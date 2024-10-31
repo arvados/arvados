@@ -13,6 +13,7 @@ import {
     msFrozenProjectActionFilter,
     msAdminFrozenProjectActionFilter,
     msWriteableProjectActionFilter,
+    msManageableProjectActionFilter,
 } from 'views-components/multiselect-toolbar/ms-project-action-set';
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter, msReadOnlyProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
@@ -24,26 +25,27 @@ import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 const {
     COLLECTION,
     COLLECTION_ADMIN,
-    READONLY_COLLECTION,
-    WRITEABLE_COLLECTION,
-    READONLY_PROCESS_RESOURCE,
-    PROCESS_RESOURCE,
-    RUNNING_PROCESS_RESOURCE,
-    RUNNING_PROCESS_ADMIN,
-    PROCESS_ADMIN,
-    PROJECT,
-    ROOT_PROJECT,
-    PROJECT_ADMIN,
-    ROOT_PROJECT_ADMIN,
-    FROZEN_PROJECT,
-    FROZEN_PROJECT_ADMIN,
-    READONLY_PROJECT,
-    WRITEABLE_PROJECT,
     FILTER_GROUP,
     FILTER_GROUP_ADMIN,
+    FROZEN_PROJECT,
+    FROZEN_PROJECT_ADMIN,
     GROUPS,
-    WORKFLOW,
+    MANAGEABLE_PROJECT,
+    PROCESS_ADMIN,
+    PROCESS_RESOURCE,
+    PROJECT,
+    PROJECT_ADMIN,
+    READONLY_COLLECTION,
+    READONLY_PROCESS_RESOURCE,
+    READONLY_PROJECT,
     READONLY_WORKFLOW,
+    ROOT_PROJECT,
+    ROOT_PROJECT_ADMIN,
+    RUNNING_PROCESS_ADMIN,
+    RUNNING_PROCESS_RESOURCE,
+    WORKFLOW,
+    WRITEABLE_COLLECTION,
+    WRITEABLE_PROJECT
 } = ContextMenuKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
@@ -70,6 +72,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [FROZEN_PROJECT_ADMIN]: [msProjectActionSet, msAdminFrozenProjectActionFilter], 
     [READONLY_PROJECT]: [msProjectActionSet, msReadOnlyProjectActionFilter],
     [WRITEABLE_PROJECT]: [msProjectActionSet, msWriteableProjectActionFilter],
+    [MANAGEABLE_PROJECT]: [msProjectActionSet, msManageableProjectActionFilter],
     [ResourceKind.PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
     
     [FILTER_GROUP]: [msProjectActionSet, msFilterGroupActionFilter],

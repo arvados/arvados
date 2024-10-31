@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useMemo} from "react";
+import React, { useMemo } from "react";
 import { connect } from "react-redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Toolbar, IconButton } from "@mui/material";
@@ -77,6 +77,7 @@ export type MultiselectToolbarProps = {
     location: string;
     forceMultiSelectMode?: boolean;
     injectedStyles?: string;
+    unfreezeRequiresAdmin?: boolean;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -99,10 +100,10 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
+        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles, unfreezeRequiresAdmin } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
-        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
+        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -225,7 +226,7 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, readonly = false): (ContextMenuKind | ResourceKind) | undefined => {
+const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, unfreezeRequiresAdmin: boolean, readonly = false ): (ContextMenuKind | ResourceKind) | undefined => {
     if (!user) return;
     const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
     const { isAdmin } = user;
@@ -238,10 +239,13 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
     switch (kind) {
         case ResourceKind.PROJECT:
             if (isFrozen) {
-                return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                : isEditable 
-                ? ContextMenuKind.FROZEN_PROJECT
-                : ContextMenuKind.READONLY_PROJECT;
+                return isAdmin 
+                ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
+                : canManage && !unfreezeRequiresAdmin
+                    ? ContextMenuKind.MANAGEABLE_PROJECT
+                    : isEditable 
+                        ? ContextMenuKind.FROZEN_PROJECT
+                        : ContextMenuKind.READONLY_PROJECT;
             }
 
             if (isAdmin && !readonly) {
@@ -346,6 +350,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
         auth,
         selectedResourceUuid,
         location: window.location.pathname,
+        unfreezeRequiresAdmin: auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin,
         iconProps: {
             resources,
             favorites,

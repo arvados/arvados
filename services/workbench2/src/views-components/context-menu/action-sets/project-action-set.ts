@@ -198,3 +198,17 @@ export const writeableProjectActionSet = [
         copyUuidAction,
     ],
 ];
+
+export const manageableProjectActionSet = [
+    [
+        viewDetailsAction,
+        openInNewTabMenuAction,
+        copyUuidAction,
+        shareAction,
+        freezeProjectAction,
+        toggleFavoriteAction,
+        copyToClipboardMenuAction,
+        openWith3rdPartyClientAction,
+        advancedAction,
+    ],
+];

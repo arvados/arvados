@@ -254,7 +254,9 @@ export const openUserContextMenu = (event: React.MouseEvent<HTMLElement>, user: 
 export const resourceUuidToContextMenuKind =
     (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
+        const auth = getState().auth;
+        const { isAdmin: isAdminUser, uuid: userUuid } = auth.user!;
+        const unfreezeRequiresAdmin = auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
         const isFrozen = resourceIsFrozen(resource, getState().resources);
@@ -264,10 +266,13 @@ export const resourceUuidToContextMenuKind =
         switch (kind) {
             case ResourceKind.PROJECT:
                 if (isFrozen) {
-                    return isAdminUser ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                    : isEditable 
-                    ? ContextMenuKind.FROZEN_PROJECT
-                    : ContextMenuKind.READONLY_PROJECT;
+                    return isAdminUser 
+                    ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
+                    : canManage && !unfreezeRequiresAdmin
+                        ? ContextMenuKind.MANAGEABLE_PROJECT
+                        : isEditable 
+                            ? ContextMenuKind.FROZEN_PROJECT
+                            : ContextMenuKind.READONLY_PROJECT;
                 }
 
                 if(canManage === false && canWrite === true) return ContextMenuKind.WRITEABLE_PROJECT;

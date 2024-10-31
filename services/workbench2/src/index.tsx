@@ -29,6 +29,7 @@ import {
     projectActionSet,
     readOnlyProjectActionSet,
     writeableProjectActionSet,
+    manageableProjectActionSet,
 } from "views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from "views-components/context-menu/action-sets/resource-action-set";
 import { favoriteActionSet } from "views-components/context-menu/action-sets/favorite-action-set";
@@ -153,6 +154,7 @@ addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
 addMenuActionSet(ContextMenuKind.SEARCH_RESULTS, searchResultsActionSet);
 addMenuActionSet(ContextMenuKind.WRITEABLE_PROJECT, writeableProjectActionSet);
 addMenuActionSet(ContextMenuKind.WRITEABLE_COLLECTION, writeableCollectionSet);
+addMenuActionSet(ContextMenuKind.MANAGEABLE_PROJECT, manageableProjectActionSet);
 
 storeRedirects();
 

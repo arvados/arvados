@@ -26,6 +26,7 @@ export enum ContextMenuKind {
     GROUP_MEMBER = "GroupMember",
     KEEP_SERVICE = "KeepService",
     LINK = "Link",
+    MANAGEABLE_PROJECT = "ManageableProject",
     MULTI = "Multi",
     OLD_VERSION_COLLECTION = "OldVersionCollection",
     PERMISSION_EDIT = "PermissionEdit",
@@ -154,6 +155,7 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.FROZEN_PROJECT]: projectOrder,
     [ContextMenuKind.FROZEN_PROJECT_ADMIN]: projectOrder,
     [ContextMenuKind.WRITEABLE_PROJECT]: projectOrder,
+    [ContextMenuKind.MANAGEABLE_PROJECT]: projectOrder,
 
     [ContextMenuKind.COLLECTION]: collectionOrder,
     [ContextMenuKind.COLLECTION_ADMIN]: collectionOrder,
