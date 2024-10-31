@@ -97,7 +97,13 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 				name:    ".",
 				mode:    os.ModeDir | 0755,
 				modTime: modTime,
-				sys:     func() interface{} { return c },
+				sys: func() interface{} {
+					return &Collection{
+						UUID:             fs.uuid,
+						PortableDataHash: fs.loadedPDH.Load().(string),
+						Properties:       c.Properties,
+					}
+				},
 			},
 			inodes: make(map[string]inode),
 		},
