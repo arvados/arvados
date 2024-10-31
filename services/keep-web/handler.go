@@ -5,6 +5,7 @@
 package keepweb
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +17,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/webdavfs"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -48,6 +49,9 @@ type handler struct {
 	s3SecretCache         map[string]*cachedS3Secret
 	s3SecretCacheMtx      sync.Mutex
 	s3SecretCacheNextTidy time.Time
+
+	dbConnector    *ctrlctx.DBConnector
+	dbConnectorMtx sync.Mutex
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -178,6 +182,15 @@ func (h *handler) CheckHealth() error {
 // Done implements service.Handler.
 func (h *handler) Done() <-chan struct{} {
 	return nil
+}
+
+func (h *handler) getDBConnector() *ctrlctx.DBConnector {
+	h.dbConnectorMtx.Lock()
+	defer h.dbConnectorMtx.Unlock()
+	if h.dbConnector == nil {
+		h.dbConnector = &ctrlctx.DBConnector{PostgreSQL: h.Cluster.PostgreSQL}
+	}
+	return h.dbConnector
 }
 
 // ServeHTTP implements http.Handler.
@@ -625,11 +638,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	colltarget := strings.Join(pathParts[stripParts:], "/")
 	colltarget = strings.TrimSuffix(colltarget, "/")
-	if !forceReload && needSync(sessionFS, r, webdavPrefix, collectionID, colltarget) {
-		err := collectionDir.Sync()
+	if !forceReload {
+		sync, err := h.needSync(r.Context(), sessionFS, fstarget)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
+		}
+		if sync {
+			err = collectionDir.Sync()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadGateway)
+				return
+			}
 		}
 	}
 
@@ -768,48 +788,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				}
 				if err != nil {
 					return err
-				}
-
-				// If a subsequent request depends on
-				// this change, it should succeed.  We
-				// could call collectionDir.Sync(),
-				// but that's not ideal: it can be
-				// expensive on a large collection;
-				// most of the time it is not needed;
-				// even when it is needed, overlapping
-				// update-and-Sync sequences can still
-				// result in a stale sessionFS (see
-				// #22184); and it doesn't address
-				// cases where the subsequent request
-				// goes through a different keep-web
-				// service in a load-balanced setup.
-				//
-				// So, in some simple/common cases
-				// (PUT, MKCOL, DELETE) we
-				// splice/update sessionFS, which is
-				// fast.
-				//
-				// In other cases (and in case that
-				// somehow fails) we rely on the
-				// subsequent request running the
-				// "Sync if target or parent is
-				// missing" code above.
-				switch r.Method {
-				case "PUT":
-					err = arvados.Splice(sessionFS, fstarget, snap)
-					if err != nil {
-						logger.WithError(err).Warn("splice failed")
-					}
-				case "MKCOL":
-					err = sessionFS.Mkdir(fstarget, 0777)
-					if err != nil {
-						logger.WithError(err).Warn("Mkdir failed")
-					}
-				case "DELETE":
-					err = sessionFS.RemoveAll(fstarget)
-					if err != nil {
-						logger.WithError(err).Warn("RemoveAll failed")
-					}
 				}
 				return nil
 			}}
@@ -1155,56 +1133,29 @@ func copyMoveDestination(r *http.Request, webdavPrefix string) (string, error) {
 	return dsttarget, nil
 }
 
-// It is possible for our long-lived sessionFS to be out of date in a
-// way that would cause the current operation to fail.  E.g., if MKCOL
-// /A succeeded moments ago on a different keep-web server, and the
-// current request is PUT /A/B, then replace_files will succeed --
-// however, if the webdav operation fails due to /A not existing in
-// our stale sessionFS, then we won't even get as far as attempting
-// replace_files.  Here, we detect these situations where our handler
-// should call Sync() before calling through to the webdav handler.
+// Check whether fstarget is in a collection whose PDH has changed
+// since it was last Sync()ed in sessionFS.
 //
-// Those situations are:
-// * PUT or MKCOL, and parent dir is missing
-// * PUT, and target is a directory
-// * MKCOL, and target exists
-// * not PUT, and target is missing (including source of COPY or MOVE)
-// * COPY or MOVE, and destination parent dir is missing (or is not a directory)
-// * COPY or MOVE with Overwrite=F, and destination exists
-func needSync(sessionFS arvados.CustomFileSystem, r *http.Request, webdavPrefix, collectionID, colltarget string) bool {
-	collprefix := "by_id/" + collectionID + "/"
-	if r.Method == "PUT" || r.Method == "MKCOL" {
-		parentdir, _ := filepath.Split(colltarget)
-		if fi, err := sessionFS.Stat(collprefix + parentdir); os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
-			return true
-		}
-		if fi, err := sessionFS.Stat(collprefix + colltarget); err == nil {
-			if r.Method == "PUT" && fi.IsDir() ||
-				r.Method == "MKCOL" {
-				return true
-			}
-		}
-		return false
+// If fstarget doesn't exist, but would be in such a collection if it
+// did exist, return true.
+func (h *handler) needSync(ctx context.Context, sessionFS arvados.CustomFileSystem, fstarget string) (bool, error) {
+	collection, _ := h.determineCollection(sessionFS, fstarget)
+	if collection == nil || len(collection.UUID) != 27 {
+		return false, nil
 	}
-	_, err := sessionFS.Stat(collprefix + colltarget)
-	if os.IsNotExist(err) {
-		return true
+	db, err := h.getDBConnector().GetDB(ctx)
+	if err != nil {
+		return false, err
 	}
-	if r.Method == "COPY" || r.Method == "MOVE" {
-		dsttarget, err := copyMoveDestination(r, webdavPrefix)
-		if err != nil {
-			// the request will fail anyway
-			return false
-		}
-		dstparentdir, _ := filepath.Split(dsttarget)
-		if fi, err := sessionFS.Stat(collprefix + dstparentdir); os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
-			return true
-		}
-		if r.Header.Get("Overwrite") == "F" {
-			return true
-		}
+	var currentPDH string
+	err = db.QueryRowContext(ctx, `select portable_data_hash from collections where uuid=$1`, collection.UUID).Scan(&currentPDH)
+	if err != nil {
+		return false, err
 	}
-	return false
+	if currentPDH != collection.PortableDataHash {
+		return true, nil
+	}
+	return false, nil
 }
 
 type fileEventLog struct {

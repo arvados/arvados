@@ -147,10 +147,6 @@ func (s *IntegrationSuite) TestForceReloadUUID(c *check.C) {
 		},
 	})
 	c.Assert(err, check.IsNil)
-	// Before we set the force-reload header, the cached version
-	// with empty_file is still accessible.
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
 	// If we set the force-reload header, we get the latest
 	// version and empty_file is gone.
 	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", "", http.Header{

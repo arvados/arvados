@@ -46,8 +46,7 @@ type UnitSuite struct {
 
 func (s *UnitSuite) SetUpTest(c *check.C) {
 	logger := ctxlog.TestLogger(c)
-	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), logger)
-	ldr.Path = "-"
+	ldr := config.NewLoader(&bytes.Buffer{}, logger)
 	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
 	cc, err := cfg.GetCluster("")
@@ -2367,7 +2366,7 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 						c.Assert(err, check.IsNil)
 						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
 						handler.ServeHTTP(resp, req)
-						c.Check(resp.Code, check.Equals, http.StatusCreated)
+						c.Check(resp.Code, check.Equals, http.StatusCreated, check.Commentf("%s", content))
 
 						time.Sleep(time.Second)
 						resp = httptest.NewRecorder()
@@ -2375,7 +2374,7 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 						c.Assert(err, check.IsNil)
 						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
 						handler.ServeHTTP(resp, req)
-						c.Check(resp.Code, check.Equals, http.StatusOK)
+						c.Check(resp.Code, check.Equals, http.StatusOK, check.Commentf("%s", content))
 						c.Check(strings.TrimSuffix(resp.Body.String(), filler), check.Equals, content)
 					}()
 				}
@@ -2472,7 +2471,6 @@ func (s *IntegrationSuite) TestDepthHeader(c *check.C) {
 		req, err := http.NewRequest(trial.method, base+trial.path, strings.NewReader(""))
 		c.Assert(err, check.IsNil)
 		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-		req.Header.Set("Cache-Control", "must-revalidate")
 		if trial.destination != "" {
 			req.Header.Set("Destination", base+trial.destination)
 		}
