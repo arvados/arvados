@@ -212,3 +212,16 @@ export const manageableProjectActionSet = [
         advancedAction,
     ],
 ];
+
+export const frozenManageableProjectActionSet = [
+    [
+        viewDetailsAction,
+        openInNewTabMenuAction,
+        copyUuidAction,
+        shareAction,
+        toggleFavoriteAction,
+        copyToClipboardMenuAction,
+        openWith3rdPartyClientAction,
+        advancedAction,
+    ],
+];

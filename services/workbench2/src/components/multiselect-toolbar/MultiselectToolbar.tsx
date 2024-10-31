@@ -241,8 +241,10 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
             if (isFrozen) {
                 return isAdmin 
                 ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                : canManage && !unfreezeRequiresAdmin
-                    ? ContextMenuKind.MANAGEABLE_PROJECT
+                : canManage 
+                    ? unfreezeRequiresAdmin
+                        ? ContextMenuKind.MANAGEABLE_PROJECT
+                        : ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
                     : isEditable 
                         ? ContextMenuKind.FROZEN_PROJECT
                         : ContextMenuKind.READONLY_PROJECT;

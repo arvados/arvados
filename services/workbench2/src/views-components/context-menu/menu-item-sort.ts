@@ -20,6 +20,7 @@ export enum ContextMenuKind {
     FAVORITE = "Favorite",
     FILTER_GROUP = "FilterGroup",
     FILTER_GROUP_ADMIN = "FilterGroupAdmin",
+    FROZEN_MANAGEABLE_PROJECT = "FrozenManageableProject",
     FROZEN_PROJECT = "FrozenProject",
     FROZEN_PROJECT_ADMIN = "FrozenProjectAdmin",
     GROUPS = "Group",
@@ -156,6 +157,7 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.FROZEN_PROJECT_ADMIN]: projectOrder,
     [ContextMenuKind.WRITEABLE_PROJECT]: projectOrder,
     [ContextMenuKind.MANAGEABLE_PROJECT]: projectOrder,
+    [ContextMenuKind.FROZEN_MANAGEABLE_PROJECT]: projectOrder,
 
     [ContextMenuKind.COLLECTION]: collectionOrder,
     [ContextMenuKind.COLLECTION_ADMIN]: collectionOrder,

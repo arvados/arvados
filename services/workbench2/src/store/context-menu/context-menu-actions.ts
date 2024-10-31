@@ -268,8 +268,10 @@ export const resourceUuidToContextMenuKind =
                 if (isFrozen) {
                     return isAdminUser 
                     ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                    : canManage && !unfreezeRequiresAdmin
-                        ? ContextMenuKind.MANAGEABLE_PROJECT
+                    : canManage 
+                        ? unfreezeRequiresAdmin
+                            ? ContextMenuKind.MANAGEABLE_PROJECT
+                            : ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
                         : isEditable 
                             ? ContextMenuKind.FROZEN_PROJECT
                             : ContextMenuKind.READONLY_PROJECT;
