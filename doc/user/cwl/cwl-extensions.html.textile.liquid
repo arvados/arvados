@@ -29,7 +29,7 @@ For portability, most Arvados extensions should go into the @hints@ section of y
 * "IntermediateOutput":#IntermediateOutput
 * "Secrets":#Secrets
 * "WorkflowRunnerResources":#WorkflowRunnerResources
-* "ClusterTarget":#clustertarget
+* "ClusterTarget":#ClusterTarget
 * "OutputStorageClass":#OutputStorageClass
 * "ProcessProperties":#ProcessProperties
 * "OutputCollectionProperties":#OutputCollectionProperties
@@ -176,7 +176,7 @@ table(table table-bordered table-condensed).
 |coresMin|int|Number of cores to reserve to the arvados-cwl-runner process. Default 1 core.|
 |keep_cache|int|Size of collection metadata cache for the workflow runner, in MiB.  Default 256 MiB.  Will be added on to the RAM request when determining node size to request.|
 
-h2(#clustertarget). arv:ClusterTarget
+h2(#ClusterTarget). arv:ClusterTarget
 
 Specify which Arvados cluster should execute a container or subworkflow, and the parent project for the container request.
 

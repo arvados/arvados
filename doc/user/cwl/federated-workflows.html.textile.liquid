@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-To support running analysis on geographically dispersed data (avoiding expensive data transfers by sending the computation to the data), and "hybrid cloud" configurations where an on-premise cluster can expand its capabilities by delegating work to a cloud-hosted cluster, Arvados supports federated workflows.  In a federated workflow, different steps of a workflow may execute on different clusters.  Arvados manages data transfer and delegation of credentials, so that all that is required is adding "arv:ClusterTarget":cwl-extensions.html#clustertarget hints to your existing workflow.
+To support running analysis on geographically dispersed data (avoiding expensive data transfers by sending the computation to the data), and "hybrid cloud" configurations where an on-premise cluster can expand its capabilities by delegating work to a cloud-hosted cluster, Arvados supports federated workflows.  In a federated workflow, different steps of a workflow may execute on different clusters.  Arvados manages data transfer and delegation of credentials, so that all that is required is adding "arv:ClusterTarget":cwl-extensions.html#ClusterTarget hints to your existing workflow.
 
 !(full-width)federated-workflow.svg!
 
