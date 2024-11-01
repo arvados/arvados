@@ -8,13 +8,14 @@ import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon,
     DetailsIcon,
-    RemoveIcon,
     ReRunProcessIcon,
     OutputIcon,
     AdvancedIcon,
     OpenIcon,
     StopIcon,
     CopyIcon,
+    DeleteForever,
+    Link,
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
@@ -86,7 +87,7 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
             },
         },
         {
-            icon: CopyIcon,
+            icon: Link,
             name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
             execute: (dispatch, resources) => {
                 dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
@@ -115,7 +116,7 @@ export const processResourceActionSet: ContextMenuActionSet = [
         // },
         {
             name: ContextMenuActionNames.REMOVE,
-            icon: RemoveIcon,
+            icon: DeleteForever,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
             },
