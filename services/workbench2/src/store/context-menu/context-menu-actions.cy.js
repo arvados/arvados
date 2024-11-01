@@ -141,6 +141,7 @@ describe('context-menu-actions', () => {
                     menuKind = store.dispatch(resourceUuidToContextMenuKind(resourceUuid, forceReadonly))
                     expect(menuKind).to.equal(expected);
                 } catch (err) {
+                    console.error(err);
                     throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid])} forceReadonly: ${forceReadonly} expected to be ${expected} but got ${menuKind}.`);
                 }
             });
