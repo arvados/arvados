@@ -137,7 +137,11 @@ class ReportChart(ReportTemplate):
         </script>'''.format(
             jslib=self.JSLIB,
             chartdata=json.dumps(self.sections(), default=date_export).replace('"@', '').replace('@"', '').replace('\\"', '"'),
-            jsassets='\n'.join([importlib.resources.files('arvados_cluster_activity').joinpath(jsa).read_bytes().decode('utf-8') for jsa in self.JSASSETS]))
+            jsassets='\n'.join(
+                importlib.resources.read_text('arvados_cluster_activity', jsa)
+                for jsa in self.JSASSETS
+            ),
+        )
 
     def style(self):
         return '\n'.join((super().style(),
