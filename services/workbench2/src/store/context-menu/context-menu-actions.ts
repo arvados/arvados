@@ -209,16 +209,17 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
 export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, process: Process) => (dispatch: Dispatch, getState: () => RootState) => {
     const res = getResource<ProcessResource>(process.containerRequest.uuid)(getState().resources);
     if (res) {
+        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(res.uuid));
         dispatch<any>(
             openContextMenu(event, {
                 uuid: res.uuid,
                 ownerUuid: res.ownerUuid,
-                kind: ResourceKind.PROCESS,
+                kind: menuKind,
                 name: res.name,
                 description: res.description,
                 outputUuid: res.outputUuid || "",
                 workflowUuid: res.properties.template_uuid || "",
-                menuKind: isProcessCancelable(process) ? ContextMenuKind.RUNNING_PROCESS_RESOURCE : ContextMenuKind.PROCESS_RESOURCE
+                menuKind
             })
         );
     }
