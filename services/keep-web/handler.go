@@ -492,32 +492,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		break
 	}
 
-	// releaseSession() is equivalent to session.Release() except
-	// that it's a no-op if (1) session is nil, or (2) it has
-	// already been called.
-	//
-	// This way, we can do a defer call here to ensure it gets
-	// called in all code paths, and also call it inline (see
-	// below) in the cases where we want to release the lock
-	// before returning.
-	releaseSession := func() {}
-	if session != nil {
-		var releaseSessionOnce sync.Once
-		releaseSession = func() { releaseSessionOnce.Do(func() { session.Release() }) }
-	}
-	defer releaseSession()
-
-	if forceReload && collectionDir != nil {
-		err := collectionDir.Sync()
-		if err != nil {
-			if he := errorWithHTTPStatus(nil); errors.As(err, &he) {
-				http.Error(w, err.Error(), he.HTTPStatus())
-			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-			return
-		}
-	}
 	if session == nil {
 		if pathToken {
 			// The URL is a "secret sharing link" that
@@ -604,14 +578,45 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The first call to releaseSession() calls session.Release(),
+	// then subsequent calls are no-ops.  This lets us use a defer
+	// call here to ensure it gets called in all code paths, and
+	// also call it inline (see below) in the cases where we want
+	// to release the lock before returning.
+	var releaseSessionOnce sync.Once
+	releaseSession := func() { releaseSessionOnce.Do(func() { session.Release() }) }
+	defer releaseSession()
+
+	colltarget := strings.Join(targetPath, "/")
+	colltarget = strings.TrimSuffix(colltarget, "/")
+	fstarget := fsprefix + colltarget
+	if !forceReload {
+		need, err := h.needSync(r.Context(), sessionFS, fstarget)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		forceReload = need
+	}
+	if forceReload {
+		err := collectionDir.Sync()
+		if err != nil {
+			if he := errorWithHTTPStatus(nil); errors.As(err, &he) {
+				http.Error(w, err.Error(), he.HTTPStatus())
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+	}
+
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		targetfnm := fsprefix + strings.Join(pathParts[stripParts:], "/")
-		if fi, err := sessionFS.Stat(targetfnm); err == nil && fi.IsDir() {
+		if fi, err := sessionFS.Stat(fstarget); err == nil && fi.IsDir() {
 			releaseSession() // because we won't be writing anything
 			if !strings.HasSuffix(r.URL.Path, "/") {
 				h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
 			} else {
-				h.serveDirectory(w, r, fi.Name(), sessionFS, targetfnm, !useSiteFS)
+				h.serveDirectory(w, r, fi.Name(), sessionFS, fstarget, !useSiteFS)
 			}
 			return
 		}
@@ -629,28 +634,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	fstarget := fsprefix + strings.Join(targetPath, "/")
 	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, nil, tokenUser)
 
 	if webdavPrefix == "" && stripParts > 0 {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
-	}
-
-	colltarget := strings.Join(pathParts[stripParts:], "/")
-	colltarget = strings.TrimSuffix(colltarget, "/")
-	if !forceReload {
-		sync, err := h.needSync(r.Context(), sessionFS, fstarget)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return
-		}
-		if sync {
-			err = collectionDir.Sync()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadGateway)
-				return
-			}
-		}
 	}
 
 	writing := writeMethod[r.Method]
@@ -823,11 +810,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.metrics.track(wh, w, r)
 	if r.Method == http.MethodGet && w.WroteStatus() == http.StatusOK {
 		wrote := int64(w.WroteBodyBytes())
-		fnm := strings.Join(pathParts[stripParts:], "/")
-		fi, err := wh.FileSystem.Stat(r.Context(), fnm)
+		fi, err := wh.FileSystem.Stat(r.Context(), colltarget)
 		if err == nil && fi.Size() != wrote {
 			var n int
-			f, err := wh.FileSystem.OpenFile(r.Context(), fnm, os.O_RDONLY, 0)
+			f, err := wh.FileSystem.OpenFile(r.Context(), colltarget, os.O_RDONLY, 0)
 			if err == nil {
 				n, err = f.Read(make([]byte, 1024))
 				f.Close()
