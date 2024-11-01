@@ -12,7 +12,7 @@ import math
 import collections
 import json
 from datetime import date, datetime, timedelta
-from typing import List
+from typing import Dict, List
 import statistics
 
 from dataclasses import dataclass
@@ -33,7 +33,7 @@ class WorkflowRunSummary:
 class ProjectSummary:
     users: set
     uuid: str
-    runs: dict[str, WorkflowRunSummary]
+    runs: Dict[str, WorkflowRunSummary]
     earliest: datetime = datetime(year=9999, month=1, day=1)
     latest: datetime = datetime(year=1900, month=1, day=1)
     name: str = ""
