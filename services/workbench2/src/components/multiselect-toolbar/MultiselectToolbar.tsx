@@ -103,7 +103,7 @@ export const MultiselectToolbar = connect(
         const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles, unfreezeRequiresAdmin } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
-        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
+        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [msResourceToContextMenuKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -226,7 +226,7 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, unfreezeRequiresAdmin: boolean, readonly = false ): (ContextMenuKind | ResourceKind) | undefined => {
+const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, user: User | null, unfreezeRequiresAdmin: boolean, readonly = false ): (ContextMenuKind | ResourceKind) | undefined => {
     if (!user) return;
     const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
     const { isAdmin } = user;
@@ -288,15 +288,17 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
                                 : ContextMenuKind.COLLECTION
                             : ContextMenuKind.READONLY_COLLECTION;
         case ResourceKind.PROCESS:
-            return !isEditable
-                ? ContextMenuKind.READONLY_PROCESS_RESOURCE
-                : isAdmin
-                    ? resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
-                        ? ContextMenuKind.RUNNING_PROCESS_ADMIN
-                        : ContextMenuKind.PROCESS_ADMIN
-                    : resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
-                        ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                        : ContextMenuKind.PROCESS_RESOURCE;
+            const process = getProcess(uuid)(resources);
+                const isRunning = process && isProcessCancelable(process);
+                return !isEditable
+                    ? ContextMenuKind.READONLY_PROCESS_RESOURCE
+                    : isAdmin 
+                        ? process && isRunning
+                            ? ContextMenuKind.RUNNING_PROCESS_ADMIN
+                            : ContextMenuKind.PROCESS_ADMIN
+                        : process && isRunning
+                            ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
+                            : ContextMenuKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
             return isAdmin ? ContextMenuKind.ROOT_PROJECT_ADMIN : ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:
