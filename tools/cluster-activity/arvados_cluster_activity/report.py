@@ -276,7 +276,8 @@ class ClusterActivityReport(object):
                 users=", ".join(prj.users),
             )
 
-        cards.append("""
+        if any(self.graphs.values()):
+            cards.append("""
                 <div id="chart"></div>
             """)
 
