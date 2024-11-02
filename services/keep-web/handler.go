@@ -1126,7 +1126,7 @@ func copyMoveDestination(r *http.Request, webdavPrefix string) (string, error) {
 // did exist, return true.
 func (h *handler) needSync(ctx context.Context, sessionFS arvados.CustomFileSystem, fstarget string) (bool, error) {
 	collection, _ := h.determineCollection(sessionFS, fstarget)
-	if collection == nil || len(collection.UUID) != 27 {
+	if collection == nil || len(collection.UUID) != 27 || !strings.HasPrefix(collection.UUID, h.Cluster.ClusterID) {
 		return false, nil
 	}
 	db, err := h.getDBConnector().GetDB(ctx)
