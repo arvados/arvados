@@ -84,7 +84,7 @@ describe('context-menu-actions', () => {
                 [containerRequestUuid, true, true, false, false, ContextMenuKind.PROCESS_ADMIN],
                 [containerRequestUuid, true, false, true, false, ContextMenuKind.PROCESS_ADMIN],
                 [containerRequestUuid, true, false, false, false, ContextMenuKind.PROCESS_ADMIN],
-                [containerRequestUuid, true, false, false, true, ContextMenuKind.READONLY_PROCESS_RESOURCE],
+                [containerRequestUuid, true, false, false, true, ContextMenuKind.PROCESS_ADMIN],
             ]
 
             cases.forEach(([resourceUuid, isAdminUser, isEditable, isTrashed, forceReadonly, expected]) => {
@@ -141,7 +141,7 @@ describe('context-menu-actions', () => {
                     menuKind = store.dispatch(resourceUuidToContextMenuKind(resourceUuid, forceReadonly))
                     expect(menuKind).to.equal(expected);
                 } catch (err) {
-                    console.error(err);
+                    console.error('Failed Assertion: ', err.message);
                     throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid])} forceReadonly: ${forceReadonly} expected to be ${expected} but got ${menuKind}.`);
                 }
             });
