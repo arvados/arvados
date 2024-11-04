@@ -53,7 +53,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
             ...dataExplorerToListParams(dataExplorer),
             filters,
             order: getOrder<ProcessResource>(dataExplorer),
-            select: containerRequestFieldsNoMounts,
+            select: [...containerRequestFieldsNoMounts, "canWrite", "canManage"],
             count: 'none',
             include: ["owner_uuid", "container_uuid"]
         };
