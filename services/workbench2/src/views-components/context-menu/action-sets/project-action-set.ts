@@ -223,5 +223,6 @@ export const frozenManageableProjectActionSet = [
         copyToClipboardMenuAction,
         openWith3rdPartyClientAction,
         advancedAction,
+        freezeProjectAction,
     ],
 ];
