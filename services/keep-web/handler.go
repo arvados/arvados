@@ -5,6 +5,7 @@
 package keepweb
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/webdavfs"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -47,6 +49,9 @@ type handler struct {
 	s3SecretCache         map[string]*cachedS3Secret
 	s3SecretCacheMtx      sync.Mutex
 	s3SecretCacheNextTidy time.Time
+
+	dbConnector    *ctrlctx.DBConnector
+	dbConnectorMtx sync.Mutex
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -179,11 +184,26 @@ func (h *handler) Done() <-chan struct{} {
 	return nil
 }
 
+func (h *handler) getDBConnector() *ctrlctx.DBConnector {
+	h.dbConnectorMtx.Lock()
+	defer h.dbConnectorMtx.Unlock()
+	if h.dbConnector == nil {
+		h.dbConnector = &ctrlctx.DBConnector{PostgreSQL: h.Cluster.PostgreSQL}
+	}
+	return h.dbConnector
+}
+
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
 		r.URL.Scheme = xfp
 	}
+
+	httpserver.SetResponseLogFields(r.Context(), logrus.Fields{
+		"webdavDepth":       r.Header.Get("Depth"),
+		"webdavDestination": r.Header.Get("Destination"),
+		"webdavOverwrite":   r.Header.Get("Overwrite"),
+	})
 
 	wbuffer := newWriteBuffer(wOrig, int(h.Cluster.Collections.WebDAVOutputBuffer))
 	defer wbuffer.Close()
@@ -472,32 +492,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		break
 	}
 
-	// releaseSession() is equivalent to session.Release() except
-	// that it's a no-op if (1) session is nil, or (2) it has
-	// already been called.
-	//
-	// This way, we can do a defer call here to ensure it gets
-	// called in all code paths, and also call it inline (see
-	// below) in the cases where we want to release the lock
-	// before returning.
-	releaseSession := func() {}
-	if session != nil {
-		var releaseSessionOnce sync.Once
-		releaseSession = func() { releaseSessionOnce.Do(func() { session.Release() }) }
-	}
-	defer releaseSession()
-
-	if forceReload && collectionDir != nil {
-		err := collectionDir.Sync()
-		if err != nil {
-			if he := errorWithHTTPStatus(nil); errors.As(err, &he) {
-				http.Error(w, err.Error(), he.HTTPStatus())
-			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-			return
-		}
-	}
 	if session == nil {
 		if pathToken {
 			// The URL is a "secret sharing link" that
@@ -584,14 +578,45 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The first call to releaseSession() calls session.Release(),
+	// then subsequent calls are no-ops.  This lets us use a defer
+	// call here to ensure it gets called in all code paths, and
+	// also call it inline (see below) in the cases where we want
+	// to release the lock before returning.
+	var releaseSessionOnce sync.Once
+	releaseSession := func() { releaseSessionOnce.Do(func() { session.Release() }) }
+	defer releaseSession()
+
+	colltarget := strings.Join(targetPath, "/")
+	colltarget = strings.TrimSuffix(colltarget, "/")
+	fstarget := fsprefix + colltarget
+	if !forceReload {
+		need, err := h.needSync(r.Context(), sessionFS, fstarget)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		forceReload = need
+	}
+	if forceReload {
+		err := collectionDir.Sync()
+		if err != nil {
+			if he := errorWithHTTPStatus(nil); errors.As(err, &he) {
+				http.Error(w, err.Error(), he.HTTPStatus())
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+	}
+
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		targetfnm := fsprefix + strings.Join(pathParts[stripParts:], "/")
-		if fi, err := sessionFS.Stat(targetfnm); err == nil && fi.IsDir() {
+		if fi, err := sessionFS.Stat(fstarget); err == nil && fi.IsDir() {
 			releaseSession() // because we won't be writing anything
 			if !strings.HasSuffix(r.URL.Path, "/") {
 				h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
 			} else {
-				h.serveDirectory(w, r, fi.Name(), sessionFS, targetfnm, !useSiteFS)
+				h.serveDirectory(w, r, fi.Name(), sessionFS, fstarget, !useSiteFS)
 			}
 			return
 		}
@@ -609,7 +634,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	fstarget := fsprefix + strings.Join(targetPath, "/")
 	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, nil, tokenUser)
 
 	if webdavPrefix == "" && stripParts > 0 {
@@ -638,8 +662,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal error: writing to anything other than /by_id/{collectionID}", http.StatusInternalServerError)
 			return
 		}
-		colltarget := strings.Join(pathParts[stripParts:], "/")
-		colltarget = strings.TrimSuffix(colltarget, "/")
 
 		// Create a temporary collection filesystem for webdav
 		// to operate on.
@@ -667,24 +689,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 		switch r.Method {
 		case "COPY", "MOVE":
-			dsturl, err := url.Parse(r.Header.Get("Destination"))
+			dsttarget, err := copyMoveDestination(r, webdavPrefix)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
-			}
-			if dsturl.Host != "" && dsturl.Host != r.Host {
-				http.Error(w, "destination host mismatch", http.StatusBadGateway)
-				return
-			}
-			var dsttarget string
-			if webdavPrefix == "" {
-				dsttarget = dsturl.Path
-			} else {
-				dsttarget = strings.TrimPrefix(dsturl.Path, webdavPrefix)
-				if len(dsttarget) == len(dsturl.Path) {
-					http.Error(w, "destination path not supported", http.StatusBadRequest)
-					return
-				}
 			}
 
 			srcspec := "current/" + colltarget
@@ -768,23 +776,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					return err
 				}
-
-				// We want subsequent reqs to account
-				// for this change.  Sync() can be
-				// expensive on a large collection, so
-				// in the simple (and common) case of
-				// uploading a single file, we just
-				// splice the new file into sessionFS
-				// instead.
-				if r.Method == "PUT" {
-					err = arvados.Splice(sessionFS, fstarget, snap)
-					if err != nil {
-						logger.WithError(err).Warn("splice failed")
-						collectionDir.Sync()
-					}
-				} else {
-					collectionDir.Sync()
-				}
 				return nil
 			}}
 	} else {
@@ -819,11 +810,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.metrics.track(wh, w, r)
 	if r.Method == http.MethodGet && w.WroteStatus() == http.StatusOK {
 		wrote := int64(w.WroteBodyBytes())
-		fnm := strings.Join(pathParts[stripParts:], "/")
-		fi, err := wh.FileSystem.Stat(r.Context(), fnm)
+		fi, err := wh.FileSystem.Stat(r.Context(), colltarget)
 		if err == nil && fi.Size() != wrote {
 			var n int
-			f, err := wh.FileSystem.OpenFile(r.Context(), fnm, os.O_RDONLY, 0)
+			f, err := wh.FileSystem.OpenFile(r.Context(), colltarget, os.O_RDONLY, 0)
 			if err == nil {
 				n, err = f.Read(make([]byte, 1024))
 				f.Close()
@@ -1106,6 +1096,52 @@ func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arva
 		return false
 	}
 	return true
+}
+
+// Parse the request's Destination header and return the destination
+// path relative to the current collection, i.e., with webdavPrefix
+// stripped off.
+func copyMoveDestination(r *http.Request, webdavPrefix string) (string, error) {
+	dsturl, err := url.Parse(r.Header.Get("Destination"))
+	if err != nil {
+		return "", err
+	}
+	if dsturl.Host != "" && dsturl.Host != r.Host {
+		return "", errors.New("destination host mismatch")
+	}
+	if webdavPrefix == "" {
+		return dsturl.Path, nil
+	}
+	dsttarget := strings.TrimPrefix(dsturl.Path, webdavPrefix)
+	if len(dsttarget) == len(dsturl.Path) {
+		return "", errors.New("destination path not supported")
+	}
+	return dsttarget, nil
+}
+
+// Check whether fstarget is in a collection whose PDH has changed
+// since it was last Sync()ed in sessionFS.
+//
+// If fstarget doesn't exist, but would be in such a collection if it
+// did exist, return true.
+func (h *handler) needSync(ctx context.Context, sessionFS arvados.CustomFileSystem, fstarget string) (bool, error) {
+	collection, _ := h.determineCollection(sessionFS, fstarget)
+	if collection == nil || len(collection.UUID) != 27 || !strings.HasPrefix(collection.UUID, h.Cluster.ClusterID) {
+		return false, nil
+	}
+	db, err := h.getDBConnector().GetDB(ctx)
+	if err != nil {
+		return false, err
+	}
+	var currentPDH string
+	err = db.QueryRowContext(ctx, `select portable_data_hash from collections where uuid=$1`, collection.UUID).Scan(&currentPDH)
+	if err != nil {
+		return false, err
+	}
+	if currentPDH != collection.PortableDataHash {
+		return true, nil
+	}
+	return false, nil
 }
 
 type fileEventLog struct {

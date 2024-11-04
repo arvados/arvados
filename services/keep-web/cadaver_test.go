@@ -282,7 +282,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			match: `(?ms).*Locking .* failed:.*405 Method Not Allowed.*`,
 		},
 	} {
-		c.Logf("%s %+v", s.testServer.URL, trial)
+		c.Logf("=== %s trial %+v", s.testServer.URL, trial)
 		if skip != nil && skip(trial.path) {
 			c.Log("(skip)")
 			continue
