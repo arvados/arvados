@@ -32,6 +32,10 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.4":#v2_7_4
 
+h3. Keep-web requires PostgreSQL database access
+
+The keep-web service now connects directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (in @pg_hba.conf@) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
+
 h3. Debian 10 and Ubuntu 18.04 are no longer supported
 
 Arvados 3.0 no longer supports some of the older distributions supported by Arvados 2.7: Debian 10 "buster" and Ubuntu 18.04 "bionic." If you are running Arvados on any of these distributions, you must first upgrade to a supported distribution before you upgrade to Arvados 3.0.
