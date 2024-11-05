@@ -264,8 +264,8 @@
       </g>
       <g class="com.sun.star.drawing.CustomShape">
        <g id="id21">
-        <rect class="BoundingBox" stroke="none" fill="none" x="1000" y="1127" width="11113" height="1461"/>
-        <text class="SVGTextShape"><tspan class="TextParagraph" font-family="Liberation Sans, sans-serif" font-size="635px" font-weight="400"><tspan class="TextPosition" x="1347" y="1722"><tspan fill="rgb(0,0,0)" stroke="none" style="white-space: pre">High level overview Arvados services</tspan></tspan><tspan class="TextPosition" x="3544" y="2433"><tspan fill="rgb(0,0,0)" stroke="none" style="white-space: pre">and how they interact</tspan></tspan></tspan></text>
+        <rect class="BoundingBox" stroke="none" fill="none" x="1000" y="1127" width="10161" height="1461"/>
+        <text class="SVGTextShape"><tspan class="TextParagraph" font-family="Liberation Sans, sans-serif" font-size="635px" font-weight="400"><tspan class="TextPosition" x="1680" y="1722"><tspan fill="rgb(0,0,0)" stroke="none" style="white-space: pre">High level overview of Arvados </tspan></tspan><tspan class="TextPosition" x="1254" y="2433"><tspan fill="rgb(0,0,0)" stroke="none" style="white-space: pre">components and how they interact</tspan></tspan></tspan></text>
        </g>
       </g>
       <g class="com.sun.star.drawing.CustomShape">
