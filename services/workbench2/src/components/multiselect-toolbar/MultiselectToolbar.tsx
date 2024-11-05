@@ -249,12 +249,13 @@ const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, us
                         : ContextMenuKind.READONLY_PROJECT;
             }
 
+            if (resource?.groupClass === GroupClass.ROLE) {
+                return ContextMenuKind.GROUPS;
+            }
+
             if (isAdmin && !readonly) {
                 if (resource?.groupClass === GroupClass.FILTER) {
                     return ContextMenuKind.FILTER_GROUP_ADMIN;
-                }
-                if (resource?.groupClass === GroupClass.ROLE) {
-                    return ContextMenuKind.GROUPS;
                 }
                 return ContextMenuKind.PROJECT_ADMIN;
             }
