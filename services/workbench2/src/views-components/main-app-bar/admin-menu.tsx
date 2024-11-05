@@ -9,7 +9,6 @@ import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { AdminMenuIcon } from "components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
 import { RootState } from "store/store";
-import { openRepositoriesPanel } from "store/repositories/repositories-actions";
 import * as NavigationAction from 'store/navigation/navigation-action';
 import { openAdminVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { openUserPanel } from "store/users/users-actions";

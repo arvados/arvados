@@ -210,7 +210,5 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
         return acc.at(-1)?.name === "Divider" && val.name === "Divider" ? acc : acc.concat(val)
     }, []);
 
-    console.log('>>>SORT', menuKind);
-
     return result.at(-1)?.name === "Divider" ? result.slice(0, -1) : result;
 };
