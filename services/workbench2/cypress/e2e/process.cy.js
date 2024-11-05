@@ -26,7 +26,7 @@ describe("Process tests", function () {
     });
 
 
-    function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted") {
+    function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
         return cy.setupDockerImage(docker_image).then(function (dockerImage) {
             return cy.createContainerRequest(user.token, {
                 name: name,
@@ -46,6 +46,7 @@ describe("Process tests", function () {
                         path: "/tmp/foo",
                     },
                 },
+                owner_uuid: ownerUuid || undefined,
             });
         });
     }
@@ -56,13 +57,15 @@ describe("Process tests", function () {
             const msButtonTooltips = [
                 'View details',
                 'Open in new tab',
-                'Outputs',
-                'API Details',
-                'Edit process',
+                'Copy UUID',
                 'Copy and re-run process',
-                'CANCEL',
+                'Cancel',
+                'Edit process',
                 'Remove',
+                'Outputs',
                 'Add to favorites',
+                'Copy link to clipboard',
+                'API Details',
             ];
 
             createContainerRequest(
@@ -1557,6 +1560,122 @@ describe("Process tests", function () {
                             verifyIOParameter(output.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
+            });
+        });
+    });
+
+    describe("Process operations", function () {
+        it("navigates to parent project when deleting current process", function () {
+            // Process in home project
+            createContainerRequest(
+                activeUser,
+                `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                "arvados/jobs",
+                ["echo", "hello world"],
+                false,
+                "Committed"
+            ).then(function (containerRequest) {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
+
+                // Delete process
+                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
+                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").within(() => {
+                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                });
+
+                // Verify we are in home project
+                cy.get("[data-cy=project-panel]").should('exist');
+                cy.url().should("contain", `/projects/${activeUser.user.uuid}`);
+            });
+
+            // Process in subproject
+            cy.createProject({
+                owningUser: activeUser,
+                projectName: 'myProject1',
+                addToFavorites: false
+            }).then(function (subproject) {
+                createContainerRequest(
+                    activeUser,
+                    `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    "arvados/jobs",
+                    ["echo", "hello world"],
+                    false,
+                    "Committed",
+                    subproject.uuid,
+                ).then(function (containerRequest) {
+                    cy.loginAs(activeUser);
+                    // Navigate to process through subproject
+                    cy.get('[data-cy=data-table-row]').contains(subproject.name).should('exist').click();
+                    cy.waitForDom();
+                    cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                    cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').click();
+                    cy.waitForDom();
+                    cy.url().should("contain", `/processes/${containerRequest.uuid}`);
+
+                    // Delete process
+                    cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
+                    cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                    cy.get("[data-cy=confirmation-dialog]").within(() => {
+                        cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                    });
+
+                    // Verify we are in subproject
+                    cy.get("[data-cy=project-panel]").should('exist');
+                    cy.url().should("contain", `/projects/${subproject.uuid}`);
+                });
+            });
+        });
+
+        it("refreshes project runs tab when deleting process", function () {
+            createContainerRequest(
+                activeUser,
+                `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                "arvados/jobs",
+                ["echo", "hello world"],
+                false,
+                "Committed"
+            ).as('firstCr')
+            .then(function () {
+                createContainerRequest(
+                    activeUser,
+                    `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    "arvados/jobs",
+                    ["echo", "hello world"],
+                    false,
+                    "Committed"
+                ).as('secondCr');
+            });
+
+            cy.getAll("@firstCr", "@secondCr").then(function ([firstCr, secondCr]) {
+                cy.loginAs(activeUser);
+                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+
+                // Delete firstCr
+                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('exist').parents('[data-cy=data-table-row]').rightclick();
+                cy.waitForDom();
+                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").within(() => {
+                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                });
+
+                // DE should refresh
+                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('not.exist');
+                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('exist');
+
+                // Delete second CR
+                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('exist').parents('[data-cy=data-table-row]').rightclick();
+                cy.waitForDom();
+                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").within(() => {
+                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                });
+
+                // No CRs
+                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('not.exist');
+                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('not.exist');
             });
         });
     });

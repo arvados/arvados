@@ -39,3 +39,13 @@ The *General access* drop-down menu controls the default sharing setting, with t
 * *Public*: This means the list of *People with access* will include _Anonymous users_, even if they are not users of the current cluster. You can further set their access level in the *Authorization* level.
 * *All users*: This means sharing with other users who are logged in on the current cluster.
 * *Shared*: When you choose to share with specific people or groups, *General access* will be set to *Shared*. From this state, you can further specify the default sharing settings for *Public* and *All users*.
+
+h2(#descriptions). Descriptions and metadata
+
+You can add descriptions to projects, collections, workflows and workflow runs when you create them, or later using the "Edit" dialog.  Descriptions are included when performing full-text search on records.
+
+Descriptions are formatted using HTML.  Workbench provides a rich text editor for editing HTML descriptions.
+
+{% include 'html_tags' %}
+
+You can also add key:value metadata to projects, collections, and workflow runs when you create them, or later by using the "Edit" dialog.  Properties can be queried in the advanced search.  For more information, see "metadata properties":{{site.baseurl}}/api/properties.html .

@@ -33,15 +33,16 @@ describe("Collection panel tests", function () {
         const msButtonTooltips = [
             'View details',
             'Open in new tab',
+            'Copy UUID',
+            'Share',
+            'Edit collection',
+            'Move to trash',
+            'Make a copy',
+            'Move to',
+            'Add to favorites',
             'Copy link to clipboard',
             'Open with 3rd party client',
             'API Details',
-            'Share',
-            'Edit collection',
-            'Move to',
-            'Make a copy',
-            'Move to trash',
-            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);
@@ -686,7 +687,8 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
             cy.get("[data-cy=collection-info-panel]").should("not.contain", projName).and("not.contain", testProject.uuid);
             cy.get("[data-cy=collection-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").contains("Move to").click();
+            cy.get("[data-cy=context-menu]").should('exist');
+            cy.get("[data-cy='Move to']").click();
             cy.get("[data-cy=form-dialog]")
                 .should("contain", "Move to")
                 .within(() => {

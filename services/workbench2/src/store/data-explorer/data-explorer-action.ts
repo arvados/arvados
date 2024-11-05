@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { DataColumns, DataTableFetchMode } from "components/data-table/data-table";
-import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
+import { DataColumns } from "components/data-table/data-column";
+import { DataTableFetchMode } from "components/data-table/data-table";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 
 export enum DataTableRequestState {

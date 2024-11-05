@@ -104,7 +104,7 @@ describe('Login tests', function() {
         cy.get('div#root').should('not.contain', 'Your account is inactive');
         cy.get('button[aria-label="Admin Panel"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]')
-            .contains('Repositories')
+            .contains('Users')
             .type('{esc}', {force: true});
         cy.get('button[aria-label="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(

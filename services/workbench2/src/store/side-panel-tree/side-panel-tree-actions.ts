@@ -13,11 +13,12 @@ import { getTreePicker, TreePicker } from 'store/tree-picker/tree-picker';
 import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from 'models/tree';
 import { ProjectResource } from 'models/project';
 import { OrderBuilder } from 'services/api/order-builder';
-import { ResourceKind } from 'models/resource';
+import { ResourceKind, extractUuidObjectType, ResourceObjectType } from 'models/resource';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
 import { verifyAndUpdateLinks } from 'common/link-update-name';
+import { ProcessIcon, ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon } from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
@@ -114,6 +115,12 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
 
 const loadProject = (projectUuid: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+
+        const objectType = extractUuidObjectType(projectUuid);
+        if (objectType !== ResourceObjectType.USER && objectType !== ResourceObjectType.GROUP) {
+            return;
+        }
+
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SIDE_PANEL_TREE }));
         const params = {
             filters: new FilterBuilder()
@@ -330,4 +337,29 @@ export const getSidePanelTreeNodeAncestorsIds = (id: string) => (treePicker: Tre
     return sidePanelTree
         ? getNodeAncestorsIds(id)(sidePanelTree)
         : [];
+};
+
+export const getSidePanelIcon = (category: string) => {
+    switch (category) {
+        case SidePanelTreeCategory.FAVORITES:
+            return FavoriteIcon;
+        case SidePanelTreeCategory.PROJECTS:
+            return ProjectsIcon;
+        case SidePanelTreeCategory.SHARED_WITH_ME:
+            return ShareMeIcon;
+        case SidePanelTreeCategory.TRASH:
+            return TrashIcon;
+        case SidePanelTreeCategory.PUBLIC_FAVORITES:
+            return PublicFavoriteIcon;
+        case SidePanelTreeCategory.ALL_PROCESSES:
+            return ProcessIcon;
+        case SidePanelTreeCategory.INSTANCE_TYPES:
+            return ResourceIcon;
+        case SidePanelTreeCategory.GROUPS:
+            return GroupsIcon;
+        case SidePanelTreeCategory.SHELL_ACCESS:
+            return TerminalIcon
+        default:
+            return ProjectIcon;
+    }
 };

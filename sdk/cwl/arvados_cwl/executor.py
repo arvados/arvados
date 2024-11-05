@@ -236,7 +236,7 @@ The 'jobs' API is no longer supported.
                                                         body={"state": state}).execute(num_retries=self.num_retries)
             self.final_status = processStatus
             self.final_output = out
-            self.workflow_eval_lock.notifyAll()
+            self.workflow_eval_lock.notify_all()
 
 
     def start_run(self, runnable, runtimeContext):

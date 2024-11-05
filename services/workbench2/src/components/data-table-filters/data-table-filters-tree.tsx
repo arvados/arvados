@@ -3,17 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Tree, toggleNodeSelection, getNode, initTreeNode, getNodeChildrenIds, selectNode, deselectNodes } from 'models/tree';
+import { toggleNodeSelection, getNode, initTreeNode, getNodeChildrenIds, selectNode, deselectNodes } from 'models/tree';
 import { Tree as TreeComponent, TreeItem, TreeItemStatus } from 'components/tree/tree';
 import { noop, map } from "lodash/fp";
 import { toggleNodeCollapse } from 'models/tree';
 import { countNodes, countChildren } from 'models/tree';
-
-export interface DataTableFilterItem {
-    name: string;
-}
-
-export type DataTableFilters = Tree<DataTableFilterItem>;
+import { DataTableFilterItem, DataTableFilters } from './data-table-filters';
 
 export interface DataTableFilterProps {
     filters: DataTableFilters;

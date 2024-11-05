@@ -3942,7 +3942,7 @@
           "type": "string"
         },
         "description": {
-          "description": "A longer description of this collection assigned by a user.",
+          "description": "A longer HTML description of this collection assigned by a user.\nAllowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,\n`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,\n`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,\n`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
           "type": "string"
         },
         "properties": {
@@ -4266,7 +4266,7 @@
           "type": "string"
         },
         "description": {
-          "description": "A longer description of this container request assigned by a user.",
+          "description": "A longer HTML description of this container request assigned by a user.\nAllowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,\n`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,\n`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,\n`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
           "type": "text"
         },
         "properties": {
@@ -4433,7 +4433,7 @@
           "type": "string"
         },
         "description": {
-          "description": "A longer description of this group assigned by a user.",
+          "description": "A longer HTML description of this group assigned by a user.\nAllowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,\n`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,\n`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,\n`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
           "type": "string"
         },
         "group_class": {
@@ -4860,7 +4860,7 @@
           "type": "string"
         },
         "description": {
-          "description": "A longer description of this user agreement assigned by a user.",
+          "description": "A longer HTML description of this user agreement assigned by a user.\nAllowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,\n`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,\n`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,\n`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
           "type": "string"
         },
         "properties": {
@@ -5030,7 +5030,7 @@
           "type": "string"
         },
         "description": {
-          "description": "A longer description of this workflow assigned by a user.",
+          "description": "A longer HTML description of this workflow assigned by a user.\nAllowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,\n`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,\n`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,\n`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
           "type": "text"
         },
         "definition": {

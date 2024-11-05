@@ -5,8 +5,7 @@
 import React from 'react';
 import { LINK_PANEL_ID } from 'store/link-panel/link-panel-actions';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
-import { SortDirection } from 'components/data-table/data-column';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourcesState } from 'store/resources/resources';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';

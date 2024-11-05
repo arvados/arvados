@@ -19,10 +19,10 @@ class TestDeprecated:
 
     @pytest.mark.parametrize('pattern', [
         r'^Do nothing$',
-        r'^ +.. WARNING:: Deprecated$',
+        r'^ *.. WARNING:: Deprecated$',
         r' removed in Arvados TestVersion\.',
         r' Prefer arvados\.noop\b',
-        r'^ +This function returns None\.$',
+        r'^ *This function returns None\.$',
     ])
     def test_docstring(self, pattern):
         assert re.search(pattern, self.noop_func.__doc__, re.MULTILINE) is not None

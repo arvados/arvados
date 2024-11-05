@@ -21,8 +21,7 @@ import { ResourceKind } from 'models/resource';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { connect } from 'react-redux';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { DataColumns } from 'components/data-table/data-table';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
     ResourceName,

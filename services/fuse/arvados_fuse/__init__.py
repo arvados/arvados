@@ -1067,3 +1067,22 @@ class Operations(llfuse.Operations):
 
     def fsyncdir(self, fh, datasync):
         self.flush(fh)
+
+    @catch_exceptions
+    def mknod(self, parent_inode, name, mode, rdev, ctx=None):
+        if not stat.S_ISREG(mode):
+            # Can only be used to create regular files.
+            raise NotImplementedError()
+
+        name = name.decode(encoding=self.inodes.encoding)
+        _logger.debug("arv-mount mknod: parent_inode %i '%s' %o", parent_inode, name, mode)
+
+        p = self._check_writable(parent_inode)
+        p.create(name)
+
+        # The file entry should have been implicitly created by callback.
+        f = p[name]
+        self.inodes.touch(p)
+
+        f.inc_ref()
+        return self.getattr(f.inode)

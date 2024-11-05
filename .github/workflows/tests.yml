@@ -15,6 +15,24 @@ jobs:
     name: Workbench2 Tests
     runs-on: ubuntu-latest
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          # true = remove
+          # false = keep
+          # this might remove tools that are actually needed, (Node, Go, Python, Ruby, ...)
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          # Cleaning up images causes some failure with the docker build/tests
+          docker-images: false
+          # Keep swap to avoid thrashing unless we really need the space
+          swap-storage: false
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Setup buildx
@@ -33,7 +51,11 @@ jobs:
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: workbench2-test:latest
-          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados/services/workbench2
+          # Timeout workaround to prevent orphaned browser process https://github.com/cypress-io/cypress/issues/28397
+          options: >-
+            -v ${{github.workspace}}:/usr/src/arvados
+            -w /usr/src/arvados/services/workbench2
+            --env CYPRESS_INTERNAL_BROWSER_CONNECT_TIMEOUT=300000
           run: |
             yarn install
             yarn test || exit $?

@@ -49,6 +49,10 @@ type collectionFileSystem struct {
 
 	// PDH returned by the server as of last sync/load.
 	loadedPDH atomic.Value
+	// Time when the most recently synced version was retrieved
+	// from the server, if any. See checkChangesOnServer.
+	reloadTime    time.Time
+	reloadTimeMtx sync.Mutex
 	// PDH of the locally generated manifest as of last
 	// sync/load. This can differ from loadedPDH after loading a
 	// version that was generated with different code and sorts
@@ -93,7 +97,13 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 				name:    ".",
 				mode:    os.ModeDir | 0755,
 				modTime: modTime,
-				sys:     func() interface{} { return c },
+				sys: func() interface{} {
+					return &Collection{
+						UUID:             fs.uuid,
+						PortableDataHash: fs.loadedPDH.Load().(string),
+						Properties:       c.Properties,
+					}
+				},
 			},
 			inodes: make(map[string]inode),
 		},
@@ -334,6 +344,7 @@ func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
 	loadedPDH, _ := fs.loadedPDH.Load().(string)
 	getparams := map[string]interface{}{"select": []string{"portable_data_hash", "manifest_text"}}
 	if fs.uuid != "" {
+		reloadTime := time.Now()
 		var coll Collection
 		err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+fs.uuid, nil, getparams)
 		if err != nil {
@@ -343,6 +354,21 @@ func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
 			// collection has changed upstream since we
 			// last loaded or saved. Refresh local data,
 			// losing any unsaved local changes.
+			fs.reloadTimeMtx.Lock()
+			defer fs.reloadTimeMtx.Unlock()
+			if fs.reloadTime.After(reloadTime) {
+				// Another goroutine called
+				// checkChangesOnServer after we
+				// started, and already updated the
+				// collection.  This means their GET
+				// request started after our caller
+				// called Sync, so their response is
+				// new enough to be consistent with
+				// our semantics.  The converse is not
+				// true, so the only safe option is to
+				// leave their update in place.
+				return true, nil
+			}
 			newfs, err := coll.FileSystem(fs.fileSystem.fsBackend, fs.fileSystem.fsBackend)
 			if err != nil {
 				return false, err
@@ -357,6 +383,7 @@ func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
 			}
 			fs.loadedPDH.Store(coll.PortableDataHash)
 			fs.savedPDH.Store(newfs.(*collectionFileSystem).savedPDH.Load())
+			fs.reloadTime = reloadTime
 			return true, nil
 		}
 		fs.updateSignatures(coll.ManifestText)
@@ -1643,6 +1670,9 @@ func (dn *dirnode) Splice(repl inode) error {
 		dn.Lock()
 		defer dn.Unlock()
 		dn.inodes = repl.inodes
+		for name, child := range dn.inodes {
+			child.SetParent(dn, name)
+		}
 		dn.setTreeFS(dn.fs)
 	case *filenode:
 		dn.parent.Lock()

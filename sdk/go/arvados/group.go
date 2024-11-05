@@ -15,7 +15,6 @@ type Group struct {
 	OwnerUUID          string                 `json:"owner_uuid"`
 	GroupClass         string                 `json:"group_class"`
 	Etag               string                 `json:"etag"`
-	Href               string                 `json:"href"`
 	TrashAt            *time.Time             `json:"trash_at"`
 	CreatedAt          time.Time              `json:"created_at"`
 	ModifiedAt         time.Time              `json:"modified_at"`

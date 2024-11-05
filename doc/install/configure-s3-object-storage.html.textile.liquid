@@ -63,6 +63,13 @@ h2(#example). Configuration example
           # might be needed for other S3-compatible services.
           V2Signature: false
 
+          # Use path-style requests instead of the default
+          # virtual-hosted-style requests.  This might be needed for
+          # S3-compatible services other than AWS.  If using AWS, see
+          # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#path-style-access
+          # for deprecation information.
+          UsePathStyle: false
+
           # By default keepstore stores data using the MD5 checksum
           # (32 hexadecimal characters) as the object name, e.g.,
           # "0123456abc...". Setting PrefixLength to 3 changes this

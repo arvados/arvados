@@ -8,7 +8,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { ResourceKind } from 'models/resource';
@@ -38,7 +38,7 @@ import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { getProperty } from 'store/properties/properties';
-import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
+import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 
@@ -185,7 +185,7 @@ export const FavoritePanel = withStyles(styles)(
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
+                    contextMenuColumn={false}
                     defaultViewIcon={FavoriteIcon}
                     defaultViewMessages={['Your favorites list is empty.']} />
                 </div>;

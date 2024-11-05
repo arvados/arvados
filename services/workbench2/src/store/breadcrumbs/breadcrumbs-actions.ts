@@ -22,7 +22,7 @@ import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, TerminalIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
-import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
+import { getSidePanelIcon } from 'store/side-panel-tree/side-panel-tree-actions';
 import { WorkflowResource } from 'models/workflow';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
@@ -123,8 +123,8 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
                 dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs));
-	} catch (e) {
-	    console.log("Error setting breadcrumbs "+e);
+        } catch (e) {
+            console.log("Error setting breadcrumbs "+e);
         } finally {
             dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-breadcrumbs"));
         }
@@ -240,7 +240,7 @@ export const setProcessBreadcrumbs = (processUuid: string) =>
         const { resources } = getState();
         const process = getProcess(processUuid)(resources);
         if (process) {
-	    dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
+            dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
         }
     };
 

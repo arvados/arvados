@@ -31,10 +31,9 @@ export const AdminMenu = connect(mapStateToProps)(
                 id="admin-menu"
                 title="Admin Panel"
                 key={currentRoute}>
-                <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
                 <MenuItem onClick={() => dispatch(openAdminVirtualMachines())}>Shell Access</MenuItem>
-                <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
-                <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeysAdmin)}>SSH Keys</MenuItem>
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>API Tokens</MenuItem>
                 <MenuItem onClick={() => dispatch(openUserPanel())}>Users</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToGroups)}>Groups</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToKeepServices)}>Keep Services</MenuItem>

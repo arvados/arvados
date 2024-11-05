@@ -12,7 +12,6 @@ export const mockGroupResource = (data: Partial<GroupResource> = {}): GroupResou
     description: "",
     etag: "",
     groupClass: null,
-    href: "",
     isTrashed: false,
     kind: ResourceKind.GROUP,
     modifiedAt: "",
@@ -34,7 +33,6 @@ export const mockProjectResource = (data: Partial<ProjectResource> = {}): Projec
 export const mockCommonResource = (data: Partial<Resource>): Resource => ({
     createdAt: "",
     etag: "",
-    href: "",
     kind: ResourceKind.NONE,
     modifiedAt: "",
     modifiedByUserUuid: "",

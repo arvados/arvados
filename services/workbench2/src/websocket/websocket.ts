@@ -13,7 +13,7 @@ import { getProcess, getSubprocesses } from "store/processes/process";
 import { LogEventType } from "models/log";
 import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
-import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { allProcessesPanelActions } from "store/all-processes-panel/all-processes-panel-action";
 import { loadCollection } from "store/workbench/workbench-actions";
 import { matchAllProcessesRoute, matchProjectRoute, matchProcessRoute } from "routes/routes";

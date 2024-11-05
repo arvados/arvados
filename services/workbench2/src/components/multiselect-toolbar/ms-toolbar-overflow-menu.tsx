@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState, useMemo, ReactElement, JSXElementConstructor } from 'react';
-import { DoubleRightArrows } from 'components/icon/icon';
+import { MoreVert } from '@mui/icons-material';
 import classnames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
@@ -31,8 +31,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
         marginTop: 0,
         paddingTop: 0,
-        paddingLeft: '1rem',
+        paddingLeft: '0.5rem',
         height: '2.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
     },
     menuElement: {
         width: '2rem',
@@ -74,7 +77,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                     className={classes.openMenuButton}
                     data-cy='overflow-menu-button'
                     size="large">
-                        <DoubleRightArrows />
+                    <MoreVert />
                 </IconButton>
             </Tooltip>
             <Menu
@@ -89,15 +92,23 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
             >
                 {React.Children.map(children, (child: any) => {
                     if (!visibilityMap[child.props['data-targetid']]) {
-                        return <MenuItem
-                                key={child}
-                                onClick={handleClose}
-                                className={classes.menuItem}
+                        return (
+                            <Tooltip
+                                title={child.props['data-title']}
+                                key={child.props['data-targetid']}
+                                disableFocusListener
+                                placement='left-start'
                             >
-                                {React.cloneElement(child, {
-                                    className: classnames(classes.menuElement),
-                                })}
-                            </MenuItem>
+                                <MenuItem
+                                    key={child}
+                                    onClick={handleClose}
+                                    className={classes.menuItem}
+                                    >
+                                    {React.cloneElement(child, {
+                                        className: classnames(classes.menuElement),
+                                    })}
+                                </MenuItem>
+                        </Tooltip>)
                     }
                     return null;
                 })}

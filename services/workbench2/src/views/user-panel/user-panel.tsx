@@ -8,9 +8,8 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from 'components/data-table/data-table';
 import { RootState } from 'store/store';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
@@ -136,14 +135,10 @@ export const UserPanel = compose(
                     <DataExplorer
                         id={USERS_PANEL_ID}
                         title={
-                            <>
-                                <Typography>
-                                    User records are created automatically on first log in.
-                                </Typography>
-                                <Typography>
-                                    To add a new user, add them to your configured log in provider.
-                                </Typography>
-                            </>}
+                            <Typography>
+                           User records are created automatically on first log in.
+                           To add a new user, add them to your configured log in provider.
+                            </Typography>}
                         onRowClick={noop}
                         onRowDoubleClick={noop}
                         onContextMenu={this.handleContextMenu}

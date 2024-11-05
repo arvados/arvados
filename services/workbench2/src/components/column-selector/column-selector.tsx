@@ -8,10 +8,9 @@ import { IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } fr
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import MenuIcon from "@mui/icons-material/Menu";
-import { DataColumn } from '../data-table/data-column';
+import { DataColumn, DataColumns } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@mui/material/IconButton';
-import { DataColumns } from '../data-table/data-table';
 import { ArvadosTheme } from "common/custom-theme";
 
 interface ColumnSelectorDataProps {

@@ -9,16 +9,15 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from 'components/data-table/data-table';
 import { RootState } from 'store/store';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, TrashableResource } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
 import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
 import { getProperty } from "store/properties/properties";
-import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel-action";
+import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {

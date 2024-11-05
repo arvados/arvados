@@ -6,7 +6,7 @@ import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToD
 import { FavoritePanelColumnNames } from "views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
 import { getUserUuid } from "common/getuser";
-import { DataColumns } from "components/data-table/data-table";
+import { DataColumns } from "components/data-table/data-column";
 import { ServiceRepository } from "services/services";
 import { FilterBuilder } from "services/api/filter-builder";
 import { updateFavorites } from "../favorites/favorites-actions";

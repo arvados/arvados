@@ -128,7 +128,12 @@ to use for this container.",
     "A string that the defines the working directory that the dispatcher should
 use when it executes the command inside this container.",
     "delete_at" => "The time this %s will be permanently deleted.",
-    "description" => "A longer description of this %s assigned by a user.",
+    "description" =>
+    "A longer HTML description of this %s assigned by a user.
+Allowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,
+`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,
+`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,
+`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
     "environment" =>
     "A hash of string keys and values that defines the environment variables
 for the dispatcher to set when it executes this container.",

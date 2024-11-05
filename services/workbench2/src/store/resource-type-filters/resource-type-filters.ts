@@ -4,7 +4,7 @@
 
 import { difference, pipe, values, includes, __ } from 'lodash/fp';
 import { createTree, setNode, TreeNodeStatus, TreeNode, Tree } from 'models/tree';
-import { DataTableFilterItem, DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { DataTableFilterItem, DataTableFilters } from 'components/data-table-filters/data-table-filters';
 import { ResourceKind } from 'models/resource';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { getSelectedNodes } from 'models/tree';

@@ -25,6 +25,7 @@ type CssRules = 'stepper';
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     stepper: {
         overflow: "scroll",
+        width: "100%",
     }
 });
 

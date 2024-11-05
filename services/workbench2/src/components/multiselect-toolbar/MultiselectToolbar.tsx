@@ -2,20 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
+import React, { useMemo } from "react";
 import { connect } from "react-redux";
-import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Toolbar, Tooltip, IconButton } from "@mui/material";
+import { CustomStyleRulesCallback, ArvadosTheme } from 'common/custom-theme';
+import { Toolbar, IconButton } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { ArvadosTheme } from "common/custom-theme";
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { Resource, ResourceKind, extractUuidKind } from "models/resource";
-import { getResource } from "store/resources/resources";
-import { ResourcesState } from "store/resources/resources";
+import { Resource, ResourceKind, extractUuidKind, EditableResource } from "models/resource";
+import { getResource, getResourceWithEditableStatus, ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
@@ -25,48 +23,40 @@ import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.act
 import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
 import { resourceIsFrozen } from "common/frozen-resources";
-import { getResourceWithEditableStatus } from "store/resources/resources";
-import { GroupResource } from "models/group";
-import { EditableResource } from "models/resource";
+import { GroupResource, GroupClass } from "models/group";
 import { User } from "models/user";
-import { GroupClass } from "models/group";
-import { isProcessCancelable } from "store/processes/process";
+import { Process, isProcessCancelable, getProcess } from "store/processes/process";
 import { CollectionResource } from "models/collection";
-import { getProcess } from "store/processes/process";
-import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 
-type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
+type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",
-        width: 0,
         height: '2.5rem',
+        width: 0,
         padding: 0,
         margin: 0,
         overflow: 'hidden',
-    },
-    button: {
-        width: "2.5rem",
-        height: "2.5rem ",
-        paddingLeft: 0,
-        border: "1px solid transparent",
     },
     iconContainer: {
         height: '100%',
     },
     icon: {
-        marginLeft: '-0.5rem',
+        marginLeft: '-5px',
     },
     divider: {
+        marginTop: '5px',
+        width: '2rem',
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
     },
 });
 
@@ -80,6 +70,7 @@ export type MultiselectToolbarProps = {
     location: string;
     forceMultiSelectMode?: boolean;
     injectedStyles?: string;
+    unfreezeRequiresAdmin?: boolean;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -102,10 +93,10 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
+        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles, unfreezeRequiresAdmin } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
-        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
+        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [msResourceToContextMenuKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -122,18 +113,24 @@ export const MultiselectToolbar = connect(
             menuDirection.HORIZONTAL
         );
 
+        // eslint-disable-next-line
+        const memoizedActions = useMemo(() => actions, [currentResourceKinds, currentPathIsTrash, selectedResourceUuid]);
+
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
         return (
             <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
-                    style={{ width: `${(actions.length * 2.5) + 2}rem`}}
+                    style={{ width: `${(memoizedActions.length * 2.5) + 2}rem`, height: '2.5rem'}}
                     data-cy='multiselect-toolbar'
                     >
-                    {actions.length ? (
-                        <IntersectionObserverWrapper menuLength={actions.length}>
-                            {actions.map((action, i) =>{
+                    {memoizedActions.length ? (
+                        <IntersectionObserverWrapper 
+                            menuLength={memoizedActions.length}
+                            key={actions.map(a => a.name).join(',')}
+                            >
+                            {memoizedActions.map((action, i) =>{
                                 const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
                             return action.name === ContextMenuActionNames.DIVIDER ? (
                                 action.component && (
@@ -146,43 +143,29 @@ export const MultiselectToolbar = connect(
                                     </div>
                                 )
                             ) : hasAlts ? (
-                                <Tooltip
-                                    className={classes.button}
-                                    data-targetid={name}
-                                    title={currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton
-                                            data-cy='multiselect-button'
-                                            disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
-                                            className={classes.icon}
-                                            size="large">
-                                            {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                <span className={classes.iconContainer} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        disabled={disabledButtons.has(name)}
+                                        onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
+                                        className={classes.icon}
+                                        size="large">
+                                        {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                    </IconButton>
+                                </span>
                             ) : (
-                                <Tooltip
-                                    className={classes.button}
-                                    data-targetid={name}
-                                    title={action.name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton
-                                            data-cy='multiselect-button'
-                                            onClick={() => {
-                                                props.executeMulti(action, targetResources, iconProps.resources)}}
-                                            className={classes.icon}
-                                            size="large">
-                                            {action.icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                //data-targetid is used to determine what goes to the overflow menu
+                                //data-title is used to display the tooltip text
+                                <span className={classes.iconContainer} data-targetid={name} data-title={name}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        onClick={() => {
+                                            props.executeMulti(action, targetResources, iconProps.resources)}}
+                                        className={classes.icon}
+                                        size="large">
+                                        {action.icon({})}
+                                    </IconButton>
+                                </span>
                             );
                             })}
                         </IntersectionObserverWrapper>
@@ -236,7 +219,7 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, readonly = false): (ContextMenuKind | ResourceKind) | undefined => {
+const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, user: User | null, unfreezeRequiresAdmin: boolean, readonly = false ): (ContextMenuKind | ResourceKind) | undefined => {
     if (!user) return;
     const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
     const { isAdmin } = user;
@@ -244,22 +227,34 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
 
     const isFrozen = resource?.kind && resource.kind === ResourceKind.PROJECT ? resourceIsFrozen(resource, resources) : false;
     const isEditable = (user.isAdmin || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
+    const { canManage, canWrite } = resource || {};
 
     switch (kind) {
         case ResourceKind.PROJECT:
             if (isFrozen) {
-                return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
+                return isAdmin 
+                ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
+                : canManage 
+                    ? unfreezeRequiresAdmin
+                        ? ContextMenuKind.MANAGEABLE_PROJECT
+                        : ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
+                    : isEditable 
+                        ? ContextMenuKind.FROZEN_PROJECT
+                        : ContextMenuKind.READONLY_PROJECT;
+            }
+
+            if (resource?.groupClass === GroupClass.ROLE) {
+                return ContextMenuKind.GROUPS;
             }
 
             if (isAdmin && !readonly) {
                 if (resource?.groupClass === GroupClass.FILTER) {
                     return ContextMenuKind.FILTER_GROUP_ADMIN;
                 }
-                if (resource?.groupClass === GroupClass.ROLE) {
-                    return ContextMenuKind.GROUPS;
-                }
                 return ContextMenuKind.PROJECT_ADMIN;
             }
+
+            if(canManage === false && canWrite === true) return ContextMenuKind.WRITEABLE_PROJECT;
 
             return isEditable
                 ? resource && resource.groupClass !== GroupClass.FILTER
@@ -271,27 +266,35 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
             if (c === undefined) {
                 return;
             }
+            const parent = getResource<GroupResource>(c.ownerUuid)(resources);
+            const isWriteable = parent?.canWrite === true && parent.canManage === false;
             const isOldVersion = c.uuid !== c.currentVersionUuid;
             const isTrashed = c.isTrashed;
             return isOldVersion
                 ? ContextMenuKind.OLD_VERSION_COLLECTION
                 : isTrashed && isEditable
-                ? ContextMenuKind.TRASHED_COLLECTION
-                : isAdmin && isEditable
-                ? ContextMenuKind.COLLECTION_ADMIN
-                : isEditable
-                ? ContextMenuKind.COLLECTION
-                : ContextMenuKind.READONLY_COLLECTION;
+                    ? ContextMenuKind.TRASHED_COLLECTION
+                    : isAdmin && isEditable
+                        ? ContextMenuKind.COLLECTION_ADMIN
+                        : isEditable 
+                            ? isWriteable
+                                ? ContextMenuKind.WRITEABLE_COLLECTION 
+                                : ContextMenuKind.COLLECTION
+                            : ContextMenuKind.READONLY_COLLECTION;
         case ResourceKind.PROCESS:
-            return isAdmin && isEditable
-                ? resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
-                    ? ContextMenuKind.RUNNING_PROCESS_ADMIN
-                    : ContextMenuKind.PROCESS_ADMIN
-                : readonly
-                ? ContextMenuKind.READONLY_PROCESS_RESOURCE
-                : resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
-                ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                : ContextMenuKind.PROCESS_RESOURCE;
+            const process = getProcess(uuid)(resources);
+                const processParent = process ? getResource<any>(process.containerRequest.ownerUuid)(resources) : undefined;
+                const { canWrite: canWriteProcess } = processParent || {};
+                const isRunning = process && isProcessCancelable(process);
+                return isAdmin 
+                        ? isRunning
+                            ? ContextMenuKind.RUNNING_PROCESS_ADMIN
+                            : ContextMenuKind.PROCESS_ADMIN
+                        : isRunning
+                            ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
+                            : canWriteProcess 
+                                ? ContextMenuKind.PROCESS_RESOURCE
+                                : ContextMenuKind.READONLY_PROCESS_RESOURCE;
         case ResourceKind.USER:
             return isAdmin ? ContextMenuKind.ROOT_PROJECT_ADMIN : ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:
@@ -347,6 +350,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
         auth,
         selectedResourceUuid,
         location: window.location.pathname,
+        unfreezeRequiresAdmin: auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin,
         iconProps: {
             resources,
             favorites,
@@ -363,8 +367,8 @@ function mapDispatchToProps(dispatch: Dispatch) {
             switch (selectedAction.name) {
                 case ContextMenuActionNames.MOVE_TO:
                 case ContextMenuActionNames.REMOVE:
-                    const firstResourceKind = isGroupResource(currentList[0], resources) 
-                        ? ContextMenuKind.GROUPS 
+                    const firstResourceKind = isGroupResource(currentList[0], resources)
+                        ? ContextMenuKind.GROUPS
                         : (getResource(currentList[0])(resources) as ContainerRequestResource | Resource).kind;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResourceKind]);
                     if (action) action.execute(dispatch, kindGroups[firstResourceKind]);

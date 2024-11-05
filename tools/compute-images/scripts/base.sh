@@ -41,18 +41,27 @@ if [ -n "$RESOLVER" ]; then
   SET_RESOLVER="--dns ${RESOLVER}"
 fi
 
+echo "Working directory is '${WORKDIR}'"
+
 # Add the arvados apt repository
 echo "# apt.arvados.org" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
 echo "deb http://apt.arvados.org/$VERSION_CODENAME $VERSION_CODENAME${REPOSUFFIX} main" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
 
 # Add the arvados signing key
-cat /tmp/1078ECD7.asc | $SUDO apt-key add -
+cat ${WORKDIR}/1078ECD7.asc | $SUDO apt-key add -
 # Add the debian keys (but don't abort if we can't find them, e.g. on Ubuntu where we don't need them)
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring 2>/dev/null || true
 
 # Fix locale
 $SUDO /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 $SUDO /usr/sbin/locale-gen
+
+if [[ "${PIN_PACKAGES:-true}" != false ]]; then
+    $SUDO install -d /etc/apt/preferences.d
+    $SUDO install -m 0644 \
+          "$WORKDIR/etc-apt-preferences.d-arvados.pref" \
+          /etc/apt/preferences.d/arvados.pref
+fi
 
 # Install some packages we always need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
@@ -111,7 +120,7 @@ echo -e "# for the crunch user\ncrunch ALL=(ALL) NOPASSWD:ALL" | $SUDO tee /etc/
 
 # Set up the ssh public key for the crunch user
 $SUDO mkdir /home/crunch/.ssh
-$SUDO mv /tmp/crunch-authorized_keys /home/crunch/.ssh/authorized_keys
+$SUDO mv ${WORKDIR}/crunch-authorized_keys /home/crunch/.ssh/authorized_keys
 $SUDO chown -R crunch:crunch /home/crunch/.ssh
 $SUDO chmod 600 /home/crunch/.ssh/authorized_keys
 $SUDO chmod 700 /home/crunch/.ssh/
@@ -127,12 +136,12 @@ EBS_AUTOSCALE=${AWS_EBS_AUTOSCALE:-}
 
 if [ "$EBS_AUTOSCALE" != "1" ]; then
   # Set up the cloud-init script that will ensure encrypted disks
-  $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
+  $SUDO mv ${WORKDIR}/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
 else
   wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install jq unzip
 
-  curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-  unzip -q /tmp/awscliv2.zip -d /tmp && $SUDO /tmp/aws/install
+  curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${WORKDIR}/awscliv2.zip"
+  unzip -q ${WORKDIR}/awscliv2.zip -d ${WORKDIR} && $SUDO ${WORKDIR}/aws/install
   # Pinned to v2.4.5 because we apply a patch below
   #export EBS_AUTOSCALE_VERSION=$(curl --silent "https://api.github.com/repos/awslabs/amazon-ebs-autoscale/releases/latest" | jq -r .tag_name)
   export EBS_AUTOSCALE_VERSION="ee323f0751c2b6f733692e805b51b9bf3c251bac"
@@ -140,12 +149,12 @@ else
   cd /opt/amazon-ebs-autoscale && $SUDO git checkout $EBS_AUTOSCALE_VERSION
 
   # Set up the cloud-init script that makes use of the AWS EBS autoscaler
-  $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh /usr/local/bin/ensure-encrypted-partitions.sh
+  $SUDO mv ${WORKDIR}/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh /usr/local/bin/ensure-encrypted-partitions.sh
 fi
 
 $SUDO chmod 755 /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chown root:root /usr/local/bin/ensure-encrypted-partitions.sh
-$SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
+$SUDO mv ${WORKDIR}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
 $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
 
 if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
@@ -171,26 +180,29 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # Install libnvidia-container, the tooling for Docker/Singularity
   curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
     $SUDO apt-key add -
-  if [[ "$VERSION_CODENAME" == bullseye ]]; then
-    # As of 2021-12-16 libnvidia-container and friends are only available for
-    # Debian 10, not yet Debian 11. Install experimental rc1 package as per this
-    # workaround:
-    # https://github.com/NVIDIA/nvidia-docker/issues/1549#issuecomment-989670662
-    curl -s -L https://nvidia.github.io/libnvidia-container/debian10/libnvidia-container.list | \
-      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
-    $SUDO sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
-  else
-    curl -s -L "https://nvidia.github.io/libnvidia-container/$DISTRO_ID$VERSION_ID/libnvidia-container.list" | \
-      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
-  fi
+  curl -fsSL "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list" |
+    $SUDO tee /etc/apt/sources.list.d/nvidia-container-toolkit.list >/dev/null
 
   $SUDO apt-get update
   $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
-  # This service fails to start when the image is booted without Nvidia GPUs present, which makes
-  # `systemctl is-system-running` respond with "degraded" and since that command is our default
-  # BootProbeCommand, compute nodes never finish booting from Arvados' perspective.
-  # Disable the service to avoid this. This should be fine because crunch-run does its own basic
-  # CUDA initialization.
+
+  # Various components fail to start, and cause systemd to boot in degraded
+  # state, if the system does not actually have an NVIDIA GPU. Configure the
+  # image to adapt at boot time.
+
+  # Don't load modules unconditionally.
+  # Instead load them if hardware is detected.
+  if [[ -f /etc/modules-load.d/nvidia.conf ]]; then
+      $SUDO mv /etc/modules-load.d/nvidia.conf /etc/modules-load.d/nvidia.avail
+  fi
+  $SUDO install "$WORKDIR/usr-local-bin-detect-gpu.sh" /usr/local/bin/detect-gpu.sh
+  $SUDO install -d /etc/systemd/system/systemd-modules-load.service.d
+  $SUDO install -m 0644 \
+        "$WORKDIR/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf" \
+        /etc/systemd/system/systemd-modules-load.service.d/detect-gpu.conf
+
+  # Don't start the persistence daemon.
+  # Instead rely on crunch-run's CUDA initialization.
   $SUDO systemctl disable nvidia-persistenced.service
 fi
 

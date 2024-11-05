@@ -9,7 +9,7 @@ import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { GroupContentsResource, GroupContentsResourcePrefix, ContentsArguments } from "services/groups-service/groups-service";
 import { ListResults } from 'services/common-service/common-service';
@@ -22,7 +22,6 @@ import {
 } from 'store/search-bar/search-bar-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
-import { DataColumns } from 'components/data-table/data-table';
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
 import { ResourceKind } from 'models/resource';

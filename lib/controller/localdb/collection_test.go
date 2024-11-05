@@ -5,8 +5,10 @@
 package localdb
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -19,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
@@ -345,6 +348,23 @@ func (s *replaceFilesSuite) TestMultipleRename(c *check.C) {
 		"file3":     1,
 		"dir/file1": 1,
 	})
+}
+
+func (s *replaceFilesSuite) TestNonexistentCurrentFile(c *check.C) {
+	adminctx := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AdminToken)
+	tmp, err := s.localdb.CollectionUpdate(adminctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		Attrs: map[string]interface{}{
+			"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1 0:2:file2 0:3:file3\n"}})
+	c.Assert(err, check.IsNil)
+	_, err = s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: tmp.UUID,
+		ReplaceFiles: map[string]string{
+			"/dst": "current/file404",
+		}})
+	var se httpserver.HTTPStatusError
+	c.Assert(errors.As(err, &se), check.Equals, true)
+	c.Check(se.HTTPStatus(), check.Equals, http.StatusBadRequest)
 }
 
 func (s *replaceFilesSuite) TestConcurrentCopyFromPDH(c *check.C) {

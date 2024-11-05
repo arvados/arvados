@@ -13,6 +13,6 @@ export const SearchProjectsPicker = connect(() => ({
     rootItemIcon: SearchIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
     loadRootItem: (_, pickerId, includeCollections, includeDirectories, includeFiles, options) => {
-        dispatch<any>(loadProject({ id: SEARCH_PROJECT_ID, pickerId, includeCollections, includeDirectories, includeFiles, searchProjects: true, options }));
+        dispatch<any>(loadProject({ id: SEARCH_PROJECT_ID, pickerId, includeCollections, includeDirectories, includeFiles, options }));
     },
 }))(ProjectsTreePicker);

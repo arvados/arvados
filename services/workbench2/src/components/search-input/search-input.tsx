@@ -17,6 +17,7 @@ interface SearchInputDataProps {
     value: string;
     label?: string;
     selfClearProp: string;
+    width?: string;
 }
 
 interface SearchInputActionProps {
@@ -47,7 +48,7 @@ export const SearchInput = (props: SearchInputProps) => {
             clearTimeout(timeout);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.value, props.label]); 
+    }, [props.value, props.label]);
 
     useEffect(() => {
         if (selfClearProp !== props.selfClearProp) {
@@ -56,7 +57,7 @@ export const SearchInput = (props: SearchInputProps) => {
             handleChange({ target: { value: "" } } as any);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.selfClearProp]); 
+    }, [props.selfClearProp]);
 
     const handleSubmit = (event: React.FormEvent<HTMLElement>) => {
         event.preventDefault();
@@ -79,7 +80,7 @@ export const SearchInput = (props: SearchInputProps) => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <FormControl variant="standard" style={{ width: '14rem'}}>
+            <FormControl variant="standard" style={{ width: props.width || '14rem', marginTop: '-10px'}}>
                 <InputLabel>{label}</InputLabel>
                 <Input
                     type="text"

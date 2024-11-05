@@ -12,8 +12,7 @@ import MockAdapter from "axios-mock-adapter";
 import { openRunProcess } from './workflow-panel-actions';
 import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 import { initialize } from 'redux-form';
-import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
-import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
+import { RUN_PROCESS_INPUTS_FORM, RUN_PROCESS_BASIC_FORM } from 'store/run-process-panel/run-process-panel-actions';
 import { ResourceKind } from 'models/resource';
 
 describe('workflow-panel-actions', () => {
@@ -52,7 +51,6 @@ describe('workflow-panel-actions', () => {
             createdAt: "",
             modifiedByUserUuid: "",
             modifiedAt: "",
-            href: "",
             etag: ""
         }];
         axiosMock
@@ -103,4 +101,3 @@ const arrayDeeplyIncludesObject = (array, object) => {
         return false;
     });
 };
-

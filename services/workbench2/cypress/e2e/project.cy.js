@@ -72,8 +72,7 @@ describe("Project tests", function () {
         cy.get("[data-cy=form-submit-btn]").click();
         cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
-        cy.waitForDom();
-        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });        
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         cy.doRequest("GET", "/arvados/v1/groups", null, {
             filters: `[["name", "=", "${projName}"], ["group_class", "=", "project"]]`,
@@ -109,6 +108,7 @@ describe("Project tests", function () {
             cy.get("[data-cy=property-add-btn]").click();
         });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         // Reopen edit via breadcrumbs and verify properties
         cy.get("[data-cy=breadcrumbs]").contains(projName).rightclick();
         cy.get("[data-cy=context-menu]").contains("Edit").click();
@@ -233,16 +233,17 @@ describe("Project tests", function () {
         const msButtonTooltips = [
             'View details',
             'Open in new tab',
+            'Copy UUID',
+            'Share',
+            'Edit project',
+            'Move to trash',
+            'New project',
+            'Move to',
+            'Freeze project',
+            'Add to favorites',
             'Copy link to clipboard',
             'Open with 3rd party client',
             'API Details',
-            'Share',
-            'New project',
-            'Edit project',
-            'Move to',
-            'Move to trash',
-            'Freeze project',
-            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);

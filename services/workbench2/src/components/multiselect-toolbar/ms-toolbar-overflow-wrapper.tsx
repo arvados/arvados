@@ -3,14 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState, useRef, useEffect } from 'react';
+import { debounce } from 'lodash';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import classnames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { OverflowMenu, OverflowChild } from './ms-toolbar-overflow-menu';
+import { Tooltip } from '@mui/material';
 
-type CssRules = 'visible' | 'inVisible' | 'toolbarWrapper' | 'overflowStyle';
+type CssRules = 'visible' | 'inVisible' | 'tooltip' | 'toolbarWrapper' | 'overflowStyle';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     visible: {
@@ -26,14 +28,22 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbarWrapper: {
         display: 'flex',
         overflow: 'hidden',
-        padding: '0 0px 0 20px',
+        padding: '0 0px 5px 20px',
         width: '100%',
+    },
+    tooltip: {
+        width: "2.5rem",
+        height: "2.5rem ",
+        paddingLeft: 0,
+        zIndex: 1000,
+        border: "1px solid transparent",
     },
     overflowStyle: {
         order: 99,
         position: 'sticky',
         right: '-2rem',
         width: 0,
+        height: '1rem',
     },
 });
 
@@ -50,23 +60,29 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
     const [numHidden, setNumHidden] = useState(() => findNumHidden(visibilityMap));
     const prevNumHidden = useRef(numHidden);
     
+    const debouncedSetVisibilityMap = React.useMemo(
+        () => debounce((updatedEntries: Record<string, boolean>) => {
+            setVisibilityMap((prev) => ({
+                ...prev,
+                ...updatedEntries,
+                [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
+            }));
+        }, 100),
+        [lastEntryId]
+    );
+    
     const handleIntersection = (entries) => {
         const updatedEntries: Record<string, boolean> = {};
         entries.forEach((entry) => {
             const targetid = entry.target.dataset.targetid as string;
-            //if true, the element is visible
             if (entry.isIntersecting) {
                 updatedEntries[targetid] = true;
             } else {
                 updatedEntries[targetid] = false;
             }
         });
-
-        setVisibilityMap((prev) => ({
-            ...prev,
-            ...updatedEntries,
-            [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
-        }));
+    
+        debouncedSetVisibilityMap(updatedEntries);
     };
 
     //ensures that the last element is always visible if the second to last is visible
@@ -104,7 +120,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
             observer.disconnect();
         };
         // eslint-disable-next-line
-    }, [menuLength]);
+    }, [menuLength, navRef]);
 
     function findNumHidden(visMap: {}) {
         return Object.values(visMap).filter((x) => x === false).length;
@@ -116,13 +132,22 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
             ref={navRef}
         >
             {React.Children.map(children, (child) => {
-                return React.cloneElement(child, {
-                    className: classnames(child.props.className, {
-                        [classes.visible]: !!visibilityMap[child.props['data-targetid']],
-                        [classes.inVisible]: !visibilityMap[child.props['data-targetid']],
-                    }),
-                });
-            })}
+                const isVisible = !!visibilityMap[child.props['data-targetid']];
+                return (
+                    <Tooltip
+                        className={classes.tooltip}
+                        title={child.props['data-title']}
+                        key={child.props['data-targetid']}
+                        disableFocusListener
+                        >
+                            { React.cloneElement(child, {
+                            className: classnames(child.props.className, {
+                                [classes.visible]: isVisible,
+                                [classes.inVisible]: !isVisible,
+                            }),
+                        })}
+                    </Tooltip>)
+                })}
             {numHidden >= 2 && (
                 <OverflowMenu
                     visibilityMap={visibilityMap}

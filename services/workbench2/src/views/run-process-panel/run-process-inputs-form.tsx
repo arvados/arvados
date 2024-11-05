@@ -25,8 +25,7 @@ import { FileArrayInput } from './inputs/file-array-input';
 import { DirectoryArrayInput } from './inputs/directory-array-input';
 import { FloatArrayInput } from './inputs/float-array-input';
 import { IntArrayInput } from './inputs/int-array-input';
-
-export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
+import { RUN_PROCESS_INPUTS_FORM } from 'store/run-process-panel/run-process-panel-actions';
 
 export interface RunProcessInputFormProps {
     inputs: CommandInputParameter[];

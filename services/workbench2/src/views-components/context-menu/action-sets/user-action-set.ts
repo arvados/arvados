@@ -76,20 +76,20 @@ export const userActionSet: ContextMenuActionSet = [
             filters: [isAdmin, canSetupUser],
         },
         {
-            name: ContextMenuActionNames.DEACTIVATE_USER,
-            icon: DeactivateUserIcon,
-            execute: (dispatch, resources) => {
-                dispatch<any>(openDeactivateDialog(resources[0].uuid));
-            },
-            filters: [isAdmin, canDeactivateUser],
-        },
-        {
             name: ContextMenuActionNames.LOGIN_AS_USER,
             icon: LoginAsIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(loginAs(resources[0].uuid));
             },
             filters: [isAdmin, isOtherUser],
+        },
+        {
+            name: ContextMenuActionNames.DEACTIVATE_USER,
+            icon: DeactivateUserIcon,
+            execute: (dispatch, resources) => {
+                dispatch<any>(openDeactivateDialog(resources[0].uuid));
+            },
+            filters: [isAdmin, canDeactivateUser],
         },
     ],
 ];

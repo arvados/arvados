@@ -3,7 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { getInputs, getOutputParameters, getRawInputs, getRawOutputs } from "store/processes/processes-actions";
+import { getInputs,
+         getOutputParameters,
+         getRawInputs,
+         getRawOutputs
+} from "store/processes/processes-actions";
 import { Dispatch } from "redux";
 import { Process, ProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
@@ -108,7 +112,7 @@ export const loadProcess =
         return { containerRequest, container };
     };
 
-export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState) => {
+export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState): Promise<Process | undefined> => {
     // Reset subprocess data explorer if navigating to new process
     //  Avoids resetting pagination when refreshing same process
     if (getState().processPanel.containerRequestUuid !== uuid) {
@@ -117,10 +121,11 @@ export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, get
     dispatch(processPanelActions.RESET_PROCESS_PANEL());
     dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
     dispatch<ProcessPanelAction>(processPanelActions.SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID(uuid));
-    await dispatch<any>(loadProcess(uuid));
+    const process = await dispatch<any>(loadProcess(uuid));
     dispatch(initProcessPanelFilters);
     dispatch<any>(initProcessLogsPanel(uuid));
     dispatch<any>(loadSubprocessPanel());
+    return process;
 };
 
 export const navigateToOutput = (resource: ContextMenuResource | ContainerRequestResource) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -149,8 +154,9 @@ export const loadOutputs =
             }));
             return;
         }
+        let propsOutputs: any = undefined;
         try {
-            const propsOutputs = getRawOutputs(containerRequest);
+            propsOutputs = getRawOutputs(containerRequest);
             const filesPromise = services.collectionService.files(containerRequest.outputUuid);
             const collectionPromise = services.collectionService.get(containerRequest.outputUuid);
             const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
@@ -185,7 +191,7 @@ export const loadOutputs =
                 }
             }
         } catch {
-            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({ uuid: containerRequest.uuid, payload: noOutputs }));
+            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({ uuid: containerRequest.uuid, payload: { raw: propsOutputs, failedToLoadOutputCollection: true } }));
         }
     };
 

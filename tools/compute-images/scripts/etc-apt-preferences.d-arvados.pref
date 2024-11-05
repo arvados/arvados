@@ -1,0 +1,28 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+Explanation: Do not upgrade Arvados packages after they are installed
+Explanation: (you should build a new compute image instead).
+Package: *
+Pin: origin "apt.arvados.org"
+Pin-Priority: 50
+
+# For every package that `base.sh` installs from a third-party repository,
+# pin those packages to the last tested and known good version.
+
+Package: src:docker-ce
+Pin: version 5:27.*
+Pin-Priority: 995
+
+Package: containerd.io
+Pin: version 1.7.*
+Pin-Priority: 995
+
+Package: src:libnvidia-container
+Pin: version 1.16.*
+Pin-Priority: 995
+
+Package: src:nvidia-graphics-drivers
+Pin: version 560.*
+Pin-Priority: 995

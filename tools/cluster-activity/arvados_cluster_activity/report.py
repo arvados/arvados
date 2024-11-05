@@ -12,7 +12,7 @@ import math
 import collections
 import json
 from datetime import date, datetime, timedelta
-from typing import List
+from typing import Dict, List
 import statistics
 
 from dataclasses import dataclass
@@ -33,7 +33,7 @@ class WorkflowRunSummary:
 class ProjectSummary:
     users: set
     uuid: str
-    runs: dict[str, WorkflowRunSummary]
+    runs: Dict[str, WorkflowRunSummary]
     earliest: datetime = datetime(year=9999, month=1, day=1)
     latest: datetime = datetime(year=1900, month=1, day=1)
     name: str = ""
@@ -174,20 +174,6 @@ class ClusterActivityReport(object):
                            "arvados_keep_total_bytes{cluster='%s'}", resample_to="60min",
                                                         extra=self.collect_storage_cost)
 
-        managed_data_now = None
-        storage_used_now = None
-
-        if len(self.graphs.get(managed_graph, [])) > 0:
-            managed_data_now = self.graphs[managed_graph][-1][1]
-
-        if len(self.graphs.get(storage_graph, [])) > 0:
-            storage_used_now = self.graphs[storage_graph][-1][1]
-
-        if managed_data_now and storage_used_now:
-            storage_cost = aws_monthly_cost(storage_used_now)
-            dedup_ratio = managed_data_now/storage_used_now
-
-
         label = self.label
 
         cards = []
@@ -209,7 +195,9 @@ class ClusterActivityReport(object):
             # <tr><th>Monthly savings from storage deduplication</th> <td>${dedup_savings:,.2f}</td></tr>
 
             data_rows = ""
-            if managed_data_now and storage_used_now:
+            if self.graphs[managed_graph] and self.graphs[storage_graph]:
+                managed_data_now = self.graphs[managed_graph][-1][1]
+                storage_used_now = self.graphs[storage_graph][-1][1]
                 data_rows = """
             <tr><th>Total data under management</th> <td>{managed_data_now}</td></tr>
             <tr><th>Total storage usage</th> <td>{storage_used_now}</td></tr>
@@ -218,8 +206,8 @@ class ClusterActivityReport(object):
                 """.format(
                        managed_data_now=format_with_suffix_base10(managed_data_now),
                        storage_used_now=format_with_suffix_base10(storage_used_now),
-                       storage_cost=storage_cost,
-                       dedup_ratio=dedup_ratio,
+                       storage_cost=aws_monthly_cost(storage_used_now),
+                       dedup_ratio=managed_data_now / storage_used_now,
                 )
 
             cards.append("""<h2>Cluster status as of {now}</h2>
@@ -288,7 +276,8 @@ class ClusterActivityReport(object):
                 users=", ".join(prj.users),
             )
 
-        cards.append("""
+        if any(self.graphs.values()):
+            cards.append("""
                 <div id="chart"></div>
             """)
 

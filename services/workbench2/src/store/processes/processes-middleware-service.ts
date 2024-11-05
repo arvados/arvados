@@ -16,7 +16,7 @@ import { ListArguments, ListResults } from 'services/common-service/common-servi
 import { ContentsArguments } from 'services/groups-service/groups-service';
 import { ProcessResource } from 'models/process';
 import { FilterBuilder } from 'services/api/filter-builder';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
@@ -84,7 +84,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
                 const containerRequests = await this.services.groupsService.contents('',
                     {
                         ...this.getParams(api, dataExplorer),
-                        select: containerRequestFieldsNoMounts.concat(containerFieldsNoMounts)
+                        select: [...containerRequestFieldsNoMounts, "can_write", "can_manage"].concat(containerFieldsNoMounts)
                 });
                 api.dispatch(updateResources(containerRequests.items));
                 if (containerRequests.included) {
@@ -120,8 +120,8 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
         if (criteriaChanged && countParams !== null) {
             // Get itemsAvailable
-            return this.services.containerRequestService.list(countParams)
-                .then((results: ListResults<ContainerRequestResource>) => {
+            return this.services.groupsService.contents('', countParams)
+                       .then((results: ListResults<ContainerRequestResource>) => {
                     if (results.itemsAvailable !== undefined) {
                         api.dispatch<any>(this.actions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
                     } else {

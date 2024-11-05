@@ -8,9 +8,9 @@ import { DataExplorer as DataExplorerComponent } from "components/data-explorer/
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { Dispatch } from "redux";
 import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
-import { DataColumn } from "components/data-table/data-column";
-import { DataColumns, TCheckedList } from "components/data-table/data-table";
-import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
+import { DataColumn, DataColumns, } from "components/data-table/data-column";
+import { TCheckedList } from "components/data-table/data-table";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";

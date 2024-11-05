@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
-import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from "components/icon/icon";
+import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon, CopyIcon } from "components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
@@ -16,7 +16,7 @@ import { ShareIcon } from "components/icon/icon";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { openDetailsPanel } from "store/details-panel/details-panel-action";
-import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { copyToClipboardAction, copyStringToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 import { ToggleLockAction } from "../actions/lock-action";
 import { freezeProject, unfreezeProject } from "store/projects/project-lock-actions";
@@ -44,6 +44,14 @@ export const copyToClipboardMenuAction = {
     name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     execute: (dispatch, resources) => {
         dispatch(copyToClipboardAction(resources));
+    },
+};
+
+export const copyUuidAction = {
+    icon: CopyIcon,
+    name: ContextMenuActionNames.COPY_UUID,
+    execute: (dispatch, resources) => {
+        dispatch(copyStringToClipboardAction(resources[0].uuid));
     },
 };
 
@@ -124,7 +132,7 @@ export const newProjectAction: any = {
 };
 
 export const readOnlyProjectActionSet: ContextMenuActionSet = [
-    [toggleFavoriteAction, openInNewTabMenuAction, copyToClipboardMenuAction, viewDetailsAction, advancedAction, openWith3rdPartyClientAction],
+    [toggleFavoriteAction, openInNewTabMenuAction, copyToClipboardMenuAction, copyUuidAction, viewDetailsAction, advancedAction, openWith3rdPartyClientAction],
 ];
 
 export const filterGroupActionSet: ContextMenuActionSet = [
@@ -139,6 +147,7 @@ export const filterGroupActionSet: ContextMenuActionSet = [
         shareAction,
         moveToAction,
         toggleTrashAction,
+        copyUuidAction,
     ],
 ];
 
@@ -152,6 +161,7 @@ export const frozenActionSet: ContextMenuActionSet = [
         advancedAction,
         openWith3rdPartyClientAction,
         freezeProjectAction,
+        copyUuidAction,
     ],
 ];
 
@@ -168,6 +178,51 @@ export const projectActionSet: ContextMenuActionSet = [
         moveToAction,
         toggleTrashAction,
         newProjectAction,
+        freezeProjectAction,
+        copyUuidAction,
+    ],
+];
+
+export const writeableProjectActionSet = [
+    [
+        toggleFavoriteAction,
+        openInNewTabMenuAction,
+        copyToClipboardMenuAction,
+        viewDetailsAction,
+        advancedAction,
+        openWith3rdPartyClientAction,
+        editProjectAction,
+        moveToAction,
+        toggleTrashAction,
+        newProjectAction,
+        copyUuidAction,
+    ],
+];
+
+export const manageableProjectActionSet = [
+    [
+        viewDetailsAction,
+        openInNewTabMenuAction,
+        copyUuidAction,
+        shareAction,
+        freezeProjectAction,
+        toggleFavoriteAction,
+        copyToClipboardMenuAction,
+        openWith3rdPartyClientAction,
+        advancedAction,
+    ],
+];
+
+export const frozenManageableProjectActionSet = [
+    [
+        viewDetailsAction,
+        openInNewTabMenuAction,
+        copyUuidAction,
+        shareAction,
+        toggleFavoriteAction,
+        copyToClipboardMenuAction,
+        openWith3rdPartyClientAction,
+        advancedAction,
         freezeProjectAction,
     ],
 ];

@@ -122,24 +122,23 @@ export const ProjectInputComponent = connect(mapStateToProps)(
             root: {
                 display: 'flex',
                 flexDirection: 'column',
+                height: "80vh",
             },
             pickerWrapper: {
-                flexBasis: `${spacing(8)}vh`,
-                flexShrink: 1,
-                minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
+                height: "100%",
             },
         });
 
         dialog = withStyles(this.dialogContentStyles)(
             ({ classes }: WithStyles<DialogContentCssRules>) =>
                 this.state.open ? <Dialog
-                    open={this.state.open}
-                    onClose={this.closeDialog}
-                    fullWidth
-                    data-cy="choose-a-project-dialog"
-                    maxWidth='md'>
+                                      open={this.state.open}
+                                      onClose={this.closeDialog}
+                                      fullWidth
+                                      data-cy="choose-a-project-dialog"
+                                      maxWidth='md'>
                     <DialogTitle>Choose a project</DialogTitle>
                     <DialogContent className={classes.root}>
                         <div className={classes.pickerWrapper}>

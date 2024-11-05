@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { runProcess } from "./run-process-panel-actions";
-import { RUN_PROCESS_BASIC_FORM } from "views/run-process-panel/run-process-basic-form";
-import { RUN_PROCESS_INPUTS_FORM } from "views/run-process-panel/run-process-inputs-form";
+import { RUN_PROCESS_BASIC_FORM, RUN_PROCESS_INPUTS_FORM } from "./run-process-panel-actions";
 import { navigateTo } from "store/navigation/navigation-action";
-  
+
 describe("run-process-panel-actions", () => {
     describe("runProcess", () => {
         const newProcessUUID = 'newProcessUUID';
@@ -59,7 +58,6 @@ describe("run-process-panel-actions", () => {
                     processPathname: "/projects/zzzzz-tpzed-yid70bw31f51234",
                     processOwnerUuid: "zzzzz-tpzed-yid70bw31f51234",
                     selectedWorkflow: {
-                        href: "/workflows/zzzzz-7fd4e-2tlnerdkxnl4fjt",
                         kind: "arvados#workflow",
                         etag: "8gh5xlhlgo61yqscyl1spw8tc",
                         uuid: "zzzzz-7fd4e-2tlnerdkxnl4fjt",
