@@ -51,12 +51,12 @@ table(table table-bordered table-condensed).
 |dispatch-slurm|Get compute requests submitted to the API server and submit them to SLURM HPC scheduler.|
 |health|Service that aggregates the other health check results to provide a single cluster-wide health status.|
 |install|Install development dependencies to be able to build and run Arvados from source.|
-|init|Do initial configuration and database setup in order to run the @boot@ subcommand.|
+|init|Create an initial configuration file for a new cluster and perform database setup.|
 |keep-balance|Perform storage utilization reporting, optimization and garbage collection.  Moves data blocks to their optimum location, ensures correct replication and storage class, and trashes unreferenced blocks.|
 |keep-web|Provides high-level to files in collections as either a WebDAV or S3-compatible API endpoint.|
 |keepproxy|Provides low-level access to keepstore services (block-level data access) for clients outside the internal (private) network.|
 |keepstore|Provides access to underlying storage (filesystem or object storage such as Amazon S3 or Azure Blob) with Arvados permissions.|
-|recover-collection|This program recovers deleted collections. Recovery is possible when the collection's manifest is still available and all of its data blocks are still available or recoverable.|
+|recover-collection|Recovers deleted collections. Recovery is possible when the collection's manifest is still available and all of its data blocks are still available or recoverable.|
 |workbench2|Serve the HTML/Javascript for the single-page Workbench application.|
 |ws|Publishes API server change events over websockets.|
 
@@ -98,7 +98,7 @@ Located in @cmd/arvados-client@.  It consists of a single @arvados-client@ binar
 table(table table-bordered table-condensed).
 |_. Subcommand|_. Description |
 |connect-ssh|Connects stdin/stdout to a container's gateway server. It is intended to be invoked with OpenSSH client's ProxyCommand config.|
-|deduplication-report|This program analyzes the overlap in blocks used by 2 or more collections. It prints a deduplication report that shows the nominal space used by the collections, as well as the actual size and the amount of space that is saved by Keep's deduplication.|
+|deduplication-report|Analyzes the overlap in blocks used by 2 or more collections. It prints a deduplication report that shows the nominal space used by the collections, as well as the actual size and the amount of space that is saved by Keep's deduplication.|
 |diagnostics|Perform cluster diagnostics to check that all the services are available and responding normally to requests.|
 |logs|Prints live streaming logs for a container.|
 |mount|Alternate Keep FUSE mount written in Go.|
