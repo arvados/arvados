@@ -10,33 +10,59 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Services":#Services
+# "Arvados-server":#Arvados-server
+# "SDK":#SDK
+# "Tools":#Tools
+# "Arvados-client":#Arvados-client
+
 !(full-width){{site.baseurl}}/images/Arvados_arch.svg!
 
-h3. Services
+h3(#Services). Services
 
-Located in @arvados/services@.
+Located in @arvados/services@.  Many services have been incorporated into @arvados-server@, see below.
 
 table(table table-bordered table-condensed).
 |_. Component|_. Description|
-|api|The API server is the core of Arvados.  It is backed by a Postgres database and manages information such as metadata for storage, a record of submitted compute jobs, users, groups, and associated permissions.|
-|arvados-dispatch-cloud|Provide elastic computing by creating and destroying cloud based virtual machines on compute demand.|
+|api|Along with Controller, the API server is the core of Arvados.  It is backed by a Postgres database and manages information such as metadata for storage, a record of submitted compute jobs, users, groups, and associated permissions.|
 |crunch-dispatch-local|Get compute requests submitted to the API server and execute them locally.|
-|crunch-dispatch-slurm|Get compute requests submitted to the API server and submit them to slurm.|
-|crunch-run|Dispatched by crunch-dispatch, executes a single compute run: setting up a Docker container, running it, and collecting the output.|
 |dockercleaner|Daemon for cleaning up Docker containers and images.|
-|fuse|Filesystem in USErspace (FUSE) filesystem driver for Keep.|
-|health|Health check proxy, contacts configured Arvados services at their health check endpoints and reports results.|
+|fuse|Filesystem in Userspace (FUSE) enabling users to mount Keep collections as a filesystem.|
+|login-sync|Synchronize virtual machine users with Arvados users and permissions.|
+|workbench2|Web application providing user interface to Arvados services.|
+
+h3(#Arvados-server). Arvados-server
+
+Located in @cmd/arvados-server@.  It consists of a single @arvados-server@ binary with a number of different subcommands.  Although the binary itself is monolithic, subcommands are each a standalone service and only handle requests for that specific service, i.e. a @arvados-server controller@ process will not respond to requests intended for a @arvados-server keep-web@.
+
+table(table table-bordered table-condensed).
+|_. Subcommand|_. Description |
+|boot|Boot an Arvados cluster from source, used by automated testing.|
+|check|Contact the a health check endpoint on services and print a report.|
+|cloudtest|Diagnostic tool which attempts to start a cloud instance using the current settings in the config file.|
+|config-check|Check that the config file is valid.|
+|config-defaults|Dump the default config options.|
+|config-dump|Dump the active config options that would be used by the other @arvados-server@ commands.|
+|controller|Controller works with the API server to make up the core of Arvados.  It intercepts requests and implements additional features such as federation.|
+|crunch-run|Dispatched by crunch-dispatch, executes a single compute run: setting up a Docker container, running it, and collecting the output.|
+|crunchstat|Run a program and collect resource usage stats using cgroups.|
+|dispatch-cloud|Get compute requests submitted to the API server and schedule them on elastic cloud compute, creating and destroying cloud based virtual machines on demand.|
+|dispatch-lsf|Get compute requests submitted to the API server and submit them to LSF HPC scheduler.|
+|dispatch-slurm|Get compute requests submitted to the API server and submit them to SLURM HPC scheduler.|
+|health|Service that aggregates the other health check results to provide a single cluster-wide health status.|
+|install|Install development dependencies to be able to build and run Arvados from source.|
+|init|Create an initial configuration file for a new cluster and perform database setup.|
 |keep-balance|Perform storage utilization reporting, optimization and garbage collection.  Moves data blocks to their optimum location, ensures correct replication and storage class, and trashes unreferenced blocks.|
+|keep-web|Provides high-level to files in collections as either a WebDAV or S3-compatible API endpoint.|
 |keepproxy|Provides low-level access to keepstore services (block-level data access) for clients outside the internal (private) network.|
 |keepstore|Provides access to underlying storage (filesystem or object storage such as Amazon S3 or Azure Blob) with Arvados permissions.|
-|keep-web|Provides high-level WebDAV access to collections (file-level data access).|
-|login-sync|Synchronize virtual machine users with Arvados users and permissions.|
-|arvados-ws|Publishes API server change events over websockets.|
-|workbench|Web application providing user interface to Arvados services.|
+|recover-collection|Recovers deleted collections. Recovery is possible when the collection's manifest is still available and all of its data blocks are still available or recoverable.|
+|workbench2|Serve the HTML/Javascript for the single-page Workbench application.|
+|ws|Publishes API server change events over websockets.|
 
-h3. Tools
+h3(#SDK). SDK
 
-The @arv@ command is located in @arvados/sdk/ruby@, the @arv-*@ tools are located in @arvados/sdk/python@, the rest are located in @arvados/tools@.
+The @arv@ command is located in @arvados/sdk/ruby@, the @arv-*@ tools are located in @arvados/sdk/python@.
 
 table(table table-bordered table-condensed).
 |_. Component|_. Description |
@@ -45,14 +71,36 @@ table(table table-bordered table-condensed).
 |arv-get|Get files from a collection.|
 |arv-keepdocker|Upload Docker images from local Docker daemon to Keep.|
 |arv-ls|List files in a collection|
-|arv-migrate-docker19|Migrate Docker images in Keep from v1 format (Docker 1.9 or earlier) to v2 format (Docker 1.10 or later)|
-|arv-normalize|Read manifest text on stdin and produce normalized manifest text on stdout.|
 |arv-put|Upload files to a collection.|
 |arv-ws|Print events from Arvados websocket event source.|
+
+h3(#Tools). Tools
+
+Located in @arvados/tools@.
+
+table(table table-bordered table-condensed).
+|_. Component|_. Description |
 |arvbash|Helpful @bash@ macros for using Arvados at the command line.|
 |arvbox|Dockerized Arvados environment for development and testing.|
+|cluster-activity|Generate a HTML and/or CSV report of cluster activity over a time period.|
 |crunchstat-summary|Read execution metrics (cpu %, ram, network, etc) collected from a compute container and produce a report.|
 |keep-block-check|Given a list of keep block locators, check that each block exists on one of the configured keepstore servers and verify the block hash.|
 |keep-exercise|Benchmarking tool to test throughput and reliability of keepstores under various usage patterns.|
 |keep-rsync|Get lists of blocks from two clusters, copy blocks which exist on source cluster but are missing from destination cluster.|
-|sync-groups|Take a CSV file listing with (group, user, permission) records and synchronize membership in Arvados groups.|
+|sync-groups|Takes a CSV file listing with rows in the form (group, user, permission) records and synchronize membership in Arvados groups.|
+|sync-users|Takes a CSV file listing with rows in the form (email, first name, last name, active, admin) and synchronize Arvados users.|
+|user-activity|Generate a text report of user activity over a time period.|
+
+h3(#Arvados-client). Arvados-client
+
+Located in @cmd/arvados-client@.  It consists of a single @arvados-client@ binary with a number of different subcommands.
+
+table(table table-bordered table-condensed).
+|_. Subcommand|_. Description |
+|connect-ssh|Connects stdin/stdout to a container's gateway server. It is intended to be invoked with OpenSSH client's ProxyCommand config.|
+|deduplication-report|Analyzes the overlap in blocks used by 2 or more collections. It prints a deduplication report that shows the nominal space used by the collections, as well as the actual size and the amount of space that is saved by Keep's deduplication.|
+|diagnostics|Perform cluster diagnostics to check that all the services are available and responding normally to requests.|
+|logs|Prints live streaming logs for a container.|
+|mount|Alternate Keep FUSE mount written in Go.|
+|shell|Connects the terminal to an interactive shell on a running container.|
+|sudo|Runs another command using API connection info and SystemRootToken from the system config file instead of the caller's environment vars.|
