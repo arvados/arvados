@@ -9,6 +9,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { CollectionIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
+import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 import { BackIcon } from 'components/icon/icon';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from 'store/collections-content-address-panel/collections-content-address-panel-actions';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
@@ -129,6 +130,8 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelAc
         dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onItemClick: (uuid: string) => {
+        dispatch<any>(toggleOne(uuid))
+        dispatch<any>(deselectAllOthers(uuid))
         dispatch<any>(loadDetailsPanel(uuid));
     },
     onItemDoubleClick: uuid => {
@@ -153,17 +156,18 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         <BackIcon className={this.props.classes.backIcon} />
                         Back
                     </Button>
-                    <div className={this.props.classes.content}><DataExplorer
-                        id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
-                        hideSearchInput
-                        onRowClick={this.props.onItemClick}
-                        onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu(this.props.resources)}
-                        contextMenuColumn={true}
-                        title={`Content address: ${this.props.match.params.id}`}
-                        defaultViewIcon={CollectionIcon}
-                        defaultViewMessages={['Collections with this content address not found.']}
-                        forceMultiSelectMode />
+                    <div className={this.props.classes.content}>
+                        <DataExplorer
+                            id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
+                            hideSearchInput
+                            onRowClick={this.props.onItemClick}
+                            onRowDoubleClick={this.props.onItemDoubleClick}
+                            onContextMenu={this.props.onContextMenu(this.props.resources)}
+                            contextMenuColumn={false}
+                            title={`Content address: ${this.props.match.params.id}`}
+                            defaultViewIcon={CollectionIcon}
+                            defaultViewMessages={['Collections with this content address not found.']}
+                        />
                     </div>
                 </div>;
             }

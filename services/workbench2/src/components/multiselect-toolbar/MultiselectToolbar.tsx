@@ -25,7 +25,7 @@ import { FavoritesState } from "store/favorites/favorites-reducer";
 import { resourceIsFrozen } from "common/frozen-resources";
 import { GroupResource, GroupClass } from "models/group";
 import { User } from "models/user";
-import { Process, isProcessCancelable, getProcess } from "store/processes/process";
+import { isProcessCancelable, getProcess } from "store/processes/process";
 import { CollectionResource } from "models/collection";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";

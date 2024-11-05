@@ -14,14 +14,12 @@ import { DispatchProp, connect } from 'react-redux';
 import { authActions, getNewExtraToken } from 'store/auth/auth-action';
 import { RootState } from "store/store";
 import { openTokenDialog } from 'store/token-dialog/token-dialog-actions';
-import { openRepositoriesPanel } from "store/repositories/repositories-actions";
 import {
     navigateToSiteManager,
     navigateToSshKeysUser,
     navigateToMyAccount,
     navigateToLinkAccount,
 } from 'store/navigation/navigation-action';
-import { openUserVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
 
