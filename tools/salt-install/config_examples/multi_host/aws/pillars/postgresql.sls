@@ -5,8 +5,7 @@
 
 {%- set domain = "__DOMAIN__" %}
 {%- set controller_nodes = "__CONTROLLER_NODES__".split(",") %}
-{%- set websocket_ip = "__WEBSOCKET_INT_IP__" %}
-{%- set keepbalance_ip = "__KEEPBALANCE_INT_IP__" %}
+{%- set pg_client_ipaddrs = ["__KEEPBALANCE_INT_IP__","__KEEPWEB_INT_IP__","__WEBSOCKET_INT_IP__"] %}
 {%- set pg_version = "__DATABASE_POSTGRESQL_VERSION__" %}
 
 ### POSTGRESQL
@@ -23,8 +22,9 @@ postgres:
     - ['host', 'all', 'all', '127.0.0.1/32', 'md5']
     - ['host', 'all', 'all', '::1/128', 'md5']
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '127.0.0.1/32']
-    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ websocket_ip }}/32']
-    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ keepbalance_ip }}/32']
+    {%- for client_ipaddr in pg_client_ipaddrs | unique | list %}
+    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ client_ipaddr }}/32']
+    {%- endfor %}
     {%- for controller_hostname in controller_nodes %}
     {%- set controller_ip = salt['cmd.run']("getent hosts "+controller_hostname+" | awk '{print $1 ; exit}'", python_shell=True) %}
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ controller_ip }}/32']
