@@ -288,16 +288,18 @@ const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, us
                             : ContextMenuKind.READONLY_COLLECTION;
         case ResourceKind.PROCESS:
             const process = getProcess(uuid)(resources);
+                const processParent = process ? getResource<any>(process.containerRequest.ownerUuid)(resources) : undefined;
+                const { canWrite: canWriteProcess } = processParent || {};
                 const isRunning = process && isProcessCancelable(process);
-                return !isEditable
-                    ? ContextMenuKind.READONLY_PROCESS_RESOURCE
-                    : isAdmin 
-                        ? process && isRunning
+                return isAdmin 
+                        ? isRunning
                             ? ContextMenuKind.RUNNING_PROCESS_ADMIN
                             : ContextMenuKind.PROCESS_ADMIN
-                        : process && isRunning
+                        : isRunning
                             ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                            : ContextMenuKind.PROCESS_RESOURCE;
+                            : canWriteProcess 
+                                ? ContextMenuKind.PROCESS_RESOURCE
+                                : ContextMenuKind.READONLY_PROCESS_RESOURCE;
         case ResourceKind.USER:
             return isAdmin ? ContextMenuKind.ROOT_PROJECT_ADMIN : ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:
