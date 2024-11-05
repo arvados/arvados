@@ -9,6 +9,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { CollectionIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
+import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 import { BackIcon } from 'components/icon/icon';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from 'store/collections-content-address-panel/collections-content-address-panel-actions';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
@@ -129,6 +130,8 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelAc
         dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onItemClick: (uuid: string) => {
+        dispatch<any>(toggleOne(uuid))
+        dispatch<any>(deselectAllOthers(uuid))
         dispatch<any>(loadDetailsPanel(uuid));
     },
     onItemDoubleClick: uuid => {
