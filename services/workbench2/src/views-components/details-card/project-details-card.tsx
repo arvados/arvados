@@ -120,6 +120,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbarStyles: {
         marginRight: '-0.5rem',
+        paddingTop: '4px',
     },
 });
 

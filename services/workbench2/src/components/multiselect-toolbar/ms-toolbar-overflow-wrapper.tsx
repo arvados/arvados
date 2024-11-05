@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState, useRef, useEffect } from 'react';
+import { debounce } from 'lodash';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -59,23 +60,29 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
     const [numHidden, setNumHidden] = useState(() => findNumHidden(visibilityMap));
     const prevNumHidden = useRef(numHidden);
     
+    const debouncedSetVisibilityMap = React.useMemo(
+        () => debounce((updatedEntries: Record<string, boolean>) => {
+            setVisibilityMap((prev) => ({
+                ...prev,
+                ...updatedEntries,
+                [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
+            }));
+        }, 100),
+        [lastEntryId]
+    );
+    
     const handleIntersection = (entries) => {
         const updatedEntries: Record<string, boolean> = {};
         entries.forEach((entry) => {
             const targetid = entry.target.dataset.targetid as string;
-            //if true, the element is visible
             if (entry.isIntersecting) {
                 updatedEntries[targetid] = true;
             } else {
                 updatedEntries[targetid] = false;
             }
         });
-
-        setVisibilityMap((prev) => ({
-            ...prev,
-            ...updatedEntries,
-            [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
-        }));
+    
+        debouncedSetVisibilityMap(updatedEntries);
     };
 
     //ensures that the last element is always visible if the second to last is visible
@@ -113,7 +120,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
             observer.disconnect();
         };
         // eslint-disable-next-line
-    }, [menuLength]);
+    }, [menuLength, navRef]);
 
     function findNumHidden(visMap: {}) {
         return Object.values(visMap).filter((x) => x === false).length;

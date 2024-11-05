@@ -10,53 +10,57 @@ import { MultiSelectMenuAction } from 'views-components/multiselect-toolbar/ms-m
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
-    ROOT_PROJECT = "RootProject",
-    ROOT_PROJECT_ADMIN = "RootProjectAdmin",
-    PROJECT = "Project",
-    FILTER_GROUP = "FilterGroup",
-    READONLY_PROJECT = "ReadOnlyProject",
-    FROZEN_PROJECT = "FrozenProject",
-    FROZEN_PROJECT_ADMIN = "FrozenProjectAdmin",
-    PROJECT_ADMIN = "ProjectAdmin",
-    FILTER_GROUP_ADMIN = "FilterGroupAdmin",
-    RESOURCE = "Resource",
-    FAVORITE = "Favorite",
-    TRASH = "Trash",
-    COLLECTION_FILES = "CollectionFiles",
-    COLLECTION_FILES_MULTIPLE = "CollectionFilesMultiple",
-    READONLY_COLLECTION_FILES = "ReadOnlyCollectionFiles",
-    READONLY_COLLECTION_FILES_MULTIPLE = "ReadOnlyCollectionFilesMultiple",
-    COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
-    COLLECTION_FILE_ITEM = "CollectionFileItem",
-    COLLECTION_DIRECTORY_ITEM = "CollectionDirectoryItem",
-    READONLY_COLLECTION_FILE_ITEM = "ReadOnlyCollectionFileItem",
-    READONLY_COLLECTION_DIRECTORY_ITEM = "ReadOnlyCollectionDirectoryItem",
     COLLECTION = "Collection",
     COLLECTION_ADMIN = "CollectionAdmin",
-    READONLY_COLLECTION = "ReadOnlyCollection",
-    OLD_VERSION_COLLECTION = "OldVersionCollection",
-    TRASHED_COLLECTION = "TrashedCollection",
-    PROCESS = "Process",
-    RUNNING_PROCESS_ADMIN = "RunningProcessAdmin",
-    PROCESS_ADMIN = "ProcessAdmin",
-    RUNNING_PROCESS_RESOURCE = "RunningProcessResource",
-    PROCESS_RESOURCE = "ProcessResource",
-    READONLY_PROCESS_RESOURCE = "ReadOnlyProcessResource",
-    PROCESS_LOGS = "ProcessLogs",
-    REPOSITORY = "Repository",
-    SSH_KEY = "SshKey",
-    VIRTUAL_MACHINE = "VirtualMachine",
-    KEEP_SERVICE = "KeepService",
-    USER = "User",
-    USER_DETAILS = "UserDetails",
+    COLLECTION_DIRECTORY_ITEM = "CollectionDirectoryItem",
+    COLLECTION_FILE_ITEM = "CollectionFileItem",
+    COLLECTION_FILES = "CollectionFiles",
+    COLLECTION_FILES_MULTIPLE = "CollectionFilesMultiple",
+    COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
+    FAVORITE = "Favorite",
+    FILTER_GROUP = "FilterGroup",
+    FILTER_GROUP_ADMIN = "FilterGroupAdmin",
+    FROZEN_MANAGEABLE_PROJECT = "FrozenManageableProject",
+    FROZEN_PROJECT = "FrozenProject",
+    FROZEN_PROJECT_ADMIN = "FrozenProjectAdmin",
     GROUPS = "Group",
     GROUP_MEMBER = "GroupMember",
-    PERMISSION_EDIT = "PermissionEdit",
+    KEEP_SERVICE = "KeepService",
     LINK = "Link",
-    WORKFLOW = "Workflow",
-    READONLY_WORKFLOW = "ReadOnlyWorkflow",
-    SEARCH_RESULTS = "SearchResults",
+    MANAGEABLE_PROJECT = "ManageableProject",
     MULTI = "Multi",
+    OLD_VERSION_COLLECTION = "OldVersionCollection",
+    PERMISSION_EDIT = "PermissionEdit",
+    PROCESS = "Process",
+    PROCESS_ADMIN = "ProcessAdmin",
+    PROCESS_LOGS = "ProcessLogs",
+    PROCESS_RESOURCE = "ProcessResource",
+    PROJECT = "Project",
+    PROJECT_ADMIN = "ProjectAdmin",
+    READONLY_COLLECTION = "ReadOnlyCollection",
+    READONLY_COLLECTION_DIRECTORY_ITEM = "ReadOnlyCollectionDirectoryItem",
+    READONLY_COLLECTION_FILE_ITEM = "ReadOnlyCollectionFileItem",
+    READONLY_COLLECTION_FILES = "ReadOnlyCollectionFiles",
+    READONLY_COLLECTION_FILES_MULTIPLE = "ReadOnlyCollectionFilesMultiple",
+    READONLY_PROCESS_RESOURCE = "ReadOnlyProcessResource",
+    READONLY_PROJECT = "ReadOnlyProject",
+    READONLY_WORKFLOW = "ReadOnlyWorkflow",
+    REPOSITORY = "Repository",
+    RESOURCE = "Resource",
+    ROOT_PROJECT = "RootProject",
+    ROOT_PROJECT_ADMIN = "RootProjectAdmin",
+    RUNNING_PROCESS_ADMIN = "RunningProcessAdmin",
+    RUNNING_PROCESS_RESOURCE = "RunningProcessResource",
+    SEARCH_RESULTS = "SearchResults",
+    SSH_KEY = "SshKey",
+    TRASH = "Trash",
+    TRASHED_COLLECTION = "TrashedCollection",
+    USER = "User",
+    USER_DETAILS = "UserDetails",
+    VIRTUAL_MACHINE = "VirtualMachine",
+    WORKFLOW = "Workflow",
+    WRITEABLE_COLLECTION = "WriteableCollection",
+    WRITEABLE_PROJECT = "WriteableProject",
 }
 
 const processOrder = [
@@ -144,15 +148,21 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.PROCESS_RESOURCE]: processOrder,
     [ContextMenuKind.RUNNING_PROCESS_ADMIN]: processOrder,
     [ContextMenuKind.RUNNING_PROCESS_RESOURCE]: processOrder,
+    [ContextMenuKind.READONLY_PROCESS_RESOURCE]: processOrder,
 
     [ContextMenuKind.PROJECT]: projectOrder,
     [ContextMenuKind.PROJECT_ADMIN]: projectOrder,
+    [ContextMenuKind.READONLY_PROJECT]: projectOrder,
     [ContextMenuKind.FROZEN_PROJECT]: projectOrder,
     [ContextMenuKind.FROZEN_PROJECT_ADMIN]: projectOrder,
+    [ContextMenuKind.WRITEABLE_PROJECT]: projectOrder,
+    [ContextMenuKind.MANAGEABLE_PROJECT]: projectOrder,
+    [ContextMenuKind.FROZEN_MANAGEABLE_PROJECT]: projectOrder,
 
     [ContextMenuKind.COLLECTION]: collectionOrder,
     [ContextMenuKind.COLLECTION_ADMIN]: collectionOrder,
     [ContextMenuKind.READONLY_COLLECTION]: collectionOrder,
+    [ContextMenuKind.WRITEABLE_COLLECTION]: collectionOrder,
     [ContextMenuKind.OLD_VERSION_COLLECTION]: collectionOrder,
 
     [ContextMenuKind.WORKFLOW]: workflowOrder,
@@ -173,7 +183,6 @@ export const menuDirection = {
 }
 
 export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] | MultiSelectMenuAction[] => {
-
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name
     if (!preferredOrder) return menuItems.sort(sortByProperty("name"));
@@ -197,7 +206,9 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
         else leftovers.push(item);
     });
 
-    return Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null).reduce((acc, val)=>{
+    const result =  Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null).reduce((acc, val)=>{
         return acc.at(-1)?.name === "Divider" && val.name === "Divider" ? acc : acc.concat(val)
     }, []);
+
+    return result.at(-1)?.name === "Divider" ? result.slice(0, -1) : result;
 };

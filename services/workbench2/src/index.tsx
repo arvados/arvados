@@ -28,6 +28,9 @@ import {
     frozenActionSet,
     projectActionSet,
     readOnlyProjectActionSet,
+    writeableProjectActionSet,
+    manageableProjectActionSet,
+    frozenManageableProjectActionSet,
 } from "views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from "views-components/context-menu/action-sets/resource-action-set";
 import { favoriteActionSet } from "views-components/context-menu/action-sets/favorite-action-set";
@@ -49,6 +52,7 @@ import {
     collectionAdminActionSet,
     oldCollectionVersionActionSet,
     readOnlyCollectionActionSet,
+    writeableCollectionSet,
 } from "views-components/context-menu/action-sets/collection-action-set";
 import { loadWorkbench } from "store/workbench/workbench-actions";
 import { Routes } from "routes/routes";
@@ -149,6 +153,10 @@ addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_WORKFLOW, readOnlyWorkflowActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
 addMenuActionSet(ContextMenuKind.SEARCH_RESULTS, searchResultsActionSet);
+addMenuActionSet(ContextMenuKind.WRITEABLE_PROJECT, writeableProjectActionSet);
+addMenuActionSet(ContextMenuKind.WRITEABLE_COLLECTION, writeableCollectionSet);
+addMenuActionSet(ContextMenuKind.MANAGEABLE_PROJECT, manageableProjectActionSet);
+addMenuActionSet(ContextMenuKind.FROZEN_MANAGEABLE_PROJECT, frozenManageableProjectActionSet);
 
 storeRedirects();
 

@@ -182,3 +182,47 @@ export const projectActionSet: ContextMenuActionSet = [
         copyUuidAction,
     ],
 ];
+
+export const writeableProjectActionSet = [
+    [
+        toggleFavoriteAction,
+        openInNewTabMenuAction,
+        copyToClipboardMenuAction,
+        viewDetailsAction,
+        advancedAction,
+        openWith3rdPartyClientAction,
+        editProjectAction,
+        moveToAction,
+        toggleTrashAction,
+        newProjectAction,
+        copyUuidAction,
+    ],
+];
+
+export const manageableProjectActionSet = [
+    [
+        viewDetailsAction,
+        openInNewTabMenuAction,
+        copyUuidAction,
+        shareAction,
+        freezeProjectAction,
+        toggleFavoriteAction,
+        copyToClipboardMenuAction,
+        openWith3rdPartyClientAction,
+        advancedAction,
+    ],
+];
+
+export const frozenManageableProjectActionSet = [
+    [
+        viewDetailsAction,
+        openInNewTabMenuAction,
+        copyUuidAction,
+        shareAction,
+        toggleFavoriteAction,
+        copyToClipboardMenuAction,
+        openWith3rdPartyClientAction,
+        advancedAction,
+        freezeProjectAction,
+    ],
+];
