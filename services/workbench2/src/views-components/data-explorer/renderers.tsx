@@ -74,7 +74,7 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-export const renderName = (item: any) => {
+export const renderName = (item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
         <Grid

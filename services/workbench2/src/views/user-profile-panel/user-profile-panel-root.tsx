@@ -137,35 +137,35 @@ export const userProfileGroupsColumns: DataColumns<string, PermissionResource> =
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid} />
+        render: uuid => <ResourceLinkHead uuid={uuid as string} />
     },
     {
         name: UserProfileGroupsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
+        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid as string} />
     },
     {
         name: UserProfileGroupsColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
+        render: uuid => <ResourceLinkTailIsVisible uuid={uuid as string} />
     },
     {
         name: UserProfileGroupsColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
+        render: uuid => <ResourceLinkHeadUuid uuid={uuid as string} />
     },
     {
         name: UserProfileGroupsColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: uuid => <ResourceLinkDelete uuid={uuid as string} />
     },
 ];
 

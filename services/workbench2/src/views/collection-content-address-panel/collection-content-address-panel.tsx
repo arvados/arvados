@@ -71,21 +71,21 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <ResourceName uuid={uuid as string} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid} />
+        render: uuid => <ResourceStatus uuid={uuid as string} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LOCATION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerName uuid={uuid} />
+        render: uuid => <ResourceOwnerName uuid={uuid as string} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,
@@ -93,7 +93,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: uuid => <ResourceLastModifiedDate uuid={uuid as string} />
     }
 ];
 

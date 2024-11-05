@@ -56,7 +56,7 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <ResourceName uuid={uuid as string} />
     },
     {
         name: WorkflowProcessesPanelColumnNames.STATUS,
@@ -64,7 +64,7 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid} />,
+        render: uuid => <ProcessStatus uuid={uuid as string} />,
     },
     {
         name: WorkflowProcessesPanelColumnNames.CREATED_AT,
@@ -72,14 +72,14 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: uuid => <ResourceCreatedAtDate uuid={uuid} />
+        render: uuid => <ResourceCreatedAtDate uuid={uuid as string} />
     },
     {
         name: WorkflowProcessesPanelColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid} />
+        render: uuid => <ContainerRunTime uuid={uuid as string} />
     }
 ];
 

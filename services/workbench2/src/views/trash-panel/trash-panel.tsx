@@ -96,14 +96,14 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <ResourceName uuid={uuid as string} />
     },
     {
         name: TrashPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getTrashPanelTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />,
+        render: uuid => <ResourceType uuid={uuid as string} />,
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,
@@ -111,7 +111,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "fileSizeTotal"},
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
+        render: uuid => <ResourceFileSize uuid={uuid as string} />
     },
     {
         name: TrashPanelColumnNames.TRASHED_DATE,
@@ -119,7 +119,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "trashAt"},
         filters: createTree(),
-        render: uuid => <ResourceTrashDate uuid={uuid} />
+        render: uuid => <ResourceTrashDate uuid={uuid as string} />
     },
     {
         name: TrashPanelColumnNames.TO_BE_DELETED,
@@ -127,14 +127,14 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
-        render: uuid => <ResourceDeleteDate uuid={uuid} />
+        render: uuid => <ResourceDeleteDate uuid={uuid as string} />
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: uuid => <ResourceRestore uuid={uuid} />
+        render: uuid => <ResourceRestore uuid={uuid as string} />
     }
 ];
 

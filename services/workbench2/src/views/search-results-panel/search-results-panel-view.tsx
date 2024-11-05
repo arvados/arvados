@@ -79,7 +79,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid} />
+        render: uuid => <ResourceStatus uuid={uuid as string} />
     },
     {
         name: SearchResultsPanelColumnNames.TYPE,
@@ -93,14 +93,14 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid as string} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
+        render: uuid => <ResourceFileSize uuid={uuid as string} />
     },
     {
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
@@ -108,7 +108,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "modifiedAt" },
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: uuid => <ResourceLastModifiedDate uuid={uuid as string} />
     }
 ];
 

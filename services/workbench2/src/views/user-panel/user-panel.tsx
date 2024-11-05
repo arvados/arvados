@@ -60,7 +60,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: uuid => <UserResourceFullName uuid={uuid} link={true} />
+        render: uuid => <UserResourceFullName uuid={uuid as string} link={true} />
     },
     {
         name: UserPanelColumnNames.UUID,
@@ -68,7 +68,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid} />
+        render: uuid => <ResourceUuid uuid={uuid as string} />
     },
     {
         name: UserPanelColumnNames.EMAIL,
@@ -76,21 +76,21 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "email"},
         filters: createTree(),
-        render: uuid => <ResourceEmail uuid={uuid} />
+        render: uuid => <ResourceEmail uuid={uuid as string} />
     },
     {
         name: UserPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <UserResourceAccountStatus uuid={uuid} />
+        render: uuid => <UserResourceAccountStatus uuid={uuid as string} />
     },
     {
         name: UserPanelColumnNames.ADMIN,
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: uuid => <ResourceIsAdmin uuid={uuid} />
+        render: uuid => <ResourceIsAdmin uuid={uuid as string} />
     },
     {
         name: UserPanelColumnNames.USERNAME,
@@ -98,7 +98,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: false,
         sort: {direction: SortDirection.NONE, field: "username"},
         filters: createTree(),
-        render: uuid => <ResourceUsername uuid={uuid} />
+        render: uuid => <ResourceUsername uuid={uuid as string} />
     }
 ];
 

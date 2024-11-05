@@ -46,56 +46,56 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: uuid => <CommonUuid uuid={uuid} />
+        render: uuid => <CommonUuid uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.API_TOKEN,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenApiToken uuid={uuid} />
+        render: uuid => <TokenApiToken uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.CREATED_BY_IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenCreatedByIpAddress uuid={uuid} />
+        render: uuid => <TokenCreatedByIpAddress uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.EXPIRES_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenExpiresAt uuid={uuid} />
+        render: uuid => <TokenExpiresAt uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.LAST_USED_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenLastUsedAt uuid={uuid} />
+        render: uuid => <TokenLastUsedAt uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.LAST_USED_BY_IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenLastUsedByIpAddress uuid={uuid} />
+        render: uuid => <TokenLastUsedByIpAddress uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.SCOPES,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenScopes uuid={uuid} />
+        render: uuid => <TokenScopes uuid={uuid as string} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.USER_ID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenUserId uuid={uuid} />
+        render: uuid => <TokenUserId uuid={uuid as string} />
     }
 ];
 

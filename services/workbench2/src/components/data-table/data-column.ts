@@ -24,7 +24,7 @@ export interface DataColumn<I, R> {
     mutuallyExclusiveFilters?: boolean;
     sort?: {direction: SortDirection, field: keyof R};
     filters: DataTableFilters;
-    render: (item: I) => React.ReactElement<any>;
+    render: (item: I | R) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;
 }
 

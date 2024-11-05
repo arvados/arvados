@@ -74,42 +74,42 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <ResourceName uuid={uuid as string} />
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ProcessStatus uuid={uuid} />
+        render: uuid => <ProcessStatus uuid={uuid as string} />
     },
     {
         name: PublicFavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />
+        render: uuid => <ResourceType uuid={uuid as string} />
     },
     {
         name: PublicFavoritePanelColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid as string} />
     },
     {
         name: PublicFavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
+        render: uuid => <ResourceFileSize uuid={uuid as string} />
     },
     {
         name: PublicFavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: uuid => <ResourceLastModifiedDate uuid={uuid as string} />
     }
 ];
 

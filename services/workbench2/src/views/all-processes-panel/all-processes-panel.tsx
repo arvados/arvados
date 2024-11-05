@@ -69,7 +69,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />,
+        render: uuid => <ResourceName uuid={uuid as string} />,
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,
@@ -77,21 +77,21 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid} />,
+        render: uuid => <ProcessStatus uuid={uuid as string} />,
     },
     {
         name: AllProcessesPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialProcessTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />,
+        render: uuid => <ResourceType uuid={uuid as string} />,
     },
     {
         name: AllProcessesPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />,
+        render: uuid => <ResourceOwnerWithName uuid={uuid as string} />,
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,
@@ -99,14 +99,14 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: uuid => <ResourceCreatedAtDate uuid={uuid} />,
+        render: uuid => <ResourceCreatedAtDate uuid={uuid as string} />,
     },
     {
         name: AllProcessesPanelColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid} />,
+        render: uuid => <ContainerRunTime uuid={uuid as string} />,
     },
 ];
 

@@ -61,42 +61,42 @@ export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionReso
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTail uuid={uuid} />
+        render: uuid => <ResourceLinkTail uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailUsername uuid={uuid} />
+        render: uuid => <ResourceLinkTailUsername uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailAccountStatus uuid={uuid} />
+        render: uuid => <ResourceLinkTailAccountStatus uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
+        render: uuid => <ResourceLinkTailIsVisible uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
+        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: uuid => <ResourceLinkDelete uuid={uuid as string} />
     },
 ];
 
@@ -106,28 +106,28 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid} />
+        render: uuid => <ResourceLinkHead uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
+        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
+        render: uuid => <ResourceLinkHeadUuid uuid={uuid as string} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: uuid => <ResourceLinkDelete uuid={uuid as string} />
     },
 ];
 
