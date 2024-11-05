@@ -84,7 +84,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
                 const containerRequests = await this.services.groupsService.contents('',
                     {
                         ...this.getParams(api, dataExplorer),
-                        select: containerRequestFieldsNoMounts.concat(containerFieldsNoMounts)
+                        select: [...containerRequestFieldsNoMounts, "can_write", "can_manage"].concat(containerFieldsNoMounts)
                 });
                 api.dispatch(updateResources(containerRequests.items));
                 if (containerRequests.included) {
