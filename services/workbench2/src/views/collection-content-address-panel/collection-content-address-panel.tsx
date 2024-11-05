@@ -156,17 +156,18 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         <BackIcon className={this.props.classes.backIcon} />
                         Back
                     </Button>
-                    <div className={this.props.classes.content}><DataExplorer
-                        id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
-                        hideSearchInput
-                        onRowClick={this.props.onItemClick}
-                        onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu(this.props.resources)}
-                        contextMenuColumn={true}
-                        title={`Content address: ${this.props.match.params.id}`}
-                        defaultViewIcon={CollectionIcon}
-                        defaultViewMessages={['Collections with this content address not found.']}
-                        forceMultiSelectMode />
+                    <div className={this.props.classes.content}>
+                        <DataExplorer
+                            id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
+                            hideSearchInput
+                            onRowClick={this.props.onItemClick}
+                            onRowDoubleClick={this.props.onItemDoubleClick}
+                            onContextMenu={this.props.onContextMenu(this.props.resources)}
+                            contextMenuColumn={false}
+                            title={`Content address: ${this.props.match.params.id}`}
+                            defaultViewIcon={CollectionIcon}
+                            defaultViewMessages={['Collections with this content address not found.']}
+                        />
                     </div>
                 </div>;
             }
