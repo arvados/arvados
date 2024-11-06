@@ -23,7 +23,6 @@ import {
     ResourceParentProcess,
     ResourceStatus,
     ResourceTrashDate,
-    ResourceType,
     ResourceUUID,
     renderType,
 } from "views-components/data-explorer/renderers";

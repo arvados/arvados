@@ -23,6 +23,7 @@ import {
     ResourceVersion,
     renderName,
     renderType,
+    OwnerWithName,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
@@ -69,7 +70,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceOwnerWithName uuid={uuid as string} />,
+        render: (resource) => <OwnerWithName resource={resource as ProjectResource} />,
     },
     {
         name: ProjectPanelDataColumnNames.PORTABLE_DATA_HASH,

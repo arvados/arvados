@@ -942,6 +942,18 @@ const _resourceWithNameLink = withStyles(
 export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
 
 export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
+export const OwnerWithName = connect((state: RootState, props: {resource: GroupContentsResource}) => {
+    const owner= getResource<UserResource>(props.resource.ownerUuid)(state.resources);
+    const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
+    return { ownerName, ownerUuid: props.resource.ownerUuid };
+})((props: {ownerName: string, ownerUuid: string}) => {
+    return <Typography 
+                noWrap
+                style={{ color: CustomTheme.palette.primary.main }}
+                display="inline"
+            >{`${props.ownerName} (${props.ownerUuid})`}</Typography>;
+});
+
 
 export const ResourceWithName = userFromID(_resourceWithName);
 
@@ -1020,9 +1032,8 @@ export const ResponsiblePerson = compose(
     );
 });
 
-export const renderType = (resource: GroupContentsResource) => {
-    // const renderType = (type: string, subtype: string) => {
-    console.log("renderType", resource);
+export const renderType = (resource: GroupContentsResource | undefined) => {
+    if(!resource) return <Typography noWrap>-</Typography>;
     const type = resource.kind;
     const subtype = resource.kind === ResourceKind.GROUP
                         ? resource.groupClass
@@ -1049,7 +1060,7 @@ export const ResourceType = connect((state: RootState, props: { uuid: string }) 
     //                 : ""
     //         : ""
     // };
-})((props: { resource: any}) => renderType(props.resource));
+})((props: { resource: any}) => renderType(props.resource || undefined));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };

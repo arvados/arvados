@@ -121,7 +121,7 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     projectPanelRunActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items.map(resource => resource.uuid),
+        items: listResults.items,
     });
 
 export const getParams = (dataExplorer: DataExplorer, projectUuid: string, isProjectTrashed: boolean): ContentsArguments => ({
