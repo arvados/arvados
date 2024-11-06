@@ -174,7 +174,7 @@ const DEFAULT_VIEW_MESSAGES = ['No workflow runs found'];
 interface ProjectPanelRunProps {
     project?: ProjectResource;
     paperClassName?: string;
-    onRowClick: (uuid: string) => void;
+    onRowClick: (item: ProjectResource) => void;
     onRowDoubleClick: (uuid: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
 }

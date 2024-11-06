@@ -183,7 +183,7 @@ export const TrashPanel = withStyles(styles)(
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 
-            handleRowClick = (uuid: string) => {
+            handleRowClick = ({uuid}: CollectionResource) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

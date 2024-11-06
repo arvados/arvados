@@ -74,7 +74,7 @@ const mapDispatchToProps = (dispatch: any) => {
     return {
         onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
         onNewGroup: () => dispatch(openCreateGroupDialog()),
-        handleRowClick: (uuid: string) => {
+        handleRowClick: ({uuid}: GroupResource) => {
             dispatch(toggleOne(uuid))
             dispatch(deselectAllOthers(uuid))
             dispatch(loadDetailsPanel(uuid));
@@ -84,7 +84,7 @@ const mapDispatchToProps = (dispatch: any) => {
 
 export interface GroupsPanelProps {
     onNewGroup: () => void;
-    handleRowClick: (uuid: string) => void;
+    handleRowClick: (item: GroupResource) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     resources: ResourcesState;
 }

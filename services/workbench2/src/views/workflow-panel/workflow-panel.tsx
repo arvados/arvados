@@ -19,7 +19,7 @@ const mapDispatchToProps = (dispatch: Dispatch): WorfklowPanelActionProps => ({
         dispatch<any>(navigateTo(uuid));
     },
 
-    handleRowClick: (uuid: string) => {
+    handleRowClick: ({uuid}: {uuid: string}) => {
         dispatch(showWorkflowDetails(uuid));
     }
 });

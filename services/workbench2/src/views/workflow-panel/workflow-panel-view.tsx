@@ -37,7 +37,7 @@ export interface WorkflowPanelDataProps {
 
 export interface WorfklowPanelActionProps {
     handleRowDoubleClick: (workflowUuid: string) => void;
-    handleRowClick: (workflowUuid: string) => void;
+    handleRowClick: (workflow: WorkflowResource) => void;
 }
 
 export type WorkflowPanelProps = WorkflowPanelDataProps & WorfklowPanelActionProps;
