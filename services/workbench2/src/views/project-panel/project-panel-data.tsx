@@ -19,10 +19,10 @@ import {
     ResourceOwnerWithName,
     ResourcePortableDataHash,
     ResourceTrashDate,
-    ResourceType,
     ResourceUUID,
     ResourceVersion,
     renderName,
+    renderType,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
@@ -62,8 +62,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
         selected: true,
         configurable: true,
         filters: getInitialDataResourceTypeFilters(),
-        render: (uuid) => {
-        return <ResourceType uuid={uuid as string} />},
+        render: (resource) => renderType(resource as ProjectResource),
     },
     {
         name: ProjectPanelDataColumnNames.OWNER,

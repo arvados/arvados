@@ -25,7 +25,8 @@ import {
     ResourceFileSize,
     ResourceName,
     ResourceTrashDate,
-    ResourceType
+    ResourceType,
+    renderType,
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -103,7 +104,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         selected: true,
         configurable: true,
         filters: getTrashPanelTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid as string} />,
+        render: (resource) => renderType(resource as CollectionResource),
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,

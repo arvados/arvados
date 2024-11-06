@@ -23,6 +23,7 @@ import {
     ResourceLastModifiedDate,
     ResourceTrashDate,
     ResourceDeleteDate,
+    renderType,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { createTree } from 'models/tree';
@@ -73,7 +74,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
         selected: true,
         configurable: true,
         filters: getInitialResourceTypeFilters(),
-        render: (uuid) => <ResourceType uuid={uuid as string} />,
+        render: (resource) => renderType(resource as ProjectResource),
     },
     {
         name: SharedWithMePanelColumnNames.OWNER,

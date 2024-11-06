@@ -20,7 +20,8 @@ import {
     ResourceLastModifiedDate,
     ResourceName,
     ResourceOwnerWithName,
-    ResourceType
+    ResourceType,
+    renderType,
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
@@ -90,7 +91,7 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid as string} />
+        render: (resource) => renderType(resource as GroupContentsResource),
     },
     {
         name: FavoritePanelColumnNames.OWNER,

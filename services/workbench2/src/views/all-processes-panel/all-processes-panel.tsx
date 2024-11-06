@@ -21,6 +21,7 @@ import {
     ResourceType,
     ContainerRunTime,
     ResourceCreatedAtDate,
+    renderType,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -84,7 +85,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         selected: true,
         configurable: true,
         filters: getInitialProcessTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid as string} />,
+        render: (resource) => renderType(resource as ContainerRequestResource),
     },
     {
         name: AllProcessesPanelColumnNames.OWNER,

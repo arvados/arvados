@@ -1020,23 +1020,36 @@ export const ResponsiblePerson = compose(
     );
 });
 
-const renderType = (type: string, subtype: string) => <Typography noWrap>{resourceLabel(type, subtype)}</Typography>;
+export const renderType = (resource: GroupContentsResource) => {
+    // const renderType = (type: string, subtype: string) => {
+    console.log("renderType", resource);
+    const type = resource.kind;
+    const subtype = resource.kind === ResourceKind.GROUP
+                        ? resource.groupClass
+                        : resource.kind === ResourceKind.PROCESS
+                            ? resource.requestingContainerUuid
+                                ? ProcessTypeFilter.CHILD_PROCESS
+                                : ProcessTypeFilter.MAIN_PROCESS
+                            : ""
+    return<Typography noWrap>{resourceLabel(type, subtype)}</Typography>
+};
 
 export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return {
-        type: resource ? resource.kind : "",
-        subtype: resource
-            ? resource.kind === ResourceKind.GROUP
-                ? resource.groupClass
-                : resource.kind === ResourceKind.PROCESS
-                    ? resource.requestingContainerUuid
-                        ? ProcessTypeFilter.CHILD_PROCESS
-                        : ProcessTypeFilter.MAIN_PROCESS
-                    : ""
-            : ""
-    };
-})((props: { type: string; subtype: string }) => renderType(props.type, props.subtype));
+    return resource
+    // return {
+    //     type: resource ? resource.kind : "",
+    //     subtype: resource
+    //         ? resource.kind === ResourceKind.GROUP
+    //             ? resource.groupClass
+    //             : resource.kind === ResourceKind.PROCESS
+    //                 ? resource.requestingContainerUuid
+    //                     ? ProcessTypeFilter.CHILD_PROCESS
+    //                     : ProcessTypeFilter.MAIN_PROCESS
+    //                 : ""
+    //         : ""
+    // };
+})((props: { resource: any}) => renderType(props.resource));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };

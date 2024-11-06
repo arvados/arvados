@@ -19,7 +19,8 @@ import {
     ResourceLastModifiedDate,
     ResourceType,
     ResourceName,
-    ResourceOwnerWithName
+    ResourceOwnerWithName,
+    renderType,
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -88,7 +89,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid as string} />
+        render: (resource) => renderType(resource as GroupContentsResource),
     },
     {
         name: PublicFavoritePanelColumnNames.OWNER,

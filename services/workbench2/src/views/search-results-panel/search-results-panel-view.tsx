@@ -16,7 +16,8 @@ import {
     ResourceName,
     ResourceOwnerWithName,
     ResourceStatus,
-    ResourceType
+    ResourceType,
+    renderType,
 } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
@@ -86,7 +87,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: getInitialSearchTypeFilters(),
-        render: (uuid: string) => <ResourceType uuid={uuid} />,
+        render: (resource) => renderType(resource as GroupContentsResource),
     },
     {
         name: SearchResultsPanelColumnNames.OWNER,
