@@ -16,7 +16,6 @@ import { ArvadosTheme } from "common/custom-theme";
 import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
 import {
     ProcessStatus,
-    ResourceName,
     ResourceOwnerWithName,
     ResourceType,
     ContainerRunTime,

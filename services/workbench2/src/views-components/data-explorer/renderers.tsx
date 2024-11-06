@@ -131,10 +131,10 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
     }
 };
 
-export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource));
+// export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+//     return resource;
+// })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource));
 
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {

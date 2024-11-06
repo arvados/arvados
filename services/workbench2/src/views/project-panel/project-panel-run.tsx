@@ -17,7 +17,6 @@ import {
     ResourceLastModifiedDate,
     ResourceLogUuid,
     ResourceModifiedByUserUuid,
-    ResourceName,
     ResourceOutputUuid,
     ResourceOwnerWithName,
     ResourceParentProcess,

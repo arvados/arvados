@@ -23,10 +23,10 @@ import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceDeleteDate,
     ResourceFileSize,
-    ResourceName,
     ResourceTrashDate,
     ResourceType,
     renderType,
+    renderName,
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -97,7 +97,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid as string} />
+        render: (resource) => renderName(resource as CollectionResource),
     },
     {
         name: TrashPanelColumnNames.TYPE,

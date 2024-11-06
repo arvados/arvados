@@ -51,7 +51,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             const items = listResults.items.map(it => it.uuid);
             api.dispatch(trashPanelActions.SET_ITEMS({
                 ...listResultsToDataExplorerItemsMeta(listResults),
-                items
+                items: listResults.items,
             }));
             api.dispatch<any>(updateFavorites(items));
             api.dispatch<any>(updatePublicFavorites(items));

@@ -18,7 +18,6 @@ import {
     ProcessStatus,
     ResourceFileSize,
     ResourceLastModifiedDate,
-    ResourceName,
     ResourceOwnerWithName,
     ResourceType,
     renderType,

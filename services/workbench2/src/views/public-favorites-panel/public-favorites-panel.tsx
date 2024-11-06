@@ -18,7 +18,6 @@ import {
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceType,
-    ResourceName,
     ResourceOwnerWithName,
     renderType,
     renderName,

@@ -4,7 +4,6 @@
 
 import { DataColumns } from 'components/data-table/data-column';
 import {
-    ResourceName,
     ProcessStatus as ResourceStatus,
     ResourceType,
     ResourceOwnerWithNameLink,

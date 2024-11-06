@@ -10,7 +10,6 @@ import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind } from 'models/resource';
 import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime, renderName } from 'views-components/data-explorer/renderers';
 import { ProcessIcon } from 'components/icon/icon';
-import { ResourceName } from 'views-components/data-explorer/renderers';
 import { SUBPROCESS_PANEL_ID } from 'store/subprocess-panel/subprocess-panel-actions';
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';

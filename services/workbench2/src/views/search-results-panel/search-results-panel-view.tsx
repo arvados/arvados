@@ -13,7 +13,6 @@ import {
     ResourceCluster,
     ResourceFileSize,
     ResourceLastModifiedDate,
-    ResourceName,
     ResourceOwnerWithName,
     ResourceStatus,
     ResourceType,

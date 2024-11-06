@@ -24,7 +24,6 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
-    ResourceName,
     ResourceOwnerName,
     ResourceLastModifiedDate,
     ResourceStatus,

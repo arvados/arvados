@@ -12,7 +12,7 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { GroupMembersCount, ResourceUuid } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
-import { ResourceName, renderName } from 'views-components/data-explorer/renderers';
+import { renderName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
