@@ -21,6 +21,7 @@ import {
     ResourceName,
     ResourceOwnerWithName,
     renderType,
+    renderName,
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -75,7 +76,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid as string} />
+        render: (resource) => renderName(resource as GroupContentsResource),
     },
     {
         name: "Status",

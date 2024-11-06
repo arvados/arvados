@@ -18,6 +18,7 @@ import {
     ResourceStatus,
     ResourceType,
     renderType,
+    renderName,
 } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
@@ -65,7 +66,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (uuid: string) => <ResourceCluster uuid={uuid} />
+        render: (resource: GroupContentsResource) => <ResourceCluster uuid={resource.uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.NAME,
@@ -73,14 +74,14 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (uuid: string) => <ResourceName uuid={uuid} />
+        render: (resource) => renderName(resource as GroupContentsResource),
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid as string} />
+        render: ({uuid}: GroupContentsResource) => <ResourceStatus uuid={uuid as string} />
     },
     {
         name: SearchResultsPanelColumnNames.TYPE,

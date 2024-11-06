@@ -8,7 +8,7 @@ import { DataTableFilterItem } from 'components/data-table-filters/data-table-fi
 import { ContainerRequestState } from 'models/container-request';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind } from 'models/resource';
-import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime } from 'views-components/data-explorer/renderers';
+import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime, renderName } from 'views-components/data-explorer/renderers';
 import { ProcessIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { SUBPROCESS_PANEL_ID } from 'store/subprocess-panel/subprocess-panel-actions';
@@ -58,7 +58,7 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid as string} />
+        render: (resource) => renderName(resource as ProcessResource),
     },
     {
         name: SubprocessPanelColumnNames.STATUS,

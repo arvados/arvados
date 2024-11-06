@@ -22,6 +22,7 @@ import {
     ContainerRunTime,
     ResourceCreatedAtDate,
     renderType,
+    renderName,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -70,7 +71,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid as string} />,
+        render: (resource) => renderName(resource as ContainerRequestResource),
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,

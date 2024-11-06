@@ -24,6 +24,7 @@ import {
     ResourceTrashDate,
     ResourceDeleteDate,
     renderType,
+    renderName,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { createTree } from 'models/tree';
@@ -59,7 +60,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (uuid) => <ResourceName uuid={uuid as string} />,
+        render: (resource) => renderName(resource as ProjectResource),
     },
     {
         name: SharedWithMePanelColumnNames.STATUS,

@@ -22,6 +22,7 @@ import {
     ResourceOwnerWithName,
     ResourceType,
     renderType,
+    renderName,
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
@@ -77,7 +78,7 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid as string} />
+        render: (resource) => renderName(resource as GroupContentsResource),
     },
     {
         name: "Status",

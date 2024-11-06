@@ -27,7 +27,9 @@ import {
     ResourceName,
     ResourceOwnerName,
     ResourceLastModifiedDate,
-    ResourceStatus
+    ResourceStatus,
+    renderName,
+    OwnerWithName,
 } from 'views-components/data-explorer/renderers';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
@@ -71,21 +73,21 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid as string} />
+        render: (resource) => renderName(resource as CollectionResource),
     },
     {
         name: CollectionContentAddressPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid as string} />
+        render: ({uuid}: CollectionResource) => <ResourceStatus uuid={uuid as string} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LOCATION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerName uuid={uuid as string} />
+        render: (resource) => <OwnerWithName resource={resource as CollectionResource} />,
     },
     {
         name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,

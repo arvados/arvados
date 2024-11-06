@@ -220,7 +220,7 @@ const resetItemsAvailable = () =>
 export const appendItems = (listResults: ListResults<GroupContentsResource>) =>
     searchResultsPanelActions.APPEND_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items.map(resource => resource.uuid),
+        items: listResults.items,
     });
 
 const couldNotFetchSearchResults = (cluster: string) =>
