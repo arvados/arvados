@@ -55,7 +55,7 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 export const setItems = (listResults: ListResults<WorkflowResource>) =>
     workflowPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items.map(resource => resource.uuid),
+        items: listResults.items,
     });
 
 const couldNotFetchWorkflows = () =>

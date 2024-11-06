@@ -91,7 +91,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(responseLinks),
-                    items: orderedItems.items.map((resource: any) => resource.uuid),
+                    items: orderedItems.items,
                 }));
                 api.dispatch<any>(updateFavorites(uuids));
             } catch (e) {

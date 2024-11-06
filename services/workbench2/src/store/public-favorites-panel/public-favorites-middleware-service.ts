@@ -87,7 +87,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(responseLinks),
-                    items: orderedItems.items.map((resource: any) => resource.uuid),
+                    items: orderedItems.items,
                 }));
                 api.dispatch<any>(updatePublicFavorites(uuids));
             } catch (e) {

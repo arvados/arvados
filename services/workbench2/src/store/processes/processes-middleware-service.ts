@@ -93,7 +93,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
                 api.dispatch(this.actions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(containerRequests),
-                    items: containerRequests.items.map(resource => resource.uuid),
+                    items: containerRequests.items,
                 }));
             } else {
                 api.dispatch(this.actions.SET_ITEMS({

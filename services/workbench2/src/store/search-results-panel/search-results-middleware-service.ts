@@ -211,7 +211,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     searchResultsPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items.map(resource => resource.uuid),
+        items: listResults.items,
     });
 
 const resetItemsAvailable = () =>

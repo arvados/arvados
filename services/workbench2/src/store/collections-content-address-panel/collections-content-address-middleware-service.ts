@@ -91,7 +91,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                 } else {
                     api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                     api.dispatch(collectionsContentAddressActions.SET_ITEMS({
-                        items: response.items.map((resource: any) => resource.uuid),
+                        items: response.items,
                         itemsAvailable: response.itemsAvailable,
                         page: Math.floor(response.offset / response.limit),
                         rowsPerPage: response.limit

@@ -134,7 +134,7 @@ const getFilters = (dataExplorer: DataExplorer, authState: AuthState) => {
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     sharedWithMePanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items.map(resource => resource.uuid),
+        items: listResults.items,
     });
 
 const couldNotFetchSharedItems = () =>
