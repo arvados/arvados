@@ -193,7 +193,7 @@ export const DataTable = withStyles(styles)(
             const singleSelected = isExactlyOneSelected(this.props.checkedList);
             if (prevProps.items !== items) {
                 if (isSelected === true) this.setState({ isSelected: false });
-                if (items.length) this.initializeCheckedList(items);
+                if (items.length) this.initializeCheckedList(items.map((item: any) => item.uuid));
                 else setCheckedListOnStore({});
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
@@ -228,7 +228,7 @@ export const DataTable = withStyles(styles)(
             selected: true,
             configurable: false,
             filters: createTree(),
-            render: uuid => {
+            render: ({uuid}) => {
                 const { classes, checkedList } = this.props;
                 return (
                     <div
