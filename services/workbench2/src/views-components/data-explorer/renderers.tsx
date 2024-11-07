@@ -791,10 +791,14 @@ export const renderModifiedByUserUuid = (resource: GroupContentsResource & {cont
     return renderUuid({uuid:modifiedByUserUuid});
 }
 
-export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.createdAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+export const renderCreatedAtDate = (resource: GroupContentsResource) => {
+    return renderDate(resource.createdAt);
+}
+
+// export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+//     return { date: resource ? resource.createdAt : "" };
+// })((props: { date: string }) => renderDate(props.date));
 
 export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);

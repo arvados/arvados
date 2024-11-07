@@ -17,10 +17,10 @@ import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-
 import {
     ProcessStatus,
     ContainerRunTime,
-    ResourceCreatedAtDate,
     renderType,
     renderName,
     OwnerWithName,
+    renderCreatedAtDate,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -99,7 +99,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: uuid => <ResourceCreatedAtDate uuid={uuid as string} />,
+        render: (resource) => renderCreatedAtDate(resource as ContainerRequestResource),
     },
     {
         name: AllProcessesPanelColumnNames.RUNTIME,

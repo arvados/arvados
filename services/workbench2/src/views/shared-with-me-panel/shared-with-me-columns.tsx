@@ -10,7 +10,6 @@ import {
     ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
-    ResourceCreatedAtDate,
     ResourceLastModifiedDate,
     ResourceTrashDate,
     ResourceDeleteDate,
@@ -23,6 +22,7 @@ import {
     renderResourceUuid,
     renderModifiedByUserUuid,
     renderVersion,
+    renderCreatedAtDate,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';
@@ -166,7 +166,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'createdAt' },
         filters: createTree(),
-        render: (uuid) => <ResourceCreatedAtDate uuid={uuid as string} />,
+        render: (resource) => renderCreatedAtDate(resource as ProjectResource),
     },
     {
         name: SharedWithMePanelColumnNames.LAST_MODIFIED,

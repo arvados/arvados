@@ -12,7 +12,6 @@ import { createTree } from "models/tree";
 import {
     ContainerRunTime,
     ResourceContainerUuid,
-    ResourceCreatedAtDate,
     ResourceDeleteDate,
     ResourceLastModifiedDate,
     ResourceLogUuid,
@@ -25,6 +24,7 @@ import {
     OwnerWithName,
     renderResourceUuid,
     renderModifiedByUserUuid,
+    renderCreatedAtDate,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -141,7 +141,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'createdAt' },
         filters: createTree(),
-        render: (uuid) => <ResourceCreatedAtDate uuid={uuid as string} />,
+        render: (resource) => renderCreatedAtDate(resource as ProjectResource),
     },
     {
         name: ProjectPanelRunColumnNames.LAST_MODIFIED,
