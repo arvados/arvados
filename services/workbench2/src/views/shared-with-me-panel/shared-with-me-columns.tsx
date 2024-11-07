@@ -10,7 +10,6 @@ import {
     ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
-    ResourceVersion,
     ResourceCreatedAtDate,
     ResourceLastModifiedDate,
     ResourceTrashDate,
@@ -23,8 +22,10 @@ import {
     renderFileCount,
     renderResourceUuid,
     renderModifiedByUserUuid,
+    renderVersion,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
+import { CollectionResource } from 'models/collection';
 import { createTree } from 'models/tree';
 import { SortDirection } from 'components/data-table/data-column';
 import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
@@ -51,7 +52,7 @@ export enum SharedWithMePanelColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
+export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | CollectionResource> = [
     {
         name: SharedWithMePanelColumnNames.NAME,
         selected: true,
@@ -157,7 +158,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceVersion uuid={uuid as string} />,
+        render: (resource) => renderVersion(resource as CollectionResource),
     },
     {
         name: SharedWithMePanelColumnNames.CREATED_AT,

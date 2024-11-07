@@ -849,14 +849,14 @@ export const ResourceOwnerName = connect((state: RootState, props: { uuid: strin
 //     return { uuid: resource ? resource.uuid : "" };
 // })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
-const renderVersion = (version: number) => {
-    return <Typography>{version ?? "-"}</Typography>;
+export const renderVersion = (resource: CollectionResource) => {
+    return <Typography>{resource.version ?? "-"}</Typography>;
 };
 
-export const ResourceVersion = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { version: resource ? resource.version : "" };
-})((props: { version: number }) => renderVersion(props.version));
+// export const ResourceVersion = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+//     return { version: resource ? resource.version : "" };
+// })((props: { version: number }) => renderVersion(props.version));
 
 export const renderPortableDataHash = (resource: GroupContentsResource) => (
     <Typography noWrap>

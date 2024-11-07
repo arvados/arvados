@@ -9,12 +9,12 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { ProjectResource } from 'models/project';
 import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
+import { CollectionResource } from "models/collection";
 import {
     ResourceCreatedAtDate,
     ResourceDeleteDate,
     ResourceLastModifiedDate,
     ResourceTrashDate,
-    ResourceVersion,
     renderName,
     renderType,
     OwnerWithName,
@@ -23,6 +23,7 @@ import {
     renderFileCount,
     renderResourceUuid,
     renderModifiedByUserUuid,
+    renderVersion,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
@@ -48,7 +49,7 @@ export enum ProjectPanelDataColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
+export const projectPanelDataColumns: DataColumns<string, ProjectResource | CollectionResource> = [
     {
         name: ProjectPanelDataColumnNames.NAME,
         selected: true,
@@ -111,7 +112,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceVersion uuid={uuid as string} />,
+        render: (resource) => renderVersion(resource as CollectionResource),
     },
     {
         name: ProjectPanelDataColumnNames.CREATED_AT,
