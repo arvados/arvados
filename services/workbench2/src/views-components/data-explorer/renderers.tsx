@@ -781,10 +781,15 @@ export const ResourceParentProcess = connect((state: RootState, props: { uuid: s
     return { parentProcess: process?.containerRequest?.requestingContainerUuid || "" };
 })((props: { parentProcess: string }) => renderUuid({ uuid: props.parentProcess }));
 
-export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { userUuid: process?.containerRequest?.modifiedByUserUuid || "" };
-})((props: { userUuid: string }) => renderUuid({ uuid: props.userUuid }));
+// export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uuid: string }) => {
+//     const process = getProcess(props.uuid)(state.resources);
+//     return { userUuid: process?.containerRequest?.modifiedByUserUuid || "" };
+// })((props: { userUuid: string }) => renderUuid({ uuid: props.userUuid }));
+
+export const renderModifiedByUserUuid = (resource: GroupContentsResource & {containerRequest?: any}) => {
+    const modifiedByUserUuid = resource.containerRequest ? resource.containerRequest.modifiedByUserUuid : resource.modifiedByUserUuid;
+    return renderUuid({uuid:modifiedByUserUuid});
+}
 
 export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);

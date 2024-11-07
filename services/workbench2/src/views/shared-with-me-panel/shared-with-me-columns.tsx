@@ -10,7 +10,6 @@ import {
     ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
-    ResourceModifiedByUserUuid,
     ResourceVersion,
     ResourceCreatedAtDate,
     ResourceLastModifiedDate,
@@ -23,6 +22,7 @@ import {
     renderFileSize,
     renderFileCount,
     renderResourceUuid,
+    renderModifiedByUserUuid,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { createTree } from 'models/tree';
@@ -150,7 +150,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceModifiedByUserUuid uuid={uuid as string} />,
+        render: (resource) => renderModifiedByUserUuid(resource as ProjectResource),
     },
     {
         name: SharedWithMePanelColumnNames.VERSION,
