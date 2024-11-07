@@ -63,6 +63,7 @@ import { CustomTheme } from "common/custom-theme";
 import { dispatchAction } from "common/dispatch-action";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
+import { PermissionResource } from 'models/permission';
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -617,12 +618,10 @@ export const ResourceLinkTailEmail = connect((state: RootState, props: { uuid: s
     return resource || { email: "" };
 })(renderEmail);
 
-export const ResourceLinkTailUsername = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const resource = getResource<UserResource>(link?.tailUuid || "")(state.resources);
-
-    return resource || { username: "" };
-})(renderUsername);
+export const ResourceLinkTailUsername = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const resource = getResource<UserResource>(props.resource.tailUuid || "")(state.resources);
+    return resource;
+})((user:UserResource) => <Typography noWrap>{user.username || user.uuid || "-"}</Typography>);
 
 const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage: boolean) => {
     return (
