@@ -940,7 +940,7 @@ const _resourceWithNameLink = withStyles(
 
 export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
 
-export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
+// export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const OwnerWithName = connect((state: RootState, props: {resource: GroupContentsResource}) => {
     const owner= getResource<UserResource>(props.resource.ownerUuid)(state.resources);

@@ -17,9 +17,9 @@ import {
     ProcessStatus,
     ResourceFileSize,
     ResourceLastModifiedDate,
-    ResourceOwnerWithName,
     renderType,
     renderName,
+    OwnerWithName,
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -95,7 +95,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid as string} />
+        render: (resource) => <OwnerWithName resource={resource as GroupContentsResource} />
     },
     {
         name: PublicFavoritePanelColumnNames.FILE_SIZE,

@@ -13,10 +13,10 @@ import {
     ResourceCluster,
     ResourceFileSize,
     ResourceLastModifiedDate,
-    ResourceOwnerWithName,
     ResourceStatus,
     renderType,
     renderName,
+    OwnerWithName,
 } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
@@ -93,7 +93,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid as string} />
+        render: (resource) => <OwnerWithName resource={resource as GroupContentsResource} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,

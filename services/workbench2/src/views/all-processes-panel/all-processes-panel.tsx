@@ -16,11 +16,11 @@ import { ArvadosTheme } from "common/custom-theme";
 import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
 import {
     ProcessStatus,
-    ResourceOwnerWithName,
     ContainerRunTime,
     ResourceCreatedAtDate,
     renderType,
     renderName,
+    OwnerWithName,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -91,7 +91,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid as string} />,
+        render: (resource) => <OwnerWithName resource={resource as ContainerRequestResource} />,
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,

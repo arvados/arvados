@@ -18,13 +18,13 @@ import {
     ResourceLogUuid,
     ResourceModifiedByUserUuid,
     ResourceOutputUuid,
-    ResourceOwnerWithName,
     ResourceParentProcess,
     ResourceStatus,
     ResourceTrashDate,
     ResourceUUID,
     renderType,
     renderName,
+    OwnerWithName,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -84,7 +84,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceOwnerWithName uuid={uuid as string} />,
+        render: (resource) => <OwnerWithName resource={resource as ProjectResource} />,
     },
     {
         name: ProjectPanelRunColumnNames.UUID,

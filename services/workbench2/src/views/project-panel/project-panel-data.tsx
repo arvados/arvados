@@ -16,7 +16,6 @@ import {
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceModifiedByUserUuid,
-    ResourceOwnerWithName,
     ResourceTrashDate,
     ResourceUUID,
     ResourceVersion,
