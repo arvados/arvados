@@ -7,7 +7,6 @@ import {
     ProcessStatus as ResourceStatus,
     ResourceType,
     ResourceOwnerWithNameLink,
-    ResourcePortableDataHash,
     ResourceFileSize,
     ResourceFileCount,
     ResourceUUID,
@@ -24,6 +23,7 @@ import {
     ResourceDeleteDate,
     renderType,
     renderName,
+    renderPortableDataHash,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { createTree } from 'models/tree';
@@ -88,7 +88,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourcePortableDataHash uuid={uuid as string} />,
+        render: (resource) => renderPortableDataHash(resource as ProjectResource),
     },
     {
         name: SharedWithMePanelColumnNames.FILE_SIZE,

@@ -17,13 +17,13 @@ import {
     ResourceLastModifiedDate,
     ResourceModifiedByUserUuid,
     ResourceOwnerWithName,
-    ResourcePortableDataHash,
     ResourceTrashDate,
     ResourceUUID,
     ResourceVersion,
     renderName,
     renderType,
     OwnerWithName,
+    renderPortableDataHash,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
@@ -77,7 +77,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourcePortableDataHash uuid={uuid as string} />,
+        render: (resource) => renderPortableDataHash(resource as ProjectResource),
     },
     {
         name: ProjectPanelDataColumnNames.FILE_SIZE,

@@ -843,12 +843,12 @@ export const ResourceVersion = connect((state: RootState, props: { uuid: string 
     return { version: resource ? resource.version : "" };
 })((props: { version: number }) => renderVersion(props.version));
 
-const renderPortableDataHash = (portableDataHash: string | null) => (
+export const renderPortableDataHash = (resource: GroupContentsResource) => (
     <Typography noWrap>
-        {portableDataHash ? (
+        {'portableDataHash' in resource ? (
             <>
-                {portableDataHash}
-                <CopyToClipboardSnackbar value={portableDataHash} />
+                {resource.portableDataHash}
+                <CopyToClipboardSnackbar value={resource.portableDataHash} />
             </>
         ) : (
             "-"
@@ -856,10 +856,10 @@ const renderPortableDataHash = (portableDataHash: string | null) => (
     </Typography>
 );
 
-export const ResourcePortableDataHash = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { portableDataHash: resource ? resource.portableDataHash : "" };
-})((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
+// export const ResourcePortableDataHash = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+//     return { portableDataHash: resource ? resource.portableDataHash : "" };
+// })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
 
 const renderFileCount = (fileCount: number) => {
     return <Typography>{fileCount ?? "-"}</Typography>;
@@ -941,6 +941,7 @@ const _resourceWithNameLink = withStyles(
 export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
 
 export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
+
 export const OwnerWithName = connect((state: RootState, props: {resource: GroupContentsResource}) => {
     const owner= getResource<UserResource>(props.resource.ownerUuid)(state.resources);
     const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
