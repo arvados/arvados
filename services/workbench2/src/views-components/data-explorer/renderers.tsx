@@ -274,6 +274,16 @@ const renderUuid = (item: { uuid: string }) => (
     </Typography>
 );
 
+export const renderResourceUuid = (resource: GroupContentsResource) => (
+    <Typography
+        data-cy="uuid"
+        noWrap
+    >
+        {resource.uuid}
+        {(resource.uuid && <CopyToClipboardSnackbar value={resource.uuid} />) || "-"}
+    </Typography>
+);
+
 const renderUuidCopyIcon = (item: { uuid: string }) => (
     <Typography
         data-cy="uuid"
@@ -829,10 +839,10 @@ export const ResourceOwnerName = connect((state: RootState, props: { uuid: strin
     return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
 })((props: { owner: string }) => renderOwner(props.owner));
 
-export const ResourceUUID = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { uuid: resource ? resource.uuid : "" };
-})((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+// export const ResourceUUID = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+//     return { uuid: resource ? resource.uuid : "" };
+// })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
 const renderVersion = (version: number) => {
     return <Typography>{version ?? "-"}</Typography>;
