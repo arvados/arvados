@@ -12,7 +12,6 @@ import { createTree } from "models/tree";
 import {
     ResourceCreatedAtDate,
     ResourceDeleteDate,
-    ResourceFileCount,
     ResourceLastModifiedDate,
     ResourceModifiedByUserUuid,
     ResourceTrashDate,
@@ -23,6 +22,7 @@ import {
     OwnerWithName,
     renderPortableDataHash,
     renderFileSize,
+    renderFileCount,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
@@ -90,7 +90,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceFileCount uuid={uuid as string} />,
+        render: (resource) => renderFileCount(resource as ProjectResource),
     },
     {
         name: ProjectPanelDataColumnNames.UUID,

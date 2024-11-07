@@ -861,14 +861,14 @@ export const renderPortableDataHash = (resource: GroupContentsResource) => (
 //     return { portableDataHash: resource ? resource.portableDataHash : "" };
 // })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
 
-const renderFileCount = (fileCount: number) => {
-    return <Typography>{fileCount ?? "-"}</Typography>;
+export const renderFileCount = (resource: GroupContentsResource & { fileCount?: number }) => {
+    return <Typography>{resource.fileCount ?? "-"}</Typography>;
 };
 
-export const ResourceFileCount = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { fileCount: resource ? resource.fileCount : "" };
-})((props: { fileCount: number }) => renderFileCount(props.fileCount));
+// export const ResourceFileCount = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+//     return { fileCount: resource ? resource.fileCount : "" };
+// })((props: { fileCount: number }) => renderFileCount(props.fileCount));
 
 const userFromID = connect((state: RootState, props: { uuid: string }) => {
     let userFullname = "";
