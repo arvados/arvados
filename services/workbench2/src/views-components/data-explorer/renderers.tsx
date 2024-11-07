@@ -938,20 +938,31 @@ const _resourceWithNameLink = withStyles(
 });
 
 
-export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
+// export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
 
 // export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
-export const OwnerWithName = connect((state: RootState, props: {resource: GroupContentsResource}) => {
-    const owner= getResource<UserResource>(props.resource.ownerUuid)(state.resources);
+export const OwnerWithName = connect((state: RootState, props: { resource: GroupContentsResource; link?: boolean }) => {
+    const owner = getResource<UserResource>(props.resource.ownerUuid)(state.resources);
     const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
-    return { ownerName, ownerUuid: props.resource.ownerUuid };
-})((props: {ownerName: string, ownerUuid: string}) => {
-    return <Typography 
-                noWrap
-                style={{ color: CustomTheme.palette.primary.main }}
-                display="inline"
-            >{`${props.ownerName} (${props.ownerUuid})`}</Typography>;
+    return { ownerName, ownerUuid: props.resource.ownerUuid, link: props.link };
+})((props: { ownerName: string; ownerUuid: string; link?: boolean }) => {
+    return props.link ? (
+        <Typography
+            style={{ color: CustomTheme.palette.primary.main, cursor: 'pointer' }}
+            display='inline'
+            noWrap
+            onClick={() => dispatchAction<any>(navigateTo(props.ownerUuid))}
+        >
+            {props.ownerName ? props.ownerName : props.ownerUuid}
+        </Typography>
+    ) : (
+        <Typography
+            noWrap
+            style={{ color: CustomTheme.palette.primary.main }}
+            display='inline'
+        >{`${props.ownerName} (${props.ownerUuid})`}</Typography>
+    );
 });
 
 
