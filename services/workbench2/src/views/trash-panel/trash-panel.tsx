@@ -24,7 +24,6 @@ import {
     ResourceDeleteDate,
     ResourceFileSize,
     ResourceTrashDate,
-    ResourceType,
     renderType,
     renderName,
 } from "views-components/data-explorer/renderers";

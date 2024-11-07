@@ -17,7 +17,6 @@ import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-
 import {
     ProcessStatus,
     ResourceOwnerWithName,
-    ResourceType,
     ContainerRunTime,
     ResourceCreatedAtDate,
     renderType,

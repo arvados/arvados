@@ -1045,22 +1045,22 @@ export const renderType = (resource: GroupContentsResource | undefined) => {
     return<Typography noWrap>{resourceLabel(type, subtype)}</Typography>
 };
 
-export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return resource
-    // return {
-    //     type: resource ? resource.kind : "",
-    //     subtype: resource
-    //         ? resource.kind === ResourceKind.GROUP
-    //             ? resource.groupClass
-    //             : resource.kind === ResourceKind.PROCESS
-    //                 ? resource.requestingContainerUuid
-    //                     ? ProcessTypeFilter.CHILD_PROCESS
-    //                     : ProcessTypeFilter.MAIN_PROCESS
-    //                 : ""
-    //         : ""
-    // };
-})((props: { resource: any}) => renderType(props.resource || undefined));
+// export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+//     return resource
+//     // return {
+//     //     type: resource ? resource.kind : "",
+//     //     subtype: resource
+//     //         ? resource.kind === ResourceKind.GROUP
+//     //             ? resource.groupClass
+//     //             : resource.kind === ResourceKind.PROCESS
+//     //                 ? resource.requestingContainerUuid
+//     //                     ? ProcessTypeFilter.CHILD_PROCESS
+//     //                     : ProcessTypeFilter.MAIN_PROCESS
+//     //                 : ""
+//     //         : ""
+//     // };
+// })((props: { resource: any}) => renderType(props.resource || undefined));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };

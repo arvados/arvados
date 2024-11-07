@@ -15,7 +15,6 @@ import {
     ResourceLastModifiedDate,
     ResourceOwnerWithName,
     ResourceStatus,
-    ResourceType,
     renderType,
     renderName,
 } from 'views-components/data-explorer/renderers';

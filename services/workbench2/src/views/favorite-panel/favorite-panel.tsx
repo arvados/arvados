@@ -19,7 +19,6 @@ import {
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceOwnerWithName,
-    ResourceType,
     renderType,
     renderName,
 } from 'views-components/data-explorer/renderers';
