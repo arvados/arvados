@@ -15,11 +15,11 @@ import { ResourceKind } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
     ProcessStatus,
-    ResourceFileSize,
     ResourceLastModifiedDate,
     renderType,
     renderName,
     OwnerWithName,
+    renderFileSize,
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -102,7 +102,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid as string} />
+        render: (resource) => renderFileSize(resource as GroupContentsResource),
     },
     {
         name: PublicFavoritePanelColumnNames.LAST_MODIFIED,

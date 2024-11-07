@@ -11,12 +11,12 @@ import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-resul
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import {
     ResourceCluster,
-    ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceStatus,
     renderType,
     renderName,
     OwnerWithName,
+    renderFileSize,
 } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
@@ -100,7 +100,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid as string} />
+        render: (resource) => renderFileSize(resource as GroupContentsResource),
     },
     {
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,

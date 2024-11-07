@@ -22,10 +22,10 @@ import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceDeleteDate,
-    ResourceFileSize,
     ResourceTrashDate,
     renderType,
     renderName,
+    renderFileSize,
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -111,7 +111,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "fileSizeTotal"},
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid as string} />
+        render: (resource) => renderFileSize(resource as CollectionResource),
     },
     {
         name: TrashPanelColumnNames.TRASHED_DATE,

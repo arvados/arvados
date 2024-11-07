@@ -16,11 +16,11 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
 import {
     ProcessStatus,
-    ResourceFileSize,
     ResourceLastModifiedDate,
     renderType,
     renderName,
     OwnerWithName,
+    renderFileSize,
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
@@ -104,7 +104,7 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid as string} />
+        render: (resource) => renderFileSize(resource as GroupContentsResource),
     },
     {
         name: FavoritePanelColumnNames.LAST_MODIFIED,

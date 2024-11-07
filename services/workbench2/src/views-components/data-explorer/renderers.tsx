@@ -796,24 +796,24 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
     return { date: resource ? resource.deleteAt : "" };
 })((props: { date: string }) => renderDate(props.date));
 
-export const renderFileSize = (fileSize?: number) => (
+export const renderFileSize = (resource: GroupContentsResource & { fileSize?: number }) => (
     <Typography
         noWrap
         style={{ minWidth: "45px" }}
     >
-        {formatFileSize(fileSize)}
+        {formatFileSize(resource.fileSize)}
     </Typography>
 );
 
-export const ResourceFileSize = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+// export const ResourceFileSize = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
 
-    if (resource && resource.kind !== ResourceKind.COLLECTION) {
-        return { fileSize: "" };
-    }
+//     if (resource && resource.kind !== ResourceKind.COLLECTION) {
+//         return { fileSize: "" };
+//     }
 
-    return { fileSize: resource ? resource.fileSizeTotal : 0 };
-})((props: { fileSize?: number }) => renderFileSize(props.fileSize));
+//     return { fileSize: resource ? resource.fileSizeTotal : 0 };
+// })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
 
 const renderOwner = (owner: string) => <Typography noWrap>{owner || "-"}</Typography>;
 
