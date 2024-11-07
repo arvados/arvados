@@ -796,12 +796,12 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
     return { date: resource ? resource.deleteAt : "" };
 })((props: { date: string }) => renderDate(props.date));
 
-export const renderFileSize = (resource: GroupContentsResource & { fileSize?: number }) => (
+export const renderFileSize = (resource: GroupContentsResource & { fileSizeTotal?: number }) => (
     <Typography
         noWrap
         style={{ minWidth: "45px" }}
     >
-        {formatFileSize(resource.fileSize)}
+        {formatFileSize(resource.fileSizeTotal)}
     </Typography>
 );
 
