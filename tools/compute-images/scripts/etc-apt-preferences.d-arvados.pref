@@ -19,11 +19,7 @@ Package: containerd.io
 Pin: version 1.7.*
 Pin-Priority: 995
 
-Package: src:libnvidia-container
-Pin: version 1.16.*
-Pin-Priority: 995
-
-Package: src:nvidia-container-toolkit
+Package: src:libnvidia-container src:nvidia-container-toolkit
 Pin: version 1.16.*
 Pin-Priority: 995
 
