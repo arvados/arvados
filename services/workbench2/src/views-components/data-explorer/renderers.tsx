@@ -274,7 +274,7 @@ const renderUuid = (item: { uuid: string }) => (
     </Typography>
 );
 
-export const renderResourceUuid = (resource: GroupContentsResource) => (
+export const renderResourceUuid = (resource: GroupContentsResource | GroupResource | UserResource) => (
     <Typography
         data-cy="uuid"
         noWrap
@@ -293,9 +293,9 @@ const renderUuidCopyIcon = (item: { uuid: string }) => (
     </Typography>
 );
 
-export const ResourceUuid = connect(
-    (state: RootState, props: { uuid: string }) => getResource<UserResource>(props.uuid)(state.resources) || { uuid: "" }
-)(renderUuid);
+// export const ResourceUuid = connect(
+//     (state: RootState, props: { uuid: string }) => getResource<UserResource>(props.uuid)(state.resources) || { uuid: "" }
+// )(renderUuid);
 
 const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
 

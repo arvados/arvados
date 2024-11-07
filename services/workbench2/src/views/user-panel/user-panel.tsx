@@ -14,11 +14,11 @@ import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
     UserResourceFullName,
-    ResourceUuid,
     ResourceEmail,
     ResourceIsAdmin,
     ResourceUsername,
     UserResourceAccountStatus,
+    renderResourceUuid,
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
@@ -68,7 +68,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid as string} />
+        render: (resource) => renderResourceUuid(resource as UserResource),
     },
     {
         name: UserPanelColumnNames.EMAIL,
