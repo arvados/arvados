@@ -84,6 +84,8 @@ For more information, see the Arvados documentation at https://doc.arvados.org/i
 
 EOF
 
+set -e -o pipefail
+
 JSON_FILE=
 ARVADOS_CLUSTER_ID=
 AWS_PROFILE=

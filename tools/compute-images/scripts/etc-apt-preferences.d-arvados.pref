@@ -23,6 +23,10 @@ Package: src:libnvidia-container
 Pin: version 1.16.*
 Pin-Priority: 995
 
+Package: src:nvidia-container-toolkit
+Pin: version 1.16.*
+Pin-Priority: 995
+
 Package: src:nvidia-graphics-drivers
 Pin: version 560.*
 Pin-Priority: 995
