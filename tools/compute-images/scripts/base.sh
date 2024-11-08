@@ -99,6 +99,23 @@ Components: stable
 Signed-by: /etc/apt/keyrings/docker.gpg
 EOF
 
+# Add the NVIDIA CUDA apt source
+# Note that the "keyring" package also installs the apt source
+NVIDIA_URL="https://developer.download.nvidia.com/compute/cuda/repos/$(echo "$DISTRO_ID$VERSION_ID" | tr -d .)/x86_64"
+CUDA_KEYRING_DEB=cuda-keyring_1.1-1_all.deb
+curl -fsSL -o "$WORKDIR/$CUDA_KEYRING_DEB" "$NVIDIA_URL/$CUDA_KEYRING_DEB"
+wait_for_apt_locks && $SUDO dpkg -i "$WORKDIR/$CUDA_KEYRING_DEB"
+
+# Add the NVIDIA container toolkit apt source
+download_and_install \
+    https://nvidia.github.io/libnvidia-container/gpgkey \
+    /etc/apt/keyrings/nvidia-container-toolkit.asc
+download_and_install \
+    https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+    /etc/apt/sources.list.d/nvidia-container-toolkit.list
+$SUDO sed -i 's@^deb http@deb [signed-by=/etc/apt/keyrings/nvidia-container-toolkit.asc] http@' \
+      /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
 safe_apt update
 safe_apt install python3-arvados-fuse arvados-docker-cleaner
 safe_apt install --no-install-recommends docker-ce
@@ -192,21 +209,6 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   elif [ "$CLOUD" == "aws" ]; then
     safe_apt install linux-image-aws linux-headers-aws
   fi
-
-  # Install CUDA
-  NVIDIA_URL="https://developer.download.nvidia.com/compute/cuda/repos/$(echo "$DISTRO_ID$VERSION_ID" | tr -d .)/x86_64"
-  $SUDO apt-key adv --fetch-keys "$NVIDIA_URL/7fa2af80.pub"
-  $SUDO apt-key adv --fetch-keys "$NVIDIA_URL/3bf863cc.pub"
-  $SUDO add-apt-repository "deb $NVIDIA_URL/ /"
-
-  # Install libnvidia-container, the tooling for Docker/Singularity
-  curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
-    $SUDO apt-key add -
-  download_and_install \
-      "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list" \
-      /etc/apt/sources.list.d/nvidia-container-toolkit.list
-
-  safe_apt update
   safe_apt install cuda libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
 
   # Various components fail to start, and cause systemd to boot in degraded
