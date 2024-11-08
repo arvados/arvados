@@ -124,7 +124,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ContainerRunTime uuid={uuid as string} />,
+        render: (resource) => <ContainerRunTime uuid={(resource as GroupContentsResource).uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.OUTPUT_UUID,

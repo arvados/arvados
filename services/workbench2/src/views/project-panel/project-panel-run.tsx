@@ -106,7 +106,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ContainerRunTime uuid={uuid as string} />,
+        render: (resource) => <ContainerRunTime uuid={(resource as GroupContentsResource).uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.OUTPUT_UUID,

@@ -106,7 +106,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid as string} />,
+        render: (resource: ContainerRequestResource) => <ContainerRunTime uuid={resource.uuid} />,
     },
 ];
 

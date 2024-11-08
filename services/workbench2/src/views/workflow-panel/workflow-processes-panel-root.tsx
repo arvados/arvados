@@ -78,7 +78,7 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid as string} />
+        render: (resource) => <ContainerRunTime uuid={(resource as ProcessResource).uuid} />
     }
 ];
 
