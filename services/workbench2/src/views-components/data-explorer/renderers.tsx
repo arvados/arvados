@@ -809,10 +809,14 @@ export const renderLastModifiedDate = (resource: GroupContentsResource) => {
 //     return { date: resource ? resource.modifiedAt : "" };
 // })((props: { date: string }) => renderDate(props.date));
 
-export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.trashAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+export const renderTrashDate = (resource: TrashableResource) => {
+    return renderDate(resource.trashAt);
+}
+
+// export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
+//     return { date: resource ? resource.trashAt : "" };
+// })((props: { date: string }) => renderDate(props.date));
 
 export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);

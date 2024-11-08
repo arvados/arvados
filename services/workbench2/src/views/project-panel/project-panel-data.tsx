@@ -12,7 +12,6 @@ import { createTree } from "models/tree";
 import { CollectionResource } from "models/collection";
 import {
     ResourceDeleteDate,
-    ResourceTrashDate,
     renderName,
     renderType,
     OwnerWithName,
@@ -24,6 +23,7 @@ import {
     renderVersion,
     renderCreatedAtDate,
     renderLastModifiedDate,
+    renderTrashDate,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
@@ -136,7 +136,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource | Coll
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
         filters: createTree(),
-        render: (uuid) => <ResourceTrashDate uuid={uuid as string} />,
+        render: (resource) => renderTrashDate(resource as ProjectResource),
     },
     {
         name: ProjectPanelDataColumnNames.DELETE_AT,

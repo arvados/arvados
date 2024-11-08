@@ -10,7 +10,6 @@ import {
     ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
-    ResourceTrashDate,
     ResourceDeleteDate,
     renderType,
     renderName,
@@ -23,6 +22,7 @@ import {
     renderVersion,
     renderCreatedAtDate,
     renderLastModifiedDate,
+    renderTrashDate,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';
@@ -182,7 +182,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
         filters: createTree(),
-        render: (uuid) => <ResourceTrashDate uuid={uuid as string} />,
+        render: (resource) => renderTrashDate(resource as ProjectResource),
     },
     {
         name: SharedWithMePanelColumnNames.DELETE_AT,

@@ -17,7 +17,6 @@ import {
     ResourceOutputUuid,
     ResourceParentProcess,
     ResourceStatus,
-    ResourceTrashDate,
     renderType,
     renderName,
     OwnerWithName,
@@ -25,6 +24,7 @@ import {
     renderModifiedByUserUuid,
     renderCreatedAtDate,
     renderLastModifiedDate,
+    renderTrashDate,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -157,7 +157,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
         filters: createTree(),
-        render: (uuid) => <ResourceTrashDate uuid={uuid as string} />,
+        render: (resource) => renderTrashDate(resource as ProjectResource),
     },
     {
         name: ProjectPanelRunColumnNames.DELETE_AT,
