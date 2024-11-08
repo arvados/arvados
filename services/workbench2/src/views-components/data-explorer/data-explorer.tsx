@@ -15,6 +15,7 @@ import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multis
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { getResource } from "store/resources/resources";
 
 interface Props {
     id: string;
@@ -25,13 +26,15 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel, resources}: RootState, { id }: Props) => {
     const working = !!progressIndicator.some(p => p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const isMSToolbarVisible = multiselect.isVisible;
+    const resourceItems = dataExplorerState.items.map(item => getResource<any>(item)(resources));
     return {
         ...dataExplorerState,
+        resourceItems,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,

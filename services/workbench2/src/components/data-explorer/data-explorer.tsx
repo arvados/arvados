@@ -153,7 +153,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface DataExplorerDataProps<T> {
     fetchMode: DataTableFetchMode;
-    items: T[];
+    items: string[];
+    resourceItems: T[];
     itemsAvailable: number;
     loadingItemsAvailable: boolean;
     columns: DataColumns<T, any>;
@@ -286,6 +287,7 @@ export const DataExplorer = withStyles(styles)(
                 forceMultiSelectMode,
                 detailsPanelResourceUuid,
                 loadDetailsPanel,
+                resourceItems,
             } = this.props;
             return (
                 <Paper
@@ -403,7 +405,7 @@ export const DataExplorer = withStyles(styles)(
                     }
                     <DataTable
                         columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
-                        items={items}
+                        items={resourceItems}
                         onRowClick={(_, item: T) => onRowClick(item)}
                         onContextMenu={onContextMenu}
                         onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}

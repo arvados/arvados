@@ -17,6 +17,7 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
+import { isEqual } from "lodash";
 import { DataColumn, DataColumns, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
 import { DataTableFilters } from "../data-table-filters/data-table-filters";
@@ -191,7 +192,7 @@ export const DataTable = withStyles(styles)(
             const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
             const singleSelected = isExactlyOneSelected(this.props.checkedList);
-            if (prevProps.items !== items) {
+            if (!isEqual(prevProps.items, items)) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items.map((item: any) => item.uuid));
                 else setCheckedListOnStore({});
