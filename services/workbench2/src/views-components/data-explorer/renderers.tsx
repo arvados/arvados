@@ -730,10 +730,18 @@ export const ResourceWorkflowStatus = connect((state: RootState, props: { uuid: 
     };
 })((props: { ownerUuid?: string; uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
-export const ResourceContainerUuid = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { uuid: process?.container?.uuid ? process?.container?.uuid : "" };
-})((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+export const renderContainerUuid = (resource: GroupContentsResource) => {
+    if (resource.kind !== ResourceKind.PROCESS) {
+        return <>-</>;
+    }
+    const containerUuid = resource.containerUuid || '';
+    return renderUuid({ uuid: containerUuid });
+};
+
+// export const ResourceContainerUuid = connect((state: RootState, props: { uuid: string }) => {
+//     const process = getProcess(props.uuid)(state.resources);
+//     return { uuid: process?.container?.uuid ? process?.container?.uuid : "" };
+// })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
 enum ColumnSelection {
     OUTPUT_UUID = "outputUuid",

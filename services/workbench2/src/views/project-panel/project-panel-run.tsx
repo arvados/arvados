@@ -11,7 +11,6 @@ import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
 import {
     ContainerRunTime,
-    ResourceContainerUuid,
     ResourceLogUuid,
     ResourceOutputUuid,
     ResourceParentProcess,
@@ -25,6 +24,7 @@ import {
     renderTrashDate,
     renderDeleteDate,
     renderResourceStatus,
+    renderContainerUuid,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -32,6 +32,7 @@ import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { getResource } from "store/resources/resources";
+import { GroupContentsResource } from "services/groups-service/groups-service";
 
 export enum ProjectPanelRunColumnNames {
     NAME = 'Name',
@@ -98,7 +99,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceContainerUuid uuid={uuid as string} />,
+        render: (resource) => renderContainerUuid(resource as GroupContentsResource),
     },
     {
         name: ProjectPanelRunColumnNames.RUNTIME,

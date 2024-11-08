@@ -5,7 +5,6 @@
 import { DataColumns } from 'components/data-table/data-column';
 import {
     ProcessStatus as ResourceStatus,
-    ResourceContainerUuid,
     ContainerRunTime,
     ResourceOutputUuid,
     ResourceLogUuid,
@@ -23,12 +22,14 @@ import {
     renderLastModifiedDate,
     renderTrashDate,
     renderDeleteDate,
+    renderContainerUuid,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';
 import { createTree } from 'models/tree';
 import { SortDirection } from 'components/data-table/data-column';
 import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 
 export enum SharedWithMePanelColumnNames {
     NAME = 'Name',
@@ -116,7 +117,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceContainerUuid uuid={uuid as string} />,
+        render: (resource) => renderContainerUuid(resource as GroupContentsResource),
     },
     {
         name: SharedWithMePanelColumnNames.RUNTIME,
