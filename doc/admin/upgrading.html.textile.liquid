@@ -40,6 +40,10 @@ Arvados 2.7 supports Debian 11 "bullseye" and Ubuntu 20.04 "focal." You can upgr
 
 The list of distributions supported by Arvados 3.0 can be found on "Planning and prerequisites.":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
 
+h3. Red Hat 8 package dependency on package streams
+
+The Red Hat 8 package of the Rails API server now depends on the Ruby 3.1 stream, and the various Python packages now depend on the Python 3.9 stream. Plan for these streams to be activated and installed automatically during your upgrade.
+
 h3. RVM is no longer supported
 
 Some Arvados packages, most notably the Rails API server package @arvados-api-server@, would check whether RVM is installed on the system, and invoke Ruby commands through it if so. Arvados 3.0 no longer specially supports RVM. Instead, Arvados 3.0 supports all the different versions of Ruby that are packaged in our supported distributions, mitigating the need to support separate Ruby installations. Package scripts run plain @ruby@ and @gem@ commands and expect they come from a supported version.
