@@ -21,11 +21,11 @@ import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
-    ResourceDeleteDate,
     renderType,
     renderName,
     renderFileSize,
     renderTrashDate,
+    renderDeleteDate,
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -127,7 +127,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
-        render: uuid => <ResourceDeleteDate uuid={uuid as string} />
+        render: (resource) => renderDeleteDate(resource as CollectionResource),
     },
     {
         name: '',

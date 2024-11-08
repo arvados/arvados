@@ -818,10 +818,14 @@ export const renderTrashDate = (resource: TrashableResource) => {
 //     return { date: resource ? resource.trashAt : "" };
 // })((props: { date: string }) => renderDate(props.date));
 
-export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.deleteAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+export const renderDeleteDate = (resource: TrashableResource) => {
+    return renderDate(resource.deleteAt);
+}
+
+// export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
+//     return { date: resource ? resource.deleteAt : "" };
+// })((props: { date: string }) => renderDate(props.date));
 
 export const renderFileSize = (resource: GroupContentsResource & { fileSizeTotal?: number }) => (
     <Typography
