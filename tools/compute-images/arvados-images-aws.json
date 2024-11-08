@@ -34,6 +34,7 @@
     "subnet_id": "{{user `subnet_id`}}",
     "associate_public_ip_address": "{{user `aws_associate_public_ip_address`}}",
     "ssh_username": "{{user `ssh_user`}}",
+    "temporary_key_pair_type": "ed25519",
     "ami_name": "arvados-{{user `arvados_cluster`}}-compute-{{isotime \"20060102150405\"}}",
     "launch_block_device_mappings": [{
       "device_name": "/dev/xvda",
