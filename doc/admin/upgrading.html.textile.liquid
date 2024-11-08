@@ -28,13 +28,9 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main
+h2(#main). v3.0.0 (2024-11-12)
 
 "previous: Upgrading to 2.7.4":#v2_7_4
-
-h3. Keep-web requires PostgreSQL database access
-
-The keep-web service now connects directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (in @pg_hba.conf@) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
 
 h3. Debian 10 and Ubuntu 18.04 are no longer supported
 
@@ -42,15 +38,65 @@ Arvados 3.0 no longer supports some of the older distributions supported by Arva
 
 Arvados 2.7 supports Debian 11 "bullseye" and Ubuntu 20.04 "focal." You can upgrade your Arvados cluster to one of those releases, then proceed to upgrade Arvados to 3.0.
 
+The list of distributions supported by Arvados 3.0 can be found on "Planning and prerequisites.":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
+
 h3. RVM is no longer supported
 
 Some Arvados packages, most notably the Rails API server package @arvados-api-server@, would check whether RVM is installed on the system, and invoke Ruby commands through it if so. Arvados 3.0 no longer specially supports RVM. Instead, Arvados 3.0 supports all the different versions of Ruby that are packaged in our supported distributions, mitigating the need to support separate Ruby installations. Package scripts run plain @ruby@ and @gem@ commands and expect they come from a supported version.
 
 If you have a custom install that requires a different version of Ruby than the one included with your distribution, you must configure your system to ensure package scripts find that version of @ruby@ before any others. For example, you might do this on Debian-based distributions by customizing apt's @DPkg::Path@ setting.
 
+h3. Keep-web requires PostgreSQL database access
+
+The keep-web service now connects directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (in @pg_hba.conf@) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
+
 h3. Slow migration on upgrade
 
-This upgrade includes a database schema update to rebuild full text search indexes to remove UUID and portable data hash column data.  This will provide better search results to users and take less space on the databaes, but plan for the @arvados-api-server@ package upgrade to take longer than usual.
+This upgrade includes a database schema update to rebuild full text search indexes to remove UUID and portable data hash column data.  This will provide better search results to users and take less space on the database, but plan for the @arvados-api-server@ package upgrade to take longer than usual.
+
+h3. WebDAV service uses @/var/cache@ for file content
+
+When running as root, @keep-web@ now stores copies of recently accessed data blocks in @/var/cache/arvados/keep@ instead of in memory. This directory is created automatically. The default cache size is 10% of the filesystem size. Use the new @Collections.WebDAVCache.DiskCacheSize@ config to specify a different percentage or an absolute size.  If @keep-web@ is not running as root, it will store the cache in @$HOME/.cache/arvados/keep@.
+
+If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
+
+h3. Python SDK reorganization of internal classes and modules
+
+We have reorganized the Python SDK to make it clearer which APIs are intended to be public, and make it easier to find documentation for them. As part of this work, some modules that only included internal support code have been moved, most notably @arvados.diskcache@, @arvados.http_to_keep@, and @arvados.timer@.
+
+If you need immediate access to these modules, you can find them under @arvados._internal@, but we do not intend to support them as part of our public SDK API, so they may change or be removed entirely in future versions. If you've written client software that relies on these modules, please "file an issue":https://dev.arvados.org/projects/arvados/issues/new to let us know so we can figure out how best to support you.
+
+h3. Virtual environments inside distribution Python packages have moved
+
+The distribution packages that we publish for Python packages include an entire virtualenv with all required libraries. In Arvados 3.0 these virtualenvs have moved from @/usr/share/python3/dist/PACKAGE_NAME@ to @/usr/lib/PACKAGE_NAME@ to prevent conflicts with distribution packages and better conform to filesystem standards.
+
+If you only run the executables installed by these packages, you don't need to change anything. Those are still installed under @/usr/bin@ and will use the new location when you upgrade. If you have written your own scripts or tools that rely on these virtualenvs, you may need to update those with the new location. For example, if you have a shell script that activates the virtualenv by running:
+
+<pre><code class="shell">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code></pre>
+
+You must update it to:
+
+<notextile>
+<pre><code class="shell">source <span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/activate</code></pre>
+</notextile>
+
+If you have a Python script with this shebang line:
+
+<pre><code class="shell">#!/usr/share/python3/dist/python3-arvados-python-client/bin/python</code></pre>
+
+You must update it to:
+
+<notextile>
+<pre><code class="shell">#!<span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/python</code></pre>
+</notextile>
+
+h3. costanalyzer subcommand replaced by Arvados cluster activity tool
+
+The functionality of @arvados-client costanalyzer@ has been replaced by a new @arvados-cluster-activity@ tool.  More information can be found at "Analyzing workflow cost":{{site.baseurl}}/user/cwl/costanalyzer.html .
+
+h3. @arv-migrate-docker19@ tool removed
+
+The @arv-migrate-docker19@ tool that updates images from Docker 1.9 to be used with Docker 1.10+ (released February 2016) has been removed. In the unlikely event you still need to "run this migration":https://doc.arvados.org/v2.7/install/migrate-docker19.html, please do so before you upgrade to Arvados 3.0.
 
 h3. Legacy APIs and response fields have been removed
 
@@ -101,50 +147,6 @@ The following configuration keys are no longer supported. Remove them from your 
 * @Containers.Logging.SweepInterval@
 
 Any container logging content remaining in the database from the legacy system will be deleted.
-
-h3. Python SDK reorganization of internal classes and modules
-
-We have reorganized the Python SDK to make it clearer which APIs are intended to be public, and make it easier to find documentation for them. As part of this work, some modules that only included internal support code have been moved, most notably @arvados.diskcache@, @arvados.http_to_keep@, and @arvados.timer@.
-
-If you need immediate access to these modules, you can find them under @arvados._internal@, but we do not intend to support them as part of our public SDK API, so they may change or be removed entirely in future versions. If you've written client software that relies on these modules, please "file an issue":https://dev.arvados.org/projects/arvados/issues/new to let us know so we can figure out how best to support you.
-
-h3. Virtual environments inside distribution Python packages have moved
-
-The distribution packages that we publish for Python packages include an entire virtualenv with all required libraries. In Arvados 3.0 these virtualenvs have moved from @/usr/share/python3/dist/PACKAGE_NAME@ to @/usr/lib/PACKAGE_NAME@ to prevent conflicts with distribution packages and better conform to filesystem standards.
-
-If you only run the executables installed by these packages, you don't need to change anything. Those are still installed under @/usr/bin@ and will use the new location when you upgrade. If you have written your own scripts or tools that rely on these virtualenvs, you may need to update those with the new location. For example, if you have a shell script that activates the virtualenv by running:
-
-<pre><code class="shell">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code></pre>
-
-You must update it to:
-
-<notextile>
-<pre><code class="shell">source <span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/activate</code></pre>
-</notextile>
-
-If you have a Python script with this shebang line:
-
-<pre><code class="shell">#!/usr/share/python3/dist/python3-arvados-python-client/bin/python</code></pre>
-
-You must update it to:
-
-<notextile>
-<pre><code class="shell">#!<span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/python</code></pre>
-</notextile>
-
-h3. WebDAV service uses @/var/cache@ for file content
-
-@keep-web@ now stores copies of recently accessed data blocks in @/var/cache/arvados/keep@ instead of in memory. That directory will be created automatically. The default cache size is 10% of the filesystem size. Use the new @Collections.WebDAVCache.DiskCacheSize@ config to specify a different percentage or an absolute size.
-
-If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
-
-h3. @arv-migrate-docker19@ tool removed
-
-The @arv-migrate-docker19@ tool that updates images from Docker 1.9 to be used with Docker 1.10+ (released February 2016) has been removed. In the unlikely event you still need to "run this migration":https://doc.arvados.org/v2.7/install/migrate-docker19.html, please do so before you upgrade to Arvados 3.0.
-
-h2. costanalyzer subcommand replaced by Arvados cluster activity tool
-
-The functionality of @arvados-client costanalyzer@ has been replaced by a new @arvados-cluster-activity@ tool.  More information can be found at "Analyzing workflow cost":{{site.baseurl}}/user/cwl/costanalyzer.html .
 
 h2(#v2_7_4). v2.7.4 (2024-07-08)
 
