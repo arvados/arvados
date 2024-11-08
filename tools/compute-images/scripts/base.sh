@@ -196,7 +196,7 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   $SUDO add-apt-repository "deb $NVIDIA_URL/ /"
 
   # Install libnvidia-container, the tooling for Docker/Singularity
-  curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
+  curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
     $SUDO apt-key add -
   download_and_install \
       "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list" \
@@ -228,7 +228,8 @@ fi
 # Get Go and build singularity
 mkdir -p /var/lib/arvados
 rm -rf /var/lib/arvados/go/
-curl -s https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+curl -fsSL https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz |
+    tar -C /var/lib/arvados -xz
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 
 singularityversion=3.10.4
