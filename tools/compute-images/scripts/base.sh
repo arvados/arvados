@@ -112,15 +112,19 @@ $SUDO /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 $SUDO /usr/sbin/locale-gen
 
 # Set a higher ulimit and the resolver (if set) for docker
-SET_RESOLVER=
-if [ -n "$RESOLVER" ]; then
-  SET_RESOLVER="--dns ${RESOLVER}"
-fi
-$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
-  /lib/systemd/system/docker.service \
-  > /etc/systemd/system/docker.service
-
-$SUDO systemctl daemon-reload
+$SUDO install -d /etc/docker
+$SUDO install -m 644 /dev/stdin /etc/docker/daemon.json <<EOFDOCKER
+{
+  "default-ulimits": {
+    "nofile": {
+      "Hard": 10000,
+      "Name": "nofile",
+      "Soft": 10000
+    }
+  }
+  ${RESOLVER:+ , \"dns\": \"$RESOLVER\"}
+}
+EOFDOCKER
 
 # docker should not start on boot: we restart it inside /usr/local/bin/ensure-encrypted-partitions.sh,
 # and the BootProbeCommand might be "docker ps -q"
