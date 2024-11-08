@@ -800,10 +800,14 @@ export const renderCreatedAtDate = (resource: GroupContentsResource) => {
 //     return { date: resource ? resource.createdAt : "" };
 // })((props: { date: string }) => renderDate(props.date));
 
-export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.modifiedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+export const renderLastModifiedDate = (resource: GroupContentsResource) => {
+    return renderDate(resource.modifiedAt);
+}
+
+// export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+//     return { date: resource ? resource.modifiedAt : "" };
+// })((props: { date: string }) => renderDate(props.date));
 
 export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);

@@ -7,11 +7,11 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { WorkflowIcon } from 'components/icon/icon';
 import { WORKFLOW_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import {
-    ResourceLastModifiedDate,
     ResourceWorkflowName,
     ResourceWorkflowStatus,
     ResourceShare,
-    ResourceRunProcess
+    ResourceRunProcess,
+    renderLastModifiedDate,
 } from "views-components/data-explorer/renderers";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
@@ -102,7 +102,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "modifiedAt"},
         filters: createTree(),
-        render: (uuid: string) => <ResourceLastModifiedDate uuid={uuid} />
+        render: (resource) => renderLastModifiedDate(resource as WorkflowResource),
     },
     {
         name: '',

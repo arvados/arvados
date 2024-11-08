@@ -13,7 +13,6 @@ import {
     ContainerRunTime,
     ResourceContainerUuid,
     ResourceDeleteDate,
-    ResourceLastModifiedDate,
     ResourceLogUuid,
     ResourceOutputUuid,
     ResourceParentProcess,
@@ -25,6 +24,7 @@ import {
     renderResourceUuid,
     renderModifiedByUserUuid,
     renderCreatedAtDate,
+    renderLastModifiedDate,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -149,7 +149,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.DESC, field: 'modifiedAt' },
         filters: createTree(),
-        render: (uuid) => <ResourceLastModifiedDate uuid={uuid as string} />,
+        render: (resource) => renderLastModifiedDate(resource as ProjectResource),
     },
     {
         name: ProjectPanelRunColumnNames.TRASH_AT,

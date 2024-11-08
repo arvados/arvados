@@ -24,11 +24,10 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
-    ResourceOwnerName,
-    ResourceLastModifiedDate,
     ResourceStatus,
     renderName,
     OwnerWithName,
+    renderLastModifiedDate,
 } from 'views-components/data-explorer/renderers';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
@@ -94,7 +93,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid as string} />
+        render: (resource) => renderLastModifiedDate(resource as CollectionResource),
     }
 ];
 

@@ -15,11 +15,11 @@ import { ResourceKind } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
     ProcessStatus,
-    ResourceLastModifiedDate,
     renderType,
     renderName,
     OwnerWithName,
     renderFileSize,
+    renderLastModifiedDate,
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -109,7 +109,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid as string} />
+        render: (resource) => renderLastModifiedDate(resource as GroupContentsResource),
     }
 ];
 
