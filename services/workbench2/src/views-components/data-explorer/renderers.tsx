@@ -64,6 +64,7 @@ import { dispatchAction } from "common/dispatch-action";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
 import { PermissionResource } from 'models/permission';
+import { ContainerRequestResource } from 'models/container-request';
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -1105,7 +1106,7 @@ export const renderType = (resource: GroupContentsResource | undefined) => {
 // })((props: { resource: any}) => renderType(props.resource || undefined));
 
 export const renderResourceStatus = (resource: GroupContentsResource) => {
-    return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus uuid={resource.uuid} /> : <ProcessStatus uuid={resource.uuid} />;
+    return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus collection={resource} /> : <ProcessStatus uuid={resource.uuid} />;
 }
 
 // export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
@@ -1118,15 +1119,12 @@ export const renderResourceStatus = (resource: GroupContentsResource) => {
 //     )
 // );
 
-export const CollectionStatus = connect((state: RootState, props: { uuid: string }) => {
-    return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };
-})((props: { collection: CollectionResource }) =>
+export const CollectionStatus = (props: { collection: CollectionResource }) =>
     props.collection.uuid !== props.collection.currentVersionUuid ? (
         <Typography>version {props.collection.version}</Typography>
     ) : (
         <Typography>head version</Typography>
-    )
-);
+    );
 
 export const CollectionName = connect((state: RootState, props: { uuid: string; className?: string }) => {
     return {
