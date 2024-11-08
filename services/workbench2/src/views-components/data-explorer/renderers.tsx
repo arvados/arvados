@@ -1104,15 +1104,19 @@ export const renderType = (resource: GroupContentsResource | undefined) => {
 //     // };
 // })((props: { resource: any}) => renderType(props.resource || undefined));
 
-export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
-    return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
-})((props: { resource: GroupContentsResource }) =>
-    props.resource && props.resource.kind === ResourceKind.COLLECTION ? (
-        <CollectionStatus uuid={props.resource.uuid} />
-    ) : (
-        <ProcessStatus uuid={props.resource.uuid} />
-    )
-);
+export const renderResourceStatus = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus uuid={resource.uuid} /> : <ProcessStatus uuid={resource.uuid} />;
+}
+
+// export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
+//     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
+// })((props: { resource: GroupContentsResource }) =>
+//     props.resource && props.resource.kind === ResourceKind.COLLECTION ? (
+//         <CollectionStatus uuid={props.resource.uuid} />
+//     ) : (
+//         <ProcessStatus uuid={props.resource.uuid} />
+//     )
+// );
 
 export const CollectionStatus = connect((state: RootState, props: { uuid: string }) => {
     return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };

@@ -15,7 +15,6 @@ import {
     ResourceLogUuid,
     ResourceOutputUuid,
     ResourceParentProcess,
-    ResourceStatus,
     renderType,
     renderName,
     OwnerWithName,
@@ -25,6 +24,7 @@ import {
     renderLastModifiedDate,
     renderTrashDate,
     renderDeleteDate,
+    renderResourceStatus,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -70,7 +70,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: ({uuid}: ProjectResource) => <ResourceStatus uuid={uuid} />,
+        render: (resource) => renderResourceStatus(resource as ProjectResource),
     },
     {
         name: ProjectPanelRunColumnNames.TYPE,

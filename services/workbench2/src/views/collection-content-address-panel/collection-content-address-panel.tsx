@@ -24,10 +24,10 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
-    ResourceStatus,
     renderName,
     OwnerWithName,
     renderLastModifiedDate,
+    renderResourceStatus,
 } from 'views-components/data-explorer/renderers';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
@@ -78,7 +78,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: ({uuid}: CollectionResource) => <ResourceStatus uuid={uuid as string} />
+        render: (resource) => renderResourceStatus(resource as CollectionResource),
     },
     {
         name: CollectionContentAddressPanelColumnNames.LOCATION,
