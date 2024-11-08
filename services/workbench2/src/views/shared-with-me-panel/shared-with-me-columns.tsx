@@ -6,7 +6,6 @@ import { DataColumns } from 'components/data-table/data-column';
 import {
     ProcessStatus as ResourceStatus,
     ContainerRunTime,
-    ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
     renderType,
@@ -23,6 +22,7 @@ import {
     renderTrashDate,
     renderDeleteDate,
     renderContainerUuid,
+    renderResourceOutputUuid,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';
@@ -131,7 +131,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceOutputUuid uuid={uuid as string} />,
+        render: (resource) => renderResourceOutputUuid(resource as GroupContentsResource),
     },
     {
         name: SharedWithMePanelColumnNames.LOG_UUID,

@@ -748,7 +748,7 @@ enum ColumnSelection {
     LOG_UUID = "logUuid",
 }
 
-const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, column: string) => {
+const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string) => {
     const selectedColumnUuid = item[column];
     return (
         <Grid
@@ -762,7 +762,7 @@ const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, c
                         color="primary"
                         style={{ width: "auto", cursor: "pointer" }}
                         noWrap
-                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}
+                        onClick={() => dispatchAction<any>(navigateTo(selectedColumnUuid))}
                     >
                         {selectedColumnUuid}
                     </Typography>
@@ -775,15 +775,19 @@ const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, c
     );
 };
 
-export const ResourceOutputUuid = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<ProcessResource>(props.uuid)(state.resources);
-    return resource;
-})((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.OUTPUT_UUID));
+export const renderResourceOutputUuid = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidLinkWithCopyIcon(resource, ColumnSelection.OUTPUT_UUID) : <>-</>;
+}
+
+// export const ResourceOutputUuid = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<ProcessResource>(props.uuid)(state.resources);
+//     return resource;
+// })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.OUTPUT_UUID));
 
 export const ResourceLogUuid = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ProcessResource>(props.uuid)(state.resources);
     return resource;
-})((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.LOG_UUID));
+})((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.LOG_UUID));
 
 export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
     const process = getProcess(props.uuid)(state.resources);
