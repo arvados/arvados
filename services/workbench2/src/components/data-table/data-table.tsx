@@ -480,7 +480,7 @@ export const DataTable = withStyles(styles)(
                     key={extractKey ? extractKey(item) : index}
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
-                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
+                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item.uuid)}
                     selected={isRowSelected}
                     className={isRowSelected ? classes.selected : ""}
                     onMouseEnter={()=>handleHover(index)}
