@@ -76,7 +76,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 api.dispatch(updateResources(groups.items));
                 api.dispatch(GroupsPanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(groups),
-                    items: groups.items,
+                    items: groups.items.map(resource => resource.uuid),
                 }));
 
                 // Get group member counts

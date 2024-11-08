@@ -31,7 +31,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const isMSToolbarVisible = multiselect.isVisible;
-    const resourceItems = dataExplorerState.items.map(item => getResource<any>(item)(resources));
+    const resourceItems = dataExplorerState.items.map(item => getResource<any>(item)(resources)).filter(Boolean);
     return {
         ...dataExplorerState,
         resourceItems,

@@ -113,7 +113,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
 export const setItems = (listResults: ListResults<UserResource>) =>
     userBindedActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items,
+        items: listResults.items.map(resource => resource.uuid),
     });
 
 const couldNotFetchUsers = () =>

@@ -42,7 +42,7 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
 
                 api.dispatch(GroupPermissionsPanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(permissionsOut),
-                    items: permissionsOut.items,
+                    items: permissionsOut.items.map(resource => resource.uuid),
                 }));
 
                 const userUuids = permissionsOut.items

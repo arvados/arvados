@@ -64,7 +64,7 @@ const getCountParams = (): ListArguments => ({
 export const setItems = (listResults: ListResults<LinkResource>) =>
     linkPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items,
+        items: listResults.items.map(resource => resource.uuid),
     });
 
 const couldNotFetchLinks = () =>
