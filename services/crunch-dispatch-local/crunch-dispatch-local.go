@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
+	"github.com/pbnjay/memory"
 	"github.com/sirupsen/logrus"
 )
 
@@ -115,10 +117,14 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	localRun := LocalRun{startFunc, make(chan ResourceRequest), ctx, cluster}
+
+	go localRun.throttle(logger)
+
 	dispatcher := dispatch.Dispatcher{
 		Logger:       logger,
 		Arv:          arv,
-		RunContainer: (&LocalRun{startFunc, make(chan bool, 8), ctx, cluster}).run,
+		RunContainer: localRun.run,
 		PollPeriod:   time.Duration(*pollInterval) * time.Second,
 	}
 
@@ -151,11 +157,79 @@ func startFunc(container arvados.Container, cmd *exec.Cmd) error {
 	return cmd.Start()
 }
 
+type ResourceRequest struct {
+	uuid  string
+	vcpus int
+	ram   int64
+	gpus  int
+	ready chan bool
+}
+
 type LocalRun struct {
 	startCmd         func(container arvados.Container, cmd *exec.Cmd) error
-	concurrencyLimit chan bool
+	concurrencyLimit chan ResourceRequest
 	ctx              context.Context
 	cluster          *arvados.Cluster
+}
+
+func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
+	maxVcpus := runtime.NumCPU()
+	var maxRam int64 = int64(memory.TotalMemory())
+	maxGpus := 4
+
+	var allocVcpus int
+	var allocRam int64
+	var allocGpus int
+
+	pending := []ResourceRequest{}
+
+NextEvent:
+	for {
+		rr := <-lr.concurrencyLimit
+
+		if rr.vcpus > 0 {
+			// allocating resources
+			pending = append(pending, rr)
+		} else {
+			// releasing resources (these should be
+			// negative numbers)
+			allocVcpus += rr.vcpus
+			allocRam += rr.ram
+			allocGpus += rr.gpus
+		}
+
+		for len(pending) > 0 {
+			rr := pending[0]
+			if rr.vcpus > maxVcpus || rr.ram > maxRam || rr.gpus > maxGpus {
+				// resource request can never be fulfilled
+				rr.ready <- false
+				continue
+			}
+
+			if (allocVcpus+rr.vcpus) > maxVcpus || (allocRam+rr.ram) > maxRam || (allocGpus+rr.gpus) > maxGpus {
+				logger.Warnf("Insufficient resources to start %v", rr.uuid)
+				// can't be scheduled yet, go up to
+				// the top and wait for the next event
+				continue NextEvent
+			}
+
+			allocVcpus += rr.vcpus
+			allocRam += rr.ram
+			allocGpus += rr.gpus
+			rr.ready <- true
+
+			logger.Infof("%v adding allocation (cpus: %v ram: %v gpus: %v); total allocated (cpus: %v ram: %v gpus: %v)",
+				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
+				allocVcpus, allocRam, allocGpus)
+
+			// shift up
+			for i := 0; i < len(pending)-1; i++ {
+				pending[i] = pending[i+1]
+			}
+			pending = pending[0 : len(pending)-1]
+		}
+
+	}
 }
 
 // Run a container.
@@ -174,14 +248,36 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 	if container.State == dispatch.Locked {
 
+		resourceRequest := ResourceRequest{
+			uuid:  container.UUID,
+			vcpus: container.RuntimeConstraints.VCPUs,
+			ram: (container.RuntimeConstraints.RAM +
+				container.RuntimeConstraints.KeepCacheRAM +
+				dispatcher.cluster.Containers.ReserveExtraRAM),
+			gpus:  container.RuntimeConstraints.CUDA.DeviceCount,
+			ready: make(chan bool)}
+
 		select {
-		case lr.concurrencyLimit <- true:
+		case lr.concurrencyLimit <- resourceRequest:
 			break
 		case <-lr.ctx.Done():
 			return lr.ctx.Err()
 		}
 
-		defer func() { <-lr.concurrencyLimit }()
+		canRun := <-resourceRequest.ready
+
+		if !canRun {
+			dispatcher.Logger.Warnf("Container resource request %v cannot be fulfilled.", uuid)
+			dispatcher.UpdateState(uuid, dispatch.Cancelled)
+			return nil
+		}
+
+		defer func() {
+			resourceRequest.vcpus = -resourceRequest.vcpus
+			resourceRequest.ram = -resourceRequest.ram
+			resourceRequest.gpus = -resourceRequest.gpus
+			lr.concurrencyLimit <- resourceRequest
+		}()
 
 		select {
 		case c := <-status:
