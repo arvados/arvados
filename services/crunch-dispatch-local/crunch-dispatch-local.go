@@ -196,6 +196,10 @@ NextEvent:
 			allocVcpus += rr.vcpus
 			allocRam += rr.ram
 			allocGpus += rr.gpus
+
+			logger.Infof("%v removed allocation (cpus: %v ram: %v gpus: %v); total allocated (cpus: %v ram: %v gpus: %v)",
+				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
+				allocVcpus, allocRam, allocGpus)
 		}
 
 		for len(pending) > 0 {
@@ -207,7 +211,7 @@ NextEvent:
 			}
 
 			if (allocVcpus+rr.vcpus) > maxVcpus || (allocRam+rr.ram) > maxRam || (allocGpus+rr.gpus) > maxGpus {
-				logger.Warnf("Insufficient resources to start %v", rr.uuid)
+				logger.Info("Insufficient resources to start %v, waiting for next event", rr.uuid)
 				// can't be scheduled yet, go up to
 				// the top and wait for the next event
 				continue NextEvent
@@ -218,7 +222,7 @@ NextEvent:
 			allocGpus += rr.gpus
 			rr.ready <- true
 
-			logger.Infof("%v adding allocation (cpus: %v ram: %v gpus: %v); total allocated (cpus: %v ram: %v gpus: %v)",
+			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v); total allocated (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
 				allocVcpus, allocRam, allocGpus)
 
@@ -253,7 +257,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 			vcpus: container.RuntimeConstraints.VCPUs,
 			ram: (container.RuntimeConstraints.RAM +
 				container.RuntimeConstraints.KeepCacheRAM +
-				dispatcher.cluster.Containers.ReserveExtraRAM),
+				int64(lr.cluster.Containers.ReserveExtraRAM)),
 			gpus:  container.RuntimeConstraints.CUDA.DeviceCount,
 			ready: make(chan bool)}
 
