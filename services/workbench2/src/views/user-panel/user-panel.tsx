@@ -13,12 +13,12 @@ import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
-    ResourceEmail,
     ResourceIsAdmin,
     ResourceUsername,
     UserResourceAccountStatus,
     renderResourceUuid,
     renderFullName,
+    renderEmail,
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
@@ -62,22 +62,22 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         filters: createTree(),
         render: (resource) => renderFullName(resource as UserResource, true)
     },
-    // {
-    //     name: UserPanelColumnNames.UUID,
-    //     selected: true,
-    //     configurable: true,
-    //     sort: {direction: SortDirection.NONE, field: "uuid"},
-    //     filters: createTree(),
-    //     render: (resource) => renderResourceUuid(resource as UserResource),
-    // },
-    // {
-    //     name: UserPanelColumnNames.EMAIL,
-    //     selected: true,
-    //     configurable: true,
-    //     sort: {direction: SortDirection.NONE, field: "email"},
-    //     filters: createTree(),
-    //     render: uuid => <ResourceEmail uuid={uuid as string} />
-    // },
+    {
+        name: UserPanelColumnNames.UUID,
+        selected: true,
+        configurable: true,
+        sort: {direction: SortDirection.NONE, field: "uuid"},
+        filters: createTree(),
+        render: (resource) => renderResourceUuid(resource as UserResource),
+    },
+    {
+        name: UserPanelColumnNames.EMAIL,
+        selected: true,
+        configurable: true,
+        sort: {direction: SortDirection.NONE, field: "email"},
+        filters: createTree(),
+        render: (resource) => renderEmail(resource as UserResource)
+    },
     // {
     //     name: UserPanelColumnNames.STATUS,
     //     selected: true,

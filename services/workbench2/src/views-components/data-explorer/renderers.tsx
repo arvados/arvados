@@ -300,12 +300,12 @@ const renderUuidCopyIcon = (item: { uuid: string }) => (
 //     (state: RootState, props: { uuid: string }) => getResource<UserResource>(props.uuid)(state.resources) || { uuid: "" }
 // )(renderUuid);
 
-const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
+export const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
 
-export const ResourceEmail = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return resource || { email: "" };
-})(renderEmail);
+// export const ResourceEmail = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<UserResource>(props.uuid)(state.resources);
+//     return resource || { email: "" };
+// })(renderEmail);
 
 enum UserAccountStatus {
     ACTIVE = "Active",
