@@ -162,13 +162,9 @@ $SUDO sed -i 's/#user_allow_other/user_allow_other/g' /etc/fuse.conf
 $SUDO adduser --disabled-password --gecos "Crunch user,,,," crunch
 # Do not require a password to sudo
 echo -e "# for the crunch user\ncrunch ALL=(ALL) NOPASSWD:ALL" | $SUDO tee /etc/sudoers.d/91-crunch
-
 # Set up the ssh public key for the crunch user
-$SUDO mkdir /home/crunch/.ssh
-$SUDO mv ${WORKDIR}/crunch-authorized_keys /home/crunch/.ssh/authorized_keys
-$SUDO chown -R crunch:crunch /home/crunch/.ssh
-$SUDO chmod 600 /home/crunch/.ssh/authorized_keys
-$SUDO chmod 700 /home/crunch/.ssh/
+$SUDO install -d -m 700 -o crunch -g crunch ~crunch/.ssh
+$SUDO install -m 600 -o crunch -g crunch "$WORKDIR/crunch-authorized_keys" ~crunch/.ssh/authorized_keys
 
 # Make sure we resolve via the provided resolver IP if set. Prepending is good enough because
 # unless 'rotate' is set, the nameservers are queried in order (cf. man resolv.conf)
