@@ -19,10 +19,10 @@ const mapDispatchToProps = (dispatch: Dispatch): WorkflowProcessesPanelActionPro
             dispatch<any>(openProcessContextMenu(event, process));
         }
     },
-    onItemClick: (uuid: string) => {
-        dispatch<any>(toggleOne(uuid))
-        dispatch<any>(deselectAllOthers(uuid))
-        dispatch<any>(loadDetailsPanel(uuid));
+    onItemClick: (resource: any) => {
+        dispatch<any>(toggleOne(resource.uuid))
+        dispatch<any>(deselectAllOthers(resource.uuid))
+        dispatch<any>(loadDetailsPanel(resource.uuid));
     },
     onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
