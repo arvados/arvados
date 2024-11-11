@@ -646,13 +646,13 @@ const renderPermissionLevel = (link: LinkResource, canManage: boolean) => {
     );
 };
 
-export const ResourceLinkHeadPermissionLevel = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+export const ResourceLinkHeadPermissionLevel = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const { resource } = props;
+    const isBuiltin = isBuiltinGroup(resource?.headUuid || "") || isBuiltinGroup(resource?.tailUuid || "");
 
     return {
-        link: link || { uuid: "", name: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        link: resource || { uuid: "", name: "", kind: ResourceKind.NONE },
+        canManage: resource && getResourceLinkCanManage(state, resource) && !isBuiltin,
     };
 })((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage));
 
