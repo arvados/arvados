@@ -538,10 +538,10 @@ const renderResourceLink = (item: Resource ) => {
             style={{ cursor: "pointer" }}
             onClick={() => {
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
-                    ? dispatchAction<any>(navigateToGroupDetails(item.uuid))
+                    ? dispatchAction<any>(navigateToGroupDetails, item.uuid)
                     : item.kind === ResourceKind.USER
-                    ? dispatchAction<any>(navigateToUserProfile(item.uuid))
-                    : dispatchAction<any>(navigateTo(item.uuid));
+                    ? dispatchAction<any>(navigateToUserProfile, item.uuid)
+                    : dispatchAction<any>(navigateTo, item.uuid); 
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
@@ -629,14 +629,14 @@ export const ResourceLinkTailUsername = connect((state: RootState, props: { reso
     return resource;
 })((user:UserResource) => <Typography noWrap>{user.username || user.uuid || "-"}</Typography>);
 
-const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage: boolean) => {
+const renderPermissionLevel = (link: LinkResource, canManage: boolean) => {
     return (
         <Typography noWrap>
             {formatPermissionLevel(link.name as PermissionLevel)}
             {canManage ? (
                 <IconButton
                     data-cy="edit-permission-button"
-                    onClick={event => dispatch<any>(openPermissionEditContextMenu(event, link))}
+                    onClick={event => dispatchAction<any>(openPermissionEditContextMenu, event, link)}
                     size="large">
                     <RenameIcon />
                 </IconButton>
@@ -655,17 +655,16 @@ export const ResourceLinkHeadPermissionLevel = connect((state: RootState, props:
         link: link || { uuid: "", name: "", kind: ResourceKind.NONE },
         canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
     };
-})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.dispatch, props.link, props.canManage));
+})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage));
 
-export const ResourceLinkTailPermissionLevel = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+export const ResourceLinkTailPermissionLevel = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "") || isBuiltinGroup(props.resource?.tailUuid || "");
 
     return {
-        link: link || { uuid: "", name: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        link: props.resource || { uuid: "", name: "", kind: ResourceKind.NONE },
+        canManage: props.resource && getResourceLinkCanManage(state, props.resource) && !isBuiltin,
     };
-})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.dispatch, props.link, props.canManage));
+})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage));
 
 const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
     const headResource = getResource<Resource>(link.headUuid)(state.resources);

@@ -89,7 +89,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionReso
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid as string} />
+        render: (resource) => <ResourceLinkTailPermissionLevel resource={resource as PermissionResource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.REMOVE,
