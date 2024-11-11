@@ -433,9 +433,9 @@ const renderIsAdmin = (props: { uuid: string; isAdmin: boolean; toggleIsAdmin: (
 );
 
 export const ResourceIsAdmin = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { isAdmin: false };
+    (state: RootState, props: { resource: UserResource }) => {
+        // const resource = getResource<UserResource>(props.uuid)(state.resources);
+        return props.resource || { isAdmin: false };
     },
     { toggleIsAdmin }
 )(renderIsAdmin);

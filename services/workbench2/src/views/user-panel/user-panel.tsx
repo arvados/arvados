@@ -90,7 +90,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: uuid => <ResourceIsAdmin uuid={uuid as string} />
+        render: (resource: UserResource) => <ResourceIsAdmin resource={resource} />
     },
     {
         name: UserPanelColumnNames.USERNAME,
