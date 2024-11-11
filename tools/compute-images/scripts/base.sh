@@ -17,7 +17,7 @@ wait_for_apt_locks() {
 
 safe_apt() {
     wait_for_apt_locks &&
-        $SUDO env DEBIAN_FRONTEND=noninteractive apt-get -qq --yes "$@"
+        $SUDO env DEBIAN_FRONTEND=noninteractive apt-get -q --yes "$@"
 }
 
 download_and_install() {
