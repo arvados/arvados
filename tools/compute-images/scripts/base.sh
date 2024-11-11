@@ -32,6 +32,13 @@ echo "Working directory is '${WORKDIR}'"
 
 ### 1. Configure apt preferences
 
+# Third-party packages may depend on contrib packages.
+# Make sure we have that component enabled for all existing sources.
+find /etc/apt -name "*.list" -print0 |
+    xargs -0r $SUDO sed -ri '/^deb / s/$/ contrib/'
+find /etc/apt -name "*.sources" -print0 |
+    xargs -0r $SUDO sed -ri '/^Components:/ s/$/ contrib/'
+
 if [[ "${PIN_PACKAGES:-true}" != false ]]; then
     $SUDO install -d /etc/apt/preferences.d
     $SUDO install -m 0644 \
@@ -68,14 +75,11 @@ safe_apt install \
   uuid-dev \
   squashfs-tools \
   libglib2.0-dev \
-  libseccomp-dev \
-  software-properties-common
+  libseccomp-dev
 
 safe_apt remove --purge unattended-upgrades
 
 ### 3. Set up third-party apt repositories and install packages we need from them
-
-$SUDO add-apt-repository contrib
 $SUDO install -d /etc/apt/keyrings
 
 # Add the Arvados apt source
