@@ -151,7 +151,7 @@ export const userProfileGroupsColumns: DataColumns<string, PermissionResource> =
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid as string} />
+        render: (resource) => <ResourceLinkTailIsVisible resource={resource as PermissionResource} />
     },
     {
         name: UserProfileGroupsColumnNames.UUID,

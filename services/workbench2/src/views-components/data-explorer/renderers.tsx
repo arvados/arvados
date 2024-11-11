@@ -395,26 +395,25 @@ const renderIsHidden = (props: {
 };
 
 export const ResourceLinkTailIsVisible = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const link = getResource<LinkResource>(props.uuid)(state.resources);
-        const member = getResource<Resource>(link?.tailUuid || "")(state.resources);
-        const group = getResource<GroupResource>(link?.headUuid || "")(state.resources);
+    (state: RootState, props: { resource: LinkResource }) => {
+        const member = getResource<Resource>(props.resource?.tailUuid || "")(state.resources);
+        const group = getResource<GroupResource>(props.resource?.headUuid || "")(state.resources);
         const permissions = filterResources((resource: LinkResource) => {
             return (
                 resource.linkClass === LinkClass.PERMISSION &&
-                resource.headUuid === link?.tailUuid &&
+                resource.headUuid === props.resource?.tailUuid &&
                 resource.tailUuid === group?.uuid &&
                 resource.name === PermissionLevel.CAN_READ
             );
         })(state.resources);
 
         const permissionLinkUuid = permissions.length > 0 ? permissions[0].uuid : "";
-        const isVisible = link && group && permissions.length > 0;
+        const isVisible = props.resource && group && permissions.length > 0;
         // Consider whether the current user canManage this resurce in addition when it's possible
-        const isBuiltin = isBuiltinGroup(link?.headUuid || "");
+        const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "");
 
         return member?.kind === ResourceKind.USER
-            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, visible: isVisible, canManage: !isBuiltin }
+            ? { memberLinkUuid: props.resource?.uuid, permissionLinkUuid, visible: isVisible, canManage: !isBuiltin }
             : { memberLinkUuid: "", permissionLinkUuid: "", visible: false, canManage: false };
     },
     { setMemberIsHidden }
