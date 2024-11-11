@@ -63,7 +63,7 @@ export const linkPanelColumns: DataColumns<string, LinkResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid as string} />
+        render: (resource) => <ResourceLinkHead resource={resource as LinkResource} />
     },
     {
         name: LinkPanelColumnNames.UUID,

@@ -106,7 +106,7 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid as string} />
+        render: (resource) => <ResourceLinkHead resource={resource as PermissionResource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,

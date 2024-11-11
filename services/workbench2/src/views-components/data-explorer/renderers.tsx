@@ -530,7 +530,7 @@ const getResourceDisplayName = (resource: Resource): string => {
     }
 };
 
-const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
+const renderResourceLink = (item: Resource ) => {
     var displayName = getResourceDisplayName(item);
 
     return (
@@ -540,10 +540,10 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
             style={{ cursor: "pointer" }}
             onClick={() => {
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
-                    ? dispatch<any>(navigateToGroupDetails(item.uuid))
+                    ? dispatchAction<any>(navigateToGroupDetails(item.uuid))
                     : item.kind === ResourceKind.USER
-                    ? dispatch<any>(navigateToUserProfile(item.uuid))
-                    : dispatch<any>(navigateTo(item.uuid));
+                    ? dispatchAction<any>(navigateToUserProfile(item.uuid))
+                    : dispatchAction<any>(navigateTo(item.uuid));
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
@@ -559,16 +559,14 @@ export const ResourceLinkTail = connect((state: RootState, props: { uuid: string
     return {
         item: tailResource || { uuid: resource?.tailUuid || "", kind: resource?.tailKind || ResourceKind.NONE },
     };
-})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item));
+})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item));
 
-export const ResourceLinkHead = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    const headResource = getResource<Resource>(resource?.headUuid || "")(state.resources);
-
+export const ResourceLinkHead = connect((state: RootState, props: { resource: PermissionResource | LinkResource }) => {
+    const headResource = getResource<Resource>(props.resource?.headUuid || "")(state.resources);
     return {
-        item: headResource || { uuid: resource?.headUuid || "", kind: resource?.headKind || ResourceKind.NONE },
+        item: headResource || { uuid: props.resource?.headUuid || "", kind: props.resource?.headKind || ResourceKind.NONE },
     };
-})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item));
+})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item));
 
 export const ResourceLinkUuid = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<LinkResource>(props.uuid)(state.resources);
