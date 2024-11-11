@@ -19,10 +19,14 @@ Package: containerd.io
 Pin: version 1.7.*
 Pin-Priority: 995
 
+Package: cuda
+Pin: version 12.5.*
+Pin-Priority: 995
+
 Package: src:libnvidia-container src:nvidia-container-toolkit
 Pin: version 1.16.*
 Pin-Priority: 995
 
-Package: src:nvidia-graphics-drivers
+Package: cuda-drivers src:nvidia-graphics-drivers
 Pin: version 560.*
 Pin-Priority: 995
