@@ -570,9 +570,9 @@ export const ResourceLinkUuid = connect((state: RootState, props: { uuid: string
     return resource || { uuid: "" };
 })(renderUuid);
 
-export const ResourceLinkHeadUuid = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const headResource = getResource<Resource>(link?.headUuid || "")(state.resources);
+export const ResourceLinkHeadUuid = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const { resource } = props;
+    const headResource = getResource<Resource>(resource?.headUuid || "")(state.resources);
 
     return headResource || { uuid: "" };
 })(renderUuid);
