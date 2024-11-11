@@ -363,9 +363,8 @@ const getUserAccountStatus = (state: RootState, props: { uuid: string }) => {
     }
 };
 
-export const ResourceLinkTailAccountStatus = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    return link && link.tailKind === ResourceKind.USER ? getUserAccountStatus(state, { uuid: link.tailUuid }) : { status: UserAccountStatus.UNKNOWN };
+export const ResourceLinkTailAccountStatus = connect((state: RootState, props: { resource: LinkResource }) => {
+    return props.resource && props.resource.tailKind === ResourceKind.USER ? getUserAccountStatus(state, { uuid: props.resource.tailUuid }) : { status: UserAccountStatus.UNKNOWN };
 })(renderAccountStatus);
 
 export const UserResourceAccountStatus = connect(getUserAccountStatus)(renderAccountStatus);
