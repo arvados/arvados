@@ -96,7 +96,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionReso
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid as string} />
+        render: (resource) => <ResourceLinkDelete resource={resource as PermissionResource} />
     },
 ];
 
@@ -127,7 +127,7 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid as string} />
+        render: (resource) => <ResourceLinkDelete resource={resource as PermissionResource} />,
     },
 ];
 

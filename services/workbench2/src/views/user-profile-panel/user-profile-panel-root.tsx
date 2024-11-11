@@ -165,7 +165,7 @@ export const userProfileGroupsColumns: DataColumns<string, PermissionResource> =
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid as string} />
+        render: (resource) => <ResourceLinkDelete resource={resource as PermissionResource} />,
     },
 ];
 

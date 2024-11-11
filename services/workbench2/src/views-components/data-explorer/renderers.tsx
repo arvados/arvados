@@ -584,13 +584,13 @@ export const ResourceLinkTailUuid = connect((state: RootState, props: { uuid: st
     return tailResource || { uuid: "" };
 })(renderUuid);
 
-const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boolean) => {
+const renderLinkDelete = (item: LinkResource, canManage: boolean) => {
     if (item.uuid) {
         return canManage ? (
             <Typography noWrap>
                 <IconButton
                     data-cy="resource-delete-button"
-                    onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}
+                    onClick={() => dispatchAction<any>(openRemoveGroupMemberDialog, item.uuid)}
                     size="large">
                     <RemoveIcon />
                 </IconButton>
@@ -607,15 +607,14 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
     }
 };
 
-export const ResourceLinkDelete = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+export const ResourceLinkDelete = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "") || isBuiltinGroup(props.resource?.tailUuid || "");
 
     return {
-        item: link || { uuid: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        item: props.resource || { uuid: "", kind: ResourceKind.NONE },
+        canManage: props.resource && getResourceLinkCanManage(state, props.resource) && !isBuiltin,
     };
-})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.dispatch, props.item, props.canManage));
+})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.item, props.canManage));
 
 export const ResourceLinkTailEmail = connect((state: RootState, props: { uuid: string }) => {
     const link = getResource<LinkResource>(props.uuid)(state.resources);
