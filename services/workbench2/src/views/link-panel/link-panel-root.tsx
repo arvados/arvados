@@ -10,8 +10,8 @@ import { ResourcesState } from 'store/resources/resources';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
 import {
-    ResourceLinkUuid, ResourceLinkHead, ResourceLinkTail,
-    ResourceLinkClass, ResourceLinkName }
+    renderUuid, ResourceLinkHead, ResourceLinkTail,
+    renderLinkClass, renderLinkName}
 from 'views-components/data-explorer/renderers';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
@@ -42,14 +42,14 @@ export const linkPanelColumns: DataColumns<string, LinkResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: uuid => <ResourceLinkName uuid={uuid as string} />
+        render: (resource) => renderLinkName(resource as LinkResource)
     },
     {
         name: LinkPanelColumnNames.LINK_CLASS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkClass uuid={uuid as string} />
+        render: (resource) => renderLinkClass(resource as LinkResource)
     },
     {
         name: LinkPanelColumnNames.TAIL,
@@ -70,7 +70,7 @@ export const linkPanelColumns: DataColumns<string, LinkResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkUuid uuid={uuid as string} />
+        render: (resource: LinkResource) => renderUuid({ uuid: resource.uuid })
     }
 ];
 

@@ -265,7 +265,7 @@ export const UserResourceFullName = connect((state: RootState, props: { uuid: st
     renderFullName(props.dispatch, props.item, props.link)
 );
 
-const renderUuid = (item: { uuid: string }) => (
+export const renderUuid = (item: { uuid: string }) => (
     <Typography
         data-cy="uuid"
         noWrap
@@ -505,19 +505,19 @@ function renderClusterBadge(badge: ClusterBadge) {
 };
 
 // Links Resources
-const renderLinkName = (item: { name: string }) => <Typography noWrap>{item.name || "-"}</Typography>;
+export const renderLinkName = (item: { name: string }) => <Typography noWrap>{item.name || "-"}</Typography>;
 
-export const ResourceLinkName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    return resource || { name: "" };
-})(renderLinkName);
+// export const ResourceLinkName = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<LinkResource>(props.uuid)(state.resources);
+//     return resource || { name: "" };
+// })(renderLinkName);
 
-const renderLinkClass = (item: { linkClass: string }) => <Typography noWrap>{item.linkClass}</Typography>;
+export const renderLinkClass = (item: { linkClass: string }) => <Typography noWrap>{item.linkClass}</Typography>;
 
-export const ResourceLinkClass = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    return resource || { linkClass: "" };
-})(renderLinkClass);
+// export const ResourceLinkClass = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<LinkResource>(props.uuid)(state.resources);
+//     return resource || { linkClass: "" };
+// })(renderLinkClass);
 
 const getResourceDisplayName = (resource: Resource): string => {
     if ((resource as UserResource).kind === ResourceKind.USER && typeof (resource as UserResource).firstName !== "undefined") {
