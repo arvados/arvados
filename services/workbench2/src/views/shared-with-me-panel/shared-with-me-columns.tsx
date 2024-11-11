@@ -6,7 +6,6 @@ import { DataColumns } from 'components/data-table/data-column';
 import {
     ProcessStatus as ResourceStatus,
     ContainerRunTime,
-    ResourceParentProcess,
     renderType,
     renderName,
     renderPortableDataHash,
@@ -23,6 +22,7 @@ import {
     renderContainerUuid,
     renderResourceOutputUuid,
     renderResourceLogUuid,
+    renderResourceParentProcess,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';
@@ -145,7 +145,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceParentProcess uuid={uuid as string} />,
+        render: (resource) => renderResourceParentProcess(resource as GroupContentsResource),
     },
     {
         name: SharedWithMePanelColumnNames.MODIFIED_BY_USER_UUID,

@@ -11,7 +11,6 @@ import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
 import {
     ContainerRunTime,
-    ResourceParentProcess,
     renderType,
     renderName,
     OwnerWithName,
@@ -25,6 +24,7 @@ import {
     renderContainerUuid,
     renderResourceOutputUuid,
     renderResourceLogUuid,
+    renderResourceParentProcess,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -127,7 +127,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceParentProcess uuid={uuid as string} />,
+        render: (resource) => renderResourceParentProcess(resource as GroupContentsResource),
     },
     {
         name: ProjectPanelRunColumnNames.MODIFIED_BY_USER_UUID,

@@ -793,10 +793,14 @@ export const renderResourceLogUuid = (resource: GroupContentsResource) => {
 //     return resource;
 // })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.LOG_UUID));
 
-export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { parentProcess: process?.containerRequest?.requestingContainerUuid || "" };
-})((props: { parentProcess: string }) => renderUuid({ uuid: props.parentProcess }));
+export const renderResourceParentProcess = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuid({ uuid: (resource as ContainerRequestResource).requestingContainerUuid || "" }) : <>-</>;
+}
+
+// export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
+//     const process = getProcess(props.uuid)(state.resources);
+//     return { parentProcess: process?.containerRequest?.requestingContainerUuid || "" };
+// })((props: { parentProcess: string }) => renderUuid({ uuid: props.parentProcess }));
 
 // export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uuid: string }) => {
 //     const process = getProcess(props.uuid)(state.resources);
