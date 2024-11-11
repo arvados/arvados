@@ -244,14 +244,14 @@ export const ResourceLastName = connect((state: RootState, props: { uuid: string
     return resource || { lastName: "" };
 })(renderLastName);
 
-const renderFullName = (dispatch: Dispatch, item: { uuid: string; firstName: string; lastName: string }, link?: boolean) => {
+export const renderFullName = (item: { uuid: string; firstName: string; lastName: string }, link?: boolean) => {
     const displayName = (item.firstName + " " + item.lastName).trim() || item.uuid;
     return link ? (
         <Typography
             noWrap
             color="primary"
             style={{ cursor: "pointer" }}
-            onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}
+            onClick={() => dispatchAction<any>(navigateToUserProfile, item.uuid)} 
         >
             {displayName}
         </Typography>
@@ -260,12 +260,12 @@ const renderFullName = (dispatch: Dispatch, item: { uuid: string; firstName: str
     );
 };
 
-export const UserResourceFullName = connect((state: RootState, props: { uuid: string; link?: boolean }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return { item: resource || { uuid: "", firstName: "", lastName: "" }, link: props.link };
-})((props: { item: { uuid: string; firstName: string; lastName: string }; link?: boolean } & DispatchProp<any>) =>
-    renderFullName(props.dispatch, props.item, props.link)
-);
+// export const UserResourceFullName = connect((state: RootState, props: { uuid: string; link?: boolean }) => {
+//     const resource = getResource<UserResource>(props.uuid)(state.resources);
+//     return { item: resource || { uuid: "", firstName: "", lastName: "" }, link: props.link };
+// })((props: { item: { uuid: string; firstName: string; lastName: string }; link?: boolean } & DispatchProp<any>) =>
+//     renderFullName(props.item, props.link)
+// );
 
 export const renderUuid = (item: { uuid: string }) => (
     <Typography

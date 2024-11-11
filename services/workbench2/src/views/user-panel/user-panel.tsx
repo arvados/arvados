@@ -13,12 +13,12 @@ import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
-    UserResourceFullName,
     ResourceEmail,
     ResourceIsAdmin,
     ResourceUsername,
     UserResourceAccountStatus,
     renderResourceUuid,
+    renderFullName,
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
@@ -60,46 +60,46 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: uuid => <UserResourceFullName uuid={uuid as string} link={true} />
+        render: (resource) => renderFullName(resource as UserResource, true)
     },
-    {
-        name: UserPanelColumnNames.UUID,
-        selected: true,
-        configurable: true,
-        sort: {direction: SortDirection.NONE, field: "uuid"},
-        filters: createTree(),
-        render: (resource) => renderResourceUuid(resource as UserResource),
-    },
-    {
-        name: UserPanelColumnNames.EMAIL,
-        selected: true,
-        configurable: true,
-        sort: {direction: SortDirection.NONE, field: "email"},
-        filters: createTree(),
-        render: uuid => <ResourceEmail uuid={uuid as string} />
-    },
-    {
-        name: UserPanelColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <UserResourceAccountStatus uuid={uuid as string} />
-    },
-    {
-        name: UserPanelColumnNames.ADMIN,
-        selected: true,
-        configurable: false,
-        filters: createTree(),
-        render: uuid => <ResourceIsAdmin uuid={uuid as string} />
-    },
-    {
-        name: UserPanelColumnNames.USERNAME,
-        selected: true,
-        configurable: false,
-        sort: {direction: SortDirection.NONE, field: "username"},
-        filters: createTree(),
-        render: uuid => <ResourceUsername uuid={uuid as string} />
-    }
+    // {
+    //     name: UserPanelColumnNames.UUID,
+    //     selected: true,
+    //     configurable: true,
+    //     sort: {direction: SortDirection.NONE, field: "uuid"},
+    //     filters: createTree(),
+    //     render: (resource) => renderResourceUuid(resource as UserResource),
+    // },
+    // {
+    //     name: UserPanelColumnNames.EMAIL,
+    //     selected: true,
+    //     configurable: true,
+    //     sort: {direction: SortDirection.NONE, field: "email"},
+    //     filters: createTree(),
+    //     render: uuid => <ResourceEmail uuid={uuid as string} />
+    // },
+    // {
+    //     name: UserPanelColumnNames.STATUS,
+    //     selected: true,
+    //     configurable: true,
+    //     filters: createTree(),
+    //     render: uuid => <UserResourceAccountStatus uuid={uuid as string} />
+    // },
+    // {
+    //     name: UserPanelColumnNames.ADMIN,
+    //     selected: true,
+    //     configurable: false,
+    //     filters: createTree(),
+    //     render: uuid => <ResourceIsAdmin uuid={uuid as string} />
+    // },
+    // {
+    //     name: UserPanelColumnNames.USERNAME,
+    //     selected: true,
+    //     configurable: false,
+    //     sort: {direction: SortDirection.NONE, field: "username"},
+    //     filters: createTree(),
+    //     render: uuid => <ResourceUsername uuid={uuid as string} />
+    // }
 ];
 
 interface UserPanelDataProps {
