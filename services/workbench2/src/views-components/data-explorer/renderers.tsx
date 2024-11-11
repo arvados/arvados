@@ -552,12 +552,11 @@ const renderResourceLink = (item: Resource ) => {
     );
 };
 
-export const ResourceLinkTail = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    const tailResource = getResource<Resource>(resource?.tailUuid || "")(state.resources);
+export const ResourceLinkTail = connect((state: RootState, props: { resource: PermissionResource | LinkResource }) => {
+    const tailResource = getResource<Resource>(props.resource?.tailUuid || "")(state.resources);
 
     return {
-        item: tailResource || { uuid: resource?.tailUuid || "", kind: resource?.tailKind || ResourceKind.NONE },
+        item: tailResource || { uuid: props.resource?.tailUuid || "", kind: props.resource?.tailKind || ResourceKind.NONE },
     };
 })((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item));
 
