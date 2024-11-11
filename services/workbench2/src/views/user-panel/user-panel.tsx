@@ -14,11 +14,11 @@ import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceIsAdmin,
-    ResourceUsername,
     UserResourceAccountStatus,
     renderResourceUuid,
     renderFullName,
     renderEmail,
+    renderUsername,
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
@@ -78,28 +78,28 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         filters: createTree(),
         render: (resource) => renderEmail(resource as UserResource)
     },
-    // {
-    //     name: UserPanelColumnNames.STATUS,
-    //     selected: true,
-    //     configurable: true,
-    //     filters: createTree(),
-    //     render: uuid => <UserResourceAccountStatus uuid={uuid as string} />
-    // },
-    // {
-    //     name: UserPanelColumnNames.ADMIN,
-    //     selected: true,
-    //     configurable: false,
-    //     filters: createTree(),
-    //     render: uuid => <ResourceIsAdmin uuid={uuid as string} />
-    // },
-    // {
-    //     name: UserPanelColumnNames.USERNAME,
-    //     selected: true,
-    //     configurable: false,
-    //     sort: {direction: SortDirection.NONE, field: "username"},
-    //     filters: createTree(),
-    //     render: uuid => <ResourceUsername uuid={uuid as string} />
-    // }
+    {
+        name: UserPanelColumnNames.STATUS,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: (resource: UserResource) => <UserResourceAccountStatus uuid={resource.uuid} />
+    },
+    {
+        name: UserPanelColumnNames.ADMIN,
+        selected: true,
+        configurable: false,
+        filters: createTree(),
+        render: uuid => <ResourceIsAdmin uuid={uuid as string} />
+    },
+    {
+        name: UserPanelColumnNames.USERNAME,
+        selected: true,
+        configurable: false,
+        sort: {direction: SortDirection.NONE, field: "username"},
+        filters: createTree(),
+        render: (resource) => renderUsername(resource as UserResource)
+    }
 ];
 
 interface UserPanelDataProps {

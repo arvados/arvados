@@ -440,12 +440,12 @@ export const ResourceIsAdmin = connect(
     { toggleIsAdmin }
 )(renderIsAdmin);
 
-const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
+export const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
 
-export const ResourceUsername = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return resource || { username: "", uuid: props.uuid };
-})(renderUsername);
+// export const ResourceUsername = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<UserResource>(props.uuid)(state.resources);
+//     return resource || { username: "", uuid: props.uuid };
+// })(renderUsername);
 
 // Virtual machine resource
 
