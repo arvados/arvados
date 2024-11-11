@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { IconButton, Tooltip } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
@@ -14,7 +13,7 @@ import { DataTableFilterItem } from 'components/data-table-filters/data-table-fi
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, TrashableResource } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
-import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
+import { TrashIcon } from 'components/icon/icon';
 import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
 import { getProperty } from "store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
@@ -26,12 +25,11 @@ import {
     renderFileSize,
     renderTrashDate,
     renderDeleteDate,
+    renderRestoreFromTrash,
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
-import { toggleTrashed } from "store/trash/trash-actions";
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
-import { Dispatch } from "redux";
 import { createTree } from 'models/tree';
 import {
     getTrashPanelTypeFilters
@@ -65,29 +63,6 @@ export enum TrashPanelColumnNames {
 export interface TrashPanelFilter extends DataTableFilterItem {
     type: ResourceKind;
 }
-
-export const ResourceRestore =
-    connect((state: RootState, props: { uuid: string, dispatch?: Dispatch<any> }) => {
-        const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-        return { resource, dispatch: props.dispatch };
-    })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
-        <Tooltip title="Restore">
-            <IconButton
-                style={{ padding: '0' }}
-                onClick={() => {
-                    if (props.resource && props.dispatch) {
-                        props.dispatch(toggleTrashed(
-                            props.resource.kind,
-                            props.resource.uuid,
-                            props.resource.ownerUuid,
-                            props.resource.isTrashed
-                        ));
-                    }}}
-                size="large">
-                <RestoreFromTrashIcon />
-            </IconButton>
-        </Tooltip>
-    );
 
 export const trashPanelColumns: DataColumns<string, CollectionResource> = [
     {
@@ -134,7 +109,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: uuid => <ResourceRestore uuid={uuid as string} />
+        render: (resource) => renderRestoreFromTrash(resource as TrashableResource)
     }
 ];
 

@@ -24,6 +24,7 @@ import {
     SetupIcon,
     InactiveIcon,
     ErrorIcon,
+    RestoreFromTrashIcon,
 } from "components/icon/icon";
 import { formatDate, formatFileSize, formatTime } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -65,6 +66,7 @@ import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
 import { PermissionResource } from 'models/permission';
 import { ContainerRequestResource } from 'models/container-request';
+import { toggleTrashed } from "store/trash/trash-actions";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -565,10 +567,10 @@ export const ResourceLinkHead = connect((state: RootState, props: { resource: Pe
     };
 })((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item));
 
-export const ResourceLinkUuid = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    return resource || { uuid: "" };
-})(renderUuid);
+// export const ResourceLinkUuid = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<LinkResource>(props.uuid)(state.resources);
+//     return resource || { uuid: "" };
+// })(renderUuid);
 
 export const ResourceLinkHeadUuid = connect((state: RootState, props: { resource: PermissionResource }) => {
     const { resource } = props;
@@ -1271,4 +1273,25 @@ export const renderMembersCount = (resource: GroupResource) => {
     } else {
         return <Typography children={value} />;
     }
+};
+
+export const renderRestoreFromTrash = (resource: TrashableResource) => {
+    return (
+        <Tooltip title="Restore">
+            <IconButton
+                style={{ padding: '0' }}
+                onClick={() => {
+                    if (resource) {
+                        dispatchAction(toggleTrashed,
+                            resource.kind,
+                            resource.uuid,
+                            resource.ownerUuid,
+                            resource.isTrashed
+                        );
+                    }}}
+                size="large">
+                <RestoreFromTrashIcon />
+            </IconButton>
+        </Tooltip>
+    );
 };
