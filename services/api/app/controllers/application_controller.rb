@@ -219,8 +219,8 @@ class ApplicationController < ActionController::Base
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(*@read_users, {
-      :include_trash => (bool_param(:include_trash) || 'untrash' == action_name),
-      :include_old_versions => bool_param(:include_old_versions)
+      :include_trash => ((self.class._index_requires_parameters[:include_trash] && bool_param(:include_trash)) || 'untrash' == action_name),
+      :include_old_versions => self.class._index_requires_parameters[:include_old_versions] && bool_param(:include_old_versions)
     })
     apply_where_limit_order_params
   end
