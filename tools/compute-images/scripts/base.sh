@@ -222,7 +222,9 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
 
   # Don't start the persistence daemon.
   # Instead rely on crunch-run's CUDA initialization.
-  $SUDO systemctl disable nvidia-persistenced.service
+  if $SUDO systemctl is-enabled --quiet nvidia-persistenced.service; then
+    $SUDO systemctl disable nvidia-persistenced.service
+  fi
 fi
 
 # Get Go and build singularity
