@@ -68,7 +68,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (uuid) => <ResourceStatus uuid={uuid as string} />,
+        render: (resource) => <ResourceStatus uuid={(resource as ProjectResource).uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.TYPE,

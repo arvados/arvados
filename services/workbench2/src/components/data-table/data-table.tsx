@@ -224,7 +224,7 @@ export const DataTable = withStyles(styles)(
             this.initializeCheckedList([]);
         }
 
-        checkBoxColumn: DataColumn<any, any> = {
+        checkBoxColumn: DataColumn<any, HTMLDivElement> = {
             name: "checkBoxColumn",
             selected: true,
             configurable: false,

@@ -65,7 +65,7 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid as string} />,
+        render: (resource) => <ProcessStatus uuid={(resource as ProcessResource).uuid} />,
     },
     {
         name: SubprocessPanelColumnNames.CREATED_AT,

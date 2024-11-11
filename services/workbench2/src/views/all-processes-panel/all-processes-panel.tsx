@@ -77,7 +77,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid as string} />,
+        render: (resource) => <ProcessStatus uuid={(resource as ContainerRequestResource).uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.TYPE,

@@ -81,7 +81,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ProcessStatus uuid={uuid as string} />
+        render: (resource) => <ProcessStatus uuid={(resource as GroupContentsResource).uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.TYPE,
