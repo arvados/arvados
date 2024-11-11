@@ -168,7 +168,7 @@ $SUDO install -m 600 -o crunch -g crunch "$WORKDIR/crunch-authorized_keys" ~crun
 
 # Make sure we resolve via the provided resolver IP if set. Prepending is good enough because
 # unless 'rotate' is set, the nameservers are queried in order (cf. man resolv.conf)
-if [ "x$RESOLVER" != "x" ]; then
+if [ -n "${RESOLVER:-}" ]; then
   $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
 fi
 
