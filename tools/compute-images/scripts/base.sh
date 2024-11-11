@@ -34,10 +34,12 @@ echo "Working directory is '${WORKDIR}'"
 
 # Third-party packages may depend on contrib packages.
 # Make sure we have that component enabled for all existing sources.
-find /etc/apt -name "*.list" -print0 |
-    xargs -0r $SUDO sed -ri '/^deb / s/$/ contrib/'
-find /etc/apt -name "*.sources" -print0 |
-    xargs -0r $SUDO sed -ri '/^Components:/ s/$/ contrib/'
+if [[ "$DISTRO_ID" = debian ]]; then
+    find /etc/apt -name "*.list" -print0 |
+        xargs -0r $SUDO sed -ri '/^deb / s/$/ contrib/'
+    find /etc/apt -name "*.sources" -print0 |
+        xargs -0r $SUDO sed -ri '/^Components:/ s/$/ contrib/'
+fi
 
 if [[ "${PIN_PACKAGES:-true}" != false ]]; then
     $SUDO install -d /etc/apt/preferences.d
