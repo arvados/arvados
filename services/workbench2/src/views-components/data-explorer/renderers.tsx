@@ -1227,29 +1227,48 @@ export const ContainerRunTime = connect((state: RootState, props: { uuid: string
     }
 );
 
-export const GroupMembersCount = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const group = getResource<GroupResource>(props.uuid)(state.resources);
+// export const GroupMembersCount = connect(
+//     (state: RootState, props: { uuid: string }) => {
+//         const group = getResource<GroupResource>(props.uuid)(state.resources);
 
-        return {
-            value: group?.memberCount,
-        };
+//         return {
+//             value: group?.memberCount,
+//         };
 
-    }
-)(withTheme((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
-    if (props.value === undefined) {
+//     }
+// )(withTheme((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
+//     if (props.value === undefined) {
+//         // Loading
+//         return <Typography component={"div"}>
+//             <InlinePulser />
+//         </Typography>;
+//     } else if (props.value === null) {
+//         // Error
+//         return <Typography>
+//             <Tooltip title="Failed to load member count">
+//                 <ErrorIcon style={{color: props.theme.customs.colors.greyL}}/>
+//             </Tooltip>
+//         </Typography>;
+//     } else {
+//         return <Typography children={props.value} />;
+//     }
+// }));
+
+export const renderMembersCount = (resource: GroupResource) => {
+    const value = resource.memberCount;
+    if (value === undefined) {
         // Loading
         return <Typography component={"div"}>
             <InlinePulser />
         </Typography>;
-    } else if (props.value === null) {
+    } else if (value === null) {
         // Error
         return <Typography>
             <Tooltip title="Failed to load member count">
-                <ErrorIcon style={{color: props.theme.customs.colors.greyL}}/>
+                <ErrorIcon style={{color: CustomTheme.palette.grey['600']}}/>
             </Tooltip>
         </Typography>;
     } else {
-        return <Typography children={props.value} />;
+        return <Typography children={value} />;
     }
-}));
+};
