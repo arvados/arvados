@@ -784,10 +784,14 @@ export const renderResourceOutputUuid = (resource: GroupContentsResource) => {
 //     return resource;
 // })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.OUTPUT_UUID));
 
-export const ResourceLogUuid = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<ProcessResource>(props.uuid)(state.resources);
-    return resource;
-})((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.LOG_UUID));
+export const renderResourceLogUuid = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidLinkWithCopyIcon(resource, ColumnSelection.LOG_UUID) : <>-</>;
+}
+
+// export const ResourceLogUuid = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<ProcessResource>(props.uuid)(state.resources);
+//     return resource;
+// })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.LOG_UUID));
 
 export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
     const process = getProcess(props.uuid)(state.resources);
