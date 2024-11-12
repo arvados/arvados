@@ -56,7 +56,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                 }));
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_FAVORITES))
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
-                dispatch<any>(loadFavoritesTree())
+                dispatch<any>(loadFavoritesTree(true))
             })
             .catch((e: any) => {
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));

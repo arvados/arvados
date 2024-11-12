@@ -326,7 +326,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
                 }
 
                 // Processes are deleted immediately, refresh favorites to remove any deleted favorites
-                dispatch<any>(loadFavoritesTree());
+                dispatch<any>(loadFavoritesTree(true));
             }
 
             // If currently viewing any of the deleted runs, navigate to home

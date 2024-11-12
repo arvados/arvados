@@ -102,10 +102,10 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (projectUuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
-            const unverifiedPubFaves = await dispatch<any>(loadPublicFavoritesTree());
+            const unverifiedPubFaves = await dispatch<any>(loadPublicFavoritesTree(false));
             verifyAndUpdateLinkNames(projectUuid, unverifiedPubFaves, dispatch, getState, services);
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
-            const unverifiedFaves = await dispatch<any>(loadFavoritesTree());
+            const unverifiedFaves = await dispatch<any>(loadFavoritesTree(false));
             await setFaves(unverifiedFaves, dispatch, getState, services);
             verifyAndUpdateLinkNames(projectUuid, unverifiedFaves, dispatch, getState, services);
         } else if (node || projectUuid !== '') {
@@ -142,8 +142,10 @@ const loadProject = (projectUuid: string) =>
         dispatch(resourcesActions.SET_RESOURCES(items));
     };
 
-export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.FAVORITES, pickerId: SIDE_PANEL_TREE }));
+export const loadFavoritesTree = (updateTree: boolean) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    if (updateTree) {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.FAVORITES, pickerId: SIDE_PANEL_TREE }));
+    }
 
     const params = {
         filters: new FilterBuilder()
@@ -157,13 +159,15 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
 
     const { items } = await services.linkService.list(params);
 
-    dispatch(
-        treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-            id: SidePanelTreeCategory.FAVORITES,
-            pickerId: SIDE_PANEL_TREE,
-            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item.name })),
-        })
-    );
+    if (updateTree) {
+        dispatch(
+            treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+                id: SidePanelTreeCategory.FAVORITES,
+                pickerId: SIDE_PANEL_TREE,
+                nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item.name })),
+            })
+        );
+    }
 
     return items;
 };
@@ -207,8 +211,10 @@ const verifyAndUpdateLinkNames = async (category: SidePanelTreeCategory, links: 
     );
 };
 
-export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.PUBLIC_FAVORITES, pickerId: SIDE_PANEL_TREE }));
+export const loadPublicFavoritesTree = (updateTree: boolean) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    if (updateTree) {
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.PUBLIC_FAVORITES, pickerId: SIDE_PANEL_TREE }));
+    }
 
     const uuidPrefix = getState().auth.config.uuidPrefix;
     const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
@@ -252,13 +258,15 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
 
     const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
 
-    dispatch(
-        treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-            id: SidePanelTreeCategory.PUBLIC_FAVORITES,
-            pickerId: SIDE_PANEL_TREE,
-            nodes: filteredItems.map(item => initTreeNode({ id: item.headUuid, value: item })),
-        })
-    );
+    if (updateTree) {
+        dispatch(
+            treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+                id: SidePanelTreeCategory.PUBLIC_FAVORITES,
+                pickerId: SIDE_PANEL_TREE,
+                nodes: filteredItems.map(item => initTreeNode({ id: item.headUuid, value: item })),
+            })
+        );
+    }
 
     //setting resources here so they won't be re-fetched in validation step
     dispatch(resourcesActions.SET_RESOURCES(responseItems));
