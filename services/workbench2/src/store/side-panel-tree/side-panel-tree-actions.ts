@@ -13,7 +13,7 @@ import { getTreePicker, TreePicker } from 'store/tree-picker/tree-picker';
 import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from 'models/tree';
 import { ProjectResource } from 'models/project';
 import { OrderBuilder } from 'services/api/order-builder';
-import { ResourceKind, extractUuidObjectType, ResourceObjectType } from 'models/resource';
+import { ResourceKind, extractUuidObjectType, ResourceObjectType, Resource } from 'models/resource';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
@@ -175,17 +175,17 @@ export const loadFavoritesTree = (updateTree: boolean) => async (dispatch: Dispa
 const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
     const uuids = links.map(it => it.headUuid);
-    const groupItems: Promise<any> = services.groupsService.list({
+    const groupItems = services.groupsService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
-    const collectionItems: Promise<any> = services.collectionService.list({
+    const collectionItems = services.collectionService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
-    const processItems: Promise<any> = services.containerRequestService.list({
+    const processItems = services.containerRequestService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
@@ -193,7 +193,7 @@ const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () =
 
     const resolvedItems = await Promise.all([groupItems, collectionItems, processItems]);
 
-    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), []);
+    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), [] as Resource[]);
 
     //setting resources here so they won't be re-fetched in validation step
     dispatch(resourcesActions.SET_RESOURCES(responseItems));
@@ -233,19 +233,19 @@ export const loadPublicFavoritesTree = (updateTree: boolean) => async (dispatch:
     const { items } = await services.linkService.list(params);
 
     const uuids = items.map(it => it.headUuid);
-    const groupItems: Promise<any> = services.groupsService.list({
+    const groupItems = services.groupsService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
-    const collectionItems: Promise<any> = services.collectionService.list({
+    const collectionItems = services.collectionService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
-    const processItems: Promise<any> = services.containerRequestService.list({
+    const processItems = services.containerRequestService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
@@ -254,7 +254,7 @@ export const loadPublicFavoritesTree = (updateTree: boolean) => async (dispatch:
 
     const resolvedItems = await Promise.all([groupItems, collectionItems, processItems]);
 
-    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), []);
+    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), [] as Resource[]);
 
     const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
 
