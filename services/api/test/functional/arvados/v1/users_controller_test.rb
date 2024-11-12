@@ -638,6 +638,13 @@ The Arvados team.
     end
   end
 
+  test "non-bool include_trash param is silently ignored" do
+    authorize_with :spectator
+    Rails.logger.expects(:warn).never
+    get(:index, params: {include_trash: '-1'})
+  end
+
+
   test "non-admin user gets only safe attributes from users#show" do
     g = act_as_system_user do
       create :group, group_class: "role"
