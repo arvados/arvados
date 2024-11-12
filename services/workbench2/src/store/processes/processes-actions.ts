@@ -28,6 +28,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { getProcessPanelCurrentUuid } from "store/process-panel/process-panel";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
+import { loadFavoritesTree } from "store/side-panel-tree/side-panel-tree-actions";
 
 export const loadContainers =
     (containerUuids: string[], loadMounts: boolean = true) =>
@@ -323,6 +324,9 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
                 } else {
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 }
+
+                // Processes are deleted immediately, refresh favorites to remove any deleted favorites
+                dispatch<any>(loadFavoritesTree());
             }
 
             // If currently viewing any of the deleted runs, navigate to home
