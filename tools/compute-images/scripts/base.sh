@@ -109,7 +109,7 @@ EOF
 # Note that the "keyring" package also installs the apt source
 NVIDIA_URL="https://developer.download.nvidia.com/compute/cuda/repos/$(echo "$DISTRO_ID$VERSION_ID" | tr -d .)/x86_64"
 CUDA_KEYRING_DEB=cuda-keyring_1.1-1_all.deb
-curl -fsSL -o "$WORKDIR/$CUDA_KEYRING_DEB" "$NVIDIA_URL/$CUDA_KEYRING_DEB"
+download_and_install "$NVIDIA_URL/$CUDA_KEYRING_DEB" "$WORKDIR/$CUDA_KEYRING_DEB" -m 644
 wait_for_apt_locks && $SUDO dpkg -i "$WORKDIR/$CUDA_KEYRING_DEB"
 
 # Add the NVIDIA container toolkit apt source
