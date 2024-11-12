@@ -969,7 +969,7 @@ test_services/workbench2_units() {
 test_services/workbench2_integration() {
     INTERACTIVE=
     FAIL_FAST_ENABLED=false
-    if [[ -n ${interactive} ]]; then
+    if [[ -n ${interactive} ]] && [[ -n ${DISPLAY} ]]; then
 	INTERACTIVE=-i
 	FAIL_FAST_ENABLED=true
     fi
