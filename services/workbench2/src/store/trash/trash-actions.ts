@@ -48,6 +48,7 @@ export const toggleProjectTrashed =
                         await dispatch<any>(updateResources([toggledResource]));
                     }
                     // Refresh favorites tree after trash/untrash
+                    // must be await to avoid race conditions with the next loadSidePanelTreeProjects
                     await dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
                     dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
 
