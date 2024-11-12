@@ -1483,13 +1483,18 @@ Clusters:
 
         # An executable file (located on the dispatcher host) to be
         # copied to cloud instances at runtime and used as the
-        # container runner/supervisor. The default value is the
-        # dispatcher program itself.
+        # "crunch-run" container runner/supervisor. The default value
+        # is the dispatcher program itself.
         #
         # Use an empty string to disable this step: nothing will be
         # copied, and cloud instances are assumed to have a suitable
         # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
+
+        # Directory to store the crunch-run binary on cloud instances
+        # (see DeployRunnerBinary above).  The "mkdir -p" command will
+        # be used to create the directory and its parents if needed.
+        DeployRunnerDirectory: /tmp/arvados-crunch-run
 
         # Install the Dispatcher's SSH public key (derived from
         # DispatchPrivateKey) when creating new cloud

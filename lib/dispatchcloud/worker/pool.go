@@ -111,6 +111,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		bootProbeCommand:               cluster.Containers.CloudVMs.BootProbeCommand,
 		instanceInitCommand:            cloud.InitCommand(cluster.Containers.CloudVMs.InstanceInitCommand),
 		runnerSource:                   cluster.Containers.CloudVMs.DeployRunnerBinary,
+		runnerDeployDirectory:          cluster.Containers.CloudVMs.DeployRunnerDirectory,
 		imageID:                        cloud.ImageID(cluster.Containers.CloudVMs.ImageID),
 		instanceTypes:                  cluster.InstanceTypes,
 		maxProbesPerSecond:             cluster.Containers.CloudVMs.MaxProbesPerSecond,
@@ -155,6 +156,7 @@ type Pool struct {
 	bootProbeCommand               string
 	instanceInitCommand            cloud.InitCommand
 	runnerSource                   string
+	runnerDeployDirectory          string
 	imageID                        cloud.ImageID
 	instanceTypes                  map[string]arvados.InstanceType
 	syncInterval                   time.Duration
@@ -1007,7 +1009,7 @@ func (wp *Pool) loadRunnerData() error {
 	}
 	wp.runnerData = buf
 	wp.runnerMD5 = md5.Sum(buf)
-	wp.runnerCmd = fmt.Sprintf("/tmp/arvados-crunch-run/crunch-run~%x", wp.runnerMD5)
+	wp.runnerCmd = fmt.Sprintf("%s/crunch-run~%x", wp.runnerDeployDirectory, wp.runnerMD5)
 	return nil
 }
 
