@@ -102,12 +102,12 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (projectUuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
-            const unverifiedPubFaves = await dispatch<any>(loadPublicFavoritesTree(false));
-            verifyAndUpdateLinkNames(projectUuid, unverifiedPubFaves, dispatch, getState, services);
+            const unverifiedPubFaves = await dispatch<any>(fetchPublicFavoritesLinks());
+            await verifyAndUpdateLinkNames(projectUuid, unverifiedPubFaves, dispatch, getState, services);
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
-            const unverifiedFaves = await dispatch<any>(loadFavoritesTree(false));
+            const unverifiedFaves = await dispatch<any>(fetchFavoritesLinks());
             await setFaves(unverifiedFaves, dispatch, getState, services);
-            verifyAndUpdateLinkNames(projectUuid, unverifiedFaves, dispatch, getState, services);
+            await verifyAndUpdateLinkNames(projectUuid, unverifiedFaves, dispatch, getState, services);
         } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
         }
@@ -142,11 +142,7 @@ const loadProject = (projectUuid: string) =>
         dispatch(resourcesActions.SET_RESOURCES(items));
     };
 
-export const loadFavoritesTree = (updateTree: boolean) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    if (updateTree) {
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.FAVORITES, pickerId: SIDE_PANEL_TREE }));
-    }
-
+const fetchFavoritesLinks = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const params = {
         filters: new FilterBuilder()
             .addEqual('link_class', LinkClass.STAR)
@@ -159,21 +155,10 @@ export const loadFavoritesTree = (updateTree: boolean) => async (dispatch: Dispa
 
     const { items } = await services.linkService.list(params);
 
-    if (updateTree) {
-        dispatch(
-            treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-                id: SidePanelTreeCategory.FAVORITES,
-                pickerId: SIDE_PANEL_TREE,
-                nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item.name })),
-            })
-        );
-    }
-
     return items;
 };
 
 const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-
     const uuids = links.map(it => it.headUuid);
     const groupItems = services.groupsService.list({
         filters: new FilterBuilder()
@@ -196,10 +181,12 @@ const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () =
     const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), [] as Resource[]);
 
     //setting resources here so they won't be re-fetched in validation step
-    dispatch(resourcesActions.SET_RESOURCES(responseItems));
+    await dispatch(resourcesActions.SET_RESOURCES(responseItems));
 };
 
 const verifyAndUpdateLinkNames = async (category: SidePanelTreeCategory, links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: category, pickerId: SIDE_PANEL_TREE }));
+
     const verfifiedLinks = await verifyAndUpdateLinks(links, dispatch, getState, services);
 
     dispatch(
@@ -211,11 +198,7 @@ const verifyAndUpdateLinkNames = async (category: SidePanelTreeCategory, links: 
     );
 };
 
-export const loadPublicFavoritesTree = (updateTree: boolean) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    if (updateTree) {
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.PUBLIC_FAVORITES, pickerId: SIDE_PANEL_TREE }));
-    }
-
+const fetchPublicFavoritesLinks = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const uuidPrefix = getState().auth.config.uuidPrefix;
     const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
     const typeFilters = [ResourceKind.COLLECTION, ResourceKind.CONTAINER_REQUEST, ResourceKind.GROUP, ResourceKind.WORKFLOW];
@@ -258,18 +241,8 @@ export const loadPublicFavoritesTree = (updateTree: boolean) => async (dispatch:
 
     const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
 
-    if (updateTree) {
-        dispatch(
-            treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-                id: SidePanelTreeCategory.PUBLIC_FAVORITES,
-                pickerId: SIDE_PANEL_TREE,
-                nodes: filteredItems.map(item => initTreeNode({ id: item.headUuid, value: item })),
-            })
-        );
-    }
-
     //setting resources here so they won't be re-fetched in validation step
-    dispatch(resourcesActions.SET_RESOURCES(responseItems));
+    await dispatch(resourcesActions.SET_RESOURCES(responseItems));
 
     return filteredItems;
 };
