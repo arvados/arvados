@@ -1579,6 +1579,15 @@ describe("Process tests", function () {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
 
+                // Favorite process
+                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
+                cy.get("ul[data-cy=context-menu]").contains("Add to favorites").click();
+                cy.waitForDom();
+
+                // Verify process in favorites
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', containerRequest.name);
+
                 // Delete process
                 cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
                 cy.get("ul[data-cy=context-menu]").contains("Remove").click();
@@ -1589,6 +1598,9 @@ describe("Process tests", function () {
                 // Verify we are in home project
                 cy.get("[data-cy=project-panel]").should('exist');
                 cy.url().should("contain", `/projects/${activeUser.user.uuid}`);
+                // Verify project absent from side panel
+                cy.get('[data-cy=side-panel-tree]').should("not.contain", containerRequest.name);
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', containerRequest.name);
             });
 
             // Process in subproject
