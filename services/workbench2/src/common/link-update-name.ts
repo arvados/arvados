@@ -11,6 +11,10 @@ import { CommonResourceServiceError, getCommonResourceServiceError } from 'servi
 
 type NameableResource = Resource & { name?: string };
 
+/**
+ * Validates links are not to trashed resources and updates link resource names
+ * to match resource name if necessary
+ */
 const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource | undefined> => {
     //head resource should already be in the store
     let headResource: Resource | undefined = getState().resources[link.headUuid];
@@ -19,7 +23,7 @@ const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getSt
         try {
             headResource = await fetchResource(link.headUuid)(dispatch, getState, services);
         } catch (e) {
-            // If not found, assume trashed and suppress this entry
+            // If not found, assume deleted permanently and suppress this entry
             if (getCommonResourceServiceError(e) === CommonResourceServiceError.NOT_FOUND) {
                 return undefined;
             }
@@ -44,6 +48,9 @@ const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getSt
     return updatedLink;
 };
 
+/**
+ * Filters links to trashed / 404ed resources and updates link name to match resource
+ */
 export const verifyAndUpdateLinks = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource[]> => {
     // Verify and update links in paralell
     const updatedLinks = links.map((link) => verifyAndUpdateLink(link, dispatch, getState, services));
