@@ -172,7 +172,7 @@ const renderDate = (date?: string) => {
     );
 };
 
-const renderWorkflowName = (item: WorkflowResource) => (
+export const renderWorkflowName = (item: WorkflowResource) => (
     <Grid
         container
         alignItems="center"
@@ -191,10 +191,10 @@ const renderWorkflowName = (item: WorkflowResource) => (
     </Grid>
 );
 
-export const ResourceWorkflowName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-    return resource;
-})(renderWorkflowName);
+// export const ResourceWorkflowName = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+//     return resource;
+// })(renderWorkflowName);
 
 const getPublicUuid = (uuidPrefix: string) => {
     return `${uuidPrefix}-tpzed-anonymouspublic`;
@@ -215,8 +215,8 @@ const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: strin
     );
 };
 
-export const ResourceShare = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+export const ResourceShare = connect((state: RootState, props: { resource: WorkflowResource }) => {
+    const { resource } = props;
     const uuidPrefix = getUuidPrefix(state);
     return {
         uuid: resource ? resource.uuid : "",
@@ -678,12 +678,12 @@ const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
 };
 
 // Process Resources
-const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
+export const resourceRunProcess = (uuid: string) => {
     return (
         <div>
             {uuid && (
                 <Tooltip title="Run process">
-                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))} size="large">
+                    <IconButton onClick={() => dispatchAction<any>(openRunProcess, uuid ?? '')} size="large">
                         <ProcessIcon />
                     </IconButton>
                 </Tooltip>
@@ -692,12 +692,12 @@ const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
     );
 };
 
-export const ResourceRunProcess = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-    return {
-        uuid: resource ? resource.uuid : "",
-    };
-})((props: { uuid: string } & DispatchProp<any>) => resourceRunProcess(props.dispatch, props.uuid));
+// export const ResourceRunProcess = connect((state: RootState, props: { uuid: string }) => {
+//     const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+//     return {
+//         uuid: resource ? resource.uuid : "",
+//     };
+// })((props: { uuid: string } & DispatchProp<any>) => resourceRunProcess(props.uuid));
 
 const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
@@ -716,8 +716,8 @@ const renderStatus = (status: string) => (
     </Typography>
 );
 
-export const ResourceWorkflowStatus = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+export const ResourceWorkflowStatus = connect((state: RootState, props: { resource: WorkflowResource }) => {
+    const { resource } = props;
     const uuidPrefix = getUuidPrefix(state);
     return {
         ownerUuid: resource ? resource.ownerUuid : "",

@@ -7,11 +7,11 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { WorkflowIcon } from 'components/icon/icon';
 import { WORKFLOW_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import {
-    ResourceWorkflowName,
     ResourceWorkflowStatus,
     ResourceShare,
-    ResourceRunProcess,
     renderLastModifiedDate,
+    renderWorkflowName,
+    resourceRunProcess,
 } from "views-components/data-explorer/renderers";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
@@ -69,7 +69,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
-        render: (uuid: string) => <ResourceWorkflowName uuid={uuid} />
+        render: (resource) => renderWorkflowName(resource as WorkflowResource),
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
@@ -94,7 +94,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         //         type: ResourceStatus.SHARED
         //     }
         // ],
-        render: (uuid: string) => <ResourceWorkflowStatus uuid={uuid} />,
+        render: (resource: WorkflowResource) => <ResourceWorkflowStatus resource={resource}/>, 
     },
     {
         name: WorkflowPanelColumnNames.LAST_MODIFIED,
@@ -109,14 +109,14 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (uuid: string) => <ResourceShare uuid={uuid} />
+        render: (resource: WorkflowResource) => <ResourceShare resource={resource} /> 
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (uuid: string) => <ResourceRunProcess uuid={uuid} />
+        render: (resource: WorkflowResource) => resourceRunProcess(resource.uuid)
     }
 ];
 
