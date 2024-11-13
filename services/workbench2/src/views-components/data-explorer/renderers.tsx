@@ -41,7 +41,6 @@ import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { getUserFullname, getUserDisplayName, User, UserResource } from "models/user";
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
-// import { withResourceData } from "views-components/data-explorer/with-resources";
 import { CollectionResource } from "models/collection";
 import { IllegalNamingWarning } from "components/warning/warning";
 import { loadResource } from "store/resources/resources-actions";
