@@ -266,7 +266,7 @@ export const renderFullName = (item: { uuid: string; firstName: string; lastName
 //     renderFullName(props.item, props.link)
 // );
 
-export const renderUuid = (item: { uuid: string }) => (
+export const renderUuidWithCopy = (item: { uuid: string }) => (
     <Typography
         data-cy="uuid"
         noWrap
@@ -286,14 +286,14 @@ export const renderUuid = (item: { uuid: string }) => (
 //     </Typography>
 // );
 
-const renderUuidCopyIcon = (item: { uuid: string }) => (
-    <Typography
-        data-cy="uuid"
-        noWrap
-    >
-        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
-    </Typography>
-);
+// const renderUuidCopyIcon = (item: { uuid: string }) => (
+//     <Typography
+//         data-cy="uuid"
+//         noWrap
+//     >
+//         {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
+//     </Typography>
+// );
 
 // export const ResourceUuid = connect(
 //     (state: RootState, props: { uuid: string }) => getResource<UserResource>(props.uuid)(state.resources) || { uuid: "" }
@@ -575,14 +575,14 @@ export const ResourceLinkHeadUuid = connect((state: RootState, props: { resource
     const headResource = getResource<Resource>(resource?.headUuid || "")(state.resources);
 
     return headResource || { uuid: "" };
-})(renderUuid);
+})(renderUuidWithCopy);
 
 export const ResourceLinkTailUuid = connect((state: RootState, props: { uuid: string }) => {
     const link = getResource<LinkResource>(props.uuid)(state.resources);
     const tailResource = getResource<Resource>(link?.tailUuid || "")(state.resources);
 
     return tailResource || { uuid: "" };
-})(renderUuid);
+})(renderUuidWithCopy);
 
 const renderLinkDelete = (item: LinkResource, canManage: boolean) => {
     if (item.uuid) {
@@ -728,7 +728,7 @@ export const renderContainerUuid = (resource: GroupContentsResource) => {
         return <>-</>;
     }
     const containerUuid = resource.containerUuid || '';
-    return renderUuid({ uuid: containerUuid });
+    return renderUuidWithCopy({ uuid: containerUuid });
 };
 
 // export const ResourceContainerUuid = connect((state: RootState, props: { uuid: string }) => {
@@ -763,7 +763,7 @@ const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string) => {
                     "-"
                 )}
             </Grid>
-            <Grid item>{selectedColumnUuid && renderUuidCopyIcon({ uuid: selectedColumnUuid })}</Grid>
+            <Grid item>{selectedColumnUuid && renderUuidWithCopy({ uuid: selectedColumnUuid })}</Grid>
         </Grid>
     );
 };
@@ -787,7 +787,7 @@ export const renderResourceLogUuid = (resource: GroupContentsResource) => {
 // })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process, ColumnSelection.LOG_UUID));
 
 export const renderResourceParentProcess = (resource: GroupContentsResource) => {
-    return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuid({ uuid: (resource as ContainerRequestResource).requestingContainerUuid || "" }) : <>-</>;
+    return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidWithCopy({ uuid: (resource as ContainerRequestResource).requestingContainerUuid || "" }) : <>-</>;
 }
 
 // export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
@@ -802,7 +802,7 @@ export const renderResourceParentProcess = (resource: GroupContentsResource) => 
 
 export const renderModifiedByUserUuid = (resource: GroupContentsResource & {containerRequest?: any}) => {
     const modifiedByUserUuid = resource.containerRequest ? resource.containerRequest.modifiedByUserUuid : resource.modifiedByUserUuid;
-    return renderUuid({uuid:modifiedByUserUuid});
+    return renderUuidWithCopy({uuid:modifiedByUserUuid});
 }
 
 export const renderCreatedAtDate = (resource: GroupContentsResource) => {

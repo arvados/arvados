@@ -10,7 +10,7 @@ import { ResourcesState } from 'store/resources/resources';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
 import {
-    renderUuid, ResourceLinkHead, ResourceLinkTail,
+    renderUuidWithCopy, ResourceLinkHead, ResourceLinkTail,
     renderLinkClass, renderLinkName}
 from 'views-components/data-explorer/renderers';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -70,7 +70,7 @@ export const linkPanelColumns: DataColumns<string, LinkResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: LinkResource) => renderUuid({ uuid: resource.uuid })
+        render: (resource: LinkResource) => renderUuidWithCopy({ uuid: resource.uuid })
     }
 ];
 
