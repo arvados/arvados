@@ -757,13 +757,12 @@ const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string) => {
                         noWrap
                         onClick={() => dispatchAction<any>(navigateTo(selectedColumnUuid))}
                     >
-                        {selectedColumnUuid}
+                        {selectedColumnUuid && renderUuidWithCopy({ uuid: selectedColumnUuid })}
                     </Typography>
                 ) : (
                     "-"
                 )}
             </Grid>
-            <Grid item>{selectedColumnUuid && renderUuidWithCopy({ uuid: selectedColumnUuid })}</Grid>
         </Grid>
     );
 };
