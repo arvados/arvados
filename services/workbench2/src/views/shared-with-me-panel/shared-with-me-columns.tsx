@@ -12,7 +12,7 @@ import {
     OwnerWithName,
     renderFileSize,
     renderFileCount,
-    renderResourceUuid,
+    renderUuid,
     renderModifiedByUserUuid,
     renderVersion,
     renderCreatedAtDate,
@@ -110,7 +110,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceUuid(resource as ProjectResource),
+        render: (resource: ProjectResource) => renderUuid({uuid: resource.uuid}),
     },
     {
         name: SharedWithMePanelColumnNames.CONTAINER_UUID,

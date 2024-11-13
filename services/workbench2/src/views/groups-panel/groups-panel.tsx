@@ -10,7 +10,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
-import { renderResourceUuid, renderMembersCount } from 'views-components/data-explorer/renderers';
+import { renderUuid, renderMembersCount } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
 import { renderName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
@@ -53,7 +53,7 @@ export const groupsPanelColumns: DataColumns<string, GroupResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceUuid(resource as GroupResource),
+        render: (resource: GroupResource) => renderUuid({uuid: resource.uuid}),
     },
     {
         name: GroupsPanelColumnNames.MEMBERS,

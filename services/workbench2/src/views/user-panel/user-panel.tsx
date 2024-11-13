@@ -15,7 +15,7 @@ import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceIsAdmin,
     UserResourceAccountStatus,
-    renderResourceUuid,
+    renderUuid,
     renderFullName,
     renderEmail,
     renderUsername,
@@ -68,7 +68,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: (resource) => renderResourceUuid(resource as UserResource),
+        render: (resource: UserResource) => renderUuid({uuid: resource.uuid})
     },
     {
         name: UserPanelColumnNames.EMAIL,

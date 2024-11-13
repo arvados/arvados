@@ -276,15 +276,15 @@ export const renderUuid = (item: { uuid: string }) => (
     </Typography>
 );
 
-export const renderResourceUuid = (resource: GroupContentsResource | GroupResource | UserResource) => (
-    <Typography
-        data-cy="uuid"
-        noWrap
-    >
-        {resource.uuid}
-        {(resource.uuid && <CopyToClipboardSnackbar value={resource.uuid} />) || "-"}
-    </Typography>
-);
+// export const renderResourceUuid = (resource: GroupContentsResource | GroupResource | UserResource) => (
+//     <Typography
+//         data-cy="uuid"
+//         noWrap
+//     >
+//         {resource.uuid}
+//         {(resource.uuid && <CopyToClipboardSnackbar value={resource.uuid} />) || "-"}
+//     </Typography>
+// );
 
 const renderUuidCopyIcon = (item: { uuid: string }) => (
     <Typography

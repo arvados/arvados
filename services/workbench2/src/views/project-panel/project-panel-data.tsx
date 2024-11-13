@@ -17,7 +17,7 @@ import {
     renderPortableDataHash,
     renderFileSize,
     renderFileCount,
-    renderResourceUuid,
+    renderUuid,
     renderModifiedByUserUuid,
     renderVersion,
     renderCreatedAtDate,
@@ -98,7 +98,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource | Coll
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceUuid(resource as ProjectResource),
+        render: (resource: ProjectResource) => renderUuid({uuid: resource.uuid}),
     },
     {
         name: ProjectPanelDataColumnNames.MODIFIED_BY_USER_UUID,
