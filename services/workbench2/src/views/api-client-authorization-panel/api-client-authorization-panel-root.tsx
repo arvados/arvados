@@ -14,14 +14,9 @@ import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-author
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { ResourcesState } from 'store/resources/resources';
 import {
-    TokenApiToken, 
-    TokenCreatedByIpAddress, 
-    TokenExpiresAt,
-    TokenLastUsedAt, 
-    TokenLastUsedByIpAddress, 
-    TokenScopes, 
-    TokenUserId,
     renderUuid,
+    renderString,
+    renderDate,
 } from 'views-components/data-explorer/renderers';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 
@@ -59,50 +54,43 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenApiToken uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderString(resource.apiToken)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.CREATED_BY_IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenCreatedByIpAddress uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderString(resource.createdByIpAddress)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.EXPIRES_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenExpiresAt uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderDate(resource.expiresAt)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.LAST_USED_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenLastUsedAt uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderDate(resource.lastUsedAt)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.LAST_USED_BY_IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenLastUsedByIpAddress uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderString(resource.lastUsedByIpAddress)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.SCOPES,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <TokenScopes uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderString(resource.scopes.join(', '))
     },
-    {
-        name: ApiClientAuthorizationPanelColumnNames.USER_ID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <TokenUserId uuid={uuid as string} />
-    }
 ];
 
 const DEFAULT_MESSAGE = 'Your api client authorization list is empty.';

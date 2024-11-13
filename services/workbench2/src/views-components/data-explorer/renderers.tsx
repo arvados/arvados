@@ -41,7 +41,7 @@ import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { getUserFullname, getUserDisplayName, User, UserResource } from "models/user";
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
-import { withResourceData } from "views-components/data-explorer/with-resources";
+// import { withResourceData } from "views-components/data-explorer/with-resources";
 import { CollectionResource } from "models/collection";
 import { IllegalNamingWarning } from "components/warning/warning";
 import { loadResource } from "store/resources/resources-actions";
@@ -160,13 +160,13 @@ const renderIcon = (item: GroupContentsResource) => {
     }
 };
 
-const renderDate = (date?: string) => {
+export const renderDate = (date?: string) => {
     return (
         <Typography
             noWrap
             style={{ minWidth: "100px" }}
         >
-            {formatDate(date)}
+            {date ? formatDate(date) : '-'}
         </Typography>
     );
 };
@@ -464,28 +464,28 @@ export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid:
 })(renderVirtualMachineLogin);
 
 // Common methods
-const renderCommonData = (data: string) => <Typography noWrap>{data}</Typography>;
+export const renderString = (str: string) => <Typography noWrap>{str || '-'}</Typography>;
 
-export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid}</Typography>;
+export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid || '-'}</Typography>;
 
 // const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
 
 // export const CommonUuid = withResourceData("uuid", renderCommonData);
 
 // Api Client Authorizations
-export const TokenApiToken = withResourceData("apiToken", renderCommonData);
+// export const TokenApiToken = withResourceData("apiToken", renderString);
 
-export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderDate);
+// export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderDate);
 
-export const TokenExpiresAt = withResourceData("expiresAt", renderDate);
+// export const TokenExpiresAt = withResourceData("expiresAt", renderDate);
 
-export const TokenLastUsedAt = withResourceData("lastUsedAt", renderDate);
+// export const TokenLastUsedAt = withResourceData("lastUsedAt", renderDate);
 
-export const TokenLastUsedByIpAddress = withResourceData("lastUsedByIpAddress", renderCommonData);
+// export const TokenLastUsedByIpAddress = withResourceData("lastUsedByIpAddress", renderString);
 
-export const TokenScopes = withResourceData("scopes", renderCommonData);
+// export const TokenScopes = withResourceData("scopes", renderString);
 
-export const TokenUserId = withResourceData("userId", renderCommonData);
+// export const TokenUserId = withResourceData("userId", renderString);
 
 export const ResourceCluster = connect((state: RootState, props: { uuid: string }) => {
     const clusterId = props.uuid.slice(0, 5) || ""
