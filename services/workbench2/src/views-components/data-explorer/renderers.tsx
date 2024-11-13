@@ -466,18 +466,20 @@ export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid:
 // Common methods
 const renderCommonData = (data: string) => <Typography noWrap>{data}</Typography>;
 
-const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
+export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid}</Typography>;
 
-export const CommonUuid = withResourceData("uuid", renderCommonData);
+// const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
+
+// export const CommonUuid = withResourceData("uuid", renderCommonData);
 
 // Api Client Authorizations
 export const TokenApiToken = withResourceData("apiToken", renderCommonData);
 
-export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderCommonDate);
+export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderDate);
 
-export const TokenExpiresAt = withResourceData("expiresAt", renderCommonDate);
+export const TokenExpiresAt = withResourceData("expiresAt", renderDate);
 
-export const TokenLastUsedAt = withResourceData("lastUsedAt", renderCommonDate);
+export const TokenLastUsedAt = withResourceData("lastUsedAt", renderDate);
 
 export const TokenLastUsedByIpAddress = withResourceData("lastUsedByIpAddress", renderCommonData);
 

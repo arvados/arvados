@@ -14,8 +14,14 @@ import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-author
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { ResourcesState } from 'store/resources/resources';
 import {
-    CommonUuid, TokenApiToken, TokenCreatedByIpAddress, TokenExpiresAt,
-    TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
+    TokenApiToken, 
+    TokenCreatedByIpAddress, 
+    TokenExpiresAt,
+    TokenLastUsedAt, 
+    TokenLastUsedByIpAddress, 
+    TokenScopes, 
+    TokenUserId,
+    renderUuid,
 } from 'views-components/data-explorer/renderers';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 
@@ -46,7 +52,7 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: uuid => <CommonUuid uuid={uuid as string} />
+        render: (resource: ApiClientAuthorization) => renderUuid({uuid: resource.uuid})
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.API_TOKEN,
