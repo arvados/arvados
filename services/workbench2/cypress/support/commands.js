@@ -342,12 +342,12 @@ Cypress.Commands.add("loginAs", (user, preserveLocalStorage = false) => {
     }
     cy.visit(`/token/?api_token=${user.token}`);
     // Use waitUntil to avoid permafail race conditions with window.location being undefined
-    cy.waitUntil(() => cy.window().then(win =>
-        win?.location?.href &&
-        win.location.href.includes("/projects/")
-    ), { timeout: 15000 });
+    // cy.waitUntil(() => cy.window().then(win =>
+    //     win?.location?.href &&
+    //     win.location.href.includes("/projects/")
+    // ), { timeout: 15000 });
     // Wait for page to settle before getting elements
-    cy.waitForDom();
+    // cy.waitForDom();
     cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
     cy.get("div#root").should("not.contain", "Your account is inactive");
 });
@@ -559,16 +559,16 @@ Cypress.Commands.add("waitForDom", () => {
 Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
     const timeout = options.timeout || 10000;
     const interval = options.interval || 100;
-  
+
     cy.log(`Waiting for localStorage key: ${key}`)
-  
+
     const checkLocalStorage = () => {
       return new Cypress.Promise((resolve, reject) => {
         const startTime = Date.now();
-  
+
         const check = () => {
           const value = localStorage.getItem(key);
-  
+
           if (value !== null) {
             resolve(value);
           } else if (Date.now() - startTime > timeout) {
@@ -577,19 +577,19 @@ Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
             setTimeout(check, interval);
           }
         };
-  
+
         check();
       });
     };
-  
+
     return cy.wrap(checkLocalStorage());
   });
-  
+
   //pauses test execution until the localStorage key changes
   Cypress.Commands.add('waitForLocalStorageUpdate', (key, timeout = 10000) => {
     const checkInterval = 200; // Interval to check the localStorage value
     let previousValue = localStorage.getItem(key);
-  
+
     return new Cypress.Promise((resolve, reject) => {
       const checkValue = () => {
         const currentValue = localStorage.getItem(key);
@@ -601,12 +601,12 @@ Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
           setTimeout(checkValue, checkInterval);
         }
       };
-  
+
       const startTime = Date.now();
       checkValue();
     });
   });
-  
+
 Cypress.Commands.add("setupDockerImage", (image_name) => {
     // Create a collection that will be used as a docker image for the tests.
     let activeUser;
