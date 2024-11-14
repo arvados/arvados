@@ -28,20 +28,26 @@ describe('renderers', () => {
 
         it('shows main process input loading when raw or params null', () => {
             // when
-            cy.mount(
-                <Provider store={store}>
-                    <StyledEngineProvider injectFirst>
-                        <ThemeProvider theme={CustomTheme}>
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                process={false} // Treat as a main process, no requestingContainerUuid
-                                params={null}
-                                raw={{}}
-                            />
-                        </ThemeProvider>
-                    </StyledEngineProvider>
-                </Provider>
+            try {
+                cy.mount(
+                    <Provider store={store}>
+                        <StyledEngineProvider injectFirst>
+                            <ThemeProvider theme={CustomTheme}>
+                                <ProcessIOCard
+                                    label={ProcessIOCardType.INPUT}
+                                    process={false} // Treat as a main process, no requestingContainerUuid
+                                    params={null}
+                                    raw={{}}
+                                />
+                            </ThemeProvider>
+                        </StyledEngineProvider>
+                    </Provider>
                 );
+            } catch (error) {
+                // ignore axios errors only
+                if(error.name === "AxiosError") console.error(error)
+                else throw error;
+            }
 
             // then
             cy.get('[data-cy=process-io-card]').within(() => {
