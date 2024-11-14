@@ -37,15 +37,16 @@ describe('<AccountMenu />', () => {
 
             try {
                 cy.mount(<AccountMenuComponent {...props} />);
+                
+                cy.get('button').should('exist').click({ force: true });
+                cy.get('[data-cy="logout-menuitem"]').should('exist').click({ force: true });
+                cy.get('@onLogout').should('have.been.called');
+                
             } catch (error) {
                 // ignore axios errors only
                 if(error.name === "AxiosError") console.error(error)
                 else throw error;
             }
-
-            cy.get('button').should('exist').click({ force: true });
-                cy.get('[data-cy="logout-menuitem"]').should('exist').click({ force: true });
-                cy.get('@onLogout').should('have.been.called');
         });
     });
 });
