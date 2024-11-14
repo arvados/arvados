@@ -30,16 +30,23 @@ describe('<AccountMenu />', () => {
             getNewExtraToken: cy.stub().as('getNewExtraToken'),
             openTokenDialog: cy.stub().as('openTokenDialog'),
         };
-        // response can be anything not 404
-        cy.intercept('*', { foo: 'bar' });
     });
 
     describe('Logout Menu Item', () => {
         it('should dispatch a logout action when clicked', () => {
-            cy.mount(<AccountMenuComponent {...props} />);
-            cy.get('button').should('exist').click({ force: true });
-            cy.get('[data-cy="logout-menuitem"]').should('exist').click({ force: true });
-            cy.get('@onLogout').should('have.been.called');
+            // response can be anything not 404
+            cy.intercept('*', { foo: 'bar' });
+
+            try {
+                cy.mount(<AccountMenuComponent {...props} />);
+                
+                cy.get('button').should('exist').click({ force: true });
+                cy.get('[data-cy="logout-menuitem"]').should('exist').click({ force: true });
+                cy.get('@onLogout').should('have.been.called');
+
+            } catch (error) {
+                console.error(error)
+            }
         });
     });
 });

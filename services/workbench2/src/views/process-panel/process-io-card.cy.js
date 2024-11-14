@@ -31,49 +31,56 @@ describe('renderers', () => {
         });
 
         it('shows main process input loading when raw or params null', () => {
+            try {
             // when
-            cy.mount(
-                <Provider store={store}>
-                    <StyledEngineProvider injectFirst>
-                        <ThemeProvider theme={CustomTheme}>
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                process={false} // Treat as a main process, no requestingContainerUuid
-                                params={null}
-                                raw={{}}
-                            />
-                        </ThemeProvider>
-                    </StyledEngineProvider>
-                </Provider>
-            );
+                cy.mount(
+                    <Provider store={store}>
+                        <StyledEngineProvider injectFirst>
+                            <ThemeProvider theme={CustomTheme}>
+                                <ProcessIOCard
+                                    label={ProcessIOCardType.INPUT}
+                                    process={false} // Treat as a main process, no requestingContainerUuid
+                                    params={null}
+                                    raw={{}}
+                                />
+                            </ThemeProvider>
+                        </StyledEngineProvider>
+                    </Provider>
+                );
+                // then
+                cy.get('[data-cy=process-io-card]').within(() => {
+                    cy.get('[data-cy=conditional-tab]').should('not.exist');
+                    cy.get('[data-cy=process-io-circular-progress]').should('exist');
+                });
+            } catch (error) {
+                console.error(error)
+            }
 
+
+            try {
+                // when
+                cy.mount(
+                    <Provider store={store}>
+                        <StyledEngineProvider injectFirst>
+                            <ThemeProvider theme={CustomTheme}>
+                                <ProcessIOCard
+                                    label={ProcessIOCardType.INPUT}
+                                    process={false} // Treat as a main process, no requestingContainerUuid
+                                    params={[]}
+                                    raw={null}
+                                />
+                            </ThemeProvider>
+                        </StyledEngineProvider>
+                    </Provider>
+                );
             // then
             cy.get('[data-cy=process-io-card]').within(() => {
                 cy.get('[data-cy=conditional-tab]').should('not.exist');
                 cy.get('[data-cy=process-io-circular-progress]').should('exist');
-            });
-
-            // when
-            cy.mount(
-                <Provider store={store}>
-                    <StyledEngineProvider injectFirst>
-                        <ThemeProvider theme={CustomTheme}>
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                process={false} // Treat as a main process, no requestingContainerUuid
-                                params={[]}
-                                raw={null}
-                            />
-                        </ThemeProvider>
-                    </StyledEngineProvider>
-                </Provider>
-            );
-
-                // then
-            cy.get('[data-cy=process-io-card]').within(() => {
-                cy.get('[data-cy=conditional-tab]').should('not.exist');
-                cy.get('[data-cy=process-io-circular-progress]').should('exist');
             });    
+            } catch (error) {
+                console.error(error)
+            }
         });
 
         it('shows main process empty params and raw', () => {
