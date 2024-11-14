@@ -22,6 +22,7 @@ import {
 } from 'store/navigation/navigation-action';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
+import { Dispatch } from 'redux';
 
 interface AccountMenuProps {
     user?: User;
@@ -31,12 +32,26 @@ interface AccountMenuProps {
     localCluster: string;
 }
 
+interface AccountMenuActionProps {
+    onLogout: () => void;
+    getNewExtraToken: (reuseExtra?: boolean) => void;
+    openTokenDialog: () => void;
+}
+
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
     user: state.auth.user,
     currentRoute: state.router.location ? state.router.location.pathname : '',
     workbenchURL: state.auth.config.workbenchUrl,
     apiToken: state.auth.apiToken,
     localCluster: state.auth.localCluster
+});
+
+const mapDispatchToProps = (dispatch: Dispatch): AccountMenuActionProps => ({
+    onLogout: () => {
+        dispatch<any>(dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false })));
+    },
+    getNewExtraToken: (reuseExtra: boolean) => dispatch<any>(getNewExtraToken(reuseExtra)),
+    openTokenDialog: () => dispatch<any>(openTokenDialog),
 });
 
 type CssRules = 'link';
@@ -49,11 +64,11 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 });
 
 export const AccountMenuComponent =
-    ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
+    ({ user, dispatch, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog }: AccountMenuProps & AccountMenuActionProps & DispatchProp<any> & WithStyles<CssRules>) => {
         let accountMenuItems = <>
             <MenuItem onClick={() => {
-                dispatch<any>(getNewExtraToken(true));
-                dispatch(openTokenDialog);
+                getNewExtraToken(true);
+                openTokenDialog();
             }}>Get API token</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
@@ -78,11 +93,12 @@ export const AccountMenuComponent =
                 </MenuItem>
                 {user.isActive && accountMenuItems}
                 <MenuItem data-cy="logout-menuitem"
-                    onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
+                    onClick={onLogout}
+                    >
                     Logout
                 </MenuItem>
             </DropdownMenu>
             : null;
     };
 
-export const AccountMenu = withStyles(styles)(connect(mapStateToProps)(AccountMenuComponent));
+export const AccountMenu = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(AccountMenuComponent));
