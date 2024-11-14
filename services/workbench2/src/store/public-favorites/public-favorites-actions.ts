@@ -11,7 +11,7 @@ import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { loadPublicFavoritesTree } from "store/side-panel-tree/side-panel-tree-actions";
+import { SidePanelTreeCategory, loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
 
 export const publicFavoritesActions = unionize({
     TOGGLE_PUBLIC_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -53,7 +53,7 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
                 }));
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES))
                 dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));
-                dispatch<any>(loadPublicFavoritesTree())
+                dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.PUBLIC_FAVORITES));
             })
             .catch((e: any) => {
                 dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));

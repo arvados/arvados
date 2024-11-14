@@ -66,7 +66,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             }));
             dispatch<any>(updateResources([updatedCollection]));
             dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
-            dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES))
+            dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
         }).catch (e => {
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);

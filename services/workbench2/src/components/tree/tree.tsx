@@ -374,7 +374,7 @@ export const Tree = withStyles(styles)(
                 if (isInFavoritesTree(it) && it.open === true && it.items && it.items.length) {
                     it = { ...it, items: it.items.filter(item => item.depth && item.depth < 3) }
                 }
-                return <div key={`item/${level}/${it.id}`}>
+                return <div data-cy="tree-top-level-item" key={`item/${level}/${it.id}`}>
                     <ListItem button className={listItem}
                         data-cy="tree-li"
                         style={{
