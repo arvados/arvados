@@ -5,15 +5,14 @@
 import { reduxForm, change } from 'redux-form';
 import withStyles from '@mui/styles/withStyles';
 import {
-    COLLECTION_CREATE_PROPERTIES_FORM_NAME,
-    COLLECTION_CREATE_FORM_NAME
-} from 'store/collections/collection-create-actions';
-import {
     ResourcePropertiesForm,
     ResourcePropertiesFormData
 } from 'views-components/resource-properties-form/resource-properties-form';
 import { addPropertyToResourceForm } from 'store/resources/resources-actions';
 import { PROPERTY_VALUE_FIELD_NAME } from 'views-components/resource-properties-form/property-value-field';
+
+const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
+const COLLECTION_CREATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
 
 const Form = withStyles(
     ({ spacing }) => (
