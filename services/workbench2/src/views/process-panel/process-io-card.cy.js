@@ -24,30 +24,28 @@ describe('renderers', () => {
                 collectionPanel: (state = {}, action) => state,
                 collectionPanelFiles: (state = {}, action) => { return {...state, item: { portableDataHash: '12345'} } },
             }));
+
+            // response can be anything not 404
+            cy.intercept('*', { foo: 'bar' });
+
         });
 
         it('shows main process input loading when raw or params null', () => {
             // when
-            try {
-                cy.mount(
-                    <Provider store={store}>
-                        <StyledEngineProvider injectFirst>
-                            <ThemeProvider theme={CustomTheme}>
-                                <ProcessIOCard
-                                    label={ProcessIOCardType.INPUT}
-                                    process={false} // Treat as a main process, no requestingContainerUuid
-                                    params={null}
-                                    raw={{}}
-                                />
-                            </ThemeProvider>
-                        </StyledEngineProvider>
-                    </Provider>
-                );
-            } catch (error) {
-                // ignore axios errors only
-                if(error.name === "AxiosError") console.error(error)
-                else throw error;
-            }
+            cy.mount(
+                <Provider store={store}>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                params={null}
+                                raw={{}}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
+                </Provider>
+            );
 
             // then
             cy.get('[data-cy=process-io-card]').within(() => {
@@ -69,13 +67,13 @@ describe('renderers', () => {
                         </ThemeProvider>
                     </StyledEngineProvider>
                 </Provider>
-                );
+            );
 
-            // then
+                // then
             cy.get('[data-cy=process-io-card]').within(() => {
                 cy.get('[data-cy=conditional-tab]').should('not.exist');
                 cy.get('[data-cy=process-io-circular-progress]').should('exist');
-            });
+            });    
         });
 
         it('shows main process empty params and raw', () => {
