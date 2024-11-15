@@ -36,6 +36,10 @@ interface AccountMenuActionProps {
     onLogout: () => void;
     getNewExtraToken: (reuseExtra?: boolean) => void;
     openTokenDialog: () => void;
+    navigateToSshKeysUser: () => void;
+    navigateToSiteManager: () => void;
+    navigateToMyAccount: () => void;
+    navigateToLinkAccount: () => void;
 }
 
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
@@ -52,6 +56,10 @@ const mapDispatchToProps = (dispatch: Dispatch): AccountMenuActionProps => ({
     },
     getNewExtraToken: (reuseExtra: boolean) => dispatch<any>(getNewExtraToken(reuseExtra)),
     openTokenDialog: () => dispatch<any>(openTokenDialog),
+    navigateToSshKeysUser: () => dispatch<any>(navigateToSshKeysUser),
+    navigateToSiteManager: () => dispatch<any>(navigateToSiteManager),
+    navigateToMyAccount: () => dispatch<any>(navigateToMyAccount),
+    navigateToLinkAccount: () => dispatch<any>(navigateToLinkAccount),
 });
 
 type CssRules = 'link';
@@ -64,16 +72,16 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 });
 
 export const AccountMenuComponent =
-    ({ user, dispatch, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog }: AccountMenuProps & AccountMenuActionProps & DispatchProp<any> & WithStyles<CssRules>) => {
+    ({ user, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog, navigateToSshKeysUser, navigateToSiteManager, navigateToMyAccount, navigateToLinkAccount }: AccountMenuProps & AccountMenuActionProps & WithStyles<CssRules>) => {
         let accountMenuItems = <>
             <MenuItem onClick={() => {
                 getNewExtraToken(true);
                 openTokenDialog();
             }}>Get API token</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
+            <MenuItem onClick={navigateToSshKeysUser}>SSH Keys</MenuItem>
+            <MenuItem onClick={navigateToSiteManager}>Site Manager</MenuItem>
+            <MenuItem onClick={navigateToMyAccount}>My account</MenuItem>
+            <MenuItem onClick={navigateToLinkAccount}>Link account</MenuItem>
         </>;
 
         const reduceItemsFn: (a: React.ReactElement[],
