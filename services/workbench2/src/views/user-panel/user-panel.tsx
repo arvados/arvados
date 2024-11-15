@@ -16,7 +16,7 @@ import {
     ResourceIsAdmin,
     UserResourceAccountStatus,
     renderUuidWithCopy,
-    renderFullName,
+    RenderFullName,
     renderEmail,
     renderUsername,
 } from "views-components/data-explorer/renderers";
@@ -60,7 +60,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: (resource) => renderFullName(resource as UserResource, true)
+        render: (resource) => <RenderFullName resource={resource as UserResource} link={true} />
     },
     {
         name: UserPanelColumnNames.UUID,

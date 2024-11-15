@@ -66,7 +66,7 @@ import { PermissionResource } from 'models/permission';
 import { ContainerRequestResource } from 'models/container-request';
 import { toggleTrashed } from "store/trash/trash-actions";
 
-// A generic wrapper for components that need to dispatch actions
+// A generic wrapper for renderers that need to dispatch actions
 const dispatchWrapper = (component: React.ComponentType<any>) => connect()(component);
 
 export const toggleIsAdmin = (uuid: string) =>
@@ -246,21 +246,22 @@ export const ResourceShare = connect((state: RootState, props: { resource: Workf
 //     return resource || { lastName: "" };
 // })(renderLastName);
 
-export const renderFullName = (item: { uuid: string; firstName: string; lastName: string }, link?: boolean) => {
-    const displayName = (item.firstName + " " + item.lastName).trim() || item.uuid;
+export const RenderFullName = dispatchWrapper((props: { resource: UserResource, link?: boolean, dispatch: Dispatch }) => {
+    const { resource, link, dispatch } = props;
+    const displayName = (resource.firstName + " " + resource.lastName).trim() || resource.uuid;
     return link ? (
         <Typography
             noWrap
             color="primary"
             style={{ cursor: "pointer" }}
-            onClick={() => dispatchAction<any>(navigateToUserProfile, item.uuid)} 
+            onClick={() => dispatch<any>(navigateToUserProfile(resource.uuid))} 
         >
             {displayName}
         </Typography>
     ) : (
         <Typography noWrap>{displayName}</Typography>
     );
-};
+});
 
 // export const UserResourceFullName = connect((state: RootState, props: { uuid: string; link?: boolean }) => {
 //     const resource = getResource<UserResource>(props.uuid)(state.resources);
