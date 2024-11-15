@@ -7,7 +7,7 @@ import {
     ProcessStatus as ResourceStatus,
     ContainerRunTime,
     renderType,
-    renderName,
+    RenderName,
     renderPortableDataHash,
     OwnerWithName,
     renderFileSize,
@@ -60,7 +60,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource) => renderName(resource as ProjectResource),
+        render: (resource) => <RenderName resource={resource as ProjectResource} />,
     },
     {
         name: SharedWithMePanelColumnNames.STATUS,

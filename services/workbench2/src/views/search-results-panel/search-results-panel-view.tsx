@@ -12,7 +12,7 @@ import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import {
     ResourceCluster,
     renderType,
-    renderName,
+    RenderName,
     OwnerWithName,
     renderFileSize,
     renderLastModifiedDate,
@@ -63,7 +63,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => renderName(resource as GroupContentsResource),
+        render: (resource) => <RenderName resource={resource as GroupContentsResource} />,
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,

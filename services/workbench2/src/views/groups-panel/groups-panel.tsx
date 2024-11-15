@@ -12,7 +12,7 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { renderUuidWithCopy, renderMembersCount } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
-import { renderName } from 'views-components/data-explorer/renderers';
+import { RenderName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
@@ -46,7 +46,7 @@ export const groupsPanelColumns: DataColumns<string, GroupResource> = [
         configurable: true,
         sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
-        render: (resource) => renderName(resource as any),
+        render: (resource) => <RenderName resource={resource as any} />,
     },
     {
         name: GroupsPanelColumnNames.UUID,

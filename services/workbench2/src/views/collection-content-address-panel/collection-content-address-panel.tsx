@@ -24,7 +24,7 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
-    renderName,
+    RenderName,
     OwnerWithName,
     renderLastModifiedDate,
     renderResourceStatus,
@@ -71,7 +71,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: (resource) => renderName(resource as CollectionResource),
+        render: (resource) => <RenderName resource={resource as CollectionResource} />,
     },
     {
         name: CollectionContentAddressPanelColumnNames.STATUS,

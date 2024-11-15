@@ -18,7 +18,7 @@ import {
     ProcessStatus,
     ContainerRunTime,
     renderType,
-    renderName,
+    RenderName,
     OwnerWithName,
     renderCreatedAtDate,
 } from "views-components/data-explorer/renderers";
@@ -69,7 +69,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => renderName(resource as ContainerRequestResource),
+        render: (resource) => <RenderName resource={resource as ContainerRequestResource} />,
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,

@@ -11,7 +11,7 @@ import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
 import { CollectionResource } from "models/collection";
 import {
-    renderName,
+    RenderName,
     renderType,
     OwnerWithName,
     renderPortableDataHash,
@@ -56,7 +56,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource | Coll
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource)=> renderName(resource as ProjectResource),
+        render: (resource)=> <RenderName resource={resource as ProjectResource} />,
     },
     {
         name: ProjectPanelDataColumnNames.TYPE,

@@ -17,7 +17,7 @@ import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
 import {
     ProcessStatus,
     renderType,
-    renderName,
+    RenderName,
     OwnerWithName,
     renderFileSize,
     renderLastModifiedDate,
@@ -76,7 +76,7 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderName(resource as GroupContentsResource),
+        render: (resource) => <RenderName resource={resource as GroupContentsResource} />,
     },
     {
         name: "Status",

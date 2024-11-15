@@ -16,7 +16,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import {
     ProcessStatus,
     renderType,
-    renderName,
+    RenderName,
     OwnerWithName,
     renderFileSize,
     renderLastModifiedDate,
@@ -74,7 +74,7 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderName(resource as GroupContentsResource),
+        render: (resource) => <RenderName resource={resource as GroupContentsResource} />,
     },
     {
         name: "Status",

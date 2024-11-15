@@ -8,7 +8,7 @@ import { DataTableFilterItem } from 'components/data-table-filters/data-table-fi
 import { ContainerRequestState } from 'models/container-request';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind } from 'models/resource';
-import { ProcessStatus, ContainerRunTime, renderName, renderCreatedAtDate } from 'views-components/data-explorer/renderers';
+import { ProcessStatus, ContainerRunTime, RenderName, renderCreatedAtDate } from 'views-components/data-explorer/renderers';
 import { ProcessIcon } from 'components/icon/icon';
 import { WORKFLOW_PROCESSES_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import { createTree } from 'models/tree';
@@ -55,7 +55,7 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => renderName(resource as ProcessResource),
+        render: (resource) => <RenderName resource={resource as ProcessResource} />,
     },
     {
         name: WorkflowProcessesPanelColumnNames.STATUS,

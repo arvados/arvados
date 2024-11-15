@@ -66,6 +66,9 @@ import { PermissionResource } from 'models/permission';
 import { ContainerRequestResource } from 'models/container-request';
 import { toggleTrashed } from "store/trash/trash-actions";
 
+// A generic wrapper for components that need to dispatch actions
+const dispatchWrapper = (component: React.ComponentType<any>) => connect()(component);
+
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
@@ -76,8 +79,9 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-export const renderName = (item: GroupContentsResource) => {
-    const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
+export const RenderName = dispatchWrapper((props: { resource: GroupContentsResource, dispatch: Dispatch }) => {
+    const { resource, dispatch } = props;
+    const navFunc = "groupClass" in resource && resource.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
         <Grid
             container
@@ -85,30 +89,30 @@ export const renderName = (item: GroupContentsResource) => {
             wrap="nowrap"
             spacing={2}
         >
-            <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(item)}</Grid>
+            <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(resource)}</Grid>
             <Grid item>
                 <Typography
                     color="primary"
                     style={{ width: "auto", cursor: "pointer" }}
                     onClick={(ev) => {
                         ev.stopPropagation()
-                        dispatchAction(navFunc, item.uuid)
+                        dispatch<any>(navFunc(resource.uuid))
                     }}
                 >
-                    {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
-                    {item.name}
+                    {resource.kind === ResourceKind.PROJECT || resource.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={resource.name} /> : null}
+                    {resource.name}
                 </Typography>
             </Grid>
             <Grid item>
                 <Typography variant="caption">
-                    <FavoriteStar resourceUuid={item.uuid} />
-                    <PublicFavoriteStar resourceUuid={item.uuid} />
-                    {item.kind === ResourceKind.PROJECT && <FrozenProject item={item} />}
+                    <FavoriteStar resourceUuid={resource.uuid} />
+                    <PublicFavoriteStar resourceUuid={resource.uuid} />
+                    {resource.kind === ResourceKind.PROJECT && <FrozenProject item={resource} />}
                 </Typography>
             </Grid>
         </Grid>
     );
-};
+});
 
 export const FrozenProject = (props: { item: ProjectResource }) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);

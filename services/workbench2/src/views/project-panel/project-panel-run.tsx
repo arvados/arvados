@@ -12,7 +12,7 @@ import { createTree } from "models/tree";
 import {
     ContainerRunTime,
     renderType,
-    renderName,
+    RenderName,
     OwnerWithName,
     renderUuidWithCopy,
     renderModifiedByUserUuid,
@@ -63,7 +63,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource) => renderName(resource as ProjectResource),
+        render: (resource) => <RenderName resource={resource as ProjectResource} />,
     },
     {
         name: ProjectPanelRunColumnNames.STATUS,

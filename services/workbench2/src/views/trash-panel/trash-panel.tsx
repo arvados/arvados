@@ -21,7 +21,7 @@ import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
     renderType,
-    renderName,
+    RenderName,
     renderFileSize,
     renderTrashDate,
     renderDeleteDate,
@@ -71,7 +71,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => renderName(resource as CollectionResource),
+        render: (resource) => <RenderName resource={resource as CollectionResource} />,
     },
     {
         name: TrashPanelColumnNames.TYPE,
