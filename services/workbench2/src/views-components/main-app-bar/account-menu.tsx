@@ -10,7 +10,7 @@ import withStyles from '@mui/styles/withStyles';
 import { User, getUserDisplayName } from "models/user";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "components/icon/icon";
-import { DispatchProp, connect } from 'react-redux';
+import { connect } from 'react-redux';
 import { authActions, getNewExtraToken } from 'store/auth/auth-action';
 import { RootState } from "store/store";
 import { openTokenDialog } from 'store/token-dialog/token-dialog-actions';
@@ -73,6 +73,9 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 
 export const AccountMenuComponent =
     ({ user, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog, navigateToSshKeysUser, navigateToSiteManager, navigateToMyAccount, navigateToLinkAccount }: AccountMenuProps & AccountMenuActionProps & WithStyles<CssRules>) => {
+        
+        console.log(user, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog, navigateToSshKeysUser, navigateToSiteManager, navigateToMyAccount, navigateToLinkAccount);
+        
         let accountMenuItems = <>
             <MenuItem onClick={() => {
                 getNewExtraToken(true);

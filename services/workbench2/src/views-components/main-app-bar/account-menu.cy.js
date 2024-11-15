@@ -21,14 +21,11 @@ describe('<AccountMenu />', () => {
                 isAdmin: false,
                 isActive: true
             },
-            currentRoute: '',
-            workbenchURL: '',
+            currentRoute: 'mockRoute',
+            workbenchURL: 'zzzzz-tpzed-workbenchurl',
             localCluser: 'zzzzz',
             apiToken: 'zzzzz',
-            dispatch: cy.stub().as('dispatch'),
             onLogout: cy.stub().as('onLogout'),
-            getNewExtraToken: cy.stub().as('getNewExtraToken'),
-            openTokenDialog: cy.stub().as('openTokenDialog'),
         };
     });
 
