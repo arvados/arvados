@@ -590,13 +590,13 @@ export const ResourceLinkTailUuid = connect((state: RootState, props: { uuid: st
     return tailResource || { uuid: "" };
 })(renderUuidWithCopy);
 
-const renderLinkDelete = (item: LinkResource, canManage: boolean) => {
+const renderLinkDelete = (item: LinkResource, canManage: boolean, dispatch: Dispatch) => {
     if (item.uuid) {
         return canManage ? (
             <Typography noWrap>
                 <IconButton
                     data-cy="resource-delete-button"
-                    onClick={() => dispatchAction<any>(openRemoveGroupMemberDialog, item.uuid)}
+                    onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}
                     size="large">
                     <RemoveIcon />
                 </IconButton>
@@ -620,7 +620,7 @@ export const ResourceLinkDelete = connect((state: RootState, props: { resource: 
         item: props.resource || { uuid: "", kind: ResourceKind.NONE },
         canManage: props.resource && getResourceLinkCanManage(state, props.resource) && !isBuiltin,
     };
-})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.item, props.canManage));
+})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.item, props.canManage, props.dispatch));
 
 export const ResourceLinkTailEmail = connect((state: RootState, props: { uuid: string }) => {
     const link = getResource<LinkResource>(props.uuid)(state.resources);
