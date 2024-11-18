@@ -51,9 +51,7 @@ const mapStateToProps = (state: RootState): AccountMenuProps => ({
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): AccountMenuActionProps => ({
-    onLogout: () => {
-        dispatch<any>(dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false })));
-    },
+    onLogout: () => dispatch<any>(authActions.LOGOUT({ deleteLinkData: true, preservePath: false })),
     getNewExtraToken: (reuseExtra: boolean) => dispatch<any>(getNewExtraToken(reuseExtra)),
     openTokenDialog: () => dispatch<any>(openTokenDialog),
     navigateToSshKeysUser: () => dispatch<any>(navigateToSshKeysUser),
