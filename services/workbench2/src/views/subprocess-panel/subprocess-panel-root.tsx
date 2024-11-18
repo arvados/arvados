@@ -57,7 +57,7 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource as ProcessResource} />,
+        render: (resource: ProcessResource) => <RenderName resource={resource} />,
     },
     {
         name: SubprocessPanelColumnNames.STATUS,
@@ -65,7 +65,7 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (resource) => <ProcessStatus uuid={(resource as ProcessResource).uuid} />,
+        render: (resource: ProcessResource) => <ProcessStatus uuid={resource.uuid} />,
     },
     {
         name: SubprocessPanelColumnNames.CREATED_AT,
@@ -73,14 +73,14 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "createdAt"},
         filters: createTree(),
-        render: (resource) => renderCreatedAtDate(resource as ProcessResource),
+        render: (resource: ProcessResource) => renderCreatedAtDate(resource),
     },
     {
         name: SubprocessPanelColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ContainerRunTime uuid={(resource as ProcessResource).uuid} />
+        render: (resource: ProcessResource) => <ContainerRunTime uuid={resource.uuid} />
     }
 ];
 

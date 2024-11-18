@@ -60,7 +60,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: (resource) => <RenderFullName resource={resource as UserResource} link={true} />
+        render: (resource) => <RenderFullName resource={resource} link={true} />
     },
     {
         name: UserPanelColumnNames.UUID,
@@ -76,7 +76,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "email"},
         filters: createTree(),
-        render: (resource) => renderEmail(resource as UserResource)
+        render: (resource: UserResource) => renderEmail(resource)
     },
     {
         name: UserPanelColumnNames.STATUS,
@@ -98,7 +98,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: false,
         sort: {direction: SortDirection.NONE, field: "username"},
         filters: createTree(),
-        render: (resource) => renderUsername(resource as UserResource)
+        render: (resource: UserResource) => renderUsername(resource)
     }
 ];
 

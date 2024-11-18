@@ -69,7 +69,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
-        render: (resource) => renderWorkflowName(resource as WorkflowResource),
+        render: (resource: WorkflowResource) => renderWorkflowName(resource),
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
@@ -102,7 +102,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "modifiedAt"},
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource as WorkflowResource),
+        render: (resource: WorkflowResource) => renderLastModifiedDate(resource),
     },
     {
         name: '',

@@ -72,7 +72,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource as GroupContentsResource} />,
+        render: (resource: GroupContentsResource) => <RenderName resource={resource as GroupContentsResource} />,
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,
@@ -86,21 +86,21 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: getInitialSearchTypeFilters(),
-        render: (resource) => renderType(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderType(resource),
     },
     {
         name: SearchResultsPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <OwnerWithName resource={resource as GroupContentsResource} />
+        render: (resource: GroupContentsResource) => <OwnerWithName resource={resource} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileSize(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderFileSize(resource),
     },
     {
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
@@ -108,7 +108,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "modifiedAt" },
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderLastModifiedDate(resource),
     }
 ];
 

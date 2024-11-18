@@ -69,7 +69,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource as ContainerRequestResource} />,
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,
@@ -77,21 +77,21 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (resource) => <ProcessStatus uuid={(resource as ContainerRequestResource).uuid} />,
+        render: (resource: ContainerRequestResource) => <ProcessStatus uuid={resource.uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialProcessTypeFilters(),
-        render: (resource) => renderType(resource as ContainerRequestResource),
+        render: (resource: ContainerRequestResource) => renderType(resource),
     },
     {
         name: AllProcessesPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <OwnerWithName resource={resource as ContainerRequestResource} />,
+        render: (resource: ContainerRequestResource) => <OwnerWithName resource={resource} />,
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,
@@ -99,7 +99,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: (resource) => renderCreatedAtDate(resource as ContainerRequestResource),
+        render: (resource: ContainerRequestResource) => renderCreatedAtDate(resource),
     },
     {
         name: AllProcessesPanelColumnNames.RUNTIME,

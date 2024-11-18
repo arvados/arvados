@@ -76,42 +76,42 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource as GroupContentsResource} />,
+        render: (resource: GroupContentsResource) => <RenderName resource={resource} />,
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ProcessStatus uuid={(resource as GroupContentsResource).uuid} />  
+        render: (resource: GroupContentsResource) => <ProcessStatus uuid={resource.uuid} />  
     },
     {
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: (resource) => renderType(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderType(resource),
     },
     {
         name: FavoritePanelColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <OwnerWithName resource={resource as GroupContentsResource} />
+        render: (resource: GroupContentsResource) => <OwnerWithName resource={resource} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileSize(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderFileSize(resource),
     },
     {
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderLastModifiedDate(resource),
     }
 ];
 

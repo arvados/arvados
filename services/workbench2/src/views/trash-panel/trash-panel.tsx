@@ -71,14 +71,14 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource as CollectionResource} />,
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: TrashPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getTrashPanelTypeFilters(),
-        render: (resource) => renderType(resource as CollectionResource),
+        render: (resource: CollectionResource) => renderType(resource),
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,
@@ -86,7 +86,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "fileSizeTotal"},
         filters: createTree(),
-        render: (resource) => renderFileSize(resource as CollectionResource),
+        render: (resource: CollectionResource) => renderFileSize(resource),
     },
     {
         name: TrashPanelColumnNames.TRASHED_DATE,
@@ -94,7 +94,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "trashAt"},
         filters: createTree(),
-        render: (resource) => renderTrashDate(resource as CollectionResource),
+        render: (resource: CollectionResource) => renderTrashDate(resource),
     },
     {
         name: TrashPanelColumnNames.TO_BE_DELETED,
@@ -102,14 +102,14 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
-        render: (resource) => renderDeleteDate(resource as CollectionResource),
+        render: (resource: CollectionResource) => renderDeleteDate(resource),
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource) => <RestoreFromTrash resource={resource as TrashableResource} />
+        render: (resource: CollectionResource) => <RestoreFromTrash resource={resource  as TrashableResource} />
     }
 ];
 

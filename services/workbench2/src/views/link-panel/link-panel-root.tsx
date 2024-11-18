@@ -42,28 +42,28 @@ export const linkPanelColumns: DataColumns<string, LinkResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => renderLinkName(resource as LinkResource)
+        render: (resource: LinkResource) => renderLinkName(resource)
     },
     {
         name: LinkPanelColumnNames.LINK_CLASS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderLinkClass(resource as LinkResource)
+        render: (resource: LinkResource) => renderLinkClass(resource)
     },
     {
         name: LinkPanelColumnNames.TAIL,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTail resource={resource as LinkResource} />
+        render: (resource: LinkResource) => <ResourceLinkTail resource={resource} />
     },
     {
         name: LinkPanelColumnNames.HEAD,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkHead resource={resource as LinkResource} />
+        render: (resource: LinkResource) => <ResourceLinkHead resource={resource} />
     },
     {
         name: LinkPanelColumnNames.UUID,
