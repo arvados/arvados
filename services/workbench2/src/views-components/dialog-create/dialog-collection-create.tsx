@@ -21,7 +21,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 
-const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
+export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
 type CssRules = 'propertiesForm';
 

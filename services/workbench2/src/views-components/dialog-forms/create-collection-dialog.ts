@@ -6,10 +6,8 @@ import { compose } from "redux";
 import { reduxForm } from 'redux-form';
 import { withDialog } from "store/dialog/with-dialog";
 import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
-import { DialogCollectionCreate } from "views-components/dialog-create/dialog-collection-create";
+import { COLLECTION_CREATE_FORM_NAME, DialogCollectionCreate } from "views-components/dialog-create/dialog-collection-create";
 import { createCollection } from "store/workbench/workbench-actions";
-
-const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
 export const CreateCollectionDialog = compose(
     withDialog(COLLECTION_CREATE_FORM_NAME),

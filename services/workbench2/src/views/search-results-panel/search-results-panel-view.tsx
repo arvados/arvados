@@ -31,7 +31,16 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { getSearchSessions } from 'store/search-bar/search-bar-actions';
 import { camelCase } from 'lodash';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { SearchResultsPanelColumnNames } from 'store/search-results-panel/search-results-middleware-service';
+
+export enum SearchResultsPanelColumnNames {
+    CLUSTER = "Cluster",
+    NAME = "Name",
+    STATUS = "Status",
+    TYPE = 'Type',
+    OWNER = "Owner",
+    FILE_SIZE = "File size",
+    LAST_MODIFIED = "Last modified"
+}
 
 export type CssRules = 'siteManagerLink' | 'searchResults';
 

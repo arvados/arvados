@@ -21,7 +21,7 @@ export const uploadCollectionFiles = (collectionUuid: string, targetLocation?: s
         dispatch(fileUploaderActions.CLEAR_UPLOAD());
     };
 
-const COLLECTION_UPLOAD_FILES_DIALOG = 'uploadCollectionFilesDialog';
+export const COLLECTION_UPLOAD_FILES_DIALOG = 'uploadCollectionFilesDialog';
 
 export const openUploadCollectionFilesDialog = (targetLocation?: string) => (dispatch: Dispatch) => {
     dispatch(reset(COLLECTION_UPLOAD_FILES_DIALOG));

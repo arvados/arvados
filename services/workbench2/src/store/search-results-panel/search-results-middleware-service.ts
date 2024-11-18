@@ -30,16 +30,8 @@ import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { Session } from 'models/session';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 import { GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION } from 'common/app-info';
+import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
 
-export enum SearchResultsPanelColumnNames {
-    CLUSTER = "Cluster",
-    NAME = "Name",
-    STATUS = "Status",
-    TYPE = 'Type',
-    OWNER = "Owner",
-    FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified"
-}
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);

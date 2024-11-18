@@ -36,6 +36,7 @@ export interface CollectionProperties {
 }
 
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
+export const COLLECTION_CREATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
 export const COLLECTION_CREATE_FORM_SELECTOR = formValueSelector(COLLECTION_CREATE_FORM_NAME);
 
 export const openCollectionCreateDialog = (ownerUuid: string) =>
