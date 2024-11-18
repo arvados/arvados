@@ -17,7 +17,7 @@ import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
-import { getResource, ResourcesState } from 'store/resources/resources';
+import { ResourcesState } from 'store/resources/resources';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
@@ -120,8 +120,7 @@ export const GroupsPanel = withStyles(styles)(connect(
             );
         }
 
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-            const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
+        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupResource) => {
             if (resource) {
                 this.props.onContextMenu(event, {
                     name: resource.name,

@@ -132,12 +132,12 @@ type AllProcessesPanelProps = AllProcessesPanelDataProps &
 export const AllProcessesPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<AllProcessesPanelProps> {
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const process = getProcess(resourceUuid)(this.props.resources);
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContainerRequestResource) => {
+                const process = getProcess(resource.uuid)(this.props.resources);
                 if (process) {
                     this.props.dispatch<any>(openProcessContextMenu(event, process));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             };
 
             handleRowDoubleClick = (uuid: string) => {

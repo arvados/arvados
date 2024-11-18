@@ -18,7 +18,7 @@ import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
 import { getProperty } from "store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { openContextMenu } from "store/context-menu/context-menu-actions";
-import { getResource, ResourcesState } from "store/resources/resources";
+import { ResourcesState } from "store/resources/resources";
 import {
     renderType,
     RenderName,
@@ -138,8 +138,7 @@ export const TrashPanel = withStyles(styles)(
                 </div>;
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const resource = getResource<TrashableResource>(resourceUuid)(this.props.resources);
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: TrashableResource) => {
                 if (resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: '',
@@ -150,7 +149,7 @@ export const TrashPanel = withStyles(styles)(
                         menuKind: ContextMenuKind.TRASH
                     }));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
             handleRowDoubleClick = (uuid: string) => {
