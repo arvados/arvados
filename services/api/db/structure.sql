@@ -2120,6 +2120,13 @@ CREATE INDEX index_container_requests_on_modified_at_and_uuid ON public.containe
 
 
 --
+-- Name: index_container_requests_on_name_and_owner_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_container_requests_on_name_and_owner_uuid ON public.container_requests USING btree (name, owner_uuid);
+
+
+--
 -- Name: index_container_requests_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3348,4 +3355,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20240604183200'),
 ('20240618121312'),
 ('20240627201747'),
-('20240820202230');
+('20240820202230'),
+('20241118110000');
+
+
