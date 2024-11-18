@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-JSON_FILE=$1
-ARVADOS_CLUSTER=$2
-PROJECT_ID=$3
-ACCOUNT_FILE=$4
-
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build cloud images for arvados-dispatch-cloud
 
