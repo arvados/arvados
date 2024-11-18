@@ -25,7 +25,7 @@ import {
     renderFileSize,
     renderTrashDate,
     renderDeleteDate,
-    renderRestoreFromTrash,
+    RestoreFromTrash,
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -109,7 +109,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource) => renderRestoreFromTrash(resource as TrashableResource)
+        render: (resource) => <RestoreFromTrash resource={resource as TrashableResource} />
     }
 ];
 

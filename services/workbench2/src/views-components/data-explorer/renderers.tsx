@@ -994,13 +994,13 @@ export const OwnerWithName = connect((state: RootState, props: { resource: Group
     const owner = getResource<UserResource>(props.resource.ownerUuid)(state.resources);
     const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
     return { ownerName, ownerUuid: props.resource.ownerUuid, link: props.link };
-})((props: { ownerName: string; ownerUuid: string; link?: boolean }) => {
+})((props: { ownerName: string; ownerUuid: string; link?: boolean } & DispatchProp<any>) => {
     return props.link ? (
         <Typography
             style={{ color: CustomTheme.palette.primary.main, cursor: 'pointer' }}
             display='inline'
             noWrap
-            onClick={() => dispatchAction<any>(navigateTo(props.ownerUuid))}
+            onClick={() => props.dispatch<any>(navigateTo(props.ownerUuid))}
         >
             {props.ownerName ? props.ownerName : props.ownerUuid}
         </Typography>
@@ -1278,18 +1278,19 @@ export const renderMembersCount = (resource: GroupResource) => {
     }
 };
 
-export const renderRestoreFromTrash = (resource: TrashableResource) => {
+export const RestoreFromTrash = dispatchWrapper((props: {resource: TrashableResource, dispatch: Dispatch}) => { 
+    const { resource, dispatch } = props;
     return (
         <Tooltip title="Restore">
             <IconButton
                 style={{ padding: '0' }}
                 onClick={() => {
                     if (resource) {
-                        dispatchAction(toggleTrashed,
+                        dispatch<any>(toggleTrashed(
                             resource.kind,
                             resource.uuid,
                             resource.ownerUuid,
-                            resource.isTrashed
+                            resource.isTrashed)
                         );
                     }}}
                 size="large">
@@ -1297,4 +1298,4 @@ export const renderRestoreFromTrash = (resource: TrashableResource) => {
             </IconButton>
         </Tooltip>
     );
-};
+});
