@@ -22,8 +22,8 @@ import {
     renderDeleteDate,
     renderResourceStatus,
     renderContainerUuid,
-    renderResourceOutputUuid,
-    renderResourceLogUuid,
+    ResourceOutputUuid,
+    ResourceLogUuid,
     renderResourceParentProcess,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
@@ -113,14 +113,14 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceOutputUuid(resource as GroupContentsResource),
+        render: (resource) => <ResourceOutputUuid resource={resource as any} />,
     },
     {
         name: ProjectPanelRunColumnNames.LOG_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceLogUuid(resource as GroupContentsResource),
+        render: (resource) => <ResourceLogUuid resource={resource as any} />,
     },
     {
         name: ProjectPanelRunColumnNames.PARENT_PROCESS,

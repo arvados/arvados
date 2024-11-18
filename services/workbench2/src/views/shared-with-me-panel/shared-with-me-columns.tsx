@@ -20,8 +20,8 @@ import {
     renderTrashDate,
     renderDeleteDate,
     renderContainerUuid,
-    renderResourceOutputUuid,
-    renderResourceLogUuid,
+    ResourceOutputUuid,
+    ResourceLogUuid,
     renderResourceParentProcess,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
@@ -131,14 +131,14 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceOutputUuid(resource as GroupContentsResource),
+        render: (resource) => <ResourceOutputUuid resource={resource as any} />,
     },
     {
         name: SharedWithMePanelColumnNames.LOG_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceLogUuid(resource as GroupContentsResource),
+        render: (resource) => <ResourceLogUuid resource={resource as any} />,
     },
     {
         name: SharedWithMePanelColumnNames.PARENT_PROCESS,
