@@ -153,9 +153,9 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
-        const onItemClick = useCallback((uuid) => {
-            setSelectedItem(uuid);
-            props.onItemClick(uuid);
+        const onItemClick = useCallback((resource) => {
+            setSelectedItem(resource.uuid);
+            props.onItemClick(resource.uuid);
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [props.onItemClick]);
 

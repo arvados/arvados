@@ -1001,7 +1001,7 @@ export const OwnerWithName = connect((state: RootState, props: { resource: Group
             noWrap
             onClick={() => props.dispatch<any>(navigateTo(props.ownerUuid))}
         >
-            {props.ownerName ? props.ownerName : props.ownerUuid}
+            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
         </Typography>
     ) : (
         <Typography
@@ -1009,7 +1009,7 @@ export const OwnerWithName = connect((state: RootState, props: { resource: Group
             style={{ color: CustomTheme.palette.primary.main }}
             display='inline'
         >
-            {props.ownerName ? props.ownerName : props.ownerUuid}
+            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
         </Typography>
     );
 });
