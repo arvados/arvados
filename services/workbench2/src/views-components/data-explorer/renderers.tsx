@@ -59,7 +59,6 @@ import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
 import { CustomTheme } from "common/custom-theme";
-import { dispatchAction } from "common/dispatch-action";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
 import { PermissionResource } from 'models/permission';
