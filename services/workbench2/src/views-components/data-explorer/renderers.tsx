@@ -634,14 +634,14 @@ export const ResourceLinkTailUsername = connect((state: RootState, props: { reso
     return resource;
 })((user:UserResource) => <Typography noWrap>{user.username || user.uuid || "-"}</Typography>);
 
-const renderPermissionLevel = (link: LinkResource, canManage: boolean) => {
+const renderPermissionLevel = (link: LinkResource, canManage: boolean, dispatch: Dispatch) => {
     return (
         <Typography noWrap>
             {formatPermissionLevel(link.name as PermissionLevel)}
             {canManage ? (
                 <IconButton
                     data-cy="edit-permission-button"
-                    onClick={event => dispatchAction<any>(openPermissionEditContextMenu, event, link)}
+                    onClick={event => dispatch<any>(openPermissionEditContextMenu(event, link))}
                     size="large">
                     <RenameIcon />
                 </IconButton>
@@ -660,7 +660,7 @@ export const ResourceLinkHeadPermissionLevel = connect((state: RootState, props:
         link: resource || { uuid: "", name: "", kind: ResourceKind.NONE },
         canManage: resource && getResourceLinkCanManage(state, resource) && !isBuiltin,
     };
-})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage));
+})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage, props.dispatch));
 
 export const ResourceLinkTailPermissionLevel = connect((state: RootState, props: { resource: PermissionResource }) => {
     const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "") || isBuiltinGroup(props.resource?.tailUuid || "");
@@ -669,7 +669,7 @@ export const ResourceLinkTailPermissionLevel = connect((state: RootState, props:
         link: props.resource || { uuid: "", name: "", kind: ResourceKind.NONE },
         canManage: props.resource && getResourceLinkCanManage(state, props.resource) && !isBuiltin,
     };
-})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage));
+})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage, props.dispatch));
 
 const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
     const headResource = getResource<Resource>(link.headUuid)(state.resources);
@@ -682,19 +682,19 @@ const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
 };
 
 // Process Resources
-export const resourceRunProcess = (uuid: string) => {
+export const ResourceRunProcess = dispatchWrapper((uuid: string, dispatch: Dispatch) => {
     return (
         <div>
             {uuid && (
                 <Tooltip title="Run process">
-                    <IconButton onClick={() => dispatchAction<any>(openRunProcess, uuid ?? '')} size="large">
+                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid ?? ''))} size="large">
                         <ProcessIcon />
                     </IconButton>
                 </Tooltip>
             )}
         </div>
     );
-};
+});
 
 // export const ResourceRunProcess = connect((state: RootState, props: { uuid: string }) => {
 //     const resource = getResource<WorkflowResource>(props.uuid)(state.resources);

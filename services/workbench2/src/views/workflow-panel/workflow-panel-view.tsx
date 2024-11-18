@@ -11,7 +11,7 @@ import {
     ResourceShare,
     renderLastModifiedDate,
     renderWorkflowName,
-    resourceRunProcess,
+    ResourceRunProcess,
 } from "views-components/data-explorer/renderers";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
@@ -116,7 +116,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: WorkflowResource) => resourceRunProcess(resource.uuid)
+        render: (resource: WorkflowResource) => <ResourceRunProcess uuid={resource.uuid} />
     }
 ];
 
