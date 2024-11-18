@@ -13,8 +13,8 @@ import { getProcess } from "store/processes/process";
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 
 const mapDispatchToProps = (dispatch: Dispatch): WorkflowProcessesPanelActionProps => ({
-    onContextMenu: (event, resourceUuid, resources) => {
-        const process = getProcess(resourceUuid)(resources);
+    onContextMenu: (event, resource, resources) => {
+        const process = getProcess(resource.uuid)(resources);
         if (process) {
             dispatch<any>(openProcessContextMenu(event, process));
         }

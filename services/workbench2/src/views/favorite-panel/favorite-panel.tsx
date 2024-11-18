@@ -141,9 +141,8 @@ export const FavoritePanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<FavoritePanelProps> {
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => {
                 const { resources } = this.props;
-                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
 
                 let readonly = false;
                 const project = getResource<GroupResource>(this.props.currentItemId)(resources);
@@ -152,7 +151,7 @@ export const FavoritePanel = withStyles(styles)(
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readonly));
 
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
@@ -166,7 +165,7 @@ export const FavoritePanel = withStyles(styles)(
                         storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                     }));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
             handleRowDoubleClick = (uuid: string) => {

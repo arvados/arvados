@@ -29,7 +29,7 @@ import {
     renderLastModifiedDate,
     renderResourceStatus,
 } from 'views-components/data-explorer/renderers';
-import { getResource, ResourcesState } from 'store/resources/resources';
+import { ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
 import { CollectionResource } from 'models/collection';
 
@@ -98,7 +98,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
 ];
 
 interface CollectionContentAddressPanelActionProps {
-    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, uuid: string) => void;
+    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, resource: CollectionResource) => void;
     onItemClick: (item: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
@@ -112,21 +112,20 @@ const mapStateToProps = ({ resources }: RootState): CollectionContentAddressPane
 })
 
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
-    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
-        const resource = getResource<CollectionResource>(resourceUuid)(resources);
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+    onContextMenu: (resources: ResourcesState) => (event, resource) => {
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: resource ? resource.name : '',
                 description: resource ? resource.description : '',
                 storageClassesDesired: resource ? resource.storageClassesDesired : [],
-                uuid: resourceUuid,
+                uuid: resource.uuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
                 menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+        dispatch<any>(loadDetailsPanel(resource.uuid));
     },
     onItemClick: (uuid: string) => {
         dispatch<any>(loadDetailsPanel(uuid));

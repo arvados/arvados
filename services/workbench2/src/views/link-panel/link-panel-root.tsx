@@ -80,7 +80,7 @@ export interface LinkPanelRootDataProps {
 
 export interface LinkPanelRootActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: LinkResource) => void;
     onItemDoubleClick: (item: string) => void;
 }
 

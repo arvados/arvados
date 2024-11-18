@@ -73,9 +73,6 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 
 export const AccountMenuComponent =
     ({ user, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog, navigateToSshKeysUser, navigateToSiteManager, navigateToMyAccount, navigateToLinkAccount }: AccountMenuProps & AccountMenuActionProps & WithStyles<CssRules>) => {
-        
-        console.log(user, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog, navigateToSshKeysUser, navigateToSiteManager, navigateToMyAccount, navigateToLinkAccount);
-        
         let accountMenuItems = <>
             <MenuItem onClick={() => {
                 getNewExtraToken(true);

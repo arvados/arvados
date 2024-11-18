@@ -154,7 +154,7 @@ interface ProjectPanelDataProps {
     paperClassName?: string;
     onRowClick: (item: ProjectResource) => void;
     onRowDoubleClick: (uuid: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ProjectResource) => void;
 };
 
 export const ProjectPanelData = class extends React.Component<ProjectPanelDataProps> {

@@ -35,7 +35,7 @@ import { createTree } from 'models/tree';
 import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from 'store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
-import { getResource, ResourcesState } from 'store/resources/resources';
+import { ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -120,7 +120,7 @@ interface PublicFavoritePanelDataProps {
 
 interface PublicFavoritePanelActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
@@ -130,21 +130,20 @@ const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavor
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
-    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
-        const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+    onContextMenu: (resources: ResourcesState) => (event, resource: GroupContentsResource) => {
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
         if (kind && resource) {
             dispatch<any>(openContextMenu(event, {
                 name: resource.name,
                 description: resource.description,
                 storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
-                uuid: resourceUuid,
+                uuid: resource.uuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
                 menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+        dispatch<any>(loadDetailsPanel(resource.uuid));
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (uuid: string) => {

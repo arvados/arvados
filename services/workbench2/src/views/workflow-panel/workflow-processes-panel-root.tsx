@@ -88,7 +88,7 @@ export interface WorkflowProcessesPanelDataProps {
 
 export interface WorkflowProcessesPanelActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: ProcessResource, resources: ResourcesState) => void;
     onItemDoubleClick: (item: string) => void;
 }
 

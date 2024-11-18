@@ -11,7 +11,7 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ShareMeIcon } from 'components/icon/icon';
-import { ResourcesState, getResource } from 'store/resources/resources';
+import { ResourcesState } from 'store/resources/resources';
 import { ResourceKind } from 'models/resource';
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -75,10 +75,8 @@ export const SharedWithMePanel = withStyles(styles)(
                 </div>;
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { resources } = this.props;
-                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => { 
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
@@ -90,7 +88,7 @@ export const SharedWithMePanel = withStyles(styles)(
                         menuKind
                     }));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
             handleRowDoubleClick = (uuid: string) => {
