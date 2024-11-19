@@ -5,9 +5,12 @@
 - name: Check distribution
   ansible.builtin.fail:
     msg: "Unsupported distribution: {{ ansible_distribution }}"
-  when: "ansible_distribution != 'Debian'"
+  when: distro_apt[ansible_distribution] is undefined
 
-- name: Set up Debian apt repository
-  ansible.builtin.include_tasks:
-    file: debian.yml
-  when: "ansible_distribution == 'Debian'"
+- name: Set up distribution apt repository
+  ansible.builtin.deb822_repository:
+    name: "{{ ansible_distribution|lower }}"
+    types: deb
+    uris: "{{ distro_apt[ansible_distribution].aws_mirror if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].mirror }}"
+    suites: "{{ ansible_distribution_release }}"
+    components: "{{ distro_apt[ansible_distribution].components }}"
