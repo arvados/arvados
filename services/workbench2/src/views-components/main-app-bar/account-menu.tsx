@@ -48,24 +48,24 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
     }
 });
 
+type AccountMenuItem = {
+    label: string;
+    onClick: () => void;
+}
+
 export const AccountMenuComponent =
     ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
-        let accountMenuItems = <>
-            <MenuItem onClick={() => {
+
+        const accountMenuItems: AccountMenuItem[] = [
+            { label: 'Get API token', onClick: () => {
                 dispatch<any>(getNewExtraToken(true));
                 dispatch(openTokenDialog);
-            }}>Get API token</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
-        </>;
-
-        const reduceItemsFn: (a: React.ReactElement[],
-            b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
-
-        accountMenuItems = React.createElement(React.Fragment, null,
-            pluginConfig.accountMenuList.reduce(reduceItemsFn, React.Children.toArray(accountMenuItems.props.children)));
+            }},
+            { label: 'SSH Keys', onClick: () => dispatch(navigateToSshKeysUser) },
+            { label: 'Site Manager', onClick: () => dispatch(navigateToSiteManager) },
+            { label: 'My account', onClick: () => dispatch(navigateToMyAccount) },
+            { label: 'Link account', onClick: () => dispatch(navigateToLinkAccount) },
+        ]
 
         return user
             ? <DropdownMenu
@@ -76,7 +76,7 @@ export const AccountMenuComponent =
                 <MenuItem disabled>
                     {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
-                {user.isActive && accountMenuItems}
+                {user.isActive && accountMenuItems.map(item=><MenuItem data-cy="account-menu-item" onClick={item.onClick}>{item.label}</MenuItem>)}
                 <MenuItem data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
