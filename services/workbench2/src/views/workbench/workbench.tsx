@@ -354,6 +354,7 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                 >
                     {isUserActive && isNotLinking && (
                         <Grid
+                            container
                             item
                             xs
                             component="aside"
