@@ -203,8 +203,8 @@ export const RenderName = dispatchWrapper((props: { resource: GroupContentsResou
 });
 
 export const RenderOwnerName = connect((state: RootState, props: { resource: GroupContentsResource; link?: boolean }) => {
-    const owner = getResource<UserResource>(props.resource.ownerUuid)(state.resources);
-    const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
+    const owner = getResource<any>(props.resource.ownerUuid)(state.resources);
+    const ownerName = owner ? 'fullName' in owner ? getUserDisplayName(owner) : owner.name : null;
     return { ownerName, ownerUuid: props.resource.ownerUuid, link: props.link };
 })((props: { ownerName: string; ownerUuid: string; link?: boolean } & DispatchProp<any>) => {
     return props.link ? (
@@ -219,7 +219,6 @@ export const RenderOwnerName = connect((state: RootState, props: { resource: Gro
     ) : (
         <Typography
             noWrap
-            style={{ color: CustomTheme.palette.primary.main }}
             display='inline'
         >
             {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
