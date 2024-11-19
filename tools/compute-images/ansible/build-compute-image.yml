@@ -46,18 +46,18 @@
     - name: Configure FUSE
       ansible.builtin.lineinfile:
         path: /etc/fuse.conf
-        regexp: "^#* *user_allow_other *$"
+        regexp: "^[# ]*user_allow_other *$"
         line: user_allow_other
     - name: Configure locale
       ansible.builtin.lineinfile:
         path: /etc/locale.gen
-        regexp: "^#* *en_US.UTF-8 +UTF-8 *$"
+        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
         line: en_US.UTF-8 UTF-8
       notify: locale-gen
     - name: Configure DNS
       ansible.builtin.lineinfile:
         path: /etc/dhcp/dhclient.conf
-        regexp: "^#* *prepend +domain-name-servers "
+        regexp: "^[# ]*prepend +domain-name-servers "
         line: "prepend domain-name-servers {{ dns_resolver }};"
       when: dns_resolver is defined
       
