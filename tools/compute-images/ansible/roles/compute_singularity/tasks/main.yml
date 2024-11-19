@@ -35,6 +35,7 @@
     mode: 0644
 
 - name: Install Go
+  become: no
   ansible.builtin.unarchive:
     src: "https://storage.googleapis.com/golang/go{{ compute_go_version }}.linux-amd64.tar.gz"
     dest: "{{ singularity_build.path }}"
