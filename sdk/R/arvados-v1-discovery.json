@@ -669,6 +669,16 @@
               "additionalProperties": {
                 "type": "string"
               }
+            },
+            "replace_segments": {
+              "type": "object",
+              "description": "Replace existing block segments in the collection with new segments.\nRefer to the [replace_segments reference][] for details.\n\n[replace_segments reference]: https://doc.arvados.org/api/methods/collections.html#replace_segments\n\n",
+              "required": false,
+              "location": "query",
+              "properties": {},
+              "additionalProperties": {
+                "type": "string"
+              }
             }
           },
           "request": {
@@ -707,6 +717,16 @@
             "replace_files": {
               "type": "object",
               "description": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
+              "required": false,
+              "location": "query",
+              "properties": {},
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "replace_segments": {
+              "type": "object",
+              "description": "Replace existing block segments in the collection with new segments.\nRefer to the [replace_segments reference][] for details.\n\n[replace_segments reference]: https://doc.arvados.org/api/methods/collections.html#replace_segments\n\n",
               "required": false,
               "location": "query",
               "properties": {},
