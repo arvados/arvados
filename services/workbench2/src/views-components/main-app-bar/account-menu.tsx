@@ -20,8 +20,6 @@ import {
     navigateToMyAccount,
     navigateToLinkAccount,
 } from 'store/navigation/navigation-action';
-import { pluginConfig } from 'plugins';
-import { ElementListReducer } from 'common/plugintypes';
 
 interface AccountMenuProps {
     user?: User;
@@ -76,7 +74,7 @@ export const AccountMenuComponent =
                 <MenuItem disabled>
                     {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
-                {user.isActive && accountMenuItems.map(item=><MenuItem data-cy="account-menu-item" onClick={item.onClick}>{item.label}</MenuItem>)}
+                {user.isActive && accountMenuItems.map(item=><MenuItem key={item.label} data-cy="account-menu-item" onClick={item.onClick}>{item.label}</MenuItem>)}
                 <MenuItem data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout

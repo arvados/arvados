@@ -22,9 +22,9 @@ import { GroupClass, GroupResource } from 'models/group';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { extractUuidKind, ResourceKind } from 'models/resource';
 import { pluginConfig } from 'plugins';
-import { ElementListReducer } from 'common/plugintypes';
 import { Location } from 'history';
 import { ProjectResource } from 'models/project';
+import { kebabCase } from 'lodash';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -39,7 +39,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["700"]
     },
     icon: {
-        marginRight: theme.spacing(1)
+        marginRight: theme.spacing(1),
+        marginTop: theme.spacing(0.5)
     }
 });
 
@@ -52,6 +53,12 @@ interface SidePanelDataProps {
 
 interface SidePanelState {
     anchorEl: any;
+}
+
+type SidePanelButtonMenuItem = {
+    label: string;
+    onClick: () => void;
+    icon: React.ReactNode;
 }
 
 type SidePanelProps = SidePanelDataProps & DispatchProp & WithStyles<CssRules>;
@@ -106,23 +113,11 @@ export const SidePanelButton = withStyles(styles)(
                     }
                 }
 
-                let menuItems = <>
-                    <MenuItem data-cy='side-panel-new-collection' className={classes.menuItem} onClick={this.handleNewCollectionClick}>
-                        <CollectionIcon className={classes.icon} /> New collection
-                    </MenuItem>
-                    <MenuItem data-cy='side-panel-run-process' className={classes.menuItem} onClick={this.handleRunProcessClick}>
-                        <ProcessIcon className={classes.icon} /> Run a workflow
-                    </MenuItem>
-                    <MenuItem data-cy='side-panel-new-project' className={classes.menuItem} onClick={this.handleNewProjectClick}>
-                        <ProjectIcon className={classes.icon} /> New project
-                    </MenuItem>
-                </>;
-
-                const reduceItemsFn: (a: React.ReactElement[], b: ElementListReducer) => React.ReactElement[] =
-                    (a, b) => b(a, classes.menuItem);
-
-                menuItems = React.createElement(React.Fragment, null,
-                    pluginConfig.newButtonMenuList.reduce(reduceItemsFn, React.Children.toArray(menuItems.props.children)));
+                const menuItems2: SidePanelButtonMenuItem[] = [
+                    { label: 'New collection', onClick: this.handleNewCollectionClick, icon: <CollectionIcon className={classes.icon} /> },
+                    { label: 'Run a workflow', onClick: this.handleRunProcessClick, icon: <ProcessIcon className={classes.icon} /> },
+                    { label: 'New project', onClick: this.handleNewProjectClick, icon: <ProjectIcon className={classes.icon} /> },
+                ]
 
                 return (
                     <Toolbar style={{paddingRight: 0}}>
@@ -143,7 +138,18 @@ export const SidePanelButton = withStyles(styles)(
                                     onClose={this.handleClose}
                                     onClick={this.handleClose}
                                     transformOrigin={transformOrigin}>
-                                    {menuItems}
+                                    {menuItems2.map(item => (
+                                        <MenuItem 
+                                            key={item.label} 
+                                            data-cy={`side-panel-${kebabCase(item.label)}`} 
+                                            className={classes.menuItem} 
+                                            onClick={item.onClick}
+                                            >
+                                            {item.icon}
+                                            {item.label}
+                                        </MenuItem>
+                                        )
+                                    )}
                                 </Menu>
                             </Grid>
                         </Grid>
