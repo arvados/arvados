@@ -47,6 +47,7 @@
     cmd: "{{ item }}"
     chdir: "{{ singularity_build.path }}"
   environment:
+    GOPATH: "{{ singularity_build.path }}/GOPATH"
     PATH: "{{ singularity_build.path }}/go/bin:{{ ansible_env.PATH }}"
   loop:
     - ./mconfig --prefix=/opt/singularity
