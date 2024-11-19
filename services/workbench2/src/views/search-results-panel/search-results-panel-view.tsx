@@ -13,7 +13,7 @@ import {
     ResourceCluster,
     renderType,
     RenderName,
-    OwnerWithName,
+    RenderOwnerName,
     renderFileSize,
     renderLastModifiedDate,
     renderResourceStatus,
@@ -93,7 +93,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <OwnerWithName resource={resource} />
+        render: (resource: GroupContentsResource) => <RenderOwnerName resource={resource} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,

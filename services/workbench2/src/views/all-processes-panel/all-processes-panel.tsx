@@ -19,7 +19,7 @@ import {
     ContainerRunTime,
     renderType,
     RenderName,
-    OwnerWithName,
+    RenderOwnerName,
     renderCreatedAtDate,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
@@ -91,7 +91,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <OwnerWithName resource={resource} />,
+        render: (resource: ContainerRequestResource) => <RenderOwnerName resource={resource} />,
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,

@@ -11,7 +11,7 @@ import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
 import {
     renderUuidWithCopy, ResourceLinkHead, ResourceLinkTail,
-    renderLinkClass, renderLinkName}
+    renderString}
 from 'views-components/data-explorer/renderers';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
@@ -42,14 +42,14 @@ export const linkPanelColumns: DataColumns<string, LinkResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource: LinkResource) => renderLinkName(resource)
+        render: (resource: LinkResource) => renderString(resource.name)
     },
     {
         name: LinkPanelColumnNames.LINK_CLASS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: LinkResource) => renderLinkClass(resource)
+        render: (resource: LinkResource) => renderString(resource.linkClass)
     },
     {
         name: LinkPanelColumnNames.TAIL,

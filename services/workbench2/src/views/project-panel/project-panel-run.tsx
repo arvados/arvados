@@ -13,7 +13,7 @@ import {
     ContainerRunTime,
     renderType,
     RenderName,
-    OwnerWithName,
+    RenderOwnerName,
     renderUuidWithCopy,
     renderModifiedByUserUuid,
     renderCreatedAtDate,
@@ -86,7 +86,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: ProjectResource) => <OwnerWithName resource={resource} />,
+        render: (resource: ProjectResource) => <RenderOwnerName resource={resource} />,
     },
     {
         name: ProjectPanelRunColumnNames.UUID,

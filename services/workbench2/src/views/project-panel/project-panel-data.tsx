@@ -13,7 +13,7 @@ import { CollectionResource } from "models/collection";
 import {
     RenderName,
     renderType,
-    OwnerWithName,
+    RenderOwnerName,
     renderPortableDataHash,
     renderFileSize,
     renderFileCount,
@@ -70,7 +70,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource | Coll
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: ProjectResource) => <OwnerWithName resource={resource} />,
+        render: (resource: ProjectResource) => <RenderOwnerName resource={resource} />,
     },
     {
         name: ProjectPanelDataColumnNames.PORTABLE_DATA_HASH,

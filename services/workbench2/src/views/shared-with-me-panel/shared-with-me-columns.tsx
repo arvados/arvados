@@ -9,7 +9,7 @@ import {
     renderType,
     RenderName,
     renderPortableDataHash,
-    OwnerWithName,
+    RenderOwnerName,
     renderFileSize,
     renderFileCount,
     renderUuidWithCopy,
@@ -83,7 +83,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ProjectResource) => <OwnerWithName resource={resource} link={true} />,
+        render: (resource: ProjectResource) => <RenderOwnerName resource={resource} link={true} />,
     },
     {
         name: SharedWithMePanelColumnNames.PORTABLE_DATA_HASH,

@@ -68,15 +68,104 @@ import { toggleTrashed } from "store/trash/trash-actions";
 // A generic wrapper for renderers that need to dispatch actions
 const dispatchWrapper = (component: React.ComponentType<any>) => connect()(component);
 
-export const toggleIsAdmin = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const isAdmin = data!.isAdmin;
-        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
-        dispatch<any>(loadUsersPanel());
-        return newActivity;
-    };
+// utility renderers ---------------------------------------------------------------------------------
+
+export const renderString = (str: string) => <Typography noWrap>{str || '-'}</Typography>;
+
+export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid || '-'}</Typography>;
+
+export const renderUuidWithCopy = (item: { uuid: string }) => (
+    <Typography
+        data-cy="uuid"
+        noWrap
+    >
+        {item.uuid}
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
+    </Typography>
+);
+
+export const renderDate = (date?: string) => {
+    return (
+        <Typography
+            noWrap
+            style={{ minWidth: "100px" }}
+        >
+            {date ? formatDate(date) : '-'}
+        </Typography>
+    );
+};
+
+export const renderCreatedAtDate = (resource: GroupContentsResource) => {
+    return renderDate(resource.createdAt);
+}
+
+export const renderLastModifiedDate = (resource: GroupContentsResource) => {
+    return renderDate(resource.modifiedAt);
+}
+
+export const renderType = (resource: GroupContentsResource | undefined) => {
+    if(!resource) return <Typography noWrap>-</Typography>;
+    const type = resource.kind;
+    const subtype = resource.kind === ResourceKind.GROUP
+                        ? resource.groupClass
+                        : resource.kind === ResourceKind.PROCESS
+                            ? resource.requestingContainerUuid
+                                ? ProcessTypeFilter.CHILD_PROCESS
+                                : ProcessTypeFilter.MAIN_PROCESS
+                            : ""
+    return<Typography noWrap>{resourceLabel(type, subtype)}</Typography>
+};
+
+export const renderResourceStatus = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus collection={resource} /> : <ProcessStatus uuid={resource.uuid} />;
+}
+
+const renderIcon = (item: GroupContentsResource) => {
+    switch (item.kind) {
+        case ResourceKind.PROJECT:
+            if (item.groupClass === GroupClass.FILTER) {
+                return <FilterGroupIcon />;
+            }
+            return <ProjectIcon />;
+        case ResourceKind.COLLECTION:
+            if (item.uuid === item.currentVersionUuid) {
+                return <CollectionIcon />;
+            }
+            return <CollectionOldVersionIcon />;
+        case ResourceKind.PROCESS:
+            return <ProcessIcon />;
+        case ResourceKind.WORKFLOW:
+            return <WorkflowIcon />;
+        default:
+            return <DefaultIcon />;
+    }
+};
+
+const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string, dispatch: Dispatch) => {
+    const selectedColumnUuid = item[column];
+    return (
+        <Grid
+            container
+            alignItems="center"
+            wrap="nowrap"
+        >
+            <Grid item>
+                {selectedColumnUuid ? (
+                    <Typography
+                        color="primary"
+                        style={{ width: "auto", cursor: "pointer" }}
+                        noWrap
+                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}
+                    >
+                        {selectedColumnUuid && renderUuidWithCopy({ uuid: selectedColumnUuid })}
+                    </Typography>
+                ) : (
+                    "-"
+                )}
+            </Grid>
+        </Grid>
+    );
+};
 
 export const RenderName = dispatchWrapper((props: { resource: GroupContentsResource, dispatch: Dispatch }) => {
     const { resource, dispatch } = props;
@@ -113,7 +202,33 @@ export const RenderName = dispatchWrapper((props: { resource: GroupContentsResou
     );
 });
 
-export const FrozenProject = (props: { item: ProjectResource }) => {
+export const RenderOwnerName = connect((state: RootState, props: { resource: GroupContentsResource; link?: boolean }) => {
+    const owner = getResource<UserResource>(props.resource.ownerUuid)(state.resources);
+    const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
+    return { ownerName, ownerUuid: props.resource.ownerUuid, link: props.link };
+})((props: { ownerName: string; ownerUuid: string; link?: boolean } & DispatchProp<any>) => {
+    return props.link ? (
+        <Typography
+            style={{ color: CustomTheme.palette.primary.main, cursor: 'pointer' }}
+            display='inline'
+            noWrap
+            onClick={() => props.dispatch<any>(navigateTo(props.ownerUuid))}
+        >
+            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
+        </Typography>
+    ) : (
+        <Typography
+            noWrap
+            style={{ color: CustomTheme.palette.primary.main }}
+            display='inline'
+        >
+            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
+        </Typography>
+    );
+});
+
+// Project resource renderers ---------------------------------------------------------------------------------
+const FrozenProject = (props: { item: ProjectResource }) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
         if (props.item.frozenByUuid) {
@@ -136,87 +251,10 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
     }
 };
 
-const renderIcon = (item: GroupContentsResource) => {
-    switch (item.kind) {
-        case ResourceKind.PROJECT:
-            if (item.groupClass === GroupClass.FILTER) {
-                return <FilterGroupIcon />;
-            }
-            return <ProjectIcon />;
-        case ResourceKind.COLLECTION:
-            if (item.uuid === item.currentVersionUuid) {
-                return <CollectionIcon />;
-            }
-            return <CollectionOldVersionIcon />;
-        case ResourceKind.PROCESS:
-            return <ProcessIcon />;
-        case ResourceKind.WORKFLOW:
-            return <WorkflowIcon />;
-        default:
-            return <DefaultIcon />;
-    }
-};
+// User resource renderers ---------------------------------------------------------------------------------
+export const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
 
-export const renderDate = (date?: string) => {
-    return (
-        <Typography
-            noWrap
-            style={{ minWidth: "100px" }}
-        >
-            {date ? formatDate(date) : '-'}
-        </Typography>
-    );
-};
-
-export const renderWorkflowName = (item: WorkflowResource) => (
-    <Grid
-        container
-        alignItems="center"
-        wrap="nowrap"
-        spacing={2}
-    >
-        <Grid item>{renderIcon(item)}</Grid>
-        <Grid item>
-            <Typography
-                color="primary"
-                style={{ width: "100px" }}
-            >
-                {item.name}
-            </Typography>
-        </Grid>
-    </Grid>
-);
-
-const getPublicUuid = (uuidPrefix: string) => {
-    return `${uuidPrefix}-tpzed-anonymouspublic`;
-};
-
-const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: string, uuid?: string) => {
-    const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
-    return (
-        <div>
-            {!isPublic && uuid && (
-                <Tooltip title="Share">
-                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))} size="large">
-                        <ShareIcon />
-                    </IconButton>
-                </Tooltip>
-            )}
-        </div>
-    );
-};
-
-export const ResourceShare = connect((state: RootState, props: { resource: WorkflowResource }) => {
-    const { resource } = props;
-    const uuidPrefix = getUuidPrefix(state);
-    return {
-        uuid: resource ? resource.uuid : "",
-        ownerUuid: resource ? resource.ownerUuid : "",
-        uuidPrefix,
-    };
-})((props: { ownerUuid?: string; uuidPrefix: string; uuid?: string } & DispatchProp<any>) =>
-    resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid)
-);
+export const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
 
 export const RenderFullName = dispatchWrapper((props: { resource: UserResource, link?: boolean, dispatch: Dispatch }) => {
     const { resource, link, dispatch } = props;
@@ -234,18 +272,6 @@ export const RenderFullName = dispatchWrapper((props: { resource: UserResource, 
         <Typography noWrap>{displayName}</Typography>
     );
 });
-
-export const renderUuidWithCopy = (item: { uuid: string }) => (
-    <Typography
-        data-cy="uuid"
-        noWrap
-    >
-        {item.uuid}
-        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
-    </Typography>
-);
-
-export const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
 
 enum UserAccountStatus {
     ACTIVE = "Active",
@@ -311,6 +337,35 @@ export const ResourceLinkTailAccountStatus = connect((state: RootState, props: {
 
 export const UserResourceAccountStatus = connect(getUserAccountStatus)(renderAccountStatus);
 
+const toggleIsAdmin = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        const isAdmin = data!.isAdmin;
+        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
+        dispatch<any>(loadUsersPanel());
+        return newActivity;
+    };
+
+const renderIsAdmin = (props: { uuid: string; isAdmin: boolean; toggleIsAdmin: (uuid: string) => void }) => (
+    <Checkbox
+        color="primary"
+        checked={props.isAdmin}
+        onClick={e => {
+            e.stopPropagation();
+            props.toggleIsAdmin(props.uuid);
+        }}
+    />
+);
+
+export const ResourceIsAdmin = connect(
+    (state: RootState, props: { resource: UserResource }) => {
+        return props.resource || { isAdmin: false };
+    },
+    { toggleIsAdmin }
+)(renderIsAdmin);
+
+// Permissions renderers ---------------------------------------------------------------------------------
 const renderIsHidden = (props: {
     memberLinkUuid: string;
     permissionLinkUuid: string;
@@ -361,46 +416,19 @@ export const ResourceLinkTailIsVisible = connect(
     { setMemberIsHidden }
 )(renderIsHidden);
 
-const renderIsAdmin = (props: { uuid: string; isAdmin: boolean; toggleIsAdmin: (uuid: string) => void }) => (
-    <Checkbox
-        color="primary"
-        checked={props.isAdmin}
-        onClick={e => {
-            e.stopPropagation();
-            props.toggleIsAdmin(props.uuid);
-        }}
-    />
-);
-
-export const ResourceIsAdmin = connect(
-    (state: RootState, props: { resource: UserResource }) => {
-        return props.resource || { isAdmin: false };
-    },
-    { toggleIsAdmin }
-)(renderIsAdmin);
-
-export const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
-
-const renderHostname = (item: { hostname: string }) => <Typography noWrap>{item.hostname}</Typography>;
+// Virtual Machines renderers ---------------------------------------------------------------------------------
 
 export const VirtualMachineHostname = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<VirtualMachinesResource>(props.uuid)(state.resources);
     return resource || { hostname: "" };
-})(renderHostname);
-
-const renderVirtualMachineLogin = (login: { user: string }) => <Typography noWrap>{login.user}</Typography>;
+})((item: { hostname: string }) => <Typography noWrap>{item.hostname}</Typography>);
 
 export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid: string }) => {
     const permission = getResource<LinkResource>(props.linkUuid)(state.resources);
     const user = getResource<UserResource>(permission?.tailUuid || "")(state.resources);
 
     return { user: user?.username || permission?.tailUuid || "" };
-})(renderVirtualMachineLogin);
-
-// Common methods
-export const renderString = (str: string) => <Typography noWrap>{str || '-'}</Typography>;
-
-export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid || '-'}</Typography>;
+})((login: { user: string }) => <Typography noWrap>{login.user}</Typography>);
 
 export const ResourceCluster = connect((state: RootState, props: { uuid: string }) => {
     const clusterId = props.uuid.slice(0, 5) || ""
@@ -410,22 +438,16 @@ export const ResourceCluster = connect((state: RootState, props: { uuid: string 
 })(renderClusterBadge);
 
 function renderClusterBadge(badge: ClusterBadge) {
-    
     const style = {
         backgroundColor: badge.backgroundColor,
         color: badge.color,
         padding: "2px 7px",
         borderRadius: 3,
     };
-
     return <span style={style}>{badge.text}</span>
 };
 
-// Links Resources
-export const renderLinkName = (item: { name: string }) => <Typography noWrap>{item.name || "-"}</Typography>;
-
-export const renderLinkClass = (item: { linkClass: string }) => <Typography noWrap>{item.linkClass}</Typography>;
-
+// Links renderers ---------------------------------------------------------------------------------
 const getResourceDisplayName = (resource: Resource): string => {
     if ((resource as UserResource).kind === ResourceKind.USER && typeof (resource as UserResource).firstName !== "undefined") {
         // We can be sure the resource is UserResource
@@ -459,7 +481,6 @@ const renderResourceLink = (item: Resource , dispatch: Dispatch) => {
 
 export const ResourceLinkTail = connect((state: RootState, props: { resource: PermissionResource | LinkResource }) => {
     const tailResource = getResource<Resource>(props.resource?.tailUuid || "")(state.resources);
-
     return {
         item: tailResource || { uuid: props.resource?.tailUuid || "", kind: props.resource?.tailKind || ResourceKind.NONE },
     };
@@ -518,13 +539,6 @@ export const ResourceLinkDelete = connect((state: RootState, props: { resource: 
     };
 })((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.item, props.canManage, props.dispatch));
 
-export const ResourceLinkTailEmail = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const resource = getResource<UserResource>(link?.tailUuid || "")(state.resources);
-
-    return resource || { email: "" };
-})(renderEmail);
-
 export const ResourceLinkTailUsername = connect((state: RootState, props: { resource: PermissionResource }) => {
     const resource = getResource<UserResource>(props.resource.tailUuid || "")(state.resources);
     return resource;
@@ -577,7 +591,111 @@ const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
     }
 };
 
-// Process Resources
+// Process / Workflow renderers ---------------------------------------------------------------------------------
+export const ProcessStatus = compose(
+    connect((state: RootState, props: { uuid: string }) => {
+        return { process: getProcess(props.uuid)(state.resources) };
+    }),
+    withStyles({}, { withTheme: true })
+)((props: { process?: Process; theme: ArvadosTheme }) =>
+    props.process ? (
+        <Chip
+            data-cy="process-status-chip"
+            label={getProcessStatus(props.process)}
+            style={{
+                height: props.theme.spacing(3),
+                width: props.theme.spacing(12),
+                ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
+                fontSize: "0.875rem",
+                borderRadius: props.theme.spacing(0.625),
+            }}
+        />
+    ) : (
+        <Typography>-</Typography>
+    )
+);
+
+const renderRunTime = (time: number) => (
+    <Typography
+        noWrap
+        style={{ minWidth: "45px" }}
+    >
+        {formatTime(time, true)}
+    </Typography>
+);
+
+interface ContainerRunTimeProps {
+    process: Process;
+}
+
+interface ContainerRunTimeState {
+    runtime: number;
+}
+
+export const ContainerRunTime = connect((state: RootState, props: { uuid: string }) => {
+    return { process: getProcess(props.uuid)(state.resources) };
+})(
+    class extends React.Component<ContainerRunTimeProps, ContainerRunTimeState> {
+        private timer: any;
+
+        constructor(props: ContainerRunTimeProps) {
+            super(props);
+            this.state = { runtime: this.getRuntime() };
+        }
+
+        getRuntime() {
+            return this.props.process ? getProcessRuntime(this.props.process) : 0;
+        }
+
+        updateRuntime() {
+            this.setState({ runtime: this.getRuntime() });
+        }
+
+        componentDidMount() {
+            this.timer = setInterval(this.updateRuntime.bind(this), 5000);
+        }
+
+        componentWillUnmount() {
+            clearInterval(this.timer);
+        }
+
+        render() {
+            return this.props.process ? renderRunTime(this.state.runtime) : <Typography>-</Typography>;
+        }
+    }
+);
+
+export const ResourceShare = connect((state: RootState, props: { resource: WorkflowResource }) => {
+    const { resource } = props;
+    const uuidPrefix = getUuidPrefix(state);
+    return {
+        uuid: resource ? resource.uuid : "",
+        ownerUuid: resource ? resource.ownerUuid : "",
+        uuidPrefix,
+    };
+})((props: { ownerUuid?: string; uuidPrefix: string; uuid?: string } & DispatchProp<any>) =>
+    resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid)
+);
+
+export const renderWorkflowName = (item: WorkflowResource) => (
+    <Grid
+        container
+        alignItems="center"
+        wrap="nowrap"
+        spacing={2}
+    >
+        <Grid item>{renderIcon(item)}</Grid>
+        <Grid item>
+            <Typography
+                color="primary"
+                style={{ width: "100px" }}
+            >
+                {item.name}
+            </Typography>
+        </Grid>
+    </Grid>
+);
+
 export const ResourceRunProcess = dispatchWrapper((uuid: string, dispatch: Dispatch) => {
     return (
         <div>
@@ -591,6 +709,25 @@ export const ResourceRunProcess = dispatchWrapper((uuid: string, dispatch: Dispa
         </div>
     );
 });
+
+const getPublicUuid = (uuidPrefix: string) => {
+    return `${uuidPrefix}-tpzed-anonymouspublic`;
+};
+
+const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: string, uuid?: string) => {
+    const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
+    return (
+        <div>
+            {!isPublic && uuid && (
+                <Tooltip title="Share">
+                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))} size="large">
+                        <ShareIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
+        </div>
+    );
+};
 
 const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
@@ -631,32 +768,6 @@ enum ColumnSelection {
     LOG_UUID = "logUuid",
 }
 
-const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string, dispatch: Dispatch) => {
-    const selectedColumnUuid = item[column];
-    return (
-        <Grid
-            container
-            alignItems="center"
-            wrap="nowrap"
-        >
-            <Grid item>
-                {selectedColumnUuid ? (
-                    <Typography
-                        color="primary"
-                        style={{ width: "auto", cursor: "pointer" }}
-                        noWrap
-                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}
-                    >
-                        {selectedColumnUuid && renderUuidWithCopy({ uuid: selectedColumnUuid })}
-                    </Typography>
-                ) : (
-                    "-"
-                )}
-            </Grid>
-        </Grid>
-    );
-};
-
 export const ResourceOutputUuid = connect((state: RootState, props: { resource: ProcessResource }) => { 
     return {process: props.resource};
 })((props: {process: ProcessResource} & DispatchProp<any>) => renderUuidLinkWithCopyIcon(props.process, ColumnSelection.OUTPUT_UUID, props.dispatch));
@@ -674,14 +785,8 @@ export const renderModifiedByUserUuid = (resource: GroupContentsResource & {cont
     return renderUuidWithCopy({uuid:modifiedByUserUuid});
 }
 
-export const renderCreatedAtDate = (resource: GroupContentsResource) => {
-    return renderDate(resource.createdAt);
-}
 
-export const renderLastModifiedDate = (resource: GroupContentsResource) => {
-    return renderDate(resource.modifiedAt);
-}
-
+// Collection renderers ---------------------------------------------------------------------------------
 export const renderTrashDate = (resource: TrashableResource) => {
     return renderDate(resource.trashAt);
 }
@@ -757,32 +862,6 @@ const _resourceWithName = withStyles(
         </Typography>
     );
 });
-
-export const OwnerWithName = connect((state: RootState, props: { resource: GroupContentsResource; link?: boolean }) => {
-    const owner = getResource<UserResource>(props.resource.ownerUuid)(state.resources);
-    const ownerName = owner ? getUserDisplayName(owner) : props.resource.ownerUuid;
-    return { ownerName, ownerUuid: props.resource.ownerUuid, link: props.link };
-})((props: { ownerName: string; ownerUuid: string; link?: boolean } & DispatchProp<any>) => {
-    return props.link ? (
-        <Typography
-            style={{ color: CustomTheme.palette.primary.main, cursor: 'pointer' }}
-            display='inline'
-            noWrap
-            onClick={() => props.dispatch<any>(navigateTo(props.ownerUuid))}
-        >
-            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
-        </Typography>
-    ) : (
-        <Typography
-            noWrap
-            style={{ color: CustomTheme.palette.primary.main }}
-            display='inline'
-        >
-            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
-        </Typography>
-    );
-});
-
 
 export const ResourceWithName = userFromID(_resourceWithName);
 
@@ -861,24 +940,7 @@ export const ResponsiblePerson = compose(
     );
 });
 
-export const renderType = (resource: GroupContentsResource | undefined) => {
-    if(!resource) return <Typography noWrap>-</Typography>;
-    const type = resource.kind;
-    const subtype = resource.kind === ResourceKind.GROUP
-                        ? resource.groupClass
-                        : resource.kind === ResourceKind.PROCESS
-                            ? resource.requestingContainerUuid
-                                ? ProcessTypeFilter.CHILD_PROCESS
-                                : ProcessTypeFilter.MAIN_PROCESS
-                            : ""
-    return<Typography noWrap>{resourceLabel(type, subtype)}</Typography>
-};
-
-export const renderResourceStatus = (resource: GroupContentsResource) => {
-    return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus collection={resource} /> : <ProcessStatus uuid={resource.uuid} />;
-}
-
-export const CollectionStatus = (props: { collection: CollectionResource }) =>
+const CollectionStatus = (props: { collection: CollectionResource }) =>
     props.collection.uuid !== props.collection.currentVersionUuid ? (
         <Typography>version {props.collection.version}</Typography>
     ) : (
@@ -895,79 +957,7 @@ export const CollectionName = connect((state: RootState, props: { uuid: string; 
     <Typography className={props.className}>{props.collection?.name || props.uuid}</Typography>
 ));
 
-export const ProcessStatus = compose(
-    connect((state: RootState, props: { uuid: string }) => {
-        return { process: getProcess(props.uuid)(state.resources) };
-    }),
-    withStyles({}, { withTheme: true })
-)((props: { process?: Process; theme: ArvadosTheme }) =>
-    props.process ? (
-        <Chip
-            data-cy="process-status-chip"
-            label={getProcessStatus(props.process)}
-            style={{
-                height: props.theme.spacing(3),
-                width: props.theme.spacing(12),
-                ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
-                fontSize: "0.875rem",
-                borderRadius: props.theme.spacing(0.625),
-            }}
-        />
-    ) : (
-        <Typography>-</Typography>
-    )
-);
-
-export const renderRunTime = (time: number) => (
-    <Typography
-        noWrap
-        style={{ minWidth: "45px" }}
-    >
-        {formatTime(time, true)}
-    </Typography>
-);
-
-interface ContainerRunTimeProps {
-    process: Process;
-}
-
-interface ContainerRunTimeState {
-    runtime: number;
-}
-
-export const ContainerRunTime = connect((state: RootState, props: { uuid: string }) => {
-    return { process: getProcess(props.uuid)(state.resources) };
-})(
-    class extends React.Component<ContainerRunTimeProps, ContainerRunTimeState> {
-        private timer: any;
-
-        constructor(props: ContainerRunTimeProps) {
-            super(props);
-            this.state = { runtime: this.getRuntime() };
-        }
-
-        getRuntime() {
-            return this.props.process ? getProcessRuntime(this.props.process) : 0;
-        }
-
-        updateRuntime() {
-            this.setState({ runtime: this.getRuntime() });
-        }
-
-        componentDidMount() {
-            this.timer = setInterval(this.updateRuntime.bind(this), 5000);
-        }
-
-        componentWillUnmount() {
-            clearInterval(this.timer);
-        }
-
-        render() {
-            return this.props.process ? renderRunTime(this.state.runtime) : <Typography>-</Typography>;
-        }
-    }
-);
-
+// Group renderers ---------------------------------------------------------------------------------
 export const renderMembersCount = (resource: GroupResource) => {
     const value = resource.memberCount;
     if (value === undefined) {
@@ -987,6 +977,7 @@ export const renderMembersCount = (resource: GroupResource) => {
     }
 };
 
+// Trash renderers ---------------------------------------------------------------------------------
 export const RestoreFromTrash = dispatchWrapper((props: {resource: TrashableResource, dispatch: Dispatch}) => { 
     const { resource, dispatch } = props;
     return (

@@ -25,7 +25,7 @@ import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
     RenderName,
-    OwnerWithName,
+    RenderOwnerName,
     renderLastModifiedDate,
     renderResourceStatus,
 } from 'views-components/data-explorer/renderers';
@@ -85,7 +85,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string, Collectio
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: CollectionResource) => <OwnerWithName resource={resource} />,
+        render: (resource: CollectionResource) => <RenderOwnerName resource={resource} />,
     },
     {
         name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,

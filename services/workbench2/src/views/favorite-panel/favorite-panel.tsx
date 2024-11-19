@@ -18,7 +18,7 @@ import {
     ProcessStatus,
     renderType,
     RenderName,
-    OwnerWithName,
+    RenderOwnerName,
     renderFileSize,
     renderLastModifiedDate,
 } from 'views-components/data-explorer/renderers';
@@ -97,7 +97,7 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <OwnerWithName resource={resource} />
+        render: (resource: GroupContentsResource) => <RenderOwnerName resource={resource} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
