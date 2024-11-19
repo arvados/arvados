@@ -17,6 +17,7 @@ import {
     toggleProcessPanelFilter,
     updateOutputParams,
     loadNodeJson,
+    loadProcess,
 } from "store/process-panel/process-panel-actions";
 import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from "store/processes/processes-actions";
 import { navigateToLogCollection, pollProcessLogs, setProcessLogsPanelFilter } from "store/process-logs-panel/process-logs-panel-actions";
@@ -76,6 +77,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     updateOutputParams: () => dispatch<any>(updateOutputParams()),
     loadNodeJson: containerRequest => dispatch<any>(loadNodeJson(containerRequest)),
     pollProcessLogs: processUuid => dispatch<any>(pollProcessLogs(processUuid)),
+    refreshProcess: processUuid => dispatch<any>(loadProcess(processUuid)),
 });
 
 const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {

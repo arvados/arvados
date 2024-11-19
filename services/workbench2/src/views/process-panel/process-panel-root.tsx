@@ -7,7 +7,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ProcessIcon } from "components/icon/icon";
-import { Process } from "store/processes/process";
+import { Process, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
 import { SubprocessFilterDataProps } from "components/subprocess-filter/subprocess-filter";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
@@ -26,6 +26,7 @@ import { ContainerRequestResource } from "models/container-request";
 import { OutputDetails, NodeInstanceType } from "store/process-panel/process-panel";
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { ArvadosTheme } from 'common/custom-theme';
+import { useAsyncInterval } from "common/use-async-interval";
 
 type CssRules = "root";
 
@@ -65,6 +66,7 @@ export interface ProcessPanelRootActionProps {
     loadOutputDefinitions: (containerRequest: ContainerRequestResource) => void;
     updateOutputParams: () => void;
     pollProcessLogs: (processUuid: string) => Promise<void>;
+    refreshProcess: (processUuid: string) => Promise<void>;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
@@ -96,6 +98,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
     loadOutputDefinitions,
     updateOutputParams,
     pollProcessLogs,
+    refreshProcess,
     ...props
 }: ProcessPanelRootProps) => {
     const outputUuid = process?.containerRequest.outputUuid;
@@ -122,6 +125,18 @@ export const ProcessPanelRoot = withStyles(styles)(({
     React.useEffect(() => {
         updateOutputParams();
     }, [outputData, outputDefinitions, updateOutputParams]);
+
+    // Poll queued/running process for status updates
+    const shouldPoll =
+        process && (
+            isProcessQueued(process)
+            || isProcessRunning(process)
+            // Status is unknown if has containerUuid but container resource not loaded
+            || getProcessStatus(process) === ProcessStatus.UNKNOWN
+        );
+    useAsyncInterval(async () => {
+        process && await refreshProcess(process.containerRequest.uuid);
+    }, shouldPoll ? 15000 : null);
 
         return process ? (
             <MPVContainer
