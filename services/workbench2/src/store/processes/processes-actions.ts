@@ -116,6 +116,14 @@ export const startWorkflow = (uuid: string) => async (dispatch: Dispatch, getSta
         const process = await services.containerRequestService.update(uuid, { state: ContainerRequestState.COMMITTED });
         if (process) {
             dispatch<any>(updateResources([process]));
+            if (process.containerUuid) {
+                services.containerService
+                    .get(process.containerUuid, false)
+                    .then((container) => dispatch<any>(updateResources([container])))
+                    .catch((e) => {
+                        console.error("Failed to optimistically load container: " + process.containerUuid, e);
+                    });
+            }
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Process started", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } else {
             dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to start process`, kind: SnackbarKind.ERROR }));
