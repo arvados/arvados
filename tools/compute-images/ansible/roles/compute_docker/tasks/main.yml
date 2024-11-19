@@ -1,0 +1,59 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Docker package pins
+  ansible.builtin.copy:
+    src: arvados-docker.pref
+    dest: /etc/apt/preferences.d/arvados-docker.pref
+    owner: root
+    group: root
+    mode: 0644
+  when: "arvados_compute_pin_packages|bool"
+
+- name: Install Docker apt repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: "{{ docker_apt_url }}"
+    suites: "{{ ansible_distribution_release }}"
+    components: stable
+    signed_by: "{{ docker_apt_url }}/gpg"
+  register: docker_apt_task
+
+- name: Install Docker
+  ansible.builtin.apt:
+    update_cache: "{{ docker_apt_task.changed }}"
+    name: docker-ce
+    install_recommends: false
+
+- name: Configure Docker daemon
+  ansible.builtin.copy:
+    content: "{{ docker_daemon|combine({'dns': [dns_resolver]} if dns_resolver is defined else {})|to_json }}"
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: docker
+    mode: 0640
+
+- name: Install Docker cleaner
+  ansible.builtin.apt:
+    name: arvados-docker-cleaner
+
+- name: Create Docker cleaner configuration directories
+  ansible.builtin.file:
+    name: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - /etc/arvados
+    - /etc/arvados/docker-cleaner
+
+- name: Configure Docker cleaner
+  ansible.builtin.copy:
+    content: "{{ docker_cleaner|to_json }}"
+    dest: /etc/arvados/docker-cleaner/docker-cleaner.json
+    owner: root
+    group: root
+    mode: 0644

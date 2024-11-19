@@ -1,0 +1,25 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Arvados package pins
+  when: "arvados_pin_version != ''"
+  ansible.builtin.template:
+    src: arvados.pref.j2
+    dest: /etc/apt/preferences.d/arvados.pref
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install Arvados apt repository
+  ansible.builtin.deb822_repository:
+    name: arvados
+    types: deb
+    uris: "{{ arvados_apt_url }}/{{ ansible_distribution_release }}"
+    # build.sh takes a `--reposuffix` option. If arvados_apt_suites looks like
+    # a suffix (i.e., it starts with `-`), prepend the current distro codename.
+    suites: "{{ ansible_distribution_release if arvados_apt_suites.startswith('-') else '' }}{{ arvados_apt_suites }}"
+    components: main
+    signed_by: "{{ arvados_apt_url }}/pubkey.gpg"
+  notify:
+    - apt update

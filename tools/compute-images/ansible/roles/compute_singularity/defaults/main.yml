@@ -1,0 +1,8 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+compute_go_version: "1.21.10"
+compute_singularity_version: "3.10.4"
+compute_singularity_url: "https://github.com/sylabs/singularity"
+workdir: "{{ ansible_env.get('TMPDIR', '/tmp') }}"

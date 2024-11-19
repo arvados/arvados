@@ -1,5 +1,6 @@
 {
   "variables": {
+    "ansible_vars_file": "",
     "account_file": "",
     "arvados_cluster": "",
     "build_environment": "azure-arm",
@@ -9,18 +10,11 @@
     "image_sku": "",
     "location": "centralus",
     "project_id": "",
-    "public_key_file": "",
-    "mksquashfs_mem": "",
-    "nvidia_gpu_support": "",
-    "reposuffix": "",
-    "pin_packages": "true",
-    "resolver": "",
     "resource_group": null,
     "ssh_private_key_file": "{{env `PACKERPRIVKEY`}}",
     "ssh_user": "packer",
     "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
-    "tenant_id": "{{env `ARM_TENANT_ID`}}",
-    "workdir": "/tmp"
+    "tenant_id": "{{env `ARM_TENANT_ID`}}"
   },
   "builders": [
     {
@@ -48,47 +42,13 @@
       "vm_size": "Standard_D1_v2"
     }
   ],
-
   "provisioners": [{
-    "type": "file",
-    "source": "1078ECD7.asc",
-    "destination": "/{{user `workdir`}}/1078ECD7.asc"
-  },{
-    "type": "file",
-    "source": "scripts/etc-apt-preferences.d-arvados.pref",
-    "destination": "{{user `workdir`}}/etc-apt-preferences.d-arvados.pref"
-  },{
-    "type": "file",
-    "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
-    "destination": "/{{user `workdir`}}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
-  },{
-    "type": "file",
-    "source": "scripts/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf",
-    "destination": "{{user `workdir`}}/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf"
-  },{
-    "type": "file",
-    "source": "scripts/usr-local-bin-detect-gpu.sh",
-    "destination": "{{user `workdir`}}/usr-local-bin-detect-gpu.sh"
-  },{
-    "type": "file",
-    "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",
-    "destination": "/{{user `workdir`}}/usr-local-bin-ensure-encrypted-partitions.sh"
-  },{
-    "type": "file",
-    "source": "{{user `public_key_file`}}",
-    "destination": "/{{user `workdir`}}/crunch-authorized_keys"
-  },{
-    "type": "shell",
-    "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
-    "script": "scripts/base.sh",
-    "environment_vars": [
-        "RESOLVER={{user `resolver`}}",
-        "REPOSUFFIX={{user `reposuffix`}}",
-        "MKSQUASHFS_MEM={{user `mksquashfs_mem`}}",
-        "NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}",
-        "CLOUD=azure",
-        "GOVERSION={{user `goversion`}}",
-        "WORKDIR={{user `workdir`}}"
-    ]
+      "type": "ansible",
+      "playbook_file": "ansible/build-compute-image.yml",
+      "user": "{{user `ssh_user`}}",
+      "extra_arguments": [
+          "--extra-vars", "@{{ user `ansible_vars_file` }}",
+          "--scp-extra-args", "'-O'"
+      ]
   }]
 }

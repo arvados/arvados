@@ -30,8 +30,10 @@ Options:
       VPC id for AWS, if not specified packer will derive from the subnet id or pick the default one.
   --aws-subnet-id <subnet-xxxxxxxxxxxxxxxxx>
       Subnet id for AWS, if not specified packer will pick the default one for the VPC.
-  --aws-ebs-autoscale
-      Install the AWS EBS autoscaler daemon (default: do not install the AWS EBS autoscaler).
+  --aws-ebs-autoscale, --no-aws-ebs-autoscale
+      These flags determine whether or not to use an EBS autoscaling volume for
+      Crunch's working directory. The default is to use this when building an
+      image on AWS.
   --aws-associate-public-ip <true|false>
       Associate a public IP address with the node used for building the compute image.
       Required when the machine running packer can not reach the node used for building
@@ -81,6 +83,20 @@ EOF
 
 set -e -o pipefail
 
+ansible_vars_file="$(mktemp --tmpdir ansible-vars-XXXXXX.yml)"
+trap 'rm -f "$ansible_vars_file"' EXIT INT TERM QUIT
+# FIXME? We build the compute node image with the same version of Go that
+# Arvados uses, but it's not clear that we should: the only thing we use Go
+# for is to build Singularity, so what matters is what Singularity wants, not
+# what Arvados wants.
+sed -rn 's/^const +goversion *= */compute_go_version: /p' \
+    <../../lib/install/deps.go >>"$ansible_vars_file"
+
+ansible_set_var() {
+    eval "$(printf "%s=%q" "$1" "$2")"
+    echo "$1: $2" >>"$ansible_vars_file"
+}
+
 JSON_FILE=
 ARVADOS_CLUSTER_ID=
 AWS_PROFILE=
@@ -100,15 +116,10 @@ AZURE_LOCATION=
 AZURE_CLOUD_ENVIRONMENT=
 DEBUG=
 SSH_USER=
-WORKDIR=
 AWS_DEFAULT_REGION=us-east-1
-PIN_PACKAGES=
-PUBLIC_KEY_FILE=
-MKSQUASHFS_MEM=256M
-NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,workdir:,resolver:,reposuffix:,pin-packages,no-pin-packages,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,no-aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,workdir:,resolver:,reposuffix:,pin-packages,no-pin-packages,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -147,7 +158,10 @@ while [ $# -gt 0 ]; do
             AWS_SUBNET_ID="$2"; shift
             ;;
         --aws-ebs-autoscale)
-            AWS_EBS_AUTOSCALE=1
+            ansible_set_var arvados_compute_encrypted_tmp aws_ebs
+            ;;
+        --no-aws-ebs-autoscale)
+            ansible_set_var arvados_compute_encrypted_tmp '""'
             ;;
         --aws-associate-public-ip)
             AWS_ASSOCIATE_PUBLIC_IP="$2"; shift
@@ -183,28 +197,29 @@ while [ $# -gt 0 ]; do
             SSH_USER="$2"; shift
             ;;
         --workdir)
-            WORKDIR="$2"; shift
+            ansible_set_var workdir "$2"; shift
             ;;
         --resolver)
-            RESOLVER="$2"; shift
+            ansible_set_var dns_resolver "$2"; shift
             ;;
         --reposuffix)
-            REPOSUFFIX="$2"; shift
+            ansible_set_var arvados_apt_suites "$2"; shift
             ;;
         --pin-packages)
-            PIN_PACKAGES=true
+            ansible_set_var arvados_compute_pin_packages true
             ;;
         --no-pin-packages)
-            PIN_PACKAGES=false
+            ansible_set_var arvados_pin_version '""'
+            ansible_set_var arvados_compute_pin_packages false
             ;;
         --public-key-file)
-            PUBLIC_KEY_FILE="$2"; shift
+            ansible_set_var compute_authorized_keys "$(readlink -e "$2")"; shift
             ;;
         --mksquashfs-mem)
-            MKSQUASHFS_MEM="$2"; shift
+            ansible_set_var compute_mksquashfs_mem "$2"; shift
             ;;
         --nvidia-gpu-support)
-            NVIDIA_GPU_SUPPORT=1
+            ansible_set_var arvados_compute_nvidia true
             ;;
         --debug)
             # If you want to debug a build issue, add the -debug flag to the build
@@ -224,7 +239,6 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-
 if [[ -z "$JSON_FILE" ]] || [[ ! -f "$JSON_FILE" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
@@ -241,7 +255,7 @@ if [[ -z "$ARVADOS_CLUSTER_ID" ]]; then
   exit 1
 fi
 
-if [[ -z "$PUBLIC_KEY_FILE" ]] || [[ ! -f "$PUBLIC_KEY_FILE" ]]; then
+if [[ -z "${compute_authorized_keys:-}" || ! -f "$compute_authorized_keys" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
   echo >&2 "ERROR: public key file file not found"
@@ -256,7 +270,6 @@ fi
 if [[ ! -z "$AZURE_SECRETS_FILE" ]]; then
   source $AZURE_SECRETS_FILE
 fi
-
 
 AWS=0
 EXTRA2=""
@@ -279,10 +292,6 @@ if [[ -n "$AWS_SUBNET_ID" ]]; then
 fi
 if [[ -n "$AWS_DEFAULT_REGION" ]]; then
   EXTRA2+=" -var aws_default_region=$AWS_DEFAULT_REGION"
-  AWS=1
-fi
-if [[ -n "$AWS_EBS_AUTOSCALE" ]]; then
-  EXTRA2+=" -var aws_ebs_autoscale=$AWS_EBS_AUTOSCALE"
   AWS=1
 fi
 if [[ $AWS -eq 1 ]]; then
@@ -313,39 +322,16 @@ fi
 if [[ -n "$SSH_USER" ]]; then
   EXTRA2+=" -var ssh_user=$SSH_USER"
 fi
-if [[ -n "$WORKDIR" ]]; then
-  EXTRA2+=" -var workdir=$WORKDIR"
+if [[ -z "${arvados_compute_pin_packages:-}" && "${arvados_apt_suites:-}" = -dev ]]; then
+    ansible_set_var arvados_pin_version '""'
+    ansible_set_var arvados_compute_pin_packages false
 fi
-if [[ -n "$RESOLVER" ]]; then
-  EXTRA2+=" -var resolver=$RESOLVER"
-fi
-if [[ -n "$REPOSUFFIX" ]]; then
-  EXTRA2+=" -var reposuffix=$REPOSUFFIX"
-fi
-if [[ -z "$PIN_PACKAGES" ]]; then
-    case "$REPOSUFFIX" in
-        -dev) PIN_PACKAGES=false ;;
-        *) PIN_PACKAGES=true ;;
-    esac
-fi
-EXTRA2+=" -var pin_packages=$PIN_PACKAGES"
-if [[ -n "$PUBLIC_KEY_FILE" ]]; then
-  EXTRA2+=" -var public_key_file=$PUBLIC_KEY_FILE"
-fi
-if [[ -n "$MKSQUASHFS_MEM" ]]; then
-  EXTRA2+=" -var mksquashfs_mem=$MKSQUASHFS_MEM"
-fi
-if [[ -n "$NVIDIA_GPU_SUPPORT" ]]; then
-  EXTRA2+=" -var nvidia_gpu_support=$NVIDIA_GPU_SUPPORT"
-fi
-
-GOVERSION=$(grep 'const goversion =' ../../lib/install/deps.go |awk -F'"' '{print $2}')
-EXTRA2+=" -var goversion=$GOVERSION"
 
 logfile=packer-$(date -Iseconds).log
 
 echo
+cat "$ansible_vars_file"
 packer version
 echo
-echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE | tee -a $logfile
-packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE 2>&1 | tee -a $logfile
+echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID" -var "ansible_vars_file=$ansible_vars_file" $EXTRA2 $JSON_FILE | tee -a $logfile
+packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID" -var "ansible_vars_file=$ansible_vars_file" $EXTRA2 $JSON_FILE 2>&1 | tee -a $logfile

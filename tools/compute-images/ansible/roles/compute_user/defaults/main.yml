@@ -1,0 +1,6 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+compute_user_account: crunch
+compute_user_home: "/home/{{ compute_user_account }}"

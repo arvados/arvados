@@ -1,0 +1,26 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install EBS autoscaler dependencies
+  ansible.builtin.apt:
+    name:
+      - awscli
+      - bash
+      - git
+      - jq
+      - unzip
+ 
+- name: Check out EBS autoscaler from Git
+  ansible.builtin.git:
+    repo: "{{ aws_ebs_autoscale_url }}"
+    dest: /opt/amazon-ebs-autoscale
+    version: "{{ aws_ebs_autoscale_version }}"
+    
+- name: Override encrypted partition service with EBS autoscaler
+  ansible.builtin.copy:
+    src: ebs-autoscale.conf
+    dest: /etc/systemd/system/arvados-ensure-encrypted-partitions.service.d/ebs-autoscale.conf
+    owner: root
+    group: root
+    mode: 0644

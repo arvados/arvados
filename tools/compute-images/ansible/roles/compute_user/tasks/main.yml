@@ -1,0 +1,33 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Create compute user account
+  ansible.builtin.user:
+    name: "{{ compute_user_account }}"
+    comment: Crunch user,,,,
+    home: "{{ compute_user_home }}"
+    password_lock: true
+
+- name: Give compute user sudo access
+  ansible.builtin.lineinfile:
+    line: "{{ compute_user_account }} ALL=(ALL) NOPASSWD:ALL"
+    path: /etc/sudoers.d/91-crunch
+    create: true
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create compute user .ssh directory
+  ansible.builtin.file:
+    state: directory
+    path: "{{ compute_user_home }}/.ssh"
+    owner: "{{ compute_user_account }}"
+    mode: 0700
+
+- name: Configure compute user authorized keys
+  ansible.builtin.copy:
+    src: "{{ compute_authorized_keys }}"
+    dest: "{{ compute_user_home }}/.ssh/authorized_keys"
+    owner: "{{ compute_user_account }}"
+    mode: 0600

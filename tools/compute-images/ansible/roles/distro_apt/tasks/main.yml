@@ -1,0 +1,13 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Check distribution
+  ansible.builtin.fail:
+    msg: "Unsupported distribution: {{ ansible_distribution }}"
+  when: "ansible_distribution != 'Debian'"
+
+- name: Set up Debian apt repository
+  ansible.builtin.include_tasks:
+    file: debian.yml
+  when: "ansible_distribution == 'Debian'"

@@ -1,0 +1,8 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+debian_apt_mirror: "{{ 'http://cdn-aws.deb.debian.org/debian' if ansible_system_vendor == 'Amazon EC2' else 'http://deb.debian.org/debian' }}"
+debian_apt_components:
+  - main
+  - contrib
