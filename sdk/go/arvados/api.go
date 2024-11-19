@@ -160,8 +160,10 @@ type CreateOptions struct {
 	EnsureUniqueName bool                   `json:"ensure_unique_name"`
 	Select           []string               `json:"select"`
 	Attrs            map[string]interface{} `json:"attrs"`
-	// ReplaceFiles only applies when creating a collection.
-	ReplaceFiles map[string]string `json:"replace_files"`
+	// ReplaceFiles and ReplaceSegments only apply when creating a
+	// collection.
+	ReplaceFiles    map[string]string             `json:"replace_files"`
+	ReplaceSegments map[BlockSegment]BlockSegment `json:"replace_segments"`
 }
 
 type UpdateOptions struct {
@@ -169,8 +171,10 @@ type UpdateOptions struct {
 	Attrs            map[string]interface{} `json:"attrs"`
 	Select           []string               `json:"select"`
 	BypassFederation bool                   `json:"bypass_federation"`
-	// ReplaceFiles only applies when updating a collection.
-	ReplaceFiles map[string]string `json:"replace_files"`
+	// ReplaceFiles and ReplaceSegments only apply when updating a
+	// collection.
+	ReplaceFiles    map[string]string             `json:"replace_files"`
+	ReplaceSegments map[BlockSegment]BlockSegment `json:"replace_segments"`
 }
 
 type GroupContentsOptions struct {

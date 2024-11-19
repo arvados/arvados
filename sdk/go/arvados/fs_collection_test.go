@@ -1477,6 +1477,101 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 	}
 }
 
+var fakeLocator = func() []string {
+	locs := make([]string, 10)
+	for i := range locs {
+		locs[i] = fmt.Sprintf("%x+%d", md5.Sum(make([]byte, i)), i)
+		if i%2 == 1 {
+			locs[i] += "+Awhatever+Zotherhints"
+		}
+	}
+	return locs
+}()
+
+func (s *CollectionFSSuite) TestReplaceSegments_HappyPath(c *check.C) {
+	fs, err := (&Collection{
+		ManifestText: ". " + fakeLocator[1] + " " + fakeLocator[2] + " 0:3:file3\n",
+	}).FileSystem(nil, &keepClientStub{})
+	c.Assert(err, check.IsNil)
+	changed, err := fs.ReplaceSegments(map[BlockSegment]BlockSegment{
+		BlockSegment{fakeLocator[1], 0, 1}: BlockSegment{fakeLocator[3], 0, 1},
+		BlockSegment{fakeLocator[2], 0, 2}: BlockSegment{fakeLocator[3], 1, 2},
+	})
+	c.Check(changed, check.Equals, true)
+	c.Check(err, check.IsNil)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Check(mtxt, check.Equals, ". "+fakeLocator[3]+" 0:3:file3\n")
+}
+
+func (s *CollectionFSSuite) TestReplaceSegments_InvalidOffset(c *check.C) {
+	origtxt := ". " + fakeLocator[1] + " " + fakeLocator[2] + " 0:3:file3\n"
+	fs, err := (&Collection{
+		ManifestText: origtxt,
+	}).FileSystem(nil, &keepClientStub{})
+	c.Assert(err, check.IsNil)
+	changed, err := fs.ReplaceSegments(map[BlockSegment]BlockSegment{
+		BlockSegment{fakeLocator[1], 0, 1}: BlockSegment{fakeLocator[3], 0, 1},
+		BlockSegment{fakeLocator[2], 0, 2}: BlockSegment{fakeLocator[3], 2, 2},
+	})
+	c.Check(changed, check.Equals, false)
+	c.Check(err, check.ErrorMatches, `invalid replacement: offset 2 \+ length 2 > block size 3`)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Check(mtxt, check.Equals, origtxt)
+}
+
+func (s *CollectionFSSuite) TestReplaceSegments_LengthMismatch(c *check.C) {
+	origtxt := ". " + fakeLocator[1] + " " + fakeLocator[2] + " 0:3:file3\n"
+	fs, err := (&Collection{
+		ManifestText: origtxt,
+	}).FileSystem(nil, &keepClientStub{})
+	c.Assert(err, check.IsNil)
+	changed, err := fs.ReplaceSegments(map[BlockSegment]BlockSegment{
+		BlockSegment{fakeLocator[1], 0, 1}: BlockSegment{fakeLocator[3], 0, 1},
+		BlockSegment{fakeLocator[2], 0, 2}: BlockSegment{fakeLocator[3], 0, 3},
+	})
+	c.Check(changed, check.Equals, false)
+	c.Check(err, check.ErrorMatches, `mismatched length: replacing segment length 2 with segment length 3`)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Check(mtxt, check.Equals, origtxt)
+}
+
+func (s *CollectionFSSuite) TestReplaceSegments_SkipUnreferenced(c *check.C) {
+	fs, err := (&Collection{
+		ManifestText: ". " + fakeLocator[1] + " " + fakeLocator[2] + " " + fakeLocator[3] + " 0:6:file6\n",
+	}).FileSystem(nil, &keepClientStub{})
+	c.Assert(err, check.IsNil)
+	changed, err := fs.ReplaceSegments(map[BlockSegment]BlockSegment{
+		BlockSegment{fakeLocator[1], 0, 1}: BlockSegment{fakeLocator[4], 0, 1}, // skipped because [5] unref
+		BlockSegment{fakeLocator[2], 0, 2}: BlockSegment{fakeLocator[4], 1, 2}, // skipped because [5] unref
+		BlockSegment{fakeLocator[5], 0, 2}: BlockSegment{fakeLocator[4], 1, 2}, // [5] unreferenced in orig manifest
+		BlockSegment{fakeLocator[3], 0, 3}: BlockSegment{fakeLocator[6], 3, 3}, // applied
+	})
+	c.Check(changed, check.Equals, true)
+	c.Check(err, check.IsNil)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Check(mtxt, check.Equals, ". "+fakeLocator[1]+" "+fakeLocator[2]+" "+fakeLocator[6]+" 0:3:file6 6:3:file6\n")
+}
+
+func (s *CollectionFSSuite) TestReplaceSegments_SkipIncompleteSegment(c *check.C) {
+	origtxt := ". " + fakeLocator[2] + " " + fakeLocator[3] + " 0:5:file5\n"
+	fs, err := (&Collection{
+		ManifestText: origtxt,
+	}).FileSystem(nil, &keepClientStub{})
+	c.Assert(err, check.IsNil)
+	changed, err := fs.ReplaceSegments(map[BlockSegment]BlockSegment{
+		BlockSegment{fakeLocator[2], 0, 1}: BlockSegment{fakeLocator[4], 0, 1}, // length=1 does not match the length=2 segment
+	})
+	c.Check(changed, check.Equals, false)
+	c.Check(err, check.IsNil)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Check(err, check.IsNil)
+	c.Check(mtxt, check.Equals, origtxt)
+}
+
 func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
 	filedata1 := "hello snapshot+splice world\n"
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)

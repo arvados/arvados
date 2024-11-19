@@ -75,6 +75,9 @@ func (conn *Conn) CollectionCreate(ctx context.Context, opts arvados.CreateOptio
 	if opts.Attrs, err = conn.applyReplaceFilesOption(ctx, "", opts.Attrs, opts.ReplaceFiles); err != nil {
 		return arvados.Collection{}, err
 	}
+	if opts.Attrs, err = conn.applyReplaceSegmentsOption(ctx, "", opts.Attrs, opts.ReplaceSegments); err != nil {
+		return arvados.Collection{}, err
+	}
 	resp, err := conn.railsProxy.CollectionCreate(ctx, opts)
 	if err != nil {
 		return resp, err
@@ -102,6 +105,9 @@ func (conn *Conn) CollectionUpdate(ctx context.Context, opts arvados.UpdateOptio
 		return arvados.Collection{}, err
 	}
 	if opts.Attrs, err = conn.applyReplaceFilesOption(ctx, opts.UUID, opts.Attrs, opts.ReplaceFiles); err != nil {
+		return arvados.Collection{}, err
+	}
+	if opts.Attrs, err = conn.applyReplaceSegmentsOption(ctx, opts.UUID, opts.Attrs, opts.ReplaceSegments); err != nil {
 		return arvados.Collection{}, err
 	}
 	resp, err := conn.railsProxy.CollectionUpdate(ctx, opts)
@@ -335,5 +341,41 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 		attrs = make(map[string]interface{}, 1)
 	}
 	attrs["manifest_text"] = mtxt
+	return attrs, nil
+}
+
+func (conn *Conn) applyReplaceSegmentsOption(ctx context.Context, fromUUID string, attrs map[string]interface{}, replaceSegments map[arvados.BlockSegment]arvados.BlockSegment) (map[string]interface{}, error) {
+	if len(replaceSegments) == 0 {
+		return attrs, nil
+	}
+
+	// Load the current collection content (unless it's being
+	// replaced by the provided manifest_text).
+	var dst arvados.Collection
+	if txt, ok := attrs["manifest_text"].(string); ok {
+		dst.ManifestText = txt
+	} else if fromUUID != "" {
+		src, err := conn.CollectionGet(ctx, arvados.GetOptions{UUID: fromUUID})
+		if err != nil {
+			return nil, err
+		}
+		dst = src
+	}
+	dstfs, err := dst.FileSystem(&arvados.StubClient{}, &arvados.StubClient{})
+	if err != nil {
+		return nil, err
+	}
+	if changed, err := dstfs.ReplaceSegments(replaceSegments); err != nil {
+		return nil, httpserver.Errorf(http.StatusBadRequest, "replace_segments: %s", err)
+	} else if changed {
+		txt, err := dstfs.MarshalManifest(".")
+		if err != nil {
+			return nil, err
+		}
+		if attrs == nil {
+			attrs = make(map[string]interface{})
+		}
+		attrs["manifest_text"] = txt
+	}
 	return attrs, nil
 }

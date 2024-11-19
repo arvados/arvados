@@ -197,6 +197,36 @@ Collections on other clusters in a federation cannot be used as sources. Each so
 
 Similarly, if @manifest_text@ is provided, it must only reference data blocks that are stored on the current cluster. This API does not copy data from other clusters in a federation.
 
+h3(#replace_segments). Using "replace_segments" to repack file data
+
+The @replace_segments@ option can be used with the "update":#update API to atomically apply a new file packing, e.g., replacing a number of small blocks with one larger block.
+
+@replace_segments@ keys indicate existing block segments in the collection, and values specify replacement segments.
+* Each segment is specified as space-separated tokens: @"locator offset length"@ where @locator@ is a signed block locator and @offset@ and @length@ are decimal-encoded integers specifying a portion of the block that is referenced in the collection.
+* Each replacement block locator must be properly signed (just as if it appeared in a @manifest_text@).
+* Each existing block segment must correspond to an entire contiguous portion of a block referenced by a file (splitting existing segments is not supported).
+* If a key does not match any existing block segment, that key _and all other keys referencing the same replacement block_ will be skipped. Other replacements will still be applied. Replacements that are skipped for this reason do not cause the request to fail.
+
+The @replace_segments@ option is applied after @replace_files@ and @manifest_text@. This means it can apply to blocks from @manifest_text@ and/or other collections referenced by @replace_files@.
+
+Example:
+
+<notextile><pre>
+"replace_segments": {
+  "c4103f122d27677c9db144cae1394a66+2+A3d02f1f3d8a622b2061ad5afe4853dbea42039e2@674dd351 0 2": "ca9c491ac66b2c62500882e93f3719a8+5+A312fea6de5807e9e77d844450d36533a599c40f1@674dd351 0 2",
+  "693e9af84d3dfcc71e640e005bdc5e2e+3+A6528480b63d90a24b60b2ee2409040f050cc5d0c@674dd351 0 3": "ca9c491ac66b2c62500882e93f3719a8+5+A312fea6de5807e9e77d844450d36533a599c40f1@674dd351 2 3"
+},
+"collection": {
+  "manifest_text": ". c4103f122d27677c9db144cae1394a66+2+A3d02f1f3d8a622b2061ad5afe4853dbea42039e2@674dd351 693e9af84d3dfcc71e640e005bdc5e2e+3+A6528480b63d90a24b60b2ee2409040f050cc5d0c@674dd351 0:5:file.txt\n"
+}
+</pre></notextile>
+
+Resulting manifest:
+
+<notextile><pre>
+. ca9c491ac66b2c62500882e93f3719a8+5+A312fea6de5807e9e77d844450d36533a599c40f1@674dd351 0:5:file.txt
+</pre></notextile>
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
@@ -292,8 +322,11 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 |collection|object||query||
 |replace_files|object|Add, delete, and replace files and directories with new content and/or content from other collections|query||
+|replace_segments|object|Repack the collection by substituting data blocks|query||
 
 The collection's existing content can be replaced entirely by providing a @manifest_text@ key in the provided @collection@ object, or updated in place by "using the @replace_files@ option":#replace_files.
+
+An alternative file packing can be applied atomically "using the @replace_segments@ option":#replace_segments.
 
 h3(#untrash). untrash
 

@@ -860,9 +860,9 @@ cluster, and automatically passes most permissions checks.",
     end
     discovery[:schemas]['ComputedPermission'][:properties]['perm_level'][:type] = 'string'
 
-    # The 'replace_files' option is implemented in lib/controller,
-    # not Rails -- we just need to add it here so discovery-aware
-    # clients know how to validate it.
+    # The 'replace_files' and 'replace_segments' options are
+    # implemented in lib/controller, not Rails -- we just need to add
+    # them here so discovery-aware clients know how to validate them.
     [:create, :update].each do |action|
       discovery[:resources]['collections'][:methods][action][:parameters]['replace_files'] = {
         type: 'object',
@@ -872,6 +872,20 @@ and/or content from other collections. Refer to the
 [replace_files reference][] for details.
 
 [replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files
+
+",
+        required: false,
+        location: 'query',
+        properties: {},
+        additionalProperties: {type: 'string'},
+      }
+      discovery[:resources]['collections'][:methods][action][:parameters]['replace_segments'] = {
+        type: 'object',
+        description:
+          "Replace existing block segments in the collection with new segments.
+Refer to the [replace_files reference][] for details.
+
+[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_segments
 
 ",
         required: false,

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +37,13 @@ type CollectionFileSystem interface {
 	// Prefix (normally ".") is a top level directory, effectively
 	// prepended to all paths in the returned manifest.
 	MarshalManifest(prefix string) (string, error)
+
+	// Given map {x->y}, replace each occurrence of x with y.
+	// Except: If segment x is not referenced anywhere in the
+	// collection, do not make any replacements that reference the
+	// same locator as y. The first return value is true if any
+	// substitutions were made.
+	ReplaceSegments(map[BlockSegment]BlockSegment) (bool, error)
 
 	// Total data bytes in all files.
 	Size() int64
@@ -535,6 +543,72 @@ func (fs *collectionFileSystem) Snapshot() (inode, error) {
 
 func (fs *collectionFileSystem) Splice(r inode) error {
 	return fs.fileSystem.root.Splice(r)
+}
+
+func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment) (bool, error) {
+	fs.fileSystem.root.Lock()
+	defer fs.fileSystem.root.Unlock()
+	missing := make(map[BlockSegment]bool, len(m))
+	for orig := range m {
+		orig.Locator = stripAllHints(orig.Locator)
+		missing[orig] = true
+	}
+	fs.fileSystem.root.(*dirnode).walkSegments(func(seg segment) segment {
+		if seg, ok := seg.(storedSegment); ok {
+			delete(missing, BlockSegment{Locator: stripAllHints(seg.locator), Offset: seg.offset, Length: seg.length})
+		}
+		return seg
+	})
+	skip := make(map[string]bool)
+	for orig, repl := range m {
+		orig.Locator = stripAllHints(orig.Locator)
+		if missing[orig] {
+			skip[repl.Locator] = true
+		}
+	}
+	todo := make(map[BlockSegment]storedSegment, len(m))
+	toks := make([][]byte, 3)
+	for orig, repl := range m {
+		if !skip[repl.Locator] {
+			orig.Locator = stripAllHints(orig.Locator)
+			if orig.Length != repl.Length {
+				return false, fmt.Errorf("mismatched length: replacing segment length %d with segment length %d", orig.Length, repl.Length)
+			}
+			if splitToToks([]byte(repl.Locator), '+', toks) < 2 {
+				return false, errors.New("invalid replacement locator")
+			}
+			blksize, err := strconv.ParseInt(string(toks[1]), 10, 64)
+			if err != nil {
+				return false, fmt.Errorf("invalid size hint in replacement locator: %w", err)
+			}
+			if repl.Offset+repl.Length > int(blksize) {
+				return false, fmt.Errorf("invalid replacement: offset %d + length %d > block size %d", repl.Offset, repl.Length, blksize)
+			}
+			todo[orig] = storedSegment{
+				locator: repl.Locator,
+				offset:  repl.Offset,
+				size:    int(blksize),
+			}
+		}
+	}
+	changed := false
+	fs.fileSystem.root.(*dirnode).walkSegments(func(s segment) segment {
+		seg, ok := s.(storedSegment)
+		if !ok {
+			return s
+		}
+		repl, ok := todo[BlockSegment{Locator: stripAllHints(seg.locator), Offset: seg.offset, Length: seg.length}]
+		if !ok {
+			return s
+		}
+		seg.locator = repl.locator
+		seg.offset = repl.offset
+		seg.size = repl.size
+		// (leave seg.kc and seg.length unchanged)
+		changed = true
+		return seg
+	})
+	return changed, nil
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to
@@ -1378,6 +1452,25 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, flush boo
 	return rootdir + strings.Join(subdirs, ""), err
 }
 
+// splitToToks is similar to bytes.SplitN(token, []byte{c}, 3), but
+// splits into the toks slice rather than allocating a new one, and
+// returns the number of toks (1, 2, or 3).
+func splitToToks(src []byte, c rune, toks [][]byte) int {
+	c1 := bytes.IndexRune(src, c)
+	if c1 < 0 {
+		toks[0] = src
+		return 1
+	}
+	toks[0], src = src[:c1], src[c1+1:]
+	c2 := bytes.IndexRune(src, c)
+	if c2 < 0 {
+		toks[1] = src
+		return 2
+	}
+	toks[1], toks[2] = src[:c2], src[c2+1:]
+	return 3
+}
+
 func (dn *dirnode) loadManifest(txt string) error {
 	streams := bytes.Split([]byte(txt), []byte{'\n'})
 	if len(streams[len(streams)-1]) != 0 {
@@ -1396,24 +1489,6 @@ func (dn *dirnode) loadManifest(txt string) error {
 	// To reduce allocs, we reuse a single "toks" slice of 3 byte
 	// slices.
 	var toks = make([][]byte, 3)
-	// Similar to bytes.SplitN(token, []byte{c}, 3), but splits
-	// into the toks slice rather than allocating a new one, and
-	// returns the number of toks (1, 2, or 3).
-	splitToToks := func(src []byte, c rune) int {
-		c1 := bytes.IndexRune(src, c)
-		if c1 < 0 {
-			toks[0] = src
-			return 1
-		}
-		toks[0], src = src[:c1], src[c1+1:]
-		c2 := bytes.IndexRune(src, c)
-		if c2 < 0 {
-			toks[1] = src
-			return 2
-		}
-		toks[1], toks[2] = src[:c2], src[c2+1:]
-		return 3
-	}
 	for i, stream := range streams {
 		lineno := i + 1
 		fnodeCache := make(map[string]*filenode)
@@ -1433,7 +1508,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 				if anyFileTokens {
 					return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 				}
-				if splitToToks(token, '+') < 2 {
+				if splitToToks(token, '+', toks) < 2 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
 				length, err := strconv.ParseInt(string(toks[1]), 10, 32)
@@ -1451,7 +1526,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 			} else if len(segments) == 0 {
 				return fmt.Errorf("line %d: bad locator %q", lineno, token)
 			}
-			if splitToToks(token, ':') != 3 {
+			if splitToToks(token, ':', toks) != 3 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
 			anyFileTokens = true
@@ -1714,6 +1789,26 @@ func (dn *dirnode) setTreeFS(fs *collectionFileSystem) {
 		case *filenode:
 			child.fs = fs
 		}
+	}
+}
+
+// walkSegments visits all file data in the tree beneath dn, calling
+// fn on each segment and replacing it with fn's return value.
+//
+// caller must have lock.
+func (dn *dirnode) walkSegments(fn func(segment) segment) {
+	for _, name := range dn.sortedNames() {
+		child := dn.inodes[name]
+		child.Lock()
+		switch child := child.(type) {
+		case *dirnode:
+			child.walkSegments(fn)
+		case *filenode:
+			for i, seg := range child.segments {
+				child.segments[i] = fn(seg)
+			}
+		}
+		child.Unlock()
 	}
 }
 
