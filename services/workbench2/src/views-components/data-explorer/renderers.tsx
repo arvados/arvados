@@ -136,11 +136,6 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
     }
 };
 
-// export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-//     return resource;
-// })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource));
-
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
@@ -192,11 +187,6 @@ export const renderWorkflowName = (item: WorkflowResource) => (
     </Grid>
 );
 
-// export const ResourceWorkflowName = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-//     return resource;
-// })(renderWorkflowName);
-
 const getPublicUuid = (uuidPrefix: string) => {
     return `${uuidPrefix}-tpzed-anonymouspublic`;
 };
@@ -228,23 +218,6 @@ export const ResourceShare = connect((state: RootState, props: { resource: Workf
     resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid)
 );
 
-// User Resources
-// const renderFirstName = (item: { firstName: string }) => {
-//     return <Typography noWrap>{item.firstName}</Typography>;
-// };
-
-// export const ResourceFirstName = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<UserResource>(props.uuid)(state.resources);
-//     return resource || { firstName: "" };
-// })(renderFirstName);
-
-// const renderLastName = (item: { lastName: string }) => <Typography noWrap>{item.lastName}</Typography>;
-
-// export const ResourceLastName = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<UserResource>(props.uuid)(state.resources);
-//     return resource || { lastName: "" };
-// })(renderLastName);
-
 export const RenderFullName = dispatchWrapper((props: { resource: UserResource, link?: boolean, dispatch: Dispatch }) => {
     const { resource, link, dispatch } = props;
     const displayName = (resource.firstName + " " + resource.lastName).trim() || resource.uuid;
@@ -262,13 +235,6 @@ export const RenderFullName = dispatchWrapper((props: { resource: UserResource, 
     );
 });
 
-// export const UserResourceFullName = connect((state: RootState, props: { uuid: string; link?: boolean }) => {
-//     const resource = getResource<UserResource>(props.uuid)(state.resources);
-//     return { item: resource || { uuid: "", firstName: "", lastName: "" }, link: props.link };
-// })((props: { item: { uuid: string; firstName: string; lastName: string }; link?: boolean } & DispatchProp<any>) =>
-//     renderFullName(props.item, props.link)
-// );
-
 export const renderUuidWithCopy = (item: { uuid: string }) => (
     <Typography
         data-cy="uuid"
@@ -279,35 +245,7 @@ export const renderUuidWithCopy = (item: { uuid: string }) => (
     </Typography>
 );
 
-// export const renderResourceUuid = (resource: GroupContentsResource | GroupResource | UserResource) => (
-//     <Typography
-//         data-cy="uuid"
-//         noWrap
-//     >
-//         {resource.uuid}
-//         {(resource.uuid && <CopyToClipboardSnackbar value={resource.uuid} />) || "-"}
-//     </Typography>
-// );
-
-// const renderUuidCopyIcon = (item: { uuid: string }) => (
-//     <Typography
-//         data-cy="uuid"
-//         noWrap
-//     >
-//         {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
-//     </Typography>
-// );
-
-// export const ResourceUuid = connect(
-//     (state: RootState, props: { uuid: string }) => getResource<UserResource>(props.uuid)(state.resources) || { uuid: "" }
-// )(renderUuid);
-
 export const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
-
-// export const ResourceEmail = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<UserResource>(props.uuid)(state.resources);
-//     return resource || { email: "" };
-// })(renderEmail);
 
 enum UserAccountStatus {
     ACTIVE = "Active",
@@ -443,13 +381,6 @@ export const ResourceIsAdmin = connect(
 
 export const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
 
-// export const ResourceUsername = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<UserResource>(props.uuid)(state.resources);
-//     return resource || { username: "", uuid: props.uuid };
-// })(renderUsername);
-
-// Virtual machine resource
-
 const renderHostname = (item: { hostname: string }) => <Typography noWrap>{item.hostname}</Typography>;
 
 export const VirtualMachineHostname = connect((state: RootState, props: { uuid: string }) => {
@@ -470,25 +401,6 @@ export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid:
 export const renderString = (str: string) => <Typography noWrap>{str || '-'}</Typography>;
 
 export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid || '-'}</Typography>;
-
-// const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
-
-// export const CommonUuid = withResourceData("uuid", renderCommonData);
-
-// Api Client Authorizations
-// export const TokenApiToken = withResourceData("apiToken", renderString);
-
-// export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderDate);
-
-// export const TokenExpiresAt = withResourceData("expiresAt", renderDate);
-
-// export const TokenLastUsedAt = withResourceData("lastUsedAt", renderDate);
-
-// export const TokenLastUsedByIpAddress = withResourceData("lastUsedByIpAddress", renderString);
-
-// export const TokenScopes = withResourceData("scopes", renderString);
-
-// export const TokenUserId = withResourceData("userId", renderString);
 
 export const ResourceCluster = connect((state: RootState, props: { uuid: string }) => {
     const clusterId = props.uuid.slice(0, 5) || ""
@@ -512,17 +424,7 @@ function renderClusterBadge(badge: ClusterBadge) {
 // Links Resources
 export const renderLinkName = (item: { name: string }) => <Typography noWrap>{item.name || "-"}</Typography>;
 
-// export const ResourceLinkName = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<LinkResource>(props.uuid)(state.resources);
-//     return resource || { name: "" };
-// })(renderLinkName);
-
 export const renderLinkClass = (item: { linkClass: string }) => <Typography noWrap>{item.linkClass}</Typography>;
-
-// export const ResourceLinkClass = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<LinkResource>(props.uuid)(state.resources);
-//     return resource || { linkClass: "" };
-// })(renderLinkClass);
 
 const getResourceDisplayName = (resource: Resource): string => {
     if ((resource as UserResource).kind === ResourceKind.USER && typeof (resource as UserResource).firstName !== "undefined") {
@@ -569,11 +471,6 @@ export const ResourceLinkHead = connect((state: RootState, props: { resource: Pe
         item: headResource || { uuid: props.resource?.headUuid || "", kind: props.resource?.headKind || ResourceKind.NONE },
     };
 })((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item, props.dispatch));
-
-// export const ResourceLinkUuid = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<LinkResource>(props.uuid)(state.resources);
-//     return resource || { uuid: "" };
-// })(renderUuid);
 
 export const ResourceLinkHeadUuid = connect((state: RootState, props: { resource: PermissionResource }) => {
     const { resource } = props;
@@ -695,13 +592,6 @@ export const ResourceRunProcess = dispatchWrapper((uuid: string, dispatch: Dispa
     );
 });
 
-// export const ResourceRunProcess = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-//     return {
-//         uuid: resource ? resource.uuid : "",
-//     };
-// })((props: { uuid: string } & DispatchProp<any>) => resourceRunProcess(props.uuid));
-
 const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
         return renderStatus(WorkflowStatus.PUBLIC);
@@ -736,11 +626,6 @@ export const renderContainerUuid = (resource: GroupContentsResource) => {
     return renderUuidWithCopy({ uuid: containerUuid });
 };
 
-// export const ResourceContainerUuid = connect((state: RootState, props: { uuid: string }) => {
-//     const process = getProcess(props.uuid)(state.resources);
-//     return { uuid: process?.container?.uuid ? process?.container?.uuid : "" };
-// })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
-
 enum ColumnSelection {
     OUTPUT_UUID = "outputUuid",
     LOG_UUID = "logUuid",
@@ -772,17 +657,9 @@ const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string, dispa
     );
 };
 
-// export const renderResourceOutputUuid = (resource: GroupContentsResource) => {
-    // return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidLinkWithCopyIcon(resource, ColumnSelection.OUTPUT_UUID) : <>-</>;   
-// }
-
 export const ResourceOutputUuid = connect((state: RootState, props: { resource: ProcessResource }) => { 
     return {process: props.resource};
 })((props: {process: ProcessResource} & DispatchProp<any>) => renderUuidLinkWithCopyIcon(props.process, ColumnSelection.OUTPUT_UUID, props.dispatch));
-
-// export const renderResourceLogUuid = (resource: GroupContentsResource) => {
-//     return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidLinkWithCopyIcon(resource, ColumnSelection.LOG_UUID) : <>-</>;
-// }
 
 export const ResourceLogUuid = connect((state: RootState, props: { resource: ProcessResource }) => {
     return {process:props.resource};
@@ -791,16 +668,6 @@ export const ResourceLogUuid = connect((state: RootState, props: { resource: Pro
 export const renderResourceParentProcess = (resource: GroupContentsResource) => {
     return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidWithCopy({ uuid: (resource as ContainerRequestResource).requestingContainerUuid || "" }) : <>-</>;
 }
-
-// export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
-//     const process = getProcess(props.uuid)(state.resources);
-//     return { parentProcess: process?.containerRequest?.requestingContainerUuid || "" };
-// })((props: { parentProcess: string }) => renderUuid({ uuid: props.parentProcess }));
-
-// export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uuid: string }) => {
-//     const process = getProcess(props.uuid)(state.resources);
-//     return { userUuid: process?.containerRequest?.modifiedByUserUuid || "" };
-// })((props: { userUuid: string }) => renderUuid({ uuid: props.userUuid }));
 
 export const renderModifiedByUserUuid = (resource: GroupContentsResource & {containerRequest?: any}) => {
     const modifiedByUserUuid = resource.containerRequest ? resource.containerRequest.modifiedByUserUuid : resource.modifiedByUserUuid;
@@ -811,37 +678,17 @@ export const renderCreatedAtDate = (resource: GroupContentsResource) => {
     return renderDate(resource.createdAt);
 }
 
-// export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-//     return { date: resource ? resource.createdAt : "" };
-// })((props: { date: string }) => renderDate(props.date));
-
 export const renderLastModifiedDate = (resource: GroupContentsResource) => {
     return renderDate(resource.modifiedAt);
 }
-
-// export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-//     return { date: resource ? resource.modifiedAt : "" };
-// })((props: { date: string }) => renderDate(props.date));
 
 export const renderTrashDate = (resource: TrashableResource) => {
     return renderDate(resource.trashAt);
 }
 
-// export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-//     return { date: resource ? resource.trashAt : "" };
-// })((props: { date: string }) => renderDate(props.date));
-
 export const renderDeleteDate = (resource: TrashableResource) => {
     return renderDate(resource.deleteAt);
 }
-
-// export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-//     return { date: resource ? resource.deleteAt : "" };
-// })((props: { date: string }) => renderDate(props.date));
 
 export const renderFileSize = (resource: GroupContentsResource & { fileSizeTotal?: number }) => (
     <Typography
@@ -852,43 +699,9 @@ export const renderFileSize = (resource: GroupContentsResource & { fileSizeTotal
     </Typography>
 );
 
-// export const ResourceFileSize = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-
-//     if (resource && resource.kind !== ResourceKind.COLLECTION) {
-//         return { fileSize: "" };
-//     }
-
-//     return { fileSize: resource ? resource.fileSizeTotal : 0 };
-// })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
-
-// const renderOwner = (owner: string) => <Typography noWrap>{owner || "-"}</Typography>;
-
-// export const ResourceOwner = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-//     return { owner: resource ? resource.ownerUuid : "" };
-// })((props: { owner: string }) => renderOwner(props.owner));
-
-// export const ResourceOwnerName = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-//     const ownerNameState = state.ownerName;
-//     const ownerName = ownerNameState.find(it => it.uuid === resource!.ownerUuid);
-//     return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
-// })((props: { owner: string }) => renderOwner(props.owner));
-
-// export const ResourceUUID = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-//     return { uuid: resource ? resource.uuid : "" };
-// })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
-
 export const renderVersion = (resource: CollectionResource) => {
     return <Typography>{resource.version ?? "-"}</Typography>;
 };
-
-// export const ResourceVersion = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-//     return { version: resource ? resource.version : "" };
-// })((props: { version: number }) => renderVersion(props.version));
 
 export const renderPortableDataHash = (resource: GroupContentsResource) => (
     <Typography noWrap>
@@ -903,19 +716,9 @@ export const renderPortableDataHash = (resource: GroupContentsResource) => (
     </Typography>
 );
 
-// export const ResourcePortableDataHash = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-//     return { portableDataHash: resource ? resource.portableDataHash : "" };
-// })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
-
 export const renderFileCount = (resource: GroupContentsResource & { fileCount?: number }) => {
     return <Typography>{resource.fileCount ?? "-"}</Typography>;
 };
-
-// export const ResourceFileCount = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-//     return { fileCount: resource ? resource.fileCount : "" };
-// })((props: { fileCount: number }) => renderFileCount(props.fileCount));
 
 const userFromID = connect((state: RootState, props: { uuid: string }) => {
     let userFullname = "";
@@ -927,14 +730,6 @@ const userFromID = connect((state: RootState, props: { uuid: string }) => {
 
     return { uuid: props.uuid, userFullname };
 });
-
-// const ownerFromResourceId = compose(
-//     connect((state: RootState, props: { uuid: string }) => {
-//         const childResource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
-//         return { uuid: childResource ? (childResource as Resource).ownerUuid : "" };
-//     }),
-//     userFromID
-// );
 
 const _resourceWithName = withStyles(
     {},
@@ -962,32 +757,6 @@ const _resourceWithName = withStyles(
         </Typography>
     );
 });
-
-// const _resourceWithNameLink = withStyles(
-//     {},
-//     { withTheme: true }
-// )((props: { uuid: string; userFullname: string; dispatch: Dispatch; theme: ArvadosTheme }) => {
-//     const { uuid, userFullname, dispatch, theme } = props;
-//     if (!userFullname) {
-//         dispatch<any>(loadResource(uuid, false));
-//     }
-
-//     return (
-//         <Typography
-//             style={{ color: theme.palette.primary.main, cursor: 'pointer' }}
-//             display="inline"
-//             noWrap
-//             onClick={() => dispatch<any>(navigateTo(uuid))}
-//         >
-//             {userFullname ? userFullname : uuid}
-//         </Typography>
-//     )
-// });
-
-
-// export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
-
-// export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const OwnerWithName = connect((state: RootState, props: { resource: GroupContentsResource; link?: boolean }) => {
     const owner = getResource<UserResource>(props.resource.ownerUuid)(state.resources);
@@ -1105,36 +874,9 @@ export const renderType = (resource: GroupContentsResource | undefined) => {
     return<Typography noWrap>{resourceLabel(type, subtype)}</Typography>
 };
 
-// export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
-//     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-//     return resource
-//     // return {
-//     //     type: resource ? resource.kind : "",
-//     //     subtype: resource
-//     //         ? resource.kind === ResourceKind.GROUP
-//     //             ? resource.groupClass
-//     //             : resource.kind === ResourceKind.PROCESS
-//     //                 ? resource.requestingContainerUuid
-//     //                     ? ProcessTypeFilter.CHILD_PROCESS
-//     //                     : ProcessTypeFilter.MAIN_PROCESS
-//     //                 : ""
-//     //         : ""
-//     // };
-// })((props: { resource: any}) => renderType(props.resource || undefined));
-
 export const renderResourceStatus = (resource: GroupContentsResource) => {
     return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus collection={resource} /> : <ProcessStatus uuid={resource.uuid} />;
 }
-
-// export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
-//     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
-// })((props: { resource: GroupContentsResource }) =>
-//     props.resource && props.resource.kind === ResourceKind.COLLECTION ? (
-//         <CollectionStatus uuid={props.resource.uuid} />
-//     ) : (
-//         <ProcessStatus uuid={props.resource.uuid} />
-//     )
-// );
 
 export const CollectionStatus = (props: { collection: CollectionResource }) =>
     props.collection.uuid !== props.collection.currentVersionUuid ? (
@@ -1175,11 +917,6 @@ export const ProcessStatus = compose(
         <Typography>-</Typography>
     )
 );
-
-// export const ProcessStartDate = connect((state: RootState, props: { uuid: string }) => {
-//     const process = getProcess(props.uuid)(state.resources);
-//     return { date: process && process.container ? process.container.startedAt : "" };
-// })((props: { date: string }) => renderDate(props.date));
 
 export const renderRunTime = (time: number) => (
     <Typography
@@ -1230,33 +967,6 @@ export const ContainerRunTime = connect((state: RootState, props: { uuid: string
         }
     }
 );
-
-// export const GroupMembersCount = connect(
-//     (state: RootState, props: { uuid: string }) => {
-//         const group = getResource<GroupResource>(props.uuid)(state.resources);
-
-//         return {
-//             value: group?.memberCount,
-//         };
-
-//     }
-// )(withTheme((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
-//     if (props.value === undefined) {
-//         // Loading
-//         return <Typography component={"div"}>
-//             <InlinePulser />
-//         </Typography>;
-//     } else if (props.value === null) {
-//         // Error
-//         return <Typography>
-//             <Tooltip title="Failed to load member count">
-//                 <ErrorIcon style={{color: props.theme.customs.colors.greyL}}/>
-//             </Tooltip>
-//         </Typography>;
-//     } else {
-//         return <Typography children={props.value} />;
-//     }
-// }));
 
 export const renderMembersCount = (resource: GroupResource) => {
     const value = resource.memberCount;
