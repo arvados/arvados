@@ -883,9 +883,9 @@ and/or content from other collections. Refer to the
         type: 'object',
         description:
           "Replace existing block segments in the collection with new segments.
-Refer to the [replace_files reference][] for details.
+Refer to the [replace_segments reference][] for details.
 
-[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_segments
+[replace_segments reference]: https://doc.arvados.org/api/methods/collections.html#replace_segments
 
 ",
         required: false,
