@@ -10,13 +10,13 @@
       - git
       - jq
       - unzip
- 
+
 - name: Check out EBS autoscaler from Git
   ansible.builtin.git:
     repo: "{{ aws_ebs_autoscale_url }}"
     dest: /opt/amazon-ebs-autoscale
     version: "{{ aws_ebs_autoscale_version }}"
-    
+
 - name: Override encrypted partition service with EBS autoscaler
   ansible.builtin.copy:
     src: ebs-autoscale.conf

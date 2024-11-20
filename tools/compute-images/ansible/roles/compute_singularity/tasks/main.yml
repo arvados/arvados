@@ -57,7 +57,7 @@
   ansible.builtin.command:
     cmd: make install
     chdir: "{{ singularity_build.path }}/builddir"
-  
+
 - name: Clean Singularity build directory
   ansible.builtin.file:
     path: "{{ singularity_build.path }}"

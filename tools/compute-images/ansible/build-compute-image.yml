@@ -60,7 +60,7 @@
         regexp: "^[# ]*prepend +domain-name-servers "
         line: "prepend domain-name-servers {{ dns_resolver }};"
       when: dns_resolver is defined
-      
+
   handlers:
     - name: apt update
       ansible.builtin.debug:
