@@ -125,6 +125,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
 
         return process ? (
             <MPVContainer
+                container
                 className={props.classes.root}
                 spacing={1}
                 panelStates={panelsData}

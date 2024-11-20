@@ -89,6 +89,7 @@ export const ProjectPanel = withStyles(styles)(
                 return <div data-cy='project-panel' className={classes.root}>
                     <DetailsCardRoot />
                     <MPVContainer
+                        container
                         className={classes.mpvRoot}
                         spacing={8}
                         panelStates={panelsData}
