@@ -137,13 +137,13 @@ export const MultiselectToolbar = connect(
                                     <div
                                         className={classes.divider}
                                         data-targetid={`${name}${i}`}
-                                        key={i}
+                                        key={`${name}${i}`}
                                     >
                                         <action.component />
                                     </div>
                                 )
                             ) : hasAlts ? (
-                                <span className={classes.iconContainer} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
+                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
                                     <IconButton
                                         data-cy='multiselect-button'
                                         disabled={disabledButtons.has(name)}
@@ -156,7 +156,7 @@ export const MultiselectToolbar = connect(
                             ) : (
                                 //data-targetid is used to determine what goes to the overflow menu
                                 //data-title is used to display the tooltip text
-                                <span className={classes.iconContainer} data-targetid={name} data-title={name}>
+                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} data-title={name}>
                                     <IconButton
                                         data-cy='multiselect-button'
                                         onClick={() => {
