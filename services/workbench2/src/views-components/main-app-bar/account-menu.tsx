@@ -50,22 +50,21 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 
 export const AccountMenuComponent =
     ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
-        let accountMenuItems = <>
+        let accountMenuItems = [
             <MenuItem onClick={() => {
                 dispatch<any>(getNewExtraToken(true));
                 dispatch(openTokenDialog);
-            }}>Get API token</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
-            <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
-        </>;
+            }}>Get API token</MenuItem>,
+            <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>,
+            <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>,
+            <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>,
+            <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>,
+        ];
 
         const reduceItemsFn: (a: React.ReactElement[],
             b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
 
-        accountMenuItems = React.createElement(React.Fragment, null,
-            pluginConfig.accountMenuList.reduce(reduceItemsFn, React.Children.toArray(accountMenuItems.props.children)));
+        accountMenuItems = pluginConfig.accountMenuList.reduce(reduceItemsFn, accountMenuItems);
 
         return user
             ? <DropdownMenu
