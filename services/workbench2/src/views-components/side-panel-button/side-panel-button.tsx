@@ -106,23 +106,22 @@ export const SidePanelButton = withStyles(styles)(
                     }
                 }
 
-                let menuItems = <>
+                let menuItems = [
                     <MenuItem data-cy='side-panel-new-collection' className={classes.menuItem} onClick={this.handleNewCollectionClick}>
                         <CollectionIcon className={classes.icon} /> New collection
-                    </MenuItem>
+                    </MenuItem>,
                     <MenuItem data-cy='side-panel-run-process' className={classes.menuItem} onClick={this.handleRunProcessClick}>
                         <ProcessIcon className={classes.icon} /> Run a workflow
-                    </MenuItem>
+                    </MenuItem>,
                     <MenuItem data-cy='side-panel-new-project' className={classes.menuItem} onClick={this.handleNewProjectClick}>
                         <ProjectIcon className={classes.icon} /> New project
-                    </MenuItem>
-                </>;
+                    </MenuItem>,
+                ];
 
                 const reduceItemsFn: (a: React.ReactElement[], b: ElementListReducer) => React.ReactElement[] =
                     (a, b) => b(a, classes.menuItem);
 
-                menuItems = React.createElement(React.Fragment, null,
-                    pluginConfig.newButtonMenuList.reduce(reduceItemsFn, React.Children.toArray(menuItems.props.children)));
+                menuItems = pluginConfig.newButtonMenuList.reduce(reduceItemsFn, menuItems);
 
                 return (
                     <Toolbar style={{paddingRight: 0}}>
