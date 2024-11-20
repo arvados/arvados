@@ -51,14 +51,14 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 export const AccountMenuComponent =
     ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
         let accountMenuItems = [
-            <MenuItem onClick={() => {
+            <MenuItem key={'get-api-token'} onClick={() => {
                 dispatch<any>(getNewExtraToken(true));
                 dispatch(openTokenDialog);
             }}>Get API token</MenuItem>,
-            <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>,
-            <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>,
-            <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>,
-            <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>,
+            <MenuItem key={'ssh-keys'} onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>,
+            <MenuItem key={'site-manager'} onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>,
+            <MenuItem key={'my-account'} onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>,
+            <MenuItem key={'link-account'} onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>,
         ];
 
         const reduceItemsFn: (a: React.ReactElement[],
@@ -72,11 +72,11 @@ export const AccountMenuComponent =
                 id="account-menu"
                 title="Account Management"
                 key={currentRoute}>
-                <MenuItem disabled>
+                <MenuItem key={'account'} disabled>
                     {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
                 {user.isActive && accountMenuItems}
-                <MenuItem data-cy="logout-menuitem"
+                <MenuItem key={'logout'} data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
                 </MenuItem>
