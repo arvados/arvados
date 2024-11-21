@@ -289,7 +289,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
             </Grid>;
     };
 
-    const content = <Grid container item {...props} xs className={props.mutuallyExclusive ? classes.exclusiveContent : classes.content}
+    const content = <Grid container direction="column" item {...props} xs className={props.mutuallyExclusive ? classes.exclusiveContent : classes.content}
         onScroll={() => setSelectedPanel(-1)}>
         {panelVisibility.includes(true)
             ? panels

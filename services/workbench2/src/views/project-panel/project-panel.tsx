@@ -94,7 +94,6 @@ export const ProjectPanel = withStyles(styles)(
                         panelStates={panelsData}
                         mutuallyExclusive
                         justify-content="flex-start"
-                        direction="column"
                         wrap="nowrap">
                         <MPVPanelContent
                             forwardProps
