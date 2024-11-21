@@ -90,7 +90,6 @@ export const ProjectPanel = withStyles(styles)(
                     <DetailsCardRoot />
                     <MPVContainer
                         className={classes.mpvRoot}
-                        spacing={8}
                         panelStates={panelsData}
                         mutuallyExclusive
                         justify-content="flex-start"

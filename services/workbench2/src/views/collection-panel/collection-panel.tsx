@@ -178,7 +178,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                     { name: "Files" },
                 ];
                 return item
-                    ? <MPVContainer className={classes.root} spacing={1} direction="column" justifyContent="flex-start" wrap="nowrap" panelStates={panelsData}>
+                    ? <MPVContainer container className={classes.root} spacing={1} direction="column" justifyContent="flex-start" wrap="nowrap" panelStates={panelsData}>
                         <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
                             <Card className={classes.infoCard}>
                                 <CardHeader
