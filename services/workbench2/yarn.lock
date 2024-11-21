@@ -6400,6 +6400,7 @@ __metadata:
     sinon: 7.3
     source-map-loader: ^3.0.0
     style-loader: ^3.3.1
+    styled-components: ^6.1.13
     tailwindcss: ^3.0.2
     terser-webpack-plugin: ^5.2.5
     tippy.js: ^6.3.7
@@ -16744,7 +16745,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"styled-components@npm:^6.1.2":
+"styled-components@npm:^6.1.13, styled-components@npm:^6.1.2":
   version: 6.1.13
   resolution: "styled-components@npm:6.1.13"
   dependencies:
