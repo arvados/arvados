@@ -320,3 +320,10 @@ def collectionResolver(api_client, document_loader, uri, num_retries=4):
                               uri[len(p[0]):])
 
     return cwltool.resolver.tool_resolver(document_loader, uri)
+
+# This is published as an entry point and picked up by cwltest so that
+# it uses CollectionFsAccess from Arvados instead of the standard
+# FsAccess that only works for the local file system.
+def get_fsaccess():
+    api_client = arvados.api()
+    return CollectionFsAccess("", CollectionCache(api_client, api_client.keep, 3))
