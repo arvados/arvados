@@ -1,3 +1,5 @@
 *pem
 secrets/*
 keypairs/*
+/*_config.json
+/*_config.yml

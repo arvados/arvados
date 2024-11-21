@@ -3,6 +3,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+- name: Validate build arguments
+  hosts: default
+  tasks:
+    - name: Check compute_authorized_keys is set
+      ansible.builtin.fail:
+        msg: "`compute_authorized_keys` is not set"
+      when: "compute_authorized_keys is not defined"
+      run_once: true
+    - name: Check compute_authorized_keys exists
+      ansible.builtin.fail:
+        msg: "`compute_authorized_keys` file not found: {{ compute_authorized_keys }}"
+      when: "compute_authorized_keys is not exists"
+      run_once: true
+
 - name: Build compute node
   # `default` is the name that the Packer Ansible plugin assigns to the
   # instance used to create the image.

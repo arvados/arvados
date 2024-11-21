@@ -1,13 +1,15 @@
 {
   "variables": {
+    "ansible_command": "ansible-playbook",
     "ansible_vars_file": "",
     "arvados_cluster": "",
     "aws_access_key": "",
     "aws_profile": "",
+    "aws_region": "",
     "aws_secret_key": "",
     "aws_source_ami": "ami-0a9d5908c7201e91d",
-    "aws_associate_public_ip_address": "",
-    "aws_ena_support": "",
+    "aws_associate_public_ip_address": true,
+    "aws_ena_support": true,
     "ssh_user": "admin",
     "subnet_id": "",
     "vpc_id": ""
@@ -17,7 +19,7 @@
     "profile": "{{ user `aws_profile`}}",
     "access_key": "{{user `aws_access_key`}}",
     "secret_key": "{{user `aws_secret_key`}}",
-    "region": "{{user `aws_default_region`}}",
+    "region": "{{user `aws_region`}}",
     "ena_support": "{{user `aws_ena_support`}}",
     "source_ami": "{{user `aws_source_ami`}}",
     "instance_type": "m5.large",
@@ -63,6 +65,7 @@
   }],
   "provisioners": [{
       "type": "ansible",
+      "command": "{{user `ansible_command`}}",
       "playbook_file": "ansible/build-compute-image.yml",
       "user": "{{user `ssh_user`}}",
       "extra_arguments": [

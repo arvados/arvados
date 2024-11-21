@@ -1,0 +1,79 @@
+### This file documents common cloud-agnostic configuration options to build
+### an Arvados compute node image. To use this file, copy it to
+### `host_config.yml`, then edit it as desired following the comments below.
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Set `compute_authorized_keys` to the ABSOLUTE path of a file that contains
+# public key(s) the Crunch dispatcher will use to SSH into the compute node.
+# This MUST correspond to the public key(s) for the private key(s) configured
+# as `Containers.DispatchPrivateKey` in your cluster configuration.
+compute_authorized_keys: null
+
+# `compute_user_account` is the name of the account the Crunch dispatcher will
+# use to SSH into the compute node. This MUST match
+# `CloudVMs.DriverParameters.AdminUsername` in your cluster configuration.
+# Note this user will be granted full passwordless sudo access.
+#compute_user_account: crunch
+
+# `arvados_container_engine` can be one of 'docker' (the default) or
+# 'singularity'. This MUST match `Containers.RuntimeEngine` in your
+# cluster configuration.
+#arvados_container_engine: docker
+
+# `arvados_compute_nvidia` is a flag that determines whether or not
+# NVIDIA CUDA and associated drivers will be installed in the compute
+# node image. Set this to true if you want your Arvados cluster to
+# support containers with CUDA requirements.
+#arvados_compute_nvidia: true
+
+# `dns_resolver` can be set to the IP address of a DNS server. If you
+# set this, compute nodes will be configured to use this DNS server
+# before those set by DHCP.
+#dns_resolver: "192.0.2.2"
+
+# `arvados_compute_encrypted_tmp` can name a method that will be used
+# to provide an encrypted working directory to running containers.
+# By default, the image will use dynamically scaling EBS storage if it
+# detects that it is being built on AWS EC2, and local storage otherwise.
+# If you are building an image for AWS EC2 and do not want to use dynamic
+# EBS storage, set this to the empty string.
+# If you are building an image for AWS EC2 and the detection fails for
+# any reason, you can set this to 'aws_ebs' to force the use of dynamic
+# EBS storage.
+# EBS autoscaling requires additional configuration in AWS IAM and your
+# cluster's `config.yml`. See
+# <http://doc.arvados.org/install/crunch2-cloud/install-dispatch-cloud.html#aws-ebs-autoscaler>
+#arvados_compute_encrypted_tmp: ""
+
+# `workdir` names a directory where Ansible should write temporary files as
+# it sets up the compute node image. The default respects the $TMPDIR
+# environment variable on the compute image, or uses `/tmp` if that's not
+# set. You can specify another directory if `/tmp` is low on space or
+# restricted as a security measure.
+#workdir: "{{ ansible_env.HOME }}"
+
+### The settings below should not be changed for production deployments.
+### These settings help support Arvados testing.
+# `arvados_pin_version` identifies the version of Arvados packages that
+# should be installed on the compute node. The default matches the release
+# of this build tool. You can set this to the empty string to install
+# whatever the latest version is at the time you build the image.
+#arvados_pin_version: ""
+
+# `arvados_apt_suites` identifies which set of packages to fetch and install
+# from apt.arvados.org. The default is to match the release codename of your
+# distribution, which will get production releases built for that
+# distribution. If this value starts with `-`, the deployment will
+# automatically prepend that release codename. You can set this to
+# '-testing' or '-dev' to install release candidate or development packages
+# for your base distribution, respectively.
+#arvados_apt_suites: "-testing"
+
+# `arvados_compute_pin_packages` is a flag that determines whether or not
+# to pin third-party dependencies like Docker and NVIDIA CUDA to versions
+# that have been tested to work with this release of Arvados. You can set
+# this to false to build a compute image with the latest versions of those
+# dependencies.
+#arvados_compute_pin_packages: true

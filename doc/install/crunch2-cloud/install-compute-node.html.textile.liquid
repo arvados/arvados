@@ -13,34 +13,28 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 @arvados-dispatch-cloud@ is only relevant for cloud installations. Skip this section if you are installing an on premises cluster that will spool jobs to Slurm or LSF.
 {% include 'notebox_end' %}
 
-# "Introduction":#introduction
-# "Install Packer":#install-packer
-# "Create an SSH keypair":#sshkeypair
-# "Compute image requirements":#requirements
-# "The build script":#building
-## "DNS resolution":#dns-resolution
-## "NVIDIA GPU support":#nvidia
-## "Singularity mksquashfs configuration":#singularity_mksquashfs_configuration
-## "apt package version pins":#apt-pins
-# "Build an AWS image":#aws
-## "Autoscaling compute node scratch space":#aws-ebs-autoscaler
-# "Build an Azure image":#azure
+p(#introduction). This page describes how to build a compute node image that can be used to run containers dispatched by Arvados in the cloud.
 
-h2(#introduction). Introduction
+# "Prerequisites":#prerequisites
+## "Create and configure an SSH keypair":#sshkeypair
+## "Get the Arvados source":#git-clone
+## "Install Ansible":#install-ansible
+## "Install Packer":#install-packer
+# "Fully automated build with Packer and Ansible":#building
+## "Write Ansible settings for the compute node":#ansible-variables
+## "Write Packer settings for your cloud":#packer-variables
+### "AWS":#aws-variables
+### "Azure":#azure-variables
+## "Run Packer":#run-packer
+# "Partially automated build with Ansible":#ansible-build
+## "Write Ansible settings for the compute node":#ansible-variables-standalone
+## "Write an Ansible inventory":#ansible-inventory
+## "Run Ansible":#run-ansible
+# "Manual build":#requirements
 
-This page describes how to build a compute node image that can be used to run containers dispatched by Arvados in the cloud.
+h2(#prerequisites). Prerequisites
 
-Packer templates for AWS and Azure are provided with Arvados. To use them, the following are needed:
-
-* "Packer":https://www.packer.io/
-* credentials for your cloud account
-* configuration details for your cloud account
-
-h2(#install-packer). Install Packer
-
-"Download Packer here":https://developer.hashicorp.com/packer/downloads
-
-h2(#sshkeypair). Create a SSH keypair
+h3(#sshkeypair). Create and configure an SSH keypair
 
 @arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, a SSH keypair is needed. Generate a SSH keypair with no passphrase:
 
@@ -56,212 +50,139 @@ The key fingerprint is:
 
 After you do this, the contents of the private key in @~/.ssh/id_dispatcher@ need to be stored in your "cluster configuration file":{{ site.baseurl }}/admin/config.html under @Containers.DispatchPrivateKey@.
 
-The public key at @~/.ssh/id_dispatcher.pub@ will need to be authorized to access instances booted from the image.
+The public key at @~/.ssh/id_dispatcher.pub@ will need to be authorized to access instances booted from the image. Keep this file; our Ansible playbook will read it to set this up for you.
 
-h2(#requirements). Compute image requirements
+h3(#git-clone). Get the Arvados source
 
-Arvados comes with a build script to automate the creation of a suitable compute node image (see "The build script":#building below). It is provided as a convenience. It is also possible to create a compute node image via other means. These are the requirements:
+Compute node templates are only available in the Arvados source tree. Clone a copy of the Arvados source for the version of Arvados you're using in a directory convenient for you:
 
-* Except on Azure, the SSH public key you generated previously must be an authorized key for the user that Crunch is configured to use. For example, if your cluster's @CloudVMs.DriverParameters.AdminUsername@ setting is *@crunch@*, then the public key should be listed in <notextile><code class="userinput">~<strong>crunch</strong>/.ssh/authorized_keys</code></notextile> in the image. This user must also be allowed to use sudo without a password unless the user is @root@.
+{% include 'branchname' %}
+<notextile>
+<pre><code>~$ <span class="userinput">git clone --depth=1 --branch=<strong>{{ branchname }}</strong> https://git.arvados.org/arvados.git ~/<strong>arvados</strong></span>
+</code></pre>
+</notextile>
+
+h3(#install-ansible). Install Ansible
+
+We provide an Ansible playbook that can run on a Debian or Ubuntu system to set up a node with all the software and configuration necessary to do Arvados compute work. "Install Ansible following their instructions.":https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html It is okay to install Ansible to a nonstandard location; you can configure other parts of the automation with that location.
+
+h3(#install-packer). Install Packer
+
+We provide Packer templates that can automatically create a compute instance, configure it with Ansible, shut it down, and create a cloud image from the result. "Install Packer following their instructions.":https://developer.hashicorp.com/packer/docs/install
+
+h2(#building). Fully automated build with Packer and Ansible
+
+After you have both tools installed, you can configure both with information about your Arvados cluster and cloud environment and then run a fully automated build.
+
+h3(#ansible-variables). Write Ansible settings for the compute node
+
+In the @tools/compute-images@ directory of your Arvados source checkout, copy @host_config.example.yml@ to @host_config.yml@. Edit @host_config.yml@ with information about how your compute nodes should be set up following the instructions in the comments.
+
+h3(#packer-variables). Write Packer settings for your cloud
+
+You need to provide different configuration to Packer depending on which cloud you're deploying Arvados in.
+
+h4(#aws-variables). AWS
+
+In the @tools/compute-images@ directory of your Arvados source checkout, copy @aws_config.example.json@ to @aws_config.json@. Fill in values for the configuration settings as follows:
+
+* If you already have AWS credentials configured that Packer can use to create and manage an EC2 instance, set @aws_profile@ to the name of those credentials in your configuration. Otherwise, set @aws_access_key@ and @aws_secret_key@ with information from an API token with those permissions.
+* Set @aws_region@, @vpc_id@, and @subnet_id@ with identifiers for the network where Packer should create the EC2 instance.
+* Set @aws_source_ami@ to the AMI of the base image that should be booted and used as the base for your compute node image. Set @ssh_user@ to the name of administrator account that is used on that image.
+* Set @arvados_cluster@ to the same five-alphanumeric identifier used under @Clusters@ in your Arvados cluster configuration.
+* If you installed Ansible to a nonstandard location, set @ansible_command@ to the absolute path of @ansible-playbook@. For example, if you installed Ansible in a virtualenv at @~/ansible@, set @ansible_command@ to {% raw %}<notextile><code class="userinput">"{{env `HOME`}}<strong>/ansible</strong>/bin/ansible-playbook"</code></notextile>{% endraw %}.
+
+When you finish writing your configuration, "run Packer":#run-packer.
+
+h4(#azure-variables). Azure
+
+{% comment %}
+FIXME: Incomplete
+{% endcomment %}
+
+In the @tools/compute-images@ directory of your Arvados source checkout, copy @azure_config.example.json@ to @azure_config.json@. Fill in values for the configuration settings as follows:
+
+* The settings load credentials from Azure's standard environment variables. As long as you have these environment variables set in the shell before you run Packer, they will be loaded as normal. Alternatively, you can set them directly in the configuration file. These secrets can be generated from the Azure portal, or with the CLI using a command like:<notextile><pre><code>~$ <span class="userinput">az ad sp create-for-rbac --name Packer --password ...</span>
+</code></pre></notextile>
+* Set @location@ and @resource_group@ with identifiers for where Packer should create the cloud instance.
+* Set @image_sku@ to the identifier of the base image that should be booted and used as the base for your compute node image. Set @ssh_user@ to the name of administrator account you want to use on that image.
+* Set @ssh_private_key_file@ to the path with the private key you generated earlier for the dispatcher to use. For example, {% raw %}<notextile><code class="userinput">"{{env `HOME`}}/.ssh/<strong>id_dispatcher</strong>"</code></notextile>{% endraw %}.
+* Set @arvados_cluster@ to the same five-alphanumeric identifier used under @Clusters@ in your Arvados cluster configuration.
+* If you installed Ansible to a nonstandard location, set @ansible_command@ to the absolute path of @ansible-playbook@. For example, if you installed Ansible in a virtualenv at @~/ansible@, set @ansible_command@ to {% raw %}<notextile><code class="userinput">"{{env `HOME`}}<strong>/ansible</strong>/bin/ansible-playbook"</code></notextile>{% endraw %}.
+
+When you finish writing your configuration, "run Packer":#run-packer.
+
+h3(#run-packer). Run Packer
+
+In the @tools/compute-images@ directory of your Arvados source checkout, run Packer with your configuration and the template appropriate for your cloud. For example, to build an image on AWS, run:
+
+<notextile>
+<pre><code>arvados/tools/compute-images$ <span class="userinput">packer build -var-file=<strong>aws</strong>_config.json <strong>aws</strong>_template.json</span>
+</code></pre>
+</notextile>
+
+To build an image on Azure, replace both instances of *@aws@* with *@azure@*, and run that command.
+
+If the build succeeds, it will report the identifier of your image at the end of the process. For example, when you build an AWS image, it will look like this:
+
+<notextile>
+<pre><code>==&gt; Builds finished. The artifacts of successful builds are:
+--&gt; amazon-ebs: AMIs were created:
+us-east-1: <strong>ami-012345abcdef56789</strong>
+</code></pre>
+</notextile>
+
+That identifier can now be set as @CloudVMs.ImageID@ in your cluster configuration. You do not need to run any other compute node build process on this page; continue to "installing the cloud dispatcher":install-dispatch-cloud.html.
+
+h2(#ansible-build). Partially automated build with Ansible
+
+If Arvados does not include a template for your cloud, or you do not have permission to run Packer, you can run the Ansible playbook by itself. This can set up a base Debian or Ubuntu system with all the software and configuration necessary to do Arvados compute work. After it's done, you can manually snapshot the node and create a cloud image from it.
+
+h3(#ansible-variables-standalone). Write Ansible settings for the compute node
+
+In the @tools/compute-images@ directory of your Arvados source checkout, copy @host_config.example.yml@ to @host_config.yml@. Edit @host_config.yml@ with information about how your compute nodes should be set up following the instructions in the comments.
+
+h3(#ansible-inventory). Write an Ansible inventory
+
+The compute node playbook runs on a host named @default@. In the @tools/compute-images@ directory of your Arvados source checkout, write a file named @inventory.ini@ with information about how to connect to this node via SSH. It should be one line like this:
+
+<notextile>
+<pre><code># Example inventory.ini for an Arvados compute node
+<span class="userinput">default ansible_host=<strong>192.0.2.9</strong> ansible_user=<strong>admin</strong></span>
+</code></pre>
+</notextile>
+
+* @ansible_host@ can be the running node's hostname or IP address. You need to be able to reach this host from the system where you're running Ansible.
+* @ansible_user@ names the user account that Ansible should use for the SSH connection. It needs to have permission to use @sudo@ on the running node.
+
+You can add other Ansible configuration options like @ansible_port@ to your inventory if needed. Refer to the "Ansible inventory documentation":https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html for details.
+
+h3(#run-ansible). Run Ansible
+
+If you installed Ansible inside a virtualenv, activate that virtualenv now. Then, in the @tools/compute-images@ directory of your Arvados source checkout, run @ansible-playbook@ with your inventory and configuration:
+
+<notextile>
+<pre><code>arvados/tools/compute-images$ <span class="userinput">ansible-playbook --ask-become-pass --inventory=inventory.ini --extra-vars=@host_config.yml</span>
+</code></pre>
+</notextile>
+
+You'll be prompted with @BECOME password:@. Enter the password for the @ansible_user@ you defined in the inventory to use sudo on the running node. If it succeeds, Ansible should report a "PLAY RECAP" with @failed=0@:
+
+<notextile>
+<pre><code>PLAY RECAP *********************************************************************
+default : ok=41  changed=37  unreachable=0  <strong>failed=0</strong>  skipped=5  rescued=0  ignored=0
+</code></pre>
+</notextile>
+
+Your node is now ready to run Arvados compute work. You can snapshot the node, create an image from it, and set that image as @CloudVMs.ImageID@ in your Arvados cluster configuration. The details of that process are cloud-specific and out of scope for this documentation. You do not need to run any other compute node build process on this page; continue to "installing the cloud dispatcher":install-dispatch-cloud.html.
+
+h2(#requirements). Manual build
+
+If you cannot run Ansible, you can create a cloud instance, manually set it up to be a compute node, and then create an image from it. The details of this process depend on which distribution you use on the cloud instance and which cloud you use; all these variations are out of scope for this documentation. These are the requirements:
+
+* Except on Azure, the SSH public key you generated previously must be an authorized key for the user that Crunch is configured to use. For example, if your cluster's @CloudVMs.DriverParameters.AdminUsername@ setting is *@crunch@*, then the dispatcher's public key should be listed in <notextile><code class="userinput">~<strong>crunch</strong>/.ssh/authorized_keys</code></notextile> in the image. This user must also be allowed to use sudo without a password unless the user is @root@.
   (On Azure, the dispatcher makes additional calls to automatically set up and authorize the user, making these steps unnecessary.)
 * SSH needs to be running and reachable by @arvados-dispatch-cloud@ on the port named by @CloudVMs.SSHPort@ in your cluster's configuration file (default 22).
-* Install the @python3-arvados-fuse@ package.
+* Install the @python3-arvados-fuse@ package. Enable the @user_allow_other@ option in @/etc/fuse.conf@.
 * Install either "Docker":https://docs.docker.com/engine/install/ or "Singularity":https://docs.sylabs.io/guides/3.0/user-guide/installation.html as appropriate based on the @Containers.RuntimeEngine@ setting in your cluster's configuration file. If you install Docker, you may also want to install and set up the @arvados-docker-cleaner@ package to conserve space on long-running instances, but it's not strictly required.
 * All available scratch space should be made available under @/tmp@.
-
-h2(#building). The build script
-
-The necessary files are located in the @arvados/tools/compute-images@ directory in the source tree. A build script is provided to generate the image. The @--help@ argument lists all available options:
-
-<notextile><pre><code>~$ <span class="userinput">./build.sh --help</span>
-build.sh: Build cloud images for arvados-dispatch-cloud
-
-Syntax:
-        build.sh [options]
-
-Options:
-
-  --json-file &lt;path&gt;
-      Path to the packer json file (required)
-  --arvados-cluster-id &lt;xxxxx&gt;
-      The ID of the Arvados cluster, e.g. zzzzz(required)
-  --aws-profile &lt;profile&gt;
-      AWS profile to use (valid profile from ~/.aws/config (optional)
-  --aws-secrets-file &lt;path&gt;
-      AWS secrets file which will be sourced from this script (optional)
-      When building for AWS, either an AWS profile or an AWS secrets file
-      must be provided.
-  --aws-source-ami &lt;ami-xxxxxxxxxxxxxxxxx&gt;
-      The AMI to use as base for building the images (required if building for AWS)
-  --aws-region &lt;region&gt; (default: us-east-1)
-      The AWS region to use for building the images
-  --aws-vpc-id &lt;vpc-id&gt;
-      VPC id for AWS, if not specified packer will derive from the subnet id or pick the default one.
-  --aws-subnet-id &lt;subnet-xxxxxxxxxxxxxxxxx&gt;
-      Subnet id for AWS, if not specified packer will pick the default one for the VPC.
-  --aws-ebs-autoscale
-      Install the AWS EBS autoscaler daemon (default: do not install the AWS EBS autoscaler).
-  --aws-associate-public-ip &lt;true|false&gt;
-      Associate a public IP address with the node used for building the compute image.
-      Required when the machine running packer can not reach the node used for building
-      the compute image via its private IP. (default: true if building for AWS)
-      Note: if the subnet has "Auto-assign public IPv4 address" enabled, disabling this
-      flag will have no effect.
-  --aws-ena-support &lt;true|false&gt;
-      Enable enhanced networking (default: true if building for AWS)
-  --gcp-project-id &lt;project-id&gt;
-      GCP project id (required if building for GCP)
-  --gcp-account-file &lt;path&gt;
-      GCP account file (required if building for GCP)
-  --gcp-zone &lt;zone&gt; (default: us-central1-f)
-      GCP zone
-  --azure-secrets-file &lt;patch&gt;
-      Azure secrets file which will be sourced from this script (required if building for Azure)
-  --azure-resource-group &lt;resouce-group&gt;
-      Azure resource group (required if building for Azure)
-  --azure-location &lt;location&gt;
-      Azure location, e.g. centralus, eastus, westeurope (required if building for Azure)
-  --azure-sku &lt;sku&gt; (required if building for Azure, e.g. 16.04-LTS)
-      Azure SKU image to use
-  --ssh_user &lt;user&gt; (default: packer)
-      The user packer will use to log into the image
-  --workdir &lt;path&gt; (default: /tmp)
-      The directory where data files are staged and setup scripts are run
-  --resolver &lt;resolver_IP&gt;
-      The dns resolver for the machine (default: host's network provided)
-  --reposuffix &lt;suffix&gt;
-      Set this to "-dev" to track the unstable/dev Arvados repositories
-  --pin-packages, --no-pin-packages
-      These flags determine whether or not to configure apt pins for Arvados
-      and third-party packages it depends on. By default packages are pinned
-      unless you set `--reposuffix -dev`.
-  --public-key-file &lt;path&gt;
-      Path to the public key file that a-d-c will use to log into the compute node (required)
-  --mksquashfs-mem (default: 256M)
-      Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
-  --nvidia-gpu-support
-      Install all the necessary tooling for Nvidia GPU support (default: do not install Nvidia GPU support)
-  --debug
-      Output debug information (default: no debug output is printed)
-</code></pre></notextile>
-
-The following sections highlight common configuration settings with more information.
-
-h3(#dns-resolution). DNS resolution
-
-Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses.  If you are on AWS and using Route 53 for your DNS, the default resolver configuration can be used with no extra options.
-
-You can also run your own internal DNS resolver. In that case, the IP address of the resolver should be passed as the value for the @--resolver@ argument to "the build script":#building.
-
-As a third option, the services could be hardcoded into an @/etc/hosts@ file. For example:
-
-<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
-10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
-10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
-</code></pre></notextile>
-
-Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.
-
-h3(#nvidia). NVIDIA GPU support
-
-If you plan on using instance types with NVIDIA GPUs, add @--nvidia-gpu-support@ to the build command line.  Arvados uses the same compute image for both GPU and non-GPU instance types.  The GPU tooling is ignored when using the image with a non-GPU instance type.
-
-{% assign mksquashfs_header = "h3" %}
-{% assign show_docker_warning = true %}
-{% include 'singularity_mksquashfs_configuration' %}
-
-The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to "the build script":#building. It defaults to @256M@.
-
-h3(#apt-pins). apt package version pins
-
-By default, unless your image uses development packages with @--reposuffix -dev@, the build script configures apt with version pins for Arvados and third-party packages it depends on. This ensures that everything apt installs has been tested and is known to work with your version of Arvados. The version pins have some flexibility to allow apt to install security updates and other changes that are unlikely to interfere with Arvados.
-
-You can explicitly control whether or not these version pins are configured with the @--pin-packages@ and @--no-pin-packages@ flags. You should only need to use these flags if you are doing development work on the compute image and specifically want to test compatibility with different versions.
-
-h2(#aws). Build an AWS image
-
-For @ClusterID@, fill in your cluster ID.
-
-@AWSProfile@ is the name of an AWS profile in your "credentials file":https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#shared-credentials-file (@~/.aws/credentials@) listing the @aws_access_key_id@ and @aws_secret_access_key@ to use.
-
-The @AMI@ is the identifier for the base image to be used. Current AMIs are maintained by "Debian":https://wiki.debian.org/Cloud/AmazonEC2Image/Buster and "Ubuntu":https://cloud-images.ubuntu.com/locator/ec2/.
-
-The @VPC@ and @Subnet@ should be configured for where you want the compute image to be generated and stored.
-
-@ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
-
-<notextile><pre><code>~$ <span class="userinput">./build.sh --json-file arvados-images-aws.json \
-           --arvados-cluster-id ClusterID \
-           --aws-profile AWSProfile \
-           --aws-source-ami AMI \
-           --aws-vpc-id VPC \
-           --aws-subnet-id Subnet \
-           --ssh_user admin \
-           --public-key-file ArvadosDispatchCloudPublicKeyPath
-</span></code></pre></notextile>
-
-h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
-
-Arvados supports "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale.  This feature automatically expands the scratch space on the compute node on demand by 200 GB at a time, up to 5 TB.
-
-If you want to add the daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building.
-
-The AWS EBS autoscaler daemon will be installed with this configuration:
-
-<notextile><pre><code>{
-    "mountpoint": "/tmp",
-    "filesystem": "lvm.ext4",
-    "lvm": {
-      "volume_group": "autoscale_vg",
-      "logical_volume": "autoscale_lv"
-    },
-    "volume": {
-        "type": "gp3",
-        "iops": 3000,
-        "encrypted": 1
-    },
-    "detection_interval": 2,
-    "limits": {
-        "max_ebs_volume_size": 1500,
-        "max_logical_volume_size": 8000,
-        "max_ebs_volume_count": 16
-    },
-    "logging": {
-        "log_file": "/var/log/ebs-autoscale.log",
-        "log_interval": 300
-    }
-}
-</code></pre></notextile>
-
-Changing the ebs-autoscale configuration is left as an exercise for the reader.
-
-This feature also requires a few Arvados configuration changes, described in "EBS Autoscale configuration":install-dispatch-cloud.html#aws-ebs-autoscaler.
-
-h2(#azure). Build an Azure image
-
-<notextile><pre><code>~$ <span class="userinput">./build.sh --json-file arvados-images-azure.json \
-           --arvados-cluster-id ClusterID \
-           --azure-resource-group ResourceGroup \
-           --azure-location AzureRegion \
-           --azure-sku AzureSKU \
-           --azure-secrets-file AzureSecretsFilePath \
-           --resolver ResolverIP \
-           --public-key-file ArvadosDispatchCloudPublicKeyPath
-</span></code></pre></notextile>
-
-For @ClusterID@, fill in your cluster ID. The @ResourceGroup@ and @AzureRegion@ (e.g. 'eastus2') should be configured for where you want the compute image to be generated and stored. The @AzureSKU@ is the SKU of the base image to be used, e.g. '18.04-LTS' for Ubuntu 18.04.
-
-@AzureSecretsFilePath@ should be replaced with the path to a shell script that loads the Azure secrets with sufficient permissions to create the image. The file would look like this:
-
-<notextile><pre><code>export ARM_CLIENT_ID=...
-export ARM_CLIENT_SECRET=...
-export ARM_SUBSCRIPTION_ID=...
-export ARM_TENANT_ID=...
-</code></pre></notextile>
-
-These secrets can be generated from the Azure portal, or with the cli using a command like this:
-
-<notextile><pre><code>~$ <span class="userinput">az ad sp create-for-rbac --name Packer --password ...</span>
-</code></pre></notextile>
-
-@ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
