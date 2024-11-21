@@ -42,9 +42,7 @@ h2(#install-packer). Install Packer
 
 h2(#sshkeypair). Create a SSH keypair
 
-@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, a SSH keypair is needed.
-
-Generate a SSH keypair with no passphrase. The private key needs to be stored in the cluster configuration file (see @Containers/DispatchPrivateKey@) for use by @arvados-dispatch-cloud@, as described in the "next section":install-dispatch-cloud.html#update-config. The public key will be baked into the compute node images, see the cloud-specific documentation below.
+@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, a SSH keypair is needed. Generate a SSH keypair with no passphrase:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ssh-keygen -N '' -f ~/.ssh/id_dispatcher</span>
@@ -53,27 +51,23 @@ Your identification has been saved in /home/user/.ssh/id_dispatcher.
 Your public key has been saved in /home/user/.ssh/id_dispatcher.pub.
 The key fingerprint is:
 [...]
-~$ <span class="userinput">cat ~/.ssh/id_dispatcher</span>
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
-ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
-...
-oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
-foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
------END RSA PRIVATE KEY-----
 </code></pre>
 </notextile>
+
+After you do this, the contents of the private key in @~/.ssh/id_dispatcher@ need to be stored in your "cluster configuration file":{{ site.baseurl }}/admin/config.html under @Containers.DispatchPrivateKey@.
+
+The public key at @~/.ssh/id_dispatcher.pub@ will need to be authorized to access instances booted from the image.
 
 h2(#requirements). Compute image requirements
 
 Arvados comes with a build script to automate the creation of a suitable compute node image (see "The build script":#building below). It is provided as a convenience. It is also possible to create a compute node image via other means. These are the requirements:
 
-* for AWS: the SSH public key for @arvados-dispatch-cloud@ (the one that corresponds with @Containers.DispatchPrivateKey@ in the Arvados config file) needs to go into ~/.ssh/authorized_keys for the SSH user you want @arvados-dispatch-cloud@ to use (cf. @CloudVMs.DriverParameters.AdminUsername@ in the Arvados config file) and that user needs to be able to sudo without password prompt, unless you use `root` in which case sudo is not used.
-* for Azure: @arvados-dispatch-cloud@ automatically extracts the SSH public key from the value of @Containers.DispatchPrivateKey@ and uses an API call to create the user specified in @CloudVMs.DriverParameters.AdminUsername@ with that SSH public key and password-less sudo enabled.
-* SSH needs to be running and reachable by @arvados-dispatch-cloud@ on port 22 (or a custom port, see @CloudVMS.SSHPort@ to in the Arvados config file)
-* the @python3-arvados-fuse@ package needs to be installed
-* @Docker@ or @Singularity@ needs to be installed (cf. @Containers.RuntimeEngine@ in the Arvados config file).
-* all available scratch space should be made available under `/tmp`.
+* Except on Azure, the SSH public key you generated previously must be an authorized key for the user that Crunch is configured to use. For example, if your cluster's @CloudVMs.DriverParameters.AdminUsername@ setting is *@crunch@*, then the public key should be listed in <notextile><code class="userinput">~<strong>crunch</strong>/.ssh/authorized_keys</code></notextile> in the image. This user must also be allowed to use sudo without a password unless the user is @root@.
+  (On Azure, the dispatcher makes additional calls to automatically set up and authorize the user, making these steps unnecessary.)
+* SSH needs to be running and reachable by @arvados-dispatch-cloud@ on the port named by @CloudVMs.SSHPort@ in your cluster's configuration file (default 22).
+* Install the @python3-arvados-fuse@ package.
+* Install either "Docker":https://docs.docker.com/engine/install/ or "Singularity":https://docs.sylabs.io/guides/3.0/user-guide/installation.html as appropriate based on the @Containers.RuntimeEngine@ setting in your cluster's configuration file. If you install Docker, you may also want to install and set up the @arvados-docker-cleaner@ package to conserve space on long-running instances, but it's not strictly required.
+* All available scratch space should be made available under @/tmp@.
 
 h2(#building). The build script
 
