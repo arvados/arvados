@@ -133,6 +133,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 wrap="nowrap">
                 <MPVPanelContent
                     forwardProps
+                    item
                     xs="auto"
                     data-cy="process-details">
                     <ProcessDetailsCard
@@ -145,6 +146,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 </MPVPanelContent>
                 <MPVPanelContent
                     forwardProps
+                    item
                     xs
                     minHeight={maxHeight}
                     maxHeight={maxHeight}
@@ -166,6 +168,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 <MPVPanelContent
                     forwardProps
                     xs
+                    item
                     maxHeight={maxHeight}
                     data-cy="process-children">
                     <SubprocessPanel process={process} />
@@ -173,6 +176,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 <MPVPanelContent
                     forwardProps
                     xs
+                    item
                     maxHeight={maxHeight}
                     data-cy="process-outputs">
                     <ProcessIOCard
@@ -187,6 +191,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 <MPVPanelContent
                     forwardProps
                     xs
+                    item
                     maxHeight={maxHeight}
                     data-cy="process-inputs">
                     <ProcessIOCard
@@ -200,6 +205,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 <MPVPanelContent
                     forwardProps
                     xs="auto"
+                    item
                     maxHeight={"50%"}
                     data-cy="process-cmd">
                     <ProcessCmdCard
@@ -210,6 +216,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 <MPVPanelContent
                     forwardProps
                     xs
+                    item
                     data-cy="process-resources">
                     <ProcessResourceCard
                         process={process}

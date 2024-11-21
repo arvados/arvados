@@ -179,7 +179,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                 ];
                 return item
                     ? <MPVContainer className={classes.root} spacing={1} direction="column" justifyContent="flex-start" wrap="nowrap" panelStates={panelsData}>
-                        <MPVPanelContent xs="auto" data-cy='collection-info-panel'>
+                        <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
                             <Card className={classes.infoCard}>
                                 <CardHeader
                                     className={classes.header}
@@ -232,7 +232,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                                 </CardContent>
                             </Card>
                         </MPVPanelContent>
-                        <MPVPanelContent xs>
+                        <MPVPanelContent item xs>
                             <Card className={classes.filesCard}>
                                 <CollectionPanelFiles isWritable={isWritable} />
                             </Card>

@@ -139,6 +139,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         minWidth: 0,
+        maxWidth: "100%",
         paddingLeft: theme.spacing(3),
         paddingRight: theme.spacing(3),
         // Reserve vertical space for app bar + MainContentBar
@@ -373,12 +374,12 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                         className={classes.contentWrapper}
                     >
                         <Grid
+                            item
                             xs
                         >
                             {isNotLinking && <MainContentBar />}
                         </Grid>
                         <Grid
-                            xs
                             className={classes.content}
                         >
                             <Switch>

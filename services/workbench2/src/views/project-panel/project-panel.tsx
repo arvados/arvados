@@ -98,6 +98,7 @@ export const ProjectPanel = withStyles(styles)(
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
+                            item
                             data-cy="process-data"
                             className={classes.dataExplorer}>
                             <ProjectPanelData
@@ -109,6 +110,7 @@ export const ProjectPanel = withStyles(styles)(
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
+                            item
                             data-cy="process-run"
                             className={classes.dataExplorer}>
                             <ProjectPanelRun
