@@ -122,7 +122,7 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
                 enterDelay={500}
                 title={<span>Project was frozen by {fullUsername}</span>}
             >
-                <FreezeIcon style={{ fontSize: "inherit" }} />
+                <span><FreezeIcon style={{ fontSize: "inherit" }} /></span>
             </Tooltip>
         );
     } else {
