@@ -42,6 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexGrow: 1,
         display: 'flex',
         flexDirection: 'column',
+        flexWrap: 'nowrap',
         minHeight: "500px",
         '& > div': {
             height: '100%',
@@ -93,7 +94,7 @@ export const ProjectPanel = withStyles(styles)(
                         panelStates={panelsData}
                         mutuallyExclusive
                         justify-content="flex-start"
-                        wrap="nowrap">
+                        style={{flexWrap: 'nowrap'}}>
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
