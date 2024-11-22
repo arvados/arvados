@@ -178,7 +178,7 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                     <div className={props.classes.icon}>
                         <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener noreferrer" className={props.classes.linkIcon}>
                             <Tooltip title="Access VM using webshell">
-                                <HelpIcon />
+                                <span><HelpIcon /></span>
                             </Tooltip>
                         </a>
                     </div>
