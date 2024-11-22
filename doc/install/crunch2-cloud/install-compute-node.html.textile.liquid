@@ -19,10 +19,10 @@ p(#introduction). This page describes how to build a compute node image that can
 ## "Create and configure an SSH keypair":#sshkeypair
 ## "Get the Arvados source":#git-clone
 ## "Install Ansible":#install-ansible
-## "Install Packer":#install-packer
+## "Install Packer and the Ansible plugin":#install-packer
 # "Fully automated build with Packer and Ansible":#building
 ## "Write Ansible settings for the compute node":#ansible-variables
-## "Write Packer settings for your cloud":#packer-variables
+## "Set up Packer for your cloud":#packer-variables
 ### "AWS":#aws-variables
 ### "Azure":#azure-variables
 ## "Run Packer":#run-packer
@@ -66,9 +66,14 @@ h3(#install-ansible). Install Ansible
 
 We provide an Ansible playbook that can run on a Debian or Ubuntu system to set up a node with all the software and configuration necessary to do Arvados compute work. "Install Ansible following their instructions.":https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html It is okay to install Ansible to a nonstandard location; you can configure other parts of the automation with that location.
 
-h3(#install-packer). Install Packer
+h3(#install-packer). Install Packer and the Ansible plugin
 
-We provide Packer templates that can automatically create a compute instance, configure it with Ansible, shut it down, and create a cloud image from the result. "Install Packer following their instructions.":https://developer.hashicorp.com/packer/docs/install
+We provide Packer templates that can automatically create a compute instance, configure it with Ansible, shut it down, and create a cloud image from the result. "Install Packer following their instructions.":https://developer.hashicorp.com/packer/docs/install After you do, install Packer's Ansible provisioner by running:
+
+<notextile>
+<pre><code>~$ <span class="userinput">packer plugins install github.com/hashicorp/ansible</span>
+</code></pre>
+</notextile>
 
 h2(#building). Fully automated build with Packer and Ansible
 
@@ -78,11 +83,18 @@ h3(#ansible-variables). Write Ansible settings for the compute node
 
 In the @tools/compute-images@ directory of your Arvados source checkout, copy @host_config.example.yml@ to @host_config.yml@. Edit @host_config.yml@ with information about how your compute nodes should be set up following the instructions in the comments.
 
-h3(#packer-variables). Write Packer settings for your cloud
+h3(#packer-variables). Set up Packer for your cloud
 
 You need to provide different configuration to Packer depending on which cloud you're deploying Arvados in.
 
 h4(#aws-variables). AWS
+
+Install Packer's AWS builder by running:
+
+<notextile>
+<pre><code>~$ <span class="userinput">packer plugins install github.com/hashicorp/amazon</span>
+</code></pre>
+</notextile>
 
 In the @tools/compute-images@ directory of your Arvados source checkout, copy @aws_config.example.json@ to @aws_config.json@. Fill in values for the configuration settings as follows:
 
@@ -99,6 +111,13 @@ h4(#azure-variables). Azure
 {% comment %}
 FIXME: Incomplete
 {% endcomment %}
+
+Install Packer's Azure builder by running:
+
+<notextile>
+<pre><code>~$ <span class="userinput">packer plugins install github.com/hashicorp/azure</span>
+</code></pre>
+</notextile>
 
 In the @tools/compute-images@ directory of your Arvados source checkout, copy @azure_config.example.json@ to @azure_config.json@. Fill in values for the configuration settings as follows:
 
