@@ -272,7 +272,7 @@ const CardSSHSection = (props: VirtualMachineProps) =>
         <Card>
             <CardContent>
                 <Typography>
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(props.helpText) }} style={{ margin: "1em" }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeHTML(props.helpText) }} style={{ margin: "1em" }} />
                 </Typography>
             </CardContent>
         </Card>
