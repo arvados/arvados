@@ -142,6 +142,28 @@ In the @tools/compute-images@ directory of your Arvados source checkout, run Pac
 
 To build an image on Azure, replace both instances of *@aws@* with *@azure@*, and run that command.
 
+{% include 'notebox_begin_warning' %}
+If @packer build@ fails early with @ok=0@, @changed=0@, @failed=1@, and a message like this:
+
+<notextile>
+<pre><code>TASK [Gathering Facts] *********************************************************
+fatal: [default]: FAILED! =&gt; {"msg": "failed to transfer file to /home/you/.ansible/tmp/ansible-local-1821271ym6nh1cw/tmp2kyfkhy4 /home/admin/.ansible/tmp/ansible-tmp-1732380360.0917368-1821275-172216075852170/AnsiballZ_setup.py:\n\n"}
+
+PLAY RECAP *********************************************************************
+default : ok=0  changed=0  unreachable=0  failed=1  skipped=0  rescued=0  ignored=0
+</code></pre>
+</notextile>
+
+This might mean the version of @scp@ on your computer is trying to use new protocol features that doesn't work with the older SSH server on the cloud image. You can work around this by running:
+
+<notextile>
+<pre><code>$ <span class="userinput">export ANSIBLE_SCP_EXTRA_ARGS="'-O'"</span>
+</code></pre>
+</notextile>
+
+Then rerun your full @packer build@ command from the same shell.
+{% include 'notebox_end' %}
+
 If the build succeeds, it will report the identifier of your image at the end of the process. For example, when you build an AWS image, it will look like this:
 
 <notextile>
@@ -185,7 +207,31 @@ If you installed Ansible inside a virtualenv, activate that virtualenv now. Then
 </code></pre>
 </notextile>
 
-You'll be prompted with @BECOME password:@. Enter the password for the @ansible_user@ you defined in the inventory to use sudo on the running node. If it succeeds, Ansible should report a "PLAY RECAP" with @failed=0@:
+You'll be prompted with @BECOME password:@. Enter the password for the @ansible_user@ you defined in the inventory to use sudo on the running node.
+
+{% include 'notebox_begin_warning' %}
+If @ansible-playbook@ fails early with @ok=0@, @changed=0@, @failed=1@, and a message like this:
+
+<notextile>
+<pre><code>TASK [Gathering Facts] *********************************************************
+fatal: [default]: FAILED! =&gt; {"msg": "failed to transfer file to /home/you/.ansible/tmp/ansible-local-1821271ym6nh1cw/tmp2kyfkhy4 /home/admin/.ansible/tmp/ansible-tmp-1732380360.0917368-1821275-172216075852170/AnsiballZ_setup.py:\n\n"}
+
+PLAY RECAP *********************************************************************
+default : ok=0  changed=0  unreachable=0  failed=1  skipped=0  rescued=0  ignored=0
+</code></pre>
+</notextile>
+
+This might mean the version of @scp@ on your computer is trying to use new protocol features that doesn't work with the older SSH server on the cloud image. You can work around this by running:
+
+<notextile>
+<pre><code>$ <span class="userinput">export ANSIBLE_SCP_EXTRA_ARGS="'-O'"</span>
+</code></pre>
+</notextile>
+
+Then rerun your full @ansible-playbook@ command from the same shell.
+{% include 'notebox_end' %}
+
+If it succeeds, Ansible should report a "PLAY RECAP" with @failed=0@:
 
 <notextile>
 <pre><code>PLAY RECAP *********************************************************************
