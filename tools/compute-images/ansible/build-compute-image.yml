@@ -3,19 +3,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Validate build arguments
+- name: Load Arvados configuration
   hosts: default
   tasks:
-    - name: Check compute_authorized_keys is set
-      ansible.builtin.fail:
-        msg: "`compute_authorized_keys` is not set"
-      when: "compute_authorized_keys is not defined"
-      run_once: true
-    - name: Check compute_authorized_keys exists
-      ansible.builtin.fail:
-        msg: "`compute_authorized_keys` file not found: {{ compute_authorized_keys }}"
-      when: "compute_authorized_keys is not exists"
-      run_once: true
+    - name: Load Arvados configuration file
+      delegate_to: localhost
+      ansible.builtin.include_vars:
+        name: arvados_config
+        file: "{{ arvados_config_file }}"
+    - name: Load Arvados cluster configuration
+      ansible.builtin.set_fact:
+        arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+      failed_when: arvados_cluster is undefined
+    - name: Get Crunch dispatch public key
+      delegate_to: localhost
+      vars:
+        key_url: "{{ arvados_cluster.Containers.DispatchPrivateKey | urlsplit }}"
+      ansible.builtin.command:
+        argv: "{{ ['ssh-keygen', '-y'] + (['-f', key_url.path] if key_url.scheme == 'file' else []) }}"
+        stdin: "{{ arvados_cluster.Containers.DispatchPrivateKey if key_url.scheme != 'file' else '' }}"
+      register: compute_dispatch_ssh_keygen
 
 - name: Build compute node
   # `default` is the name that the Packer Ansible plugin assigns to the
@@ -48,7 +55,7 @@
         name: compute_nvidia
       when: "arvados_compute_nvidia|default(false)|bool"
     - include_role:
-        name: "compute_{{ arvados_container_engine|default('docker') }}"
+        name: "compute_{{ arvados_cluster.Containers.RuntimeEngine }}"
     - include_role:
         name: compute_encrypt_tmp
     - include_role:

@@ -25,9 +25,16 @@
     owner: "{{ compute_user_account }}"
     mode: 0700
 
-- name: Configure compute user authorized keys
+- name: Initialize compute user authorized keys
   ansible.builtin.copy:
     src: "{{ compute_authorized_keys }}"
     dest: "{{ compute_user_home }}/.ssh/authorized_keys"
     owner: "{{ compute_user_account }}"
     mode: 0600
+
+- name: Install dispatch public key
+  ansible.builtin.lineinfile:
+    path: "{{ compute_user_home }}/.ssh/authorized_keys"
+    regexp: "^{{ item.0 | regex_escape }}\\s+{{ item.1 | regex_escape }}(\\s|$)"
+    line: "{{ item | join(' ') }}"
+  loop: "{{ compute_dispatch_ssh_keygen.stdout.splitlines()|map('split') }}"

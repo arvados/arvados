@@ -5,22 +5,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Set `compute_authorized_keys` to the ABSOLUTE path of a file that contains
-# public key(s) the Crunch dispatcher will use to SSH into the compute node.
-# This MUST correspond to the public key(s) for the private key(s) configured
-# as `Containers.DispatchPrivateKey` in your cluster configuration.
-compute_authorized_keys: null
+# `arvados_config_file` is the ABSOLUTE path of an Arvados cluster
+# configuration file. Ansible reads various settings from this file to
+# make sure system configuration is consistent with cluster configuration.
+# This file MUST be readable by the user running Ansible/Packer, along with
+# any files it references (e.g., `Containers.DispatchPrivateKey`).
+arvados_config_file: /etc/arvados/config.yml
 
-# `compute_user_account` is the name of the account the Crunch dispatcher will
-# use to SSH into the compute node. This MUST match
-# `CloudVMs.DriverParameters.AdminUsername` in your cluster configuration.
-# Note this user will be granted full passwordless sudo access.
-#compute_user_account: crunch
-
-# `arvados_container_engine` can be one of 'docker' (the default) or
-# 'singularity'. This MUST match `Containers.RuntimeEngine` in your
-# cluster configuration.
-#arvados_container_engine: docker
+# `arvados_cluster_id` is a five-character cluster identifier defined under
+# `Clusters` in `ansible_config_file`. Ansible will use configuration
+# settings from this specific cluster.
+# If you are running Packer, you do not need to set this; the `arvados_cluster`
+# you set there will be passed through to Ansible.
+# Otherwise, you MUST set this to the identifier of the cluster you are
+# setting up a compute node for.
+#arvados_cluster_id: xxxxx
 
 # `arvados_compute_nvidia` is a flag that determines whether or not
 # NVIDIA CUDA and associated drivers will be installed in the compute

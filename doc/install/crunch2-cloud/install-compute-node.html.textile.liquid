@@ -181,7 +181,7 @@ If Arvados does not include a template for your cloud, or you do not have permis
 
 h3(#ansible-variables-standalone). Write Ansible settings for the compute node
 
-In the @tools/compute-images@ directory of your Arvados source checkout, copy @host_config.example.yml@ to @host_config.yml@. Edit @host_config.yml@ with information about how your compute nodes should be set up following the instructions in the comments.
+In the @tools/compute-images@ directory of your Arvados source checkout, copy @host_config.example.yml@ to @host_config.yml@. Edit @host_config.yml@ with information about how your compute nodes should be set up following the instructions in the comments. Note that you *must set* @arvados_cluster_id@ in this file since you are not running Packer.
 
 h3(#ansible-inventory). Write an Ansible inventory
 

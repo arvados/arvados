@@ -2,5 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-compute_user_account: crunch
+compute_authorized_keys: /dev/null
+compute_user_account: "{{ arvados_cluster.Containers.CloudVMs.DriverParameters.AdminUsername }}"
 compute_user_home: "/home/{{ compute_user_account }}"
