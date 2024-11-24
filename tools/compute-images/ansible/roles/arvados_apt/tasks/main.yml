@@ -16,8 +16,8 @@
     name: arvados
     types: deb
     uris: "{{ arvados_apt_url }}/{{ ansible_distribution_release }}"
-    # build.sh takes a `--reposuffix` option. If arvados_apt_suites looks like
-    # a suffix (i.e., it starts with `-`), prepend the current distro codename.
+    # As a convenient shortcut for users, if arvados_apt_suites looks like a
+    # suffix (i.e., it starts with `-`), prepend the current distro codename.
     suites: "{{ ansible_distribution_release if arvados_apt_suites.startswith('-') else '' }}{{ arvados_apt_suites }}"
     components: main
     signed_by: "{{ arvados_apt_url }}/pubkey.gpg"
