@@ -21,6 +21,13 @@ arvados_config_file: /etc/arvados/config.yml
 # setting up a compute node for.
 #arvados_cluster_id: xxxxx
 
+# `compute_authorized_keys` is the ABSOLUTE path to a file with additional
+# public SSH keys to authorize for the Crunch user, in `authorized_keys`
+# format. If your copy of `arvados_config_file` does not have
+# `Containers.DispatchPrivateKey` set for security reasons, you can name a
+# file with the dispatcher's public key here.
+#compute_authorized_keys: /dev/null
+
 # `arvados_compute_nvidia` is a flag that determines whether or not
 # NVIDIA CUDA and associated drivers will be installed in the compute
 # node image. Set this to true if you want your Arvados cluster to

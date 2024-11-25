@@ -15,11 +15,8 @@ For testing, you'll need a Debian or Ubuntu system where you don't mind messing 
 
 ### Configuration Requirements
 
-You must have an Arvados cluster configuration. You can start by copying the defaults from the Arvados source in `arvados/lib/config/config.default.yml`. After you make your copy, you should change the following:
-
-* Under `Clusters`, change the example identifier `xxxxx` to a unique five-alphanumeric identifier for your test cluster. It SHOULD start with `z` so it's easily identifiable as a test cluster.
-* Under `Containers`, set `DispatchPrivateKey` to the `file` URL or literal contents of an SSH private key. This key MUST NOT have a passphrase set. This key SHOULD be one [you generate specifically for testing](https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair).
-
-You may also change other settings that you specifically want to test such as `Containers.RuntimeEngine`.
+You must have an Arvados cluster configuration. You can start by copying the defaults from the Arvados source in `arvados/lib/config/config.default.yml`. After you make your copy, you should change the example identifier `xxxxx` under `Clusters` to a unique five-alphanumeric identifier for your test cluster. It SHOULD start with `z` so it's easily identifiable as a test cluster. You may also change other settings that you specifically want to test such as `Containers.RuntimeEngine`.
 
 Once you have this, you can start [following the Ansible build instructions]((https:///doc.arvados.org/install/crunch2-cloud/install-compute-node.html#ansible-build)). When you write `host_config.yml`, set `arvados_config_file` to the ABSOLUTE path of the cluster configuration file you wrote, and `arvados_cluster_id` to the cluster identifier you wrote in there under `Clusters`.
+
+You must define at least one public SSH key for the Crunch user. The easiest way to do this is to set `compute_authorized_keys` in your `host_config.yml` and point it to one of your SSH public keys or `authorized_keys` file. If you set `Containers.DispatchPrivateKey` in your Arvados cluster configuration file, that's sufficient too.
