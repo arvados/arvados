@@ -169,7 +169,7 @@ interface MPVContainerDataProps {
 type MPVContainerProps = MPVContainerDataProps & GridProps;
 
 // Grid container compatible component that also handles panel toggling.
-const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
+const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusive, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
     if (children === undefined || children === null || Object.keys(children).length === 0) {
         children = [];
     } else if (!isArray(children)) {
@@ -194,7 +194,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
     if (isArray(children)) {
         const showFn = (idx: number) => () => {
             setPreviousPanelVisibility(initialVisibility);
-            if (props.mutuallyExclusive) {
+            if (mutuallyExclusive) {
                 // Hide all other panels
                 setPanelVisibility([
                     ...(new Array(idx).fill(false)),
@@ -271,7 +271,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
                     key={idx}
                     visible={panelVisibility[idx]}
                     name={panelName}
-                    paperClassName={props.mutuallyExclusive ? classes.exclusiveContentPaper : undefined}
+                    paperClassName={mutuallyExclusive ? classes.exclusiveContentPaper : undefined}
                     panelRef={(idx === selectedPanel) ? panelRef : undefined}
                     maximized={panelIsMaximized} illuminated={idx === highlightedPanel}
                     doHidePanel={hideFn(idx)} doMaximizePanel={maximizeFn(idx)} doUnMaximizePanel={panelIsMaximized ? unMaximizeFn(idx) : () => null}>
@@ -280,7 +280,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
             panels = [...panels, aPanel];
         };
 
-        buttonBar = props.mutuallyExclusive ?
+        buttonBar = mutuallyExclusive ?
             <Tabs value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
                 {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
             </Tabs> :
@@ -289,7 +289,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
             </Grid>;
     };
 
-    const content = <Grid container direction="column" item {...props} xs className={props.mutuallyExclusive ? classes.exclusiveContent : classes.content}
+    const content = <Grid container direction="column" item {...props} xs className={mutuallyExclusive ? classes.exclusiveContent : classes.content}
         onScroll={() => setSelectedPanel(-1)}>
         {panelVisibility.includes(true)
             ? panels
@@ -298,7 +298,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
             </Grid>}
     </Grid>;
 
-    if (props.mutuallyExclusive) {
+    if (mutuallyExclusive) {
         return <Grid container {...props} className={classNames(classes.exclusiveGridContainerRoot, props.className)}>
             <Grid item {...props} className={classes.gridItemRoot}>
                 <Paper className={classes.paperRoot}>
