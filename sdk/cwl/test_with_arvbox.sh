@@ -99,6 +99,7 @@ set -eu -o pipefail
 # Switch to the branch that the outer script is running from,
 # this ensures we get the right version of tests and a-c-r
 cd /usr/src/arvados
+git config --global --add safe.directory /usr/src/arvados
 git fetch -a
 git checkout -f $githead
 
