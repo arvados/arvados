@@ -18,6 +18,10 @@
     - name: Get Crunch dispatch public key
       delegate_to: localhost
       vars:
+        # Try to parse DispatchPrivateKey as a URL.
+        # If it's recognized as a file: URL, pass the path to `ssh-keygen -f`.
+        # Otherwise, expect it's private key content,
+        # and pass it through `ssh-keygen` stdin.
         key_url: "{{ arvados_cluster.Containers.DispatchPrivateKey | urlsplit }}"
       ansible.builtin.command:
         argv: "{{ ['ssh-keygen', '-y'] + (['-f', key_url.path] if key_url.scheme == 'file' else []) }}"
