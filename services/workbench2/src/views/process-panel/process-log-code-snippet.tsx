@@ -4,7 +4,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { ThemeProvider, Theme, StyledEngineProvider, createTheme, adaptV4Theme } from '@mui/material/styles';
+import { ThemeProvider, Theme, StyledEngineProvider, createTheme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -49,18 +49,20 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const theme = createTheme(adaptV4Theme({
-    overrides: {
+const theme = createTheme({
+    components: {
         MuiTypography: {
-            body2: {
-                color: grey["200"]
-            }
-        }
+            styleOverrides: {
+                body2: {
+                    color: grey["200"]
+                },
+            },
+        },
     },
     typography: {
         fontFamily: 'monospace',
     }
-}));
+});
 
 interface ProcessLogCodeSnippetProps {
     lines: string[];
