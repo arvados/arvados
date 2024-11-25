@@ -89,16 +89,18 @@ fi
 
 arvbox start $config $tag
 
-# Copy the integration test suite from our local arvados clone instead
-# of using the one inside the container, so we can make changes to the
-# integration tests without necessarily having to rebuilding the
-# container image.
-docker cp -L $cwldir/tests $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl
+githead=$(git rev-parse HEAD)
 
 arvbox pipe <<EOF
 set -eu -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
+
+# Switch to the branch that the outer script is running from,
+# this ensures we get the right version of tests and a-c-r
+cd /usr/src/arvados
+git fetch -a
+git checkout -f $githead
 
 if test $config = dev -o $reinstall = 1; then
   pip_install_sdist sdk/python sdk/cwl
