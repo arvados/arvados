@@ -325,5 +325,5 @@ def collectionResolver(api_client, document_loader, uri, num_retries=4):
 # it uses CollectionFsAccess from Arvados instead of the standard
 # FsAccess that only works for the local file system.
 def get_fsaccess():
-    api_client = arvados.api()
+    api_client = arvados.api('v1')
     return CollectionFsAccess("", CollectionCache(api_client, api_client.keep, 3))

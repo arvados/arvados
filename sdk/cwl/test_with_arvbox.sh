@@ -106,14 +106,12 @@ fi
 
 set -x
 
-# 2.3.20230527113600 release of cwltest confirms that files exist on disk, since
-# our files are in Keep, all the tests fail.
-# We should add [optional] Arvados support to cwltest so it can access
-# Keep but for the time being just install the last working version.
-# This version depends on setuptools, but does not declare that, so we install
-# it ourselves to ensure it's available. That can be removed at the same time
-# we upgrade the cwltest version.
-/opt/arvados-py/bin/pip install 'cwltest<2.3.20230527113600' setuptools
+# Starting with the 2.5.20241122133319 release of cwltest, it looks
+# for an entry point declared as cwltest.fsaccess and will use that
+# for file access.  As of 2024-11-25 arvados-cwl-runner publishes this
+# entry point so that cwltest uses CollectionFsAccess, allowing cwltest to
+# check that files exist in Keep.
+/opt/arvados-py/bin/pip install 'cwltest >=2.5.20241122133319,<3'
 
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest
