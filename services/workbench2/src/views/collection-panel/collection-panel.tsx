@@ -196,10 +196,11 @@ export const CollectionPanel = withStyles(styles)(connect(
                                         <span>
                                             <IllegalNamingWarning name={item.name} />
                                             {item.name}
-                                            {isWritable ||
+                                            {isWritable || 
                                                 <Tooltip title="Read-only">
-                                                    <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                                </Tooltip>}
+                                                    <span><ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} /></span>
+                                                </Tooltip>
+                                                }
                                         </span>
                                     }
                                     action={
