@@ -1,0 +1,6 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_compute_pin_packages: true
+nvidia_container_apt_url: "https://nvidia.github.io/libnvidia-container"

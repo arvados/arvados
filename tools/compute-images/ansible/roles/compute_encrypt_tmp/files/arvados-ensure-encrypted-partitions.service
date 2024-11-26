@@ -1,0 +1,19 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Ensure Arvados compute work directories are encrypted
+Before=docker.service
+Before=docker.socket
+Before=ssh.service
+
+[Install]
+WantedBy=docker.service
+WantedBy=docker.socket
+WantedBy=ssh.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/local/sbin/ensure-encrypted-partitions.sh

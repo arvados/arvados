@@ -115,57 +115,5 @@ echo YES | cryptsetup luksFormat "$LVPATH" "$KEYPATH"
 cryptsetup --key-file "$KEYPATH" luksOpen "$LVPATH" "$(basename "$CRYPTPATH")"
 shred -u "$KEYPATH"
 mkfs.xfs -f "$CRYPTPATH"
-
-# First make sure docker is not using /tmp, then unmount everything under it.
-if [ -d /etc/sv/docker.io ]
-then
-  # TODO: Actually detect Docker state with runit
-  DOCKER_ACTIVE=true
-  sv stop docker.io || service stop docker.io || true
-else
-  if systemctl --quiet is-active docker.service docker.socket; then
-    systemctl stop docker.service docker.socket || true
-    DOCKER_ACTIVE=true
-  else
-    DOCKER_ACTIVE=false
-  fi
-fi
-
-ensure_umount "$MOUNTPATH/docker/aufs"
-
-MOUNTOPTIONS="async"
-mount -o ${MOUNTOPTIONS} "$CRYPTPATH" "$MOUNTPATH"
+mount -o async "$CRYPTPATH" "$MOUNTPATH"
 chmod a+w,+t "$MOUNTPATH"
-
-# Make sure docker uses the big partition
-cat <<EOF > /etc/docker/daemon.json
-{
-    "data-root": "$MOUNTPATH/docker-data"
-}
-EOF
-
-if ! $DOCKER_ACTIVE; then
-  # Nothing else to do
-  exit 0
-fi
-
-# restart docker
-if [ -d /etc/sv/docker.io ]
-then
-  ## runit
-  sv up docker.io
-else
-  systemctl start docker.service docker.socket || true
-fi
-
-end=$((SECONDS+60))
-
-while [ $SECONDS -lt $end ]; do
-  if /usr/bin/docker ps -q >/dev/null; then
-    exit 0
-  fi
-  sleep 1
-done
-
-# Docker didn't start within a minute, abort
-exit 1

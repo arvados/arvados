@@ -1,0 +1,14 @@
+### This file is managed by Ansible ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Pin Docker dependencies to tested and known-good versions
+
+Package: src:docker-ce
+Pin: version 5:27.*
+Pin-Priority: 995
+
+Package: containerd.io
+Pin: version 1.7.*
+Pin-Priority: 995

@@ -1,0 +1,46 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install encrypted partition dependencies
+  ansible.builtin.apt:
+    name:
+      - btrfs-progs
+      - cryptsetup
+      - curl
+      - lvm2
+      - xfsprogs
+
+- name: Install encrypted partition script
+  ansible.builtin.copy:
+    src: ensure-encrypted-partitions.sh
+    dest: /usr/local/sbin/ensure-encrypted-partitions.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Define encrypted partition service
+  ansible.builtin.copy:
+    src: arvados-ensure-encrypted-partitions.service
+    dest: /etc/systemd/system/arvados-ensure-encrypted-partitions.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Prepare encrypted partition service override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/arvados-ensure-encrypted-partitions.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Set up AWS EBS-backed encrypted partitions
+  ansible.builtin.include_tasks:
+    file: aws_ebs.yml
+  when: "arvados_compute_encrypted_tmp|lower == 'aws_ebs'"
+
+- name: Enable encrypted partition service
+  ansible.builtin.systemd_service:
+    name: arvados-ensure-encrypted-partitions.service
+    enabled: true

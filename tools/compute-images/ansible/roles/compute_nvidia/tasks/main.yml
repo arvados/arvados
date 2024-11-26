@@ -1,0 +1,83 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install NVIDIA package pins
+  ansible.builtin.copy:
+    src: arvados-nvidia.pref
+    dest: /etc/apt/preferences.d/arvados-nvidia.pref
+    owner: root
+    group: root
+    mode: 0644
+  when: "arvados_compute_pin_packages|bool"
+
+- name: Install NVIDIA CUDA apt repository
+  ansible.builtin.apt:
+    deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}{{ ansible_distribution_minor_version if ansible_distribution == 'Ubuntu' else '' }}/{{ ansible_architecture }}/cuda-keyring_1.1-1_all.deb"
+  register: cuda_apt_task
+
+- name: Install NVIDIA container toolkit apt repository
+  ansible.builtin.deb822_repository:
+    name: nvidia-container-toolkit
+    types: deb
+    uris: "{{ nvidia_container_apt_url }}/stable/deb/$(ARCH)"
+    suites: "/"
+    signed_by: "{{ nvidia_container_apt_url }}/gpgkey"
+  register: nvidia_apt_task
+
+- name: Install NVIDIA packages
+  ansible.builtin.apt:
+    update_cache: "{{ cuda_apt_task.changed or nvidia_apt_task.changed }}"
+    name:
+      - cuda
+      - libnvidia-container1
+      - libnvidia-container-tools
+      - nvidia-container-toolkit
+
+- name: Copy nvidia.conf modules to nvidia.avail
+  ansible.builtin.copy:
+    src: /etc/modules-load.d/nvidia.conf
+    dest: /etc/modules-load.d/nvidia.avail
+    remote_src: true
+
+- name: Remove nvidia.conf modules from autoloading
+  ansible.builtin.file:
+    dest: /etc/modules-load.d/nvidia.conf
+    state: absent
+
+- name: Install dynamic module loading script
+  ansible.builtin.copy:
+    src: detect-gpu.sh
+    dest: /usr/local/sbin/detect-gpu.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Prepare systemd-modules-load override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/systemd-modules-load.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install dynamic module load hook
+  ansible.builtin.copy:
+    src: detect-gpu.conf
+    dest: /etc/systemd/system/systemd-modules-load.service.d/arvados-detect-gpu.conf
+    owner: root
+    group: root
+    mode: 0644
+
+# crunch-run has its own CUDA initialization code.
+# We prefer to use that over NVIDIA's.
+- name: Query nvidia-persistenced.service
+  ansible.builtin.systemd_service:
+    name: nvidia-persistenced.service
+  register: nvidia_persistenced
+
+- name: Disable nvidia-persistenced.service
+  when: "nvidia_persistenced.status.LoadState != 'not-found'"
+  ansible.builtin.systemd_service:
+    name: nvidia-persistenced.service
+    enabled: false

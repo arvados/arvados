@@ -1,0 +1,55 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Create compute user account
+  ansible.builtin.user:
+    name: "{{ compute_user_account }}"
+    comment: Crunch user,,,,
+    home: "{{ compute_user_home }}"
+    password_lock: true
+
+- name: Give compute user sudo access
+  ansible.builtin.lineinfile:
+    line: "{{ compute_user_account }} ALL=(ALL) NOPASSWD:ALL"
+    path: /etc/sudoers.d/91-crunch
+    create: true
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create compute user .ssh directory
+  ansible.builtin.file:
+    state: directory
+    path: "{{ compute_user_home }}/.ssh"
+    owner: "{{ compute_user_account }}"
+    mode: 0700
+
+- name: Initialize compute user authorized keys
+  ansible.builtin.file:
+    path: "{{ compute_user_home }}/.ssh/authorized_keys"
+    state: touch
+    owner: "{{ compute_user_account }}"
+    mode: 0600
+
+- name: Install dispatch public key
+  when: compute_dispatch_ssh_keygen.changed
+  ansible.builtin.lineinfile:
+    path: "{{ compute_user_home }}/.ssh/authorized_keys"
+    regexp: "^{{ item.0 | regex_escape }}\\s+{{ item.1 | regex_escape }}(\\s|$)"
+    line: "{{ item | join(' ') }}"
+  loop: "{{ compute_dispatch_ssh_keygen.stdout_lines|map('split') }}"
+
+- name: Install public keys from Ansible configuration
+  when: compute_authorized_keys is defined
+  ansible.builtin.lineinfile:
+    path: "{{ compute_user_home }}/.ssh/authorized_keys"
+    regexp: "^{{ item.0 | regex_escape }}\\s+{{ item.1 | regex_escape }}(\\s|$)"
+    line: "{{ item | join(' ') }}"
+  loop: "{{ lookup('ansible.builtin.file', compute_authorized_keys).splitlines()|select('match', '^\\w\\S*\\s+\\S')|map('split') }}"
+
+- name: Check that at least one SSH key was installed
+  ansible.builtin.stat:
+    path: "{{ compute_user_home }}/.ssh/authorized_keys"
+  register: compute_user_authorized_keys_stat
+  failed_when: compute_user_authorized_keys_stat.stat.size|default(0) == 0
