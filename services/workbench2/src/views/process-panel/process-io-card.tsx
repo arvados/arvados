@@ -832,7 +832,7 @@ interface PrimitiveTooltipProps {
 
 const PrimitiveTooltip = (props: React.PropsWithChildren<PrimitiveTooltipProps>) => (
     <Tooltip title={typeof props.data !== 'object' ? String(props.data) : ""}>
-        <pre>{props.children}</pre>
+        <Typography component='span' fontFamily='monospace'>{props.children}</Typography>
     </Tooltip>
 );
 
@@ -890,14 +890,14 @@ const KeepUrlBase = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
     const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ? (
         <Tooltip title={<>View collection in Workbench<br />{pdhUrl}</>}>
-            <div>
+            <span>
                 <RouterLink
                     to={pdhWbPath}
                     className={classes.keepLink}
                     >
                     {pdhUrl}
                 </RouterLink>
-            </div>
+            </span>
         </Tooltip>
     ) : (
         <></>
