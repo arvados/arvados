@@ -153,7 +153,7 @@ export const MPVPanelContent = ({ doHidePanel, doMaximizePanel, doUnMaximizePane
         <Paper style={{ height: '100%' }} elevation={panelIlluminated ? 8 : 0}>
             {forwardProps
                 ? React.cloneElement(props.children, { doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, paperClassName })
-                : React.cloneElement(props.children, { paperClassName })}
+                : React.cloneElement(props.children)}
         </Paper>
     </Grid>;
 }
