@@ -342,7 +342,7 @@ _build_rails_package_scripts() {
     local destdir="$1"; shift
     local srcdir="$RUN_BUILD_PACKAGES_PATH/rails-package-scripts"
     for scriptname in postinst prerm postrm; do
-        cat "$srcdir/$pkgname.sh" "$srcdir/step2.sh" "$srcdir/$scriptname.sh" \
+        cat "$srcdir/$pkgname.sh" "$srcdir/$scriptname.sh" \
             >"$destdir/$scriptname" || return $?
     done
 }

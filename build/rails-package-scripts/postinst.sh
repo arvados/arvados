@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# This code runs after package variable definitions and step2.sh.
+# This code runs after package variable definitions.
 
 set -e
 
@@ -112,14 +112,14 @@ setup_conffile() {
 }
 
 prepare_database() {
+  # Prevent PostgreSQL from trying to page output
+  unset PAGER
   DB_MIGRATE_STATUS=`bin/rake db:migrate:status 2>&1 || true`
   if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" bin/rake \
-                     "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
+      run_and_report "Setting up database" bin/rake db:schema:load db:seed
   elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
-      run_and_report "Running db:migrate" \
-                     bin/rake db:migrate
+      run_and_report "Running db:migrate" bin/rake db:migrate
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
       run_and_report "Running db:setup" bin/rake db:setup
   else
@@ -130,29 +130,16 @@ prepare_database() {
 
 configure_version() {
   if [ -n "$WEB_SERVICE" ]; then
-      SERVICE_MANAGER=$(guess_service_manager)
-  elif WEB_SERVICE=$(list_services_systemd | grep -E '^(nginx|httpd)'); then
-      SERVICE_MANAGER=systemd
-  elif WEB_SERVICE=$(list_services_service \
-                         | grep -Eo '\b(nginx|httpd)[^[:space:]]*'); then
-      SERVICE_MANAGER=service
-  fi
-
-  if [ -z "$WEB_SERVICE" ]; then
-    report_web_service_warning "Web service (Nginx or Apache) not found"
-  elif [ "$WEB_SERVICE" != "$(echo "$WEB_SERVICE" | head -n 1)" ]; then
-    WEB_SERVICE=$(echo "$WEB_SERVICE" | head -n 1)
-    report_web_service_warning \
-        "Multiple web services found.  Choosing the first one ($WEB_SERVICE)"
+    :
+  elif command -v nginx >/dev/null 2>&1; then
+    WEB_SERVICE=nginx
+  else
+    report_web_service_warning "Web service (nginx) not found"
   fi
 
   case "$DISTRO_FAMILY" in
       debian) WWW_OWNER=www-data ;;
-      rhel) case "$WEB_SERVICE" in
-                httpd*) WWW_OWNER=apache ;;
-                nginx*) WWW_OWNER=nginx ;;
-            esac
-            ;;
+      rhel) WWW_OWNER=nginx ;;
   esac
 
   # Before we do anything else, make sure some directories and files are in place
@@ -208,24 +195,19 @@ EOF
     setup_confdirs /etc/arvados "$CONFIG_PATH"
     setup_conffile environments/production.rb environments/production.rb.example \
         || true
-    setup_extra_conffiles
+    # Rails 5.2 does not tolerate dangling symlinks in the initializers
+    # directory, and this one can still be there, left over from a previous
+    # version of the API server package.
+    rm -f $RELEASE_PATH/config/initializers/omniauth.rb
     echo "... done."
 
     echo -n "Ensuring directory and file permissions ..."
     # Ensure correct ownership of a few files
     chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
     chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
+    chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql
     chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
     chown -R "$WWW_OWNER:" $SHARED_PATH/log
-    # Make sure postgres doesn't try to use a pager.
-    export PAGER=
-    case "$RAILSPKG_DATABASE_LOAD_TASK" in
-        # db:structure:load was deprecated in Rails 6.1 and shouldn't be used.
-        db:schema:load | db:structure:load)
-            chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb || true
-            chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql || true
-            ;;
-    esac
     chmod 644 $SHARED_PATH/log/*
     echo "... done."
   fi
@@ -237,8 +219,6 @@ EOF
   elif ! run_and_report "Checking configuration for completeness" bin/rake config:check; then
       NOT_READY_REASON="you must add required configuration settings to /etc/arvados/config.yml"
       NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html#update-config"
-  elif [ -z "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
-      :
   elif ! prepare_database; then
       NOT_READY_REASON="database setup could not be completed"
   fi
@@ -248,8 +228,8 @@ EOF
     chmod -R 2775 $RELEASE_PATH/tmp
   fi
 
-  if [ -z "$NOT_READY_REASON" ] && [ -n "$SERVICE_MANAGER" ]; then
-      service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"
+  if [ -z "$NOT_READY_REASON" ] && [ -n "$WEB_SERVICE" ]; then
+      systemctl restart "$WEB_SERVICE"
   fi
 }
 

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# This code runs after package variable definitions and step2.sh.
+# This code runs after package variable definitions.
 
 set -e
 
