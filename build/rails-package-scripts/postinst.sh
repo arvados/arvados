@@ -23,6 +23,8 @@ if [ -z "$RESETUP_CMD" ]; then
 fi
 # Default documentation URL. This can be set to a more specific URL.
 NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html"
+# This will be set to a command path after we install the version we need.
+BUNDLE=
 
 report_web_service_warning() {
     local warning="$1"; shift
@@ -114,14 +116,14 @@ setup_conffile() {
 prepare_database() {
   # Prevent PostgreSQL from trying to page output
   unset PAGER
-  DB_MIGRATE_STATUS=`bin/rake db:migrate:status 2>&1 || true`
+  DB_MIGRATE_STATUS=`"$BUNDLE" exec bin/rake db:migrate:status 2>&1 || true`
   if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" bin/rake db:schema:load db:seed
+      run_and_report "Setting up database" "$BUNDLE" exec bin/rake db:schema:load db:seed
   elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
-      run_and_report "Running db:migrate" bin/rake db:migrate
+      run_and_report "Running db:migrate" "$BUNDLE" exec bin/rake db:migrate
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
-      run_and_report "Running db:setup" bin/rake db:setup
+      run_and_report "Running db:setup" "$BUNDLE" exec bin/rake db:setup
   else
       # We don't have enough configuration to even check the database.
       return 1
@@ -153,13 +155,13 @@ configure_version() {
 
   run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
   local ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-  local bundle="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
-  if ! [ -x "$bundle" ]; then
+  BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+  if ! [ -x "$BUNDLE" ]; then
       # Some distros (at least Ubuntu 24.04) append the Ruby version to the
       # executable name, but that isn't reflected in the output of
       # `gem contents`. Check for that version.
-      bundle="$bundle$ruby_minor_ver"
-      if ! [ -x "$bundle" ]; then
+      BUNDLE="$BUNDLE$ruby_minor_ver"
+      if ! [ -x "$BUNDLE" ]; then
           echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
           return 1
       fi
@@ -167,7 +169,7 @@ configure_version() {
 
   local bundle_path="$SHARED_PATH/vendor_bundle"
   run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-                 "$bundle" config set --local path "$bundle_path"
+                 "$BUNDLE" config set --local path "$bundle_path"
 
   # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
   # which are already installed system-wide, which causes bundle activation to
@@ -176,8 +178,8 @@ configure_version() {
       | run_and_report "Installing bundle gems" xargs -0r \
                        gem install --conservative --ignore-dependencies --local --quiet \
                        --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
-  run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
-  run_and_report "Verifying bundle is complete" "$bundle" exec true
+  run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
+  run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
   if [ -z "$WWW_OWNER" ]; then
     NOT_READY_REASON="there is no web service account to own Arvados configuration"
@@ -216,7 +218,7 @@ EOF
       :
   # warn about config errors (deprecated/removed keys from
   # previous version, etc)
-  elif ! run_and_report "Checking configuration for completeness" bin/rake config:check; then
+  elif ! run_and_report "Checking configuration for completeness" "$BUNDLE" exec bin/rake config:check; then
       NOT_READY_REASON="you must add required configuration settings to /etc/arvados/config.yml"
       NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html#update-config"
   elif ! prepare_database; then
