@@ -32,6 +32,10 @@ h2(#main). development main
 
 "previous: Upgrading to 3.0.0":#v3_0_0
 
+h3. Rails API server now runs standalone
+
+The Arvados Rails API server now runs from a standalone Passenger server to simplify deployment. Before upgrading, existing deployments should remove the Rails API server from their nginx configuration. e.g., remove the entire @server@ block with @root /var/www/arvados-api/current/public@ from @/etc/nginx/conf.d/arvados-api-and-controller.conf@. If you customized this deployment at all, the "updated install instructions":{{ site.baseurl }}/install/install-api-server.html#railsapi-config explain how to customize the standalone Passenger server.
+
 h2(#v3_0_0). v3.0.0 (2024-11-12)
 
 "previous: Upgrading to 2.7.4":#v2_7_4

@@ -20,5 +20,5 @@ logrotate:
         - copytruncate
         - sharedscripts
         - postrotate
-        - '  [ -s /run/nginx.pid ] && kill -USR1 `cat /run/nginx.pid`'
+        - '  systemctl try-reload-or-restart arvados-railsapi.service'
         - endscript

@@ -20,8 +20,8 @@ nginx:
   servers:
     managed:
       arvados_api.conf:
-        enabled: true
-        overwrite: true
+        enabled: false
+        overwrite: false
         config:
           - server:
             - listen: 'api.internal:8004'

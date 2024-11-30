@@ -14,6 +14,7 @@ remove () {
   rm -rf $RELEASE_PATH/tmp
   rm -rf $RELEASE_PATH/.bundle
   rm -rf $RELEASE_PATH/log
+  rm -rf /lib/systemd/system/arvados-railsapi.service.d
 }
 
 if [ "$1" = 'remove' ]; then

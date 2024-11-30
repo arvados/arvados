@@ -26,6 +26,15 @@ NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html"
 # This will be set to a command path after we install the version we need.
 BUNDLE=
 
+systemd_quote() {
+    if [ $# -ne 1 ]; then
+        echo "error: systemd_quote requires exactly one argument" >&2
+        return 2
+    fi
+    # See systemd.syntax(7) - Use double quotes with backslash escapes
+    echo "$1" | sed -re 's/[\\"]/\\\0/g; s/^/"/; s/$/"/'
+}
+
 report_web_service_warning() {
     local warning="$1"; shift
     cat >&2 <<EOF
@@ -141,7 +150,7 @@ configure_version() {
 
   case "$DISTRO_FAMILY" in
       debian) WWW_OWNER=www-data ;;
-      rhel) WWW_OWNER=nginx ;;
+      rhel) WWW_OWNER="$(id --group --name nginx || true)" ;;
   esac
 
   # Before we do anything else, make sure some directories and files are in place
@@ -182,38 +191,50 @@ configure_version() {
   run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
   run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
-  if [ -z "$WWW_OWNER" ]; then
-    NOT_READY_REASON="there is no web service account to own Arvados configuration"
-    NOT_READY_DOC_URL="https://doc.arvados.org/install/nginx.html"
-  else
-    cat <<EOF
-
-Assumption: $WEB_SERVICE is configured to serve Rails from
-            $RELEASE_PATH
-Assumption: $WEB_SERVICE and passenger run as $WWW_OWNER
-
-EOF
-
-    echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
-    setup_confdirs /etc/arvados "$CONFIG_PATH"
-    setup_conffile environments/production.rb environments/production.rb.example \
-        || true
-    # Rails 5.2 does not tolerate dangling symlinks in the initializers
-    # directory, and this one can still be there, left over from a previous
-    # version of the API server package.
-    rm -f $RELEASE_PATH/config/initializers/omniauth.rb
-    echo "... done."
-
-    echo -n "Ensuring directory and file permissions ..."
-    # Ensure correct ownership of a few files
-    chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
-    chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
-    chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql
-    chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
-    chown -R "$WWW_OWNER:" $SHARED_PATH/log
-    chmod 644 $SHARED_PATH/log/*
-    echo "... done."
+  local passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
+  if ! [ -x "$passenger" ]; then
+      echo "Error: failed to find \`passenger\` command after installing bundle" >&2
+      return 1
   fi
+  "$BUNDLE" exec "$passenger-config" build-native-support
+  "$BUNDLE" exec "$passenger-config" install-agent
+  "$BUNDLE" exec "$passenger-config" install-standalone-runtime
+
+  echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
+  setup_confdirs /etc/arvados "$CONFIG_PATH"
+  setup_conffile environments/production.rb environments/production.rb.example \
+      || true
+  # Rails 5.2 does not tolerate dangling symlinks in the initializers
+  # directory, and this one can still be there, left over from a previous
+  # version of the API server package.
+  rm -f $RELEASE_PATH/config/initializers/omniauth.rb
+  echo "... done."
+
+  echo -n "Extending systemd unit configuration ..."
+  local systemd_group
+  if [ -z "$WWW_OWNER" ]; then
+      systemd_group="%N"
+  else
+      systemd_group="$(systemd_quote "$WWW_OWNER")"
+  fi
+  install -d /lib/systemd/system/arvados-railsapi.service.d
+  # The 20 prefix is chosen so most user overrides should come after, which
+  # is what most admins will expect, but there's still space to put drop-ins
+  # earlier.
+  cat >/lib/systemd/system/arvados-railsapi.service.d/20-postinst.conf <<EOF
+[Service]
+ExecStartPre=+/bin/chgrp $systemd_group log tmp
+ExecStartPre=+-/bin/chgrp $systemd_group \${PASSENGER_LOG_FILE}
+ExecStart=
+ExecStart=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger") start --daemonize --pid-file %t/%N/passenger.pid
+ExecStop=
+ExecStop=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger") stop --pid-file %t/%N/passenger.pid
+ExecReload=
+ExecReload=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger-config") reopen-logs
+${WWW_OWNER:+SupplementaryGroups=$WWW_OWNER}
+EOF
+  systemctl daemon-reload
+  echo "... done."
 
   if [ -n "$NOT_READY_REASON" ]; then
       :
@@ -226,13 +247,8 @@ EOF
       NOT_READY_REASON="database setup could not be completed"
   fi
 
-  if [ -n "$WWW_OWNER" ]; then
-    chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
-    chmod -R 2775 $RELEASE_PATH/tmp
-  fi
-
-  if [ -z "$NOT_READY_REASON" ] && [ -n "$WEB_SERVICE" ]; then
-      systemctl restart "$WEB_SERVICE"
+  if [ -z "$NOT_READY_REASON" ]; then
+      systemctl try-restart arvados-railsapi.service
   fi
 }
 
