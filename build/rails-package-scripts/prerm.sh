@@ -19,7 +19,7 @@ remove () {
 if [ "$1" = 'remove' ]; then
   # This is a debian-based system and removal was requested
   remove
-elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
-  # This is an rpm-based system
+elif [ "$1" = "0" ]; then
+  # This is an rpm-based system and zero versions will remain after erasure
   remove
 fi
