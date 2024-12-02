@@ -176,7 +176,8 @@ configure_version() {
   # fail later. Work around this by installing all gems manually.
   find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
       | run_and_report "Installing bundle gems" xargs -0r \
-                       gem install --conservative --ignore-dependencies --local --quiet \
+                       gem install --conservative --ignore-dependencies \
+                       --local --no-document --quiet \
                        --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
   run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
   run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
