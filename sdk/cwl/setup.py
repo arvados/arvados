@@ -23,7 +23,9 @@ setup(name='arvados-cwl-runner',
       license='Apache 2.0',
       packages=find_packages(),
       package_data={'arvados_cwl': ['arv-cwl-schema-v1.0.yml', 'arv-cwl-schema-v1.1.yml', 'arv-cwl-schema-v1.2.yml']},
-      entry_points={"console_scripts": ["cwl-runner=arvados_cwl:main", "arvados-cwl-runner=arvados_cwl:main"]},
+      entry_points={"console_scripts": ["cwl-runner=arvados_cwl:main",
+                                        "arvados-cwl-runner=arvados_cwl:main"],
+                    "cwltest.fsaccess": ["fsaccess=arvados_cwl.fsaccess:get_fsaccess"]},
       # Note that arvados/build/run-build-packages.sh looks at this
       # file to determine what version of cwltool and schema-salad to
       # build.
