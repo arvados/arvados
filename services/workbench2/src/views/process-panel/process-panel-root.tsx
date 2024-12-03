@@ -27,6 +27,7 @@ import { OutputDetails, NodeInstanceType } from "store/process-panel/process-pan
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { ArvadosTheme } from 'common/custom-theme';
 import { useAsyncInterval } from "common/use-async-interval";
+import { WebSocketService } from "websocket/websocket-service";
 
 type CssRules = "root";
 
@@ -104,6 +105,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
     const outputUuid = process?.containerRequest.outputUuid;
     const containerRequest = process?.containerRequest;
     const inputMounts = getInputCollectionMounts(process?.containerRequest);
+    const webSocketConnected = WebSocketService.getInstance().isActive();
 
     React.useEffect(() => {
         if (containerRequest) {
@@ -126,8 +128,9 @@ export const ProcessPanelRoot = withStyles(styles)(({
         updateOutputParams();
     }, [outputData, outputDefinitions, updateOutputParams]);
 
-    // Poll queued/running process for status updates
+    // If WebSocket not connected, poll queued/running process for status updates
     const shouldPoll =
+        !webSocketConnected &&
         process && (
             isProcessQueued(process)
             || isProcessRunning(process)
