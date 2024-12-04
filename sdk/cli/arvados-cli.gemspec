@@ -27,8 +27,8 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-cli'
-  s.version     = version
-  s.date        = git_timestamp.strftime("%Y-%m-%d")
+  s.version     = '3.0.0.1'
+  s.date        = '2024-12-04'
   s.summary     = "Arvados CLI tools"
   s.description = "Arvados command line tools, git commit #{git_hash}"
   s.authors     = ["Arvados Authors"]
@@ -39,7 +39,7 @@ Gem::Specification.new do |s|
   s.executables << "arv"
   s.executables << "arv-tag"
   s.required_ruby_version = '>= 2.7.0'
-  s.add_runtime_dependency 'arvados', '~> 2.8.a'
+  s.add_runtime_dependency 'arvados', '= 3.0.0'
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../ruby-google-api-client/
   s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
