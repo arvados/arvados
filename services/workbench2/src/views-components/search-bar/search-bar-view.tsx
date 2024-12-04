@@ -145,6 +145,7 @@ export const SearchBarView = compose(
     class extends React.Component<SearchBarViewProps> {
         state={
             loggedInSessions: [],
+            recentQueries: [],
         }
 
         debouncedSearch = debounce(() => {
@@ -163,6 +164,7 @@ export const SearchBarView = compose(
 
         componentDidMount(): void {
             this.setState({ loggedInSessions: this.props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive)});
+            this.setState({ recentQueries: this.props.loadRecentQueries()});
         }
 
         componentDidUpdate( prevProps: Readonly<SearchBarViewProps>, prevState: Readonly<{loggedInSessions: Session[]}>, snapshot?: any ): void {
@@ -173,6 +175,9 @@ export const SearchBarView = compose(
             if(prevState.loggedInSessions.length !== this.state.loggedInSessions.length){
                 const newLogin = this.state.loggedInSessions.filter((ss) => !prevState.loggedInSessions.includes(ss));
                 this.props.searchSingleCluster(newLogin[0], this.props.searchValue);
+            }
+            if(this.props.isPopoverOpen === true && prevProps.isPopoverOpen === false){
+                this.setState({ recentQueries: this.props.loadRecentQueries()});
             }
         }
 
@@ -220,14 +225,14 @@ export const SearchBarView = compose(
                             }
                         />
                     </form>
-                    <div className={classes.view}>{isPopoverOpen && getView({ ...props })}</div>
+                    <div className={classes.view}>{isPopoverOpen && getView({ ...props }, this.state.recentQueries)}</div>
                 </Paper>
             </>;
         }
     }
 );
 
-const getView = (props: SearchBarViewProps) => {
+const getView = (props: SearchBarViewProps, recentQueries: string[]) => {
     switch (props.currentView) {
         case SearchView.AUTOCOMPLETE:
             return (
@@ -251,7 +256,8 @@ const getView = (props: SearchBarViewProps) => {
                 <SearchBarBasicView
                     onSetView={props.onSetView}
                     onSearch={props.onSearch}
-                    loadRecentQueries={props.loadRecentQueries}
+                    // loadRecentQueries={props.loadRecentQueries}
+                    recentQueries={recentQueries}
                     savedQueries={props.savedQueries}
                     deleteSavedQuery={props.deleteSavedQuery}
                     editSavedQuery={props.editSavedQuery}
