@@ -100,7 +100,13 @@ class _Downloader:
 def check_cached_url(api, project_uuid, url, etags,
                      utcnow=datetime.datetime.utcnow,
                      prefer_cached_downloads=False):
-    return generic_check_cached_url(api, _Downloader(api, boto3.client('s3')),
+
+    session = boto3.session.Session()
+    # creds = session.get_credentials()
+    # aws_access_key_id=creds.access_key, aws_secret_access_key=creds.secret_key
+    botoclient = session.client('s3')
+
+    return generic_check_cached_url(api, _Downloader(api, botoclient),
                             project_uuid, url, etags,
                             utcnow=utcnow,
                             prefer_cached_downloads=prefer_cached_downloads)
@@ -115,7 +121,9 @@ def s3_to_keep(api, project_uuid, url,
     reuse most of the HTTP downloading infrastucture.
     """
 
-    return url_to_keep(api, _Downloader(api, boto3.client('s3')),
+    botoclient = boto3.client('s3')
+
+    return url_to_keep(api, _Downloader(api, botoclient),
                        project_uuid, url,
                        utcnow=utcnow,
                        prefer_cached_downloads=prefer_cached_downloads)
