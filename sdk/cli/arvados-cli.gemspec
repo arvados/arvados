@@ -30,7 +30,7 @@ version = version.sub("~dev", ".dev").sub("~rc", ".rc")
 arv_dep_version = if dev_index = (version =~ /\.dev/)
                     "~> #{version[...dev_index]}.a"
                   else
-                    "== #{version}"
+                    "= #{version}"
                   end
 
 Gem::Specification.new do |s|
