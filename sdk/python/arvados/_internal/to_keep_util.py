@@ -156,3 +156,82 @@ def check_cached_url(api, downloader, project_uuid, url, etags,
     logger.debug("Found ETag values %s", etags)
 
     return CheckCacheResult(None, None, None, clean_url, now)
+
+def etag_quote(etag):
+    # if it already has leading and trailing quotes, do nothing
+    if etag[0] == '"' and etag[-1] == '"':
+        return etag
+    else:
+        # Add quotes.
+        return '"' + etag + '"'
+
+def url_to_keep(api, downloader, project_uuid, url,
+                 utcnow=datetime.datetime.utcnow, varying_url_params="",
+                 prefer_cached_downloads=False):
+    """Download a from a HTTP-like protocol and upload it to keep, with HTTP headers as metadata.
+
+    Before downloading the URL, checks to see if the URL already
+    exists in Keep and applies HTTP caching policy, the
+    varying_url_params and prefer_cached_downloads flags in order to
+    decide whether to use the version in Keep or re-download it.
+
+    This
+    """
+
+    etags = {}
+    cache_result = check_cached_url(api, downloader,
+                                    project_uuid, url, etags,
+                                    utcnow, varying_url_params,
+                                    prefer_cached_downloads)
+
+    if cache_result.portable_data_hash is not None:
+        return cache_result
+
+    clean_url = cache_result.clean_url
+    now = cache_result.now
+
+    properties = {}
+    headers = {}
+    if etags:
+        headers['If-None-Match'] = ', '.join([etag_quote(k) for k,v in etags.items()])
+    logger.debug("Sending GET request with headers %s", headers)
+
+    logger.info("Beginning download of %s", url)
+
+    req = downloader.download(url, headers)
+
+    c = downloader.collection
+
+    if req.status_code not in (200, 304):
+        raise Exception("Failed to download '%s' got status %s " % (url, req.status_code))
+
+    if downloader.target is not None:
+        downloader.target.close()
+
+    remember_headers(clean_url, properties, req.headers, now)
+
+    if req.status_code == 304 and "Etag" in req.headers and req.headers["Etag"] in etags:
+        item = etags[req.headers["Etag"]]
+        item["properties"].update(properties)
+        api.collections().update(uuid=item["uuid"], body={"collection":{"properties": item["properties"]}}).execute()
+        cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
+        return (item["portable_data_hash"], list(cr.keys())[0], item["uuid"], clean_url, now)
+
+    logger.info("Download complete")
+
+    collectionname = "Downloaded from %s" % urllib.parse.quote(clean_url, safe='')
+
+    # max length - space to add a timestamp used by ensure_unique_name
+    max_name_len = 254 - 28
+
+    if len(collectionname) > max_name_len:
+        over = len(collectionname) - max_name_len
+        split = int(max_name_len/2)
+        collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
+
+    c.save_new(name=collectionname, owner_uuid=project_uuid, ensure_unique_name=True)
+
+    api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
+
+    return CheckCacheResult(c.portable_data_hash(), downloader.name,
+                            c.manifest_locator(), clean_url, now)

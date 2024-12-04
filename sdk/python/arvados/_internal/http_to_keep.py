@@ -14,7 +14,7 @@ import arvados
 import arvados.collection
 import arvados._internal
 from .pycurl import PyCurlHelper
-from .to_keep_util import check_cached_url, remember_headers, Response, CheckCacheResult
+from .to_keep_util import (Response, url_to_keep, check_cached_url as generic_check_cached_url)
 
 logger = logging.getLogger('arvados.http_import')
 
@@ -156,13 +156,15 @@ class _Downloader(PyCurlHelper):
         self.checkpoint = loopnow
 
 
-def _etag_quote(etag):
-    # if it already has leading and trailing quotes, do nothing
-    if etag[0] == '"' and etag[-1] == '"':
-        return etag
-    else:
-        # Add quotes.
-        return '"' + etag + '"'
+def check_cached_url(api, project_uuid, url, etags,
+                     utcnow=datetime.datetime.utcnow,
+                     varying_url_params="",
+                     prefer_cached_downloads=False):
+    return generic_check_cached_url(api, _Downloader(api),
+                            project_uuid, url, etags,
+                            utcnow=utcnow,
+                            varying_url_params=varying_url_params,
+                            prefer_cached_downloads=prefer_cached_downloads)
 
 
 def http_to_keep(api, project_uuid, url,
@@ -176,61 +178,8 @@ def http_to_keep(api, project_uuid, url,
     decide whether to use the version in Keep or re-download it.
     """
 
-    etags = {}
-    curldownloader = _Downloader(api)
-    cache_result = check_cached_url(api, curldownloader,
-                                    project_uuid, url, etags,
-                                    utcnow, varying_url_params,
-                                    prefer_cached_downloads)
-
-    if cache_result.portable_data_hash is not None:
-        return cache_result
-
-    clean_url = cache_result.clean_url
-    now = cache_result.now
-
-    properties = {}
-    headers = {}
-    if etags:
-        headers['If-None-Match'] = ', '.join([_etag_quote(k) for k,v in etags.items()])
-    logger.debug("Sending GET request with headers %s", headers)
-
-    logger.info("Beginning download of %s", url)
-
-    req = curldownloader.download(url, headers)
-
-    c = curldownloader.collection
-
-    if req.status_code not in (200, 304):
-        raise Exception("Failed to download '%s' got status %s " % (url, req.status_code))
-
-    if curldownloader.target is not None:
-        curldownloader.target.close()
-
-    remember_headers(clean_url, properties, req.headers, now)
-
-    if req.status_code == 304 and "Etag" in req.headers and req.headers["Etag"] in etags:
-        item = etags[req.headers["Etag"]]
-        item["properties"].update(properties)
-        api.collections().update(uuid=item["uuid"], body={"collection":{"properties": item["properties"]}}).execute()
-        cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-        return (item["portable_data_hash"], list(cr.keys())[0], item["uuid"], clean_url, now)
-
-    logger.info("Download complete")
-
-    collectionname = "Downloaded from %s" % urllib.parse.quote(clean_url, safe='')
-
-    # max length - space to add a timestamp used by ensure_unique_name
-    max_name_len = 254 - 28
-
-    if len(collectionname) > max_name_len:
-        over = len(collectionname) - max_name_len
-        split = int(max_name_len/2)
-        collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
-
-    c.save_new(name=collectionname, owner_uuid=project_uuid, ensure_unique_name=True)
-
-    api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
-
-    return CheckCacheResult(c.portable_data_hash(), curldownloader.name,
-                            c.manifest_locator(), clean_url, now)
+    return url_to_keep(api, _Downloader(api),
+                       project_uuid, url,
+                       utcnow,
+                       varying_url_params,
+                       prefer_cached_downloads)
