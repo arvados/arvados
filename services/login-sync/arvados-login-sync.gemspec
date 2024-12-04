@@ -27,8 +27,8 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-login-sync'
-  s.version     = version
-  s.date        = git_timestamp.strftime("%Y-%m-%d")
+  s.version     = '3.0.0.1'
+  s.date        = '2024-12-04'
   s.summary     = "Set up local login accounts for Arvados users"
   s.description = "Creates and updates local login accounts for Arvados users. Built from git commit #{git_hash}"
   s.authors     = ["Arvados Authors"]
@@ -40,7 +40,7 @@ Gem::Specification.new do |s|
   # The minimum version's 'a' suffix is necessary to enable bundler
   # to consider 'pre-release' versions.  See:
   # https://github.com/rubygems/bundler/issues/4340
-  s.add_runtime_dependency 'arvados', '~> 2.8.a'
+  s.add_runtime_dependency 'arvados', '= 3.0.0'
   s.add_runtime_dependency 'launchy', '< 2.5'
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../../sdk/ruby-google-api-client/
