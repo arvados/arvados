@@ -20,8 +20,9 @@ import { FormGroup, FormLabel } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
+import { COLLECTION_CREATE_FORM_NAME } from 'store/collections/collection-create-actions';
 
-export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
+// export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
 type CssRules = 'propertiesForm';
 

@@ -160,7 +160,7 @@ addMenuActionSet(ContextMenuKind.FROZEN_MANAGEABLE_PROJECT, frozenManageableProj
 
 storeRedirects();
 
-export let store: RootStore;
+let store: RootStore;
 
 fetchConfig().then(({ config, apiHost }) => {
     const history = createBrowserHistory();
