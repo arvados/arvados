@@ -50,7 +50,7 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [localhost]=''
+  [localhost]='database,controller,monitoring,workbench2,webshell,keepproxy,keepweb,websocket,dispatcher,keepbalance,keepstore'
 )
 
 # HOSTNAME_EXT must be set to the address that users will use to

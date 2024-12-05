@@ -383,7 +383,7 @@ deploy)
 
     # Check if there are multiple controllers, they'll be comma-separated
     # in ROLE2NODES
-    if [[ ${ROLE2NODES['controller']} =~ , ]]; then
+    if [[ ${ROLE2NODES['controller']:-} =~ , ]]; then
       # If we have multiple controllers then there must be
       # load balancer. We want to do a rolling update, take
       # down each node at the load balancer before updating
@@ -403,8 +403,8 @@ deploy)
       done
     else
       # Only one controller, check if it wasn't already taken care of.
-      NODE=${ROLE2NODES['controller']}
-      if [[ ! -z "${NODES[$NODE]:-}" ]]; then
+      NODE=${ROLE2NODES['controller']:-}
+      if [[ -n "${NODE}" && ! -z "${NODES[$NODE]:-}" ]]; then
         deploynode $NODE "${NODES[$NODE]}" $BRANCH
         unset NODES[$NODE]
       fi
