@@ -27,7 +27,7 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-login-sync'
-  s.version     = '3.0.0.1'
+  s.version     = '3.0.0.2'
   s.date        = '2024-12-04'
   s.summary     = "Set up local login accounts for Arvados users"
   s.description = "Creates and updates local login accounts for Arvados users. Built from git commit #{git_hash}"

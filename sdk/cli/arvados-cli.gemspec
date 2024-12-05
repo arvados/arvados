@@ -27,7 +27,7 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-cli'
-  s.version     = '3.0.0.1'
+  s.version     = '3.0.0.2'
   s.date        = '2024-12-04'
   s.summary     = "Arvados CLI tools"
   s.description = "Arvados command line tools, git commit #{git_hash}"
