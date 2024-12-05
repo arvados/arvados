@@ -1,0 +1,96 @@
+#!/usr/bin/env ansible-playbook
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Load Arvados configuration
+  hosts: default
+  tasks:
+    - name: Load Arvados configuration file
+      delegate_to: localhost
+      ansible.builtin.include_vars:
+        name: arvados_config
+        file: "{{ arvados_config_file }}"
+    - name: Load Arvados cluster configuration
+      ansible.builtin.set_fact:
+        arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+      failed_when: arvados_cluster is undefined
+    - name: Get Crunch dispatch public key
+      when: arvados_cluster.Containers.DispatchPrivateKey is defined and arvados_cluster.Containers.DispatchPrivateKey is truthy
+      delegate_to: localhost
+      vars:
+        # Try to parse DispatchPrivateKey as a URL.
+        # If it's recognized as a file: URL, pass the path to `ssh-keygen -f`.
+        # Otherwise, expect it's private key content,
+        # and pass it through `ssh-keygen` stdin.
+        key_url: "{{ arvados_cluster.Containers.DispatchPrivateKey | urlsplit }}"
+      ansible.builtin.command:
+        argv: "{{ ['ssh-keygen', '-y'] + (['-f', key_url.path] if key_url.scheme == 'file' else []) }}"
+        stdin: "{{ arvados_cluster.Containers.DispatchPrivateKey if key_url.scheme != 'file' else '' }}"
+      register: compute_dispatch_ssh_keygen
+
+- name: Build compute node
+  # `default` is the name that the Packer Ansible plugin assigns to the
+  # instance used to create the image.
+  hosts: default
+  become: true
+  tasks:
+    - name: Bootstrap packages required for Ansible
+      ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
+      loop:
+        - update
+        - install gnupg python3-apt python3-debian xz-utils
+    - include_role:
+        name: distro_apt
+    - include_role:
+        name: arvados_apt
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
+    - name: Remove unwanted packages
+      ansible.builtin.apt:
+        state: absent
+        autoremove: true
+        purge: true
+        name:
+          - unattended-upgrades
+
+    - include_role:
+        name: compute_nvidia
+      when: "arvados_compute_nvidia|default(false)|bool"
+    - include_role:
+        name: "compute_{{ arvados_cluster.Containers.RuntimeEngine }}"
+    - include_role:
+        name: compute_encrypt_tmp
+    - include_role:
+        name: compute_user
+
+    - name: Install Arvados FUSE driver
+      ansible.builtin.apt:
+        name: python3-arvados-fuse
+    - name: Configure FUSE
+      ansible.builtin.lineinfile:
+        path: /etc/fuse.conf
+        regexp: "^[# ]*user_allow_other *$"
+        line: user_allow_other
+    - name: Configure locale
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
+        line: en_US.UTF-8 UTF-8
+      notify: locale-gen
+    - name: Configure DNS
+      ansible.builtin.lineinfile:
+        path: /etc/dhcp/dhclient.conf
+        regexp: "^[# ]*prepend +domain-name-servers "
+        line: "prepend domain-name-servers {{ dns_resolver }};"
+      when: dns_resolver is defined
+
+  handlers:
+    - name: apt update
+      ansible.builtin.debug:
+        msg: Skipping apt update handler before an apt upgrade
+        verbosity: 1
+    - name: locale-gen
+      ansible.builtin.command: locale-gen

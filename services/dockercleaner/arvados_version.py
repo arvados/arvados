@@ -115,7 +115,7 @@ def get_version(setup_dir=SETUP_DIR, module=MODULE_NAME):
         return read_version(setup_dir, module)
     else:
         version = git_version_at_commit()
-    version = version.replace("~dev", ".dev").replace("~rc", "rc")
+    version = version.replace("~dev", ".dev").replace("~rc", "rc").lstrip("development-")
     save_version(setup_dir, module, version)
     return version
 

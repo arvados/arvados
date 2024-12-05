@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+distro_apt:
+  Debian:
+    components:
+      - main
+      - contrib
+    mirror: http://deb.debian.org/debian
+    aws_mirror: http://cdn-aws.deb.debian.org/debian
+  Ubuntu:
+    components:
+      - main
+      - universe
+    mirror: http://archive.ubuntu.com/ubuntu
+    aws_mirror: http://cdn-aws.archive.ubuntu.com/ubuntu

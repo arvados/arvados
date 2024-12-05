@@ -1,0 +1,18 @@
+### This file is managed by Ansible ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Pin NVIDIA dependencies to tested and known-good versions
+
+Package: cuda
+Pin: version 12.5.*
+Pin-Priority: 995
+
+Package: src:libnvidia-container src:nvidia-container-toolkit
+Pin: version 1.16.*
+Pin-Priority: 995
+
+Package: cuda-drivers src:nvidia-graphics-drivers
+Pin: version 560.*
+Pin-Priority: 995

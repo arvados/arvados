@@ -1,0 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_apt_url: "https://apt.arvados.org"
+arvados_apt_suites: "{{ ansible_distribution_release }}"
+arvados_pin_version: "3.0.0"

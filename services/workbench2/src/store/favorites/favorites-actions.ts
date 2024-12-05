@@ -10,9 +10,9 @@ import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set"; 
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
-import { loadFavoritesTree} from "store/side-panel-tree/side-panel-tree-actions";
+import { SidePanelTreeCategory, loadSidePanelTreeProjects} from "store/side-panel-tree/side-panel-tree-actions";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -56,7 +56,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                 }));
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_FAVORITES))
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
-                dispatch<any>(loadFavoritesTree())
+                dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
             })
             .catch((e: any) => {
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));

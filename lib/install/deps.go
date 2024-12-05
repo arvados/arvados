@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -57,6 +58,7 @@ type installCommand struct {
 	SingularityVersion string
 	NodejsVersion      string
 	EatMyData          bool
+	UserAccount        string
 }
 
 func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -84,6 +86,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.SingularityVersion, "singularity-version", defaultSingularityVersion, "Singularity `version` to install (do not override in production mode)")
 	flags.StringVar(&inst.NodejsVersion, "nodejs-version", defaultNodejsVersion, "Nodejs `version` to install (not applicable in production mode)")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
+	flags.StringVar(&inst.UserAccount, "user-account", "", "Account to add to the docker group so it can run the test suite (not applicable in production mode)")
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
@@ -316,6 +319,34 @@ fi
 		if err != nil {
 			err = fmt.Errorf("couldn't set fs.inotify.max_user_watches value. (Is this a docker container? Fix this on the docker host by adding fs.inotify.max_user_watches=524288 to /etc/sysctl.conf and running `sysctl -p`)")
 			return 1
+		}
+
+		if inst.UserAccount != "" {
+			dockergroup, err2 := user.LookupGroup("docker")
+			if err2 != nil {
+				err = fmt.Errorf("docker group lookup failed: %w", err2)
+				return 1
+			}
+			user, err2 := user.Lookup(inst.UserAccount)
+			if err2 != nil {
+				err = fmt.Errorf("user lookup failed: %q: %w", inst.UserAccount, err2)
+				return 1
+			}
+			gids, err2 := user.GroupIds()
+			if err2 != nil {
+				err = fmt.Errorf("group lookup for user %q failed: %w", inst.UserAccount, err2)
+				return 1
+			}
+			if slices.Index(gids, dockergroup.Gid) >= 0 {
+				logger.Printf("user %s (%s) is already a member of the docker group (%s)", inst.UserAccount, user.Uid, dockergroup.Gid)
+			} else {
+				logger.Printf("adding user %s (%s) to the docker group (%s)", inst.UserAccount, user.Uid, dockergroup.Gid)
+				out, err2 := exec.Command("adduser", inst.UserAccount, "docker").CombinedOutput()
+				if err2 != nil {
+					err = fmt.Errorf("error adding user %q to docker group: %w, %q", inst.UserAccount, err2, out)
+					return 1
+				}
+			}
 		}
 	}
 

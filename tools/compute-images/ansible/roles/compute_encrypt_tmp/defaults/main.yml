@@ -1,0 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_compute_encrypted_tmp: "{{ 'aws_ebs' if ansible_system_vendor == 'Amazon EC2' else '' }}"
+aws_ebs_autoscale_url: "https://github.com/arvados/amazon-ebs-autoscale.git"
+aws_ebs_autoscale_version: "ee323f0751c2b6f733692e805b51b9bf3c251bac"
