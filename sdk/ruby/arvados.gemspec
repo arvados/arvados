@@ -27,7 +27,7 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados'
-  s.version     = version
+  s.version     = '3.0.0'
   s.date        = git_timestamp.strftime("%Y-%m-%d")
   s.summary     = "Arvados client library"
   s.description = "Arvados client library, git commit #{git_hash}"
