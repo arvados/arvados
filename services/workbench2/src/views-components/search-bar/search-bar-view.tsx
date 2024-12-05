@@ -152,6 +152,10 @@ export const SearchBarView = compose(
             this.props.onSearch(this.props.searchValue);
         }, 1000);
 
+        handleFocus = (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            this.setState({ recentQueries: this.props.loadRecentQueries()});
+        };
+
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
             this.debouncedSearch();
             this.props.onChange(event);
@@ -160,6 +164,7 @@ export const SearchBarView = compose(
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
             this.debouncedSearch.clear();
             this.props.onSubmit(event);
+            this.setState({ recentQueries: this.props.loadRecentQueries()});
         };
 
         componentDidMount(): void {
@@ -175,9 +180,6 @@ export const SearchBarView = compose(
             if(prevState.loggedInSessions.length !== this.state.loggedInSessions.length){
                 const newLogin = this.state.loggedInSessions.filter((ss) => !prevState.loggedInSessions.includes(ss));
                 this.props.searchSingleCluster(newLogin[0], this.props.searchValue);
-            }
-            if(this.props.isPopoverOpen === true && prevProps.isPopoverOpen === false){
-                this.setState({ recentQueries: this.props.loadRecentQueries()});
             }
         }
 
@@ -205,6 +207,7 @@ export const SearchBarView = compose(
                             disableUnderline={true}
                             onClick={e => handleInputClick(e, props)}
                             onKeyDown={e => handleKeyDown(e, props)}
+                            onFocus={e => this.handleFocus(e)}
                             startAdornment={
                                 <InputAdornment position="start">
                                     <Tooltip title="Search">
