@@ -64,7 +64,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: (resource: ProjectResource) => <RenderName resource={resource} />,
     },
     {
         name: ProjectPanelRunColumnNames.STATUS,

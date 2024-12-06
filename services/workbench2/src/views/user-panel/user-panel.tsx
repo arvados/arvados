@@ -60,7 +60,7 @@ export const userPanelColumns: DataColumns<string, UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: (resource) => <RenderFullName resource={resource} link={true} />
+        render: (resource: UserResource) => <RenderFullName resource={resource} />
     },
     {
         name: UserPanelColumnNames.UUID,

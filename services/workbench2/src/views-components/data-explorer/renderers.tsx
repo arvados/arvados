@@ -65,9 +65,6 @@ import { PermissionResource } from 'models/permission';
 import { ContainerRequestResource } from 'models/container-request';
 import { toggleTrashed } from "store/trash/trash-actions";
 
-// A generic wrapper for renderers that need to dispatch actions
-const dispatchWrapper = (component: React.ComponentType<any>) => connect()(component);
-
 // utility renderers ---------------------------------------------------------------------------------
 
 export const renderString = (str: string) => <Typography noWrap>{str || '-'}</Typography>;
@@ -120,7 +117,7 @@ export const renderResourceStatus = (resource: GroupContentsResource) => {
     return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus collection={resource} /> : <ProcessStatus uuid={resource.uuid} />;
 }
 
-const renderIcon = (item: GroupContentsResource) => {
+const renderIcon = (item: GroupContentsResource  | GroupResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
             if (item.groupClass === GroupClass.FILTER) {
@@ -167,7 +164,8 @@ const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string, dispa
     );
 };
 
-export const RenderName = dispatchWrapper((props: { resource: GroupContentsResource, dispatch: Dispatch }) => {
+export const RenderName = connect((resource: GroupContentsResource | GroupResource) => resource)(
+    (props: { resource: GroupContentsResource | GroupResource } & DispatchProp<any>) => {
     const { resource, dispatch } = props;
     const navFunc = "groupClass" in resource && resource.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
@@ -195,7 +193,7 @@ export const RenderName = dispatchWrapper((props: { resource: GroupContentsResou
                 <Typography variant="caption">
                     <FavoriteStar resourceUuid={resource.uuid} />
                     <PublicFavoriteStar resourceUuid={resource.uuid} />
-                    {resource.kind === ResourceKind.PROJECT && <FrozenProject item={resource} />}
+                    {resource.kind === ResourceKind.PROJECT && <FrozenProject item={resource as ProjectResource} />}
                 </Typography>
             </Grid>
         </Grid>
@@ -255,10 +253,10 @@ export const renderUsername = (item: { username: string; uuid: string }) => <Typ
 
 export const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
 
-export const RenderFullName = dispatchWrapper((props: { resource: UserResource, link?: boolean, dispatch: Dispatch }) => {
-    const { resource, link, dispatch } = props;
+export const RenderFullName = connect((resource: UserResource) => resource)((props: { resource: UserResource} & DispatchProp<any>) => {
+    const { resource, dispatch } = props;
     const displayName = (resource.firstName + " " + resource.lastName).trim() || resource.uuid;
-    return link ? (
+    return (
         <Typography
             noWrap
             color="primary"
@@ -267,9 +265,7 @@ export const RenderFullName = dispatchWrapper((props: { resource: UserResource, 
         >
             {displayName}
         </Typography>
-    ) : (
-        <Typography noWrap>{displayName}</Typography>
-    );
+    )
 });
 
 enum UserAccountStatus {
@@ -695,12 +691,13 @@ export const renderWorkflowName = (item: WorkflowResource) => (
     </Grid>
 );
 
-export const ResourceRunProcess = dispatchWrapper((uuid: string, dispatch: Dispatch) => {
+export const ResourceRunProcess = connect((uuid: string) => uuid)((props: { uuid:string } & DispatchProp<any>) => {
+    const { uuid } = props;
     return (
         <div>
             {uuid && (
                 <Tooltip title="Run process">
-                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid ?? ''))} size="large">
+                    <IconButton onClick={() => props.dispatch<any>(openRunProcess(uuid ?? ''))} size="large">
                         <ProcessIcon />
                     </IconButton>
                 </Tooltip>
@@ -977,7 +974,8 @@ export const renderMembersCount = (resource: GroupResource) => {
 };
 
 // Trash renderers ---------------------------------------------------------------------------------
-export const RestoreFromTrash = dispatchWrapper((props: {resource: TrashableResource, dispatch: Dispatch}) => { 
+export const RestoreFromTrash = connect((resource: TrashableResource)=> resource)(
+    (props: {resource: TrashableResource} & DispatchProp<any>) => {
     const { resource, dispatch } = props;
     return (
         <Tooltip title="Restore">

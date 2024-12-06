@@ -61,7 +61,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: (resource: ProjectResource | CollectionResource) => <RenderName resource={resource} />,
     },
     {
         name: SharedWithMePanelColumnNames.STATUS,

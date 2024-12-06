@@ -71,7 +71,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: (resource: CollectionResource) => <RenderName resource={resource} />,
     },
     {
         name: TrashPanelColumnNames.TYPE,

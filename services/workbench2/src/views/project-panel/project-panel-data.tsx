@@ -56,7 +56,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource | Coll
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource)=> <RenderName resource={resource} />,
+        render: (resource: ProjectResource)=> <RenderName resource={resource} />,
     },
     {
         name: ProjectPanelDataColumnNames.TYPE,

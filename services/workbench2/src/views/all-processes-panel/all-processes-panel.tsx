@@ -69,7 +69,7 @@ export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResou
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: (resource: ContainerRequestResource) => <RenderName resource={resource} />,
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,
