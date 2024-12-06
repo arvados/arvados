@@ -49,7 +49,7 @@ export enum ProjectPanelDataColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelDataColumns: DataColumns<string, ProjectResource | CollectionResource> = [
+export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
     {
         name: ProjectPanelDataColumnNames.NAME,
         selected: true,
@@ -112,7 +112,7 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource | Coll
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: CollectionResource) => renderVersion(resource),
+        render: (resource: ProjectResource) => renderVersion(resource),
     },
     {
         name: ProjectPanelDataColumnNames.CREATED_AT,

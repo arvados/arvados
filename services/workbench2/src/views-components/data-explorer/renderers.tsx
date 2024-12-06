@@ -791,17 +791,21 @@ export const renderDeleteDate = (resource: TrashableResource) => {
     return renderDate(resource.deleteAt);
 }
 
-export const renderFileSize = (resource: GroupContentsResource & { fileSizeTotal?: number }) => (
+export const renderFileSize = (resource: GroupContentsResource) => (
     <Typography
         noWrap
         style={{ minWidth: "45px" }}
     >
-        {formatFileSize(resource.fileSizeTotal)}
+        {formatFileSize('fileSizeTotal' in resource ? resource.fileSizeTotal : undefined)}
     </Typography>
 );
 
-export const renderVersion = (resource: CollectionResource) => {
-    return <Typography>{resource.version ?? "-"}</Typography>;
+export const renderFileCount = (resource: GroupContentsResource) => {
+    return <Typography>{'fileCount' in resource ? resource.fileCount : "-"}</Typography>;
+};
+
+export const renderVersion = (resource: GroupContentsResource) => {
+    return <Typography>{'version' in resource ? resource.version : "-"}</Typography>; 
 };
 
 export const renderPortableDataHash = (resource: GroupContentsResource) => (
@@ -816,10 +820,6 @@ export const renderPortableDataHash = (resource: GroupContentsResource) => (
         )}
     </Typography>
 );
-
-export const renderFileCount = (resource: GroupContentsResource & { fileCount?: number }) => {
-    return <Typography>{resource.fileCount ?? "-"}</Typography>;
-};
 
 const userFromID = connect((state: RootState, props: { uuid: string }) => {
     let userFullname = "";
