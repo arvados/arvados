@@ -32,7 +32,7 @@ gem 'jquery-rails'
 
 gem 'acts_as_api'
 
-gem 'passenger'
+gem 'passenger', '~> 6.0.0'
 
 # Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
 gem 'minitest', '5.10.3'
