@@ -76,7 +76,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: true,
         configurable: true,
         filters: getInitialResourceTypeFilters(),
-        render: (resource) => renderType(resource as ProjectResource),
+        render: (resource: ProjectResource) => renderType(resource),
     },
     {
         name: SharedWithMePanelColumnNames.OWNER,
@@ -90,7 +90,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | Col
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderPortableDataHash(resource as ProjectResource),
+        render: (resource: ProjectResource) => renderPortableDataHash(resource),
     },
     {
         name: SharedWithMePanelColumnNames.FILE_SIZE,

@@ -974,7 +974,7 @@ export const renderMembersCount = (resource: GroupResource) => {
 };
 
 // Trash renderers ---------------------------------------------------------------------------------
-export const RestoreFromTrash = connect((resource: TrashableResource)=> resource)(
+export const RestoreFromTrash = connect((resource: TrashableResource | CollectionResource)=> resource)(
     (props: {resource: TrashableResource} & DispatchProp<any>) => {
     const { resource, dispatch } = props;
     return (

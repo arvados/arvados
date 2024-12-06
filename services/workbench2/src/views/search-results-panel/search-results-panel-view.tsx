@@ -72,14 +72,14 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <RenderName resource={resource as GroupContentsResource} />,
+        render: (resource: GroupContentsResource) => <RenderName resource={resource} />,
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => renderResourceStatus(resource as GroupContentsResource),
+        render: (resource: GroupContentsResource) => renderResourceStatus(resource),
     },
     {
         name: SearchResultsPanelColumnNames.TYPE,

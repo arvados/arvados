@@ -109,7 +109,7 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: CollectionResource) => <RestoreFromTrash resource={resource  as TrashableResource} />
+        render: (resource: CollectionResource) => <RestoreFromTrash resource={resource} />
     }
 ];
 
