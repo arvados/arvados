@@ -48,7 +48,7 @@ export interface WorkflowProcessesPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource> = [
+export const workflowProcessesPanelColumns: DataColumns<ProcessResource> = [
     {
         name: WorkflowProcessesPanelColumnNames.NAME,
         selected: true,

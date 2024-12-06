@@ -54,7 +54,7 @@ export enum SharedWithMePanelColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const sharedWithMePanelColumns: DataColumns<string, ProjectResource | CollectionResource> = [
+export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionResource> = [
     {
         name: SharedWithMePanelColumnNames.NAME,
         selected: true,

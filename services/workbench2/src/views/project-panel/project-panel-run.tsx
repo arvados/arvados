@@ -57,7 +57,7 @@ export enum ProjectPanelRunColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
+export const projectPanelRunColumns: DataColumns<ProjectResource> = [
     {
         name: ProjectPanelRunColumnNames.NAME,
         selected: true,

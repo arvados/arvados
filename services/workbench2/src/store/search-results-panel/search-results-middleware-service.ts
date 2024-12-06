@@ -175,7 +175,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
         dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
     }
 
-const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));
+const typeFilters = (columns: DataColumns<GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));
 
 export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
     ...dataExplorerToListParams(dataExplorer),

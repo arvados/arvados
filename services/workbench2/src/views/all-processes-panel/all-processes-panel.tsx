@@ -62,7 +62,7 @@ export interface AllProcessesPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResource> = [
+export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
     {
         name: AllProcessesPanelColumnNames.NAME,
         selected: true,

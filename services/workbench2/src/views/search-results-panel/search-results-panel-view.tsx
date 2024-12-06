@@ -58,7 +58,7 @@ export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const searchResultsPanelColumns: DataColumns<string, GroupContentsResource> = [
+export const searchResultsPanelColumns: DataColumns<GroupContentsResource> = [
     {
         name: SearchResultsPanelColumnNames.CLUSTER,
         selected: true,

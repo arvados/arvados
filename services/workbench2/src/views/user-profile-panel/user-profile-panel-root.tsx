@@ -131,7 +131,7 @@ enum TABS {
 
 }
 
-export const userProfileGroupsColumns: DataColumns<string, PermissionResource> = [
+export const userProfileGroupsColumns: DataColumns<PermissionResource> = [
     {
         name: UserProfileGroupsColumnNames.NAME,
         selected: true,

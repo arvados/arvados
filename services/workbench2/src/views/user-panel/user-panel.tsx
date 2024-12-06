@@ -53,7 +53,7 @@ export enum UserPanelColumnNames {
     USERNAME = "Username"
 }
 
-export const userPanelColumns: DataColumns<string, UserResource> = [
+export const userPanelColumns: DataColumns<UserResource> = [
     {
         name: UserPanelColumnNames.NAME,
         selected: true,

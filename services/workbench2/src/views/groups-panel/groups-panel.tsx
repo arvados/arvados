@@ -39,7 +39,7 @@ export enum GroupsPanelColumnNames {
     MEMBERS = "Members",
 }
 
-export const groupsPanelColumns: DataColumns<string, GroupResource> = [
+export const groupsPanelColumns: DataColumns<GroupResource> = [
     {
         name: GroupsPanelColumnNames.GROUP,
         selected: true,

@@ -40,7 +40,7 @@ export enum ApiClientAuthorizationPanelColumnNames {
     USER_ID = 'User ID'
 }
 
-export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAuthorization> = [
+export const apiClientAuthorizationPanelColumns: DataColumns<ApiClientAuthorization> = [
     {
         name: ApiClientAuthorizationPanelColumnNames.UUID,
         selected: true,

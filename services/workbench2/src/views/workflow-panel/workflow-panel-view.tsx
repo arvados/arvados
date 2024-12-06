@@ -62,7 +62,7 @@ export enum ResourceStatus {
 //     }
 // };
 
-export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
+export const workflowPanelColumns: DataColumns<WorkflowResource> = [
     {
         name: WorkflowPanelColumnNames.NAME,
         selected: true,

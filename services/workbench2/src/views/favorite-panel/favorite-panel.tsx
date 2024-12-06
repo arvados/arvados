@@ -70,7 +70,7 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = [
+export const favoritePanelColumns: DataColumns<GroupContentsResource> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,

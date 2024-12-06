@@ -141,7 +141,7 @@ const getCountParams = (dataExplorer: DataExplorer, projectUuid: string, isProje
 });
 
 export const getFilters = (dataExplorer: DataExplorer, projectUuid: string) => {
-    const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
+    const columns = dataExplorer.columns as DataColumns<ProjectResource>;
     const typeFilters = serializeProcessTypeGroupContentsFilters(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.STATUS);
     const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);

@@ -34,15 +34,15 @@ export enum DataTableFetchMode {
     INFINITE,
 }
 
-export interface DataTableDataProps<I> {
-    items: I[];
-    columns: DataColumns<I, any>;
-    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: I) => void;
-    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
-    onSortToggle: (column: DataColumn<I, any>) => void;
-    onFiltersChange: (filters: DataTableFilters, column: DataColumn<I, any>) => void;
-    extractKey?: (item: I) => React.Key;
+export interface DataTableDataProps<T> {
+    items: T[];
+    columns: DataColumns<any>;
+    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
+    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onSortToggle: (column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
+    extractKey?: (item: T) => React.Key;
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
@@ -224,7 +224,7 @@ export const DataTable = withStyles(styles)(
             this.initializeCheckedList([]);
         }
 
-        checkBoxColumn: DataColumn<any, HTMLDivElement> = {
+        checkBoxColumn: DataColumn<any> = {
             name: "checkBoxColumn",
             selected: true,
             configurable: false,
@@ -359,7 +359,7 @@ export const DataTable = withStyles(styles)(
             );
         }
 
-        renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
+        renderNoItemsPlaceholder = (columns: DataColumns<T>) => {
             const { isLoaded } = this.state;
             const { working, isNotFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
@@ -391,7 +391,7 @@ export const DataTable = withStyles(styles)(
             }
         };
 
-        renderHeadCell = (column: DataColumn<T, any>, index: number) => {
+        renderHeadCell = (column: DataColumn<T>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes, checkedList } = this.props;
             const { isSelected } = this.state;
@@ -498,7 +498,7 @@ export const DataTable = withStyles(styles)(
             );
         };
 
-        mapVisibleColumns = (fn: (column: DataColumn<T, any>, index: number) => React.ReactElement<any>) => {
+        mapVisibleColumns = (fn: (column: DataColumn<T>, index: number) => React.ReactElement<any>) => {
             return this.props.columns.filter(column => column.selected).map(fn);
         };
 

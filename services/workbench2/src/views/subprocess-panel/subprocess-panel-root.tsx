@@ -50,7 +50,7 @@ export interface SubprocessPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
+export const subprocessPanelColumns: DataColumns<ProcessResource> = [
     {
         name: SubprocessPanelColumnNames.NAME,
         selected: true,

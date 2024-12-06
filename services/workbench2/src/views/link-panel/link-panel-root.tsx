@@ -35,7 +35,7 @@ export enum LinkPanelColumnNames {
     UUID = "UUID"
 }
 
-export const linkPanelColumns: DataColumns<string, LinkResource> = [
+export const linkPanelColumns: DataColumns<LinkResource> = [
     {
         name: LinkPanelColumnNames.NAME,
         selected: true,

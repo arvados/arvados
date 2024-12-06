@@ -25,7 +25,7 @@ export class AllProcessesPanelMiddlewareService extends ProcessesMiddlewareServi
     getFilters(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): string | null {
         const sup = super.getFilters(api, dataExplorer);
         if (sup === null) { return null; }
-        const columns = dataExplorer.columns as DataColumns<string, ContainerRequestResource>;
+        const columns = dataExplorer.columns as DataColumns<ContainerRequestResource>;
 
         const typeFilters = serializeOnlyProcessTypeFilters(true)(getDataExplorerColumnFilters(columns, AllProcessesPanelColumnNames.TYPE));
         return joinFilters(sup, typeFilters);

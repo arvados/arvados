@@ -55,7 +55,7 @@ export enum GroupDetailsPanelPermissionsColumnNames {
 const MEMBERS_DEFAULT_MESSAGE = 'Members list is empty.';
 const PERMISSIONS_DEFAULT_MESSAGE = 'Permissions list is empty.';
 
-export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionResource> = [
+export const groupDetailsMembersPanelColumns: DataColumns<PermissionResource> = [
     {
         name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
         selected: true,
@@ -100,7 +100,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionReso
     },
 ];
 
-export const groupDetailsPermissionsPanelColumns: DataColumns<string, PermissionResource> = [
+export const groupDetailsPermissionsPanelColumns: DataColumns<PermissionResource> = [
     {
         name: GroupDetailsPanelPermissionsColumnNames.NAME,
         selected: true,

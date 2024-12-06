@@ -64,7 +64,7 @@ export interface TrashPanelFilter extends DataTableFilterItem {
     type: ResourceKind;
 }
 
-export const trashPanelColumns: DataColumns<string, CollectionResource> = [
+export const trashPanelColumns: DataColumns<CollectionResource> = [
     {
         name: TrashPanelColumnNames.NAME,
         selected: true,

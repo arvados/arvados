@@ -48,7 +48,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
 
 const mapDispatchToProps = () => {
     return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
-        onSetColumns: (columns: DataColumns<any, any>) => {
+        onSetColumns: (columns: DataColumns<any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
         },
 
@@ -56,15 +56,15 @@ const mapDispatchToProps = () => {
             dispatch(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id, searchValue }));
         },
 
-        onColumnToggle: (column: DataColumn<any, any>) => {
+        onColumnToggle: (column: DataColumn<any>) => {
             dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
         },
 
-        onSortToggle: (column: DataColumn<any, any>) => {
+        onSortToggle: (column: DataColumn<any>) => {
             dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
         },
 
-        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any, any>) => {
+        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any>) => {
             dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
         },
 

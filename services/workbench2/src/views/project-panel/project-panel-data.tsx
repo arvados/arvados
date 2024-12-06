@@ -9,7 +9,6 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { ProjectResource } from 'models/project';
 import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
-import { CollectionResource } from "models/collection";
 import {
     RenderName,
     renderType,
@@ -49,7 +48,7 @@ export enum ProjectPanelDataColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
+export const projectPanelDataColumns: DataColumns<ProjectResource> = [
     {
         name: ProjectPanelDataColumnNames.NAME,
         selected: true,

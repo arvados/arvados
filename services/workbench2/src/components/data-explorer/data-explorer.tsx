@@ -157,7 +157,7 @@ interface DataExplorerDataProps<T> {
     resourceItems: T[];
     itemsAvailable: number;
     loadingItemsAvailable: boolean;
-    columns: DataColumns<T, any>;
+    columns: DataColumns<T>;
     searchLabel?: string;
     searchValue: string;
     rowsPerPage: number;
@@ -187,14 +187,14 @@ interface DataExplorerDataProps<T> {
 }
 
 interface DataExplorerActionProps<T> {
-    onSetColumns: (columns: DataColumns<T, any>) => void;
+    onSetColumns: (columns: DataColumns<T>) => void;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onRowDoubleClick: (item: T) => void;
-    onColumnToggle: (column: DataColumn<T, any>) => void;
+    onColumnToggle: (column: DataColumn<T>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
-    onSortToggle: (column: DataColumn<T, any>) => void;
-    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T, any>) => void;
+    onSortToggle: (column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
     onPageChange: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
@@ -518,7 +518,7 @@ export const DataExplorer = withStyles(styles)(
             </Grid>
         );
 
-        contextMenuColumn: DataColumn<any, any> = {
+        contextMenuColumn: DataColumn<T> = {
             name: "Actions",
             selected: true,
             configurable: false,

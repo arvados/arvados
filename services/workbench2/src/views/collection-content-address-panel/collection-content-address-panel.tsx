@@ -64,7 +64,7 @@ enum CollectionContentAddressPanelColumnNames {
     LAST_MODIFIED = "Last modified"
 }
 
-export const collectionContentAddressPanelColumns: DataColumns<string, CollectionResource> = [
+export const collectionContentAddressPanelColumns: DataColumns<CollectionResource> = [
     {
         name: CollectionContentAddressPanelColumnNames.COLLECTION_WITH_THIS_ADDRESS,
         selected: true,
