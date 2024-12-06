@@ -1,0 +1,66 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+[Unit]
+Description=Arvados API server Rails backend
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/config.yml
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+# It would be nicer to write a Type=simple process, but then Passenger
+# duplicates a lot of logs to stdout.
+Type=forking
+PIDFile=%t/%N/passenger.pid
+EnvironmentFile=-/etc/arvados/environment
+# Passenger web server settings come from (highest precedence first):
+# 1. Command line options
+# 2. PASSENGER_* environment variables
+# 3. /var/www/arvados-api/current/Passengerfile.json
+# You can change or add settings for this unit by running
+# `systemctl edit arvados-railsapi.service`.
+# Refer to the Passenger standalone configuration reference at
+# <https://www.phusionpassenger.com/library/config/standalone/reference>
+# for more information about options.
+Environment=PASSENGER_ADDRESS=localhost
+Environment=PASSENGER_ENVIRONMENT=production
+Environment=PASSENGER_LOG_FILE=log/production.log
+Environment=PASSENGER_PORT=8004
+WorkingDirectory=/var/www/arvados-api/current
+ExecStartPre=+/bin/install -d log tmp
+ExecStartPre=+/bin/chmod g+srwx log tmp
+ExecStartPre=+-/bin/chmod g+rw ${PASSENGER_LOG_FILE}
+# Note that `bundle exec` lines should have overrides from the package that
+# use specific versions of `bundle` and `passenger`.
+ExecStart=/usr/bin/bundle exec passenger start --daemonize --pid-file %t/%N/passenger.pid
+ExecStop=/usr/bin/bundle exec passenger stop --pid-file %t/%N/passenger.pid
+ExecReload=/usr/bin/bundle exec passenger-config reopen-logs
+Restart=always
+RestartSec=1
+
+ReadWritePaths=/var/www/arvados-api/current/log
+ReadWritePaths=/var/www/arvados-api/current/tmp
+ReadWritePaths=/var/www/arvados-api/shared/log
+RuntimeDirectory=%N
+
+DynamicUser=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectSystem=strict
+
+LockPersonality=true
+NoNewPrivileges=true
+MemoryDenyWriteExecute=true
+PrivateDevices=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallFilter=@system-service
