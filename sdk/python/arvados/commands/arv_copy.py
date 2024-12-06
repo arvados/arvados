@@ -112,7 +112,7 @@ If not provided, will use the default client configuration from the environment 
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the collection or workflow should be copied.')
     copy_opts.add_argument(
-        '--storage-classes', dest='storage_classes',
+        '--storage-classes', dest='storage_classes', default="",
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
     copy_opts.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
@@ -131,8 +131,7 @@ If not provided, will use the default client configuration from the environment 
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
-    if args.storage_classes:
-        args.storage_classes = [x for x in args.storage_classes.strip().replace(' ', '').split(',') if x]
+    args.storage_classes = arvados.util.csv_to_list(args.storage_classes)
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -870,7 +869,8 @@ def uuid_type(api, object_uuid):
 def copy_from_http(url, src, dst, args):
 
     project_uuid = args.project_uuid
-    varying_url_params = args.varying_url_params
+    # Ensure string of varying parameters is well-formed
+    varying_url_params = ",".join(arvados.util.csv_to_list(args.varying_url_params))
     prefer_cached_downloads = args.prefer_cached_downloads
 
     cached = http_to_keep.check_cached_url(src, project_uuid, url, {},
