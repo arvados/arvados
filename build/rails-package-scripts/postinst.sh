@@ -197,8 +197,7 @@ configure_version() {
       return 1
   fi
   "$BUNDLE" exec "$passenger-config" build-native-support
-  "$BUNDLE" exec "$passenger-config" install-agent
-  "$BUNDLE" exec "$passenger-config" install-standalone-runtime
+  "$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
 
   echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
   setup_confdirs /etc/arvados "$CONFIG_PATH"
