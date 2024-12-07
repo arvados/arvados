@@ -35,20 +35,6 @@ systemd_quote() {
     echo "$1" | sed -re 's/[\\"]/\\\0/g; s/^/"/; s/$/"/'
 }
 
-report_web_service_warning() {
-    local warning="$1"; shift
-    cat >&2 <<EOF
-
-WARNING: $warning.
-
-To override, set the WEB_SERVICE environment variable to the name of the service
-hosting the Rails server.
-
-After you do that, resume $PACKAGE_NAME setup by running:
-  $RESETUP_CMD
-EOF
-}
-
 run_and_report() {
     # Usage: run_and_report ACTION_MSG CMD
     # This is the usual wrapper that prints ACTION_MSG, runs CMD, then writes
@@ -140,14 +126,6 @@ prepare_database() {
 }
 
 configure_version() {
-  if [ -n "$WEB_SERVICE" ]; then
-    :
-  elif command -v nginx >/dev/null 2>&1; then
-    WEB_SERVICE=nginx
-  else
-    report_web_service_warning "Web service (nginx) not found"
-  fi
-
   case "$DISTRO_FAMILY" in
       debian) WWW_OWNER=www-data ;;
       rhel) WWW_OWNER="$(id --group --name nginx || true)" ;;
