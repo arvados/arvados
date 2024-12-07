@@ -42,6 +42,7 @@ case "$TARGET" in
             zlib1g-dev
             # Passenger runtime dependencies
             libnsl2
+            libnss-systemd
         )
         ;;
 esac
