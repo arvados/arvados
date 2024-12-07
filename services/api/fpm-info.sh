@@ -10,6 +10,7 @@ fpm_depends+=(
     # Postinst script dependencies
     diffutils
     # Passenger dependencies
+    curl
     procps
     # Dependencies of our API server code
     "git >= 1.7.10"
