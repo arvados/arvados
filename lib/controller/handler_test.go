@@ -226,7 +226,10 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	s.railsSpy.Director = func(req *http.Request) {
 		<-holdReqs
 		if wantError {
-			req.Method = "MAKE-COFFEE"
+			// The Passenger server hosting RailsAPI will drop HTTP requests
+			// unrecognized names. Make a request with a real method that
+			// RailsAPI doesn't implement.
+			req.Method = "TRACE"
 		} else if wantBadContent {
 			req.URL.Path = "/_health/ping"
 			req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
