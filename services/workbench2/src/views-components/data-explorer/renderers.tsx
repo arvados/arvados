@@ -776,11 +776,9 @@ export const renderResourceParentProcess = (resource: GroupContentsResource) => 
     return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidWithCopy({ uuid: (resource as ContainerRequestResource).requestingContainerUuid || "" }) : <>-</>;
 }
 
-export const renderModifiedByUserUuid = (resource: GroupContentsResource & {containerRequest?: any}) => {
-    const modifiedByUserUuid = resource.containerRequest ? resource.containerRequest.modifiedByUserUuid : resource.modifiedByUserUuid;
-    return renderUuidWithCopy({uuid:modifiedByUserUuid});
+export const renderModifiedByUserUuid = (resource: GroupContentsResource) => {
+    return renderUuidWithCopy({uuid: resource.modifiedByUserUuid});
 }
-
 
 // Collection renderers ---------------------------------------------------------------------------------
 export const renderTrashDate = (resource: TrashableResource) => {
