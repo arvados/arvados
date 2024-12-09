@@ -9,17 +9,18 @@ import { WorkflowPanelView } from 'views/workflow-panel/workflow-panel-view';
 import { WorfklowPanelActionProps, WorkflowPanelDataProps } from './workflow-panel-view';
 import { showWorkflowDetails, getWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
 import { RootState } from 'store/store';
+import { WorkflowResource } from 'models/workflow';
 
 const mapStateToProps = (state: RootState): WorkflowPanelDataProps => ({
     workflow: getWorkflowDetails(state)
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): WorfklowPanelActionProps => ({
-    handleRowDoubleClick: (uuid: string) => {
+    handleRowDoubleClick: ({uuid}: WorkflowResource) => {
         dispatch<any>(navigateTo(uuid));
     },
 
-    handleRowClick: ({uuid}: {uuid: string}) => {
+    handleRowClick: ({uuid}: WorkflowResource) => {
         dispatch(showWorkflowDetails(uuid));
     }
 });

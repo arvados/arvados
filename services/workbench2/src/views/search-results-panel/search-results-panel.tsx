@@ -25,10 +25,10 @@ export interface SearchResultsPanelDataProps {
 }
 
 export interface SearchResultsPanelActionProps {
-    onItemClick: (item: string) => void;
+    onItemClick: (resource: GroupContentsResource) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
     onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemDoubleClick: (resource: GroupContentsResource) => void;
 }
 
 export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
@@ -47,12 +47,12 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
         dispatch<any>(openSearchResultsContextMenu(event, resource.uuid));
     },
     onDialogOpen: (ownerUuid: string) => { return; },
-    onItemClick: (resourceUuid: string) => {
-        dispatch<any>(toggleOne(resourceUuid))
-        dispatch<any>(deselectAllOthers(resourceUuid))
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+    onItemClick: ({uuid}: GroupContentsResource) => {
+        dispatch<any>(toggleOne(uuid))
+        dispatch<any>(deselectAllOthers(uuid))
+        dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: uuid => {
+    onItemDoubleClick: ({uuid}: GroupContentsResource) => {
         dispatch<any>(navigateTo(uuid));
     }
 });

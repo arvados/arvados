@@ -90,9 +90,9 @@ export interface SubprocessPanelDataProps {
 }
 
 export interface SubprocessPanelActionProps {
-    onRowClick: (item: string) => void;
+    onRowClick: (resource: ProcessResource) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemDoubleClick: (resource: ProcessResource) => void;
 }
 
 type SubprocessPanelProps = SubprocessPanelActionProps & SubprocessPanelDataProps;

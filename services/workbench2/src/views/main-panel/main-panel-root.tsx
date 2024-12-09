@@ -15,7 +15,7 @@ import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
 import { Routes } from 'routes/routes';
-import { isUUID } from 'common/isUuid';
+import { isResourceUuid } from 'models/resource';
 
 type CssRules = 'root';
 
@@ -58,7 +58,7 @@ export const MainPanelRoot = withStyles(styles)(
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');
                 const uuid = splitRoute[splitRoute.length - 1];
-                if(isUUID(uuid) && Object.values(Routes).includes(`/${uuid}`) === false) {
+                if(isResourceUuid(uuid) && Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
                 } else {
                     setCurrentRouteUuid(null);

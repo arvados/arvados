@@ -119,10 +119,10 @@ interface PublicFavoritePanelDataProps {
 }
 
 interface PublicFavoritePanelActionProps {
-    onItemClick: (item: string) => void;
+    onItemClick: (resource: GroupContentsResource) => void;
     onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
+    onDialogOpen: (resource: GroupContentsResource) => void;
+    onItemDoubleClick: (resource: GroupContentsResource) => void;
 }
 const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavoritePanelDataProps => ({
     publicFavorites,
@@ -145,13 +145,13 @@ const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps 
         }
         dispatch<any>(loadDetailsPanel(resource.uuid));
     },
-    onDialogOpen: (ownerUuid: string) => { return; },
-    onItemClick: (uuid: string) => {
+    onDialogOpen: (resource: GroupContentsResource) => { return; },
+    onItemClick: ({uuid}: GroupContentsResource) => {
                 dispatch<any>(toggleOne(uuid))
                 dispatch<any>(deselectAllOthers(uuid))
                 dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: uuid => {
+    onItemDoubleClick: ({uuid}: GroupContentsResource) => {
         dispatch<any>(navigateTo(uuid));
     }
 });

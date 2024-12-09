@@ -114,17 +114,11 @@ interface AllProcessesPanelDataProps {
     resources: ResourcesState;
 }
 
-interface AllProcessesPanelActionProps {
-    onItemClick: (item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
-}
 const mapStateToProps = (state: RootState): AllProcessesPanelDataProps => ({
     resources: state.resources,
 });
 
 type AllProcessesPanelProps = AllProcessesPanelDataProps &
-    AllProcessesPanelActionProps &
     DispatchProp &
     WithStyles<CssRules> &
     RouteComponentProps<{ id: string }>;
@@ -140,7 +134,7 @@ export const AllProcessesPanel = withStyles(styles)(
                 this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             };
 
-            handleRowDoubleClick = (uuid: string) => {
+            handleRowDoubleClick = ({uuid}: ContainerRequestResource) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             };
 

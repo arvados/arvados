@@ -79,9 +79,9 @@ export interface LinkPanelRootDataProps {
 }
 
 export interface LinkPanelRootActionProps {
-    onItemClick: (item: string) => void;
+    onItemClick: (item: LinkResource) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: LinkResource) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemDoubleClick: (item: LinkResource) => void;
 }
 
 export type LinkPanelRootProps = LinkPanelRootDataProps & LinkPanelRootActionProps & WithStyles<CssRules>;

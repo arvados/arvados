@@ -20,10 +20,10 @@ import { Resource } from "models/resource";
 
 interface Props {
     id: string;
-    onRowClick: (item: any) => void;
+    onRowClick: (resource: Resource) => void;
     onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
-    onRowDoubleClick: (item: any) => void;
-    extractKey?: (item: any) => React.Key;
+    onRowDoubleClick: (resource: Resource) => void;
+    extractKey?: (item: any) => React.Key; // TODO: remove
     working?: boolean;
 }
 

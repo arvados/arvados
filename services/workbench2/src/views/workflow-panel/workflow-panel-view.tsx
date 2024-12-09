@@ -36,7 +36,7 @@ export interface WorkflowPanelDataProps {
 }
 
 export interface WorfklowPanelActionProps {
-    handleRowDoubleClick: (workflowUuid: string) => void;
+    handleRowDoubleClick: (workflow: WorkflowResource) => void;
     handleRowClick: (workflow: WorkflowResource) => void;
 }
 
@@ -94,7 +94,7 @@ export const workflowPanelColumns: DataColumns<WorkflowResource> = [
         //         type: ResourceStatus.SHARED
         //     }
         // ],
-        render: (resource: WorkflowResource) => <ResourceWorkflowStatus resource={resource}/>, 
+        render: (resource: WorkflowResource) => <ResourceWorkflowStatus resource={resource}/>,
     },
     {
         name: WorkflowPanelColumnNames.LAST_MODIFIED,
@@ -109,7 +109,7 @@ export const workflowPanelColumns: DataColumns<WorkflowResource> = [
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: WorkflowResource) => <ResourceShare resource={resource} /> 
+        render: (resource: WorkflowResource) => <ResourceShare resource={resource} />
     },
     {
         name: '',

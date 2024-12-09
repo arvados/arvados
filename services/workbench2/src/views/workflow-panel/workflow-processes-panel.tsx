@@ -11,6 +11,7 @@ import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { getProcess } from "store/processes/process";
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { ContainerRequestResource } from "models/container-request";
 
 const mapDispatchToProps = (dispatch: Dispatch): WorkflowProcessesPanelActionProps => ({
     onContextMenu: (event, resource, resources) => {
@@ -19,12 +20,12 @@ const mapDispatchToProps = (dispatch: Dispatch): WorkflowProcessesPanelActionPro
             dispatch<any>(openProcessContextMenu(event, process));
         }
     },
-    onItemClick: (resource: any) => {
+    onItemClick: (resource: ContainerRequestResource) => {
         dispatch<any>(toggleOne(resource.uuid))
         dispatch<any>(deselectAllOthers(resource.uuid))
         dispatch<any>(loadDetailsPanel(resource.uuid));
     },
-    onItemDoubleClick: uuid => {
+    onItemDoubleClick: ({uuid}: ContainerRequestResource) => {
         dispatch<any>(navigateTo(uuid));
     },
 });

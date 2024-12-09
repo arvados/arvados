@@ -20,7 +20,6 @@ import {
     renderEmail,
     renderUsername,
 } from "views-components/data-explorer/renderers";
-import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
 import { UserResource } from 'models/user';
@@ -108,7 +107,6 @@ interface UserPanelDataProps {
 
 interface UserPanelActionProps {
     openUserCreateDialog: () => void;
-    handleRowClick: (uuid: string) => void;
     handleContextMenu: (event, resource: UserResource) => void;
 }
 
@@ -120,7 +118,6 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
-    handleRowClick: (uuid: string) => dispatch<any>(navigateToUserProfile(uuid)),
     handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 

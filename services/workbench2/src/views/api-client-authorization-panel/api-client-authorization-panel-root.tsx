@@ -96,9 +96,9 @@ export const apiClientAuthorizationPanelColumns: DataColumns<ApiClientAuthorizat
 const DEFAULT_MESSAGE = 'Your api client authorization list is empty.';
 
 export interface ApiClientAuthorizationPanelRootActionProps {
-    onItemClick: (item: string) => void;
+    onItemClick: (resource: ApiClientAuthorization) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemDoubleClick: (resource: ApiClientAuthorization) => void;
 }
 
 export interface ApiClientAuthorizationPanelRootDataProps {

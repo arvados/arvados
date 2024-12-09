@@ -152,7 +152,7 @@ export const TrashPanel = withStyles(styles)(
                 this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
-            handleRowDoubleClick = (uuid: string) => {
+            handleRowDoubleClick = ({uuid}: CollectionResource) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 

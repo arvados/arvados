@@ -156,11 +156,11 @@ export const ProjectPanel = withStyles(styles)(
                 this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             };
 
-            handleRowDoubleClick = (uuid: string) => {
+            handleRowDoubleClick = ({uuid}: Resource) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             };
 
-            handleRowClick = ({uuid}: {uuid: string}) => {
+            handleRowClick = ({uuid}: Resource) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

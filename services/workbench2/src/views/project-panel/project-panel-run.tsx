@@ -177,7 +177,7 @@ interface ProjectPanelRunProps {
     project?: ProjectResource;
     paperClassName?: string;
     onRowClick: (item: ProjectResource) => void;
-    onRowDoubleClick: (uuid: string) => void;
+    onRowDoubleClick: ({uuid}: ProjectResource) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ProjectResource) => void;
 }
 

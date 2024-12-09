@@ -83,7 +83,7 @@ export const favoritePanelColumns: DataColumns<GroupContentsResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <ProcessStatus uuid={resource.uuid} />  
+        render: (resource: GroupContentsResource) => <ProcessStatus uuid={resource.uuid} />
     },
     {
         name: FavoritePanelColumnNames.TYPE,
@@ -122,11 +122,6 @@ interface FavoritePanelDataProps {
     userUuid: string;
 }
 
-interface FavoritePanelActionProps {
-    onItemClick: (item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
-}
 const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
     resources: state.resources,
@@ -134,7 +129,7 @@ const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
 });
 
-type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
+type FavoritePanelProps = FavoritePanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const FavoritePanel = withStyles(styles)(
@@ -168,7 +163,7 @@ export const FavoritePanel = withStyles(styles)(
                 this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
-            handleRowDoubleClick = (uuid: string) => {
+            handleRowDoubleClick = ({uuid}: GroupContentsResource) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 

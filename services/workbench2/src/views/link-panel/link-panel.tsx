@@ -36,7 +36,7 @@ const mapDispatchToProps = (dispatch: Dispatch): LinkPanelRootActionProps => ({
             }));
         }
     },
-    onItemClick: (resourceUuid: string) => { return; },
+    onItemClick: (resource: LinkResource) => { return; },
     onItemDoubleClick: uuid => { return; }
 });
 

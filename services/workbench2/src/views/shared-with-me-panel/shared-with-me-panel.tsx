@@ -75,7 +75,7 @@ export const SharedWithMePanel = withStyles(styles)(
                 </div>;
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => { 
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => {
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
@@ -91,7 +91,7 @@ export const SharedWithMePanel = withStyles(styles)(
                 this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
-            handleRowDoubleClick = (uuid: string) => {
+            handleRowDoubleClick = ({uuid}: GroupContentsResource) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 
