@@ -7,9 +7,7 @@ import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { createTree } from 'models/tree';
 
 /**
- *
- * @template I Type of dataexplorer item reference
- * @template R Type of resource to use to restrict values of column sort.field
+ * @template T Type of item to be displayed in the data table
  */
 export interface DataColumn<T> {
     key?: React.Key;

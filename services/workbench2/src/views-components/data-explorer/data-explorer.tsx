@@ -16,6 +16,7 @@ import { setSelectedResourceUuid } from "store/selected-resource/selected-resour
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { getResource } from "store/resources/resources";
+import { Resource } from "models/resource";
 
 interface Props {
     id: string;
@@ -31,7 +32,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const isMSToolbarVisible = multiselect.isVisible;
-    const resourceItems = dataExplorerState.items.map(item => getResource<any>(item)(resources)).filter(Boolean);
+    const resourceItems = dataExplorerState.items.map(item => getResource<Resource>(item)(resources)).filter((resource): resource is Resource => Boolean(resource));
     return {
         ...dataExplorerState,
         resourceItems,
