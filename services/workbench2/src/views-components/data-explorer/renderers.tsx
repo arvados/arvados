@@ -249,9 +249,9 @@ const FrozenProject = (props: { item: ProjectResource }) => {
 };
 
 // User resource renderers ---------------------------------------------------------------------------------
-export const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
+export const renderUsername = (item: UserResource) => <Typography noWrap>{item.username || item.uuid}</Typography>;
 
-export const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
+export const renderEmail = (item: UserResource) => <Typography noWrap>{item.email}</Typography>;
 
 export const RenderFullName = connect((resource: UserResource) => resource)((props: { resource: UserResource} & DispatchProp<any>) => {
     const { resource, dispatch } = props;
