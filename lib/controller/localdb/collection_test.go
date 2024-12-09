@@ -5,6 +5,7 @@
 package localdb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -172,7 +173,7 @@ func (s *CollectionSuite) TestSignaturesDisabled(c *check.C) {
 var _ = check.Suite(&replaceFilesSuite{})
 
 type replaceFilesSuite struct {
-	CollectionSuite
+	localdbSuite
 	client *arvados.Client
 	ac     *arvadosclient.ArvadosClient
 	kc     *keepclient.KeepClient
@@ -181,7 +182,7 @@ type replaceFilesSuite struct {
 }
 
 func (s *replaceFilesSuite) SetUpSuite(c *check.C) {
-	s.CollectionSuite.SetUpSuite(c)
+	s.localdbSuite.SetUpSuite(c)
 	var err error
 	s.client = arvados.NewClientFromEnv()
 	s.ac, err = arvadosclient.New(s.client)
@@ -191,7 +192,7 @@ func (s *replaceFilesSuite) SetUpSuite(c *check.C) {
 }
 
 func (s *replaceFilesSuite) SetUpTest(c *check.C) {
-	s.CollectionSuite.SetUpTest(c)
+	s.localdbSuite.SetUpTest(c)
 	// Unlike most test suites, we need to COMMIT our setup --
 	// otherwise, when our tests start additional
 	// transactions/connections, they won't see our setup.
@@ -559,4 +560,210 @@ func (s *replaceFilesSuite) expectFileSizes(c *check.C, coll arvados.Collection,
 		}
 	}
 	c.Check(found, check.DeepEquals, expected)
+}
+
+var _ = check.Suite(&replaceSegmentsSuite{})
+
+type replaceSegmentsSuite struct {
+	localdbSuite
+	client  *arvados.Client
+	ac      *arvadosclient.ArvadosClient
+	kc      *keepclient.KeepClient
+	locator []string           // locator[i] is a locator of a block consisting of i null bytes.
+	tmp     arvados.Collection // each test case starts off with file1 and file2
+}
+
+func (s *replaceSegmentsSuite) SetUpSuite(c *check.C) {
+	s.localdbSuite.SetUpSuite(c)
+	var err error
+	s.client = arvados.NewClientFromEnv()
+	s.client.AuthToken = arvadostest.ActiveTokenV2
+	s.ac, err = arvadosclient.New(s.client)
+	c.Assert(err, check.IsNil)
+	s.kc, err = keepclient.MakeKeepClient(s.ac)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *replaceSegmentsSuite) SetUpTest(c *check.C) {
+	s.localdbSuite.SetUpTest(c)
+	if s.locator == nil {
+		s.locator = make([]string, 10)
+		for i := range s.locator {
+			resp, err := s.kc.BlockWrite(s.userctx, arvados.BlockWriteOptions{Data: make([]byte, i)})
+			c.Assert(err, check.IsNil)
+			s.locator[i] = resp.Locator
+			c.Logf("locator %d %s", i, s.locator[i])
+		}
+	}
+	var err error
+	s.tmp, err = s.localdb.CollectionCreate(s.userctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"manifest_text": ". " + s.locator[1] + " " + s.locator[2] + " 0:1:file1 1:2:file2\n",
+		}})
+	c.Assert(err, check.IsNil)
+}
+
+func (s *replaceSegmentsSuite) checkCollectionNotModified(c *check.C) {
+	// Confirm the collection was not modified.
+	coll, err := s.localdb.CollectionGet(s.userctx, arvados.GetOptions{UUID: s.tmp.UUID})
+	c.Assert(err, check.IsNil)
+	c.Check(stripSignatures(coll.ManifestText), check.Equals, stripSignatures(s.tmp.ManifestText))
+	c.Check(coll.ModifiedAt, check.Equals, s.tmp.ModifiedAt)
+}
+
+func (s *replaceSegmentsSuite) Test2to1_Simple(c *check.C) {
+	coll, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[3], 0, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[3], 1, 2},
+		}})
+	c.Assert(err, check.IsNil)
+	c.Check(stripSignatures(coll.ManifestText), check.Equals, stripSignatures(". "+s.locator[3]+" 0:1:file1 1:2:file2\n"))
+}
+
+// Apply replacements to provided manifest_text when creating a new
+// collection.
+func (s *replaceSegmentsSuite) TestCreate(c *check.C) {
+	coll, err := s.localdb.CollectionCreate(s.userctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"manifest_text": ". " + s.locator[2] + " " + s.locator[3] + " 0:5:file5\n",
+		},
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[5], 0, 2},
+			arvados.BlockSegment{s.locator[3], 0, 3}: arvados.BlockSegment{s.locator[5], 2, 3},
+		}})
+	c.Assert(err, check.IsNil)
+	c.Check(stripSignatures(coll.ManifestText), check.Equals, stripSignatures(". "+s.locator[5]+" 0:5:file5\n"))
+}
+
+func (s *replaceSegmentsSuite) TestSignatureCheck(c *check.C) {
+	var badlocator string
+	{
+		adminclient := arvados.NewClientFromEnv()
+		ac, err := arvadosclient.New(adminclient)
+		c.Assert(err, check.IsNil)
+		kc, err := keepclient.MakeKeepClient(ac)
+		c.Assert(err, check.IsNil)
+		resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{Data: make([]byte, 3)})
+		c.Assert(err, check.IsNil)
+		badlocator = resp.Locator
+	}
+
+	// Replacement locator has an invalid signature (signed with a
+	// different token) so this update should fail.
+	_, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{badlocator, 0, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{badlocator, 1, 2},
+		}})
+	c.Assert(err, check.ErrorMatches, `.*PermissionDenied.*`)
+	var se httpserver.HTTPStatusError
+	c.Assert(errors.As(err, &se), check.Equals, true)
+	c.Check(se.HTTPStatus(), check.Equals, http.StatusForbidden)
+
+	s.checkCollectionNotModified(c)
+}
+
+func (s *replaceSegmentsSuite) Test2to1_Reordered(c *check.C) {
+	coll, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[3], 2, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[3], 0, 2},
+		}})
+	c.Assert(err, check.IsNil)
+	c.Check(stripSignatures(coll.ManifestText), check.Equals, stripSignatures(". "+s.locator[3]+" 2:1:file1 0:2:file2\n"))
+}
+
+func (s *replaceSegmentsSuite) Test2to1_MultipleReferences(c *check.C) {
+	coll, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		Attrs: map[string]interface{}{
+			"manifest_text": ". " + s.locator[1] + " " + s.locator[2] + " 0:1:file1 1:2:file2\n" +
+				"./dir " + s.locator[1] + " 0:1:file3\n",
+		}})
+	coll, err = s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[3], 0, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[3], 1, 2},
+		}})
+	c.Assert(err, check.IsNil)
+	c.Check(stripSignatures(coll.ManifestText), check.Equals,
+		stripSignatures(". "+s.locator[3]+" 0:1:file1 1:2:file2\n"+
+			"./dir "+s.locator[3]+" 0:1:file3\n"))
+}
+
+// Caller is asking to repack 1,2,4->7 and 5->8, but a different
+// caller has already repacked 1,2,3->6, so we skip 1,2,4->7 but apply
+// 5->8.
+func (s *replaceSegmentsSuite) TestSkipUnreferenced(c *check.C) {
+	orig := ". " + s.locator[6] + " " + s.locator[4] + " 0:1:file1 1:2:file2 3:3:file3 6:4:file4\n" +
+		"./dir " + s.locator[5] + " 0:5:file5\n"
+	coll, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		Attrs: map[string]interface{}{
+			"manifest_text": orig,
+		}})
+	c.Assert(err, check.IsNil)
+	coll, err = s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: coll.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[7], 0, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[7], 1, 2},
+			arvados.BlockSegment{s.locator[4], 0, 4}: arvados.BlockSegment{s.locator[7], 3, 4},
+			arvados.BlockSegment{s.locator[5], 0, 5}: arvados.BlockSegment{s.locator[8], 0, 5},
+		}})
+	c.Assert(err, check.IsNil)
+	c.Check(stripSignatures(coll.ManifestText), check.Equals,
+		stripSignatures(". "+s.locator[6]+" "+s.locator[4]+" 0:1:file1 1:2:file2 3:3:file3 6:4:file4\n"+
+			"./dir "+s.locator[8]+" 0:5:file5\n"))
+}
+
+func (s *replaceSegmentsSuite) TestLengthMismatch(c *check.C) {
+	_, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[3], 0, 2},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[3], 0, 2},
+		}})
+	c.Check(err, check.ErrorMatches, `replace_segments: mismatched length: replacing segment length 1 with segment length 2`)
+	var se httpserver.HTTPStatusError
+	c.Assert(errors.As(err, &se), check.Equals, true)
+	c.Check(se.HTTPStatus(), check.Equals, http.StatusBadRequest)
+	s.checkCollectionNotModified(c)
+}
+
+func (s *replaceSegmentsSuite) TestInvalidReplacementOffset(c *check.C) {
+	_, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[3], 0, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[3], 3, 2},
+		}})
+	c.Check(err, check.ErrorMatches, `replace_segments: invalid replacement: offset 3 \+ length 2 > block size 3`)
+	var se httpserver.HTTPStatusError
+	c.Assert(errors.As(err, &se), check.Equals, true)
+	c.Check(se.HTTPStatus(), check.Equals, http.StatusBadRequest)
+	s.checkCollectionNotModified(c)
+}
+
+func (s *replaceSegmentsSuite) TestInvalidReplacementLength(c *check.C) {
+	_, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		ReplaceSegments: map[arvados.BlockSegment]arvados.BlockSegment{
+			arvados.BlockSegment{s.locator[1], 0, 1}: arvados.BlockSegment{s.locator[3], 0, 1},
+			arvados.BlockSegment{s.locator[2], 0, 2}: arvados.BlockSegment{s.locator[3], 4, 2},
+		}})
+	c.Check(err, check.ErrorMatches, `replace_segments: invalid replacement: offset 4 \+ length 2 > block size 3`)
+	var se httpserver.HTTPStatusError
+	c.Assert(errors.As(err, &se), check.Equals, true)
+	c.Check(se.HTTPStatus(), check.Equals, http.StatusBadRequest)
+	s.checkCollectionNotModified(c)
+}
+
+func stripSignatures(manifest string) string {
+	return regexp.MustCompile(`\+A[^ ]+`).ReplaceAllString(manifest, "")
 }

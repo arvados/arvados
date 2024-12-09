@@ -197,6 +197,36 @@ Collections on other clusters in a federation cannot be used as sources. Each so
 
 Similarly, if @manifest_text@ is provided, it must only reference data blocks that are stored on the current cluster. This API does not copy data from other clusters in a federation.
 
+h3(#replace_segments). Using "replace_segments" to repack file data
+
+The @replace_segments@ option can be used with the "create":#create or "update":#update API to atomically apply a new file packing, typically with the goal of replacing a number of small blocks with one larger block. The repacking is specified in terms of _block segments_: a block segment is a portion of a stored block that is referenced by a file in a manifest.
+
+@replace_segments@ keys indicate existing block segments in the collection, and values specify replacement segments.
+* Each segment is specified as space-separated tokens: @"locator offset length"@ where @locator@ is a signed block locator and @offset@ and @length@ are decimal-encoded integers specifying a portion of the block that is referenced in the collection.
+* Each replacement block locator must be properly signed (just as if it appeared in a @manifest_text@).
+* Each existing block segment must correspond to an entire contiguous portion of a block referenced by a single file (splitting existing segments is not supported).
+* If a segment to be replaced does not match any existing block segment in the manifest, that segment _and all other @replace_segments@ entries referencing the same replacement block_ will be skipped. Other replacements will still be applied. Replacements that are skipped for this reason do not cause the request to fail. This rule ensures that when concurrent clients compute different repackings and request similar replacements such as @a,b,c,d,e → X@ and @a,b,c,d,e,f → Y@, the resulting manifest references @X@ or @Y@ but not both. Otherwise, the effect could be @a,b,c,d,e → X, f → Y@ where @Y@ is just an inefficient way to reference the same data as @f@.
+
+The @replace_files@ and @manifest_text@ options, if present, are applied before @replace_segments@. This means @replace_segments@ can apply to blocks from @manifest_text@ and/or other collections referenced by @replace_files@.
+
+In the following example, two files were originally saved by writing two small blocks (@c410@ and @c93e@). After concatenating the two small blocks and writing a single larger block @ca9c@, the manifest is being updated to reference the larger block.
+
+<notextile><pre>
+"collection": {
+  "manifest_text": ". c4103f122d27677c9db144cae1394a66+2+A3d02f1f3d8a622b2061ad5afe4853dbea42039e2@674dd351 693e9af84d3dfcc71e640e005bdc5e2e+3+A6528480b63d90a24b60b2ee2409040f050cc5d0c@674dd351 0:2:file1.txt 2:3:file2.txt\n"
+},
+"replace_segments": {
+  "c4103f122d27677c9db144cae1394a66+2+A3d02f1f3d8a622b2061ad5afe4853dbea42039e2@674dd351 0 2": "ca9c491ac66b2c62500882e93f3719a8+5+A312fea6de5807e9e77d844450d36533a599c40f1@674dd351 0 2",
+  "693e9af84d3dfcc71e640e005bdc5e2e+3+A6528480b63d90a24b60b2ee2409040f050cc5d0c@674dd351 0 3": "ca9c491ac66b2c62500882e93f3719a8+5+A312fea6de5807e9e77d844450d36533a599c40f1@674dd351 2 3"
+}
+</pre></notextile>
+
+Resulting manifest:
+
+<notextile><pre>
+. ca9c491ac66b2c62500882e93f3719a8+5+A312fea6de5807e9e77d844450d36533a599c40f1@674dd351 0:2:file1.txt 2:3:file2.txt
+</pre></notextile>
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
@@ -215,8 +245,11 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |collection|object||query||
 |replace_files|object|Initialize files and directories with new content and/or content from other collections|query||
+|replace_segments|object|Repack the collection by substituting data blocks|query||
 
 The new collection's content can be initialized by providing a @manifest_text@ key in the provided @collection@ object, or by "using the @replace_files@ option":#replace_files.
+
+An alternative file packing can be applied atomically "using the @replace_segments@ option":#replace_segments.
 
 h3(#delete). delete
 
@@ -292,8 +325,11 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 |collection|object||query||
 |replace_files|object|Add, delete, and replace files and directories with new content and/or content from other collections|query||
+|replace_segments|object|Repack the collection by substituting data blocks|query||
 
 The collection's existing content can be replaced entirely by providing a @manifest_text@ key in the provided @collection@ object, or updated in place by "using the @replace_files@ option":#replace_files.
+
+An alternative file packing can be applied atomically "using the @replace_segments@ option":#replace_segments.
 
 h3(#untrash). untrash
 
