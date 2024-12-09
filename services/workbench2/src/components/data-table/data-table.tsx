@@ -170,8 +170,13 @@ type DataTableState = {
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
+// tell compiler that all items will have a uuid prop
+export interface DataTableItem {
+    uuid: string;
+}
+
 export const DataTable = withStyles(styles)(
-    class Component<T> extends React.Component<DataTableProps<T>> {
+    class Component<T extends DataTableItem> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
             isLoaded: false,
@@ -459,10 +464,10 @@ export const DataTable = withStyles(styles)(
             </IconButton>
         );
 
-        renderBodyRow = (item: any, index: number) => {
+        renderBodyRow = (item: T, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             const { hoveredIndex } = this.state;
-            const isRowSelected = item === selectedResourceUuid;
+            const isRowSelected = item.uuid === selectedResourceUuid;
             const getClassnames = (colIndex: number) => {
                 if(currentRoute === '/workflows') return classes.tableCellWorkflows;
                 if(colIndex === 0) return classnames(classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
@@ -480,7 +485,7 @@ export const DataTable = withStyles(styles)(
                     key={extractKey ? extractKey(item) : index}
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
-                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item.uuid)}
+                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
                     selected={isRowSelected}
                     className={isRowSelected ? classes.selected : ""}
                     onMouseEnter={()=>handleHover(index)}

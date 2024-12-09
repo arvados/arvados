@@ -18,7 +18,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataColumns } from "components/data-table/data-column";
-import { DataTable, DataTableFetchMode } from "components/data-table/data-table";
+import { DataTable, DataTableFetchMode, DataTableItem } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
 import { SearchInput } from "components/search-input/search-input";
 import { ArvadosTheme } from "common/custom-theme";
@@ -151,7 +151,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-interface DataExplorerDataProps<T> {
+interface DataExplorerDataProps<T extends DataTableItem> {
     fetchMode: DataTableFetchMode;
     items: string[];
     resourceItems: T[];
@@ -206,10 +206,10 @@ interface DataExplorerActionProps<T> {
     loadDetailsPanel: (uuid: string) => void;
 }
 
-type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
+type DataExplorerProps<T extends DataTableItem> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
 export const DataExplorer = withStyles(styles)(
-    class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+    class DataExplorerGeneric<T extends DataTableItem> extends React.Component<DataExplorerProps<T>> {
         state = {
             hideToolbar: true,
             isSearchResults: false,
