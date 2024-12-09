@@ -265,7 +265,7 @@ export const DataTable = withStyles(styles)(
             { name: "Invert", fn: list => this.handleInvertSelect(list) },
         ];
 
-        initializeCheckedList = (uuids: any[]): void => {
+        initializeCheckedList = (uuids: string[]): void => {
             const newCheckedList = { ...this.props.checkedList };
 
             if(Object.keys(newCheckedList).length === 0){

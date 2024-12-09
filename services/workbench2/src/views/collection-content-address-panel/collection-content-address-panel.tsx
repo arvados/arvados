@@ -32,6 +32,7 @@ import {
 import { ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
 import { CollectionResource } from 'models/collection';
+import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 
 type CssRules = 'backLink' | 'backIcon' | 'root' | 'content';
 
@@ -99,8 +100,8 @@ export const collectionContentAddressPanelColumns: DataColumns<CollectionResourc
 
 interface CollectionContentAddressPanelActionProps {
     onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, resource: CollectionResource) => void;
-    onItemClick: (item: string) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemClick: (resource: CollectionResource) => void;
+    onItemDoubleClick: (resource: CollectionResource) => void;
 }
 
 interface CollectionContentAddressPanelDataProps {
@@ -127,10 +128,12 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelAc
         }
         dispatch<any>(loadDetailsPanel(resource.uuid));
     },
-    onItemClick: (uuid: string) => {
+    onItemClick: ({uuid}: CollectionResource) => {
+        dispatch<any>(toggleOne(uuid))
+        dispatch<any>(deselectAllOthers(uuid))
         dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: uuid => {
+    onItemDoubleClick: ({uuid}: CollectionResource) => {
         dispatch<any>(navigateTo(uuid));
     }
 });
