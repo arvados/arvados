@@ -17,7 +17,6 @@ import {
     resourceUuidToContextMenuKind,
     openContextMenu
 } from 'store/context-menu/context-menu-actions';
-import { ResourceKind } from 'models/resource';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { connect } from 'react-redux';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -114,16 +113,16 @@ const mapStateToProps = ({ resources }: RootState): CollectionContentAddressPane
 
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
     onContextMenu: (resources: ResourcesState) => (event, resource) => {
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
-        if (kind) {
+        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
+        if (menuKind) {
             dispatch<any>(openContextMenu(event, {
                 name: resource ? resource.name : '',
                 description: resource ? resource.description : '',
                 storageClassesDesired: resource ? resource.storageClassesDesired : [],
                 uuid: resource.uuid,
-                ownerUuid: '',
-                kind: ResourceKind.NONE,
-                menuKind: kind
+                ownerUuid: resource.ownerUuid,
+                kind: resource.kind,
+                menuKind: menuKind
             }));
         }
         dispatch<any>(loadDetailsPanel(resource.uuid));
@@ -164,8 +163,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         contextMenuColumn={true}
                         title={`Content address: ${this.props.match.params.id}`}
                         defaultViewIcon={CollectionIcon}
-                        defaultViewMessages={['Collections with this content address not found.']}
-                        forceMultiSelectMode />
+                        defaultViewMessages={['Collections with this content address not found.']}/>
                     </div>
                 </div>;
             }
