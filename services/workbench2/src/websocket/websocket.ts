@@ -20,9 +20,9 @@ import { matchAllProcessesRoute, matchProjectRoute, matchProcessRoute } from "ro
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {
-        const webSocketService = new WebSocketService(config.websocketUrl, authService);
+        const webSocketService = WebSocketService.getInstance();
         webSocketService.setMessageListener(messageListener(store));
-        webSocketService.connect();
+        webSocketService.connect(config.websocketUrl, authService);
     } else {
         console.warn("WARNING: Websocket ExternalURL is not set on the cluster config.");
     }
