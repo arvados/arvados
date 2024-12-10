@@ -43,12 +43,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-
 export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
-
-
 
 interface SharedWithMePanelDataProps {
     resources: ResourcesState;

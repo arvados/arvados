@@ -27,7 +27,6 @@ export interface SearchResultsPanelDataProps {
 export interface SearchResultsPanelActionProps {
     onItemClick: (resource: GroupContentsResource) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
-    onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (resource: GroupContentsResource) => void;
 }
 
@@ -46,7 +45,6 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     onContextMenu: (event, resource) => {
         dispatch<any>(openSearchResultsContextMenu(event, resource.uuid));
     },
-    onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: ({uuid}: GroupContentsResource) => {
         dispatch<any>(toggleOne(uuid))
         dispatch<any>(deselectAllOthers(uuid))
