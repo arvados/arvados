@@ -32,6 +32,20 @@ case "$TARGET" in
             libnsl
         )
         ;;
+    ubuntu2004)
+        fpm_depends+=(
+            # Dependencies to build gems
+            g++
+            libcurl-ssl-dev
+            libpq-dev
+            postgresql-client
+            "ruby-dev >= 2.7.0"
+            zlib1g-dev
+            # Passenger runtime dependencies
+            # libnsl2 is excluded because it was included as part of glibc
+            libnss-systemd
+        )
+        ;;
     debian* | ubuntu*)
         fpm_depends+=(
             # Dependencies to build gems
