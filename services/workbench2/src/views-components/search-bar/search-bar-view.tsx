@@ -145,11 +145,16 @@ export const SearchBarView = compose(
     class extends React.Component<SearchBarViewProps> {
         state={
             loggedInSessions: [],
+            recentQueries: [],
         }
 
         debouncedSearch = debounce(() => {
             this.props.onSearch(this.props.searchValue);
         }, 1000);
+
+        handleFocus = (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            this.setState({ recentQueries: this.props.loadRecentQueries()});
+        };
 
         handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
             this.debouncedSearch();
@@ -159,10 +164,12 @@ export const SearchBarView = compose(
         handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
             this.debouncedSearch.clear();
             this.props.onSubmit(event);
+            this.setState({ recentQueries: this.props.loadRecentQueries()});
         };
 
         componentDidMount(): void {
             this.setState({ loggedInSessions: this.props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive)});
+            this.setState({ recentQueries: this.props.loadRecentQueries()});
         }
 
         componentDidUpdate( prevProps: Readonly<SearchBarViewProps>, prevState: Readonly<{loggedInSessions: Session[]}>, snapshot?: any ): void {
@@ -200,6 +207,7 @@ export const SearchBarView = compose(
                             disableUnderline={true}
                             onClick={e => handleInputClick(e, props)}
                             onKeyDown={e => handleKeyDown(e, props)}
+                            onFocus={e => this.handleFocus(e)}
                             startAdornment={
                                 <InputAdornment position="start">
                                     <Tooltip title="Search">
@@ -220,14 +228,14 @@ export const SearchBarView = compose(
                             }
                         />
                     </form>
-                    <div className={classes.view}>{isPopoverOpen && getView({ ...props })}</div>
+                    <div className={classes.view}>{isPopoverOpen && getView({ ...props }, this.state.recentQueries)}</div>
                 </Paper>
             </>;
         }
     }
 );
 
-const getView = (props: SearchBarViewProps) => {
+const getView = (props: SearchBarViewProps, recentQueries: string[]) => {
     switch (props.currentView) {
         case SearchView.AUTOCOMPLETE:
             return (
@@ -251,7 +259,8 @@ const getView = (props: SearchBarViewProps) => {
                 <SearchBarBasicView
                     onSetView={props.onSetView}
                     onSearch={props.onSearch}
-                    loadRecentQueries={props.loadRecentQueries}
+                    // loadRecentQueries={props.loadRecentQueries}
+                    recentQueries={recentQueries}
                     savedQueries={props.savedQueries}
                     deleteSavedQuery={props.deleteSavedQuery}
                     editSavedQuery={props.editSavedQuery}

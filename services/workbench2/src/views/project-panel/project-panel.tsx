@@ -42,6 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexGrow: 1,
         display: 'flex',
         flexDirection: 'column',
+        flexWrap: 'nowrap',
         minHeight: "500px",
         '& > div': {
             height: '100%',
@@ -90,15 +91,14 @@ export const ProjectPanel = withStyles(styles)(
                     <DetailsCardRoot />
                     <MPVContainer
                         className={classes.mpvRoot}
-                        spacing={8}
                         panelStates={panelsData}
                         mutuallyExclusive
                         justify-content="flex-start"
-                        direction="column"
-                        wrap="nowrap">
+                        style={{flexWrap: 'nowrap'}}>
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
+                            item
                             data-cy="process-data"
                             className={classes.dataExplorer}>
                             <ProjectPanelData
@@ -110,6 +110,7 @@ export const ProjectPanel = withStyles(styles)(
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
+                            item
                             data-cy="process-run"
                             className={classes.dataExplorer}>
                             <ProjectPanelRun

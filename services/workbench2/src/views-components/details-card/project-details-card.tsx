@@ -96,7 +96,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     faveIcon: {
         fontSize: '0.8rem',
-        margin: 'auto 0 1rem 0.3rem',
+        margin: 'auto 0 0.2rem 0.3rem',
         color: theme.palette.text.primary,
     },
     frozenIcon: {
@@ -213,7 +213,7 @@ export const ProjectCard = connect(
                                                           disableFocusListener
                                                           title={<span>Project was frozen by {frozenByFullName}</span>}
                                                       >
-                                                          <FreezeIcon style={{ fontSize: 'inherit' }} />
+                                                          <span><FreezeIcon style={{ fontSize: '1.25rem' }} /></span>
                                                       </Tooltip>
                                                   )}
                                                                             {!hasDescription && (

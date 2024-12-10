@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { ThemeProvider, Theme, StyledEngineProvider, createTheme, adaptV4Theme } from '@mui/material/styles';
+import { ThemeProvider, Theme, StyledEngineProvider, createTheme } from '@mui/material/styles';
 import { CodeSnippet, CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
 import { themeOptions } from 'common/custom-theme';
 import { grey } from '@mui/material/colors';
@@ -15,21 +15,23 @@ declare module '@mui/styles/defaultTheme' {
 }
 
 
-const theme = createTheme(adaptV4Theme(Object.assign({}, themeOptions, {
-    overrides: {
+const theme = createTheme(Object.assign({}, themeOptions, {
+    components: {
         MuiTypography: {
-            body1: {
-                color: grey["900"]
-            },
-            root: {
-                backgroundColor: grey["200"]
+            styleOverrides: {
+                body1: {
+                    color: grey["900"]
+                },
+                root: {
+                    backgroundColor: grey["200"]
+                },
             }
         }
     },
     typography: {
         fontFamily: 'monospace',
     }
-})));
+}));
 
 export const DefaultCodeSnippet = (props: CodeSnippetDataProps) =>
     <StyledEngineProvider injectFirst>

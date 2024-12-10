@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTheme, adaptV4Theme } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 import { StyleRulesCallback } from '@mui/styles';
 import { DeprecatedThemeOptions, Theme } from '@mui/material/styles';
 import { blue, grey, green, yellow, red } from '@mui/material/colors';
 
 export interface ArvadosThemeOptions extends DeprecatedThemeOptions {
     customs: any;
+    components?: any;
 }
 
 export interface ArvadosTheme extends Theme {
@@ -80,139 +81,170 @@ export const themeOptions: ArvadosThemeOptions = {
             greyD: arvadosGreyDark,
         }
     },
-    overrides: {
+    components: {
         MuiTableCell: {
-            root: {
-                paddingTop: '12px',
-                paddingBottom: '12px',
+            styleOverrides: {
+                root: { paddingTop: '12px', paddingBottom: '12px' }
             },
         },
         MuiTypography: {
-            body1: {
-                fontSize: '0.875rem'
-            }
+            styleOverrides: {
+                body1: { fontSize: '0.875rem' }
+            },
         },
         MuiAppBar: {
-            colorPrimary: {
-                backgroundColor: arvadosDarkBlue
-            }
+            styleOverrides: {
+                colorPrimary: { backgroundColor: arvadosDarkBlue }
+            },
         },
         MuiTabs: {
-            root: {
-                color: grey600
+            styleOverrides: {
+                root: {
+                    color: grey600
+                },
+                indicator: {
+                    backgroundColor: arvadosDarkBlue
+                },
             },
-            indicator: {
-                backgroundColor: arvadosDarkBlue
-            }
         },
         MuiTab: {
-            root: {
-                '&$selected': {
-                    fontWeight: 700,
-                }
-            }
+            styleOverrides: {
+                root: {
+                    '&$selected': {
+                        fontWeight: 700,
+                    },
+                },
+            },
         },
         MuiList: {
-            root: {
-                color: grey900
-            }
+            styleOverrides: {
+                root: {
+                    color: grey900
+                },
+            },
         },
         MuiListItem: {
-            root: {
-                color: grey900
+            styleOverrides: {
+                root: {
+                    color: grey900
+                },
             }
         },
         MuiListItemText: {
-            root: {
-                padding: 0,
-                paddingBottom: '2px',
-            }
+            styleOverrides: {
+                root: {
+                    padding: 0,
+                    paddingBottom: '2px',
+                },
+            },
         },
         MuiListItemIcon: {
-            root: {
-                fontSize: '1.25rem',
-                minWidth: 0,
-                marginRight: '16px'
-            }
+            styleOverrides: {
+                root: {
+                    fontSize: '1.25rem',
+                    minWidth: 0,
+                    marginRight: '16px'
+                },
+            },
         },
         MuiCardHeader: {
-            avatar: {
-                display: 'flex',
-                alignItems: 'center'
+            styleOverrides: {
+                avatar: {
+                    display: 'flex',
+                    alignItems: 'center'
+                },
+                title: {
+                    color: arvadosGreyDark,
+                    fontSize: '1.25rem'
+                },
             },
-            title: {
-                color: arvadosGreyDark,
-                fontSize: '1.25rem'
-            }
         },
         MuiAccordion: {
-            root: {
-                backgroundColor: arvadosGreyVeryLight,
-              },
+            styleOverrides: {
+                root: {
+                    backgroundColor: arvadosGreyVeryLight,
+                },
+            },
         },
         MuiAccordionDetails: {
-            root: {
-                marginBottom: 0,
-                paddingBottom: '4px',
+            styleOverrides: {
+                root: {
+                    marginBottom: 0,
+                    paddingBottom: '4px',
+                },
             },
         },
         MuiAccordionSummary: {
-            content: {
-                '&$expanded': {
+            styleOverrides: {
+                content: {
+                    '&$expanded': {
+                        margin: 0,
+                    },
+                    color: grey700,
+                    fontSize: '1.25rem',
                     margin: 0,
                 },
-                color: grey700,
-                fontSize: '1.25rem',
-                margin: 0,
             },
         },
         MuiMenuItem: {
-            root: {
-                padding: '8px 16px'
-            }
+            styleOverrides: {
+                root: {
+                    padding: '8px 16px'
+                },
+            },
         },
         MuiInput: {
-            root: {
-                fontSize: '0.875rem'
-            },
-            underline: {
-                '&:after': {
-                    borderBottomColor: arvadosDarkBlue
+            styleOverrides: {
+                root: {
+                    fontSize: '0.875rem'
                 },
-                '&:hover:not($disabled):not($focused):not($error):before': {
-                    borderBottom: '1px solid inherit'
-                }
-            }
+                underline: {
+                    '&:after': {
+                        borderBottomColor: arvadosDarkBlue
+                    },
+                    '&:hover:not($disabled):not($focused):not($error):before': {
+                        borderBottom: '1px solid inherit'
+                    },
+                },
+            },
         },
         MuiFormLabel: {
-            root: {
-                fontSize: '0.875rem',
-                "&$focused": {
-                    "&$focused:not($error)": {
-                        color: arvadosDarkBlue
-                    }
-                }
-            }
+            styleOverrides: {
+                root: {
+                    fontSize: '0.875rem',
+                    "&$focused": {
+                        "&$focused:not($error)": {
+                            color: arvadosDarkBlue
+                        },
+                    },
+                },
+            },
         },
         MuiStepIcon: {
-            root: {
-                '&$active': {
-                    color: arvadosDarkBlue
+            styleOverrides: {
+                root: {
+                    '&$active': {
+                        color: arvadosDarkBlue
+                    },
+                    '&$completed': {
+                        color: 'inherited'
+                    },
                 },
-                '&$completed': {
-                    color: 'inherited'
-                },
-            }
+            },
         },
         MuiStepConnector: {
-            vertical: {
-                flex: "unset",
-            }
+            styleOverrides: {
+                vertical: {
+                    flex: "unset",
+                },
+            },
         },
         MuiLinearProgress: {
-            barColorSecondary: {
-                backgroundColor: red['700']
-            }
+            styleOverrides: {
+                barColorSecondary: {
+                    backgroundColor: red['700']
+                },
+            },
         },
     },
     mixins: {
@@ -225,7 +257,7 @@ export const themeOptions: ArvadosThemeOptions = {
             main: '#017ead',
             dark: '#015272',
             light: '#82cffd',
-            contrastText: '#fff'
+            contrastText: '#fff',
         },
         background: {
             default: '#fafafa',
@@ -233,4 +265,4 @@ export const themeOptions: ArvadosThemeOptions = {
     },
 };
 
-export const CustomTheme = createTheme(adaptV4Theme(themeOptions));
+export const CustomTheme = createTheme(themeOptions);

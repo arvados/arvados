@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { ThreeDots } from 'react-loader-spinner'
+import { ThreeDots } from './three-dots';
 import withTheme from '@mui/styles/withTheme';
 import { ArvadosTheme } from 'common/custom-theme';
 

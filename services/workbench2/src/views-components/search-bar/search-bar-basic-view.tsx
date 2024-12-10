@@ -54,12 +54,12 @@ export type SearchBarBasicViewActionProps = {
 type SearchBarBasicViewProps = SearchBarBasicViewDataProps & SearchBarBasicViewActionProps & WithStyles<CssRules>;
 
 export const SearchBarBasicView = withStyles(styles)(
-    ({ classes, onSetView, loadRecentQueries, deleteSavedQuery, savedQueries, onSearch, editSavedQuery, selectedItem }: SearchBarBasicViewProps) =>
+    ({ classes, onSetView, deleteSavedQuery, savedQueries, onSearch, editSavedQuery, selectedItem, recentQueries }: SearchBarBasicViewProps& { recentQueries: string[] }) =>
         <Paper className={classes.root}>
             <div className={classes.label}>{"Recent queries"}</div>
             <SearchBarRecentQueries
                 onSearch={onSearch}
-                loadRecentQueries={loadRecentQueries}
+                recentQueries={recentQueries}
                 selectedItem={selectedItem} />
             <div className={classes.label}>{"Saved queries"}</div>
             <SearchBarSavedQueries

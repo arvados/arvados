@@ -28,19 +28,19 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface SearchBarRecentQueriesDataProps {
     selectedItem: SearchBarSelectedItem;
+    recentQueries: string[];
 }
 
 export interface SearchBarRecentQueriesActionProps {
     onSearch: (searchValue: string) => void;
-    loadRecentQueries: () => string[];
 }
 
 type SearchBarRecentQueriesProps = SearchBarRecentQueriesDataProps & SearchBarRecentQueriesActionProps & WithStyles<CssRules>;
 
 export const SearchBarRecentQueries = withStyles(styles)(
-    ({ classes, onSearch, loadRecentQueries, selectedItem }: SearchBarRecentQueriesProps) =>
+    ({ classes, onSearch, selectedItem, recentQueries }: SearchBarRecentQueriesProps) =>
         <List component="nav" className={classes.root}>
-            {loadRecentQueries().map((query, index) =>
+            {recentQueries.map((query, index) =>
                 <ListItem button key={index} className={classes.listItem} selected={`RQ-${index}-${query}` === selectedItem.id}>
                     <ListItemText disableTypography
                         secondary={query}

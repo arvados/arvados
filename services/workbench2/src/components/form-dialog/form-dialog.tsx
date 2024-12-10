@@ -5,15 +5,13 @@
 import React from 'react';
 import { InjectedFormProps } from 'redux-form';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material/';
-import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { CustomTheme as theme } from 'common/custom-theme';
 import { Button, CircularProgress } from '@mui/material';
-import { WithStyles } from '@mui/styles';
-import withStyles from '@mui/styles/withStyles';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 
 type CssRules = "button" | "lastButton" | "form" | "formContainer" | "dialogTitle" | "progressIndicator" | "dialogActions";
 
-const styles: CustomStyleRulesCallback<CssRules> = theme => ({
+const styles: Record<CssRules, Record<string, string | number>>  = {
     button: {
         marginLeft: theme.spacing(1),
     },
@@ -44,7 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         marginBottom: theme.spacing(1),
         marginRight: theme.spacing(3),
     }
-});
+};
 
 interface DialogProjectDataProps {
     cancelLabel?: string;
@@ -56,9 +54,9 @@ interface DialogProjectDataProps {
     doNotDisableCancel?: boolean;
 }
 
-type DialogProjectProps = DialogProjectDataProps & WithDialogProps<{}> & InjectedFormProps<any> & WithStyles<CssRules>;
+type DialogProjectProps = DialogProjectDataProps & WithDialogProps<{}> & InjectedFormProps<any>;
 
-export const FormDialog = withStyles(styles)((props: DialogProjectProps) => {
+export const FormDialog = (props: DialogProjectProps) => {
     
     const handleClose = (ev, reason) => {
         if (reason !== 'backdropClick') {
@@ -73,14 +71,14 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) => {
                 fullWidth
                 scroll='paper'
                 maxWidth='md'>
-                <form data-cy='form-dialog' className={props.classes.form}>
-                    <DialogTitle className={props.classes.dialogTitle}>
+                <form data-cy='form-dialog' style={styles.form}>
+                    <DialogTitle style={styles.dialogTitle}>
                         {props.dialogTitle}
                     </DialogTitle>
-                    <DialogContent className={props.classes.formContainer}>
+                    <DialogContent style={styles.formContainer}>
                         <props.formFields {...props} />
                     </DialogContent>
-                    <DialogActions className={props.classes.dialogActions}>
+                    <DialogActions style={styles.dialogActions}>
                         <Button
                             data-cy='form-cancel-btn'
                             onClick={() => {
@@ -92,7 +90,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) => {
                                     props.initialize({});
                                 }
                             }}
-                            className={props.classes.button}
+                            style={styles.button}
                             color="primary"
                             disabled={props.doNotDisableCancel ? false : props.submitting}>
                             {props.cancelLabel || 'Cancel'}
@@ -101,14 +99,14 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) => {
                             data-cy='form-submit-btn'
                             type="submit"
                             onClick={props.handleSubmit}
-                            className={props.classes.lastButton}
+                            style={styles.lastButton}
                             color="primary"
                             disabled={props.invalid || props.submitting || (props.pristine && !props.enableWhenPristine)}
                             variant="contained">
                             {props.submitLabel || 'Submit'}
-                            {props.submitting && <CircularProgress size={20} className={props.classes.progressIndicator} />}
+                            {props.submitting && <CircularProgress size={20} style={styles.progressIndicator} />}
                         </Button>
                     </DialogActions>
                 </form>
             </Dialog>
-});
+};

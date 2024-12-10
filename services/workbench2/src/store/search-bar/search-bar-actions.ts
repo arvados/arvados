@@ -62,7 +62,7 @@ export const loadRecentQueries = () =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const recentQueries = services.searchService.getRecentQueries();
         dispatch(searchBarActions.SET_RECENT_QUERIES(recentQueries));
-        return recentQueries;
+        return [...recentQueries].reverse();
     };
 
 export const searchData = (searchValue: string, useCancel = false) =>

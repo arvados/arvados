@@ -178,8 +178,8 @@ export const CollectionPanel = withStyles(styles)(connect(
                     { name: "Files" },
                 ];
                 return item
-                    ? <MPVContainer className={classes.root} spacing={1} direction="column" justifyContent="flex-start" wrap="nowrap" panelStates={panelsData}>
-                        <MPVPanelContent xs="auto" data-cy='collection-info-panel'>
+                    ? <MPVContainer container className={classes.root} spacing={1} direction="column" justifyContent="flex-start" wrap="nowrap" panelStates={panelsData}>
+                        <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
                             <Card className={classes.infoCard}>
                                 <CardHeader
                                     className={classes.header}
@@ -198,8 +198,9 @@ export const CollectionPanel = withStyles(styles)(connect(
                                             {item.name}
                                             {isWritable ||
                                                 <Tooltip title="Read-only">
-                                                    <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                                </Tooltip>}
+                                                    <span><ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} /></span>
+                                                </Tooltip>
+                                                }
                                         </span>
                                     }
                                     action={
@@ -232,7 +233,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                                 </CardContent>
                             </Card>
                         </MPVPanelContent>
-                        <MPVPanelContent xs>
+                        <MPVPanelContent item xs>
                             <Card className={classes.filesCard}>
                                 <CollectionPanelFiles isWritable={isWritable} />
                             </Card>
