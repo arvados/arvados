@@ -11,6 +11,10 @@ trap 'rm -f "$API_GEMS_LS"' EXIT INT TERM QUIT
 
 cd "/var/www/${PACKAGE_NAME%-server}"
 
+cat_dropins() {
+    cat /lib/systemd/system/arvados-railsapi.service.d/*.conf
+}
+
 check_gem_dirs() {
     local when="$1"; shift
     env -C shared/vendor_bundle/ruby ls -1 >"$API_GEMS_LS"
@@ -42,20 +46,16 @@ expect_grep() {
 env -C current bundle list >"$ARV_PACKAGES_DIR/$PACKAGE_NAME.gems"
 check_gem_dirs "initial install"
 
-SVC_OVERRIDES="$(mktemp --tmpdir arvados-railsapi-XXXXXX.conf)"
-trap 'rm -f "$API_GEMS_LS" "$SVC_OVERRIDES"' EXIT INT TERM QUIT
-cat /lib/systemd/system/arvados-railsapi.service.d/*.conf >"$SVC_OVERRIDES"
-
 case "$TARGET" in
     debian*|ubuntu*)
-        expect_grep 0 -x SupplementaryGroups=www-data "$SVC_OVERRIDES"
+        cat_dropins | expect_grep 0 -x SupplementaryGroups=www-data
         ;;
     rocky*)
-        expect_grep 1 "^SupplementaryGroups=" "$SVC_OVERRIDES"
+        cat_dropins | expect_grep 1 "^SupplementaryGroups="
         microdnf --assumeyes install nginx
         microdnf --assumeyes reinstall "$PACKAGE_NAME"
         check_gem_dirs "package reinstall"
-        expect_grep 0 -x SupplementaryGroups=nginx "$SVC_OVERRIDES"
+        cat_dropins | expect_grep 0 -x SupplementaryGroups=nginx
         ;;
     *)
         echo "$0: WARNING: Unknown target '$TARGET'." >&2
