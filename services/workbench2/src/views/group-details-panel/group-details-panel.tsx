@@ -61,42 +61,42 @@ export const groupDetailsMembersPanelColumns: DataColumns<PermissionResource> = 
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkTail resource={resource} />
+        render: (resource) => <ResourceLinkTail resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkTailUsername resource={resource} />
+        render: (resource) => <ResourceLinkTailUsername resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkTailAccountStatus resource={resource} />
+        render: (resource) => <ResourceLinkTailAccountStatus resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkTailIsVisible resource={resource} />
+        render: (resource) => <ResourceLinkTailIsVisible resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkTailPermissionLevel resource={resource} />
+        render: (resource) => <ResourceLinkTailPermissionLevel resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkDelete resource={resource} />
+        render: (resource) => <ResourceLinkDelete resource={resource} />
     },
 ];
 
@@ -106,28 +106,28 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<PermissionResource
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkHead resource={resource} />
+        render: (resource) => <ResourceLinkHead resource={resource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkHeadPermissionLevel resource={resource} />
+        render: (resource) => <ResourceLinkHeadPermissionLevel resource={resource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkHeadUuid resource={resource} />
+        render: (resource) => <ResourceLinkHeadUuid resource={resource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: PermissionResource) => <ResourceLinkDelete resource={resource} />,
+        render: (resource) => <ResourceLinkDelete resource={resource} />,
     },
 ];
 

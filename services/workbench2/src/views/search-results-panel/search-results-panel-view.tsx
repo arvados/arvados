@@ -64,7 +64,7 @@ export const searchResultsPanelColumns: DataColumns<GroupContentsResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <ResourceCluster uuid={resource.uuid} />
+        render: (resource) => <ResourceCluster uuid={resource.uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.NAME,
@@ -72,35 +72,35 @@ export const searchResultsPanelColumns: DataColumns<GroupContentsResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <RenderName resource={resource} />,
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => renderResourceStatus(resource),
+        render: (resource) => renderResourceStatus(resource),
     },
     {
         name: SearchResultsPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialSearchTypeFilters(),
-        render: (resource: GroupContentsResource) => renderType(resource),
+        render: (resource) => renderType(resource),
     },
     {
         name: SearchResultsPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <RenderOwnerName resource={resource} />
+        render: (resource) => <RenderOwnerName resource={resource} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => renderFileSize(resource),
+        render: (resource) => renderFileSize(resource),
     },
     {
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
@@ -108,7 +108,7 @@ export const searchResultsPanelColumns: DataColumns<GroupContentsResource> = [
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "modifiedAt" },
         filters: createTree(),
-        render: (resource: GroupContentsResource) => renderLastModifiedDate(resource),
+        render: (resource) => renderLastModifiedDate(resource),
     }
 ];
 

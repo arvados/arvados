@@ -59,7 +59,7 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: (resource: UserResource) => <RenderFullName resource={resource} />
+        render: (resource) => <RenderFullName resource={resource} />
     },
     {
         name: UserPanelColumnNames.UUID,
@@ -67,7 +67,7 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: (resource: UserResource) => renderUuidWithCopy({uuid: resource.uuid})
+        render: (resource) => renderUuidWithCopy({uuid: resource.uuid})
     },
     {
         name: UserPanelColumnNames.EMAIL,
@@ -75,21 +75,21 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "email"},
         filters: createTree(),
-        render: (resource: UserResource) => renderEmail(resource)
+        render: (resource) => renderEmail(resource)
     },
     {
         name: UserPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: UserResource) => <UserResourceAccountStatus uuid={resource.uuid} />
+        render: (resource) => <UserResourceAccountStatus uuid={resource.uuid} />
     },
     {
         name: UserPanelColumnNames.ADMIN,
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: UserResource) => <ResourceIsAdmin resource={resource} />
+        render: (resource) => <ResourceIsAdmin resource={resource} />
     },
     {
         name: UserPanelColumnNames.USERNAME,
@@ -97,7 +97,7 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: false,
         sort: {direction: SortDirection.NONE, field: "username"},
         filters: createTree(),
-        render: (resource: UserResource) => renderUsername(resource)
+        render: (resource) => renderUsername(resource)
     }
 ];
 

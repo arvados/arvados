@@ -47,49 +47,49 @@ export const apiClientAuthorizationPanelColumns: DataColumns<ApiClientAuthorizat
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderUuid({uuid: resource.uuid})
+        render: (resource) => renderUuid({uuid: resource.uuid})
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.API_TOKEN,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderString(resource.apiToken)
+        render: (resource) => renderString(resource.apiToken)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.CREATED_BY_IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderString(resource.createdByIpAddress)
+        render: (resource) => renderString(resource.createdByIpAddress)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.EXPIRES_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderDate(resource.expiresAt)
+        render: (resource) => renderDate(resource.expiresAt)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.LAST_USED_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderDate(resource.lastUsedAt)
+        render: (resource) => renderDate(resource.lastUsedAt)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.LAST_USED_BY_IP_ADDRESS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderString(resource.lastUsedByIpAddress)
+        render: (resource) => renderString(resource.lastUsedByIpAddress)
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.SCOPES,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ApiClientAuthorization) => renderString(resource.scopes.join(', '))
+        render: (resource) => renderString(resource.scopes.join(', '))
     },
 ];
 

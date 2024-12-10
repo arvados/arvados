@@ -46,21 +46,21 @@ export const groupsPanelColumns: DataColumns<GroupResource> = [
         configurable: true,
         sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
-        render: (resource: GroupResource) => <RenderName resource={resource} />,
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: GroupsPanelColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupResource) => renderUuidWithCopy({uuid: resource.uuid}),
+        render: (resource) => renderUuidWithCopy({uuid: resource.uuid}),
     },
     {
         name: GroupsPanelColumnNames.MEMBERS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupResource) => renderMembersCount(resource),
+        render: (resource) => renderMembersCount(resource),
     },
 ];
 

@@ -69,7 +69,7 @@ export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <RenderName resource={resource} />,
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,
@@ -77,21 +77,21 @@ export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (resource: ContainerRequestResource) => <ProcessStatus uuid={resource.uuid} />,
+        render: (resource) => <ProcessStatus uuid={resource.uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialProcessTypeFilters(),
-        render: (resource: ContainerRequestResource) => renderType(resource),
+        render: (resource) => renderType(resource),
     },
     {
         name: AllProcessesPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <RenderOwnerName resource={resource} />,
+        render: (resource) => <RenderOwnerName resource={resource} />,
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,
@@ -99,14 +99,14 @@ export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => renderCreatedAtDate(resource),
+        render: (resource) => renderCreatedAtDate(resource),
     },
     {
         name: AllProcessesPanelColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <ContainerRunTime uuid={resource.uuid} />,
+        render: (resource) => <ContainerRunTime uuid={resource.uuid} />,
     },
 ];
 

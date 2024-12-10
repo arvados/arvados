@@ -71,14 +71,14 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource: CollectionResource) => <RenderName resource={resource} />,
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: TrashPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getTrashPanelTypeFilters(),
-        render: (resource: CollectionResource) => renderType(resource),
+        render: (resource) => renderType(resource),
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,
@@ -86,7 +86,7 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "fileSizeTotal"},
         filters: createTree(),
-        render: (resource: CollectionResource) => renderFileSize(resource),
+        render: (resource) => renderFileSize(resource),
     },
     {
         name: TrashPanelColumnNames.TRASHED_DATE,
@@ -94,7 +94,7 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "trashAt"},
         filters: createTree(),
-        render: (resource: CollectionResource) => renderTrashDate(resource),
+        render: (resource) => renderTrashDate(resource),
     },
     {
         name: TrashPanelColumnNames.TO_BE_DELETED,
@@ -102,14 +102,14 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
-        render: (resource: CollectionResource) => renderDeleteDate(resource),
+        render: (resource) => renderDeleteDate(resource),
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: CollectionResource) => <RestoreFromTrash resource={resource} />
+        render: (resource) => <RestoreFromTrash resource={resource} />
     }
 ];
 

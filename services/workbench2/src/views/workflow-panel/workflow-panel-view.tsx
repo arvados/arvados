@@ -69,7 +69,7 @@ export const workflowPanelColumns: DataColumns<WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
-        render: (resource: WorkflowResource) => renderWorkflowName(resource),
+        render: (resource) => renderWorkflowName(resource),
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
@@ -94,7 +94,7 @@ export const workflowPanelColumns: DataColumns<WorkflowResource> = [
         //         type: ResourceStatus.SHARED
         //     }
         // ],
-        render: (resource: WorkflowResource) => <ResourceWorkflowStatus resource={resource}/>,
+        render: (resource) => <ResourceWorkflowStatus resource={resource}/>,
     },
     {
         name: WorkflowPanelColumnNames.LAST_MODIFIED,
@@ -102,21 +102,21 @@ export const workflowPanelColumns: DataColumns<WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "modifiedAt"},
         filters: createTree(),
-        render: (resource: WorkflowResource) => renderLastModifiedDate(resource),
+        render: (resource) => renderLastModifiedDate(resource),
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: WorkflowResource) => <ResourceShare resource={resource} />
+        render: (resource) => <ResourceShare resource={resource} />
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource: WorkflowResource) => <ResourceRunProcess uuid={resource.uuid} />
+        render: (resource) => <ResourceRunProcess uuid={resource.uuid} />
     }
 ];
 
