@@ -26,6 +26,15 @@ NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html"
 # This will be set to a command path after we install the version we need.
 BUNDLE=
 
+# systemd_ctl is just "systemctl if we booted with systemd, otherwise a noop."
+# This makes the package installable in Docker containers, albeit without any
+# service deployment.
+if [ -d /run/systemd/system ]; then
+    systemd_ctl() { systemctl "$@"; }
+else
+    systemd_ctl() { true; }
+fi
+
 systemd_quote() {
     if [ $# -ne 1 ]; then
         echo "error: systemd_quote requires exactly one argument" >&2
@@ -210,7 +219,7 @@ ExecReload=
 ExecReload=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger-config") reopen-logs
 ${WWW_OWNER:+SupplementaryGroups=$WWW_OWNER}
 EOF
-  systemctl daemon-reload
+  systemd_ctl daemon-reload
   echo "... done."
 
   if [ -n "$NOT_READY_REASON" ]; then
@@ -225,7 +234,7 @@ EOF
   fi
 
   if [ -z "$NOT_READY_REASON" ]; then
-      systemctl try-restart arvados-railsapi.service
+      systemd_ctl try-restart arvados-railsapi.service
   fi
 }
 
