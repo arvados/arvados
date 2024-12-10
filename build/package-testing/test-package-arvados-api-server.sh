@@ -26,22 +26,38 @@ check_gem_dirs() {
     return 11
 }
 
+expect_grep() {
+    local expect_exit="$1"; shift
+    local actual_exit=0
+    grep "$@" >/dev/null || actual_exit=$?
+    if [ "$actual_exit" -eq "$expect_exit" ]; then
+        return 0
+    elif [ "$actual_exit" -eq 0 ]; then
+        return 1
+    else
+        return "$actual_exit"
+    fi
+}
+
+env -C current bundle list >"$ARV_PACKAGES_DIR/$PACKAGE_NAME.gems"
 check_gem_dirs "initial install"
+
+SVC_OVERRIDES="$(mktemp --tmpdir arvados-railsapi-XXXXXX.conf)"
+trap 'rm -f "$API_GEMS_LS" "$SVC_OVERRIDES"' EXIT INT TERM QUIT
+cat /lib/systemd/system/arvados-railsapi.service.d/*.conf >"$SVC_OVERRIDES"
 
 case "$TARGET" in
     debian*|ubuntu*)
-        apt-get install -y nginx
-        dpkg-reconfigure "$PACKAGE_NAME"
+        expect_grep 0 -x SupplementaryGroups=www-data "$SVC_OVERRIDES"
         ;;
     rocky*)
-        microdnf --assumeyes install httpd
+        expect_grep 1 "^SupplementaryGroups=" "$SVC_OVERRIDES"
+        microdnf --assumeyes install nginx
         microdnf --assumeyes reinstall "$PACKAGE_NAME"
+        check_gem_dirs "package reinstall"
+        expect_grep 0 -x SupplementaryGroups=nginx "$SVC_OVERRIDES"
         ;;
     *)
-        echo -e "$0: Unknown target '$TARGET'.\n" >&2
-        exit 1
+        echo "$0: WARNING: Unknown target '$TARGET'." >&2
         ;;
 esac
-
-check_gem_dirs "package reinstall"
-env -C current bundle list >"$ARV_PACKAGES_DIR/$PACKAGE_NAME.gems"
