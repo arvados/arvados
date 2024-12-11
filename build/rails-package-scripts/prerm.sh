@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# This code runs after package variable definitions and step2.sh.
+# This code runs after package variable definitions.
 
 remove () {
   rm -f $RELEASE_PATH/config/database.yml
@@ -14,12 +14,13 @@ remove () {
   rm -rf $RELEASE_PATH/tmp
   rm -rf $RELEASE_PATH/.bundle
   rm -rf $RELEASE_PATH/log
+  rm -rf /lib/systemd/system/arvados-railsapi.service.d
 }
 
 if [ "$1" = 'remove' ]; then
   # This is a debian-based system and removal was requested
   remove
-elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
-  # This is an rpm-based system
+elif [ "$1" = "0" ]; then
+  # This is an rpm-based system and zero versions will remain after erasure
   remove
 fi

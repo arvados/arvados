@@ -342,7 +342,7 @@ _build_rails_package_scripts() {
     local destdir="$1"; shift
     local srcdir="$RUN_BUILD_PACKAGES_PATH/rails-package-scripts"
     for scriptname in postinst prerm postrm; do
-        cat "$srcdir/$pkgname.sh" "$srcdir/step2.sh" "$srcdir/$scriptname.sh" \
+        cat "$srcdir/$pkgname.sh" "$srcdir/$scriptname.sh" \
             >"$destdir/$scriptname" || return $?
     done
 }
@@ -553,7 +553,6 @@ BEGIN { OFS="\0"; ORS="\0"; }
     fi
     local railsdir="/var/www/${pkgname%-server}/current"
     local -a pos_args=("$srcdir/=$railsdir" "$pkgname" dir "$version")
-    local license_arg="$license_path=$railsdir/$(basename "$license_path")"
     local -a switches=(--after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
                        --after-remove "$scripts_dir/postrm")
@@ -570,7 +569,9 @@ BEGIN { OFS="\0"; ORS="\0"; }
     done
     fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/cache-*" \
-              -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
+              -x "$exclude_root/vendor/bundle" "$@" \
+              "$license_path=$railsdir/$(basename "$license_path")" \
+              "$srcdir/arvados-railsapi.service=/lib/systemd/system/arvados-railsapi.service"
     rm -rf "$scripts_dir"
 }
 

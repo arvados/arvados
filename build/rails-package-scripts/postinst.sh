@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# This code runs after package variable definitions and step2.sh.
+# This code runs after package variable definitions.
 
 set -e
 
@@ -23,19 +23,25 @@ if [ -z "$RESETUP_CMD" ]; then
 fi
 # Default documentation URL. This can be set to a more specific URL.
 NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html"
+# This will be set to a command path after we install the version we need.
+BUNDLE=
 
-report_web_service_warning() {
-    local warning="$1"; shift
-    cat >&2 <<EOF
+# systemd_ctl is just "systemctl if we booted with systemd, otherwise a noop."
+# This makes the package installable in Docker containers, albeit without any
+# service deployment.
+if [ -d /run/systemd/system ]; then
+    systemd_ctl() { systemctl "$@"; }
+else
+    systemd_ctl() { true; }
+fi
 
-WARNING: $warning.
-
-To override, set the WEB_SERVICE environment variable to the name of the service
-hosting the Rails server.
-
-After you do that, resume $PACKAGE_NAME setup by running:
-  $RESETUP_CMD
-EOF
+systemd_quote() {
+    if [ $# -ne 1 ]; then
+        echo "error: systemd_quote requires exactly one argument" >&2
+        return 2
+    fi
+    # See systemd.syntax(7) - Use double quotes with backslash escapes
+    echo "$1" | sed -re 's/[\\"]/\\\0/g; s/^/"/; s/$/"/'
 }
 
 run_and_report() {
@@ -56,9 +62,14 @@ run_and_report() {
 }
 
 setup_confdirs() {
+    local confdir confgrp
+    case "$WWW_OWNER" in
+        "") confgrp=root ;;
+        *) confgrp="$WWW_OWNER" ;;
+    esac
     for confdir in "$@"; do
         if [ ! -d "$confdir" ]; then
-            install -d -g "$WWW_OWNER" -m 0750 "$confdir"
+            install -d -g "$confgrp" -m 0750 "$confdir"
         fi
     done
 }
@@ -112,16 +123,16 @@ setup_conffile() {
 }
 
 prepare_database() {
-  DB_MIGRATE_STATUS=`bin/rake db:migrate:status 2>&1 || true`
+  # Prevent PostgreSQL from trying to page output
+  unset PAGER
+  DB_MIGRATE_STATUS=`"$BUNDLE" exec bin/rake db:migrate:status 2>&1 || true`
   if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" bin/rake \
-                     "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
+      run_and_report "Setting up database" "$BUNDLE" exec bin/rake db:schema:load db:seed
   elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
-      run_and_report "Running db:migrate" \
-                     bin/rake db:migrate
+      run_and_report "Running db:migrate" "$BUNDLE" exec bin/rake db:migrate
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
-      run_and_report "Running db:setup" bin/rake db:setup
+      run_and_report "Running db:setup" "$BUNDLE" exec bin/rake db:setup
   else
       # We don't have enough configuration to even check the database.
       return 1
@@ -129,30 +140,9 @@ prepare_database() {
 }
 
 configure_version() {
-  if [ -n "$WEB_SERVICE" ]; then
-      SERVICE_MANAGER=$(guess_service_manager)
-  elif WEB_SERVICE=$(list_services_systemd | grep -E '^(nginx|httpd)'); then
-      SERVICE_MANAGER=systemd
-  elif WEB_SERVICE=$(list_services_service \
-                         | grep -Eo '\b(nginx|httpd)[^[:space:]]*'); then
-      SERVICE_MANAGER=service
-  fi
-
-  if [ -z "$WEB_SERVICE" ]; then
-    report_web_service_warning "Web service (Nginx or Apache) not found"
-  elif [ "$WEB_SERVICE" != "$(echo "$WEB_SERVICE" | head -n 1)" ]; then
-    WEB_SERVICE=$(echo "$WEB_SERVICE" | head -n 1)
-    report_web_service_warning \
-        "Multiple web services found.  Choosing the first one ($WEB_SERVICE)"
-  fi
-
   case "$DISTRO_FAMILY" in
       debian) WWW_OWNER=www-data ;;
-      rhel) case "$WEB_SERVICE" in
-                httpd*) WWW_OWNER=apache ;;
-                nginx*) WWW_OWNER=nginx ;;
-            esac
-            ;;
+      rhel) WWW_OWNER="$(id --group --name nginx || true)" ;;
   esac
 
   # Before we do anything else, make sure some directories and files are in place
@@ -166,13 +156,13 @@ configure_version() {
 
   run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
   local ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-  local bundle="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
-  if ! [ -x "$bundle" ]; then
+  BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+  if ! [ -x "$BUNDLE" ]; then
       # Some distros (at least Ubuntu 24.04) append the Ruby version to the
       # executable name, but that isn't reflected in the output of
       # `gem contents`. Check for that version.
-      bundle="$bundle$ruby_minor_ver"
-      if ! [ -x "$bundle" ]; then
+      BUNDLE="$BUNDLE$ruby_minor_ver"
+      if ! [ -x "$BUNDLE" ]; then
           echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
           return 1
       fi
@@ -180,76 +170,76 @@ configure_version() {
 
   local bundle_path="$SHARED_PATH/vendor_bundle"
   run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-                 "$bundle" config set --local path "$bundle_path"
+                 "$BUNDLE" config set --local path "$bundle_path"
 
   # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
   # which are already installed system-wide, which causes bundle activation to
   # fail later. Work around this by installing all gems manually.
   find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
       | run_and_report "Installing bundle gems" xargs -0r \
-                       gem install --conservative --ignore-dependencies --local --quiet \
+                       gem install --conservative --ignore-dependencies \
+                       --local --no-document --quiet \
                        --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
-  run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
-  run_and_report "Verifying bundle is complete" "$bundle" exec true
+  run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
+  run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
-  if [ -z "$WWW_OWNER" ]; then
-    NOT_READY_REASON="there is no web service account to own Arvados configuration"
-    NOT_READY_DOC_URL="https://doc.arvados.org/install/nginx.html"
-  else
-    cat <<EOF
-
-Assumption: $WEB_SERVICE is configured to serve Rails from
-            $RELEASE_PATH
-Assumption: $WEB_SERVICE and passenger run as $WWW_OWNER
-
-EOF
-
-    echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
-    setup_confdirs /etc/arvados "$CONFIG_PATH"
-    setup_conffile environments/production.rb environments/production.rb.example \
-        || true
-    setup_extra_conffiles
-    echo "... done."
-
-    echo -n "Ensuring directory and file permissions ..."
-    # Ensure correct ownership of a few files
-    chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
-    chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
-    chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
-    chown -R "$WWW_OWNER:" $SHARED_PATH/log
-    # Make sure postgres doesn't try to use a pager.
-    export PAGER=
-    case "$RAILSPKG_DATABASE_LOAD_TASK" in
-        # db:structure:load was deprecated in Rails 6.1 and shouldn't be used.
-        db:schema:load | db:structure:load)
-            chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb || true
-            chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql || true
-            ;;
-    esac
-    chmod 644 $SHARED_PATH/log/*
-    echo "... done."
+  local passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
+  if ! [ -x "$passenger" ]; then
+      echo "Error: failed to find \`passenger\` command after installing bundle" >&2
+      return 1
   fi
+  "$BUNDLE" exec "$passenger-config" build-native-support
+  "$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
+
+  echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
+  setup_confdirs /etc/arvados "$CONFIG_PATH"
+  setup_conffile environments/production.rb environments/production.rb.example \
+      || true
+  # Rails 5.2 does not tolerate dangling symlinks in the initializers
+  # directory, and this one can still be there, left over from a previous
+  # version of the API server package.
+  rm -f $RELEASE_PATH/config/initializers/omniauth.rb
+  echo "... done."
+
+  echo -n "Extending systemd unit configuration ..."
+  local systemd_group
+  if [ -z "$WWW_OWNER" ]; then
+      systemd_group="%N"
+  else
+      systemd_group="$(systemd_quote "$WWW_OWNER")"
+  fi
+  install -d /lib/systemd/system/arvados-railsapi.service.d
+  # The 20 prefix is chosen so most user overrides should come after, which
+  # is what most admins will expect, but there's still space to put drop-ins
+  # earlier.
+  cat >/lib/systemd/system/arvados-railsapi.service.d/20-postinst.conf <<EOF
+[Service]
+ExecStartPre=+/bin/chgrp $systemd_group log tmp
+ExecStartPre=+-/bin/chgrp $systemd_group \${PASSENGER_LOG_FILE}
+ExecStart=
+ExecStart=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger") start --daemonize --pid-file %t/%N/passenger.pid
+ExecStop=
+ExecStop=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger") stop --pid-file %t/%N/passenger.pid
+ExecReload=
+ExecReload=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger-config") reopen-logs
+${WWW_OWNER:+SupplementaryGroups=$WWW_OWNER}
+EOF
+  systemd_ctl daemon-reload
+  echo "... done."
 
   if [ -n "$NOT_READY_REASON" ]; then
       :
   # warn about config errors (deprecated/removed keys from
   # previous version, etc)
-  elif ! run_and_report "Checking configuration for completeness" bin/rake config:check; then
+  elif ! run_and_report "Checking configuration for completeness" "$BUNDLE" exec bin/rake config:check; then
       NOT_READY_REASON="you must add required configuration settings to /etc/arvados/config.yml"
       NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html#update-config"
-  elif [ -z "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
-      :
   elif ! prepare_database; then
       NOT_READY_REASON="database setup could not be completed"
   fi
 
-  if [ -n "$WWW_OWNER" ]; then
-    chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
-    chmod -R 2775 $RELEASE_PATH/tmp
-  fi
-
-  if [ -z "$NOT_READY_REASON" ] && [ -n "$SERVICE_MANAGER" ]; then
-      service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"
+  if [ -z "$NOT_READY_REASON" ]; then
+      systemd_ctl try-restart arvados-railsapi.service
   fi
 }
 

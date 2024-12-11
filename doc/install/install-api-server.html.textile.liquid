@@ -28,9 +28,7 @@ Here is a simplified diagram showing the relationship between the core services.
 h2(#dependencies). Install dependencies
 
 # "Install PostgreSQL":install-postgresql.html
-# "Install Ruby and Bundler":ruby.html
 # "Install nginx":nginx.html
-# "Install Phusion Passenger":https://www.phusionpassenger.com/docs/tutorials/deploy_to_production/installations/oss/ownserver/ruby/nginx/
 
 h2(#database-setup). Set up database
 
@@ -77,7 +75,7 @@ h3. PostgreSQL.Connection
 </code></pre>
 </notextile>
 
-Replace the @$postgres_password@ placeholder with the password you generated during "database setup":#database-setup .
+Replace the @$postgres_password@ placeholder with the password you generated during "database setup":#database-setup.
 
 h3. Services
 
@@ -100,7 +98,7 @@ The @Services@ section of the configuration helps Arvados components contact one
 
 h2(#update-nginx). Update nginx configuration
 
-Use a text editor to create a new file @/etc/nginx/conf.d/arvados-api-and-controller.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-controller.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
 <pre><code>proxy_http_version 1.1;
@@ -166,32 +164,6 @@ server {
     proxy_set_header      X-Real-IP         $remote_addr;
   }
 }
-
-server {
-  # This configures the Arvados API server.  It is written using Ruby
-  # on Rails and uses the Passenger application server.
-
-  listen <span class="userinput">localhost:8004</span>;
-  server_name localhost-api;
-
-  root /var/www/arvados-api/current/public;
-  index  index.html index.htm index.php;
-
-  passenger_enabled on;
-  passenger_preload_bundler on;
-  passenger_load_shell_envvars off;
-  # The API server needs to find `arvados-server` in $PATH to read the cluster
-  # configuration. If you have installed `arvados-server` in a nonstandard
-  # location, add that directory to the PATH value here.
-  passenger_env_var PATH /usr/bin:/usr/local/bin;
-
-  # This value effectively limits the size of API objects users can
-  # create, especially collections.  If you change this, you should
-  # also ensure the following settings match it:
-  # * `client_max_body_size` in the previous server section
-  # * `API.MaxRequestSize` in config.yml
-  client_max_body_size 128m;
-}
 </code></pre>
 </notextile>
 
@@ -199,7 +171,22 @@ server {
 
 {% include 'install_packages' %}
 
-{% assign arvados_component = 'arvados-controller' %}
+h3(#railsapi-config). Configure Rails API server
+
+By default, the Rails API server is configured to listen on @localhost:8004@, matching the example cluster configuration above. If you need to change this, edit the @arvados-railsapi.service@ definition to redefine the @PASSENGER_ADDRESS@ and @PASSENGER_PORT@ environment variables, like this:
+
+<notextile>
+<pre><code># <span class="userinput">systemctl edit arvados-railsapi.service</span>
+### Editing /etc/systemd/system/arvados-railsapi.service.d/override.conf in your editor
+<span class="userinput">[Service]
+Environment=PASSENGER_ADDRESS=<strong>0.0.0.0</strong>
+Environment=PASSENGER_PORT=<strong>8040</strong>
+</span></code></pre>
+</notextile>
+
+You can similarly define other Passenger settings if desired. The "Passenger Standalone reference":https://www.phusionpassenger.com/library/config/standalone/reference/ documents all the available settings.
+
+{% assign arvados_component = 'arvados-railsapi arvados-controller' %}
 
 {% include 'start_service' %}
 
@@ -226,8 +213,6 @@ h3. Confirm that you can use the system root token to act as the system root use
 
 h3. Troubleshooting
 
-If you are getting TLS errors, make sure the @ssl_certificate@ directive in your nginx configuration has the "full certificate chain":http://nginx.org/en/docs/http/configuring_https_servers.html#chains
+If you are getting TLS errors, make sure the @ssl_certificate@ directive in your nginx configuration has the "full certificate chain":http://nginx.org/en/docs/http/configuring_https_servers.html#chains.
 
-Logs can be found in @/var/www/arvados-api/current/log/production.log@ and using @journalctl -u arvados-controller@.
-
-See also the admin page on "Logging":{{site.baseurl}}/admin/logging.html .
+Logs can be found in @/var/www/arvados-api/current/log/production.log@ and using @journalctl -u arvados-controller@. See also the admin page on "Logging":{{site.baseurl}}/admin/logging.html.
