@@ -36,11 +36,12 @@ expect_grep() {
     grep "$@" >/dev/null || actual_exit=$?
     if [ "$actual_exit" -eq "$expect_exit" ]; then
         return 0
-    elif [ "$actual_exit" -eq 0 ]; then
-        return 1
-    else
-        return "$actual_exit"
     fi
+    echo "Package $PACKAGE_NAME FAILED: \`grep" "$@" "\` returned exit code $actual_exit" >&2
+    case "$actual_exit" in
+        0) return 1 ;;
+        *) return "$actual_exit" ;;
+    esac
 }
 
 env -C current bundle list >"$ARV_PACKAGES_DIR/$PACKAGE_NAME.gems"
