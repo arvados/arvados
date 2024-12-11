@@ -61,6 +61,19 @@ run_and_report() {
     return $retcode
 }
 
+setup_confdirs() {
+    local confdir confgrp
+    case "$WWW_OWNER" in
+        "") confgrp=root ;;
+        *) confgrp="$WWW_OWNER" ;;
+    esac
+    for confdir in "$@"; do
+        if [ ! -d "$confdir" ]; then
+            install -d -g "$confgrp" -m 0750 "$confdir"
+        fi
+    done
+}
+
 setup_conffile() {
     # Usage: setup_conffile CONFFILE_PATH [SOURCE_PATH]
     # Both paths are relative to RELEASE_CONFIG_PATH.
@@ -179,10 +192,7 @@ configure_version() {
   "$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
 
   echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
-  install -d -m 0750 /etc/arvados "$CONFIG_PATH"
-  if [ -n "$WWW_OWNER" ]; then
-      chgrp "$WWW_OWNER" /etc/arvados "$CONFIG_PATH"
-  fi
+  setup_confdirs /etc/arvados "$CONFIG_PATH"
   setup_conffile environments/production.rb environments/production.rb.example \
       || true
   # Rails 5.2 does not tolerate dangling symlinks in the initializers
