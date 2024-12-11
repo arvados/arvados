@@ -30,6 +30,7 @@ case "$TARGET" in
             zlib-devel
             # Passenger runtime dependencies
             libnsl
+            openssl-devel
         )
         ;;
     ubuntu2004)
@@ -44,6 +45,7 @@ case "$TARGET" in
             # Passenger runtime dependencies
             # libnsl2 is excluded because it was included as part of glibc
             libnss-systemd
+            libssl-dev
         )
         ;;
     debian* | ubuntu*)
@@ -58,6 +60,7 @@ case "$TARGET" in
             # Passenger runtime dependencies
             libnsl2
             libnss-systemd
+            libssl-dev
         )
         ;;
 esac
