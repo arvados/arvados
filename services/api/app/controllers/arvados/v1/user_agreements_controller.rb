@@ -15,6 +15,15 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     'links'
   end
 
+  def limit_database_read(model_class:)
+    # Because we implement a custom index method that takes no arguments,
+    # there's nothing to limit. Explicitly override; the superclass isn't
+    # prepared for the case where model_class is not the type of @objects.
+    # This should be safe since administrators are expected to select a (very)
+    # limited number of agreements.
+    return
+  end
+
   def index
     if not current_user.is_invited
       # New users cannot see user agreements until/unless invited to

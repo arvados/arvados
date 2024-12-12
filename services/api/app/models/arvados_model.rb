@@ -225,7 +225,18 @@ class ArvadosModel < ApplicationRecord
     # If an index request reads that column from the database,
     # APIs that return lists will only fetch objects until reaching
     # max_index_database_read bytes of data from those columns.
-    []
+    # This default implementation returns all columns that aren't "small".
+    self.columns.select do |col|
+      col_meta = col.sql_type_metadata
+      case col_meta.type
+      when :boolean, :datetime, :float, :integer
+        false
+      else
+        # 1024 is a semi-arbitrary choice. As of Arvados 3.0.0, "regular"
+        # strings are typically 255, and big strings are much larger (512K).
+        col_meta.limit.nil? or (col_meta.limit > 1024)
+      end
+    end.map(&:name)
   end
 
   # If current user can manage the object, return an array of uuids of

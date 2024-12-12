@@ -47,8 +47,4 @@ class Workflow < ArvadosModel
   def self.full_text_searchable_columns
     super - ["definition"]
   end
-
-  def self.limit_index_columns_read
-    ["definition"]
-  end
 end
