@@ -289,7 +289,6 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
-
   test 'serialized attributes dirty tracking with audit log settings' do
     Rails.configuration.AuditLogs.MaxDeleteBatch = 1000
     set_user_from_auth :admin
