@@ -31,7 +31,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'faraday', '~> 2.8.0'
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
   s.add_runtime_dependency 'faraday-gzip', '~> 2.0'
-  s.add_runtime_dependency 'googleauth', '~> 1.0'
+  # googleauth stopped supporting Ruby 2.7 in 1.2.0 (due to a new dependency).
+  s.add_runtime_dependency 'googleauth', '~> 1.1.0'
   s.add_runtime_dependency 'multi_json', '~> 1.10'
   s.add_runtime_dependency 'autoparse', '~> 0.3'
   s.add_runtime_dependency 'extlib', '~> 0.9'
