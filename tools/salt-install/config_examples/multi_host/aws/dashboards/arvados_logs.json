@@ -174,7 +174,7 @@
               "uid": "${DS_LOKI}"
             },
             "editorMode": "code",
-            "expr": "sum(count_over_time({systemd_unit=~\"arvados-controller\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RespStatusCode =~ `2[0-9]{2}` | RequestId =~ `${request_id}` [$__auto])) + sum(count_over_time({filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | RespStatusCode =~ `2[0-9]{2}` | RequestId =~ `${request_id}` [$__auto]))",
+            "expr": "sum(count_over_time({systemd_unit=~\"arvados-controller\\\\.service|arvados-railsapi\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RespStatusCode =~ `2[0-9]{2}` | RequestId =~ `${request_id}` [$__auto])) + sum(count_over_time({filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | RespStatusCode =~ `2[0-9]{2}` | RequestId =~ `${request_id}` [$__auto]))",
             "legendFormat": "ok",
             "queryType": "range",
             "refId": "ok"
@@ -185,7 +185,7 @@
               "uid": "${DS_LOKI}"
             },
             "editorMode": "builder",
-            "expr": "sum(count_over_time({systemd_unit=~\"arvados-controller\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RespStatusCode =~ `[45][0-9]{2}` | RequestId =~ `${request_id}` [$__auto])) + sum(count_over_time({filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | RespStatusCode =~ `[45][0-9]{2}` | RequestId =~ `${request_id}` [$__auto]))",
+            "expr": "sum(count_over_time({systemd_unit=~\"arvados-controller\\\\.service|arvados-railsapi\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RespStatusCode =~ `[45][0-9]{2}` | RequestId =~ `${request_id}` [$__auto])) + sum(count_over_time({filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | RespStatusCode =~ `[45][0-9]{2}` | RequestId =~ `${request_id}` [$__auto]))",
             "hide": false,
             "legendFormat": "errors",
             "queryType": "range",
@@ -223,7 +223,7 @@
               "uid": "${DS_LOKI}"
             },
             "editorMode": "code",
-            "expr": "{systemd_unit=~\"arvados-controller\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RequestId =~ `${request_id}`",
+            "expr": "{systemd_unit=~\"arvados-controller\\\\.service|arvados-railsapi\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RequestId =~ `${request_id}`",
             "queryType": "range",
             "refId": "Arvados Journald logs"
           },
