@@ -247,6 +247,49 @@ class ArvadosModelTest < ActiveSupport::TestCase
     assert_equal({'foo' => 'bar'}, c.properties)
   end
 
+  {
+    Collection => ["description", "manifest_text"],
+    Container => [
+      "command",
+      "environment",
+      "output_properties",
+      "runtime_constraints",
+      "secret_mounts",
+    ],
+    ContainerRequest => [
+      "command",
+      "environment",
+      "mounts",
+      "output_glob",
+      "output_properties",
+      "properties",
+      "runtime_constraints",
+      "secret_mounts",
+    ],
+    Group => ["description", "properties"],
+    Log => ["properties", "summary"],
+  }.each_pair do |model, expect|
+    test "#{model.name} limits expected columns on index" do
+      assert_equal(
+        (model.limit_index_columns_read & expect).sort,
+        expect.sort,
+      )
+    end
+  end
+
+  {
+    Collection => ["delete_at", "preserve_version", "trash_at", "version"],
+    Container => ["cost", "progress", "state", "subrequests_cost"],
+    ContainerRequest => ["container_uuid", "cwd", "requesting_container_uuid"],
+    Group => ["group_class", "is_trashed", "trashed_at"],
+    Log => ["event_at", "event_type"],
+  }.each_pair do |model, colnames|
+    test "#{model.name} does not limit expected columns on index" do
+      assert_equal(model.limit_index_columns_read & colnames, [])
+    end
+  end
+
+
   test 'serialized attributes dirty tracking with audit log settings' do
     Rails.configuration.AuditLogs.MaxDeleteBatch = 1000
     set_user_from_auth :admin
