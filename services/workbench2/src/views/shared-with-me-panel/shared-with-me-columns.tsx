@@ -30,6 +30,7 @@ import { SortDirection } from 'components/data-table/data-column';
 import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { ContainerRequestResource } from 'models/container-request';
+import { CollectionResource } from "models/collection";
 
 export enum SharedWithMePanelColumnNames {
     NAME = 'Name',
@@ -53,7 +54,7 @@ export enum SharedWithMePanelColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const sharedWithMePanelColumns: DataColumns<ProjectResource> = [
+export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionResource> = [
     {
         name: SharedWithMePanelColumnNames.NAME,
         selected: true,

@@ -25,6 +25,7 @@ import {
     renderDeleteDate,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
+import { CollectionResource } from "models/collection";
 
 export enum ProjectPanelDataColumnNames {
     NAME = 'Name',
@@ -48,7 +49,7 @@ export enum ProjectPanelDataColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelDataColumns: DataColumns<ProjectResource> = [
+export const projectPanelDataColumns: DataColumns<ProjectResource | CollectionResource> = [
     {
         name: ProjectPanelDataColumnNames.NAME,
         selected: true,

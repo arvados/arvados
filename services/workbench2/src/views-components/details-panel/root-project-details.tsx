@@ -48,7 +48,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface RootProjectDetailsComponentDataProps {
-    rootProject: any;
+    rootProject: UserResource;
 }
 
 const mapStateToProps = (state: RootState): { resources: ResourcesState } => {
@@ -69,7 +69,7 @@ export const RootProjectDetailsComponent = connect(mapStateToProps, mapDispatchT
         ({ rootProject}: RootProjectDetailsComponentProps & { resources: ResourcesState }) => <div>
             <DetailsAttribute label='Type' value="Root Project" />
             <DetailsAttribute label='User' />
-            <RenderFullName resource={rootProject as UserResource} />
+            <RenderFullName resource={rootProject} />
             <DetailsAttribute label='Created at' value={formatDate(rootProject.createdAt)} />
             <DetailsAttribute label='UUID' linkToUuid={rootProject.uuid} value={rootProject.uuid} />
         </div>
