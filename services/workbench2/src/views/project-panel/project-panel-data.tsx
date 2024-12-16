@@ -152,9 +152,9 @@ const DEFAULT_VIEW_MESSAGES = ['No data found'];
 
 interface ProjectPanelDataProps {
     paperClassName?: string;
-    onRowClick: (item: ProjectResource) => void;
-    onRowDoubleClick: ({uuid}: ProjectResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ProjectResource) => void;
+    onRowClick: (item: ProjectResource | CollectionResource) => void;
+    onRowDoubleClick: ({uuid}: ProjectResource | CollectionResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ProjectResource | CollectionResource) => void;
 };
 
 export const ProjectPanelData = class extends React.Component<ProjectPanelDataProps> {

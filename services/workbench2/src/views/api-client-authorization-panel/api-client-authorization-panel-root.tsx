@@ -97,7 +97,7 @@ const DEFAULT_MESSAGE = 'Your api client authorization list is empty.';
 
 export interface ApiClientAuthorizationPanelRootActionProps {
     onItemClick: (resource: ApiClientAuthorization) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ApiClientAuthorization) => void;
     onItemDoubleClick: (resource: ApiClientAuthorization) => void;
 }
 

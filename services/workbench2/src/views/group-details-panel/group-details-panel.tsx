@@ -12,7 +12,6 @@ import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
@@ -145,12 +144,10 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = {
-    onContextMenu: openContextMenu,
     onAddUser: openAddGroupMembersDialog,
 };
 
 export interface GroupDetailsPanelProps {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
     resources: ResourcesState;
     groupCanManage: boolean;

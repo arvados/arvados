@@ -14,8 +14,8 @@ import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-acti
 import { ProcessResource } from "models/process";
 
 const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => ({
-    onContextMenu: (event, resourceUuid, resources) => {
-        const process = getProcess(resourceUuid)(resources);
+    onContextMenu: (event, resource, resources) => {
+        const process = getProcess(resource.uuid)(resources);
         if (process) {
             dispatch<any>(openProcessContextMenu(event, process));
         }

@@ -11,7 +11,7 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { openUserContextMenu } from "store/context-menu/context-menu-actions";
-import { getResource, ResourcesState } from "store/resources/resources";
+import { ResourcesState } from "store/resources/resources";
 import {
     ResourceIsAdmin,
     UserResourceAccountStatus,
@@ -107,7 +107,7 @@ interface UserPanelDataProps {
 
 interface UserPanelActionProps {
     openUserCreateDialog: () => void;
-    handleContextMenu: (event, resource: UserResource) => void;
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: UserResource) => void;
 }
 
 const mapStateToProps = (state: RootState) => {
@@ -118,7 +118,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
-    handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 
 type UserPanelProps = UserPanelDataProps & UserPanelActionProps & DispatchProp & WithStyles<UserPanelRules>;
@@ -150,9 +150,8 @@ export const UserPanel = compose(
                 </Paper>;
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: UserResource) => {
                 event.stopPropagation();
-                const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
                 if (resource) {
                     this.props.handleContextMenu(event, resource);
                 }

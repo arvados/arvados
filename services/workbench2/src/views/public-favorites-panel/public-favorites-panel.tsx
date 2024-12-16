@@ -120,7 +120,7 @@ interface PublicFavoritePanelDataProps {
 
 interface PublicFavoritePanelActionProps {
     onItemClick: (resource: GroupContentsResource) => void;
-    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
     onItemDoubleClick: (resource: GroupContentsResource) => void;
 }
 const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavoritePanelDataProps => ({
@@ -129,7 +129,7 @@ const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavor
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
-    onContextMenu: (resources: ResourcesState) => (event, resource: GroupContentsResource) => {
+    onContextMenu: (event, resource: GroupContentsResource) => {
         const kind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
         if (kind && resource) {
             dispatch<any>(openContextMenu(event, {
@@ -165,7 +165,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     id={PUBLIC_FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
-                    onContextMenu={this.props.onContextMenu(this.props.resources)}
+                    onContextMenu={this.props.onContextMenu}
                     contextMenuColumn={false}
                     defaultViewIcon={PublicFavoriteIcon}
                     defaultViewMessages={['Public favorites list is empty.']} />

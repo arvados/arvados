@@ -21,6 +21,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
+import { ContainerRequestResource } from 'models/container-request';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
@@ -88,7 +89,7 @@ export interface WorkflowProcessesPanelDataProps {
 
 export interface WorkflowProcessesPanelActionProps {
     onItemClick: (resource: ProcessResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: ProcessResource, resources: ResourcesState) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: ContainerRequestResource, resources: ResourcesState) => void;
     onItemDoubleClick: (resource: ProcessResource) => void;
 }
 
@@ -116,7 +117,7 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         id={WORKFLOW_PROCESSES_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
+        onContextMenu={(event, item: ContainerRequestResource) => props.onContextMenu(event, item, props.resources)}
         contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}

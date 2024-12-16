@@ -98,7 +98,7 @@ export const collectionContentAddressPanelColumns: DataColumns<CollectionResourc
 ];
 
 interface CollectionContentAddressPanelActionProps {
-    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, resource: CollectionResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: CollectionResource) => void;
     onItemClick: (resource: CollectionResource) => void;
     onItemDoubleClick: (resource: CollectionResource) => void;
 }
@@ -112,7 +112,7 @@ const mapStateToProps = ({ resources }: RootState): CollectionContentAddressPane
 })
 
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
-    onContextMenu: (resources: ResourcesState) => (event, resource) => {
+    onContextMenu: (event, resource) => {
         const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
         if (menuKind) {
             dispatch<any>(openContextMenu(event, {
@@ -159,7 +159,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         hideSearchInput
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu(this.props.resources)}
+                        onContextMenu={this.props.onContextMenu}
                         contextMenuColumn={true}
                         title={`Content address: ${this.props.match.params.id}`}
                         defaultViewIcon={CollectionIcon}
