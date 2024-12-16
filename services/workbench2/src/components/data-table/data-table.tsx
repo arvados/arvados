@@ -28,6 +28,7 @@ import { IconType, PendingIcon } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { Resource } from "models/resource";
 
 export enum DataTableFetchMode {
     PAGINATED,
@@ -170,13 +171,8 @@ type DataTableState = {
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
-// tell compiler that all items will have a uuid prop
-export interface DataTableItem {
-    uuid: string;
-}
-
 export const DataTable = withStyles(styles)(
-    class Component<T extends DataTableItem> extends React.Component<DataTableProps<T>> {
+    class Component<T extends Resource> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
             isLoaded: false,
