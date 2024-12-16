@@ -30,3 +30,8 @@ func (bs *BlockSegment) UnmarshalJSON(data []byte) error {
 func (bs BlockSegment) MarshalText() ([]byte, error) {
 	return []byte(fmt.Sprintf("%s %d %d", bs.Locator, bs.Offset, bs.Length)), nil
 }
+
+func (bs BlockSegment) StripAllHints() BlockSegment {
+	bs.Locator = stripAllHints(bs.Locator)
+	return bs
+}
