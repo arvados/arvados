@@ -19,6 +19,7 @@ import { noop } from 'lodash/fp';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -71,6 +72,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: any) => {
     return {
+        onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
         onNewGroup: () => dispatch(openCreateGroupDialog()),
         handleRowClick: ({uuid}: GroupResource) => {
             dispatch(toggleOne(uuid))
