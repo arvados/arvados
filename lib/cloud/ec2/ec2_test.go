@@ -160,7 +160,7 @@ func (e *ec2stub) DescribeInstanceStatus(ctx context.Context, input *ec2.Describ
 }
 
 func (e *ec2stub) DescribeSpotPriceHistory(ctx context.Context, input *ec2.DescribeSpotPriceHistoryInput, _ ...func(*ec2.Options)) (*ec2.DescribeSpotPriceHistoryOutput, error) {
-	if input.NextToken == nil {
+	if input.NextToken == nil || *input.NextToken == "" {
 		return &ec2.DescribeSpotPriceHistoryOutput{
 			SpotPriceHistory: []types.SpotPrice{
 				types.SpotPrice{
@@ -188,6 +188,7 @@ func (e *ec2stub) DescribeSpotPriceHistory(ctx context.Context, input *ec2.Descr
 					Timestamp:        aws.Time(e.reftime.Add(-2 * time.Minute)),
 				},
 			},
+			NextToken: aws.String(""), // see bug #22400
 		}, nil
 	}
 }
