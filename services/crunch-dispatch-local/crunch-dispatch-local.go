@@ -54,7 +54,7 @@ func main() {
 
 	flags.StringVar(&crunchRunCommand,
 		"crunch-run-command",
-		"/usr/bin/crunch-run",
+		"",
 		"Crunch command to run container")
 
 	getVersion := flags.Bool(
@@ -82,6 +82,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
 		os.Exit(1)
+	}
+
+	if crunchRunCommand == "" {
+		crunchRunCommand = cluster.Containers.CrunchRunCommand
 	}
 
 	logger := baseLogger.WithField("ClusterID", cluster.ClusterID)
@@ -175,7 +179,9 @@ type LocalRun struct {
 func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 	maxVcpus := runtime.NumCPU()
 	var maxRam int64 = int64(memory.TotalMemory())
-	maxGpus := 4
+
+	// treat all GPUs as a single resource for now.
+	maxGpus := 1
 
 	var allocVcpus int
 	var allocRam int64
@@ -297,7 +303,11 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		waitGroup.Add(1)
 		defer waitGroup.Done()
 
-		cmd := exec.Command(crunchRunCommand, "--runtime-engine="+lr.cluster.Containers.RuntimeEngine, uuid)
+		args := []string{"--runtime-engine=" + lr.cluster.Containers.RuntimeEngine}
+		args = append(args, lr.cluster.Containers.CrunchRunArgumentsList...)
+		args = append(args, uuid)
+
+		cmd := exec.Command(crunchRunCommand, args...)
 		cmd.Stdin = nil
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
