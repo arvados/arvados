@@ -188,14 +188,17 @@ export const DataTable = withStyles(styles)(
         }
 
         shouldComponentUpdate( nextProps: Readonly<DataTableProps<T>>, nextState: Readonly<DataTableState>, nextContext: any ): boolean {
-            const { items, currentRouteUuid, isNotFound } = this.props;
+            const { items, currentRouteUuid, isNotFound, checkedList, columns, working } = this.props;
             const { isSelected, isLoaded, hoveredIndex } = this.state;
             return items !== nextProps.items
                 || currentRouteUuid !== nextProps.currentRouteUuid
                 || isNotFound !== nextProps.isNotFound
                 || isLoaded !== nextState.isLoaded
                 || isSelected !== nextState.isSelected
-                || hoveredIndex !== nextState.hoveredIndex;
+                || hoveredIndex !== nextState.hoveredIndex
+                || checkedList !== nextProps.checkedList
+                || columns !== nextProps.columns
+                || working !== nextProps.working;
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
