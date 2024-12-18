@@ -10,8 +10,10 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -171,6 +173,45 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute", "utility"}},
 		})
 	}
+	//if spec.ROCmDeviceCount != 0 {
+	// there's no container toolkit for ROCm so we're gonna have to do this the hard way.
+
+	// fortunately, the minimum version of this seems to be this:
+	// rendergroup=$(getent group render | cut -d: -f3)
+	// videogroup=$(getent group video | cut -d: -f3)
+	// docker run -it --device=/dev/kfd --device=/dev/dri/renderD128 --user $(id -u) --group-add $videogroup --group-add $rendergroup "$@"
+
+	// Need to do some basic device detection, they show
+	// up in /dev/dri but want to be able to tell the
+	// difference between iGPU and eGPU
+
+	if amdVisibleDevices := os.Getenv("AMD_VISIBLE_DEVICES"); amdVisibleDevices != "" {
+		hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
+			PathInContainer: "/dev/kfd",
+			PathOnHost:      "/dev/kfd",
+		})
+		info, _ := os.Stat("/dev/kfd")
+		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+			hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
+		}
+
+		for _, dev := range strings.Split(amdVisibleDevices, ",") {
+			intDev, err := strconv.Atoi(dev)
+			if err != nil {
+				continue
+			}
+			devPath := fmt.Sprintf("/dev/dri/renderD%v", 128+intDev)
+			hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
+				PathInContainer: devPath,
+				PathOnHost:      devPath,
+			})
+			info, _ = os.Stat(devPath)
+			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+				hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
+			}
+		}
+	}
+
 	for path, mount := range spec.BindMounts {
 		bind := mount.HostPath + ":" + path
 		if mount.ReadOnly {
