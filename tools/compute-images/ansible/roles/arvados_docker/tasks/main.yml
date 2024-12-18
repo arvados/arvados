@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: Install Docker package pins
+  become: yes
   ansible.builtin.copy:
     src: arvados-docker.pref
     dest: /etc/apt/preferences.d/arvados-docker.pref
@@ -12,6 +13,7 @@
   when: "arvados_compute_pin_packages|bool"
 
 - name: Install Docker apt repository
+  become: yes
   ansible.builtin.deb822_repository:
     name: docker
     types: deb
@@ -22,6 +24,7 @@
   register: docker_apt_task
 
 - name: Install Docker
+  become: yes
   ansible.builtin.apt:
     update_cache: "{{ docker_apt_task.changed }}"
     name: docker-ce
