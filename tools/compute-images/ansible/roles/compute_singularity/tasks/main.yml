@@ -34,7 +34,15 @@
     dest: "{{ singularity_build.path }}/VERSION"
     mode: 0644
 
+- name: Check if Go is already installed
+  become: no
+  ansible.builtin.command:
+    cmd: go version
+  failed_when: "false"
+  register: go_version
+
 - name: Install Go
+  when: "go_version.rc != 0"
   become: no
   ansible.builtin.unarchive:
     src: "https://storage.googleapis.com/golang/go{{ compute_go_version }}.linux-amd64.tar.gz"

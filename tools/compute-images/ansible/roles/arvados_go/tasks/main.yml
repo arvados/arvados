@@ -1,0 +1,31 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Set up Go directory
+  become: yes
+  ansible.builtin.file:
+    state: directory
+    path: "/opt/go{{ arvados_go_version }}"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install Go
+  become: yes
+  ansible.builtin.unarchive:
+    src: "https://storage.googleapis.com/golang/go{{ arvados_go_version }}.linux-amd64.tar.gz"
+    dest: "/opt/go{{ arvados_go_version }}"
+    extra_opts:
+      - "--strip-components=1"
+    remote_src: yes
+
+- name: Add Go commands to PATH
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "/opt/go{{ arvados_go_version }}/bin/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+  loop:
+    - go
+    - gofmt
