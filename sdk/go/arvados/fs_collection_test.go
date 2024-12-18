@@ -11,10 +11,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"runtime/pprof"
@@ -1862,6 +1865,78 @@ func (s *CollectionFSSuite) TestRepackData(c *check.C) {
 			}
 		}
 	}
+}
+
+func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
+	s.kc.blocks = make(map[string][]byte)
+	testfs, err := (&Collection{}).FileSystem(nil, s.kc)
+	c.Assert(err, check.IsNil)
+	cfs := testfs.(*collectionFileSystem)
+	gitdir, err := filepath.Abs("../../..")
+	c.Assert(err, check.IsNil)
+	infs := os.DirFS(gitdir)
+	buf, err := exec.Command("git", "-C", gitdir, "ls-files").CombinedOutput()
+	c.Assert(err, check.IsNil, check.Commentf("%s", buf))
+	dirsCreated := make(map[string]bool)
+	bytesContent := 0
+	bytesRewritten := 0
+	bytesWritten := func() (n int) {
+		s.kc.Lock()
+		defer s.kc.Unlock()
+		for _, data := range s.kc.blocks {
+			n += len(data)
+		}
+		return
+	}
+	blocksInManifest := func() int {
+		blocks := make(map[string]bool)
+		cfs.fileSystem.root.(*dirnode).walkSegments(func(s segment) segment {
+			blocks[s.(storedSegment).blockSegment().StripAllHints().Locator] = true
+			return s
+		})
+		return len(blocks)
+	}
+	for _, path := range bytes.Split(buf, []byte("\n")) {
+		path := string(path)
+		if path == "" ||
+			strings.HasPrefix(path, "tools/arvbox/lib/arvbox/docker/service") &&
+				strings.HasSuffix(path, "/run") {
+			// dangling symlink
+			continue
+		}
+		fi, err := fs.Stat(infs, path)
+		c.Assert(err, check.IsNil)
+		if fi.IsDir() || fi.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		for i, c := range path {
+			if c == '/' && !dirsCreated[path[:i]] {
+				testfs.Mkdir(path[:i], 0700)
+				dirsCreated[path[:i]] = true
+			}
+		}
+		data, err := fs.ReadFile(infs, path)
+		c.Assert(err, check.IsNil)
+		f, err := testfs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0700)
+		c.Assert(err, check.IsNil)
+		_, err = f.Write(data)
+		c.Assert(err, check.IsNil)
+		err = f.Close()
+		c.Assert(err, check.IsNil)
+		bytesContent += len(data)
+
+		err = cfs.Flush("", true)
+		c.Assert(err, check.IsNil)
+		_, err = cfs.Repack(context.Background(), RepackOptions{})
+		c.Assert(err, check.IsNil)
+
+		if bw := bytesWritten(); bw > bytesContent+bytesRewritten {
+			bytesRewritten = bw - bytesContent
+			c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", bytesContent, bw, bytesRewritten, blocksInManifest())
+		}
+	}
+	c.Assert(err, check.IsNil)
+	c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", bytesContent, bytesWritten(), bytesRewritten, blocksInManifest())
 }
 
 func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
