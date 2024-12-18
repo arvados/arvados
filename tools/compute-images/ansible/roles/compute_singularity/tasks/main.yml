@@ -11,71 +11,81 @@
       - libseccomp-dev
       - squashfs-tools
 
-- name: Create Singularity build directory
-  become: no
-  ansible.builtin.tempfile:
-    state: directory
-    path: "{{ workdir }}"
-    prefix: singularity-build-
-  register: singularity_build
-
-- name: Clone Singularity
-  become: no
-  ansible.builtin.git:
-    repo: "{{ compute_singularity_url }}"
-    dest: "{{ singularity_build.path }}"
-    version: "v{{ compute_singularity_version }}"
-
-- name: Create Singularity VERSION file
-  become: no
-  ansible.builtin.copy:
-    content: |
-      {{ compute_singularity_version }}
-    dest: "{{ singularity_build.path }}/VERSION"
-    mode: 0644
-
-- name: Check if Go is already installed
+- name: Check Singularity install
   become: no
   ansible.builtin.command:
-    cmd: go version
-  failed_when: "false"
-  register: go_version
+    cmd: "{{ (compute_singularity_destdir, 'bin/singularity')|path_join }} --version"
+  failed_when: false
+  register: singularity_version_check
 
-- name: Install Go
-  when: "go_version.rc != 0"
-  become: no
-  ansible.builtin.unarchive:
-    src: "https://storage.googleapis.com/golang/go{{ compute_go_version }}.linux-amd64.tar.gz"
-    dest: "{{ singularity_build.path }}"
-    remote_src: yes
+- name: Build and install Singularity
+  when: "singularity_version_check.rc != 0"
+  block:
+    - name: Create Singularity build directory
+      become: no
+      ansible.builtin.tempfile:
+        state: directory
+        path: "{{ workdir }}"
+        prefix: singularity-build-
+      register: singularity_build
 
-- name: Build Singularity
-  become: no
-  ansible.builtin.command:
-    cmd: "{{ item }}"
-    chdir: "{{ singularity_build.path }}"
-  environment:
-    GOPATH: "{{ singularity_build.path }}/GOPATH"
-    PATH: "{{ singularity_build.path }}/go/bin:{{ ansible_env.PATH }}"
-  loop:
-    - ./mconfig --prefix=/opt/singularity
-    - env -C builddir make
+    - name: Clone Singularity
+      become: no
+      ansible.builtin.git:
+        repo: "{{ compute_singularity_url }}"
+        dest: "{{ singularity_build.path }}"
+        version: "v{{ compute_singularity_version }}"
 
-- name: Install Singularity
-  ansible.builtin.command:
-    cmd: make install
-    chdir: "{{ singularity_build.path }}/builddir"
+    - name: Create Singularity VERSION file
+      become: no
+      ansible.builtin.copy:
+        content: |
+          {{ compute_singularity_version }}
+        dest: "{{ singularity_build.path }}/VERSION"
+        mode: 0644
 
-- name: Clean Singularity build directory
-  ansible.builtin.file:
-    path: "{{ singularity_build.path }}"
-    state: absent
+    - name: Check if Go is already installed
+      become: no
+      ansible.builtin.command:
+        cmd: go version
+      failed_when: "false"
+      register: go_version
+
+    - name: Install Go
+      when: "go_version.rc != 0"
+      become: no
+      ansible.builtin.unarchive:
+        src: "https://storage.googleapis.com/golang/go{{ compute_go_version }}.linux-amd64.tar.gz"
+        dest: "{{ singularity_build.path }}"
+        remote_src: yes
+
+    - name: Build Singularity
+      become: no
+      ansible.builtin.command:
+        cmd: "{{ item }}"
+        chdir: "{{ singularity_build.path }}"
+      environment:
+        GOPATH: "{{ singularity_build.path }}/GOPATH"
+        PATH: "{{ singularity_build.path }}/go/bin:{{ ansible_env.PATH }}"
+      loop:
+        - "./mconfig --prefix={{ compute_singularity_destdir }}"
+        - env -C builddir make
+
+    - name: Install Singularity
+      ansible.builtin.command:
+        cmd: make install
+        chdir: "{{ singularity_build.path }}/builddir"
+
+    - name: Clean Singularity build directory
+      ansible.builtin.file:
+        path: "{{ singularity_build.path }}"
+        state: absent
 
 - name: Add Singularity commands to PATH
   ansible.builtin.file:
     state: link
-    src: "/opt/singularity/bin/{{ item }}"
-    dest: "/usr/local/bin/{{ item }}"
+    src: "{{ (compute_singularity_destdir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
   loop:
     - run-singularity
     - singularity
@@ -83,7 +93,7 @@
 - name: Configure Singularity mksquashfs mem
   ansible.builtin.lineinfile:
     create: true
-    path: /opt/singularity/etc/singularity/singularity.conf
+    path: "{{ (compute_singularity_destdir, 'etc/singularity/singularity.conf')|path_join }}"
     regexp: "^ *mksquashfs +mem *="
     line: "mksquashfs mem = {{ compute_mksquashfs_mem }}"
   when: compute_mksquashfs_mem is defined
