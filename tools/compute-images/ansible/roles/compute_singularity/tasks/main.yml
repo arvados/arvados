@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: Install Singularity dependencies
+  become: yes
   ansible.builtin.apt:
     name:
       - build-essential
@@ -72,16 +73,19 @@
         - env -C builddir make
 
     - name: Install Singularity
+      become: yes
       ansible.builtin.command:
         cmd: make install
         chdir: "{{ singularity_build.path }}/builddir"
 
     - name: Clean Singularity build directory
+      become: yes
       ansible.builtin.file:
         path: "{{ singularity_build.path }}"
         state: absent
 
 - name: Add Singularity commands to PATH
+  become: yes
   ansible.builtin.file:
     state: link
     src: "{{ (compute_singularity_destdir, 'bin', item)|path_join }}"
@@ -91,6 +95,7 @@
     - singularity
 
 - name: Configure Singularity mksquashfs mem
+  become: yes
   ansible.builtin.lineinfile:
     create: true
     path: "{{ (compute_singularity_destdir, 'etc/singularity/singularity.conf')|path_join }}"
