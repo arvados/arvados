@@ -6,7 +6,7 @@
   become: yes
   ansible.builtin.file:
     state: directory
-    path: "/opt/go{{ arvados_go_version }}"
+    path: "{{ arvados_go_destdir }}"
     owner: root
     group: root
     mode: 0755
@@ -15,17 +15,18 @@
   become: yes
   ansible.builtin.unarchive:
     src: "https://storage.googleapis.com/golang/go{{ arvados_go_version }}.linux-amd64.tar.gz"
-    dest: "/opt/go{{ arvados_go_version }}"
+    dest: "{{ arvados_go_destdir }}"
     extra_opts:
       - "--strip-components=1"
     remote_src: yes
+    creates: "{{ (arvados_go_destdir, 'bin/go')|path_join }}"
 
 - name: Add Go commands to PATH
   become: yes
   ansible.builtin.file:
     state: link
-    src: "/opt/go{{ arvados_go_version }}/bin/{{ item }}"
-    dest: "/usr/local/bin/{{ item }}"
+    src: "{{ (arvados_go_destdir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
   loop:
     - go
     - gofmt
