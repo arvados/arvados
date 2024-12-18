@@ -1,0 +1,228 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# install-test-env.yml - Ansible playbook to set up a host to run Arvados tests
+#
+# THIS IS A PROTOTYPE - NOT FULLY TESTED.
+# The goal is you should be able to run this playbook on a host, clone the
+# Arvados source, and run `build/run-tests.sh`. It might not be 100% of the
+# way there but what's currently here gets the majority of tests passing on
+# Debian 12.
+#
+# In order to use this playbook, you must write an Arvados `config.yml` with
+# PostgreSQL connection details for the `zzzzz` cluster, like so:
+#
+# Clusters:
+#   zzzzz:
+#     PostgreSQL:
+#       Connection:
+#         host: localhost
+#         port: "5432"
+#         dbname: arvados_test
+#         user: arvados_test
+#         password: insecure_arvados_test
+#
+# You can edit `dbname`, `user`, and `password` to taste.
+# Pass the path of this file to `ansible-playbook` with
+# `-e arvados_config=config.yml`.
+
+- name: Load Arvados configuration
+  hosts: all
+  tasks:
+    - name: Load Arvados configuration file
+      delegate_to: localhost
+      ansible.builtin.include_vars:
+        name: arvados_config
+        file: "{{ arvados_config_file }}"
+    - name: Load Arvados cluster configuration
+      ansible.builtin.set_fact:
+        arvados_cluster: "{{ arvados_config.Clusters.zzzzz }}"
+      failed_when: arvados_cluster is undefined
+
+- hosts: all
+  vars:
+    # Arvados tests are hardcoded to use an arvados_test database, so we always
+    # set that up. A different dbname is assumed to be a development database
+    # and we set that up too.
+    arvados_dev_databases: "{{ [arvados_cluster.PostgreSQL.Connection.dbname, 'arvados_test']|unique }}"
+    arvados_dev_user: "{{ ansible_user_id }}"
+    arvados_nodejs_version: "14.21.3"
+    arvados_nodejs_destdir: "/opt/node-v{{ arvados_nodejs_version }}-linux-x64"
+
+  tasks:
+    - name: Bootstrap packages required for Ansible
+      become: yes
+      ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
+      loop:
+        - update
+        - install acl gnupg python3-apt python3-debian python3-psycopg2 xz-utils
+    - name: Install all required development packages
+      become: yes
+      ansible.builtin.apt:
+        name:
+          # Common build and test tools
+          - bison
+          - ca-certificates
+          - curl
+          - diffutils
+          - g++
+          - git
+          - libnss-systemd
+          - make
+          - nginx
+          - postgresql-client
+          - python3-dev
+          - python3-venv
+          - ruby
+          - ruby-dev
+          # Common libraries
+          - libcurl4-openssl-dev
+          - libssl-dev
+          # build/run-tests.sh
+          - bsdextrautils
+          - net-tools
+          # doc
+          - linkchecker
+          # lib/controller
+          - rsync
+          # lib/pam
+          - libpam-dev
+          # sdk/java-v2
+          - default-jdk-headless
+          - gradle
+          # sdk/R
+          - libfontconfig1-dev
+          - libfreetype6-dev
+          - libfribidi-dev
+          - libharfbuzz-dev
+          - libjpeg-dev
+          - libpng-dev
+          - libtiff5-dev
+          - libxml2-dev
+          - r-base
+          # services/api
+          - libnsl2
+          - libpq-dev
+          - locales
+          - procps
+          - shared-mime-info
+          - zlib1g-dev
+          # services/fuse
+          - fuse
+          - libfuse-dev
+          # services/keep-web
+          - cadaver
+          - mime-support
+          # services/workbench2
+          # <https://docs.cypress.io/app/get-started/install-cypress#Linux-Prerequisites>
+          - firefox-esr
+          - libasound2
+          - libgbm-dev
+          - libgtk-3-0
+          - libgtk2.0-0
+          - libnotify-dev
+          - libnss3
+          - libxss1
+          - libxtst6
+          - xauth
+          - xvfb
+
+    - ansible.builtin.include_role:
+        name: arvados_docker
+    - ansible.builtin.include_role:
+        name: arvados_go
+    - ansible.builtin.include_role:
+        name: compute_singularity
+
+    # RailsAPI tests depend on the en_US.UTF-8 locale.
+    # It must be generated before starting the PostgreSQL server.
+    - name: Configure en_US.UTF-8 locale
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
+        line: en_US.UTF-8 UTF-8
+      register: locale_gen
+    - name: Run locale-gen
+      when: locale_gen.changed
+      become: yes
+      ansible.builtin.command:
+        cmd: locale-gen
+    - ansible.builtin.include_role:
+        name: arvados_postgresql
+      vars:
+        arvados_postgresql_hba_users: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
+        arvados_postgresql_hba_databases: "{{ arvados_dev_databases|join(',') }}"
+        arvados_postgresql_hba_sources:
+          - "127.0.0.1/24"
+          - "::1/128"
+
+    - name: Install Node.js
+      become: yes
+      ansible.builtin.unarchive:
+        src: "https://nodejs.org/dist/v{{ arvados_nodejs_version }}/node-v{{ arvados_nodejs_version }}-linux-x64.tar.xz"
+        dest: "{{ arvados_nodejs_destdir|dirname }}"
+        remote_src: yes
+        creates: "{{ (arvados_nodejs_destdir, 'bin/node')|path_join }}"
+    - name: Install yarn
+      become: yes
+      ansible.builtin.command:
+        cmd: npm install -g yarn
+        creates: "{{ (arvados_nodejs_destdir, 'bin/yarn')|path_join }}"
+      environment:
+        PATH: "{{ (arvados_nodejs_destdir, 'bin')|path_join }}:{{ ansible_env.PATH }}"
+    - name: Add Node commands to PATH
+      become: yes
+      ansible.builtin.file:
+        state: link
+        src: "{{ (arvados_nodejs_destdir, 'bin', item)|path_join }}"
+        dest: "{{ ('/usr/local/bin', item)|path_join }}"
+      loop:
+        - node
+        - npm
+        - yarn
+        - yarnpkg
+
+    - ansible.builtin.include_role:
+        name: arvados_database
+      vars:
+        arvados_database_name: "{{ item }}"
+        arvados_database_user_name: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
+        arvados_database_user_password: "{{ arvados_cluster.PostgreSQL.Connection.password }}"
+        # Let the test user drop and recreate the database wholesale
+        arvados_database_role_attr_flags: CREATEDB
+      loop: "{{ arvados_dev_databases }}"
+
+    - name: Set up Arvados development user
+      become: yes
+      ansible.builtin.user:
+        name: "{{ arvados_dev_user }}"
+        groups:
+          - docker
+        append: yes
+      register: dev_user
+    - name: Set up .config/arvados
+      become: yes
+      become_user: "{{ arvados_dev_user }}"
+      ansible.builtin.file:
+        path: "{{ (dev_user.home, item)|path_join }}"
+        state: directory
+      loop:
+        - .config
+        - .config/arvados
+    - name: Write arvados/config.yml for testing
+      become: yes
+      become_user: "{{ arvados_dev_user }}"
+      ansible.builtin.copy:
+        src: "{{ arvados_config_file }}"
+        dest: "{{ (dev_user.home, '.config/arvados/config.yml')|path_join }}"
+        mode: 0600
+    - name: Add Arvados test configuration to profile.d
+      become: yes
+      ansible.builtin.copy:
+        content: |
+          if [ -z "${CONFIGSRC:-}" ] && [ -e ~/.config/arvados/config.yml ]; then
+            export CONFIGSRC="$HOME/.config/arvados"
+          fi
+        dest: /etc/profile.d/arvados-test.sh
