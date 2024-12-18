@@ -1,15 +1,18 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+#
+# Follows the recipe from
+# <https://docs.sylabs.io/guides/3.10/admin-guide/installation.html#id1>
 
 - name: Install Singularity dependencies
   become: yes
   ansible.builtin.apt:
     name:
       - build-essential
-      - git
       - libglib2.0-dev
       - libseccomp-dev
+      - pkg-config
       - squashfs-tools
 
 - name: Check Singularity install
@@ -30,20 +33,14 @@
         prefix: singularity-build-
       register: singularity_build
 
-    - name: Clone Singularity
+    - name: Download Singularity source
       become: no
-      ansible.builtin.git:
-        repo: "{{ compute_singularity_url }}"
+      ansible.builtin.unarchive:
+        src: "https://github.com/sylabs/singularity/releases/download/v{{ compute_singularity_version }}/singularity-ce-{{ compute_singularity_version }}.tar.gz"
         dest: "{{ singularity_build.path }}"
-        version: "v{{ compute_singularity_version }}"
-
-    - name: Create Singularity VERSION file
-      become: no
-      ansible.builtin.copy:
-        content: |
-          {{ compute_singularity_version }}
-        dest: "{{ singularity_build.path }}/VERSION"
-        mode: 0644
+        extra_opts:
+          - "--strip-components=1"
+        remote_src: yes
 
     - name: Check if Go is already installed
       become: no
@@ -67,7 +64,7 @@
         chdir: "{{ singularity_build.path }}"
       environment:
         GOPATH: "{{ singularity_build.path }}/GOPATH"
-        PATH: "{{ singularity_build.path }}/go/bin:{{ ansible_env.PATH }}"
+        PATH: "{{ singularity_build.path }}/go/bin:{{ ansible_env.PATH }}:{{ singularity_build.path }}/GOPATH/bin"
       loop:
         - "./mconfig --prefix={{ compute_singularity_destdir }}"
         - env -C builddir make
