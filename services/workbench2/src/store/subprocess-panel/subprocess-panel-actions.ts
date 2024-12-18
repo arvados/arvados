@@ -123,7 +123,8 @@ export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFi
                     });
 
                 // Simultaneously requests each status count and apply them to the return object
-                (await Promise.all(promises)).forEach((singleResult) => {
+                const results = await resolvePromisesSequentially(promises);
+                results.forEach((singleResult) => {
                     result[singleResult.status] += singleResult.count;
                 });
 
@@ -147,3 +148,15 @@ export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFi
         }
         return undefined;
     };
+
+async function resolvePromisesSequentially<T>(promises: Promise<T>[]) {
+    const results: T[] = [];
+
+    for (const promise of promises) {
+        // Yield control to the event loop before awaiting the promise
+        await new Promise(resolve => setTimeout(resolve, 0));
+        results.push(await promise);
+    }
+
+    return results;
+}
