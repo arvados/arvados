@@ -187,8 +187,9 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 
 	if amdVisibleDevices := os.Getenv("AMD_VISIBLE_DEVICES"); amdVisibleDevices != "" {
 		hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
-			PathInContainer: "/dev/kfd",
-			PathOnHost:      "/dev/kfd",
+			PathInContainer:   "/dev/kfd",
+			PathOnHost:        "/dev/kfd",
+			CgroupPermissions: "rwm",
 		})
 		info, _ := os.Stat("/dev/kfd")
 		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
@@ -202,8 +203,9 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			}
 			devPath := fmt.Sprintf("/dev/dri/renderD%v", 128+intDev)
 			hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
-				PathInContainer: devPath,
-				PathOnHost:      devPath,
+				PathInContainer:   devPath,
+				PathOnHost:        devPath,
+				CgroupPermissions: "rwm",
 			})
 			info, _ = os.Stat(devPath)
 			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
