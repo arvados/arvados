@@ -13,7 +13,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
 import { ResourceKind, ResourceObjectType, extractUuidObjectType, COLLECTION_PDH_REGEX } from 'models/resource';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { getTreePicker, TreePicker, TreeItemWeight, TreeItemWithWeight } from './tree-picker';
+import { getTreePicker, TreePicker} from './tree-picker';
 import { ProjectsTreePickerItem } from './tree-picker-middleware';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
@@ -27,6 +27,7 @@ import { getResource } from "store/resources/resources";
 import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 import { call, put, takeEvery, takeLatest, getContext, select, all } from "redux-saga/effects";
+import { TreeItemWeight, TreeItemWithWeight } from "components/tree/tree";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),

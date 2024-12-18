@@ -187,6 +187,17 @@ export const DataTable = withStyles(styles)(
             }
         }
 
+        shouldComponentUpdate( nextProps: Readonly<DataTableProps<T>>, nextState: Readonly<DataTableState>, nextContext: any ): boolean {
+            const { items, currentRouteUuid, isNotFound } = this.props;
+            const { isSelected, isLoaded, hoveredIndex } = this.state;
+            return items !== nextProps.items
+                || currentRouteUuid !== nextProps.currentRouteUuid
+                || isNotFound !== nextProps.isNotFound
+                || isLoaded !== nextState.isLoaded
+                || isSelected !== nextState.isSelected
+                || hoveredIndex !== nextState.hoveredIndex;
+        }
+
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
             const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
@@ -199,14 +210,16 @@ export const DataTable = withStyles(styles)(
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([]);
             }
-            if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
-                this.props.setSelectedUuid(singleSelected);
-            }
-            if (!singleSelected && !!currentRouteUuid && !this.isAnySelected()) {
-                this.props.setSelectedUuid(currentRouteUuid);
-            }
-            if (!singleSelected && this.isAnySelected()) {
-                this.props.setSelectedUuid(null);
+            if (this.state.isLoaded){
+                if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
+                    this.props.setSelectedUuid(singleSelected);
+                }
+                if (!singleSelected && !!currentRouteUuid && !this.isAnySelected()) {
+                    this.props.setSelectedUuid(currentRouteUuid);
+                }
+                if (!singleSelected && this.isAnySelected()) {
+                    this.props.setSelectedUuid(null);
+                }
             }
             if(prevProps.working === false && this.props.working === true) {
                 this.setState({ isLoaded: false });

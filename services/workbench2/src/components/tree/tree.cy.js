@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 import React from 'react';
-import { Tree, TreeItemStatus } from './tree';
+import { TreeComponent, TreeItemStatus } from './tree';
 import { mockProjectResource } from '../../models/test-utils';
 import { ThemeProvider } from '@mui/material/styles';
 import { CustomTheme } from '../../common/custom-theme';
@@ -19,7 +19,7 @@ describe("Tree component", () => {
         };
         cy.mount(
             <ThemeProvider theme={CustomTheme}>
-                <Tree
+                <TreeComponent
                 render={project => <div />}
                 toggleItemOpen={cy.stub()}
                 toggleItemActive={cy.stub()}
@@ -40,7 +40,7 @@ describe("Tree component", () => {
         };
         cy.mount(
             <ThemeProvider theme={CustomTheme}>
-                <Tree
+                <TreeComponent
                 render={project => <div />}
                 toggleItemOpen={cy.stub()}
                 toggleItemActive={cy.stub()}
@@ -61,7 +61,7 @@ describe("Tree component", () => {
         };
         cy.mount(
             <ThemeProvider theme={CustomTheme}>
-                <Tree
+                <TreeComponent
                     showSelection={true}
                     render={() => <div />}
                     toggleItemOpen={cy.stub()}
@@ -85,7 +85,7 @@ describe("Tree component", () => {
         const onSelectionChanged = (event, item) => spy(item);
         cy.mount(
             <ThemeProvider theme={CustomTheme}>
-                <Tree
+                <TreeComponent
                 showSelection={true}
                 render={() => <div />}
                 toggleItemOpen={cy.stub()}
