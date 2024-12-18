@@ -37,7 +37,6 @@ interface MainAppBarDataProps {
     children?: ReactNode;
     uuidPrefix: string;
     siteBanner: string;
-    sidePanelIsCollapsed: boolean;
 }
 
 export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
@@ -55,7 +54,6 @@ export const MainAppBar = withStyles(styles)(
                     </Link>
                             </Typography>
                             <Typography variant="caption" color="inherit">
-                                
                                 {props.buildInfo}</Typography>
                         </Grid>}
                         <Grid
