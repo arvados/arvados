@@ -73,7 +73,6 @@ export const MainPanelRoot = withStyles(styles)(
                 buildInfo={buildInfo}
                 uuidPrefix={uuidPrefix}
                 siteBanner={siteBanner}
-                sidePanelIsCollapsed={sidePanelIsCollapsed}
                 >
                 {working
                     ? <LinearProgress color="secondary" data-cy="linear-progress" />
@@ -82,7 +81,7 @@ export const MainPanelRoot = withStyles(styles)(
             <Grid container direction="column" className={classes.root}>
                 {user
                     ? (user.isActive || (!user.isActive && isLinkingPath)
-                    ? <WorkbenchPanel 
+                    ? <WorkbenchPanel
                         isNotLinking={isNotLinking}
                         isUserActive={user.isActive}
                         sessionIdleTimeout={sessionIdleTimeout}
