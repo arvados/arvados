@@ -64,8 +64,7 @@ export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     selectedResourceUuid: string | null;
     iconProps: IconProps
-    user: User | null
-    disabledButtons: Set<string>
+    disabledButtons: Array<string>
     auth: AuthState;
     location: string;
     forceMultiSelectMode?: boolean;
@@ -93,12 +92,14 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles, unfreezeRequiresAdmin } = props;
+        const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles, auth, unfreezeRequiresAdmin } = props;
+        const user = auth && auth.user ? auth.user : null
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [msResourceToContextMenuKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
+        const disabledButtons = new Set<string>(props.disabledButtons);
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
@@ -126,7 +127,7 @@ export const MultiselectToolbar = connect(
                     data-cy='multiselect-toolbar'
                     >
                     {memoizedActions.length ? (
-                        <IntersectionObserverWrapper 
+                        <IntersectionObserverWrapper
                             menuLength={memoizedActions.length}
                             key={actions.map(a => a.name).join(',')}
                             >
@@ -232,13 +233,13 @@ const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, us
     switch (kind) {
         case ResourceKind.PROJECT:
             if (isFrozen) {
-                return isAdmin 
-                ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                : canManage 
+                return isAdmin
+                ? ContextMenuKind.FROZEN_PROJECT_ADMIN
+                : canManage
                     ? unfreezeRequiresAdmin
                         ? ContextMenuKind.MANAGEABLE_PROJECT
                         : ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
-                    : isEditable 
+                    : isEditable
                         ? ContextMenuKind.FROZEN_PROJECT
                         : ContextMenuKind.READONLY_PROJECT;
             }
@@ -276,9 +277,9 @@ const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, us
                     ? ContextMenuKind.TRASHED_COLLECTION
                     : isAdmin && isEditable
                         ? ContextMenuKind.COLLECTION_ADMIN
-                        : isEditable 
+                        : isEditable
                             ? isWriteable
-                                ? ContextMenuKind.WRITEABLE_COLLECTION 
+                                ? ContextMenuKind.WRITEABLE_COLLECTION
                                 : ContextMenuKind.COLLECTION
                             : ContextMenuKind.READONLY_COLLECTION;
         case ResourceKind.PROCESS:
@@ -286,13 +287,13 @@ const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, us
                 const processParent = process ? getResource<any>(process.containerRequest.ownerUuid)(resources) : undefined;
                 const { canWrite: canWriteProcess } = processParent || {};
                 const isRunning = process && isProcessCancelable(process);
-                return isAdmin 
+                return isAdmin
                         ? isRunning
                             ? ContextMenuKind.RUNNING_PROCESS_ADMIN
                             : ContextMenuKind.PROCESS_ADMIN
                         : isRunning
                             ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                            : canWriteProcess 
+                            : canWriteProcess
                                 ? ContextMenuKind.PROCESS_RESOURCE
                                 : ContextMenuKind.READONLY_PROCESS_RESOURCE;
         case ResourceKind.USER:
@@ -345,8 +346,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResourceUuid}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
-        user: auth && auth.user ? auth.user : null,
-        disabledButtons: new Set<string>(multiselect.disabledButtons),
+        disabledButtons: multiselect.disabledButtons,
         auth,
         selectedResourceUuid,
         location: window.location.pathname,
