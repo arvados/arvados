@@ -21,7 +21,7 @@ import { Resource } from "models/resource";
 interface Props {
     id: string;
     onRowClick: (resource: Resource) => void;
-    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: Resource, isAdmin?: boolean, resource?: Resource) => void;
+    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: Resource, isAdmin?: boolean) => void;
     onRowDoubleClick: (resource: Resource) => void;
     working?: boolean;
 }
