@@ -1868,6 +1868,10 @@ func (s *CollectionFSSuite) TestRepackData(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
+	s.testRepackCost(c)
+}
+
+func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 	s.kc.blocks = make(map[string][]byte)
 	testfs, err := (&Collection{}).FileSystem(nil, s.kc)
 	c.Assert(err, check.IsNil)
