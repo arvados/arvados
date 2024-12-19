@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useMemo} from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Grid, Typography, Button, Select } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -76,7 +76,7 @@ type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     localCluster: string,
     loginCluster: string,
     welcomePage: string,
-    passwordLogin: boolean,
+    config: Config,
 };
 
 const loginOptions = ['LDAP', 'PAM', 'Test'];
@@ -98,8 +98,9 @@ export const LoginPanel = withStyles(styles)(
         localCluster: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
         welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML,
-        passwordLogin: requirePasswordLogin(state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster]),
-        }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, passwordLogin }: LoginPanelProps) => {
+        config: state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster],
+        }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, config }: LoginPanelProps) => {
+        const passwordLogin = useMemo(() => requirePasswordLogin(config), [config]);
         const loginBtnLabel = `Log in${(localCluster !== homeCluster && loginCluster !== homeCluster) ? " to "+localCluster+" with user from "+homeCluster : ''}`;
 
         return (
