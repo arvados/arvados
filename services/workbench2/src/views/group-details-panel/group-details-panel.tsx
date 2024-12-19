@@ -13,7 +13,7 @@ import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
-import { ResourcesState, getResource } from 'store/resources/resources';
+import { getResource } from 'store/resources/resources';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
 import { WithStyles } from '@mui/styles';
@@ -137,10 +137,8 @@ const mapStateToProps = (state: RootState) => {
     const userUuid = getUserUuid(state);
 
     return {
-        resources: state.resources,
-        groupCanManage: userUuid && !isBuiltinGroup(group?.uuid || '')
-            ? group?.canManage
-            : false,
+        userUuid,
+        group,
     };
 };
 
@@ -152,7 +150,12 @@ const mapDispatchToProps = {
 export interface GroupDetailsPanelProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
-    resources: ResourcesState;
+    userUuid: string;
+    group: GroupResource;
+}
+
+type GroupDetailsPanelState = {
+    value: number;
     groupCanManage: boolean;
 }
 
@@ -160,12 +163,27 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
     mapStateToProps, mapDispatchToProps
 )(
     class GroupDetailsPanel extends React.Component<GroupDetailsPanelProps & WithStyles<CssRules>> {
-        state = {
+        state: GroupDetailsPanelState = {
             value: 0,
+            groupCanManage: false,
         };
 
         componentDidMount() {
             this.setState({ value: 0 });
+        }
+
+        shouldComponentUpdate(nextProps: Readonly<GroupDetailsPanelProps>, nextState: Readonly<GroupDetailsPanelState>, nextContext: any): boolean {
+            return this.props.group !== nextProps.group || this.state.value !== nextState.value;
+        }
+
+        componentDidUpdate(prevProps: Readonly<GroupDetailsPanelProps>, prevState: Readonly<{}>, snapshot?: any): void {
+            if (prevProps.userUuid!== this.props.userUuid || prevProps.group !== this.props.group) {
+                this.setState({ groupCanManage: this.groupCanManage(this.props.userUuid, this.props.group) });
+            }
+        }
+
+        groupCanManage = (userUuid: string, group: GroupResource) => {
+            return userUuid && !isBuiltinGroup(group?.uuid || '') ? group.canManage : false
         }
 
         render() {
@@ -190,7 +208,7 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
                                 hideColumnSelector
                                 hideSearchInput
                                 actions={
-                                    this.props.groupCanManage &&
+                                    this.state.groupCanManage &&
                                     <Grid container justifyContent='flex-end'>
                                         <Button
                                             data-cy="group-member-add"
