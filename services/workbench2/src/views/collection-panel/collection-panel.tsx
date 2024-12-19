@@ -129,7 +129,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
-    isWritable: boolean;
+    itemOwner: GroupResource | UserResource | null;
+    currentUserUUID: string;
+    isFrozen: boolean;
     isOldVersion: boolean;
     isLoadingFiles: boolean;
 }
@@ -140,29 +142,26 @@ export const CollectionPanel = withStyles(styles)(connect(
     (state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const currentUserUUID = getUserUuid(state);
         const item = getResource<CollectionResource>(props.match.params.id)(state.resources);
-        let isWritable = false;
+        const itemOwner = item ? getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources) : null;
         const isOldVersion = item && item.currentVersionUuid !== item.uuid;
-        if (item && !isOldVersion) {
-            if (item.ownerUuid === currentUserUUID) {
-                isWritable = true;
-            } else {
-                const itemOwner = getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources);
-                if (itemOwner) {
-                    isWritable = itemOwner.canWrite;
-                }
-            }
-        }
-
-        if (item && isWritable) {
-            isWritable = !resourceIsFrozen(item, state.resources);
-        }
-
-        return { item, isWritable, isOldVersion };
+        const isFrozen = item ? resourceIsFrozen(item, state.resources) : false;
+        return { item, itemOwner, isFrozen, currentUserUUID, isOldVersion };
     })(
         class extends React.Component<CollectionPanelProps> {
 
             componentDidMount() {
                 if (this.props.item) this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+            }
+
+            shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
+                if (this.props.item) {
+                    return this.props.item.uuid !== nextProps.item.uuid;
+                }
+                if (this.props.itemOwner && nextProps.itemOwner) {
+                    return this.props.itemOwner.uuid !== nextProps.itemOwner.uuid;
+                }
+                if (this.props.isOldVersion !== nextProps.isOldVersion) return true;
+                return false;
             }
 
             componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
@@ -172,7 +171,22 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
 
             render() {
-                const { classes, item, dispatch, isWritable, isOldVersion } = this.props;
+                const { classes, item, itemOwner, dispatch, isOldVersion, isFrozen, currentUserUUID } = this.props;
+                let isWritable = false;
+
+                if (item && !isOldVersion) {
+                    if (item.ownerUuid === currentUserUUID) {
+                        isWritable = true;
+                    } else {
+                        if (itemOwner) {
+                            isWritable = itemOwner.canWrite;
+                        }
+                    }
+                }
+
+                if (item && isWritable) {
+                    isWritable = !isFrozen;
+                }
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
                     { name: "Files" },
