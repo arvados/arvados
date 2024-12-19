@@ -220,7 +220,7 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 		return nil
 	}
 	var imageCollection arvados.Collection
-	err = containerClient.RequestAndDecode(&imageCollection,
+	errRename := containerClient.RequestAndDecode(&imageCollection,
 		arvados.EndpointCollectionUpdate.Method,
 		uuidPath,
 		nil, map[string]interface{}{
@@ -229,20 +229,25 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 				"trash_at": exp.UTC().Format(time.RFC3339),
 			},
 		})
-	if err == nil {
+	if errRename == nil {
 		// If we just wrote the image to the cache, the
 		// response also returns the updated PDH
 		e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, imageCollection.PortableDataHash)
 		return nil
 	}
 
-	e.logf("error updating/renaming collection for cached sif image: %v", err)
 	// Failed to update but maybe it lost a race and there is
-	// another cached collection in the same place, so check the cache
-	// again
+	// another cached collection in the same place, so check the
+	// cache again.
 	sifCollection, err = e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient)
 	if err != nil {
-		return err
+		// Most likely, this means the rename failed for some
+		// reason other than "destination already exists", so
+		// we'll present that as the main error.  But we'll
+		// also log the checkImageCache error, in case it
+		// helps troubleshooting.
+		e.logf("info: checkImageCache result: %w", err)
+		return fmt.Errorf("error updating/renaming collection for cached sif image: %w", errRename)
 	}
 	e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, sifCollection.PortableDataHash)
 
