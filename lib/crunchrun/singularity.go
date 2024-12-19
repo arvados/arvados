@@ -211,6 +211,21 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 		return nil
 	}
 
+	// Sync() ensures arv-mount flushes all data and updates the
+	// collection record before we rename it into place.
+	// Otherwise, a crunch-run process running elsewhere could try
+	// to use it in the race window (after we rename it into
+	// place, but before the content is updated) and fail.
+	f, err := os.OpenFile(imageFilename, os.O_RDWR, 0)
+	if err != nil {
+		return fmt.Errorf("could not open image file: %w", err)
+	}
+	defer f.Close()
+	err = f.Sync()
+	if err != nil {
+		return fmt.Errorf("could not sync image file: %w", err)
+	}
+
 	// update TTL to now + two weeks
 	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
 
