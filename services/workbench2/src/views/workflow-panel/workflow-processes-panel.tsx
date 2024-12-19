@@ -9,16 +9,12 @@ import { WorkflowProcessesPanelRoot, WorkflowProcessesPanelActionProps, Workflow
 import { RootState } from "store/store";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
-import { getProcess } from "store/processes/process";
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { ContainerRequestResource } from "models/container-request";
 
 const mapDispatchToProps = (dispatch: Dispatch): WorkflowProcessesPanelActionProps => ({
-    onContextMenu: (event, resource, resources) => {
-        const process = getProcess(resource.uuid)(resources);
-        if (process) {
-            dispatch<any>(openProcessContextMenu(event, process));
-        }
+    onContextMenu: (event, resource) => {
+        dispatch<any>(openProcessContextMenu(event, resource));
     },
     onItemClick: (resource: ContainerRequestResource) => {
         dispatch<any>(toggleOne(resource.uuid))

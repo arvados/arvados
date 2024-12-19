@@ -11,12 +11,11 @@ import { getResource, getResourceWithEditableStatus } from "../resources/resourc
 import { UserResource } from "models/user";
 import { isSidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
 import { extractUuidKind, ResourceKind, EditableResource, Resource } from "models/resource";
-import { Process, isProcessCancelable } from "store/processes/process";
+import { isProcessCancelable } from "store/processes/process";
 import { RepositoryResource } from "models/repositories";
 import { SshKeyResource } from "models/ssh-key";
 import { VirtualMachinesResource } from "models/virtual-machines";
 import { KeepServiceResource } from "models/keep-services";
-import { ProcessResource } from "models/process";
 import { CollectionResource } from "models/collection";
 import { GroupClass, GroupResource } from "models/group";
 import { GroupContentsResource } from "services/groups-service/groups-service";
@@ -27,6 +26,7 @@ import { getProcess } from "store/processes/process";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { selectOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
 import { ApiClientAuthorization } from "models/api-client-authorization";
+import { ContainerRequestResource } from "models/container-request";
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition; resource: ContextMenuResource }>(),
@@ -205,23 +205,20 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
     }
 };
 
-export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, process: Process) => (dispatch: Dispatch, getState: () => RootState) => {
-    const res = getResource<ProcessResource>(process.containerRequest.uuid)(getState().resources);
-    if (res) {
-        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(res.uuid));
-        dispatch<any>(
-            openContextMenu(event, {
-                uuid: res.uuid,
-                ownerUuid: res.ownerUuid,
-                kind: menuKind,
-                name: res.name,
-                description: res.description,
-                outputUuid: res.outputUuid || "",
-                workflowUuid: res.properties.template_uuid || "",
-                menuKind
-            })
-        );
-    }
+export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, containerRequest: ContainerRequestResource) => (dispatch: Dispatch, getState: () => RootState) => {
+    const menuKind = dispatch<any>(resourceUuidToContextMenuKind(containerRequest.uuid));
+    dispatch<any>(
+        openContextMenu(event, {
+            uuid: containerRequest.uuid,
+            ownerUuid: containerRequest.ownerUuid,
+            kind: menuKind,
+            name: containerRequest.name,
+            description: containerRequest.description,
+            outputUuid: containerRequest.outputUuid || "",
+            workflowUuid: containerRequest.properties.template_uuid || "",
+            menuKind
+        })
+    );
 };
 
 export const openPermissionEditContextMenu =

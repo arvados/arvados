@@ -30,7 +30,6 @@ import { ContainerRequestResource, ContainerRequestState } from "models/containe
 import { RootState } from "store/store";
 import { createTree } from "models/tree";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
-import { getProcess } from "store/processes/process";
 import { ResourcesState } from "store/resources/resources";
 import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
 
@@ -126,11 +125,9 @@ type AllProcessesPanelProps = AllProcessesPanelDataProps &
 export const AllProcessesPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<AllProcessesPanelProps> {
+
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContainerRequestResource) => {
-                const process = getProcess(resource.uuid)(this.props.resources);
-                if (process) {
-                    this.props.dispatch<any>(openProcessContextMenu(event, process));
-                }
+                this.props.dispatch<any>(openProcessContextMenu(event, resource));
                 this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             };
 

@@ -57,10 +57,8 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
             })
         );
     },
-    onContextMenu: (event, process) => {
-        if (process) {
-            dispatch<any>(openProcessContextMenu(event, process));
-        }
+    onContextMenu: (event, containerRequest) => {
+        dispatch<any>(openProcessContextMenu(event, containerRequest));
     },
     onToggle: status => {
         dispatch<any>(toggleProcessPanelFilter(status));

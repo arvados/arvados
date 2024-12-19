@@ -23,7 +23,6 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
 import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';
 import { Process } from 'store/processes/process';
-import { Resource } from 'models/resource';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
@@ -92,7 +91,7 @@ export interface SubprocessPanelDataProps {
 
 export interface SubprocessPanelActionProps {
     onRowClick: (resource: ProcessResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: Resource, resources: ResourcesState) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ProcessResource) => void;
     onItemDoubleClick: (resource: ProcessResource) => void;
 }
 
@@ -120,7 +119,7 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         id={SUBPROCESS_PANEL_ID}
         onRowClick={props.onRowClick}
         onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
+        onContextMenu={props.onContextMenu}
         contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
