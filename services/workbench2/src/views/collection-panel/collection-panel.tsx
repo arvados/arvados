@@ -138,6 +138,10 @@ interface CollectionPanelDataProps {
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp & WithStyles<CssRules>
 
+type CollectionPanelState = {
+    isWritable: boolean;
+}
+
 export const CollectionPanel = withStyles(styles)(connect(
     (state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const currentUserUUID = getUserUuid(state);
@@ -148,33 +152,38 @@ export const CollectionPanel = withStyles(styles)(connect(
         return { item, itemOwner, isFrozen, currentUserUUID, isOldVersion };
     })(
         class extends React.Component<CollectionPanelProps> {
+            state: CollectionPanelState = {
+                isWritable: false,
+            }
 
             componentDidMount() {
                 if (this.props.item) this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
             }
 
-            shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
-                if (this.props.item) {
-                    return this.props.item.uuid !== nextProps.item.uuid;
-                }
-                if (this.props.itemOwner && nextProps.itemOwner) {
-                    return this.props.itemOwner.uuid !== nextProps.itemOwner.uuid;
-                }
-                if (this.props.isOldVersion !== nextProps.isOldVersion) return true;
-                return false;
+            shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps>, nextState: Readonly<CollectionPanelState>, nextContext: any ): boolean {
+                    return this.props.item?.uuid !== nextProps.item?.uuid
+                        || this.props.itemOwner?.uuid !== nextProps.itemOwner?.uuid
+                        || this.props.isOldVersion !== nextProps.isOldVersion
+                        || this.state.isWritable !== nextState.isWritable;
             }
 
             componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
-                if (prevProps.item && prevProps.item.uuid !== this.props.item.uuid) {
-                    this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+                const { item, itemOwner, currentUserUUID, isFrozen } = this.props;
+                if (item && prevProps.item?.uuid !== item.uuid) {
+                    this.props.dispatch<any>(setSelectedResourceUuid(item.uuid));
+                }
+                if (prevProps.item !== item
+                    || prevProps.itemOwner?.uuid !== itemOwner?.uuid
+                    || prevProps.isFrozen !== isFrozen
+                    || prevProps.currentUserUUID !== currentUserUUID) {
+                        this.checkIsWritable(item, itemOwner, currentUserUUID, isFrozen);
                 }
             }
 
-            render() {
-                const { classes, item, itemOwner, dispatch, isOldVersion, isFrozen, currentUserUUID } = this.props;
+            checkIsWritable = (item: CollectionResource, itemOwner: GroupResource | UserResource | null, currentUserUUID: string, isFrozen: boolean) => {
                 let isWritable = false;
 
-                if (item && !isOldVersion) {
+                if (item && !this.props.isOldVersion) {
                     if (item.ownerUuid === currentUserUUID) {
                         isWritable = true;
                     } else {
@@ -183,10 +192,17 @@ export const CollectionPanel = withStyles(styles)(connect(
                         }
                     }
                 }
-
                 if (item && isWritable) {
                     isWritable = !isFrozen;
                 }
+
+                this.setState({ isWritable });
+            }
+
+            render() {
+                console.log(">>>render");
+                const { classes, item, dispatch, isOldVersion } = this.props;
+                const { isWritable } = this.state;
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
                     { name: "Files" },
