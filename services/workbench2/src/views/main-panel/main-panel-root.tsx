@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, LinearProgress } from '@mui/material';
 import { WithStyles } from '@mui/styles';
@@ -16,6 +16,9 @@ import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
 import { Routes, matchLinkAccountRoute } from 'routes/routes';
 import { RouterState } from "react-router-redux";
+import parse from 'parse-duration';
+import { Config } from 'common/config';
+import { LinkAccountPanelState, LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
 
 const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -34,9 +37,8 @@ export interface MainPanelRootDataProps {
     progressIndicator: string[];
     buildInfo: string;
     uuidPrefix: string;
-    isNotLinking: boolean;
-    siteBanner: string;
-    sessionIdleTimeout: number;
+    linkAccountPanel: LinkAccountPanelState;
+    config: Config;
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
     currentSideWidth: number;
@@ -51,26 +53,16 @@ interface MainPanelRootDispatchProps {
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    ({ classes, progressIndicator, user, buildInfo, uuidPrefix,
-        isNotLinking, siteBanner, sessionIdleTimeout,
+    ({ classes, progressIndicator, user, buildInfo, uuidPrefix, config, linkAccountPanel,
         sidePanelIsCollapsed, isTransitioning, currentSideWidth, setCurrentRouteUuid, router}: MainPanelRootProps) =>{
 
-            const [working, setWorking] = useState(false);
-            const [loading, setLoading] = useState(false);
-            const [currentRoute, setCurrentRoute] = useState('');
-            const [isLinkingPath, setIsLinkingPath] = useState(false);
-
-            useEffect(() => {
-                setWorking(progressIndicator.length > 0);
-                setLoading(progressIndicator.includes(WORKBENCH_LOADING_SCREEN));
-            }, [progressIndicator]);
-
-            useEffect(() => {
-                if (router.location?.pathname) {
-                    setCurrentRoute(router.location.pathname)
-                    setIsLinkingPath(matchLinkAccountRoute(router.location.pathname) !== null);
-                };
-            }, [router]);
+            const working = progressIndicator.length > 0;
+            const loading = progressIndicator.includes(WORKBENCH_LOADING_SCREEN);
+            const isLinkingPath = router.location ? matchLinkAccountRoute(router.location.pathname) !== null : false;
+            const currentRoute = router.location ? router.location.pathname : '';
+            const isNotLinking = linkAccountPanel.status === LinkAccountPanelStatus.NONE || linkAccountPanel.status === LinkAccountPanelStatus.INITIAL;
+            const siteBanner = config.clusterConfig.Workbench.SiteName;
+            const sessionIdleTimeout = parse(config.clusterConfig.Workbench.IdleTimeout, 's') || 0;
 
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');
