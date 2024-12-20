@@ -7,7 +7,6 @@ import { connect } from 'react-redux';
 import parse from 'parse-duration';
 import { MainPanelRoot, MainPanelRootDataProps } from 'views/main-panel/main-panel-root';
 import { LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
-import { matchLinkAccountRoute } from 'routes/routes';
 import { toggleSidePanel } from "store/side-panel/side-panel-action";
 import { propertiesActions } from 'store/properties/properties-actions';
 
@@ -18,13 +17,12 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         buildInfo: state.appInfo.buildInfo,
         uuidPrefix: state.auth.localCluster,
         isNotLinking: state.linkAccountPanel.status === LinkAccountPanelStatus.NONE || state.linkAccountPanel.status === LinkAccountPanelStatus.INITIAL,
-        isLinkingPath: state.router.location ? matchLinkAccountRoute(state.router.location.pathname) !== null : false,
         siteBanner: state.auth.config.clusterConfig.Workbench.SiteName,
         sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
         sidePanelIsCollapsed: state.sidePanel.collapsedState,
         isTransitioning: state.detailsPanel.isTransitioning,
         currentSideWidth: state.sidePanel.currentSideWidth,
-        currentRoute: state.router.location ? state.router.location.pathname : '',
+        router: state.router,
     };
 };
 

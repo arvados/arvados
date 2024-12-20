@@ -14,8 +14,8 @@ import { LoginPanel } from 'views/login-panel/login-panel';
 import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
-import { Routes } from 'routes/routes';
-// import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { Routes, matchLinkAccountRoute } from 'routes/routes';
+import { RouterState } from "react-router-redux";
 
 const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -35,13 +35,12 @@ export interface MainPanelRootDataProps {
     buildInfo: string;
     uuidPrefix: string;
     isNotLinking: boolean;
-    isLinkingPath: boolean;
     siteBanner: string;
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
     currentSideWidth: number;
-    currentRoute: string;
+    router: RouterState;
 }
 
 interface MainPanelRootDispatchProps {
@@ -53,16 +52,25 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, progressIndicator, user, buildInfo, uuidPrefix,
-        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout,
-        sidePanelIsCollapsed, isTransitioning, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
+        isNotLinking, siteBanner, sessionIdleTimeout,
+        sidePanelIsCollapsed, isTransitioning, currentSideWidth, setCurrentRouteUuid, router}: MainPanelRootProps) =>{
 
-            const [working, setWorking] = useState(progressIndicator.length > 0);
-            const [loading, setLoading] = useState(progressIndicator.includes(WORKBENCH_LOADING_SCREEN));
+            const [working, setWorking] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const [currentRoute, setCurrentRoute] = useState('');
+            const [isLinkingPath, setIsLinkingPath] = useState(false);
 
             useEffect(() => {
                 setWorking(progressIndicator.length > 0);
                 setLoading(progressIndicator.includes(WORKBENCH_LOADING_SCREEN));
             }, [progressIndicator]);
+
+            useEffect(() => {
+                if (router.location?.pathname) {
+                    setCurrentRoute(router.location.pathname)
+                    setIsLinkingPath(matchLinkAccountRoute(router.location.pathname) !== null);
+                };
+            }, [router]);
 
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');
