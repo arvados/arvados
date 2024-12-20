@@ -15,6 +15,5 @@ export const withProgress = (id: string) =>
         connect(mapStateToProps(id))(component);
 
 export const mapStateToProps = (id: string) => (state: RootState): WithProgressStateProps => {
-    const progress = state.progressIndicator.find(p => p.id === id);
-    return { working: progress ? progress.working : false };
+    return { working: state.progressIndicators.includes(id) };
 };

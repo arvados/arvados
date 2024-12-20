@@ -15,8 +15,7 @@ import { UserResource } from "models/user";
 import { GroupResource } from "models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
 import { login, logout } from "store/auth/auth-action";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { progressIndicatorsActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 
 export const linkAccountPanelActions = unionize({
     LINK_INIT: ofType<{
@@ -234,7 +233,7 @@ export const cancelLinking = (reload: boolean = false) =>
         let user: UserResource | undefined;
         try {
             // When linking is cancelled switch to the originating user (i.e. the user saved in session data)
-            dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
+            dispatch(progressIndicatorsActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
             const linkAccountData = services.linkAccountService.getAccountToLink();
             if (linkAccountData) {
                 services.linkAccountService.removeAccountToLink();
@@ -249,7 +248,7 @@ export const cancelLinking = (reload: boolean = false) =>
                 window.location.reload();
             }
             else {
-                dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                dispatch(progressIndicatorsActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
             }
         }
     };

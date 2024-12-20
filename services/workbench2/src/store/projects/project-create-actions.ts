@@ -21,7 +21,7 @@ import { matchProjectRoute, matchRunProcessRoute } from 'routes/routes';
 import { RouterState } from "react-router-redux";
 import { GroupClass } from "models/group";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -67,7 +67,7 @@ export const createProject = (project: Partial<ProjectResource>) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
-            dispatch(progressIndicatorActions.START_WORKING(PROJECT_CREATE_FORM_NAME));
+            dispatch(progressIndicatorsActions.START_WORKING(PROJECT_CREATE_FORM_NAME));
             const newProject = await services.projectService.create(project, false);
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
             dispatch(reset(PROJECT_CREATE_FORM_NAME));
@@ -90,6 +90,6 @@ export const createProject = (project: Partial<ProjectResource>) =>
             }
             return undefined;
         } finally {
-            dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_CREATE_FORM_NAME));
+            dispatch(progressIndicatorsActions.STOP_WORKING(PROJECT_CREATE_FORM_NAME));
         }
     };

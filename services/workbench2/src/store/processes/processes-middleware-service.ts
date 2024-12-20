@@ -19,7 +19,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-column';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
+import { progressIndicatorsActions } from '../progress-indicator/progress-indicator-actions';
 import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
     export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
@@ -76,7 +76,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         try {
-            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+            if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
             const params = this.getParams(api, dataExplorer);
 
             // Get items
@@ -109,7 +109,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
                 kind: SnackbarKind.ERROR
             }));
         } finally {
-            if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
+            if (!background) { api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId())); }
         }
     }
 

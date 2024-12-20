@@ -13,7 +13,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupMembersPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
 import { ResourceKind } from 'models/resource';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
 import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 import { ListArguments, ListResults } from "services/common-service/common-service";
 import { PermissionResource } from "models/permission";
@@ -34,7 +34,7 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             return;
         } else {
             try {
-                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
                 const groupResource = await this.services.groupsService.get(groupUuid);
                 api.dispatch(updateResources([groupResource]));
 
@@ -71,7 +71,7 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
             } finally {
-                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
             }
         }
     }

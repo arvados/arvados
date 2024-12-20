@@ -26,7 +26,7 @@ import { serializeResourceTypeFilters } from 'store//resource-type-filters/resou
 import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { Session } from 'models/session';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
@@ -63,7 +63,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const numberOfSessions = sessions.length;
         let numberOfResolvedResponses = 0;
         let totalNumItemsAvailable = 0;
-        api.dispatch(progressIndicatorActions.START_WORKING(this.id))
+        api.dispatch(progressIndicatorsActions.START_WORKING(this.id))
         api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
 
         //In SearchResultsPanel, if we don't reset the items available, the items available will
@@ -92,7 +92,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     // Used to determine if all results are empty, so items.length works as well as itemsAvailable
                     totalNumItemsAvailable += response.items.length;
                     if (numberOfResolvedResponses === numberOfSessions) {
-                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                        api.dispatch(progressIndicatorsActions.STOP_WORKING(this.id))
                         if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true }))
                     }
                     // Request all containers for process status to be available
@@ -112,7 +112,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     }
                 }).catch(() => {
                     api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                    api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                    api.dispatch(progressIndicatorsActions.STOP_WORKING(this.id))
                 });
         }
         );
@@ -144,7 +144,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
             params.include = "owner_uuid";
         }
 
-        dispatch(progressIndicatorActions.START_WORKING(SEARCH_RESULTS_PANEL_ID))
+        dispatch(progressIndicatorsActions.START_WORKING(SEARCH_RESULTS_PANEL_ID))
 
         services.groupsService.contents('', params, session)
                 .then((response) => {
@@ -170,9 +170,9 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
                     }
                 }).catch(() => {
                     dispatch(couldNotFetchSearchResults(session.clusterId));
-                    dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
+                    dispatch(progressIndicatorsActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
                 });
-        dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
+        dispatch(progressIndicatorsActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
     }
 
 const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));

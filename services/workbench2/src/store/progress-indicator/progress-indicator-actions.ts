@@ -4,11 +4,12 @@
 
 import { unionize, ofType, UnionOf } from "common/unionize";
 
-export const progressIndicatorActions = unionize({
+export const progressIndicatorsActions = unionize({
     START_WORKING: ofType<string>(),
     STOP_WORKING: ofType<string>(),
-    PERSIST_STOP_WORKING: ofType<string>(),
-    TOGGLE_WORKING: ofType<{ id: string, working: boolean }>()
 });
 
-export type ProgressIndicatorAction = UnionOf<typeof progressIndicatorActions>;
+export type ProgressIndicatorsAction = UnionOf<typeof progressIndicatorsActions>;
+
+export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
+

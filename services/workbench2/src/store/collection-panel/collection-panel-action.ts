@@ -12,7 +12,7 @@ import { unionize, ofType, UnionOf } from 'common/unionize';
 import { SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
@@ -26,12 +26,12 @@ export const loadCollectionPanel = (uuid: string, forceReload = false) =>
         let collection: CollectionResource | null = null;
         if (!item || item.uuid !== uuid || forceReload) {
             try {
-                dispatch(progressIndicatorActions.START_WORKING(uuid + "-panel"));
+                dispatch(progressIndicatorsActions.START_WORKING(uuid + "-panel"));
                 collection = await services.collectionService.get(uuid);
                 dispatch(collectionPanelActions.SET_COLLECTION(collection));
                 dispatch(resourcesActions.SET_RESOURCES([collection]));
             } finally {
-                dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-panel"));
+                dispatch(progressIndicatorsActions.STOP_WORKING(uuid + "-panel"));
             }
         } else {
             collection = item;

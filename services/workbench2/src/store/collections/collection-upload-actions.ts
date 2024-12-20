@@ -9,7 +9,7 @@ import { dialogActions } from 'store/dialog/dialog-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
 import { reset, startSubmit, stopSubmit } from 'redux-form';
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
 import * as WorkbenchActions from 'store/workbench/workbench-actions';
 
 export const uploadCollectionFiles = (collectionUuid: string, targetLocation?: string) =>
@@ -34,7 +34,7 @@ export const submitCollectionFiles = (targetLocation?: string) =>
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
             try {
-                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
+                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
                 await dispatch<any>(uploadCollectionFiles(currentCollection.uuid, targetLocation));
                 dispatch(closeUploadCollectionFilesDialog());
@@ -43,7 +43,7 @@ export const submitCollectionFiles = (targetLocation?: string) =>
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
+                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             } catch (e) {
                 dispatch(stopSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(closeUploadCollectionFilesDialog());
@@ -52,7 +52,7 @@ export const submitCollectionFiles = (targetLocation?: string) =>
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
+                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             }
         }
     };
