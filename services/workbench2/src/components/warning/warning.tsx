@@ -25,17 +25,14 @@ export const WarningComponent = ({ text, rules, message }: WarningComponentProps
 
 interface IllegalNamingWarningProps {
     name: string;
-    validate: RegExp[];
+    forwardSlashNameSubstitution: string;
 }
 
 
 export const IllegalNamingWarning = connect(
     (state: RootState) => {
-        return {
-            validate: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
-                [disallowSlash] : [])
-        };
-    })(({ name, validate }: IllegalNamingWarningProps) =>
+        return { forwardSlashNameSubstitution: state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution };
+    })(({ name, forwardSlashNameSubstitution }: IllegalNamingWarningProps) =>
         <WarningComponent
-            text={name} rules={validate}
+            text={name} rules={forwardSlashNameSubstitution === "" ? [disallowSlash] : []}
             message="Names embedding '/' will be renamed or invisible to file system access (arv-mount or WebDAV)" />);
