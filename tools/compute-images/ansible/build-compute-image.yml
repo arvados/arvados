@@ -55,6 +55,9 @@
         purge: true
         name:
           - unattended-upgrades
+    - name: Install Arvados FUSE driver
+      ansible.builtin.apt:
+        name: python3-arvados-fuse
 
     - include_role:
         name: compute_nvidia
@@ -64,16 +67,10 @@
     - include_role:
         name: compute_encrypt_tmp
     - include_role:
+        name: compute_fuse
+    - include_role:
         name: compute_user
 
-    - name: Install Arvados FUSE driver
-      ansible.builtin.apt:
-        name: python3-arvados-fuse
-    - name: Configure FUSE
-      ansible.builtin.lineinfile:
-        path: /etc/fuse.conf
-        regexp: "^[# ]*user_allow_other *$"
-        line: user_allow_other
     - name: Configure locale
       ansible.builtin.lineinfile:
         path: /etc/locale.gen

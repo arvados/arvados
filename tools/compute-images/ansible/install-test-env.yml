@@ -133,6 +133,8 @@
     - ansible.builtin.include_role:
         name: arvados_go
     - ansible.builtin.include_role:
+        name: compute_fuse
+    - ansible.builtin.include_role:
         name: compute_singularity
 
     # RailsAPI tests depend on the en_US.UTF-8 locale.
