@@ -69,7 +69,6 @@ export type MultiselectToolbarProps = {
     location: string;
     forceMultiSelectMode?: boolean;
     injectedStyles?: string;
-    unfreezeRequiresAdmin?: boolean;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -92,9 +91,10 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles, auth, unfreezeRequiresAdmin } = props;
+        const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles, auth } = props;
         const user = auth && auth.user ? auth.user : null
         const selectedResourceArray = selectedToArray(checkedList);
+        const unfreezeRequiresAdmin = auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [msResourceToContextMenuKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
@@ -350,7 +350,6 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
         auth,
         selectedResourceUuid,
         location: window.location.pathname,
-        unfreezeRequiresAdmin: auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin,
         iconProps: {
             resources,
             favorites,
