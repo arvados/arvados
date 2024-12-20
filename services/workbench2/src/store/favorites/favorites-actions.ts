@@ -9,7 +9,7 @@ import { getUserUuid } from "common/getuser";
 import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { SidePanelTreeCategory, loadSidePanelTreeProjects} from "store/side-panel-tree/side-panel-tree-actions";
@@ -28,7 +28,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
         if (!userUuid) {
             return Promise.reject("No user");
         }
-        dispatch(progressIndicatorActions.START_WORKING("toggleFavorite"));
+        dispatch(progressIndicatorsActions.START_WORKING("toggleFavorite"));
         dispatch<any>(addDisabledButton(ContextMenuActionNames.ADD_TO_FAVORITES))
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
@@ -55,11 +55,11 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                     kind: SnackbarKind.SUCCESS
                 }));
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_FAVORITES))
-                dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
+                dispatch(progressIndicatorsActions.STOP_WORKING("toggleFavorite"));
                 dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
             })
             .catch((e: any) => {
-                dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
+                dispatch(progressIndicatorsActions.STOP_WORKING("toggleFavorite"));
                 throw e;
             });
     };

@@ -11,7 +11,7 @@ import { fieldRequire } from 'validators/require';
 import { FileUploaderField } from 'views-components/file-uploader/file-uploader';
 import { WarningCollection } from 'components/warning-collection/warning-collection';
 import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
 
 type DialogCollectionFilesUploadProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -26,7 +26,7 @@ export const DialogCollectionFilesUpload = (props: DialogCollectionFilesUploadPr
             const { submitting, dispatch } = (props as any);
 
             if (submitting) {
-                dispatch(progressIndicatorActions.STOP_WORKING('uploadCollectionFilesDialog'));
+                dispatch(progressIndicatorsActions.STOP_WORKING('uploadCollectionFilesDialog'));
                 dispatch(fileUploaderActions.CANCEL_FILES_UPLOAD());
                 dispatch(fileUploaderActions.CLEAR_UPLOAD());
             }

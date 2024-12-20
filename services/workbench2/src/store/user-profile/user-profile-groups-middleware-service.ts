@@ -6,7 +6,7 @@ import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
 import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
 import { getCurrentUserProfilePanelUuid, UserProfileGroupsActions } from 'store/user-profile/user-profile-actions';
 import { updateResources } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
@@ -25,7 +25,7 @@ export class UserProfileGroupsMiddlewareService extends DataExplorerMiddlewareSe
         const userUuid = getCurrentUserProfilePanelUuid(state.properties);
         if (userUuid) {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                api.dispatch(progressIndicatorsActions.START_WORKING(this.getId()));
 
                 // Get user
                 const user = await this.services.userService.get(userUuid);
@@ -70,7 +70,7 @@ export class UserProfileGroupsMiddlewareService extends DataExplorerMiddlewareSe
             } catch {
                 api.dispatch(couldNotFetchGroups());
             } finally {
-                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
             }
         }
     }

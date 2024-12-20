@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, LinearProgress } from '@mui/material';
 import { WithStyles } from '@mui/styles';
@@ -15,6 +15,9 @@ import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
 import { Routes } from 'routes/routes';
+// import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+
+const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
 type CssRules = 'root';
 
@@ -28,8 +31,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface MainPanelRootDataProps {
     user?: User;
-    working: boolean;
-    loading: boolean;
+    progressIndicator: string[];
     buildInfo: string;
     uuidPrefix: string;
     isNotLinking: boolean;
@@ -50,9 +52,17 @@ interface MainPanelRootDispatchProps {
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    ({ classes, loading, working, user, buildInfo, uuidPrefix,
-        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
+    ({ classes, progressIndicator, user, buildInfo, uuidPrefix,
+        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout,
         sidePanelIsCollapsed, isTransitioning, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
+
+            const [working, setWorking] = useState(progressIndicator.length > 0);
+            const [loading, setLoading] = useState(progressIndicator.includes(WORKBENCH_LOADING_SCREEN));
+
+            useEffect(() => {
+                setWorking(progressIndicator.length > 0);
+                setLoading(progressIndicator.includes(WORKBENCH_LOADING_SCREEN));
+            }, [progressIndicator]);
 
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');

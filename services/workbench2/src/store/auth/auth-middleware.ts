@@ -8,8 +8,7 @@ import { ServiceRepository, setAuthorizationHeader, removeAuthorizationHeader } 
 import { initSessions } from "store/auth/auth-action-session";
 import { User } from "models/user";
 import { RootState } from 'store/store';
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { progressIndicatorsActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 import { navigateToMyAccount } from 'store/navigation/navigation-action';
 
 export const authMiddleware = (services: ServiceRepository): Middleware => store => next => action => {
@@ -56,12 +55,12 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
                 // For more details, see:
                 // https://doc.arvados.org/main/admin/user-management.html
 
-                store.dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
+                store.dispatch(progressIndicatorsActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
                 services.userService.activate(user.uuid).then((user: User) => {
                     store.dispatch(authActions.INIT_USER({ user, token }));
-                    store.dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                    store.dispatch(progressIndicatorsActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
                 }).catch(() => {
-                    store.dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                    store.dispatch(progressIndicatorsActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
                 });
             }
         },
