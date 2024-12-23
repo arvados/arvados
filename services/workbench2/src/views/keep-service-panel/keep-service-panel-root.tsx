@@ -43,14 +43,14 @@ export interface KeepServicePanelRootActionProps {
 
 export interface KeepServicePanelRootDataProps {
     keepServices: KeepServiceResource[];
-    hasKeepSerices: boolean;
 }
 
 type KeepServicePanelRootProps = KeepServicePanelRootActionProps & KeepServicePanelRootDataProps & WithStyles<CssRules>;
 
 export const KeepServicePanelRoot = withStyles(styles)(
-    ({ classes, hasKeepSerices, keepServices, openRowOptions }: KeepServicePanelRootProps) =>
-        <Card className={classes.root}>
+    ({ classes, keepServices, openRowOptions }: KeepServicePanelRootProps) => {
+        const hasKeepSerices = keepServices.length > 0;
+        return <Card className={classes.root}>
             <CardContent>
                 {hasKeepSerices && <Grid container direction="row">
                     <Grid item xs={12}>
@@ -99,4 +99,5 @@ export const KeepServicePanelRoot = withStyles(styles)(
                 </Grid>}
             </CardContent>
         </Card>
+    }
 );
