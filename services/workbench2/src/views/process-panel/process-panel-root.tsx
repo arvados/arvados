@@ -7,27 +7,28 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ProcessIcon } from "components/icon/icon";
-import { Process, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
+import { Process, getProcess, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
-import { SubprocessFilterDataProps } from "components/subprocess-filter/subprocess-filter";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
 import { ProcessDetailsCard } from "./process-details-card";
-import { ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from "./process-io-card";
+import { ProcessIOCard, ProcessIOCardType } from "./process-io-card";
 import { ProcessResourceCard } from "./process-resource-card";
 import { getProcessPanelLogs, ProcessLogsPanel } from "store/process-logs-panel/process-logs-panel";
 import { ProcessLogsCard } from "./process-log-card";
 import { FilterOption } from "views/process-panel/process-log-form";
 import { getInputCollectionMounts } from "store/processes/processes-actions";
-import { WorkflowInputsData } from "models/workflow";
-import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { AuthState } from "store/auth/auth-reducer";
 import { ProcessCmdCard } from "./process-cmd-card";
 import { ContainerRequestResource } from "models/container-request";
-import { OutputDetails, NodeInstanceType } from "store/process-panel/process-panel";
+import { ProcessPanel as ProcessPanelState } from "store/process-panel/process-panel";
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { ArvadosTheme } from 'common/custom-theme';
 import { useAsyncInterval } from "common/use-async-interval";
 import { WebSocketService } from "websocket/websocket-service";
+import { RouteComponentProps } from 'react-router';
+import { ResourcesState } from 'store/resources/resources';
+import { getInlineFileUrl } from "views-components/context-menu/actions/helpers";
+import { CollectionFile } from "models/collection-file";
 
 type CssRules = "root";
 
@@ -38,18 +39,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface ProcessPanelRootDataProps {
-    process?: Process;
-    subprocesses: Array<Process>;
-    filters: Array<SubprocessFilterDataProps>;
+    resources: ResourcesState;
+    processPanel: ProcessPanelState;
     processLogsPanel: ProcessLogsPanel;
     auth: AuthState;
-    inputRaw: WorkflowInputsData | null;
-    inputParams: ProcessIOParameter[] | null;
-    outputData: OutputDetails | null;
-    outputDefinitions: CommandOutputParameter[];
-    outputParams: ProcessIOParameter[] | null;
-    nodeInfo: NodeInstanceType | null;
-    usageReport: string | null;
+    usageReport: CollectionFile | null;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -83,16 +77,10 @@ const panelsData: MPVPanelState[] = [
 ];
 
 export const ProcessPanelRoot = withStyles(styles)(({
-    process,
     auth,
+    resources,
+    processPanel,
     processLogsPanel,
-    inputRaw,
-    inputParams,
-    outputData,
-    outputDefinitions,
-    outputParams,
-    nodeInfo,
-    usageReport,
     loadInputs,
     loadOutputs,
     loadNodeJson,
@@ -100,12 +88,24 @@ export const ProcessPanelRoot = withStyles(styles)(({
     updateOutputParams,
     pollProcessLogs,
     refreshProcess,
+    onContextMenu,
+    cancelProcess,
+    startProcess,
+    resumeOnHoldWorkflow,
     ...props
-}: ProcessPanelRootProps) => {
+}: ProcessPanelRootProps & RouteComponentProps<{ id: string }>) => {
+    const process = getProcess(props.match.params.id)(resources);
     const outputUuid = process?.containerRequest.outputUuid;
     const containerRequest = process?.containerRequest;
     const inputMounts = getInputCollectionMounts(process?.containerRequest);
     const webSocketConnected = WebSocketService.getInstance().isActive();
+    const { inputRaw, inputParams, outputData, outputDefinitions, outputParams, nodeInfo, usageReport } = processPanel;
+
+    const usageReportWithUrl = (process || null) && usageReport && getInlineFileUrl(
+                `${auth.config.keepWebServiceUrl}${usageReport.url}?api_token=${auth.apiToken}`,
+                auth.config.keepWebServiceUrl,
+                auth.config.keepWebInlineServiceUrl
+            )
 
     React.useEffect(() => {
         if (containerRequest) {
@@ -156,10 +156,10 @@ export const ProcessPanelRoot = withStyles(styles)(({
                     data-cy="process-details">
                     <ProcessDetailsCard
                         process={process}
-                        onContextMenu={event => props.onContextMenu(event, process)}
-                        cancelProcess={props.cancelProcess}
-                        startProcess={props.startProcess}
-                        resumeOnHoldWorkflow={props.resumeOnHoldWorkflow}
+                        onContextMenu={event => onContextMenu(event, process)}
+                        cancelProcess={cancelProcess}
+                        startProcess={startProcess}
+                        resumeOnHoldWorkflow={resumeOnHoldWorkflow}
                     />
                 </MPVPanelContent>
                 <MPVPanelContent
@@ -239,7 +239,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                     <ProcessResourceCard
                         process={process}
                         nodeInfo={nodeInfo}
-                        usageReport={usageReport}
+                        usageReport={usageReportWithUrl}
                     />
                 </MPVPanelContent>
             </MPVContainer>
