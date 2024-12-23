@@ -4,12 +4,9 @@
 
 import { RootState } from "store/store";
 import { connect } from "react-redux";
-import { getProcess, getSubprocesses, Process, getProcessStatus } from "store/processes/process";
 import { Dispatch } from "redux";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from "./process-panel-root";
-import { getProcessPanelCurrentUuid, ProcessPanel as ProcessPanelState } from "store/process-panel/process-panel";
-import { groupBy } from "lodash";
 import {
     loadInputs,
     loadOutputDefinitions,
@@ -22,29 +19,14 @@ import {
 import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from "store/processes/processes-actions";
 import { navigateToLogCollection, pollProcessLogs, setProcessLogsPanelFilter } from "store/process-logs-panel/process-logs-panel-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { getInlineFileUrl } from "views-components/context-menu/actions/helpers";
 
-const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
-    const uuid = getProcessPanelCurrentUuid(router) || "";
-    const subprocesses = getSubprocesses(uuid)(resources);
-    const process = getProcess(uuid)(resources);
+const mapStateToProps = ({ auth, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
     return {
-        process,
-        subprocesses: subprocesses.filter(subprocess => processPanel.filters[getProcessStatus(subprocess)]),
-        filters: getFilters(processPanel, subprocesses),
+        resources,
         processLogsPanel: processLogsPanel,
         auth: auth,
-        inputRaw: processPanel.inputRaw,
-        inputParams: processPanel.inputParams,
-        outputData: processPanel.outputData,
-        outputDefinitions: processPanel.outputDefinitions,
-        outputParams: processPanel.outputParams,
-        nodeInfo: processPanel.nodeInfo,
-        usageReport: (process || null) && processPanel.usageReport && getInlineFileUrl(
-            `${auth.config.keepWebServiceUrl}${processPanel.usageReport.url}?api_token=${auth.apiToken}`,
-            auth.config.keepWebServiceUrl,
-            auth.config.keepWebInlineServiceUrl
-        ),
+        processPanel: processPanel,
+        usageReport: processPanel.usageReport,
     };
 };
 
@@ -79,15 +61,5 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     pollProcessLogs: processUuid => dispatch<any>(pollProcessLogs(processUuid)),
     refreshProcess: processUuid => dispatch<any>(loadProcess(processUuid)),
 });
-
-const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
-    const grouppedProcesses = groupBy(processes, getProcessStatus);
-    return Object.keys(processPanel.filters).map(filter => ({
-        label: filter,
-        value: (grouppedProcesses[filter] || []).length,
-        checked: processPanel.filters[filter],
-        key: filter,
-    }));
-};
 
 export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);
