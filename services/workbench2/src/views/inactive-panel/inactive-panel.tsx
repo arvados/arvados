@@ -44,18 +44,19 @@ const mapDispatchToProps = (dispatch: Dispatch): InactivePanelActionProps => ({
 
 const mapStateToProps = (state: RootState): InactivePanelStateProps => ({
     inactivePageText: state.auth.config.clusterConfig.Workbench.InactivePageHTML,
-    isLoginClusterFederation: state.auth.config.clusterConfig.Login.LoginCluster !== '',
+    loginCluster: state.auth.config.clusterConfig.Login.LoginCluster,
 });
 
 export interface InactivePanelStateProps {
     inactivePageText: string;
-    isLoginClusterFederation: boolean;
+    loginCluster: string;
 }
 
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
 
-export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isLoginClusterFederation }: InactivePanelProps) =>
-    <Grid container justifyContent="center" alignItems="center" direction="column" spacing={3}
+export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, loginCluster }: InactivePanelProps) =>{
+    const isLoginClusterFederation = loginCluster === "";
+    return <Grid container justifyContent="center" alignItems="center" direction="column" spacing={3}
         className={classes.root}
         style={{ marginTop: 56, height: "100%" }}>
         <Grid item>
@@ -79,7 +80,8 @@ export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isL
                 If you would like to use this login to access another account, please contact your administrator.
             </Typography>
         </Grid></> }
-    </Grid >;
+    </Grid >
+};
 
 export const InactivePanel = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(InactivePanelRoot));

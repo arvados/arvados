@@ -37,7 +37,6 @@ import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
-import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -131,7 +130,7 @@ const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
     resources: state.resources,
     userUuid: state.auth.user!.uuid,
-    currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+    currentItemId: state.properties[PROJECT_PANEL_CURRENT_UUID],
 });
 
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
