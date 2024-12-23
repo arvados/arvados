@@ -23,11 +23,12 @@ import { ProcessRuntimeStatus } from "views-components/process-runtime-status/pr
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 import { ContainerRequestResource } from "models/container-request";
 import { filterResources } from "store/resources/resources";
-import { JSONMount } from 'models/mount-types';
+import { JSONMount, MountType } from 'models/mount-types';
 import { getCollectionUrl } from 'models/collection';
 import { Link } from "react-router-dom";
 import { getResourceUrl } from "routes/routes";
 import WarningIcon from '@mui/icons-material/Warning';
+import { ResourcesState } from "store/resources/resources";
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -46,36 +47,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState, props: { request: ProcessResource, container?: ContainerResource }) => {
-    const process = getProcess(props.request.uuid)(state.resources);
-
-    let workflowCollection = "";
-    let workflowPath = "";
-    if (process?.containerRequest?.mounts && process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW]) {
-        const wf = process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
-
-        if (wf.content["$graph"] &&
-            wf.content["$graph"].length > 0 &&
-            wf.content["$graph"][0] &&
-            wf.content["$graph"][0]["steps"] &&
-            wf.content["$graph"][0]["steps"][0]) {
-
-            const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
-            const pdh = wf.content["$graph"][0]["steps"][0].run.match(REGEX);
-            if (pdh) {
-                workflowCollection = pdh[1];
-                workflowPath = pdh[2];
-            }
-        }
-    }
-
     return {
-        container: process?.container,
-        workflowCollection,
-        workflowPath,
-        subprocesses: filterResources((resource: ContainerRequestResource) =>
-            (resource.kind === ResourceKind.CONTAINER_REQUEST &&
-             resource.requestingContainerUuid === process?.containerRequest.containerUuid)
-        )(state.resources),
+        requestUuid: props.request.uuid,
+        resources: state.resources,
     };
 };
 
@@ -89,30 +63,61 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionP
     openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
 });
 
+type ProcessDetailsDataProps = {
+    request: ProcessResource,
+    container?: ContainerResource,
+    twoCol?: boolean,
+    hideProcessPanelRedundantFields?: boolean,
+    classes: Record<CssRules, string>
+    requestUuid: string;
+    resources: ResourcesState;
+}
+
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
-        (props: {
-            request: ProcessResource,
-            container?: ContainerResource,
-            subprocesses: ContainerRequestResource[],
-            workflowCollection,
-            workflowPath,
-            twoCol?: boolean,
-            hideProcessPanelRedundantFields?: boolean,
-            classes: Record<CssRules, string>
-        } & ProcessDetailsAttributesActionProps) => {
-            const containerRequest = props.request;
+        (props: ProcessDetailsDataProps & ProcessDetailsAttributesActionProps) => {
+            const process = getProcess(props.request.uuid)(props.resources);
+            const subprocesses = filterResources((resource: ContainerRequestResource) =>
+                (resource.kind === ResourceKind.CONTAINER_REQUEST &&
+                    resource.requestingContainerUuid === process?.containerRequest.containerUuid)
+            )(props.resources)
+            const mounts = process?.containerRequest?.mounts;
+            const containerRequest = process?.containerRequest;
             const container = props.container;
-            const subprocesses = props.subprocesses;
             const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
-            const workflowCollection = props.workflowCollection;
-            const workflowPath = props.workflowPath;
-            const filteredPropertyKeys = Object.keys(containerRequest.properties)
-                                               .filter(k => (typeof containerRequest.properties[k] !== 'object'));
+            const { workflowCollection, workflowPath } = parseMounts(mounts);
+            const filteredPropertyKeys = Object.keys(containerRequest?.properties)
+                                            .filter(k => (typeof containerRequest?.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
             const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
+
+            function parseMounts(mounts: { [path: string]: MountType } | undefined) {
+                if (!mounts) {
+                    return { workflowCollection: "", workflowPath: "" };
+                }
+                const wf = mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
+                let workflowCollection = "";
+                let workflowPath = "";
+
+                    if (wf.content["$graph"] &&
+                        wf.content["$graph"].length > 0 &&
+                        wf.content["$graph"][0] &&
+                        wf.content["$graph"][0]["steps"] &&
+                        wf.content["$graph"][0]["steps"][0]) {
+
+                        const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
+                        const pdh = wf.content["$graph"][0]["steps"][0].run.match(REGEX);
+                        if (pdh) {
+                            workflowCollection = pdh[1];
+                            workflowPath = pdh[2];
+                        }
+                    }
+                return { workflowCollection, workflowPath };
+            }
+
+            if (!containerRequest) return <></>;
 
             return <Grid container>
             <Grid item xs={12}>
