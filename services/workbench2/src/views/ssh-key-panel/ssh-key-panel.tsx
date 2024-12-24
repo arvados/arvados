@@ -16,7 +16,6 @@ const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
 
     return {
         sshKeys: sshKeys,
-        hasKeys: sshKeys!.length > 0
     };
 };
 
