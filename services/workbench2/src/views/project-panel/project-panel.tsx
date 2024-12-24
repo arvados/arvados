@@ -14,7 +14,6 @@ import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
@@ -71,8 +70,8 @@ interface ProjectPanelDataProps {
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 const mapStateToProps = (state: RootState) => {
-    const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
-    const project = getResource<GroupResource>(currentItemId || "")(state.resources);
+    const currentItemId = state.properties[PROJECT_PANEL_CURRENT_UUID];
+    const project = state.resources[currentItemId] as GroupResource;
     return {
         currentItemId,
         project,
