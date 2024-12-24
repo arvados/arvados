@@ -17,7 +17,7 @@ describe('InactivePanel', () => {
                 title: 'title',
                 ontop: 'ontop',
             },
-            isLoginClusterFederation: false,
+            loginCluster: 'foo',
             inactivePageText: 'Inactive page content',
         };
     });
@@ -43,7 +43,7 @@ describe('InactivePanel', () => {
 
     it('should render content and link account warning on LoginCluster federations', () => {
         // given
-        props.isLoginClusterFederation = true;
+        props.loginCluster = "";
         const expectedMessage = "Inactive page content";
         const expectedLinkAccountText = 'If you would like to use this login to access another account, please contact your administrator';
 
