@@ -20,7 +20,6 @@ import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { RootState } from 'store/store';
-import { getUserUuid } from 'common/getuser';
 
 export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
@@ -57,7 +56,7 @@ interface HasUserUuid {
     userUuid: string;
 }
 
-const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
+const mapStateToProps = (state: RootState) => ({ userUuid: state.auth.user?.uuid });
 
 export const ProjectInputComponent = connect(mapStateToProps)(
     class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {

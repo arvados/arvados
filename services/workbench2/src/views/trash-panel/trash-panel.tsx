@@ -16,7 +16,6 @@ import { ResourceKind, TrashableResource } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
 import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
-import { getProperty } from "store/properties/properties";
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
@@ -68,26 +67,26 @@ export interface TrashPanelFilter extends DataTableFilterItem {
 
 export const ResourceRestore =
     connect((state: RootState, props: { uuid: string, dispatch?: Dispatch<any> }) => {
-        const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-        return { resource, dispatch: props.dispatch };
-    })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
-        <Tooltip title="Restore">
+        return { uuid: props.uuid, resources: state.resources, dispatch: props.dispatch };
+    })((props: { uuid: string, resources: ResourcesState, dispatch?: Dispatch<any> }) =>{
+        const resource = getResource<TrashableResource>(props.uuid)(props.resources);
+        return <Tooltip title="Restore">
             <IconButton
                 style={{ padding: '0' }}
                 onClick={() => {
-                    if (props.resource && props.dispatch) {
+                    if (resource && props.dispatch) {
                         props.dispatch(toggleTrashed(
-                            props.resource.kind,
-                            props.resource.uuid,
-                            props.resource.ownerUuid,
-                            props.resource.isTrashed
+                            resource.kind,
+                            resource.uuid,
+                            resource.ownerUuid,
+                            resource.isTrashed
                         ));
                     }}}
                 size="large">
                 <RestoreFromTrashIcon />
             </IconButton>
         </Tooltip>
-    );
+    });
 
 export const trashPanelColumns: DataColumns<string, CollectionResource> = [
     {
@@ -147,7 +146,7 @@ type TrashPanelProps = TrashPanelDataProps & DispatchProp & WithStyles<CssRules>
 
 export const TrashPanel = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+        currentItemId: state.properties[PROJECT_PANEL_CURRENT_UUID],
         resources: state.resources
     }))(
         class extends React.Component<TrashPanelProps> {

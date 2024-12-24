@@ -32,7 +32,8 @@ export interface WorkflowPanelFilter extends DataTableFilterItem {
 }
 
 export interface WorkflowPanelDataProps {
-    workflow?: WorkflowResource;
+    uuid?: string;
+    workflows?: WorkflowResource[];
 }
 
 export interface WorfklowPanelActionProps {
@@ -121,6 +122,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
 ];
 
 export const WorkflowPanelView = (props: WorkflowPanelProps) => {
+    const workflow = props.workflows?.find(workflow => workflow.uuid === props.uuid) || undefined;
     return <Grid container spacing={2} style={{ minHeight: '500px' }}>
         <Grid item xs={6}>
             <DataExplorer
@@ -134,7 +136,7 @@ export const WorkflowPanelView = (props: WorkflowPanelProps) => {
         </Grid>
         <Grid item xs={6}>
             <Paper style={{ height: '100%' }}>
-                <WorkflowDetailsCard workflow={props.workflow} />
+                <WorkflowDetailsCard workflow={workflow} />
             </Paper>
         </Grid>
     </Grid>;

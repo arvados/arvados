@@ -60,14 +60,14 @@ export interface SshKeyPanelRootActionProps {
 
 export interface SshKeyPanelRootDataProps {
     sshKeys: SshKeyResource[];
-    hasKeys: boolean;
 }
 
 type SshKeyPanelRootProps = SshKeyPanelRootDataProps & SshKeyPanelRootActionProps & WithStyles<CssRules>;
 
 export const SshKeyPanelRoot = withStyles(styles)(
-    ({ classes, sshKeys, openSshKeyCreateDialog, openPublicKeyDialog, hasKeys, openRowOptions }: SshKeyPanelRootProps) =>
-        <Card className={classes.root}>
+    ({ classes, sshKeys, openSshKeyCreateDialog, openPublicKeyDialog, openRowOptions }: SshKeyPanelRootProps) => {
+        const hasKeys = React.useMemo(() => sshKeys.length > 0, [sshKeys.length]);
+        return <Card className={classes.root}>
             <CardContent>
                 <Grid container direction="row">
                     <Grid item xs={8}>
@@ -131,4 +131,4 @@ export const SshKeyPanelRoot = withStyles(styles)(
                 </Grid>
             </CardContent>
         </Card>
-);
+});
