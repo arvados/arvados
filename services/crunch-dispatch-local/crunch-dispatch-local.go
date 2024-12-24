@@ -208,6 +208,10 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 		availableGpus = append(availableGpus, dev)
 	}
 
+	logger.Infof("AMD_VISIBLE_DEVICES=%v", os.Getenv("AMD_VISIBLE_DEVICES"))
+	logger.Infof("CUDA_VISIBLE_DEVICES=%v", os.Getenv("CUDA_VISIBLE_DEVICES"))
+	logger.Infof("availableGpus %v", availableGpus)
+
 	maxGpus := len(availableGpus)
 
 	availableVcpus := maxVcpus
