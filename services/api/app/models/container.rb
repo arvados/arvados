@@ -321,6 +321,22 @@ class Container < ArvadosModel
         resolved_runtime_constraints.delete('cuda')
       ].uniq
     end
+
+    resolved_rocm = resolved_runtime_constraints['rocm']
+    if resolved_rocm.nil? or resolved_rocm['device_count'] == 0
+      runtime_constraint_variations[:rocm] = [
+        # Check for constraints without rocm
+        # (containers that predate the constraint)
+        nil,
+        # The default "don't need ROCM" value
+        {
+          'device_count' => 0,
+        },
+        # The requested value
+        resolved_runtime_constraints.delete('rocm')
+      ].uniq
+    end
+
     reusable_runtime_constraints = hash_product(**runtime_constraint_variations)
                                      .map { |v| resolved_runtime_constraints.merge(v) }
 

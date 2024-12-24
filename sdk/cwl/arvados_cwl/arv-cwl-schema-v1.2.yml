@@ -331,6 +331,33 @@ $graph:
         Maximum number of GPU devices to request.  If not specified,
         same as `cudaDeviceCountMin`.
 
+
+- name: ROCmRequirement
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Require support for AMD ROCm (GPU hardware acceleration).
+  fields:
+    class:
+      type: string
+      doc: 'arv:ROCmRequirement'
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    rocmDeviceCountMin:
+      type: ['null', int, cwl:Expression]
+      default: 1
+      doc: |
+        Minimum number of GPU devices to request.  If not specified,
+        same as `rocmDeviceCountMax`.  If neither are specified,
+        default 1.
+    rocmDeviceCountMax:
+      type: ['null', int, cwl:Expression]
+      doc: |
+        Maximum number of GPU devices to request.  If not specified,
+        same as `rocmDeviceCountMin`.
+
 - name: UsePreemptible
   type: record
   extends: cwl:ProcessRequirement

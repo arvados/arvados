@@ -317,6 +317,12 @@ class ArvadosContainer(JobBase):
                 "hardware_capability": aslist(cuda_req["cudaComputeCapability"])[0]
             }
 
+        rocm_req, _ = self.get_requirement("http://arvados.org/cwl#ROCmRequirement")
+        if rocm_req:
+            runtime_constraints["rocm"] = {
+                "device_count": resources.get("rocmDeviceCount", 1),
+            }
+
         if runtimeContext.enable_preemptible is False:
             scheduling_parameters["preemptible"] = False
         else:

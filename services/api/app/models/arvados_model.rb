@@ -966,6 +966,9 @@ class ArvadosModel < ApplicationRecord
         'driver_version' => '',
         'hardware_capability' => '',
       },
+      'rocm' => {
+        'device_count' => 0,
+      },
       'keep_cache_disk' => 0,
       'keep_cache_ram' => 0,
       'ram' => 0,

@@ -427,6 +427,16 @@ class ContainerRequest < ArvadosModel
           end
         end
       end
+
+      if runtime_constraints['rocm']
+        ['device_count'].each do |k|
+          v = runtime_constraints['rocm'][k]
+          if !v.is_a?(Integer) || v < 0
+            errors.add(:runtime_constraints,
+                       "[rocm.#{k}]=#{v.inspect} must be a positive or zero integer")
+          end
+        end
+      end
     end
   end
 

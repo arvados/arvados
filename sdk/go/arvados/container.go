@@ -101,6 +101,10 @@ type CUDARuntimeConstraints struct {
 	DeviceCount        int    `json:"device_count"`
 }
 
+type ROCmRuntimeConstraints struct {
+	DeviceCount int `json:"device_count"`
+}
+
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
@@ -110,6 +114,7 @@ type RuntimeConstraints struct {
 	KeepCacheRAM  int64                  `json:"keep_cache_ram"`
 	KeepCacheDisk int64                  `json:"keep_cache_disk"`
 	CUDA          CUDARuntimeConstraints `json:"cuda"`
+	ROCm          ROCmRuntimeConstraints `json:"rocm"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters

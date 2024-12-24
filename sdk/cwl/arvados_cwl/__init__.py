@@ -297,6 +297,7 @@ def add_arv_hints():
         "http://arvados.org/cwl#KeepCacheTypeRequirement",
         "http://arvados.org/cwl#OutOfMemoryRetry",
         "http://arvados.org/cwl#PreemptionBehavior",
+        "http://arvados.org/cwl#ROCmRequirement",
     ])
 
 def exit_signal_handler(sigcode, frame):
