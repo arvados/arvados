@@ -210,7 +210,6 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 
 	logger.Infof("AMD_VISIBLE_DEVICES=%v", os.Getenv("AMD_VISIBLE_DEVICES"))
 	logger.Infof("CUDA_VISIBLE_DEVICES=%v", os.Getenv("CUDA_VISIBLE_DEVICES"))
-	logger.Infof("availableGpus %v", availableGpus)
 
 	maxGpus := len(availableGpus)
 
@@ -234,7 +233,7 @@ NextEvent:
 
 			logger.Infof("%v released allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
-				availableVcpus, availableRam, rr.gpus)
+				availableVcpus, availableRam, availableGpus)
 
 		case <-lr.ctx.Done():
 			return
@@ -250,7 +249,7 @@ NextEvent:
 			}
 
 			if rr.vcpus > availableVcpus || rr.ram > availableRam || rr.gpus > len(availableGpus) {
-				logger.Info("Insufficient resources to start %v, waiting for next event", rr.uuid)
+				logger.Infof("Insufficient resources to start %v, waiting for next event", rr.uuid)
 				// can't be scheduled yet, go up to
 				// the top and wait for the next event
 				continue NextEvent
@@ -269,7 +268,7 @@ NextEvent:
 
 			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
-				availableVcpus, availableRam, alloc.gpus)
+				availableVcpus, availableRam, availableGpus)
 
 			// shift array down
 			for i := 0; i < len(pending)-1; i++ {
@@ -303,7 +302,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 			ram: (container.RuntimeConstraints.RAM +
 				container.RuntimeConstraints.KeepCacheRAM +
 				int64(lr.cluster.Containers.ReserveExtraRAM)),
-			gpus:  container.RuntimeConstraints.CUDA.DeviceCount,
+			gpus:  container.RuntimeConstraints.CUDA.DeviceCount + 1, // fixme finish ROCm support
 			ready: make(chan ResourceAlloc)}
 
 		select {
