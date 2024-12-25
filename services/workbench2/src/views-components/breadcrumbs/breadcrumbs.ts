@@ -6,7 +6,6 @@ import { connect } from "react-redux";
 import { Breadcrumb, Breadcrumbs as BreadcrumbsComponent, BreadcrumbsProps } from 'components/breadcrumbs/breadcrumbs';
 import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
-import { getProperty } from '../../store/properties/properties';
 import { BREADCRUMBS } from '../../store/breadcrumbs/breadcrumbs-actions';
 import { openSidePanelContextMenu } from 'store/context-menu/context-menu-actions';
 
@@ -14,7 +13,7 @@ type BreadcrumbsDataProps = Pick<BreadcrumbsProps, 'items' | 'resources'>;
 type BreadcrumbsActionProps = Pick<BreadcrumbsProps, 'onClick' | 'onContextMenu'>;
 
 const mapStateToProps = () => ({ properties, resources }: RootState): BreadcrumbsDataProps => ({
-    items: (getProperty<Breadcrumb[]>(BREADCRUMBS)(properties) || []),
+    items: properties[BREADCRUMBS] || [],
     resources,
 });
 
