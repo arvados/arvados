@@ -11,7 +11,7 @@ import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, Proc
 import { ReactElement } from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import classnames from "classnames";
-import { getNodeChildrenIds, Tree, getNode, initTreeNode } from 'models/tree';
+import { getNodeChildrenIds, Tree, getNode, initTreeNode, createTree } from 'models/tree';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
 import { ResourceKind } from 'models/resource';
@@ -20,6 +20,7 @@ import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-act
 import { kebabCase } from 'lodash';
 import { Resource } from 'models/resource';
 import { ResourcesState } from 'store/resources/resources';
+import { TreePicker } from 'store/tree-picker/tree-picker';
 
 type CssRules = 'list'
               | 'listItem'
@@ -144,6 +145,8 @@ export interface TreeItem<T> {
 
 export interface TreeProps<T> {
     tree?: Tree<T>;
+    pickerId?: string;
+    treePicker?: TreePicker;
     resources?: ResourcesState;
     currentItemUuid?: string;
     items?: Array<TreeItem<T>>;
@@ -377,7 +380,9 @@ function addToItemsMap<T>(item: TreeItem<T>, itemsMap: Map<string, TreeItem<T>>)
 export const TreeComponent = withStyles(styles)(
     function<T>(props: TreeProps<T> & WithStyles<CssRules>) {
         const level = props.level ? props.level : 0;
-        const { classes, render, toggleItemActive, toggleItemOpen, currentItemUuid, useRadioButtons, tree, resources } = props;
+        const { classes, render, toggleItemActive, toggleItemOpen, currentItemUuid, useRadioButtons, resources, treePicker, pickerId } = props;
+        const pickedTree = treePicker && pickerId ? treePicker[pickerId] : createTree<T>();
+        const tree = props.tree || pickedTree;
         const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
         const itemsMap: ItemsMap<T> = new Map();
         const fillMap = (tree: Tree<T>, resources: ResourcesState) => getNodeChildrenIds('')(tree)

@@ -5,7 +5,6 @@
 import { connect } from "react-redux";
 import { TreeComponent, TreeProps, TreeItem} from "components/tree/tree";
 import { RootState } from "store/store";
-import { Tree, createTree} from 'models/tree';
 import { Dispatch } from "redux";
 
 type Callback<T> = (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>, pickerId: string) => void;
@@ -18,10 +17,10 @@ export interface TreePickerProps<T> {
 }
 
 const mapStateToProps =
-    <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'tree' | 'resources'> => {
-        const tree: Tree<T> = state.treePicker[props.pickerId] || createTree<T>();
+    <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'resources' | 'treePicker' | 'pickerId'> => {
         return {
-            tree: tree,
+            treePicker: state.treePicker,
+            pickerId: props.pickerId,
             resources: state.resources,
         };
     };
