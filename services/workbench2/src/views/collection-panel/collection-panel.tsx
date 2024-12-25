@@ -187,7 +187,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                             isOldVersion: item.currentVersionUuid !== item.uuid,
                         });
                     }
-                    if (itemOwner && prevProps.resources !== resources) {
+                    if (prevProps.resources !== resources) {
                         const isWritable = this.checkIsWritable(item, itemOwner, currentUserUUID, resourceIsFrozen(item, resources));
                         this.setState({ isWritable: isWritable });
                     }
