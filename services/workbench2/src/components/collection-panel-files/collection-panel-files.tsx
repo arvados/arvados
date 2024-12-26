@@ -455,7 +455,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                 }
             },
             // eslint-disable-next-line react-hooks/exhaustive-deps
-            [path, setPath, collectionPanelFiles] 
+            [path, setPath, collectionPanelFiles, isWritable]
         );
 
         const getItemIcon = React.useCallback(

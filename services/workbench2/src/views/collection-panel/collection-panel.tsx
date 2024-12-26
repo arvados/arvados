@@ -172,6 +172,7 @@ export const CollectionPanel = withStyles(styles)(connect(
             shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps & RouteComponentProps<{ id: string }>>, nextState: Readonly<CollectionPanelState>, nextContext: any ): boolean {
                     return this.props.match.params.id !== nextProps.match.params.id
                         || this.props.resources !== nextProps.resources
+                        || this.state.isWritable !== nextState.isWritable;
             }
 
             componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<CollectionPanelState>, snapshot?: any ): void {
