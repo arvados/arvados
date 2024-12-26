@@ -8,7 +8,6 @@ import { contextMenuActions, ContextMenuResource } from "store/context-menu/cont
 import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
 import { ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
-import { memoize } from "lodash";
 
 type DataProps = Pick<ContextMenuProps, "contextMenu"> & { resource?: ContextMenuResource };
 
@@ -31,20 +30,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     },
 });
 
-const handleItemClick = memoize(
-    (resource: DataProps["resource"], onItemClick: ActionProps["onItemClick"]): ContextMenuProps["onItemClick"] =>
-        item => {
-            onItemClick(item, { ...resource, fromContextMenu: true } as ContextMenuResource);
-        }
-);
-
-const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionProps): ContextMenuProps => ({
-    ...dataProps,
-    ...actionProps,
-    onItemClick: handleItemClick(resource, actionProps.onItemClick),
-});
-
-export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenuComponent);
+export const ContextMenu = connect(mapStateToProps, mapDispatchToProps)(ContextMenuComponent);
 
 
 

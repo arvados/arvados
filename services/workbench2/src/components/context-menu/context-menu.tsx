@@ -23,7 +23,7 @@ export type ContextMenuItemGroup = ContextMenuItem[];
 
 export interface ContextMenuProps {
     contextMenu: ContextMenuState;
-    onItemClick: (action: ContextMenuItem) => void;
+    onItemClick: (action: ContextMenuItem, resource: ContextMenuResource | undefined) => void;
     onClose: () => void;
 }
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
@@ -47,12 +47,12 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                 ? <item.component
                                     key={actionIndex}
                                     data-cy={item.name}
-                                    onClick={() => onItemClick(item)} />
+                                    onClick={() => onItemClick(item, resource)} />
                                 : <ListItem
                                     button
                                     key={actionIndex}
                                     data-cy={item.name}
-                                    onClick={() => onItemClick(item)}>
+                                    onClick={() => onItemClick(item, resource)}>
                                     {item.icon &&
                                         <ListItemIcon>
                                             <item.icon />
