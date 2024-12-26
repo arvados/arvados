@@ -171,7 +171,9 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
         }
 
         shouldComponentUpdate(nextProps: Readonly<GroupDetailsPanelProps>, nextState: Readonly<GroupDetailsPanelState>, nextContext: any): boolean {
-            return this.props.group !== nextProps.group || this.state.value !== nextState.value;
+            return this.props.group !== nextProps.group
+                || this.state.value !== nextState.value
+                || this.state.groupCanManage !== nextState.groupCanManage;
         }
 
         componentDidUpdate(prevProps: Readonly<GroupDetailsPanelProps>, prevState: Readonly<{}>, snapshot?: any): void {
