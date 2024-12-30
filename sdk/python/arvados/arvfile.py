@@ -857,6 +857,7 @@ class ArvadosFile(object):
             self._segments.append(streams.Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
 
         self.set_committed(False)
+        self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     def __eq__(self, other):
         if other is self:

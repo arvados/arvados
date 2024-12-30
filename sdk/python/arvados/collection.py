@@ -1259,9 +1259,17 @@ class Collection(RichCollectionBase):
             else:
                 self._remember_api_response(response)
             other = CollectionReader(response["manifest_text"])
+        # if the local Collection is marked as committed, it doesn't
+        # have any pending local changes, so updates only come from
+        # upstream, which means we want to reset the "committed" flag
+        # after applying updates so we don't waste time writing back
+        # an identical record.
+        updates_from_upstream_only = self._committed
         baseline = CollectionReader(self._manifest_text)
         self.apply(baseline.diff(other))
         self._manifest_text = self.manifest_text()
+        if updates_from_upstream_only:
+            self.set_committed(True)
 
     @synchronized
     def _my_api(self):

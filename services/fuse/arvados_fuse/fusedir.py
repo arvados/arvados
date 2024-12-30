@@ -365,9 +365,13 @@ class CollectionDirectoryBase(Directory):
                             self.inodes.invalidate_entry(self, name)
                             self.inodes.del_entry(ent)
                         elif event == arvados.collection.MOD:
-                            if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
-                                self.inodes.invalidate_inode(item.fuse_entry)
+                            # MOD events have (modified_from, newitem)
+                            newitem = item[1]
+                            if hasattr(newitem, "fuse_entry") and newitem.fuse_entry is not None:
+                                newitem.fuse_entry.invalidate()
+                                self.inodes.invalidate_inode(newitem.fuse_entry)
                             elif name in self._entries:
+                                self._entries[name].invalidate()
                                 self.inodes.invalidate_inode(self._entries[name])
 
                         if self.collection_record_file is not None:
