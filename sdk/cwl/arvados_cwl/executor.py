@@ -208,9 +208,9 @@ The 'jobs' API is no longer supported.
                                                      collection_cache=self.collection_cache)
         self.toplevel_runtimeContext.secret_store = ArvSecretStore()
 
-        if self.toplevel_runtimeContext is None and "ARVADOS_PROJECT_UUID" in os.environ:
-            self.toplevel_runtimeContext = os.environ["ARVADOS_PROJECT_UUID"]
-            logger.info("Using project %s from ARVADOS_PROJECT_UUID in the environment", self.toplevel_runtimeContext)
+        if self.toplevel_runtimeContext.project_uuid is None and "ARVADOS_PROJECT_UUID" in os.environ:
+            self.toplevel_runtimeContext.project_uuid = os.environ["ARVADOS_PROJECT_UUID"]
+            logger.info("Using project %s from ARVADOS_PROJECT_UUID in the environment", self.toplevel_runtimeContext.project_uuid)
 
         self.defer_downloads = arvargs.submit and arvargs.defer_downloads
 
