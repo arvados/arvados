@@ -548,6 +548,13 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         if args.name is None:
             put_args += ['--name', collection_name]
 
+        if not args.project_uuid and "ARVADOS_PROJECT_UUID" in os.environ:
+            args.project_uuid = os.environ["ARVADOS_PROJECT_UUID"]
+            logger.info("Using project %s from ARVADOS_PROJECT_UUID in the environment", args.project_uuid)
+
+        if args.project_uuid:
+            put_args += ['--project-uuid', args.project_uuid]
+
         coll_uuid = arv_put.main(
             put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
             install_sig_handlers=install_sig_handlers).strip()

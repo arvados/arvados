@@ -1115,6 +1115,8 @@ def progress_writer(progress_func, outfile=sys.stderr):
     return write_progress
 
 def desired_project_uuid(api_client, project_uuid, num_retries):
+    if not project_uuid and "ARVADOS_PROJECT_UUID" in os.environ:
+        project_uuid = os.environ["ARVADOS_PROJECT_UUID"]
     if not project_uuid:
         query = api_client.users().current()
     elif arvados.util.user_uuid_pattern.match(project_uuid):
