@@ -1,0 +1,156 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# build-debian-nspawn-vm.yml - Ansible playbook to build a new Debian/Ubuntu
+# systemd-nspawn VM from scratch
+#
+# Run this playbook on a host with systemd-nspawn installed, and it will create
+# a minimal Debian/Ubuntu system with networking, SSH, and a user account with
+# full sudo access. This is enough that you can start the VM and run more
+# Ansible playbooks on it.
+#
+# The VM expects to work with a private network. It expects the host to provide
+# a DHCP lease (e.g., the host is running systemd-networkd) and forward IP.
+#
+# You MUST set the following variables to run this playbook:
+#
+# * `image_name`: The name of the image to create. This must be a valid DNS
+#   component. Note a container by this name will be started while the playbook
+#   is running.
+#
+# * `image_authorized_keys`: SSH public key string or URL.
+#
+# Other interesting variables you MAY set include:
+#
+# * `debootstrap_suite`: The codename of the Debian/Ubuntu release to install,
+#   like 'bookworm' or 'noble'. The default is Debian stable.
+#
+# * `debootstrap_mirror`: The URL of the Debian/Ubuntu mirror to install from.
+#   You MUST set this to an Ubuntu mirror if you want to install Ubuntu.
+#
+# * `image_username`, `image_passhash`, `image_gecos`, `image_shell`: These all
+#   define parameters for the user account created inside the VM. For details
+#   about how to generate `image_passhash`, see
+# <https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module>
+
+- name: Bootstrap image
+  hosts: localhost
+  vars:
+    image_path: "/var/lib/machines/{{ image_name }}"
+    debootstrap_suite: stable
+    debootstrap_mirror: "http://deb.debian.org/debian"
+    debootstrap_script: "{{ 'gutsy' if debootstrap_mirror is search('\\bubuntu\\b') else 'sid' }}"
+  tasks:
+    - name: debootstrap
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - debootstrap
+          - --include=dbus,openssh-server,python3,sudo,systemd
+          - "{{ debootstrap_suite }}"
+          - "{{ image_path }}"
+          - "{{ debootstrap_mirror }}"
+          - "{{ debootstrap_script }}"
+        creates: "{{ (image_path, 'etc/os-release')|path_join }}"
+    - name: Set up authorized SSH keys for root
+      become: yes
+      ansible.posix.authorized_key:
+        user: root
+        path: "{{ (image_path, 'root/.ssh/authorized_keys')|path_join }}"
+        key: "{{ image_authorized_keys }}"
+
+- name: Start VM and add host
+  hosts: localhost
+  vars:
+    image_interface: host0
+  tasks:
+    # We want to start the VM as early as possible because it's easier to
+    # manage the system state when we know it's running. We restart the VM
+    # to ensure it's running from the image we just built.
+    - name: Start VM
+      become: yes
+      ansible.builtin.systemd_service:
+        name: "systemd-nspawn@{{ image_name }}.service"
+        state: restarted
+
+    - name: Enable networking and sshd
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - "--machine={{ image_name }}"
+          - enable
+          - --now
+          - ssh
+          - systemd-networkd
+      register: nspawn_enable
+      # Retry if we tried the command faster than the VM could start dbus.
+      until: "nspawn_enable.stderr is not search('^Failed to connect to bus:', multiline=true)"
+      retries: 15
+      delay: 1
+    - name: Wait for VM network
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - systemd-run
+          - "--machine={{ image_name }}"
+          - --wait
+          - /usr/lib/systemd/systemd-networkd-wait-online
+          - "--interface={{ image_interface }}"
+          - --timeout=60
+    - name: Get VM network address
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - systemd-run
+          - "--machine={{ image_name }}"
+          - --pipe
+          - networkctl
+          - status
+          - --json=short
+          - "{{ image_interface }}"
+      register: nspawn_netctl
+    - name: Add VM Ansible host
+      vars:
+        vm_addr: "{{ (nspawn_netctl.stdout|from_json).Addresses|selectattr('ScopeString', '==', 'global')|first }}"
+      ansible.builtin.add_host:
+        name: nspawn_vm
+        ansible_host: "{{ vm_addr.Address|join('.' if vm_addr.Family == 2 else ':') }}"
+        ansible_user: root
+
+- name: Set up VM user with sudo
+  hosts: nspawn_vm
+  vars:
+    image_username: admin
+    image_passhash: "!"
+    image_gecos: ""
+    image_shell: /usr/bin/bash
+  tasks:
+    - name: Create user account
+      ansible.builtin.user:
+        name: "{{ image_username }}"
+        password: "{{ image_passhash }}"
+        comment: "{{ image_gecos }}"
+        shell: "{{ image_shell }}"
+        groups:
+          - sudo
+        append: yes
+    - name: Set up authorized SSH keys for user
+      ansible.posix.authorized_key:
+        user: "{{ image_username }}"
+        key: "{{ image_authorized_keys }}"
+    - name: Clean up authorized SSH keys for root
+      ansible.posix.authorized_key:
+        user: root
+        key: "{{ image_authorized_keys }}"
+        state: absent
+
+- name: Stop VM
+  hosts: localhost
+  tasks:
+    - name: Stop VM
+      become: yes
+      ansible.builtin.systemd_service:
+        name: "systemd-nspawn@{{ image_name }}.service"
+        state: stopped
