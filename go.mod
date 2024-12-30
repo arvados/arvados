@@ -48,7 +48,7 @@ require (
 	github.com/prometheus/common v0.53.0
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/crypto v0.31.0
-	golang.org/x/net v0.26.0
+	golang.org/x/net v0.33.0
 	golang.org/x/oauth2 v0.20.0
 	golang.org/x/sys v0.28.0
 	google.golang.org/api v0.181.0
