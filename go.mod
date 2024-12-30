@@ -47,10 +47,10 @@ require (
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.53.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/crypto v0.24.0
-	golang.org/x/net v0.26.0
+	golang.org/x/crypto v0.31.0
+	golang.org/x/net v0.33.0
 	golang.org/x/oauth2 v0.20.0
-	golang.org/x/sys v0.21.0
+	golang.org/x/sys v0.28.0
 	google.golang.org/api v0.181.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/go-jose/go-jose.v2 v2.6.3
@@ -98,7 +98,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
@@ -127,7 +127,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528155852-a33235495d66 // indirect
