@@ -5,14 +5,27 @@
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { contextMenuActions, ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
+import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem, getMenuActionSet } from "components/context-menu/context-menu";
 import { ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
+import { memoize } from "lodash";
 
-type DataProps = Pick<ContextMenuProps, "contextMenu"> & { resource?: ContextMenuResource };
+type DataProps = Pick<ContextMenuProps, "contextMenu" | "items"> & { resource?: ContextMenuResource };
+
+const filteredItems = memoize((resource: ContextMenuResource | undefined, state: RootState) => {
+    const actionSet = getMenuActionSet(resource);
+    return actionSet.map(group => group.filter(action => {
+        if(resource && action.filters) {
+            return action.filters.every(filter => filter(state, resource))
+        } else {
+            return true;
+        }
+    }));
+});
 
 const mapStateToProps = (state: RootState): DataProps => {
     return {
+        items: filteredItems(state.contextMenu.resource, state),
         contextMenu: state.contextMenu,
     };
 };
