@@ -210,7 +210,7 @@ The 'jobs' API is no longer supported.
 
         if self.toplevel_runtimeContext is None and "ARVADOS_PROJECT_UUID" in os.environ:
             self.toplevel_runtimeContext = os.environ["ARVADOS_PROJECT_UUID"]
-            logger.info("Using project %s for ARVADOS_PROJECT_UUID", self.toplevel_runtimeContext)
+            logger.info("Using project %s from ARVADOS_PROJECT_UUID in the environment", self.toplevel_runtimeContext)
 
         self.defer_downloads = arvargs.submit and arvargs.defer_downloads
 

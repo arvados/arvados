@@ -142,12 +142,23 @@ If not provided, will use the default client configuration from the environment 
     if not args.source_arvados and arvados.util.uuid_pattern.match(args.object_uuid):
         args.source_arvados = args.object_uuid[:5]
 
+    if not args.project_uuid and "ARVADOS_PROJECT_UUID" in os.environ:
+        args.project_uuid = os.environ["ARVADOS_PROJECT_UUID"]
+        logger.info("Using project %s from ARVADOS_PROJECT_UUID in the environment", args.project_uuid)
+
+    if not args.destination_arvados and args.project_uuid:
+        args.destination_arvados = args.project_uuid[:5]
+
     # Create API clients for the source and destination instances
     src_arv = api_for_instance(args.source_arvados, args.retries)
     dst_arv = api_for_instance(args.destination_arvados, args.retries)
 
     if not args.project_uuid:
-        args.project_uuid = dst_arv.users().current().execute(num_retries=args.retries)["uuid"]
+        if "ARVADOS_PROJECT_UUID" in os.environ:
+            args.project_uuid = os.environ["ARVADOS_PROJECT_UUID"]
+            logger.info("Using project %s from ARVADOS_PROJECT_UUID in the environment", args.project_uuid)
+        else:
+            args.project_uuid = dst_arv.users().current().execute(num_retries=args.retries)["uuid"]
 
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
