@@ -117,7 +117,7 @@ export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFi
                         // For each status pair, request count and return bar status and count
                         const { barStatus, processStatus } = statusPair;
                         const filter = buildProcessStatusFilters(new FilterBuilder(baseFilter), processStatus);
-                        const count = (await requestContainerStatusCount(filter)).itemsAvailable;
+                        const count = (await requestContainerStatusCount(filter))?.itemsAvailable;
                         if (count === undefined) return Promise.reject();
                         return {status: barStatus, count};
                     });
@@ -153,9 +153,13 @@ async function resolvePromisesSequentially<T>(promises: Promise<T>[]) {
     const results: T[] = [];
 
     for (const promise of promises) {
-        // Yield control to the event loop before awaiting the promise
-        await new Promise(resolve => setTimeout(resolve, 0));
-        results.push(await promise);
+        try {
+            // Yield control to the event loop before awaiting the promise
+            await new Promise(resolve => setTimeout(resolve, 0));
+            results.push(await promise);
+        } catch (error) {
+            console.error("Error while resolving promises sequentially", error);
+        }
     }
 
     return results;

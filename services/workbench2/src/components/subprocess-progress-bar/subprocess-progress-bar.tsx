@@ -21,6 +21,7 @@ import { ProcessResource } from "models/process";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
 import { DataColumns } from "components/data-table/data-column";
+import { SUBPROCESS_PANEL_ID } from "store/subprocess-panel/subprocess-panel-actions";
 
 type CssRules = 'progressStacked';
 
@@ -78,7 +79,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
 });
 
 export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
-    ({ parentResource, classes, dataExplorer, dataExplorerId, fetchProcessProgressBarStatus }: ProgressBarProps) => {
+    ({ parentResource, classes, dataExplorer, dataExplorerId = SUBPROCESS_PANEL_ID, fetchProcessProgressBarStatus }: ProgressBarProps) => {
 
         const [progressCounts, setProgressData] = useState<ProgressBarCounts | undefined>(undefined);
         const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
@@ -108,7 +109,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         // Either when the workflow is running (shouldPollProcess) or when the
         //   project contains steps in an active state (shouldPollProject)
         useAsyncInterval(async () => {
-            if (parentUuid) {
+            if (parentUuid && typeFilter.current) {
                 fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
                     .then(result => {
                         if (result) {

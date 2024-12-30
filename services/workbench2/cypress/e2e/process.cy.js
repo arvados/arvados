@@ -41,7 +41,7 @@ describe("Process tests", function () {
                 use_existing: reuse,
                 state: state,
                 mounts: {
-                    foo: {
+                    '/var/lib/cwl/workflow.json': {
                         kind: "tmp",
                         path: "/tmp/foo",
                     },

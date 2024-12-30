@@ -94,13 +94,13 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
 
             function parseMounts(mounts: { [path: string]: MountType } | undefined) {
-                if (!mounts) {
+                if (!mounts || !mounts[MOUNT_PATH_CWL_WORKFLOW]) {
                     return { workflowCollection: "", workflowPath: "" };
                 }
                 const wf = mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
                 let workflowCollection = "";
                 let workflowPath = "";
-
+                if (wf.content) {
                     if (wf.content["$graph"] &&
                         wf.content["$graph"].length > 0 &&
                         wf.content["$graph"][0] &&
@@ -114,6 +114,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                             workflowPath = pdh[2];
                         }
                     }
+                }
                 return { workflowCollection, workflowPath };
             }
 
