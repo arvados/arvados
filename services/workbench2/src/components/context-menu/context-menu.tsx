@@ -22,16 +22,16 @@ export interface ContextMenuItem {
 export type ContextMenuItemGroup = ContextMenuItem[];
 
 export interface ContextMenuProps {
+    items: ContextMenuActionSet;
     contextMenu: ContextMenuState;
     onItemClick: (action: ContextMenuItem, resource: ContextMenuResource | undefined) => void;
     onClose: () => void;
 }
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { onClose, onItemClick } = this.props;
+        const { items, onClose, onItemClick } = this.props;
         const { open, position, resource } = this.props.contextMenu;
         const anchorEl = resource ? createAnchorAt(position) : undefined;
-        const items = getMenuActionSet(resource);
         return <Popover
             anchorEl={anchorEl}
             open={open}
@@ -86,5 +86,5 @@ export const addMenuActionSet = (name: ContextMenuKind, itemSet: ContextMenuActi
 };
 const emptyActionSet: ContextMenuActionSet = [];
 
-const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
+export const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
     resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
