@@ -1,0 +1,114 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# privilege-nspawn-vm.yml - Add privileges to a systemd-nspawn VM to run
+# Arvados components
+#
+# Run this playbook on a host with systemd-nspawn installed. It will configure a
+# named VM container with all of the privileges necessary to run different Arvados
+# components.
+#
+# You MUST run this playbook with the `container_name` variable set to the name
+# of the VM to configure.
+#
+# By default the playbook grants privileges required for all Arvados components.
+# You can revoke the privileges for a component by setting any of the variables
+# `docker_privileges`, `fuse_privileges`, or `singularity_privileges` to the
+# string 'absent'. For example, if you're building a compute node VM that only
+# uses the Docker compute engine, you could set `singularity_privileges=absent`
+# to avoid granting privileges that are only required for Singularity.
+
+- name: Add privileges to systemd-nspawn VM
+  hosts: localhost
+  vars:
+    docker_privileges: present
+    fuse_privileges: present
+    singularity_privileges: present
+    nspawn_container_conffile: "/etc/systemd/nspawn/{{ container_name }}.nspawn"
+    nspawn_service_conffile: "/etc/systemd/system/systemd-nspawn@{{ container_name }}.service.d/arvados-ansible.conf"
+  module_defaults:
+    community.general.ini_file:
+      exclusive: false
+      ignore_spaces: true
+      no_extra_spaces: true
+      owner: root
+      group: root
+      mode: 0644
+  tasks:
+    - name: Create systemd-nspawn drop-in directory
+      ansible.builtin.file:
+        state: directory
+        path: "{{ nspawn_service_conffile|dirname }}"
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Control access to FUSE device
+      community.general.ini_file:
+        state: "{{ fuse_privileges }}"
+        path: "{{ nspawn_service_conffile }}"
+        section: Service
+        option: DeviceAllow
+        value: "/dev/fuse rw"
+      notify: daemon-reload
+
+    - name: Control access to block loop devices
+      community.general.ini_file:
+        state: "{{ singularity_privileges }}"
+        path: "{{ nspawn_service_conffile }}"
+        section: Service
+        option: DeviceAllow
+        value: "block-loop rwm"
+      notify: daemon-reload
+    - name: Control block loop device ordering
+      community.general.ini_file:
+        state: "{{ singularity_privileges }}"
+        path: "{{ nspawn_service_conffile }}"
+        section: Unit
+        option: "{{ item }}"
+        value: "modprobe@loop.service"
+      loop:
+        - Wants
+        - After
+      notify: daemon-reload
+
+    - name: Filter system calls for Docker
+      community.general.ini_file:
+        state: "{{ docker_privileges }}"
+        path: "{{ nspawn_container_conffile }}"
+        section: Exec
+        option: SystemCallFilter
+        value: "{{ item }}"
+      loop:
+        - add_key
+        - bpf
+        - keyctl
+
+    - name: Map private users for Singularity
+      community.general.ini_file:
+        state: "{{ singularity_privileges }}"
+        path: "{{ nspawn_container_conffile }}"
+        section: Exec
+        option: PrivateUsers
+        value: "0"
+
+    - name: Bind FUSE device
+      community.general.ini_file:
+        state: "{{ fuse_privileges }}"
+        path: "{{ nspawn_container_conffile }}"
+        section: Files
+        option: Bind
+        value: /dev/fuse
+
+    - name: Bind block loop control device
+      community.general.ini_file:
+        state: "{{ singularity_privileges }}"
+        path: "{{ nspawn_container_conffile }}"
+        section: Files
+        option: Bind
+        value: /dev/loop-control
+  handlers:
+    - name: daemon-reload
+      ansible.builtin.systemd_service:
+        daemon_reload: true
