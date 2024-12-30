@@ -159,34 +159,15 @@ Consider this section for the @RailsAPI@ service:
 
 There is no @ExternalURL@ defined because the @RailsAPI@ is not directly accessible and does not need to advertise a URL: all traffic to it flows via @Controller@, which is the only client that talks to it.
 
-The @RailsAPI@ service is also a Rails application, and its listening host/port is defined in the Nginx configuration:
+The @RailsAPI@ service is also a Rails application, and its listening host and port are set in the @arvados-railsapi.service@ unit definition:
 
-<notextile><pre><code>
-server {
-  # This configures the Arvados API server.  It is written using Ruby
-  # on Rails and uses the Passenger application server.
-
-  listen localhost:8004;
-  server_name localhost-api;
-
-  root /var/www/arvados-api/current/public;
-  index  index.html index.htm index.php;
-
-  passenger_enabled on;
-  passenger_preload_bundler on;
-  passenger_load_shell_envvars off;
-  # The API server needs to find `arvados-server` in $PATH to read the cluster
-  # configuration. If you have installed `arvados-server` in a nonstandard
-  # location, add that directory to the PATH value here.
-  passenger_env_var PATH /usr/bin:/usr/local/bin;
-
-  # This value effectively limits the size of API objects users can
-  # create, especially collections.  If you change this, you should
-  # also ensure the following settings match it:
-  # * `client_max_body_size` in the previous server section
-  # * `API.MaxRequestSize` in config.yml
-  client_max_body_size 128m;
-}
+<notextile>
+<pre><code># <span class="userinput">systemctl cat arvados-railsapi.service</span>
+[...]
+[Service]
+Environment=<strong>PASSENGER_ADDRESS=localhost</strong>
+Environment=<strong>PASSENGER_PORT=8004</strong>
+[...]
 </code></pre></notextile>
 
 So then, why is there a need to specify @InternalURLs@ for the @RailsAPI@ service? It is there because this is how the @Controller@ service locates the @RailsAPI@ service it should talk to. Since this connection is internal to the Arvados cluster, @Controller@ uses @InternalURLs@ to find the @RailsAPI@ endpoint.

@@ -112,10 +112,6 @@ class Container < ArvadosModel
     Complete => [Cancelled]
   }
 
-  def self.limit_index_columns_read
-    ["mounts"]
-  end
-
   def self.full_text_searchable_columns
     super - ["secret_mounts", "secret_mounts_md5", "runtime_token", "gateway_address", "output_storage_classes"]
   end

@@ -425,7 +425,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 				}
 			}
 		}
-		if dio.NextToken == nil {
+		if dio.NextToken == nil || *dio.NextToken == "" {
 			break
 		}
 		dii.NextToken = dio.NextToken
@@ -442,7 +442,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 			for _, ent := range page.InstanceStatuses {
 				az[*ent.InstanceId] = *ent.AvailabilityZone
 			}
-			if page.NextToken == nil {
+			if page.NextToken == nil || *page.NextToken == "" {
 				break
 			}
 			disi.NextToken = page.NextToken
@@ -561,7 +561,7 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 			})
 			instanceSet.pricesUpdated[pk] = updateTime
 		}
-		if page.NextToken == nil {
+		if page.NextToken == nil || *page.NextToken == "" {
 			break
 		}
 		dsphi.NextToken = page.NextToken

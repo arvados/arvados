@@ -340,10 +340,14 @@ class ApplicationController < ActionController::Base
     limit_columns &= model_class.columns_for_attributes(select_for_klass @select, model_class) if @select
     return if limit_columns.empty?
     model_class.transaction do
+      # This query does not use `pg_column_size()` because the returned value
+      # can be smaller than the apparent length thanks to compression.
+      # `octet_length(::text)` better reflects how expensive it will be for
+      # Rails to process the data.
       limit_query = @objects.
         except(:select, :distinct).
         select("(%s) as read_length" %
-               limit_columns.map { |s| "octet_length(#{model_class.table_name}.#{s})" }.join(" + "))
+               limit_columns.map { |s| "octet_length(#{model_class.table_name}.#{s}::text)" }.join(" + "))
       new_limit = 0
       read_total = 0
       limit_query.each do |record|

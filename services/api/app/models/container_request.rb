@@ -117,10 +117,6 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def self.limit_index_columns_read
-    ["mounts"]
-  end
-
   def logged_attributes
     super.except('secret_mounts', 'runtime_token')
   end

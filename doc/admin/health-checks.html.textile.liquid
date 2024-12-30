@@ -46,26 +46,26 @@ If all checks pass, it writes @health check OK@ to stderr (unless the @-quiet@ f
 {% codeblock as yaml %}
 Checks:
   "arvados-api-server+http://localhost:8004/_health/ping":
-    ClockTime: "2022-11-16T16:08:57Z"
-    ConfigSourceSHA256: e2c086ae3dd290cf029cb3fe79146529622279b6280cf6cd17dc8d8c30daa57f
-    ConfigSourceTimestamp: "2022-11-07T18:08:24.539545Z"
+    ClockTime: "2024-12-13T14:38:25Z"
+    ConfigSourceSHA256: 5a2b21ce0aeeeebcaf623329871b4628772446d4684ab0f89da4a2cbc7b3f17c
+    ConfigSourceTimestamp: "2024-12-12T11:14:06.487848-05:00"
     HTTPStatusCode: 200
     Health: OK
     Response:
       health: OK
-    ResponseTime: 0.017159
-    Server: nginx/1.14.0 + Phusion Passenger(R) 6.0.15
-    Version: 2.5.0~dev20221116141533
+    ResponseTime: 0.051136
+    Server: nginx/1.26.1 + Phusion Passenger(R) 6.0.23
+    Version: 3.0.0
   "arvados-controller+http://localhost:8003/_health/ping":
-    ClockTime: "2022-11-16T16:08:57Z"
-    ConfigSourceSHA256: e2c086ae3dd290cf029cb3fe79146529622279b6280cf6cd17dc8d8c30daa57f
-    ConfigSourceTimestamp: "2022-11-07T18:08:24.539545Z"
+    ClockTime: "2024-12-13T14:38:25Z"
+    ConfigSourceSHA256: 5a2b21ce0aeeeebcaf623329871b4628772446d4684ab0f89da4a2cbc7b3f17c
+    ConfigSourceTimestamp: "2024-12-12T11:14:06.487848-05:00"
     HTTPStatusCode: 200
     Health: OK
     Response:
       health: OK
-    ResponseTime: 0.004748
+    ResponseTime: 0.014869
     Server: ""
-    Version: 2.5.0~dev20221116141533 (go1.18.8)
+    Version: 3.0.0 (go1.21.10)
 # ...
 {% endcodeblock %}

@@ -1,3 +1,9 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
 h2(#start-service). Start the service
 
 <notextile>
@@ -10,6 +16,6 @@ h2(#start-service). Start the service
 If @systemctl status@ indicates it is not running, use @journalctl@ to check logs for errors:
 
 <notextile>
-<pre><code># <span class="userinput">journalctl -n12 --unit {{arvados_component}}</span>
+<pre><code># <span class="userinput">journalctl --since -5min -u {{ arvados_component | split: ' ' | join: ' -u ' }}</span>
 </code></pre>
 </notextile>

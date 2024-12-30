@@ -177,11 +177,14 @@ By default, the Rails API server is configured to listen on @localhost:8004@, ma
 
 <notextile>
 <pre><code># <span class="userinput">systemctl edit arvados-railsapi.service</span>
-### Editing /etc/systemd/system/arvados-railsapi.service.d/override.conf in your editor
+### Editing /etc/systemd/system/arvados-railsapi.service.d/override.conf
+### Anything between here and the comment below will become the new contents of the file
 <span class="userinput">[Service]
 Environment=PASSENGER_ADDRESS=<strong>0.0.0.0</strong>
-Environment=PASSENGER_PORT=<strong>8040</strong>
-</span></code></pre>
+Environment=PASSENGER_PORT=<strong>8040</strong></span>
+### Lines below this comment will be discarded
+[...]
+</code></pre>
 </notextile>
 
 You can similarly define other Passenger settings if desired. The "Passenger Standalone reference":https://www.phusionpassenger.com/library/config/standalone/reference/ documents all the available settings.
