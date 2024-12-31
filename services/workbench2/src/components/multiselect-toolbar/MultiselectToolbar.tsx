@@ -90,7 +90,7 @@ export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
+    withStyles(styles)(React.memo((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles, auth } = props;
         const user = auth && auth.user ? auth.user : null
         const selectedResourceArray = selectedToArray(checkedList);
@@ -132,7 +132,7 @@ export const MultiselectToolbar = connect(
                             key={actions.map(a => a.name).join(',')}
                             >
                             {memoizedActions.map((action, i) =>{
-                                const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
+                                const { hasAlts, shouldUseAlts, name, altName, icon, altIcon } = action;
                             return action.name === ContextMenuActionNames.DIVIDER ? (
                                 action.component && (
                                     <div
@@ -144,14 +144,14 @@ export const MultiselectToolbar = connect(
                                     </div>
                                 )
                             ) : hasAlts ? (
-                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
+                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} data-title={(shouldUseAlts && shouldUseAlts(selectedResourceUuid, iconProps)) ? altName : name}>
                                     <IconButton
                                         data-cy='multiselect-button'
                                         disabled={disabledButtons.has(name)}
                                         onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
                                         className={classes.icon}
                                         size="large">
-                                        {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                        {currentPathIsTrash || (shouldUseAlts && shouldUseAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                     </IconButton>
                                 </span>
                             ) : (
@@ -176,7 +176,8 @@ export const MultiselectToolbar = connect(
                 </Toolbar>
             </React.Fragment>
         );
-    })
+        // return true to skip re-render, false to force re-render
+    }, (prevProps, nextProps) => prevProps.disabledButtons === nextProps.disabledButtons))
 );
 
 export function selectedToArray(checkedList: TCheckedList): Array<string> {
