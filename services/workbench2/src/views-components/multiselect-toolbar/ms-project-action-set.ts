@@ -98,7 +98,7 @@ export const msToggleTrashAction: MultiSelectMenuAction = {
     altName: 'Restore from Trash',
     altIcon: RestoreFromTrashIcon,
     isForMulti: true,
-    useAlts: (uuid, iconProps) => {
+    shouldUseAlts: (uuid, iconProps) => {
         return uuid ? (getResource(uuid)(iconProps.resources) as any)?.isTrashed : false;
     },
     execute: (dispatch, resources) => {
@@ -115,7 +115,7 @@ const msFreezeProjectAction: MultiSelectMenuAction = {
     altName: 'Unfreeze Project',
     altIcon: UnfreezeIcon,
     isForMulti: false,
-    useAlts: (uuid, iconProps) => {
+    shouldUseAlts: (uuid, iconProps) => {
         return uuid ? !!(getResource(uuid)(iconProps.resources) as any).frozenByUuid : false;
     },
     execute: (dispatch, resources) => {

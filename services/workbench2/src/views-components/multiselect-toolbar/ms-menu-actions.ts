@@ -26,7 +26,7 @@ export type MultiSelectMenuAction = {
     altName?: string;
     altIcon?: IconType;
     isForMulti: boolean;
-    useAlts?: (uuid: string | null, iconProps: {resources: ResourcesState, favorites: FavoritesState, publicFavorites: PublicFavoritesState}) => boolean;
+    shouldUseAlts?: (uuid: string | null, iconProps: {resources: ResourcesState, favorites: FavoritesState, publicFavorites: PublicFavoritesState}) => boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
     adminOnly?: boolean;
 };
@@ -42,7 +42,7 @@ const msToggleFavoriteAction: MultiSelectMenuAction = {
     altName: 'Remove from Favorites',
     altIcon: RemoveFavoriteIcon,
     isForMulti: false,
-    useAlts: (uuid: string, iconProps) => {
+    shouldUseAlts: (uuid: string, iconProps) => {
         return checkFavorite(uuid, iconProps.favorites);
     },
     execute: (dispatch, resources) => {
@@ -89,7 +89,7 @@ const msTogglePublicFavoriteAction: MultiSelectMenuAction = {
     altName: 'Remove from public favorites',
     altIcon: PublicFavoriteIcon,
     isForMulti: false,
-    useAlts: (uuid: string, iconProps) => {
+    shouldUseAlts: (uuid: string, iconProps) => {
         return iconProps.publicFavorites[uuid] === true
     },
     execute: (dispatch, resources) => {
