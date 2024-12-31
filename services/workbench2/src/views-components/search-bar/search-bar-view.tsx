@@ -28,6 +28,7 @@ import { debounce } from "debounce";
 import { Vocabulary } from "models/vocabulary";
 import { connectVocabulary } from "../resource-properties-form/property-field-common";
 import { Session } from "models/session";
+import { isEqual } from "lodash";
 
 type CssRules = "container" | "containerSearchViewOpened" | "input" | "view";
 
@@ -170,6 +171,10 @@ export const SearchBarView = compose(
         componentDidMount(): void {
             this.setState({ loggedInSessions: this.props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive)});
             this.setState({ recentQueries: this.props.loadRecentQueries()});
+        }
+
+        shouldComponentUpdate( nextProps: Readonly<SearchBarViewProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
+            return !isEqual(nextProps, this.props)
         }
 
         componentDidUpdate( prevProps: Readonly<SearchBarViewProps>, prevState: Readonly<{loggedInSessions: Session[]}>, snapshot?: any ): void {

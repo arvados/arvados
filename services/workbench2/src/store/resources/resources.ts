@@ -5,6 +5,7 @@
 import { Resource, EditableResource } from "models/resource";
 import { ResourceKind } from 'models/resource';
 import { GroupResource } from "models/group";
+import { memoize } from "lodash";
 
 export type ResourcesState = { [key: string]: Resource };
 
@@ -25,9 +26,9 @@ export const getResourceWithEditableStatus = <T extends GroupResource & Editable
         return resource;
     };
 
-export const getResource = <T extends Resource = Resource>(id: string) =>
+export const getResource = memoize(<T extends Resource = Resource>(id: string) =>
     (state: ResourcesState): T | undefined =>
-        state[id] as T;
+        state[id] as T);
 
 export const setResource = <T extends Resource>(id: string, data: T) =>
     (state: ResourcesState) => ({
