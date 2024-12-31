@@ -5,7 +5,6 @@
 import React from 'react';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
-import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
@@ -13,7 +12,7 @@ import { UserCard } from './user-details-card';
 import { ProjectCard } from './project-details-card';
 
 const mapStateToProps = ({ resources, properties }: RootState) => {
-    const currentResource = getResource(properties.currentRouteUuid)(resources);
+    const currentResource = resources[properties.currentRouteUuid];
 
     return {
         currentResource,
