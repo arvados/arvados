@@ -238,8 +238,6 @@ sanity_checks() {
     docker --version || echo "No docker client. Try: arvados-server install"
     echo -n 'docker server: '
     docker info --format='{{.ServerVersion}}' || echo "No docker server. Try: arvados-server install"
-    echo -n 's3cmd: '
-    s3cmd --version || echo "No s3cmd. Try: apt-get install s3cmd"
 
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
@@ -508,7 +506,8 @@ setup_virtualenv() {
     # This requires both the Python SDK itself and PyYAML.
     # Hence we must install these dependencies this early for the rest of the
     # script to work.
-    pip install PyYAML || fatal "failed to install PyYAML in virtualenv"
+    # s3cmd is used by controller and keep-web tests.
+    pip install PyYAML s3cmd || fatal "failed to install test dependencies in virtualenv"
     do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 
