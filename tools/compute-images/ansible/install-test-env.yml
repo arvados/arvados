@@ -101,6 +101,7 @@
           - libtiff5-dev
           - libxml2-dev
           - r-base
+          - r-cran-testthat
           # services/api
           - libnsl2
           - libpq-dev
