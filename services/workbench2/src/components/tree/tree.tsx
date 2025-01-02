@@ -17,7 +17,7 @@ import { SidePanelRightArrowIcon } from '../icon/icon';
 import { ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
-import { kebabCase } from 'lodash';
+import { kebabCase, isEqual } from 'lodash';
 import { Resource } from 'models/resource';
 import { ResourcesState } from 'store/resources/resources';
 import { TreePicker } from 'store/tree-picker/tree-picker';
@@ -378,7 +378,7 @@ function addToItemsMap<T>(item: TreeItem<T>, itemsMap: Map<string, TreeItem<T>>)
 };
 
 export const TreeComponent = withStyles(styles)(
-    function<T>(props: TreeProps<T> & WithStyles<CssRules>) {
+    React.memo(function<T>(props: TreeProps<T> & WithStyles<CssRules>) {
         const level = props.level ? props.level : 0;
         const { classes, render, toggleItemActive, toggleItemOpen, currentItemUuid, useRadioButtons, resources, treePicker, pickerId } = props;
         const pickedTree = treePicker && pickerId ? treePicker[pickerId] : createTree<T>();
@@ -435,12 +435,13 @@ export const TreeComponent = withStyles(styles)(
 
         // Scroll to selected item whenever it changes, accepts selectedRef from props for recursive trees
         const [cachedSelectedRef, setCachedRef] = useState<HTMLDivElement | null>(null)
-        const selectedRef = props.selectedRef || useCallback((node: HTMLDivElement | null) => {
+        const scrollToNode = useCallback((node: HTMLDivElement | null) => {
             if (node && node.scrollIntoView && node !== cachedSelectedRef) {
                 node.scrollIntoView({ behavior: "smooth", block: "center" });
             }
             setCachedRef(node);
-        }, [cachedSelectedRef]);
+        }, [cachedSelectedRef])
+        const selectedRef = props.selectedRef || scrollToNode;
 
         const { levelIndentation = 20, itemRightPadding = 20 } = props;
         return <List className={list}>
@@ -522,5 +523,15 @@ export const TreeComponent = withStyles(styles)(
                 </div>;
             })}
         </List>;
-    }
+    }, preventRerender)
 );
+
+// return true to prevent re-render, false to allow re-render
+function preventRerender(prevProps: TreeProps<any>, nextProps: TreeProps<any>) {
+    if (prevProps.treePicker && nextProps.treePicker && prevProps.pickerId && nextProps.pickerId) {
+        if (!isEqual(prevProps.treePicker[prevProps.pickerId], nextProps.treePicker[nextProps.pickerId])) {
+            return false;
+        }
+    }
+    return true;
+}
