@@ -20,10 +20,13 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 )
@@ -679,6 +682,89 @@ func (s *keepstoreSuite) TestGetLocatorInfo(c *C) {
 	}
 }
 
+func (s *keepstoreSuite) TestTimeout(c *C) {
+	var rtr *router
+	go service.Command(arvados.ServiceNameKeepstore, func(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) service.Handler {
+		rtr = newHandlerOrErrorHandler(ctx, cluster, token, reg).(*router)
+		return rtr
+	}).RunCommand("keepstore", []string{"-config", "-"}, strings.NewReader(`
+Clusters:
+ zzzzz:
+  SystemRootToken: abcdefg
+  Services:
+   Keepstore:
+    InternalURLs:
+     "http://127.0.1.123:45678": {}
+  API:
+   RequestTimeout: 500ms
+   KeepServiceRequestTimeout: 15s
+  Collections:
+   BlobSigningKey: abcdefg
+  Volumes:
+   zzzzz-nyw5e-000000000000000:
+    Replication: 1
+    Driver: stub
+`), ctxlog.LogWriter(c.Log), ctxlog.LogWriter(c.Log))
+	for deadline := time.Now().Add(5 * time.Second); rtr == nil; {
+		if time.Now().After(deadline) {
+			c.Error("timed out waiting for service.Command to call newHandler func")
+			c.FailNow()
+		}
+	}
+	stubvol := rtr.keepstore.mountsW[0].volume.(*stubVolume)
+	err := stubvol.BlockWrite(context.Background(), "acbd18db4cc2f85cedef654fccc4a4d8", []byte("foo"))
+	c.Assert(err, IsNil)
+	ac, err := arvados.NewClientFromConfig(rtr.keepstore.cluster)
+	ac.AuthToken = "abcdefg"
+	c.Assert(err, IsNil)
+	ac.KeepServiceURIs = []string{"http://127.0.1.123:45678"}
+	arv, err := arvadosclient.New(ac)
+	c.Assert(err, IsNil)
+	kc := keepclient.New(arv)
+	kc.Want_replicas = 1
+
+	// Wait for service to come up
+	for deadline := time.Now().Add(time.Second); ; time.Sleep(time.Second / 10) {
+		_, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+			Data: []byte("foo"),
+		})
+		if err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			c.Errorf("timed out waiting for BlockWrite(`foo`) to succeed: %s", err)
+			c.FailNow()
+		}
+	}
+
+	// Induce a write delay longer than RequestTimeout, and check
+	// that the request fails.
+	t0 := time.Now()
+	stubvol.blockWrite = func(context.Context, string, []byte) error { time.Sleep(time.Second); return nil }
+	_, err = kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Data: []byte("bar"),
+	})
+	c.Check(err, ErrorMatches, `Could not write .* 499 .*`)
+	duration := time.Since(t0)
+	c.Logf("write request duration %s", duration)
+	c.Check(duration > 500*time.Millisecond, Equals, true)
+
+	// Induce an index delay, and check that the request does
+	// *not* fail (because index is exempt from RequestTimeout).
+	t0 = time.Now()
+	stubvol.index = func(context.Context, string, io.Writer) error { time.Sleep(time.Second); return nil }
+	var uuid string
+	for uuid = range kc.LocalRoots() {
+	}
+	rdr, err := kc.GetIndex(uuid, "")
+	c.Assert(err, IsNil)
+	_, err = io.ReadAll(rdr)
+	c.Check(err, IsNil)
+	duration = time.Since(t0)
+	c.Logf("index request duration %s", duration)
+	c.Check(duration > time.Second, Equals, true)
+}
+
 func init() {
 	driver["stub"] = func(params newVolumeParams) (volume, error) {
 		v := &stubVolume{
@@ -870,6 +956,9 @@ func (v *stubVolume) Index(ctx context.Context, prefix string, writeTo io.Writer
 		}
 	}
 	v.mtx.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	_, err := io.Copy(writeTo, buf)
 	return err
 }
