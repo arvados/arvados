@@ -176,9 +176,19 @@ export const MultiselectToolbar = connect(
                 </Toolbar>
             </React.Fragment>
         );
-        // return true to skip re-render, false to force re-render
-    }, (prevProps, nextProps) => prevProps.disabledButtons === nextProps.disabledButtons))
+    }, preventRerender))
 );
+
+// return true to skip re-render, false to force re-render
+function preventRerender(prevProps: MultiselectToolbarProps, nextProps: MultiselectToolbarProps) {
+    if (prevProps.selectedResourceUuid !== nextProps.selectedResourceUuid) {
+        return false;
+    }
+    if (prevProps.disabledButtons !== nextProps.disabledButtons) {
+        return false;
+    }
+    return true;
+}
 
 export function selectedToArray(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];
