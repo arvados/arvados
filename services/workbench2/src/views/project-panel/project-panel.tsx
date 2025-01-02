@@ -25,6 +25,7 @@ import { DetailsCardRoot } from 'views-components/details-card/details-card-root
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
+import { isEqual } from 'lodash';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -83,6 +84,10 @@ const mapStateToProps = (state: RootState) => {
 export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
+
+            shouldComponentUpdate( nextProps: Readonly<ProjectPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
+                return !isEqual(nextProps.resources, this.props.resources)
+            }
 
             render() {
                 const { classes } = this.props;
