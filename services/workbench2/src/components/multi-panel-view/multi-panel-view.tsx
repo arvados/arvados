@@ -169,7 +169,7 @@ interface MPVContainerDataProps {
 type MPVContainerProps = MPVContainerDataProps & GridProps;
 
 // Grid container compatible component that also handles panel toggling.
-const MPVContainerComponent = React.memo(({ children, panelStates, classes, mutuallyExclusive, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
+const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusive, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
     if (children === undefined || children === null || Object.keys(children).length === 0) {
         children = [];
     } else if (!isArray(children)) {
@@ -313,14 +313,6 @@ const MPVContainerComponent = React.memo(({ children, panelStates, classes, mutu
             {content}
         </Grid>;
     }
-}, preventRerender);
-
-// return true to prevent re-render, false to allow re-render
-function preventRerender(prevProps: MPVContainerProps, nextProps: MPVContainerProps) {
-    if (prevProps.panelStates !== nextProps.panelStates) {
-        return false;
-    }
-    return true;
-}
+};
 
 export const MPVContainer = withStyles(styles)(MPVContainerComponent);
