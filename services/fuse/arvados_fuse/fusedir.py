@@ -479,11 +479,6 @@ class CollectionDirectory(CollectionDirectoryBase):
         self.api = api
         self.num_retries = num_retries
         self._poll = True
-        try:
-            self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
-        except:
-            _logger.debug("Error getting blobSignatureTtl from discovery document: %s", sys.exc_info()[0])
-            self._poll_time = 60*60
 
         if isinstance(collection_record, dict):
             self.collection_locator = collection_record['uuid']
@@ -491,9 +486,25 @@ class CollectionDirectory(CollectionDirectoryBase):
         else:
             self.collection_locator = collection_record
             self._mtime = 0
+
+        is_uuid = (self.collection_locator is not None) and (uuid_pattern.match(self.collection_locator) is not None)
+
+        if is_uuid:
+            # It is a uuid, it may be updated upstream, so recheck it periodically.
+            self._poll_time = 15
+        else:
+            # It is not a uuid.  For immutable collections, collection
+            # only needs to be refreshed if it is very long lived
+            # (long enough that there's a risk of the blob signatures
+            # expiring).
+            try:
+                self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
+            except:
+                _logger.debug("Error getting blobSignatureTtl from discovery document: %s", sys.exc_info()[0])
+                self._poll_time = 60*60
+
+        self._writable = is_uuid and enable_write
         self._manifest_size = 0
-        if self.collection_locator:
-            self._writable = (uuid_pattern.match(self.collection_locator) is not None) and enable_write
         self._updating_lock = threading.Lock()
 
     def same(self, i):
@@ -545,10 +556,6 @@ class CollectionDirectory(CollectionDirectoryBase):
     @use_counter
     def update(self):
         try:
-            if self.collection is not None and portable_data_hash_pattern.match(self.collection_locator):
-                # It's immutable, nothing to update
-                return True
-
             if self.collection_locator is None:
                 # No collection locator to retrieve from
                 self.fresh()
