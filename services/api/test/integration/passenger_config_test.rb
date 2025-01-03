@@ -22,5 +22,6 @@ class PassengerConfigTest < ActionDispatch::IntegrationTest
     end
     assert_includes(rubyopt, "--disable-did_you_mean")
     assert_includes(rubyopt, "--disable-error_highlight")
+    assert_includes(rubyopt, "--disable-syntax_suggest")
   end
 end
