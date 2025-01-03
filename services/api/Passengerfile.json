@@ -1,4 +1,7 @@
 {
     "auto": true,
+    "envvars": {
+        "RUBYOPT": "--disable-did_you_mean --disable-error_highlight --disable-syntax_suggest"
+    },
     "preload_bundler": true
 }
