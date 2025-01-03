@@ -31,7 +31,6 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_equal discovery_doc['defaultTrashLifetime'], Rails.configuration.Collections.DefaultTrashLifetime
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['source_version'])
     assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['sourceVersion'])
-    assert_match(/^unknown$/, discovery_doc['packageVersion'])
     assert_equal discovery_doc['websocketUrl'], Rails.configuration.Services.Websocket.ExternalURL.to_s
     assert_equal discovery_doc['workbenchUrl'], Rails.configuration.Services.Workbench1.ExternalURL.to_s
     assert_equal('zzzzz', discovery_doc['uuidPrefix'])
@@ -45,6 +44,15 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     # Key source_version will be replaced with sourceVersion
     assert_equal 'aaa888fff', discovery_doc['source_version']
     assert_equal 'aaa888fff', discovery_doc['sourceVersion']
+  end
+
+  ["unknown", "1.0.1-stable"].each do |pkg_version|
+    test "packageVersion #{pkg_version} comes from AppVersion" do
+      AppVersion.stubs(:package_version).returns(pkg_version)
+      get :index
+      assert_response :success
+      assert_equal(pkg_version, json_response["packageVersion"])
+    end
   end
 
   test "discovery document overrides packageVersion with config" do
