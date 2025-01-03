@@ -71,7 +71,7 @@ const mapStateToProps = (state: RootState, props: ProgressBarDataProps) => {
 
     if (props.dataExplorerId) {
         const dataExplorerState = getDataExplorer(state.dataExplorer, props.dataExplorerId);
-        const columns = dataExplorerState.columns as DataColumns<string, ProcessResource>;
+        const columns = dataExplorerState.columns as DataColumns<ProcessResource>;
         typeFilter = serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
     }
 

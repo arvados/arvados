@@ -16,11 +16,11 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
 import {
     ProcessStatus,
-    ResourceFileSize,
-    ResourceLastModifiedDate,
-    ResourceName,
-    ResourceOwnerWithName,
-    ResourceType
+    renderType,
+    RenderName,
+    RenderOwnerName,
+    renderFileSize,
+    renderLastModifiedDate,
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
@@ -70,48 +70,48 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = [
+export const favoritePanelColumns: DataColumns<GroupContentsResource> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ProcessStatus uuid={uuid} />
+        render: (resource) => <ProcessStatus uuid={resource.uuid} />
     },
     {
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />
+        render: (resource) => renderType(resource),
     },
     {
         name: FavoritePanelColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
+        render: (resource) => <RenderOwnerName resource={resource} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
+        render: (resource) => renderFileSize(resource),
     },
     {
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: (resource) => renderLastModifiedDate(resource),
     }
 ];
 
@@ -122,11 +122,6 @@ interface FavoritePanelDataProps {
     userUuid: string;
 }
 
-interface FavoritePanelActionProps {
-    onItemClick: (item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
-}
 const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
     resources: state.resources,
@@ -134,16 +129,15 @@ const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
 });
 
-type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
+type FavoritePanelProps = FavoritePanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const FavoritePanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<FavoritePanelProps> {
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => {
                 const { resources } = this.props;
-                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
 
                 let readonly = false;
                 const project = getResource<GroupResource>(this.props.currentItemId)(resources);
@@ -152,7 +146,7 @@ export const FavoritePanel = withStyles(styles)(
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readonly));
 
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
@@ -166,14 +160,14 @@ export const FavoritePanel = withStyles(styles)(
                         storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                     }));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
             }
 
-            handleRowDoubleClick = (uuid: string) => {
+            handleRowDoubleClick = ({uuid}: GroupContentsResource) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 
-            handleRowClick = (uuid: string) => {
+            handleRowClick = ({uuid}: GroupContentsResource) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

@@ -31,6 +31,7 @@ import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
 import { InlinePulser } from "components/loading/inline-pulser";
+import { Resource } from "models/resource";
 
 type CssRules =
     | 'titleWrapper'
@@ -151,12 +152,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-interface DataExplorerDataProps<T> {
+interface DataExplorerDataProps<T extends Resource> {
     fetchMode: DataTableFetchMode;
-    items: T[];
+    items: string[];
+    resourceItems: T[];
     itemsAvailable: number;
     loadingItemsAvailable: boolean;
-    columns: DataColumns<T, any>;
+    columns: DataColumns<T>;
     searchLabel?: string;
     searchValue: string;
     rowsPerPage: number;
@@ -186,14 +188,14 @@ interface DataExplorerDataProps<T> {
 }
 
 interface DataExplorerActionProps<T> {
-    onSetColumns: (columns: DataColumns<T, any>) => void;
+    onSetColumns: (columns: DataColumns<T>) => void;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onRowDoubleClick: (item: T) => void;
-    onColumnToggle: (column: DataColumn<T, any>) => void;
+    onColumnToggle: (column: DataColumn<T>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
-    onSortToggle: (column: DataColumn<T, any>) => void;
-    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T, any>) => void;
+    onSortToggle: (column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
     onPageChange: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
@@ -205,10 +207,10 @@ interface DataExplorerActionProps<T> {
     loadDetailsPanel: (uuid: string) => void;
 }
 
-type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
+type DataExplorerProps<T extends Resource> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
 export const DataExplorer = withStyles(styles)(
-    class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+    class DataExplorerGeneric<T extends Resource> extends React.Component<DataExplorerProps<T>> {
         state = {
             hideToolbar: true,
             isSearchResults: false,
@@ -286,6 +288,7 @@ export const DataExplorer = withStyles(styles)(
                 forceMultiSelectMode,
                 detailsPanelResourceUuid,
                 loadDetailsPanel,
+                resourceItems,
             } = this.props;
             return (
                 <Paper
@@ -403,7 +406,7 @@ export const DataExplorer = withStyles(styles)(
                     }
                     <DataTable
                         columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
-                        items={items}
+                        items={resourceItems}
                         onRowClick={(_, item: T) => onRowClick(item)}
                         onContextMenu={onContextMenu}
                         onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}
@@ -516,7 +519,7 @@ export const DataExplorer = withStyles(styles)(
             </Grid>
         );
 
-        contextMenuColumn: DataColumn<any, any> = {
+        contextMenuColumn: DataColumn<T> = {
             name: "Actions",
             selected: true,
             configurable: false,

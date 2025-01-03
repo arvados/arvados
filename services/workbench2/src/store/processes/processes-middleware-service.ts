@@ -28,7 +28,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
     }
 
     getFilters(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): string | null {
-        const columns = dataExplorer.columns as DataColumns<string, ContainerRequestResource>;
+        const columns = dataExplorer.columns as DataColumns<ContainerRequestResource>;
         const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
         const activeStatusFilter = Object.keys(statusColumnFilters).find(
             filterName => statusColumnFilters[filterName].selected

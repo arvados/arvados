@@ -8,9 +8,8 @@ import { DataTableFilterItem } from 'components/data-table-filters/data-table-fi
 import { ContainerRequestState } from 'models/container-request';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind } from 'models/resource';
-import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime } from 'views-components/data-explorer/renderers';
+import { ProcessStatus, ContainerRunTime, RenderName, renderCreatedAtDate } from 'views-components/data-explorer/renderers';
 import { ProcessIcon } from 'components/icon/icon';
-import { ResourceName } from 'views-components/data-explorer/renderers';
 import { WORKFLOW_PROCESSES_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
@@ -49,14 +48,14 @@ export interface WorkflowProcessesPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource> = [
+export const workflowProcessesPanelColumns: DataColumns<ProcessResource> = [
     {
         name: WorkflowProcessesPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: WorkflowProcessesPanelColumnNames.STATUS,
@@ -64,7 +63,7 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid} />,
+        render: (resource) => <ProcessStatus uuid={resource.uuid} />,
     },
     {
         name: WorkflowProcessesPanelColumnNames.CREATED_AT,
@@ -72,14 +71,14 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: uuid => <ResourceCreatedAtDate uuid={uuid} />
+        render: (resource) => renderCreatedAtDate(resource),
     },
     {
         name: WorkflowProcessesPanelColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid} />
+        render: (resource) => <ContainerRunTime uuid={resource.uuid} />
     }
 ];
 
@@ -88,9 +87,9 @@ export interface WorkflowProcessesPanelDataProps {
 }
 
 export interface WorkflowProcessesPanelActionProps {
-    onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemClick: (resource: ProcessResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: ProcessResource) => void;
+    onItemDoubleClick: (resource: ProcessResource) => void;
 }
 
 type WorkflowProcessesPanelProps = WorkflowProcessesPanelActionProps & WorkflowProcessesPanelDataProps;
@@ -117,7 +116,7 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         id={WORKFLOW_PROCESSES_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
+        onContextMenu={props.onContextMenu}
         contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}

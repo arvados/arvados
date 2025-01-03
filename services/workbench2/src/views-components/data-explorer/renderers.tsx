@@ -5,7 +5,6 @@
 import React from "react";
 import { Grid, Typography, Tooltip, IconButton, Checkbox, Chip } from "@mui/material";
 import withStyles from '@mui/styles/withStyles';
-import withTheme from '@mui/styles/withTheme';
 import { FavoriteStar, PublicFavoriteStar } from "../favorite-star/favorite-star";
 import { Resource, ResourceKind, TrashableResource } from "models/resource";
 import {
@@ -24,6 +23,7 @@ import {
     SetupIcon,
     InactiveIcon,
     ErrorIcon,
+    RestoreFromTrashIcon,
 } from "components/icon/icon";
 import { formatDate, formatFileSize, formatTime } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -41,7 +41,6 @@ import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { getUserFullname, getUserDisplayName, User, UserResource } from "models/user";
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
-import { withResourceData } from "views-components/data-explorer/with-resources";
 import { CollectionResource } from "models/collection";
 import { IllegalNamingWarning } from "components/warning/warning";
 import { loadResource } from "store/resources/resources-actions";
@@ -62,19 +61,113 @@ import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-fil
 import { CustomTheme } from "common/custom-theme";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
+import { PermissionResource } from 'models/permission';
+import { ContainerRequestResource } from 'models/container-request';
+import { toggleTrashed } from "store/trash/trash-actions";
 
-export const toggleIsAdmin = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const isAdmin = data!.isAdmin;
-        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
-        dispatch<any>(loadUsersPanel());
-        return newActivity;
-    };
+// utility renderers ---------------------------------------------------------------------------------
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
-    const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
+export const renderString = (str: string) => <Typography noWrap>{str || '-'}</Typography>;
+
+export const renderUuid = (item: {uuid: string}) => <Typography noWrap>{item.uuid || '-'}</Typography>;
+
+export const renderUuidWithCopy = (item: { uuid: string }) => (
+    <Typography
+        data-cy="uuid"
+        noWrap
+    >
+        {item.uuid}
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
+    </Typography>
+);
+
+export const renderDate = (date?: string) => {
+    return (
+        <Typography
+            noWrap
+            style={{ minWidth: "100px" }}
+        >
+            {date ? formatDate(date) : '-'}
+        </Typography>
+    );
+};
+
+export const renderCreatedAtDate = (resource: GroupContentsResource) => {
+    return renderDate(resource.createdAt);
+}
+
+export const renderLastModifiedDate = (resource: GroupContentsResource) => {
+    return renderDate(resource.modifiedAt);
+}
+
+export const renderType = (resource: GroupContentsResource | undefined) => {
+    if(!resource) return <Typography noWrap>-</Typography>;
+    const type = resource.kind;
+    const subtype = resource.kind === ResourceKind.GROUP
+                        ? resource.groupClass
+                        : resource.kind === ResourceKind.PROCESS
+                            ? resource.requestingContainerUuid
+                                ? ProcessTypeFilter.CHILD_PROCESS
+                                : ProcessTypeFilter.MAIN_PROCESS
+                            : ""
+    return<Typography noWrap>{resourceLabel(type, subtype)}</Typography>
+};
+
+export const renderResourceStatus = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.COLLECTION ? <CollectionStatus collection={resource} /> : <ProcessStatus uuid={resource.uuid} />;
+}
+
+const renderIcon = (item: GroupContentsResource  | GroupResource) => {
+    switch (item.kind) {
+        case ResourceKind.PROJECT:
+            if (item.groupClass === GroupClass.FILTER) {
+                return <FilterGroupIcon />;
+            }
+            return <ProjectIcon />;
+        case ResourceKind.COLLECTION:
+            if (item.uuid === item.currentVersionUuid) {
+                return <CollectionIcon />;
+            }
+            return <CollectionOldVersionIcon />;
+        case ResourceKind.PROCESS:
+            return <ProcessIcon />;
+        case ResourceKind.WORKFLOW:
+            return <WorkflowIcon />;
+        default:
+            return <DefaultIcon />;
+    }
+};
+
+const renderUuidLinkWithCopyIcon = (item: ProcessResource, column: string, dispatch: Dispatch) => {
+    const selectedColumnUuid = item[column];
+    return (
+        <Grid
+            container
+            alignItems="center"
+            wrap="nowrap"
+        >
+            <Grid item>
+                {selectedColumnUuid ? (
+                    <Typography
+                        color="primary"
+                        style={{ width: "auto", cursor: "pointer" }}
+                        noWrap
+                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}
+                    >
+                        {selectedColumnUuid && renderUuidWithCopy({ uuid: selectedColumnUuid })}
+                    </Typography>
+                ) : (
+                    "-"
+                )}
+            </Grid>
+        </Grid>
+    );
+};
+
+export const RenderName = connect((resource: GroupContentsResource | GroupResource) => resource)(
+    (props: { resource: GroupContentsResource | GroupResource } & DispatchProp<any>) => {
+    const { resource, dispatch } = props;
+    const navFunc = "groupClass" in resource && resource.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
         <Grid
             container
@@ -82,32 +175,57 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             wrap="nowrap"
             spacing={2}
         >
-            <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(item)}</Grid>
+            <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(resource)}</Grid>
             <Grid item>
                 <Typography
                     color="primary"
                     style={{ width: "auto", cursor: "pointer" }}
                     onClick={(ev) => {
                         ev.stopPropagation()
-                        dispatch<any>(navFunc(item.uuid))
+                        dispatch<any>(navFunc(resource.uuid))
                     }}
                 >
-                    {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
-                    {item.name}
+                    {resource.kind === ResourceKind.PROJECT || resource.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={resource.name} /> : null}
+                    {resource.name}
                 </Typography>
             </Grid>
             <Grid item>
                 <Typography variant="caption">
-                    <FavoriteStar resourceUuid={item.uuid} />
-                    <PublicFavoriteStar resourceUuid={item.uuid} />
-                    {item.kind === ResourceKind.PROJECT && <FrozenProject item={item} />}
+                    <FavoriteStar resourceUuid={resource.uuid} />
+                    <PublicFavoriteStar resourceUuid={resource.uuid} />
+                    {resource.kind === ResourceKind.PROJECT && <FrozenProject item={resource as ProjectResource} />}
                 </Typography>
             </Grid>
         </Grid>
     );
-};
+});
 
-export const FrozenProject = (props: { item: ProjectResource }) => {
+export const RenderOwnerName = connect((state: RootState, props: { resource: GroupContentsResource; link?: boolean }) => {
+    const owner = getResource<any>(props.resource.ownerUuid)(state.resources);
+    const ownerName = owner ? 'fullName' in owner ? getUserDisplayName(owner) : owner.name : null;
+    return { ownerName, ownerUuid: props.resource.ownerUuid, link: props.link };
+})((props: { ownerName: string; ownerUuid: string; link?: boolean } & DispatchProp<any>) => {
+    return props.link ? (
+        <Typography
+            style={{ color: CustomTheme.palette.primary.main, cursor: 'pointer' }}
+            display='inline'
+            noWrap
+            onClick={() => props.dispatch<any>(navigateTo(props.ownerUuid))}
+        >
+            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
+        </Typography>
+    ) : (
+        <Typography
+            noWrap
+            display='inline'
+        >
+            {props.ownerName ? `${props.ownerName} (${props.ownerUuid})` : props.ownerUuid}
+        </Typography>
+    );
+});
+
+// Project resource renderers ---------------------------------------------------------------------------------
+const FrozenProject = (props: { item: ProjectResource }) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
         if (props.item.frozenByUuid) {
@@ -130,167 +248,25 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
     }
 };
 
-export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
+// User resource renderers ---------------------------------------------------------------------------------
+export const renderUsername = (item: UserResource) => <Typography noWrap>{item.username || item.uuid}</Typography>;
 
-const renderIcon = (item: GroupContentsResource) => {
-    switch (item.kind) {
-        case ResourceKind.PROJECT:
-            if (item.groupClass === GroupClass.FILTER) {
-                return <FilterGroupIcon />;
-            }
-            return <ProjectIcon />;
-        case ResourceKind.COLLECTION:
-            if (item.uuid === item.currentVersionUuid) {
-                return <CollectionIcon />;
-            }
-            return <CollectionOldVersionIcon />;
-        case ResourceKind.PROCESS:
-            return <ProcessIcon />;
-        case ResourceKind.WORKFLOW:
-            return <WorkflowIcon />;
-        default:
-            return <DefaultIcon />;
-    }
-};
+export const renderEmail = (item: UserResource) => <Typography noWrap>{item.email}</Typography>;
 
-const renderDate = (date?: string) => {
+export const RenderFullName = connect((resource: UserResource) => resource)((props: { resource: UserResource} & DispatchProp<any>) => {
+    const { resource, dispatch } = props;
+    const displayName = (resource.firstName + " " + resource.lastName).trim() || resource.uuid;
     return (
-        <Typography
-            noWrap
-            style={{ minWidth: "100px" }}
-        >
-            {formatDate(date)}
-        </Typography>
-    );
-};
-
-const renderWorkflowName = (item: WorkflowResource) => (
-    <Grid
-        container
-        alignItems="center"
-        wrap="nowrap"
-        spacing={2}
-    >
-        <Grid item>{renderIcon(item)}</Grid>
-        <Grid item>
-            <Typography
-                color="primary"
-                style={{ width: "100px" }}
-            >
-                {item.name}
-            </Typography>
-        </Grid>
-    </Grid>
-);
-
-export const ResourceWorkflowName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-    return resource;
-})(renderWorkflowName);
-
-const getPublicUuid = (uuidPrefix: string) => {
-    return `${uuidPrefix}-tpzed-anonymouspublic`;
-};
-
-const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: string, uuid?: string) => {
-    const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
-    return (
-        <div>
-            {!isPublic && uuid && (
-                <Tooltip title="Share">
-                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))} size="large">
-                        <ShareIcon />
-                    </IconButton>
-                </Tooltip>
-            )}
-        </div>
-    );
-};
-
-export const ResourceShare = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-    const uuidPrefix = getUuidPrefix(state);
-    return {
-        uuid: resource ? resource.uuid : "",
-        ownerUuid: resource ? resource.ownerUuid : "",
-        uuidPrefix,
-    };
-})((props: { ownerUuid?: string; uuidPrefix: string; uuid?: string } & DispatchProp<any>) =>
-    resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid)
-);
-
-// User Resources
-const renderFirstName = (item: { firstName: string }) => {
-    return <Typography noWrap>{item.firstName}</Typography>;
-};
-
-export const ResourceFirstName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return resource || { firstName: "" };
-})(renderFirstName);
-
-const renderLastName = (item: { lastName: string }) => <Typography noWrap>{item.lastName}</Typography>;
-
-export const ResourceLastName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return resource || { lastName: "" };
-})(renderLastName);
-
-const renderFullName = (dispatch: Dispatch, item: { uuid: string; firstName: string; lastName: string }, link?: boolean) => {
-    const displayName = (item.firstName + " " + item.lastName).trim() || item.uuid;
-    return link ? (
         <Typography
             noWrap
             color="primary"
             style={{ cursor: "pointer" }}
-            onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}
+            onClick={() => dispatch<any>(navigateToUserProfile(resource.uuid))} 
         >
             {displayName}
         </Typography>
-    ) : (
-        <Typography noWrap>{displayName}</Typography>
-    );
-};
-
-export const UserResourceFullName = connect((state: RootState, props: { uuid: string; link?: boolean }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return { item: resource || { uuid: "", firstName: "", lastName: "" }, link: props.link };
-})((props: { item: { uuid: string; firstName: string; lastName: string }; link?: boolean } & DispatchProp<any>) =>
-    renderFullName(props.dispatch, props.item, props.link)
-);
-
-const renderUuid = (item: { uuid: string }) => (
-    <Typography
-        data-cy="uuid"
-        noWrap
-    >
-        {item.uuid}
-        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
-    </Typography>
-);
-
-const renderUuidCopyIcon = (item: { uuid: string }) => (
-    <Typography
-        data-cy="uuid"
-        noWrap
-    >
-        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
-    </Typography>
-);
-
-export const ResourceUuid = connect(
-    (state: RootState, props: { uuid: string }) => getResource<UserResource>(props.uuid)(state.resources) || { uuid: "" }
-)(renderUuid);
-
-const renderEmail = (item: { email: string }) => <Typography noWrap>{item.email}</Typography>;
-
-export const ResourceEmail = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return resource || { email: "" };
-})(renderEmail);
+    )
+});
 
 enum UserAccountStatus {
     ACTIVE = "Active",
@@ -350,13 +326,41 @@ const getUserAccountStatus = (state: RootState, props: { uuid: string }) => {
     }
 };
 
-export const ResourceLinkTailAccountStatus = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    return link && link.tailKind === ResourceKind.USER ? getUserAccountStatus(state, { uuid: link.tailUuid }) : { status: UserAccountStatus.UNKNOWN };
+export const ResourceLinkTailAccountStatus = connect((state: RootState, props: { resource: LinkResource }) => {
+    return props.resource && props.resource.tailKind === ResourceKind.USER ? getUserAccountStatus(state, { uuid: props.resource.tailUuid }) : { status: UserAccountStatus.UNKNOWN };
 })(renderAccountStatus);
 
 export const UserResourceAccountStatus = connect(getUserAccountStatus)(renderAccountStatus);
 
+const toggleIsAdmin = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        const isAdmin = data!.isAdmin;
+        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
+        dispatch<any>(loadUsersPanel());
+        return newActivity;
+    };
+
+const renderIsAdmin = (props: { uuid: string; isAdmin: boolean; toggleIsAdmin: (uuid: string) => void }) => (
+    <Checkbox
+        color="primary"
+        checked={props.isAdmin}
+        onClick={e => {
+            e.stopPropagation();
+            props.toggleIsAdmin(props.uuid);
+        }}
+    />
+);
+
+export const ResourceIsAdmin = connect(
+    (state: RootState, props: { resource: UserResource }) => {
+        return props.resource || { isAdmin: false };
+    },
+    { toggleIsAdmin }
+)(renderIsAdmin);
+
+// Permissions renderers ---------------------------------------------------------------------------------
 const renderIsHidden = (props: {
     memberLinkUuid: string;
     permissionLinkUuid: string;
@@ -383,131 +387,62 @@ const renderIsHidden = (props: {
 };
 
 export const ResourceLinkTailIsVisible = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const link = getResource<LinkResource>(props.uuid)(state.resources);
-        const member = getResource<Resource>(link?.tailUuid || "")(state.resources);
-        const group = getResource<GroupResource>(link?.headUuid || "")(state.resources);
+    (state: RootState, props: { resource: LinkResource }) => {
+        const member = getResource<Resource>(props.resource?.tailUuid || "")(state.resources);
+        const group = getResource<GroupResource>(props.resource?.headUuid || "")(state.resources);
         const permissions = filterResources((resource: LinkResource) => {
             return (
                 resource.linkClass === LinkClass.PERMISSION &&
-                resource.headUuid === link?.tailUuid &&
+                resource.headUuid === props.resource?.tailUuid &&
                 resource.tailUuid === group?.uuid &&
                 resource.name === PermissionLevel.CAN_READ
             );
         })(state.resources);
 
         const permissionLinkUuid = permissions.length > 0 ? permissions[0].uuid : "";
-        const isVisible = link && group && permissions.length > 0;
+        const isVisible = props.resource && group && permissions.length > 0;
         // Consider whether the current user canManage this resurce in addition when it's possible
-        const isBuiltin = isBuiltinGroup(link?.headUuid || "");
+        const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "");
 
         return member?.kind === ResourceKind.USER
-            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, visible: isVisible, canManage: !isBuiltin }
+            ? { memberLinkUuid: props.resource?.uuid, permissionLinkUuid, visible: isVisible, canManage: !isBuiltin }
             : { memberLinkUuid: "", permissionLinkUuid: "", visible: false, canManage: false };
     },
     { setMemberIsHidden }
 )(renderIsHidden);
 
-const renderIsAdmin = (props: { uuid: string; isAdmin: boolean; toggleIsAdmin: (uuid: string) => void }) => (
-    <Checkbox
-        color="primary"
-        checked={props.isAdmin}
-        onClick={e => {
-            e.stopPropagation();
-            props.toggleIsAdmin(props.uuid);
-        }}
-    />
-);
-
-export const ResourceIsAdmin = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { isAdmin: false };
-    },
-    { toggleIsAdmin }
-)(renderIsAdmin);
-
-const renderUsername = (item: { username: string; uuid: string }) => <Typography noWrap>{item.username || item.uuid}</Typography>;
-
-export const ResourceUsername = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<UserResource>(props.uuid)(state.resources);
-    return resource || { username: "", uuid: props.uuid };
-})(renderUsername);
-
-// Virtual machine resource
-
-const renderHostname = (item: { hostname: string }) => <Typography noWrap>{item.hostname}</Typography>;
+// Virtual Machines renderers ---------------------------------------------------------------------------------
 
 export const VirtualMachineHostname = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<VirtualMachinesResource>(props.uuid)(state.resources);
     return resource || { hostname: "" };
-})(renderHostname);
-
-const renderVirtualMachineLogin = (login: { user: string }) => <Typography noWrap>{login.user}</Typography>;
+})((item: { hostname: string }) => <Typography noWrap>{item.hostname}</Typography>);
 
 export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid: string }) => {
     const permission = getResource<LinkResource>(props.linkUuid)(state.resources);
     const user = getResource<UserResource>(permission?.tailUuid || "")(state.resources);
 
     return { user: user?.username || permission?.tailUuid || "" };
-})(renderVirtualMachineLogin);
-
-// Common methods
-const renderCommonData = (data: string) => <Typography noWrap>{data}</Typography>;
-
-const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
-
-export const CommonUuid = withResourceData("uuid", renderCommonData);
-
-// Api Client Authorizations
-export const TokenApiToken = withResourceData("apiToken", renderCommonData);
-
-export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderCommonDate);
-
-export const TokenExpiresAt = withResourceData("expiresAt", renderCommonDate);
-
-export const TokenLastUsedAt = withResourceData("lastUsedAt", renderCommonDate);
-
-export const TokenLastUsedByIpAddress = withResourceData("lastUsedByIpAddress", renderCommonData);
-
-export const TokenScopes = withResourceData("scopes", renderCommonData);
-
-export const TokenUserId = withResourceData("userId", renderCommonData);
+})((login: { user: string }) => <Typography noWrap>{login.user}</Typography>);
 
 export const ResourceCluster = connect((state: RootState, props: { uuid: string }) => {
-    const clusterId = props.uuid.slice(0, 5)
+    const clusterId = props.uuid.slice(0, 5) || ""
     const clusterBadge = getProperty<ClusterBadge[]>('clusterBadges')(state.properties)?.find(badge => badge.text === clusterId);
     // dark grey is default BG color
     return clusterBadge || { text: clusterId, color: '#fff', backgroundColor: '#696969' };
 })(renderClusterBadge);
 
 function renderClusterBadge(badge: ClusterBadge) {
-    
     const style = {
         backgroundColor: badge.backgroundColor,
         color: badge.color,
         padding: "2px 7px",
         borderRadius: 3,
     };
-
     return <span style={style}>{badge.text}</span>
 };
 
-// Links Resources
-const renderLinkName = (item: { name: string }) => <Typography noWrap>{item.name || "-"}</Typography>;
-
-export const ResourceLinkName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    return resource || { name: "" };
-})(renderLinkName);
-
-const renderLinkClass = (item: { linkClass: string }) => <Typography noWrap>{item.linkClass}</Typography>;
-
-export const ResourceLinkClass = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    return resource || { linkClass: "" };
-})(renderLinkClass);
-
+// Links renderers ---------------------------------------------------------------------------------
 const getResourceDisplayName = (resource: Resource): string => {
     if ((resource as UserResource).kind === ResourceKind.USER && typeof (resource as UserResource).firstName !== "undefined") {
         // We can be sure the resource is UserResource
@@ -517,7 +452,7 @@ const getResourceDisplayName = (resource: Resource): string => {
     }
 };
 
-const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
+const renderResourceLink = (item: Resource , dispatch: Dispatch) => {
     var displayName = getResourceDisplayName(item);
 
     return (
@@ -530,7 +465,7 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
                     ? dispatch<any>(navigateToGroupDetails(item.uuid))
                     : item.kind === ResourceKind.USER
                     ? dispatch<any>(navigateToUserProfile(item.uuid))
-                    : dispatch<any>(navigateTo(item.uuid));
+                    : dispatch<any>(navigateTo(item.uuid)); 
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
@@ -539,44 +474,35 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
     );
 };
 
-export const ResourceLinkTail = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    const tailResource = getResource<Resource>(resource?.tailUuid || "")(state.resources);
-
+export const ResourceLinkTail = connect((state: RootState, props: { resource: PermissionResource | LinkResource }) => {
+    const tailResource = getResource<Resource>(props.resource?.tailUuid || "")(state.resources);
     return {
-        item: tailResource || { uuid: resource?.tailUuid || "", kind: resource?.tailKind || ResourceKind.NONE },
+        item: tailResource || { uuid: props.resource?.tailUuid || "", kind: props.resource?.tailKind || ResourceKind.NONE },
     };
-})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item));
+})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item, props.dispatch));
 
-export const ResourceLinkHead = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
+export const ResourceLinkHead = connect((state: RootState, props: { resource: PermissionResource | LinkResource }) => {
+    const headResource = getResource<Resource>(props.resource?.headUuid || "")(state.resources);
+    return {
+        item: headResource || { uuid: props.resource?.headUuid || "", kind: props.resource?.headKind || ResourceKind.NONE },
+    };
+})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.item, props.dispatch));
+
+export const ResourceLinkHeadUuid = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const { resource } = props;
     const headResource = getResource<Resource>(resource?.headUuid || "")(state.resources);
 
-    return {
-        item: headResource || { uuid: resource?.headUuid || "", kind: resource?.headKind || ResourceKind.NONE },
-    };
-})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item));
-
-export const ResourceLinkUuid = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<LinkResource>(props.uuid)(state.resources);
-    return resource || { uuid: "" };
-})(renderUuid);
-
-export const ResourceLinkHeadUuid = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const headResource = getResource<Resource>(link?.headUuid || "")(state.resources);
-
     return headResource || { uuid: "" };
-})(renderUuid);
+})(renderUuidWithCopy);
 
 export const ResourceLinkTailUuid = connect((state: RootState, props: { uuid: string }) => {
     const link = getResource<LinkResource>(props.uuid)(state.resources);
     const tailResource = getResource<Resource>(link?.tailUuid || "")(state.resources);
 
     return tailResource || { uuid: "" };
-})(renderUuid);
+})(renderUuidWithCopy);
 
-const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boolean) => {
+const renderLinkDelete = (item: LinkResource, canManage: boolean, dispatch: Dispatch) => {
     if (item.uuid) {
         return canManage ? (
             <Typography noWrap>
@@ -599,31 +525,21 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
     }
 };
 
-export const ResourceLinkDelete = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+export const ResourceLinkDelete = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "") || isBuiltinGroup(props.resource?.tailUuid || "");
 
     return {
-        item: link || { uuid: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        item: props.resource || { uuid: "", kind: ResourceKind.NONE },
+        canManage: props.resource && getResourceLinkCanManage(state, props.resource) && !isBuiltin,
     };
-})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.dispatch, props.item, props.canManage));
+})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.item, props.canManage, props.dispatch));
 
-export const ResourceLinkTailEmail = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const resource = getResource<UserResource>(link?.tailUuid || "")(state.resources);
+export const ResourceLinkTailUsername = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const resource = getResource<UserResource>(props.resource.tailUuid || "")(state.resources);
+    return resource;
+})((user:UserResource) => <Typography noWrap>{user.username || user.uuid || "-"}</Typography>);
 
-    return resource || { email: "" };
-})(renderEmail);
-
-export const ResourceLinkTailUsername = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const resource = getResource<UserResource>(link?.tailUuid || "")(state.resources);
-
-    return resource || { username: "" };
-})(renderUsername);
-
-const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage: boolean) => {
+const renderPermissionLevel = (link: LinkResource, canManage: boolean, dispatch: Dispatch) => {
     return (
         <Typography noWrap>
             {formatPermissionLevel(link.name as PermissionLevel)}
@@ -641,25 +557,24 @@ const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage
     );
 };
 
-export const ResourceLinkHeadPermissionLevel = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+export const ResourceLinkHeadPermissionLevel = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const { resource } = props;
+    const isBuiltin = isBuiltinGroup(resource?.headUuid || "") || isBuiltinGroup(resource?.tailUuid || "");
 
     return {
-        link: link || { uuid: "", name: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        link: resource || { uuid: "", name: "", kind: ResourceKind.NONE },
+        canManage: resource && getResourceLinkCanManage(state, resource) && !isBuiltin,
     };
-})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.dispatch, props.link, props.canManage));
+})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage, props.dispatch));
 
-export const ResourceLinkTailPermissionLevel = connect((state: RootState, props: { uuid: string }) => {
-    const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+export const ResourceLinkTailPermissionLevel = connect((state: RootState, props: { resource: PermissionResource }) => {
+    const isBuiltin = isBuiltinGroup(props.resource?.headUuid || "") || isBuiltinGroup(props.resource?.tailUuid || "");
 
     return {
-        link: link || { uuid: "", name: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        link: props.resource || { uuid: "", name: "", kind: ResourceKind.NONE },
+        canManage: props.resource && getResourceLinkCanManage(state, props.resource) && !isBuiltin,
     };
-})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.dispatch, props.link, props.canManage));
+})((props: { link: LinkResource; canManage: boolean } & DispatchProp<any>) => renderPermissionLevel(props.link, props.canManage, props.dispatch));
 
 const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
     const headResource = getResource<Resource>(link.headUuid)(state.resources);
@@ -671,27 +586,144 @@ const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
     }
 };
 
-// Process Resources
-const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
+// Process / Workflow renderers ---------------------------------------------------------------------------------
+export const ProcessStatus = compose(
+    connect((state: RootState, props: { uuid: string }) => {
+        return { process: getProcess(props.uuid)(state.resources) };
+    }),
+    withStyles({}, { withTheme: true })
+)((props: { process?: Process; theme: ArvadosTheme }) =>
+    props.process ? (
+        <Chip
+            data-cy="process-status-chip"
+            label={getProcessStatus(props.process)}
+            style={{
+                height: props.theme.spacing(3),
+                width: props.theme.spacing(12),
+                ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
+                fontSize: "0.875rem",
+                borderRadius: props.theme.spacing(0.625),
+            }}
+        />
+    ) : (
+        <Typography>-</Typography>
+    )
+);
+
+const renderRunTime = (time: number) => (
+    <Typography
+        noWrap
+        style={{ minWidth: "45px" }}
+    >
+        {formatTime(time, true)}
+    </Typography>
+);
+
+interface ContainerRunTimeProps {
+    process: Process;
+}
+
+interface ContainerRunTimeState {
+    runtime: number;
+}
+
+export const ContainerRunTime = connect((state: RootState, props: { uuid: string }) => {
+    return { process: getProcess(props.uuid)(state.resources) };
+})(
+    class extends React.Component<ContainerRunTimeProps, ContainerRunTimeState> {
+        private timer: any;
+
+        constructor(props: ContainerRunTimeProps) {
+            super(props);
+            this.state = { runtime: this.getRuntime() };
+        }
+
+        getRuntime() {
+            return this.props.process ? getProcessRuntime(this.props.process) : 0;
+        }
+
+        updateRuntime() {
+            this.setState({ runtime: this.getRuntime() });
+        }
+
+        componentDidMount() {
+            this.timer = setInterval(this.updateRuntime.bind(this), 5000);
+        }
+
+        componentWillUnmount() {
+            clearInterval(this.timer);
+        }
+
+        render() {
+            return this.props.process ? renderRunTime(this.state.runtime) : <Typography>-</Typography>;
+        }
+    }
+);
+
+export const ResourceShare = connect((state: RootState, props: { resource: WorkflowResource }) => {
+    const { resource } = props;
+    const uuidPrefix = getUuidPrefix(state);
+    return {
+        uuid: resource ? resource.uuid : "",
+        ownerUuid: resource ? resource.ownerUuid : "",
+        uuidPrefix,
+    };
+})((props: { ownerUuid?: string; uuidPrefix: string; uuid?: string } & DispatchProp<any>) =>
+    resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid)
+);
+
+export const renderWorkflowName = (item: WorkflowResource) => (
+    <Grid
+        container
+        alignItems="center"
+        wrap="nowrap"
+        spacing={2}
+    >
+        <Grid item>{renderIcon(item)}</Grid>
+        <Grid item>
+            <Typography
+                color="primary"
+                style={{ width: "100px" }}
+            >
+                {item.name}
+            </Typography>
+        </Grid>
+    </Grid>
+);
+
+export const ResourceRunProcess = connect((uuid: string) => uuid)((props: { uuid:string } & DispatchProp<any>) => {
+    const { uuid } = props;
     return (
         <div>
             {uuid && (
                 <Tooltip title="Run process">
-                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))} size="large">
+                    <IconButton onClick={() => props.dispatch<any>(openRunProcess(uuid ?? ''))} size="large">
                         <ProcessIcon />
                     </IconButton>
                 </Tooltip>
             )}
         </div>
     );
+});
+
+const getPublicUuid = (uuidPrefix: string) => {
+    return `${uuidPrefix}-tpzed-anonymouspublic`;
 };
 
-export const ResourceRunProcess = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-    return {
-        uuid: resource ? resource.uuid : "",
-    };
-})((props: { uuid: string } & DispatchProp<any>) => resourceRunProcess(props.dispatch, props.uuid));
+const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: string, uuid?: string) => {
+    const isPublic = ownerUuid === getPublicUuid(uuidPrefix);
+    return (
+        <div>
+            {!isPublic && uuid && (
+                <Tooltip title="Share">
+                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))} size="large">
+                        <ShareIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
+        </div>
+    );
+};
 
 const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
@@ -710,8 +742,8 @@ const renderStatus = (status: string) => (
     </Typography>
 );
 
-export const ResourceWorkflowStatus = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
+export const ResourceWorkflowStatus = connect((state: RootState, props: { resource: WorkflowResource }) => {
+    const { resource } = props;
     const uuidPrefix = getUuidPrefix(state);
     return {
         ownerUuid: resource ? resource.ownerUuid : "",
@@ -719,156 +751,73 @@ export const ResourceWorkflowStatus = connect((state: RootState, props: { uuid: 
     };
 })((props: { ownerUuid?: string; uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
-export const ResourceContainerUuid = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { uuid: process?.container?.uuid ? process?.container?.uuid : "" };
-})((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+export const renderContainerUuid = (resource: GroupContentsResource) => {
+    if (resource.kind !== ResourceKind.PROCESS) {
+        return <>-</>;
+    }
+    const containerUuid = resource.containerUuid || '';
+    return renderUuidWithCopy({ uuid: containerUuid });
+};
 
 enum ColumnSelection {
     OUTPUT_UUID = "outputUuid",
     LOG_UUID = "logUuid",
 }
 
-const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, column: string) => {
-    const selectedColumnUuid = item[column];
-    return (
-        <Grid
-            container
-            alignItems="center"
-            wrap="nowrap"
-        >
-            <Grid item>
-                {selectedColumnUuid ? (
-                    <Typography
-                        color="primary"
-                        style={{ width: "auto", cursor: "pointer" }}
-                        noWrap
-                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}
-                    >
-                        {selectedColumnUuid}
-                    </Typography>
-                ) : (
-                    "-"
-                )}
-            </Grid>
-            <Grid item>{selectedColumnUuid && renderUuidCopyIcon({ uuid: selectedColumnUuid })}</Grid>
-        </Grid>
-    );
-};
+export const ResourceOutputUuid = connect((state: RootState, props: { resource: ProcessResource }) => { 
+    return {process: props.resource};
+})((props: {process: ProcessResource} & DispatchProp<any>) => renderUuidLinkWithCopyIcon(props.process, ColumnSelection.OUTPUT_UUID, props.dispatch));
 
-export const ResourceOutputUuid = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<ProcessResource>(props.uuid)(state.resources);
-    return resource;
-})((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.OUTPUT_UUID));
+export const ResourceLogUuid = connect((state: RootState, props: { resource: ProcessResource }) => {
+    return {process:props.resource};
+})((props: {process: ProcessResource} & DispatchProp<any>) => renderUuidLinkWithCopyIcon(props.process, ColumnSelection.LOG_UUID, props.dispatch));
 
-export const ResourceLogUuid = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<ProcessResource>(props.uuid)(state.resources);
-    return resource;
-})((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.LOG_UUID));
+export const renderResourceParentProcess = (resource: GroupContentsResource) => {
+    return resource.kind === ResourceKind.CONTAINER_REQUEST ? renderUuidWithCopy({ uuid: (resource as ContainerRequestResource).requestingContainerUuid || "" }) : <>-</>;
+}
 
-export const ResourceParentProcess = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { parentProcess: process?.containerRequest?.requestingContainerUuid || "" };
-})((props: { parentProcess: string }) => renderUuid({ uuid: props.parentProcess }));
+export const renderModifiedByUserUuid = (resource: GroupContentsResource) => {
+    return renderUuidWithCopy({uuid: resource.modifiedByUserUuid});
+}
 
-export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { userUuid: process?.containerRequest?.modifiedByUserUuid || "" };
-})((props: { userUuid: string }) => renderUuid({ uuid: props.userUuid }));
+// Collection renderers ---------------------------------------------------------------------------------
+export const renderTrashDate = (resource: TrashableResource) => {
+    return renderDate(resource.trashAt);
+}
 
-export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.createdAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+export const renderDeleteDate = (resource: TrashableResource) => {
+    return renderDate(resource.deleteAt);
+}
 
-export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.modifiedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
-
-export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.trashAt : "" };
-})((props: { date: string }) => renderDate(props.date));
-
-export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<TrashableResource>(props.uuid)(state.resources);
-    return { date: resource ? resource.deleteAt : "" };
-})((props: { date: string }) => renderDate(props.date));
-
-export const renderFileSize = (fileSize?: number) => (
+export const renderFileSize = (resource: GroupContentsResource) => (
     <Typography
         noWrap
         style={{ minWidth: "45px" }}
     >
-        {formatFileSize(fileSize)}
+        {formatFileSize('fileSizeTotal' in resource ? resource.fileSizeTotal : undefined)}
     </Typography>
 );
 
-export const ResourceFileSize = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-
-    if (resource && resource.kind !== ResourceKind.COLLECTION) {
-        return { fileSize: "" };
-    }
-
-    return { fileSize: resource ? resource.fileSizeTotal : 0 };
-})((props: { fileSize?: number }) => renderFileSize(props.fileSize));
-
-const renderOwner = (owner: string) => <Typography noWrap>{owner || "-"}</Typography>;
-
-export const ResourceOwner = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { owner: resource ? resource.ownerUuid : "" };
-})((props: { owner: string }) => renderOwner(props.owner));
-
-export const ResourceOwnerName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    const ownerNameState = state.ownerName;
-    const ownerName = ownerNameState.find(it => it.uuid === resource!.ownerUuid);
-    return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
-})((props: { owner: string }) => renderOwner(props.owner));
-
-export const ResourceUUID = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { uuid: resource ? resource.uuid : "" };
-})((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
-
-const renderVersion = (version: number) => {
-    return <Typography>{version ?? "-"}</Typography>;
+export const renderFileCount = (resource: GroupContentsResource) => {
+    return <Typography>{'fileCount' in resource ? resource.fileCount : "-"}</Typography>;
 };
 
-export const ResourceVersion = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { version: resource ? resource.version : "" };
-})((props: { version: number }) => renderVersion(props.version));
+export const renderVersion = (resource: GroupContentsResource) => {
+    return <Typography>{'version' in resource ? resource.version : "-"}</Typography>; 
+};
 
-const renderPortableDataHash = (portableDataHash: string | null) => (
+export const renderPortableDataHash = (resource: GroupContentsResource) => (
     <Typography noWrap>
-        {portableDataHash ? (
+        {'portableDataHash' in resource ? (
             <>
-                {portableDataHash}
-                <CopyToClipboardSnackbar value={portableDataHash} />
+                {resource.portableDataHash}
+                <CopyToClipboardSnackbar value={resource.portableDataHash} />
             </>
         ) : (
             "-"
         )}
     </Typography>
 );
-
-export const ResourcePortableDataHash = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { portableDataHash: resource ? resource.portableDataHash : "" };
-})((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
-
-const renderFileCount = (fileCount: number) => {
-    return <Typography>{fileCount ?? "-"}</Typography>;
-};
-
-export const ResourceFileCount = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-    return { fileCount: resource ? resource.fileCount : "" };
-})((props: { fileCount: number }) => renderFileCount(props.fileCount));
 
 const userFromID = connect((state: RootState, props: { uuid: string }) => {
     let userFullname = "";
@@ -880,14 +829,6 @@ const userFromID = connect((state: RootState, props: { uuid: string }) => {
 
     return { uuid: props.uuid, userFullname };
 });
-
-const ownerFromResourceId = compose(
-    connect((state: RootState, props: { uuid: string }) => {
-        const childResource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
-        return { uuid: childResource ? (childResource as Resource).ownerUuid : "" };
-    }),
-    userFromID
-);
 
 const _resourceWithName = withStyles(
     {},
@@ -915,32 +856,6 @@ const _resourceWithName = withStyles(
         </Typography>
     );
 });
-
-const _resourceWithNameLink = withStyles(
-    {},
-    { withTheme: true }
-)((props: { uuid: string; userFullname: string; dispatch: Dispatch; theme: ArvadosTheme }) => {
-    const { uuid, userFullname, dispatch, theme } = props;
-    if (!userFullname) {
-        dispatch<any>(loadResource(uuid, false));
-    }
-
-    return (
-        <Typography
-            style={{ color: theme.palette.primary.main, cursor: 'pointer' }}
-            display="inline"
-            noWrap
-            onClick={() => dispatch<any>(navigateTo(uuid))}
-        >
-            {userFullname ? userFullname : uuid}
-        </Typography>
-    )
-});
-
-
-export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
-
-export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);
 
@@ -1019,43 +934,12 @@ export const ResponsiblePerson = compose(
     );
 });
 
-const renderType = (type: string, subtype: string) => <Typography noWrap>{resourceLabel(type, subtype)}</Typography>;
-
-export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return {
-        type: resource ? resource.kind : "",
-        subtype: resource
-            ? resource.kind === ResourceKind.GROUP
-                ? resource.groupClass
-                : resource.kind === ResourceKind.PROCESS
-                    ? resource.requestingContainerUuid
-                        ? ProcessTypeFilter.CHILD_PROCESS
-                        : ProcessTypeFilter.MAIN_PROCESS
-                    : ""
-            : ""
-    };
-})((props: { type: string; subtype: string }) => renderType(props.type, props.subtype));
-
-export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
-    return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
-})((props: { resource: GroupContentsResource }) =>
-    props.resource && props.resource.kind === ResourceKind.COLLECTION ? (
-        <CollectionStatus uuid={props.resource.uuid} />
-    ) : (
-        <ProcessStatus uuid={props.resource.uuid} />
-    )
-);
-
-export const CollectionStatus = connect((state: RootState, props: { uuid: string }) => {
-    return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };
-})((props: { collection: CollectionResource }) =>
+const CollectionStatus = (props: { collection: CollectionResource }) =>
     props.collection.uuid !== props.collection.currentVersionUuid ? (
         <Typography>version {props.collection.version}</Typography>
     ) : (
         <Typography>head version</Typography>
-    )
-);
+    );
 
 export const CollectionName = connect((state: RootState, props: { uuid: string; className?: string }) => {
     return {
@@ -1067,107 +951,46 @@ export const CollectionName = connect((state: RootState, props: { uuid: string; 
     <Typography className={props.className}>{props.collection?.name || props.uuid}</Typography>
 ));
 
-export const ProcessStatus = compose(
-    connect((state: RootState, props: { uuid: string }) => {
-        return { process: getProcess(props.uuid)(state.resources) };
-    }),
-    withStyles({}, { withTheme: true })
-)((props: { process?: Process; theme: ArvadosTheme }) =>
-    props.process ? (
-        <Chip
-            data-cy="process-status-chip"
-            label={getProcessStatus(props.process)}
-            style={{
-                height: props.theme.spacing(3),
-                width: props.theme.spacing(12),
-                ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
-                fontSize: "0.875rem",
-                borderRadius: props.theme.spacing(0.625),
-            }}
-        />
-    ) : (
-        <Typography>-</Typography>
-    )
-);
-
-export const ProcessStartDate = connect((state: RootState, props: { uuid: string }) => {
-    const process = getProcess(props.uuid)(state.resources);
-    return { date: process && process.container ? process.container.startedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
-
-export const renderRunTime = (time: number) => (
-    <Typography
-        noWrap
-        style={{ minWidth: "45px" }}
-    >
-        {formatTime(time, true)}
-    </Typography>
-);
-
-interface ContainerRunTimeProps {
-    process: Process;
-}
-
-interface ContainerRunTimeState {
-    runtime: number;
-}
-
-export const ContainerRunTime = connect((state: RootState, props: { uuid: string }) => {
-    return { process: getProcess(props.uuid)(state.resources) };
-})(
-    class extends React.Component<ContainerRunTimeProps, ContainerRunTimeState> {
-        private timer: any;
-
-        constructor(props: ContainerRunTimeProps) {
-            super(props);
-            this.state = { runtime: this.getRuntime() };
-        }
-
-        getRuntime() {
-            return this.props.process ? getProcessRuntime(this.props.process) : 0;
-        }
-
-        updateRuntime() {
-            this.setState({ runtime: this.getRuntime() });
-        }
-
-        componentDidMount() {
-            this.timer = setInterval(this.updateRuntime.bind(this), 5000);
-        }
-
-        componentWillUnmount() {
-            clearInterval(this.timer);
-        }
-
-        render() {
-            return this.props.process ? renderRunTime(this.state.runtime) : <Typography>-</Typography>;
-        }
-    }
-);
-
-export const GroupMembersCount = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const group = getResource<GroupResource>(props.uuid)(state.resources);
-
-        return {
-            value: group?.memberCount,
-        };
-
-    }
-)(withTheme((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
-    if (props.value === undefined) {
+// Group renderers ---------------------------------------------------------------------------------
+export const renderMembersCount = (resource: GroupResource) => {
+    const value = resource.memberCount;
+    if (value === undefined) {
         // Loading
         return <Typography component={"div"}>
             <InlinePulser />
         </Typography>;
-    } else if (props.value === null) {
+    } else if (value === null) {
         // Error
         return <Typography>
             <Tooltip title="Failed to load member count">
-                <ErrorIcon style={{color: props.theme.customs.colors.greyL}}/>
+                <ErrorIcon style={{color: CustomTheme.palette.grey['600']}}/>
             </Tooltip>
         </Typography>;
     } else {
-        return <Typography children={props.value} />;
+        return <Typography children={value} />;
     }
-}));
+};
+
+// Trash renderers ---------------------------------------------------------------------------------
+export const RestoreFromTrash = connect((resource: TrashableResource | CollectionResource)=> resource)(
+    (props: {resource: TrashableResource} & DispatchProp<any>) => {
+    const { resource, dispatch } = props;
+    return (
+        <Tooltip title="Restore">
+            <IconButton
+                style={{ padding: '0' }}
+                onClick={() => {
+                    if (resource) {
+                        dispatch<any>(toggleTrashed(
+                            resource.kind,
+                            resource.uuid,
+                            resource.ownerUuid,
+                            resource.isTrashed)
+                        );
+                    }}}
+                size="large">
+                <RestoreFromTrashIcon />
+            </IconButton>
+        </Tooltip>
+    );
+});

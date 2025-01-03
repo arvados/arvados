@@ -32,7 +32,7 @@ import { DetailsIcon, GroupsIcon, MoreVerticalIcon } from 'components/icon/icon'
 import { DataColumns } from 'components/data-table/data-column';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible, UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
-import { getResource, ResourcesState } from 'store/resources/resources';
+import { ResourcesState } from 'store/resources/resources';
 import { DefaultView } from 'components/default-view/default-view';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { PermissionResource } from 'models/permission';
@@ -89,7 +89,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface UserProfilePanelRootActionProps {
-    handleContextMenu: (event, resource: UserResource) => void;
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: UserResource | undefined) => void;
 }
 
 export interface UserProfilePanelRootDataProps {
@@ -99,6 +99,7 @@ export interface UserProfilePanelRootDataProps {
     isValid: boolean;
     isInaccessible: boolean;
     userUuid: string;
+    user: UserResource | undefined;
     resources: ResourcesState;
     localCluster: string;
     userProfileFormMessage: string;
@@ -131,41 +132,41 @@ enum TABS {
 
 }
 
-export const userProfileGroupsColumns: DataColumns<string, PermissionResource> = [
+export const userProfileGroupsColumns: DataColumns<PermissionResource> = [
     {
         name: UserProfileGroupsColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid} />
+        render: resource => <ResourceLinkHead resource={resource as PermissionResource} />
     },
     {
         name: UserProfileGroupsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
+        render: (resource) => <ResourceLinkHeadPermissionLevel resource={resource as PermissionResource} />
     },
     {
         name: UserProfileGroupsColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
+        render: (resource) => <ResourceLinkTailIsVisible resource={resource as PermissionResource} />
     },
     {
         name: UserProfileGroupsColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
+        render: (resource) => <ResourceLinkHeadUuid resource={resource as PermissionResource} />
     },
     {
         name: UserProfileGroupsColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: (resource) => <ResourceLinkDelete resource={resource as PermissionResource} />,
     },
 ];
 
@@ -225,7 +226,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                                     <IconButton
                                                         data-cy='user-profile-panel-options-btn'
                                                         aria-label="Actions"
-                                                        onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}
+                                                        onClick={(event) => this.handleContextMenu(event, this.props.user)}
                                                         size="large">
                                                         <MoreVerticalIcon />
                                                     </IconButton>
@@ -349,9 +350,8 @@ export const UserProfilePanelRoot = withStyles(styles)(
             this.setState({ value });
         }
 
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: UserResource | undefined) => {
             event.stopPropagation();
-            const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
             if (resource) {
                 this.props.handleContextMenu(event, resource);
             }

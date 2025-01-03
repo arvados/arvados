@@ -12,7 +12,6 @@ import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
@@ -55,79 +54,79 @@ export enum GroupDetailsPanelPermissionsColumnNames {
 const MEMBERS_DEFAULT_MESSAGE = 'Members list is empty.';
 const PERMISSIONS_DEFAULT_MESSAGE = 'Permissions list is empty.';
 
-export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionResource> = [
+export const groupDetailsMembersPanelColumns: DataColumns<PermissionResource> = [
     {
         name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTail uuid={uuid} />
+        render: (resource) => <ResourceLinkTail resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailUsername uuid={uuid} />
+        render: (resource) => <ResourceLinkTailUsername resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailAccountStatus uuid={uuid} />
+        render: (resource) => <ResourceLinkTailAccountStatus resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
+        render: (resource) => <ResourceLinkTailIsVisible resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
+        render: (resource) => <ResourceLinkTailPermissionLevel resource={resource} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: (resource) => <ResourceLinkDelete resource={resource} />
     },
 ];
 
-export const groupDetailsPermissionsPanelColumns: DataColumns<string, PermissionResource> = [
+export const groupDetailsPermissionsPanelColumns: DataColumns<PermissionResource> = [
     {
         name: GroupDetailsPanelPermissionsColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid} />
+        render: (resource) => <ResourceLinkHead resource={resource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
+        render: (resource) => <ResourceLinkHeadPermissionLevel resource={resource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
+        render: (resource) => <ResourceLinkHeadUuid resource={resource} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: (resource) => <ResourceLinkDelete resource={resource} />,
     },
 ];
 
@@ -145,12 +144,10 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = {
-    onContextMenu: openContextMenu,
     onAddUser: openAddGroupMembersDialog,
 };
 
 export interface GroupDetailsPanelProps {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
     resources: ResourcesState;
     groupCanManage: boolean;

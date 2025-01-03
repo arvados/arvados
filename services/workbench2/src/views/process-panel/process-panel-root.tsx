@@ -53,7 +53,7 @@ export interface ProcessPanelRootDataProps {
 }
 
 export interface ProcessPanelRootActionProps {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: Process) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, containerRequest: ContainerRequestResource) => void;
     onToggle: (status: string) => void;
     cancelProcess: (uuid: string) => void;
     startProcess: (uuid: string) => void;
@@ -156,7 +156,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                     data-cy="process-details">
                     <ProcessDetailsCard
                         process={process}
-                        onContextMenu={event => props.onContextMenu(event, process)}
+                        onContextMenu={event => props.onContextMenu(event, process.containerRequest)}
                         cancelProcess={props.cancelProcess}
                         startProcess={props.startProcess}
                         resumeOnHoldWorkflow={props.resumeOnHoldWorkflow}

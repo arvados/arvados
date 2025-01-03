@@ -14,8 +14,8 @@ import { IconButtonProps } from '@mui/material/IconButton';
 import { ArvadosTheme } from "common/custom-theme";
 
 interface ColumnSelectorDataProps {
-    columns: DataColumns<any, any>;
-    onColumnToggle: (column: DataColumn<any, any>) => void;
+    columns: DataColumns<any>;
+    onColumnToggle: (column: DataColumn<any>) => void;
     className?: string;
 }
 

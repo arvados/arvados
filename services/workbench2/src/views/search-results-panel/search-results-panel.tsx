@@ -14,6 +14,7 @@ import { User } from "models/user";
 import { Config } from 'common/config';
 import { Session } from "models/session";
 import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
+import { GroupContentsResource } from "services/groups-service/groups-service";
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;
@@ -24,10 +25,9 @@ export interface SearchResultsPanelDataProps {
 }
 
 export interface SearchResultsPanelActionProps {
-    onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemClick: (resource: GroupContentsResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
+    onItemDoubleClick: (resource: GroupContentsResource) => void;
 }
 
 export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
@@ -42,16 +42,15 @@ const mapStateToProps = (rootState: RootState) => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps => ({
-    onContextMenu: (event, resourceUuid) => {
-        dispatch<any>(openSearchResultsContextMenu(event, resourceUuid));
+    onContextMenu: (event, resource) => {
+        dispatch<any>(openSearchResultsContextMenu(event, resource.uuid));
     },
-    onDialogOpen: (ownerUuid: string) => { return; },
-    onItemClick: (resourceUuid: string) => {
-        dispatch<any>(toggleOne(resourceUuid))
-        dispatch<any>(deselectAllOthers(resourceUuid))
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+    onItemClick: ({uuid}: GroupContentsResource) => {
+        dispatch<any>(toggleOne(uuid))
+        dispatch<any>(deselectAllOthers(uuid))
+        dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: uuid => {
+    onItemDoubleClick: ({uuid}: GroupContentsResource) => {
         dispatch<any>(navigateTo(uuid));
     }
 });

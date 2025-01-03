@@ -15,11 +15,11 @@ import { ResourceKind } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
     ProcessStatus,
-    ResourceFileSize,
-    ResourceLastModifiedDate,
-    ResourceType,
-    ResourceName,
-    ResourceOwnerWithName
+    renderType,
+    RenderName,
+    RenderOwnerName,
+    renderFileSize,
+    renderLastModifiedDate,
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -35,7 +35,7 @@ import { createTree } from 'models/tree';
 import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from 'store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
-import { getResource, ResourcesState } from 'store/resources/resources';
+import { ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -68,48 +68,48 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResource> = [
+export const publicFavoritePanelColumns: DataColumns<GroupContentsResource> = [
     {
         name: PublicFavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ProcessStatus uuid={uuid} />
+        render: (resource) => <ProcessStatus uuid={resource.uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />
+        render: (resource) => renderType(resource),
     },
     {
         name: PublicFavoritePanelColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
+        render: (resource) => <RenderOwnerName resource={resource} />
     },
     {
         name: PublicFavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
+        render: (resource) => renderFileSize(resource),
     },
     {
         name: PublicFavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: (resource) => renderLastModifiedDate(resource),
     }
 ];
 
@@ -119,10 +119,9 @@ interface PublicFavoritePanelDataProps {
 }
 
 interface PublicFavoritePanelActionProps {
-    onItemClick: (item: string) => void;
-    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
+    onItemClick: (resource: GroupContentsResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
+    onItemDoubleClick: (resource: GroupContentsResource) => void;
 }
 const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavoritePanelDataProps => ({
     publicFavorites,
@@ -130,29 +129,27 @@ const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavor
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
-    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
-        const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+    onContextMenu: (event, resource: GroupContentsResource) => {
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
         if (kind && resource) {
             dispatch<any>(openContextMenu(event, {
                 name: resource.name,
                 description: resource.description,
                 storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
-                uuid: resourceUuid,
+                uuid: resource.uuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
                 menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(resourceUuid));
+        dispatch<any>(loadDetailsPanel(resource.uuid));
     },
-    onDialogOpen: (ownerUuid: string) => { return; },
-    onItemClick: (uuid: string) => {
+    onItemClick: ({uuid}: GroupContentsResource) => {
                 dispatch<any>(toggleOne(uuid))
                 dispatch<any>(deselectAllOthers(uuid))
                 dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: uuid => {
+    onItemDoubleClick: ({uuid}: GroupContentsResource) => {
         dispatch<any>(navigateTo(uuid));
     }
 });
@@ -168,7 +165,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     id={PUBLIC_FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
-                    onContextMenu={this.props.onContextMenu(this.props.resources)}
+                    onContextMenu={this.props.onContextMenu}
                     contextMenuColumn={false}
                     defaultViewIcon={PublicFavoriteIcon}
                     defaultViewMessages={['Public favorites list is empty.']} />

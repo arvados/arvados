@@ -51,7 +51,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             const items = listResults.items.map(it => it.uuid);
             api.dispatch(trashPanelActions.SET_ITEMS({
                 ...listResultsToDataExplorerItemsMeta(listResults),
-                items
+                items,
             }));
             api.dispatch<any>(updateFavorites(items));
             api.dispatch<any>(updatePublicFavorites(items));
@@ -108,7 +108,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
 };
 
 const getFilters = (dataExplorer: DataExplorer) => {
-    const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
+    const columns = dataExplorer.columns as DataColumns<CollectionResource>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, TrashPanelColumnNames.TYPE));
 
     const otherFilters = new FilterBuilder()

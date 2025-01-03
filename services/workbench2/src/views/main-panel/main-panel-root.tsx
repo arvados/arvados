@@ -15,6 +15,7 @@ import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
 import { Routes } from 'routes/routes';
+import { isResourceUuid } from 'models/resource';
 
 type CssRules = 'root';
 
@@ -51,13 +52,13 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, loading, working, user, buildInfo, uuidPrefix,
-        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
+        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout,
         sidePanelIsCollapsed, isTransitioning, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
 
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');
                 const uuid = splitRoute[splitRoute.length - 1];
-                if(Object.values(Routes).includes(`/${uuid}`) === false) {
+                if(isResourceUuid(uuid) && Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
                 } else {
                     setCurrentRouteUuid(null);
@@ -82,7 +83,7 @@ export const MainPanelRoot = withStyles(styles)(
             <Grid container direction="column" className={classes.root}>
                 {user
                     ? (user.isActive || (!user.isActive && isLinkingPath)
-                    ? <WorkbenchPanel 
+                    ? <WorkbenchPanel
                         isNotLinking={isNotLinking}
                         isUserActive={user.isActive}
                         sessionIdleTimeout={sessionIdleTimeout}

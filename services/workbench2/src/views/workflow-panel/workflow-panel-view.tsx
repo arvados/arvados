@@ -7,11 +7,11 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { WorkflowIcon } from 'components/icon/icon';
 import { WORKFLOW_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import {
-    ResourceLastModifiedDate,
-    ResourceWorkflowName,
     ResourceWorkflowStatus,
     ResourceShare,
-    ResourceRunProcess
+    renderLastModifiedDate,
+    renderWorkflowName,
+    ResourceRunProcess,
 } from "views-components/data-explorer/renderers";
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
@@ -36,8 +36,8 @@ export interface WorkflowPanelDataProps {
 }
 
 export interface WorfklowPanelActionProps {
-    handleRowDoubleClick: (workflowUuid: string) => void;
-    handleRowClick: (workflowUuid: string) => void;
+    handleRowDoubleClick: (workflow: WorkflowResource) => void;
+    handleRowClick: (workflow: WorkflowResource) => void;
 }
 
 export type WorkflowPanelProps = WorkflowPanelDataProps & WorfklowPanelActionProps;
@@ -62,14 +62,14 @@ export enum ResourceStatus {
 //     }
 // };
 
-export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
+export const workflowPanelColumns: DataColumns<WorkflowResource> = [
     {
         name: WorkflowPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
-        render: (uuid: string) => <ResourceWorkflowName uuid={uuid} />
+        render: (resource) => renderWorkflowName(resource),
     },
     {
         name: WorkflowPanelColumnNames.AUTHORISATION,
@@ -94,7 +94,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         //         type: ResourceStatus.SHARED
         //     }
         // ],
-        render: (uuid: string) => <ResourceWorkflowStatus uuid={uuid} />,
+        render: (resource) => <ResourceWorkflowStatus resource={resource}/>,
     },
     {
         name: WorkflowPanelColumnNames.LAST_MODIFIED,
@@ -102,21 +102,21 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "modifiedAt"},
         filters: createTree(),
-        render: (uuid: string) => <ResourceLastModifiedDate uuid={uuid} />
+        render: (resource) => renderLastModifiedDate(resource),
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (uuid: string) => <ResourceShare uuid={uuid} />
+        render: (resource) => <ResourceShare resource={resource} />
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (uuid: string) => <ResourceRunProcess uuid={uuid} />
+        render: (resource) => <ResourceRunProcess uuid={resource.uuid} />
     }
 ];
 

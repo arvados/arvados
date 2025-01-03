@@ -17,6 +17,7 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
+import { isEqual } from "lodash";
 import { DataColumn, DataColumns, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
 import { DataTableFilters } from "../data-table-filters/data-table-filters";
@@ -27,21 +28,22 @@ import { IconType, PendingIcon } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { Resource } from "models/resource";
 
 export enum DataTableFetchMode {
     PAGINATED,
     INFINITE,
 }
 
-export interface DataTableDataProps<I> {
-    items: I[];
-    columns: DataColumns<I, any>;
-    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: I) => void;
-    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
-    onSortToggle: (column: DataColumn<I, any>) => void;
-    onFiltersChange: (filters: DataTableFilters, column: DataColumn<I, any>) => void;
-    extractKey?: (item: I) => React.Key;
+export interface DataTableDataProps<T> {
+    items: T[];
+    columns: DataColumns<any>;
+    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
+    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
+    onSortToggle: (column: DataColumn<T>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
+    extractKey?: (item: T) => React.Key;
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
@@ -170,7 +172,7 @@ type DataTableState = {
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
-    class Component<T> extends React.Component<DataTableProps<T>> {
+    class Component<T extends Resource> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
             isLoaded: false,
@@ -191,9 +193,9 @@ export const DataTable = withStyles(styles)(
             const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
             const singleSelected = isExactlyOneSelected(this.props.checkedList);
-            if (prevProps.items !== items) {
+            if (!isEqual(prevProps.items, items)) {
                 if (isSelected === true) this.setState({ isSelected: false });
-                if (items.length) this.initializeCheckedList(items);
+                if (items.length) this.initializeCheckedList(items.map((item: any) => item.uuid));
                 else setCheckedListOnStore({});
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
@@ -223,12 +225,12 @@ export const DataTable = withStyles(styles)(
             this.initializeCheckedList([]);
         }
 
-        checkBoxColumn: DataColumn<any, any> = {
+        checkBoxColumn: DataColumn<any> = {
             name: "checkBoxColumn",
             selected: true,
             configurable: false,
             filters: createTree(),
-            render: uuid => {
+            render: ({uuid}) => {
                 const { classes, checkedList } = this.props;
                 return (
                     <div
@@ -259,7 +261,7 @@ export const DataTable = withStyles(styles)(
             { name: "Invert", fn: list => this.handleInvertSelect(list) },
         ];
 
-        initializeCheckedList = (uuids: any[]): void => {
+        initializeCheckedList = (uuids: string[]): void => {
             const newCheckedList = { ...this.props.checkedList };
 
             if(Object.keys(newCheckedList).length === 0){
@@ -358,7 +360,7 @@ export const DataTable = withStyles(styles)(
             );
         }
 
-        renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
+        renderNoItemsPlaceholder = (columns: DataColumns<T>) => {
             const { isLoaded } = this.state;
             const { working, isNotFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
@@ -390,7 +392,7 @@ export const DataTable = withStyles(styles)(
             }
         };
 
-        renderHeadCell = (column: DataColumn<T, any>, index: number) => {
+        renderHeadCell = (column: DataColumn<T>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes, checkedList } = this.props;
             const { isSelected } = this.state;
@@ -458,10 +460,10 @@ export const DataTable = withStyles(styles)(
             </IconButton>
         );
 
-        renderBodyRow = (item: any, index: number) => {
+        renderBodyRow = (item: T, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             const { hoveredIndex } = this.state;
-            const isRowSelected = item === selectedResourceUuid;
+            const isRowSelected = item.uuid === selectedResourceUuid;
             const getClassnames = (colIndex: number) => {
                 if(currentRoute === '/workflows') return classes.tableCellWorkflows;
                 if(colIndex === 0) return classnames(classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
@@ -497,7 +499,7 @@ export const DataTable = withStyles(styles)(
             );
         };
 
-        mapVisibleColumns = (fn: (column: DataColumn<T, any>, index: number) => React.ReactElement<any>) => {
+        mapVisibleColumns = (fn: (column: DataColumn<T>, index: number) => React.ReactElement<any>) => {
             return this.props.columns.filter(column => column.selected).map(fn);
         };
 

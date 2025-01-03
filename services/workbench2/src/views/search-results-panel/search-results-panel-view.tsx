@@ -11,12 +11,12 @@ import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-resul
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import {
     ResourceCluster,
-    ResourceFileSize,
-    ResourceLastModifiedDate,
-    ResourceName,
-    ResourceOwnerWithName,
-    ResourceStatus,
-    ResourceType
+    renderType,
+    RenderName,
+    RenderOwnerName,
+    renderFileSize,
+    renderLastModifiedDate,
+    renderResourceStatus,
 } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
@@ -58,13 +58,13 @@ export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const searchResultsPanelColumns: DataColumns<string, GroupContentsResource> = [
+export const searchResultsPanelColumns: DataColumns<GroupContentsResource> = [
     {
         name: SearchResultsPanelColumnNames.CLUSTER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (uuid: string) => <ResourceCluster uuid={uuid} />
+        render: (resource) => <ResourceCluster uuid={resource.uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.NAME,
@@ -72,35 +72,35 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (uuid: string) => <ResourceName uuid={uuid} />
+        render: (resource) => <RenderName resource={resource} />,
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid} />
+        render: (resource) => renderResourceStatus(resource),
     },
     {
         name: SearchResultsPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialSearchTypeFilters(),
-        render: (uuid: string) => <ResourceType uuid={uuid} />,
+        render: (resource) => renderType(resource),
     },
     {
         name: SearchResultsPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
+        render: (resource) => <RenderOwnerName resource={resource} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
+        render: (resource) => renderFileSize(resource),
     },
     {
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
@@ -108,7 +108,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "modifiedAt" },
         filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+        render: (resource) => renderLastModifiedDate(resource),
     }
 ];
 
@@ -153,9 +153,9 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
-        const onItemClick = useCallback((uuid) => {
-            setSelectedItem(uuid);
-            props.onItemClick(uuid);
+        const onItemClick = useCallback((resource: GroupContentsResource) => {
+            setSelectedItem(resource.uuid);
+            props.onItemClick(resource);
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [props.onItemClick]);
 
