@@ -88,7 +88,7 @@ export interface WorkflowProcessesPanelDataProps {
 
 export interface WorkflowProcessesPanelActionProps {
     onItemClick: (resource: ProcessResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: ProcessResource, resources: ResourcesState) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: ProcessResource) => void;
     onItemDoubleClick: (resource: ProcessResource) => void;
 }
 
@@ -116,7 +116,7 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         id={WORKFLOW_PROCESSES_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
-        onContextMenu={(event, item: ProcessResource) => props.onContextMenu(event, item, props.resources)}
+        onContextMenu={props.onContextMenu}
         contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
