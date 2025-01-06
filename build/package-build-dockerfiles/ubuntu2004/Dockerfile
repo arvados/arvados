@@ -57,6 +57,7 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y \
     git \
     libcurl4-gnutls-dev \
     libfuse-dev \
+    libgnutls28-dev \
     libpam-dev \
     libpq-dev \
     pkgconf \
