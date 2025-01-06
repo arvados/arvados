@@ -1,0 +1,39 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Create database user
+  become: "{{ arvados_database_login_host is falsy }}"
+  become_user: "{{ arvados_database_login_user }}"
+  community.postgresql.postgresql_user:
+    name: "{{ arvados_database_user_name }}"
+    password: "{{ arvados_database_user_password }}"
+    role_attr_flags: "{{ arvados_database_role_attr_flags }}"
+    login_host: "{{ arvados_database_login_host }}"
+    login_password: "{{ arvados_database_login_password }}"
+    login_port: "{{ arvados_database_login_port }}"
+    login_user: "{{ arvados_database_login_user }}"
+
+- name: Create database
+  become: "{{ arvados_database_login_host is falsy }}"
+  become_user: "{{ arvados_database_login_user }}"
+  community.postgresql.postgresql_db:
+    db: "{{ arvados_database_name }}"
+    encoding: UTF8
+    owner: "{{ arvados_database_user_name }}"
+    template: template0
+    login_host: "{{ arvados_database_login_host }}"
+    login_password: "{{ arvados_database_login_password }}"
+    login_port: "{{ arvados_database_login_port }}"
+    login_user: "{{ arvados_database_login_user }}"
+
+- name: Create pg_trgm extension
+  become: "{{ arvados_database_login_host is falsy }}"
+  become_user: "{{ arvados_database_login_user }}"
+  community.postgresql.postgresql_ext:
+    db: "{{ arvados_database_name }}"
+    name: pg_trgm
+    login_host: "{{ arvados_database_login_host }}"
+    login_password: "{{ arvados_database_login_password }}"
+    login_port: "{{ arvados_database_login_port }}"
+    login_user: "{{ arvados_database_login_user }}"

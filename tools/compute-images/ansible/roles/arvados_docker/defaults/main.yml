@@ -1,0 +1,6 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_compute_pin_packages: true
+docker_apt_url: "https://download.docker.com/linux/{{ ansible_distribution|lower }}"

@@ -55,10 +55,8 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y \
     curl \
     equivs \
     git \
-    libattr1-dev \
     libcurl4-gnutls-dev \
     libfuse-dev \
-    libgnutls28-dev \
     libpam-dev \
     libpq-dev \
     pkgconf \

@@ -1,0 +1,15 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_postgresql_package: postgresql
+# If not specified, the role tasks will query the path from the server.
+arvados_postgresql_hba_file: ""
+arvados_postgresql_hba_contype: host
+# Comma-separated list of database names
+arvados_postgresql_hba_databases: ""
+arvados_postgresql_hba_method: scram-sha-256
+# Array of IPv4 or v6 netmasks
+arvados_postgresql_hba_sources: []
+# Comma-separated list of user names
+arvados_postgresql_hba_users: ""

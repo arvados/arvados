@@ -201,9 +201,6 @@ sanity_checks() {
     echo -n 'fuse.h: '
     find /usr/include -path '*fuse/fuse.h' | egrep --max-count=1 . \
         || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
-    echo -n 'gnutls.h: '
-    find /usr/include -path '*gnutls/gnutls.h' | egrep --max-count=1 . \
-        || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
     echo -n 'virtualenv: '
     python3 -m venv --help | grep -q '^usage: venv ' \
         && echo "venv module found" \
@@ -222,9 +219,6 @@ sanity_checks() {
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
-    echo -n 'libattr1 xattr.h: '
-    find /usr/include -path '*/attr/xattr.h' | egrep --max-count=1 . \
-        || fatal "No libattr1 xattr.h. Try: apt-get install libattr1-dev"
     echo -n 'libcurl curl.h: '
     find /usr/include -path '*/curl/curl.h' | egrep --max-count=1 . \
         || fatal "No libcurl curl.h. Try: apt-get install libcurl4-gnutls-dev"
@@ -238,16 +232,12 @@ sanity_checks() {
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
     echo -n 'xvfb: '
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
-    echo -n 'graphviz: '
-    dot -V || fatal "No graphviz. Try: apt-get install graphviz"
     echo -n 'singularity: '
     singularity --version || fatal "No singularity. Try: arvados-server install"
     echo -n 'docker client: '
     docker --version || echo "No docker client. Try: arvados-server install"
     echo -n 'docker server: '
     docker info --format='{{.ServerVersion}}' || echo "No docker server. Try: arvados-server install"
-    echo -n 's3cmd: '
-    s3cmd --version || echo "No s3cmd. Try: apt-get install s3cmd"
 
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
@@ -257,8 +247,6 @@ sanity_checks() {
       Rscript -e "library('testthat')" || fatal "No testthat. Try: apt-get install r-cran-testthat"
       # needed for roxygen2, needed for devtools, needed for R sdk
       pkg-config --exists libxml-2.0 || fatal "No libxml2. Try: apt-get install libxml2-dev"
-      # needed for pkgdown, builds R SDK doc pages
-      which pandoc || fatal "No pandoc. Try: apt-get install pandoc"
     fi
     echo 'procs with /dev/fuse open:'
     find /proc/*/fd -lname /dev/fuse 2>/dev/null | cut -d/ -f3 | xargs --no-run-if-empty ps -lywww
@@ -518,7 +506,8 @@ setup_virtualenv() {
     # This requires both the Python SDK itself and PyYAML.
     # Hence we must install these dependencies this early for the rest of the
     # script to work.
-    pip install PyYAML || fatal "failed to install PyYAML in virtualenv"
+    # s3cmd is used by controller and keep-web tests.
+    pip install PyYAML s3cmd || fatal "failed to install test dependencies in virtualenv"
     do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 

@@ -1447,9 +1447,7 @@ func (s *IntegrationSuite) TestS3ListObjectsV2EncodingTypeURL(c *check.C) {
 }
 
 // TestS3cmd checks compatibility with the s3cmd command line tool, if
-// it's installed. As of Debian buster, s3cmd is only in backports, so
-// `arvados-server install` don't install it, and this test skips if
-// it's not installed.
+// it's installed (run-tests normally takes care of that).
 func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	if _, err := exec.LookPath("s3cmd"); err != nil {
 		c.Skip("s3cmd not found")

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-arvados_compute_pin_packages: true
-docker_apt_url: "https://download.docker.com/linux/{{ ansible_distribution|lower }}"
 docker_daemon:
   data-root: /tmp/docker-data
   default-ulimits:

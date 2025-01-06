@@ -192,11 +192,9 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jdk-headless",
 			"default-jre-headless",
 			"gettext",
-			"libattr1-dev",
 			"libffi-dev",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests
-			"libgnutls28-dev",
 			"libpam-dev",
 			"libpcre3-dev",
 			"libpq-dev",
@@ -210,7 +208,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"lsof",
 			"make",
 			"net-tools",
-			"pandoc",
 			"pkg-config",
 			"postgresql",
 			"postgresql-contrib",
@@ -239,10 +236,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				pkgs = append(pkgs, "firefox-esr")
 			} else {
 				pkgs = append(pkgs, "firefox")
-			}
-			if osv.Debian && osv.Major >= 11 {
-				// not available in Debian <11
-				pkgs = append(pkgs, "s3cmd")
 			}
 		}
 		if dev || test {
@@ -933,7 +926,6 @@ func prodpkgs(osv osversion) []string {
 		"curl",
 		"fuse",
 		"git",
-		"graphviz",
 		"haveged",
 		"libcurl3-gnutls",
 		"libxslt1.1",
@@ -942,11 +934,6 @@ func prodpkgs(osv osversion) []string {
 		"sudo",
 	}
 	if osv.Debian || osv.Ubuntu {
-		if osv.Debian && osv.Major == 8 {
-			pkgs = append(pkgs, "libgnutls-deb0-28") // sdk/cwl
-		} else if osv.Debian && osv.Major >= 10 || osv.Ubuntu && osv.Major >= 16 {
-			pkgs = append(pkgs, "python3-distutils") // sdk/cwl
-		}
 		return append(pkgs,
 			"mime-support", // keep-web
 		)

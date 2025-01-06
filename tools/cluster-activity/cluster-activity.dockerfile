@@ -4,7 +4,7 @@
 
 FROM debian:12
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -q && apt-get install -qy --no-install-recommends \
-    python3-dev python3-venv libcurl4-gnutls-dev libgnutls28-dev build-essential
+    python3-dev python3-venv libcurl4-gnutls-dev build-essential
 COPY *.tar.gz /root
 RUN python3 -mvenv /usr/local/cluster-activity && \
     /usr/local/cluster-activity/bin/pip install \

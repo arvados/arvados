@@ -2,31 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Install Docker package pins
-  ansible.builtin.copy:
-    src: arvados-docker.pref
-    dest: /etc/apt/preferences.d/arvados-docker.pref
-    owner: root
-    group: root
-    mode: 0644
-  when: "arvados_compute_pin_packages|bool"
-
-- name: Install Docker apt repository
-  ansible.builtin.deb822_repository:
-    name: docker
-    types: deb
-    uris: "{{ docker_apt_url }}"
-    suites: "{{ ansible_distribution_release }}"
-    components: stable
-    signed_by: "{{ docker_apt_url }}/gpg"
-  register: docker_apt_task
-
-- name: Install Docker
-  ansible.builtin.apt:
-    update_cache: "{{ docker_apt_task.changed }}"
-    name: docker-ce
-    install_recommends: false
-
 - name: Configure Docker daemon
   ansible.builtin.copy:
     content: "{{ docker_daemon|combine({'dns': [dns_resolver]} if dns_resolver is defined else {})|to_json }}"

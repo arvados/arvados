@@ -14,7 +14,7 @@ FROM debian:bullseye-slim
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -q && apt-get install -qy --no-install-recommends \
-    git python3-dev python3-venv libcurl4-gnutls-dev libgnutls28-dev nodejs build-essential
+    git python3-dev python3-venv libcurl4-gnutls-dev nodejs build-essential
 
 RUN python3 -m venv /opt/arvados-py
 ENV PATH=/opt/arvados-py/bin:/usr/local/bin:/usr/bin:/bin

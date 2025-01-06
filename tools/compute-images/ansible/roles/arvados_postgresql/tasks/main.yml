@@ -1,0 +1,37 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install PostgreSQL server package
+  become: yes
+  ansible.builtin.apt:
+    name: "{{ arvados_postgresql_package }}"
+
+- name: Find pg_hba.conf file
+  when: arvados_postgresql_hba_file is falsy
+  become: yes
+  become_user: postgres
+  community.postgresql.postgresql_query:
+    db: postgres
+    query: SHOW hba_file;
+  register: pg_hba_query
+
+- name: Create pg_hba.conf entries
+  when: arvados_postgresql_hba_databases is truthy and arvados_postgresql_hba_users is truthy
+  become: true
+  loop: "{{ arvados_postgresql_hba_sources }}"
+  community.postgresql.postgresql_pg_hba:
+    dest: "{{ arvados_postgresql_hba_file or pg_hba_query.query_result.0.hba_file }}"
+    contype: "{{ arvados_postgresql_hba_contype }}"
+    databases: "{{ arvados_postgresql_hba_databases }}"
+    method: "{{ arvados_postgresql_hba_method }}"
+    users: "{{ arvados_postgresql_hba_users }}"
+    source: "{{ item }}"
+  register: pg_hba_entries
+
+- name: Set up PostgreSQL service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: "postgresql@{{ (arvados_postgresql_hba_file or pg_hba_query.query_result.0.hba_file)|dirname|relpath('/etc/postgresql')|replace('/', '-') }}.service"
+    state: "{{ 'reloaded' if pg_hba_entries.changed else 'started' }}"
+    enabled: yes
