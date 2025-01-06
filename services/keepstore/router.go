@@ -160,6 +160,7 @@ func (rtr *router) handleMounts(w http.ResponseWriter, req *http.Request) {
 }
 
 func (rtr *router) handleIndex(w http.ResponseWriter, req *http.Request) {
+	httpserver.ExemptFromDeadline(req)
 	prefix := req.FormValue("prefix")
 	if prefix == "" {
 		prefix = mux.Vars(req)["prefix"]
@@ -280,12 +281,20 @@ func (ss *setSizeOnWrite) Write(p []byte) (int, error) {
 	return ss.ResponseWriter.Write(p)
 }
 
+func (ss *setSizeOnWrite) Unwrap() http.ResponseWriter {
+	return ss.ResponseWriter
+}
+
 type discardWrite struct {
 	http.ResponseWriter
 }
 
 func (discardWrite) Write(p []byte) (int, error) {
 	return len(p), nil
+}
+
+func (dw discardWrite) Unwrap() http.ResponseWriter {
+	return dw.ResponseWriter
 }
 
 func corsHandler(h http.Handler) http.Handler {

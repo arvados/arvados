@@ -72,29 +72,39 @@ func (s *Suite) TestWithDeadline(c *check.C) {
 	c.Check(resp.Body.String(), check.Equals, "ok")
 }
 
-func (s *Suite) TestNoDeadlineAfterHijacked(c *check.C) {
+func (s *Suite) TestExemptFromDeadline(c *check.C) {
 	srv := Server{
 		Addr: ":",
 		Server: http.Server{
 			Handler: HandlerWithDeadline(time.Millisecond, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				conn, _, err := w.(http.Hijacker).Hijack()
-				c.Assert(err, check.IsNil)
-				defer conn.Close()
-				select {
-				case <-req.Context().Done():
-					c.Error("request context done too soon")
-				case <-time.After(time.Second / 10):
-					conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\nok"))
+				if req.URL.Path == "/exempt" {
+					ExemptFromDeadline(req)
 				}
+				time.Sleep(time.Second / 10)
+				if req.Context().Err() != nil {
+					w.WriteHeader(499)
+					return
+				}
+				fmt.Fprint(w, "ok")
 			})),
 			BaseContext: func(net.Listener) context.Context { return s.ctx },
 		},
 	}
 	srv.Start()
 	defer srv.Close()
-	resp, err := http.Get("http://" + srv.Addr)
+
+	resp, err := http.Get("http://" + srv.Addr + "/normal")
 	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, 499)
 	body, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+	c.Check(string(body), check.Equals, "")
+
+	resp, err = http.Get("http://" + srv.Addr + "/exempt")
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, 200)
+	body, err = ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
 	c.Check(string(body), check.Equals, "ok")
 }
 

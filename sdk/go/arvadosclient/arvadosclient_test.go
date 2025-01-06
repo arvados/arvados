@@ -282,7 +282,7 @@ func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	if status := h.respStatus[h.retryAttempts]; status < 0 {
 		// Fail the client's Do() by hanging up without
 		// sending an HTTP response header.
-		conn, _, err := resp.(http.Hijacker).Hijack()
+		conn, _, err := http.NewResponseController(resp).Hijack()
 		if err != nil {
 			panic(err)
 		}

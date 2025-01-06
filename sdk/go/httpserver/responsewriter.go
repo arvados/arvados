@@ -86,3 +86,7 @@ func (w *responseWriter) sniff(data []byte) {
 func (w *responseWriter) Sniffed() []byte {
 	return w.sniffed
 }
+
+func (w *responseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}

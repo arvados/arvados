@@ -5,9 +5,7 @@
 package httpserver
 
 import (
-	"bufio"
 	"context"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -25,24 +23,8 @@ var (
 	requestTimeContextKey       = contextKey{"requestTime"}
 	responseLogFieldsContextKey = contextKey{"responseLogFields"}
 	mutexContextKey             = contextKey{"mutex"}
+	stopDeadlineTimerContextKey = contextKey{"stopDeadlineTimer"}
 )
-
-type hijacker interface {
-	http.ResponseWriter
-	http.Hijacker
-}
-
-// hijackNotifier wraps a ResponseWriter, calling the provided
-// Notify() func if/when the wrapped Hijacker is hijacked.
-type hijackNotifier struct {
-	hijacker
-	hijacked chan<- bool
-}
-
-func (hn hijackNotifier) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	close(hn.hijacked)
-	return hn.hijacker.Hijack()
-}
 
 // HandlerWithDeadline cancels the request context if the request
 // takes longer than the specified timeout without having its
@@ -57,20 +39,21 @@ func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		nodeadline := make(chan bool)
-		go func() {
-			select {
-			case <-nodeadline:
-			case <-ctx.Done():
-			case <-time.After(timeout):
-				cancel()
-			}
-		}()
-		if hj, ok := w.(hijacker); ok {
-			w = hijackNotifier{hj, nodeadline}
-		}
+		timer := time.AfterFunc(timeout, cancel)
+		ctx = context.WithValue(ctx, stopDeadlineTimerContextKey, timer.Stop)
 		next.ServeHTTP(w, r.WithContext(ctx))
+		timer.Stop()
 	})
+}
+
+// ExemptFromDeadline exempts the given request from the timeout set
+// by HandlerWithDeadline.
+//
+// It is a no-op if the deadline has already passed, or none was set.
+func ExemptFromDeadline(r *http.Request) {
+	if stop, ok := r.Context().Value(stopDeadlineTimerContextKey).(func() bool); ok {
+		stop()
+	}
 }
 
 func SetResponseLogFields(ctx context.Context, fields logrus.Fields) {
@@ -110,19 +93,8 @@ func LogRequests(h http.Handler) http.Handler {
 
 		logRequest(w, req, lgr)
 		defer logResponse(w, req, lgr)
-		h.ServeHTTP(rewrapResponseWriter(w, wrapped), req)
+		h.ServeHTTP(w, req)
 	})
-}
-
-// Rewrap w to restore additional interfaces provided by wrapped.
-func rewrapResponseWriter(w http.ResponseWriter, wrapped http.ResponseWriter) http.ResponseWriter {
-	if hijacker, ok := wrapped.(http.Hijacker); ok {
-		return struct {
-			http.ResponseWriter
-			http.Hijacker
-		}{w, hijacker}
-	}
-	return w
 }
 
 func Logger(req *http.Request) logrus.FieldLogger {
@@ -170,6 +142,10 @@ type responseTimer struct {
 	ResponseWriter
 	wrote     bool
 	writeTime time.Time
+}
+
+func (rt *responseTimer) Unwrap() http.ResponseWriter {
+	return rt.ResponseWriter
 }
 
 func (rt *responseTimer) CloseNotify() <-chan bool {
