@@ -148,13 +148,6 @@ func (rt *responseTimer) Unwrap() http.ResponseWriter {
 	return rt.ResponseWriter
 }
 
-func (rt *responseTimer) CloseNotify() <-chan bool {
-	if cn, ok := rt.ResponseWriter.(http.CloseNotifier); ok {
-		return cn.CloseNotify()
-	}
-	return nil
-}
-
 func (rt *responseTimer) WriteHeader(code int) {
 	if !rt.wrote {
 		rt.wrote = true

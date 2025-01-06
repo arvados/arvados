@@ -14,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
@@ -69,9 +70,16 @@ func (rtr *router) setup() {
 	})
 }
 
-func (rtr *router) makeServer(newSession sessionFactory, gauge prometheus.Gauge) *websocket.Server {
+func exemptFromDeadline(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		httpserver.ExemptFromDeadline(req)
+		h.ServeHTTP(w, req)
+	})
+}
+
+func (rtr *router) makeServer(newSession sessionFactory, gauge prometheus.Gauge) http.Handler {
 	var connected int64
-	return &websocket.Server{
+	return exemptFromDeadline(&websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {
 			return nil
 		},
@@ -94,12 +102,12 @@ func (rtr *router) makeServer(newSession sessionFactory, gauge prometheus.Gauge)
 			atomic.AddInt64(&connected, -1)
 			gauge.Set(float64(atomic.LoadInt64(&connected)))
 		}),
-	}
+	})
 }
 
 func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
-	rtr.mux.ServeHTTP(resp, req)
+	rtr.mux.ServeHTTP(httpserver.ResponseControllerShim{ResponseWriter: resp}, req)
 }
 
 func (rtr *router) CheckHealth() error {
