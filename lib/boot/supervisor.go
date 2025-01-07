@@ -788,9 +788,9 @@ func (super *Supervisor) autofillConfig() error {
 	usedPort := map[string]bool{}
 	nextPort := func(host string) (string, error) {
 		for {
-			port, err := availablePort(host)
+			port, err := AvailablePort(host)
 			if err != nil {
-				port, err = availablePort(super.ListenHost)
+				port, err = AvailablePort(super.ListenHost)
 			}
 			if err != nil {
 				return "", err
@@ -1007,7 +1007,13 @@ func externalPort(svc arvados.Service) (string, error) {
 	}
 }
 
-func availablePort(host string) (string, error) {
+// Return a TCP port that is not in use on the given local interface
+// address.  The host argument may be an IP address, a hostname, or
+// empty.
+//
+// AvailablePort("") returns a TCP port that is not in use on any
+// local interface.
+func AvailablePort(host string) (string, error) {
 	ln, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
 	if err != nil {
 		return "", err

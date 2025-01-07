@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -684,6 +685,8 @@ func (s *keepstoreSuite) TestGetLocatorInfo(c *C) {
 
 func (s *keepstoreSuite) TestTimeout(c *C) {
 	var rtr *router
+	port, err := boot.AvailablePort("")
+	c.Assert(err, IsNil)
 	go service.Command(arvados.ServiceNameKeepstore, func(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) service.Handler {
 		rtr = newHandlerOrErrorHandler(ctx, cluster, token, reg).(*router)
 		return rtr
@@ -694,7 +697,7 @@ Clusters:
   Services:
    Keepstore:
     InternalURLs:
-     "http://127.0.1.123:45678": {}
+     "http://127.0.1.123:`+port+`": {}
   API:
    RequestTimeout: 500ms
    KeepServiceRequestTimeout: 15s
@@ -712,12 +715,12 @@ Clusters:
 		}
 	}
 	stubvol := rtr.keepstore.mountsW[0].volume.(*stubVolume)
-	err := stubvol.BlockWrite(context.Background(), "acbd18db4cc2f85cedef654fccc4a4d8", []byte("foo"))
+	err = stubvol.BlockWrite(context.Background(), "acbd18db4cc2f85cedef654fccc4a4d8", []byte("foo"))
 	c.Assert(err, IsNil)
 	ac, err := arvados.NewClientFromConfig(rtr.keepstore.cluster)
 	ac.AuthToken = "abcdefg"
 	c.Assert(err, IsNil)
-	ac.KeepServiceURIs = []string{"http://127.0.1.123:45678"}
+	ac.KeepServiceURIs = []string{"http://127.0.1.123:" + port}
 	arv, err := arvadosclient.New(ac)
 	c.Assert(err, IsNil)
 	kc := keepclient.New(arv)
