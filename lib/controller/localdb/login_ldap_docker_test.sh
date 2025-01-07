@@ -37,6 +37,17 @@ case "${config_method}" in
         ;;
 esac
 
+. /etc/os-release
+case "$ID" in
+    debian|ubuntu)
+        controller_image="$ID:$VERSION_ID"
+        ;;
+    *)
+        echo >&2 "don't know what Docker image corresponds to $NAME $VERSION"
+        exit 3  # EXIT_NOTIMPLEMENTED
+        ;;
+esac
+
 hostname="$(hostname)"
 tmpdir="$(mktemp -d)"
 cleanup() {
@@ -208,7 +219,7 @@ docker run --detach --rm --name=${ctrlctr} \
        -v "${tmpdir}/arvados-server":/bin/arvados-server:ro \
        -v "${tmpdir}/zzzzz.yml":/etc/arvados/config.yml:ro \
        -v $(realpath "${PWD}/../../.."):/arvados:ro \
-       debian:11 \
+       "$controller_image" \
        bash -c "${setup_pam_ldap:-true} && arvados-server controller"
 docker logs --follow ${ctrlctr} 2>$debug >$debug &
 ctrlhostports=$(docker port ${ctrlctr} 9999/tcp)
