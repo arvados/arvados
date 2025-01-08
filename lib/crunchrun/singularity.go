@@ -111,30 +111,45 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 		},
 			Limit: 1})
 	if err != nil {
-		return nil, fmt.Errorf("error querying for collection '%v': %v", collectionName, err)
-	}
-	var imageCollection arvados.Collection
-	if len(cl.Items) == 1 {
-		imageCollection = cl.Items[0]
-	} else {
-		collectionName := "converting " + collectionName
-		exp := time.Now().Add(24 * 7 * 2 * time.Hour)
-		err = containerClient.RequestAndDecode(&imageCollection,
-			arvados.EndpointCollectionCreate.Method,
-			arvados.EndpointCollectionCreate.Path,
-			nil, map[string]interface{}{
-				"collection": map[string]string{
-					"owner_uuid": imageGroup.UUID,
-					"name":       collectionName,
-					"trash_at":   exp.UTC().Format(time.RFC3339),
-				},
-				"ensure_unique_name": true,
-			})
-		if err != nil {
-			return nil, fmt.Errorf("error creating '%v' collection: %s", collectionName, err)
+		return nil, fmt.Errorf("error querying for collection %q: %w", collectionName, err)
+	} else if len(cl.Items) == 1 && cl.Items[0].PortableDataHash == "d41d8cd98f00b204e9800998ecf8427e+0" {
+		// A bug in a previous version could result in an
+		// empty collection saved as "singularity image for
+		// X".  If that happened, delete the empty collection
+		// (so it doesn't prevent us from renaming our new
+		// collection into place later) and proceed with the
+		// "no existing cached image" path.
+		e.logf("removing empty collection %s erroneously saved as %q", cl.Items[0].UUID, cl.Items[0].Name)
+		err = containerClient.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+cl.Items[0].UUID, nil, nil)
+		if te := new(arvados.TransactionError); errors.As(err, te) && te.StatusCode == 404 {
+			// If we lost a race with another crunch-run
+			// process that was also trying to delete the
+			// same collection, then "not found" is not
+			// really an error.
+		} else if err != nil {
+			e.logf("warning: failed to remove empty image cache collection %s: %w", cl.Items[0].UUID, err)
 		}
+	} else if len(cl.Items) == 1 {
+		return &cl.Items[0], nil
 	}
 
+	var imageCollection arvados.Collection
+	collectionName = "converting " + collectionName
+	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
+	err = containerClient.RequestAndDecode(&imageCollection,
+		arvados.EndpointCollectionCreate.Method,
+		arvados.EndpointCollectionCreate.Path,
+		nil, map[string]interface{}{
+			"collection": map[string]string{
+				"owner_uuid": imageGroup.UUID,
+				"name":       collectionName,
+				"trash_at":   exp.UTC().Format(time.RFC3339),
+			},
+			"ensure_unique_name": true,
+		})
+	if err != nil {
+		return nil, fmt.Errorf("error creating '%v' collection: %s", collectionName, err)
+	}
 	return &imageCollection, nil
 }
 
