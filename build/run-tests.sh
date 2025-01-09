@@ -921,12 +921,14 @@ pythonstuff=(
 )
 
 declare -a gostuff
-readarray -d "" -t gostuff < <(
-    git -C "$WORKSPACE" ls-files -z |
-    grep -z '\.go$' |
-    xargs -0 dirname -z |
-    sort -zu
-)
+if [[ -n "$WORKSPACE" ]]; then
+    readarray -d "" -t gostuff < <(
+        git -C "$WORKSPACE" ls-files -z |
+            grep -z '\.go$' |
+            xargs -0r dirname -z |
+            sort -zu
+    )
+fi
 
 declare -A testfuncargs=()
 for testfuncname in $(declare -F | awk '
@@ -949,8 +951,11 @@ do
     case "$arg" in
         --help)
             exec 1>&2
-            printf "%s\n\nAvailable targets:\n\n" "$helpmessage"
-            printf "%s\n" "${!testfuncargs[@]}" | sort | column
+            echo "$helpmessage"
+            if [[ ${#gostuff} -gt 0 ]]; then
+                printf "\nAvailable targets:\n\n"
+                printf "%s\n" "${!testfuncargs[@]}" | sort | column
+            fi
             exit 1
             ;;
         --skip)
