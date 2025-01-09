@@ -234,7 +234,6 @@ func (gw *Gateway) runTunnel(addr string) error {
 		if err != nil {
 			return err
 		}
-		gw.Log.Printf("tunnel connection %d started", muxconn.StreamID())
 		go func() {
 			defer muxconn.Close()
 			gwconn, err := net.Dial("tcp", addr)
@@ -262,7 +261,6 @@ func (gw *Gateway) runTunnel(addr string) error {
 				muxconn.Close()
 			}()
 			wg.Wait()
-			gw.Log.Printf("tunnel connection %d finished", muxconn.StreamID())
 		}()
 	}
 }
