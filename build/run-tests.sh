@@ -930,7 +930,7 @@ readarray -d "" -t gostuff < <(
 
 declare -A testfuncargs=()
 for testfuncname in $(declare -F | awk '
-($3 ~ /^test_/ && $3 !~ /package_presence$/) {
+($3 ~ /^test_/ && $3 !~ /_package_presence$/) {
   print substr($3, 6);
 }
 '); do
