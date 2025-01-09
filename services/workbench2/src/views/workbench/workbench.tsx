@@ -159,14 +159,14 @@ interface WorkbenchDataProps {
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
 
-const defaultSplitterSize = 90;
+const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
 
-const getSplitterInitialSize = () => {
+const defaultSidePanelSplitterSize = 90;
+const getSidePanelSplitterInitialSize = () => {
     const splitterSize = localStorage.getItem("splitterSize");
-    return splitterSize ? Number(splitterSize) : defaultSplitterSize;
+    return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
 };
 
-const saveSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
 
 let routes = (
     <>
@@ -307,11 +307,11 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
         const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
 
         if(isTransitioning && !!rightPanel) {
-            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSplitterInitialSize()}%`};`)
+            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`)
         }
 
         if (rightPanel) {
-            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSplitterInitialSize()}%`};`);
+            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`);
         }
         const splitter = document.getElementsByClassName("layout-splitter")[0];
         sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
@@ -349,9 +349,9 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                     percentage={true}
                     primaryIndex={0}
                     primaryMinSize={10}
-                    secondaryInitialSize={getSplitterInitialSize()}
+                    secondaryInitialSize={getSidePanelSplitterInitialSize()}
                     secondaryMinSize={40}
-                    onSecondaryPaneSizeChange={saveSplitterSize}
+                    onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
                 >
                     {isUserActive && isNotLinking && (
                         <Grid
