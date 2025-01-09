@@ -247,7 +247,7 @@ def _logfilename(label):
     # us.
     cat = subprocess.Popen(
         stdbuf+['cat', fifo],
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE)
     _detachedSubprocesses.append(cat)
     tee = subprocess.Popen(
@@ -371,7 +371,7 @@ def run(leave_running_atexit=False):
          '--ssl-certificate', 'tmp/self-signed.pem',
          '--ssl-certificate-key', 'tmp/self-signed.key'],
         env=env,
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf)
     _detachedSubprocesses.append(railsapi)
@@ -452,7 +452,7 @@ def run_controller():
     controller = subprocess.Popen(
         ["arvados-server", "controller"],
         env=_service_environ(),
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf,
         close_fds=True)
@@ -476,7 +476,7 @@ def run_ws():
     ws = subprocess.Popen(
         ["arvados-server", "ws"],
         env=_service_environ(),
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf,
         close_fds=True)
@@ -511,15 +511,14 @@ def _start_keep(n, blob_signing=False):
     keep_cmd = ["arvados-server", "keepstore", "-config", conf]
 
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
-        with open('/dev/null') as _stdin:
-            child = subprocess.Popen(
-                keep_cmd,
-                env=_service_environ(),
-                stdin=_stdin,
-                stdout=logf,
-                stderr=logf,
-                close_fds=True)
-            _detachedSubprocesses.append(child)
+        child = subprocess.Popen(
+            keep_cmd,
+            env=_service_environ(),
+            stdin=subprocess.DEVNULL,
+            stdout=logf,
+            stderr=logf,
+            close_fds=True)
+        _detachedSubprocesses.append(child)
 
     print('child.pid is %d'%child.pid, file=sys.stderr)
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
@@ -582,7 +581,7 @@ def run_keep_proxy():
     kp = subprocess.Popen(
         ['arvados-server', 'keepproxy'],
         env=env,
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf,
         close_fds=True)
@@ -625,7 +624,7 @@ def run_keep_web():
     keepweb = subprocess.Popen(
         ['arvados-server', 'keep-web'],
         env=_service_environ(),
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf)
     _detachedSubprocesses.append(keepweb)
@@ -682,7 +681,9 @@ def run_nginx():
         ['nginx',
          '-g', 'error_log stderr notice; pid '+_pidfile('nginx')+';',
          '-c', conffile],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=sys.stderr)
     _detachedSubprocesses.append(nginx)
     _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'])
 
