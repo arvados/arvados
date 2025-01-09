@@ -167,6 +167,13 @@ const getSidePanelSplitterInitialSize = () => {
     return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
 };
 
+const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
+
+const defaultDetailsPanelSplitterSize = 320;
+const getDetailsPanelSplitterInitialSize = () => {
+    const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
+    return splitterSize ? Number(splitterSize) : defaultDetailsPanelSplitterSize;
+};
 
 let routes = (
     <>
@@ -375,8 +382,9 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                             percentage={false}
                             primaryIndex={0}
                             primaryMinSize={300}
-                            secondaryInitialSize={320}
+                            secondaryInitialSize={getDetailsPanelSplitterInitialSize()}
                             secondaryMinSize={250}
+                            onSecondaryPaneSizeChange={saveDetailsSplitterSize}
                         >
                             <Grid
                                 container
