@@ -369,32 +369,47 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                         container
                         item
                         xs
-                        component="main"
-                        direction="column"
-                        className={classes.contentWrapper}
                     >
-                        <Grid
-                            item
-                            xs
+                        <SplitterLayout
+                            customClassName={classes.splitter}
+                            percentage={false}
+                            primaryIndex={0}
+                            primaryMinSize={300}
+                            secondaryInitialSize={320}
+                            secondaryMinSize={250}
                         >
-                            {isNotLinking && <MainContentBar />}
-                        </Grid>
-                        <Grid
-                            className={classes.content}
-                        >
-                            <Switch>
-                                {routes.props.children}
-                                <Route
-                                    path={Routes.NO_MATCH}
-                                    component={NotFoundPanel}
-                                />
-                            </Switch>
-                        </Grid>
+                            <Grid
+                                container
+                                item
+                                xs
+                                component="main"
+                                direction="column"
+                                className={classes.contentWrapper}
+                            >
+                                <Grid
+                                    item
+                                    xs
+                                >
+                                    {isNotLinking && <MainContentBar />}
+                                </Grid>
+                                <Grid
+                                    className={classes.content}
+                                >
+                                    <Switch>
+                                        {routes.props.children}
+                                        <Route
+                                            path={Routes.NO_MATCH}
+                                            component={NotFoundPanel}
+                                        />
+                                    </Switch>
+                                </Grid>
+                            </Grid>
+                            <Grid item style={{height: "100%"}}>
+                                <DetailsPanel />
+                            </Grid>
+                        </SplitterLayout>
                     </Grid>
                 </SplitterLayout>
-            </Grid>
-            <Grid item>
-                <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
             <AttributesApiClientAuthorizationDialog />
