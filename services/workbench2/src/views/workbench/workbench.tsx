@@ -109,8 +109,9 @@ import { ElementListReducer } from "common/plugintypes";
 import { COLLAPSE_ICON_SIZE } from "views-components/side-panel-toggle/side-panel-toggle";
 import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
+import classNames from "classnames";
 
-type CssRules = "root" | "container" | "splitter" | "asidePanel" | "contentWrapper" | "content";
+type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -128,6 +129,27 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             pointerEvents: "none",
             cursor: "pointer",
         },
+    },
+    splitterSidePanel: {
+        "& > .layout-splitter::after": {
+            content: `""`,
+            marginLeft: 0,
+            width: "15px",
+            display: "block",
+            position: "relative",
+            height: "100%",
+            zIndex: 100, // Needed for drag handle to overlap middle panel
+        }
+    },
+    splitterDetails: {
+        "& > .layout-splitter::after": {
+            content: `""`,
+            marginLeft: "-15px",
+            width: "15px",
+            display: "block",
+            position: "relative",
+            height: "100%",
+        }
     },
     asidePanel: {
         paddingTop: theme.spacing(1),
@@ -353,7 +375,7 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsP
                 className={classes.container}
             >
                 <SplitterLayout
-                    customClassName={classes.splitter}
+                    customClassName={classNames(classes.splitter, classes.splitterSidePanel)}
                     percentage={true}
                     primaryIndex={0}
                     primaryMinSize={10}
@@ -379,7 +401,7 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsP
                         xs
                     >
                         <SplitterLayout
-                            customClassName={classes.splitter}
+                            customClassName={classNames(classes.splitter, classes.splitterDetails)}
                             percentage={false}
                             primaryIndex={0}
                             primaryMinSize={300}
