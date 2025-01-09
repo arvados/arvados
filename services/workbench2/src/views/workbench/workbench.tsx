@@ -154,6 +154,7 @@ interface WorkbenchDataProps {
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
+    isDetailsPanelOpen: boolean;
     currentSideWidth: number;
 }
 
@@ -305,7 +306,7 @@ routes = React.createElement(
 );
 
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
-const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActive, sessionIdleTimeout, currentSideWidth } = props
+const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsPanelOpen, isUserActive, sessionIdleTimeout, currentSideWidth } = props
 
     const applyCollapsedState = (savedWidthInPx) => {
         const rightPanel: Element = document.getElementsByClassName("layout-pane")[1];
@@ -412,9 +413,9 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                                     </Switch>
                                 </Grid>
                             </Grid>
-                            <Grid item style={{height: "100%"}}>
+                            {isDetailsPanelOpen && <Grid item style={{height: "100%"}}>
                                 <DetailsPanel />
-                            </Grid>
+                            </Grid>}
                         </SplitterLayout>
                     </Grid>
                 </SplitterLayout>
