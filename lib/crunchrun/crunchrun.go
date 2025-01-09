@@ -1198,7 +1198,7 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 		Action string    `json:"action"`
 		Time   time.Time `json:"time"`
 	}
-	runner.CrunchLog.Printf("Checking for spot interruptions every %v using instance metadata at %s", spotInterruptionCheckInterval, ec2MetadataBaseURL)
+	runner.CrunchLog.Printf("Checking for spot instance interruptions every %v using instance metadata at %s", spotInterruptionCheckInterval, ec2MetadataBaseURL)
 	var metadata ec2metadata
 	var token string
 	var tokenExp time.Time
@@ -1236,7 +1236,6 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 			return err
 		}
 		defer resp.Body.Close()
-		metadata = ec2metadata{}
 		switch resp.StatusCode {
 		case http.StatusOK:
 			break
@@ -1247,6 +1246,7 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 			// instance-action is not present in the
 			// instance metadata and you receive an HTTP
 			// 404 error when you try to retrieve it."
+			metadata = ec2metadata{}
 			return nil
 		case http.StatusUnauthorized:
 			token = ""
@@ -1254,10 +1254,12 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 		default:
 			return fmt.Errorf("%s", resp.Status)
 		}
-		err = json.NewDecoder(resp.Body).Decode(&metadata)
+		nextmetadata := ec2metadata{}
+		err = json.NewDecoder(resp.Body).Decode(&nextmetadata)
 		if err != nil {
 			return err
 		}
+		metadata = nextmetadata
 		return nil
 	}
 	failures := 0
@@ -1265,16 +1267,16 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 	for range time.NewTicker(spotInterruptionCheckInterval).C {
 		err := check()
 		if err != nil {
-			runner.CrunchLog.Printf("Error checking spot interruptions: %s", err)
+			runner.CrunchLog.Printf("Temporarily unable to check spot instance interruptions: %s (will retry in %v)", err, spotInterruptionCheckInterval)
 			failures++
 			if failures > 5 {
-				runner.CrunchLog.Printf("Giving up on checking spot interruptions after too many consecutive failures")
+				runner.CrunchLog.Printf("Giving up on checking spot instance interruptions after too many consecutive errors")
 				return
 			}
 			continue
 		}
 		failures = 0
-		if metadata != lastmetadata {
+		if metadata.Action != "" && metadata != lastmetadata {
 			lastmetadata = metadata
 			text := fmt.Sprintf("Cloud provider scheduled instance %s at %s", metadata.Action, metadata.Time.UTC().Format(time.RFC3339))
 			runner.CrunchLog.Printf("%s", text)
