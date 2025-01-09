@@ -952,18 +952,17 @@ if __name__ == "__main__":
         'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', type=str, help="one of {}".format(actions))
+    parser.add_argument(
+        'action',
+        metavar='ACTION',
+        choices=actions,
+        help="one of %(choices)s",
+    )
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
     parser.add_argument('--num-keep-servers', metavar='int', type=int, default=2, help="Number of keep servers desired")
     parser.add_argument('--keep-blob-signing', action="store_true", help="Enable blob signing for keepstore servers")
 
     args = parser.parse_args()
-
-    if args.action not in actions:
-        print("Unrecognized action '{}'. Actions are: {}.".
-              format(args.action, actions),
-              file=sys.stderr)
-        sys.exit(1)
     # Create a new process group so our child processes don't exit on
     # ^C in run-tests.sh interactive mode.
     os.setpgid(0, 0)
