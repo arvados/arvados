@@ -9,7 +9,6 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { Transition } from 'react-transition-group';
 import { ArvadosTheme } from 'common/custom-theme';
-import classnames from "classnames";
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import { CloseIcon } from 'components/icon/icon';
@@ -33,24 +32,17 @@ import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
-type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
+type CssRules = 'root' | 'container' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
 const DRAWER_WIDTH = 320;
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
-        borderLeft: `1px solid ${theme.palette.divider}`,
         height: '100%',
         overflow: 'hidden',
-        transition: `width ${SLIDE_TIMEOUT}ms ease`,
-        width: 0,
-    },
-    opened: {
-        width: DRAWER_WIDTH,
     },
     container: {
         maxWidth: 'none',
-        width: DRAWER_WIDTH,
     },
     headerContainer: {
         color: theme.palette.grey["600"],
@@ -158,7 +150,7 @@ export const DetailsPanel = withStyles(styles)(
                     <Grid
                         container
                         direction="column"
-                        className={classnames([classes.root, { [classes.opened]: isOpened }])}>
+                        className={classes.root}>
                         <Transition
                             in={isOpened}
                             timeout={SLIDE_TIMEOUT}
