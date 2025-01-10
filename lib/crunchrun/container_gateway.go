@@ -205,6 +205,7 @@ func (gw *Gateway) Start() error {
 func (gw *Gateway) maintainTunnel(addr string) {
 	for ; ; time.Sleep(5 * time.Second) {
 		err := gw.runTunnel(addr)
+		// Note: err is never nil here, see runTunnel comment.
 		gw.Log.Printf("runTunnel: %s", err)
 	}
 }
@@ -212,6 +213,10 @@ func (gw *Gateway) maintainTunnel(addr string) {
 // runTunnel connects to controller and sets up a tunnel through
 // which controller can connect to the gateway server at the given
 // addr.
+//
+// runTunnel aims to run forever (i.e., until the current process
+// exits). If it returns at all, it returns a non-nil error indicating
+// why the tunnel was shut down.
 func (gw *Gateway) runTunnel(addr string) error {
 	ctx := auth.NewContext(context.Background(), auth.NewCredentials(gw.ArvadosClient.AuthToken))
 	arpc := rpc.NewConn("", &url.URL{Scheme: "https", Host: gw.ArvadosClient.APIHost}, gw.ArvadosClient.Insecure, rpc.PassthroughTokenProvider)
