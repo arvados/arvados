@@ -133,7 +133,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     splitterSidePanel: {
         "& > .layout-splitter::after": {
             content: `""`,
-            marginLeft: 0,
+            marginLeft: "3px", // Matches splitter line width
             width: "15px",
             display: "block",
             position: "relative",
