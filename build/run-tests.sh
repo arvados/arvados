@@ -59,72 +59,6 @@ defaults to $HOME/arvados-api-server if that directory exists.
 More information and background:
 
 https://dev.arvados.org/projects/arvados/wiki/Running_tests
-
-Available tests:
-
-cmd/arvados-client
-cmd/arvados-package
-cmd/arvados-server
-doc
-lib/cli
-lib/cmd
-lib/controller
-lib/controller/federation
-lib/controller/railsproxy
-lib/controller/router
-lib/controller/rpc
-lib/crunchstat
-lib/crunch-run
-lib/cloud
-lib/cloud/azure
-lib/cloud/cloudtest
-lib/dispatchcloud
-lib/dispatchcloud/container
-lib/dispatchcloud/scheduler
-lib/dispatchcloud/sshexecutor
-lib/dispatchcloud/worker
-lib/mount
-lib/pam
-lib/service
-services/api
-services/dockercleaner
-services/fuse
-services/health
-services/keep-web
-services/keepproxy
-services/keepstore
-services/keep-balance
-services/login-sync
-services/crunch-dispatch-local
-services/crunch-dispatch-slurm
-services/workbench2_units
-services/workbench2_integration
-services/ws
-sdk/cli
-sdk/cwl
-sdk/python
-sdk/ruby-google-api-client
-sdk/ruby
-sdk/go/arvados
-sdk/go/arvadosclient
-sdk/go/auth
-sdk/go/dispatch
-sdk/go/keepclient
-sdk/go/health
-sdk/go/httpserver
-sdk/go/blockdigest
-sdk/go/asyncbuf
-sdk/go/stats
-sdk/go/crunchrunner
-sdk/R
-sdk/java-v2
-tools/sync-groups
-tools/crunchstat-summary
-tools/keep-exercise
-tools/keep-rsync
-tools/keep-block-check
-tools/cluster-activity
-
 EOF
 
 # First make sure to remove any ARVADOS_ variables from the calling
@@ -263,83 +197,6 @@ rotate_logfile() {
     gzip "$1/$THEDATE-$BUILD_NUMBER-$2"
   fi
 }
-
-declare -a failures
-declare -A skip
-declare -A only
-declare -A testargs
-
-while [[ -n "$1" ]]
-do
-    arg="$1"; shift
-    case "$arg" in
-        --help)
-            echo >&2 "$helpmessage"
-            echo >&2
-            exit 1
-            ;;
-        --skip)
-            skip["${1%:py3}"]=1; shift
-            ;;
-        --only)
-            only["${1%:py3}"]=1; skip["${1%:py3}"]=""; shift
-            ;;
-        --short)
-            short=1
-            ;;
-        --interactive)
-            interactive=1
-            ;;
-        --skip-install)
-            skip[install]=1
-            ;;
-        --only-install)
-            only_install="$1"; shift
-            ;;
-        --temp)
-            temp="$1"; shift
-            temp_preserve=1
-            ;;
-        --leave-temp)
-            temp_preserve=1
-            ;;
-        --repeat)
-            repeat=$((${1}+0)); shift
-            ;;
-        --retry)
-            retry=1
-            ;;
-        *_test=*)
-            suite="${arg%%_test=*}"
-            args="${arg#*=}"
-            testargs["${suite%:py3}"]="$args"
-            ;;
-        *=*)
-            eval export $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
-            ;;
-        *)
-            echo >&2 "$0: Unrecognized option: '$arg'. Try: $0 --help"
-            exit 1
-            ;;
-    esac
-done
-
-# R SDK installation is very slow (~360s in a clean environment) and only
-# required when testing it. Skip that step if it is not needed.
-NEED_SDK_R=true
-
-if [[ ${#only[@]} -ne 0 ]] &&
-   [[ -z "${only['sdk/R']}" && -z "${only['doc']}" ]]; then
-  NEED_SDK_R=false
-fi
-
-if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
-  NEED_SDK_R=false
-fi
-
-if [[ $NEED_SDK_R == false ]]; then
-        echo "R SDK not needed, it will not be installed."
-fi
 
 checkpidfile() {
     svc="$1"
@@ -859,22 +716,6 @@ install_services/api() {
     ) || return 1
 }
 
-declare -a pythonstuff
-pythonstuff=(
-    # The ordering of sdk/python, tools/crunchstat-summary, and
-    # sdk/cwl here is significant. See
-    # https://dev.arvados.org/issues/19744#note-26
-    sdk/python
-    tools/crunchstat-summary
-    sdk/cwl
-    services/dockercleaner
-    services/fuse
-    tools/cluster-activity
-)
-
-declare -a gostuff
-gostuff=($(cd "$WORKSPACE" && git ls-files | grep '\.go$' | sed -e 's/\/[^\/]*$//' | sort -u))
-
 install_services/workbench2() {
     cd "$WORKSPACE/services/workbench2" \
         && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
@@ -1058,12 +899,45 @@ help_interactive() {
     echo "reset                  (...services used by integration tests)"
     echo "exit"
     echo "== Test targets:"
-    echo "${!testfuncargs[@]}" | tr ' ' '\n' | sort | column
+    printf "%s\n" "${!testfuncargs[@]}" | sort | column
 }
 
-initialize
+declare -a failures
+declare -A skip
+declare -A only
+declare -A testargs
+
+declare -a pythonstuff
+pythonstuff=(
+    # The ordering of sdk/python, tools/crunchstat-summary, and
+    # sdk/cwl here is significant. See
+    # https://dev.arvados.org/issues/19744#note-26
+    sdk/python
+    tools/crunchstat-summary
+    sdk/cwl
+    services/dockercleaner
+    services/fuse
+    tools/cluster-activity
+)
+
+declare -a gostuff
+if [[ -n "$WORKSPACE" ]]; then
+    readarray -d "" -t gostuff < <(
+        git -C "$WORKSPACE" ls-files -z |
+            grep -z '\.go$' |
+            xargs -0r dirname -z |
+            sort -zu
+    )
+fi
 
 declare -A testfuncargs=()
+for testfuncname in $(declare -F | awk '
+($3 ~ /^test_/ && $3 !~ /_package_presence$/) {
+  print substr($3, 6);
+}
+'); do
+    testfuncargs[$testfuncname]="$testfuncname"
+done
 for g in "${gostuff[@]}"; do
     testfuncargs[$g]="$g go"
 done
@@ -1071,10 +945,83 @@ for p in "${pythonstuff[@]}"; do
     testfuncargs[$p]="$p pip"
 done
 
-testfuncargs["sdk/cli"]="sdk/cli"
-testfuncargs["sdk/R"]="sdk/R"
-testfuncargs["sdk/java-v2"]="sdk/java-v2"
+while [[ -n "$1" ]]
+do
+    arg="$1"; shift
+    case "$arg" in
+        --help)
+            exec 1>&2
+            echo "$helpmessage"
+            if [[ ${#gostuff} -gt 0 ]]; then
+                printf "\nAvailable targets:\n\n"
+                printf "%s\n" "${!testfuncargs[@]}" | sort | column
+            fi
+            exit 1
+            ;;
+        --skip)
+            skip["${1%:py3}"]=1; shift
+            ;;
+        --only)
+            only["${1%:py3}"]=1; skip["${1%:py3}"]=""; shift
+            ;;
+        --short)
+            short=1
+            ;;
+        --interactive)
+            interactive=1
+            ;;
+        --skip-install)
+            skip[install]=1
+            ;;
+        --only-install)
+            only_install="$1"; shift
+            ;;
+        --temp)
+            temp="$1"; shift
+            temp_preserve=1
+            ;;
+        --leave-temp)
+            temp_preserve=1
+            ;;
+        --repeat)
+            repeat=$((${1}+0)); shift
+            ;;
+        --retry)
+            retry=1
+            ;;
+        *_test=*)
+            suite="${arg%%_test=*}"
+            args="${arg#*=}"
+            testargs["${suite%:py3}"]="$args"
+            ;;
+        *=*)
+            eval export $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
+            ;;
+        *)
+            echo >&2 "$0: Unrecognized option: '$arg'. Try: $0 --help"
+            exit 1
+            ;;
+    esac
+done
 
+# R SDK installation is very slow (~360s in a clean environment) and only
+# required when testing it. Skip that step if it is not needed.
+NEED_SDK_R=true
+
+if [[ ${#only[@]} -ne 0 ]] &&
+   [[ -z "${only['sdk/R']}" && -z "${only['doc']}" ]]; then
+  NEED_SDK_R=false
+fi
+
+if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
+  NEED_SDK_R=false
+fi
+
+if [[ $NEED_SDK_R == false ]]; then
+        echo "R SDK not needed, it will not be installed."
+fi
+
+initialize
 if [[ -z ${interactive} ]]; then
     install_all
     test_all
@@ -1129,10 +1076,8 @@ else
                         ;;
                     *)
                         testargs["$target"]="${opts}"
-                        tt="${testfuncargs[${target}]}"
-                        tt="${tt:-$target}"
                         while [ $count -gt 0 ]; do
-                          do_$verb $tt
+                          do_$verb ${testfuncargs[${target}]}
                           let "count=count-1"
                         done
                         ;;
