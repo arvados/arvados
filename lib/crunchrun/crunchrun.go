@@ -1267,13 +1267,14 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 	for range time.NewTicker(spotInterruptionCheckInterval).C {
 		err := check()
 		if err != nil {
-			runner.CrunchLog.Printf("Temporarily unable to check spot instance interruptions: %s (will retry in %v)", err, spotInterruptionCheckInterval)
-			failures++
-			if failures > 5 {
-				runner.CrunchLog.Printf("Giving up on checking spot instance interruptions after too many consecutive errors")
+			message := fmt.Sprintf("Unable to check spot instance interruptions: %s", err)
+			if failures++; failures > 5 {
+				runner.CrunchLog.Printf("%s -- now giving up after too many consecutive errors", message)
 				return
+			} else {
+				runner.CrunchLog.Printf("%s -- will retry in %v", message, spotInterruptionCheckInterval)
+				continue
 			}
-			continue
 		}
 		failures = 0
 		if metadata.Action != "" && metadata != lastmetadata {

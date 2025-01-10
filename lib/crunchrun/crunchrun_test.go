@@ -832,9 +832,9 @@ func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
 	checkLogs := func() {
 		checkedLogs = true
 		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Checking for spot instance interruptions every 125ms using instance metadata at http://.*`)
-		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Temporarily unable to check spot instance interruptions: 503 Service Unavailable.*`)
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Unable to check spot instance interruptions: 503 Service Unavailable -- will retry in 125ms.*`)
 		if failureRate == 1 {
-			c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Giving up on checking spot instance interruptions after too many consecutive errors.*`)
+			c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Unable to check spot instance interruptions: 503 Service Unavailable -- now giving up after too many consecutive errors.*`)
 			return
 		}
 		text := `Cloud provider scheduled instance stop at ` + stoptime.Load().(time.Time).Format(time.RFC3339)
