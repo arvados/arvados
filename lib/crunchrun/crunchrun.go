@@ -1267,7 +1267,7 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 	for range time.NewTicker(spotInterruptionCheckInterval).C {
 		err := check()
 		if err != nil {
-			message := fmt.Sprintf("Unable to check spot instance interruptions: %s", err)
+			message := fmt.Sprintf("Spot instance interruption check was inconclusive: %s", err)
 			if failures++; failures > 5 {
 				runner.CrunchLog.Printf("%s -- now giving up after too many consecutive errors", message)
 				return
