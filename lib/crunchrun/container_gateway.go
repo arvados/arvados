@@ -367,14 +367,9 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	if username == "" {
 		username = "root"
 	}
-	hj, ok := w.(http.Hijacker)
-	if !ok {
-		http.Error(w, "ResponseWriter does not support connection upgrade", http.StatusInternalServerError)
-		return
-	}
-	netconn, _, err := hj.Hijack()
-	if !ok {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	netconn, _, err := http.NewResponseController(w).Hijack()
+	if err != nil {
+		http.Error(w, "connection upgrade failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer netconn.Close()
@@ -383,6 +378,7 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	netconn.Write([]byte("HTTP/1.1 101 Switching Protocols\r\n"))
 	w.Header().Write(netconn)
 	netconn.Write([]byte("\r\n"))
+	httpserver.ExemptFromDeadline(req)
 
 	ctx := req.Context()
 

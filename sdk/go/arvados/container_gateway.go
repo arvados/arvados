@@ -11,27 +11,26 @@ import (
 	"sync"
 
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/sirupsen/logrus"
 )
 
 func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer cresp.Conn.Close()
-	hj, ok := w.(http.Hijacker)
-	if !ok {
-		http.Error(w, "ResponseWriter does not support connection upgrade", http.StatusInternalServerError)
+	conn, bufrw, err := http.NewResponseController(w).Hijack()
+	if err != nil {
+		http.Error(w, "connection upgrade failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer conn.Close()
+	conn.Write([]byte("HTTP/1.1 101 Switching Protocols\r\n"))
 	w.Header().Set("Connection", "upgrade")
 	for k, v := range cresp.Header {
 		w.Header()[k] = v
 	}
-	w.WriteHeader(http.StatusSwitchingProtocols)
-	conn, bufrw, err := hj.Hijack()
-	if err != nil {
-		ctxlog.FromContext(req.Context()).WithError(err).Error("error hijacking ResponseWriter")
-		return
-	}
-	defer conn.Close()
+	w.Header().Write(conn)
+	conn.Write([]byte("\r\n"))
+	httpserver.ExemptFromDeadline(req)
 
 	var bytesIn, bytesOut int64
 	ctx, cancel := context.WithCancel(req.Context())

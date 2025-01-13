@@ -5,7 +5,10 @@
 package httpserver
 
 import (
+	"bufio"
+	"net"
 	"net/http"
+	"time"
 )
 
 const sniffBytes = 1024
@@ -30,13 +33,6 @@ type responseWriter struct {
 
 func WrapResponseWriter(orig http.ResponseWriter) ResponseWriter {
 	return &responseWriter{ResponseWriter: orig}
-}
-
-func (w *responseWriter) CloseNotify() <-chan bool {
-	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
-		return cn.CloseNotify()
-	}
-	return nil
 }
 
 func (w *responseWriter) WriteHeader(s int) {
@@ -85,4 +81,37 @@ func (w *responseWriter) sniff(data []byte) {
 
 func (w *responseWriter) Sniffed() []byte {
 	return w.sniffed
+}
+
+func (w *responseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+// ResponseControllerShim uses a ResponseController to re-add the
+// optional interface methods to a ResponseWriter that has lost them
+// via wrapping by middleware.
+//
+// This allows us to combine old code (like x/net/websocket) with
+// middleware that doesn't explicitly support the optional interfaces
+// (like responseTimer and responseWriter here).
+type ResponseControllerShim struct{ http.ResponseWriter }
+
+func (s ResponseControllerShim) EnableFullDuplex() error {
+	return http.NewResponseController(s.ResponseWriter).EnableFullDuplex()
+}
+
+func (s ResponseControllerShim) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return http.NewResponseController(s.ResponseWriter).Hijack()
+}
+
+func (s ResponseControllerShim) SetReadDeadline(d time.Time) error {
+	return http.NewResponseController(s.ResponseWriter).SetReadDeadline(d)
+}
+
+func (s ResponseControllerShim) SetWriteDeadline(d time.Time) error {
+	return http.NewResponseController(s.ResponseWriter).SetWriteDeadline(d)
+}
+
+func (s ResponseControllerShim) Flush() error {
+	return http.NewResponseController(s.ResponseWriter).Flush()
 }
