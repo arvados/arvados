@@ -922,9 +922,12 @@ class RichCollectionBase(CollectionBase):
                         # Overwrite path with new item; this can happen if
                         # path was a file and is now a collection or vice versa
                         self.copy(final, path, overwrite=True)
-                else:
-                    # Local is missing (presumably deleted) or local doesn't
-                    # match the "start" value, so save change to conflict file
+                elif event_type == MOD:
+                    # Local doesn't match the "start" value or local
+                    # is missing (presumably deleted) so save change
+                    # to conflict file.  Don't do this for TOK events
+                    # which means the file didn't change but only had
+                    # tokens updated.
                     self.copy(final, conflictpath)
             elif event_type == DEL:
                 if local == initial:
@@ -1275,8 +1278,7 @@ class Collection(RichCollectionBase):
         # conflict file with the contents of 'other'.
         self.apply(baseline.diff(other))
 
-        # Remember the new baseline so we don't keep creating conflict
-        # files every time update() is called.
+        # Remember the new baseline, changes to a file
         if upstream_response is not None:
             self._remember_api_response(upstream_response)
 
