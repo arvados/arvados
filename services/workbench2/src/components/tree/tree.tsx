@@ -17,7 +17,7 @@ import { SidePanelRightArrowIcon } from '../icon/icon';
 import { ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
-import { kebabCase, isEqual } from 'lodash';
+import { kebabCase } from 'lodash';
 import { Resource } from 'models/resource';
 import { ResourcesState } from 'store/resources/resources';
 import { TreePicker } from 'store/tree-picker/tree-picker';
@@ -528,6 +528,6 @@ export const TreeComponent = withStyles(styles)(
 
 // return true to prevent re-render, false to allow re-render
 function preventRerender<T>(prevProps: TreeProps<T>, nextProps: TreeProps<T>) {
-    if(!isEqual(prevProps.treePicker, nextProps.treePicker)) return false;
+    if(prevProps.treePicker !== nextProps.treePicker) return false;
     return true;
 }
