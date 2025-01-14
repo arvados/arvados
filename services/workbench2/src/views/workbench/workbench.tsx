@@ -134,7 +134,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& > .layout-splitter::after": {
             content: `""`,
             marginLeft: "3px", // Matches splitter line width
-            width: "15px",
+            width: "8px",
             display: "block",
             position: "relative",
             height: "100%",
@@ -144,8 +144,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     splitterDetails: {
         "& > .layout-splitter::after": {
             content: `""`,
-            marginLeft: "-15px",
-            width: "15px",
+            marginLeft: "-8px",
+            width: "8px",
             display: "block",
             position: "relative",
             height: "100%",

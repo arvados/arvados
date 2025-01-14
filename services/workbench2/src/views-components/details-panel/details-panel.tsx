@@ -34,7 +34,6 @@ import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
 type CssRules = 'root' | 'container' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
-const DRAWER_WIDTH = 320;
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
