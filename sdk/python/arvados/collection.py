@@ -1134,7 +1134,7 @@ class Collection(RichCollectionBase):
         self._manifest_text = None
         self._portable_data_hash = None
         self._api_response = None
-        self._past_versions = set()
+        self._token_refresh_timestamp = 0
 
         self.lock = threading.RLock()
         self.events = None
@@ -1201,20 +1201,6 @@ class Collection(RichCollectionBase):
         return True
 
     @synchronized
-    def known_past_version(
-            self,
-            modified_at_and_portable_data_hash: Tuple[Optional[str], Optional[str]]
-    ) -> bool:
-        """Indicate whether an API record for this collection has been seen before
-
-        As this collection object loads records from the API server, it records
-        their `modified_at` and `portable_data_hash` fields. This method accepts
-        a 2-tuple with values for those fields, and returns `True` if the
-        combination was previously loaded.
-        """
-        return modified_at_and_portable_data_hash in self._past_versions
-
-    @synchronized
     @retry_method
     def update(
             self,
@@ -1245,31 +1231,55 @@ class Collection(RichCollectionBase):
           the collection's API record from the API server. If not specified,
           uses the `num_retries` provided when this instance was constructed.
         """
+        upstream_response = None
         if other is None:
             if self._manifest_locator is None:
                 raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
-            response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
-            if (self.known_past_version((response.get("modified_at"), response.get("portable_data_hash"))) and
-                response.get("portable_data_hash") != self.portable_data_hash()):
-                # The record on the server is different from our current one, but we've seen it before,
-                # so ignore it because it's already been merged.
-                # However, if it's the same as our current record, proceed with the update, because we want to update
-                # our tokens.
+            upstream_response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
+            other = CollectionReader(upstream_response["manifest_text"])
+
+        time_since_last_token_refresh = (time.time() - self._token_refresh_timestamp)
+        if self.committed():
+            # 1st case, no local changes, content is the same
+            if self.portable_data_hash() == other.portable_data_hash() and time_since_last_token_refresh < (60*60):
+                # No difference in content.  Remember the API record
+                # (metadata such as name or properties may have changed)
+                # but don't update the token refresh timestamp.
+                if upstream_response is not None:
+                    self._remember_api_response(upstream_response)
                 return
-            else:
-                self._remember_api_response(response)
-            other = CollectionReader(response["manifest_text"])
-        # if the local Collection is marked as committed, it doesn't
-        # have any pending local changes, so updates only come from
-        # upstream, which means we want to reset the "committed" flag
-        # after applying updates so we don't waste time writing back
-        # an identical record.
-        updates_from_upstream_only = self._committed
-        baseline = CollectionReader(self._manifest_text)
-        self.apply(baseline.diff(other))
-        self._manifest_text = self.manifest_text()
-        if updates_from_upstream_only:
+
+            # 2nd case, no local changes, but either upstream changed
+            # or we want to refresh tokens.
+
+            self.apply(self.diff(other))
+            if upstream_response is not None:
+                self._remember_api_response(upstream_response)
+            self._update_token_timestamp()
             self.set_committed(True)
+            return
+
+        # 3rd case, upstream changed, but we also have uncommitted
+        # changes that we want to incorporate so they don't get lost.
+
+        # _manifest_text stores the text from last time we received a
+        # record from the API server.  This is the state of the
+        # collection before our uncommitted changes.
+        baseline = Collection(self._manifest_text)
+
+        # Get the set of changes between our baseline and the other
+        # collection and apply them to self.
+        #
+        # If a file was modified in both 'self' and 'other', the
+        # 'apply' method keeps the contents of 'self' and creates a
+        # conflict file with the contents of 'other'.
+        self.apply(baseline.diff(other))
+
+        # Remember the new baseline so we don't keep creating conflict
+        # files every time update() is called.
+        if upstream_response is not None:
+            self._remember_api_response(upstream_response)
+
 
     @synchronized
     def _my_api(self):
@@ -1303,7 +1313,11 @@ class Collection(RichCollectionBase):
 
     def _remember_api_response(self, response):
         self._api_response = response
-        self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
+        self._manifest_text = self._api_response['manifest_text']
+        self._portable_data_hash = self._api_response['portable_data_hash']
+
+    def _update_token_timestamp(self):
+        self._token_refresh_timestamp = time.time()
 
     def _populate_from_api_server(self):
         # As in KeepClient itself, we must wait until the last
@@ -1316,8 +1330,7 @@ class Collection(RichCollectionBase):
         self._remember_api_response(self._my_api().collections().get(
             uuid=self._manifest_locator).execute(
                 num_retries=self.num_retries))
-        self._manifest_text = self._api_response['manifest_text']
-        self._portable_data_hash = self._api_response['portable_data_hash']
+
         # If not overriden via kwargs, we should try to load the
         # replication_desired and storage_classes_desired from the API server
         if self.replication_desired is None:
@@ -1542,8 +1555,6 @@ class Collection(RichCollectionBase):
                 uuid=self._manifest_locator,
                 body=body
                 ).execute(num_retries=num_retries))
-            self._manifest_text = self._api_response["manifest_text"]
-            self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed(True)
         elif body:
             self._remember_api_response(self._my_api().collections().update(
@@ -1662,12 +1673,7 @@ class Collection(RichCollectionBase):
                 body["preserve_version"] = preserve_version
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
-            text = self._api_response["manifest_text"]
-
             self._manifest_locator = self._api_response["uuid"]
-            self._portable_data_hash = self._api_response["portable_data_hash"]
-
-            self._manifest_text = text
             self.set_committed(True)
 
         return text
@@ -1751,6 +1757,7 @@ class Collection(RichCollectionBase):
                 stream_name = None
                 state = STREAM_NAME
 
+        self._update_token_timestamp()
         self.set_committed(True)
 
     @synchronized

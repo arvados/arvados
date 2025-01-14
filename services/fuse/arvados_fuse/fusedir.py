@@ -373,6 +373,8 @@ class CollectionDirectoryBase(Directory):
                             elif name in self._entries:
                                 self._entries[name].invalidate()
                                 self.inodes.invalidate_inode(self._entries[name])
+                        # we don't care about TOK events, those mean
+                        # only token signatures were updated
 
                         if self.collection_record_file is not None:
                             self.collection_record_file.invalidate()
