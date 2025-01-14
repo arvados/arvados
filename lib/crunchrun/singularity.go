@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -239,6 +240,16 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 	err = f.Sync()
 	if err != nil {
 		return fmt.Errorf("could not sync image file: %w", err)
+	}
+
+	// Reading the magic ".arvados#collection" file invokes a
+	// different code path in arv-mount that forces an update via
+	// FreshBase.invalidate().  This is helpful if Sync() above
+	// did not in fact do what we wanted.
+	imageDir, _ := path.Split(imageFilename)
+	_, err = os.ReadFile(path.Join(imageDir, ".arvados#collection"))
+	if err != nil {
+		return fmt.Errorf("could not sync image collection: %w", err)
 	}
 
 	// update TTL to now + two weeks
