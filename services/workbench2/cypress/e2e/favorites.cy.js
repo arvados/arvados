@@ -254,22 +254,22 @@ describe('Favorites tests', function () {
             });
     });
 
-    it('shows the correct favorites and public favorites in the side panel', () => {
+    it.only('shows the correct favorites and public favorites in the side panel', () => {
         cy.createProject({
             owningUser: adminUser,
-            projectName: 'myFavoriteProject1',
+            projectName: `myFavoriteProject1 ${Math.floor(Math.random() * 999999)}`,
         }).as('myFavoriteProject1');
         cy.createProject({
             owningUser: adminUser,
-            projectName: 'myFavoriteProject2',
+            projectName: `myFavoriteProject2 ${Math.floor(Math.random() * 999999)}`,
         }).as('myFavoriteProject2');
         cy.createProject({
             owningUser: adminUser,
-            projectName: 'myPublicFavoriteProject1',
+            projectName: `myPublicFavoriteProject1 ${Math.floor(Math.random() * 999999)}`,
         }).as('myPublicFavoriteProject1');
         cy.createProject({
             owningUser: adminUser,
-            projectName: 'myPublicFavoriteProject2',
+            projectName: `myPublicFavoriteProject2 ${Math.floor(Math.random() * 999999)}`,
         }).as('myPublicFavoriteProject2');
         cy.createCollection(adminUser.token, {
             owner_uuid: adminUser.user.uuid,
@@ -281,67 +281,67 @@ describe('Favorites tests', function () {
                 cy.loginAs(adminUser);
 
                 //add two projects and collection to favorites
-                cy.get('[data-cy=side-panel-tree]').contains('myFavoriteProject1').rightclick();
+                cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject1.name).rightclick();
                 cy.contains('Add to favorites').click();
-                cy.get('[data-cy=side-panel-tree]').contains('myFavoriteProject2').rightclick();
+                cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject2.name).rightclick();
                 cy.contains('Add to favorites').click();
                 cy.get('[data-cy=process-data]').contains(testfavoriteCollection.name).rightclick();
                 cy.contains('Add to favorites').click();
 
                 //add two projects to public favorites
-                cy.get('[data-cy=data-table]').contains('myPublicFavoriteProject1').rightclick();
+                cy.get('[data-cy=data-table]').contains(myPublicFavoriteProject1.name).rightclick();
                 cy.contains('Add to public favorites').click();
-                cy.get('[data-cy=data-table]').contains('myPublicFavoriteProject2').rightclick();
+                cy.get('[data-cy=data-table]').contains(myPublicFavoriteProject2.name).rightclick();
                 cy.contains('Add to public favorites').click();
 
                 //close "Home Projects", which is open by default
                 cy.get(`[data-cy=tree-item-toggle-${kebabCase(adminUser.user.uuid)}]`).click();
 
                 //check if the correct favorites are displayed in the side panel
-                cy.get('span').contains('myFavoriteProject1').should('not.exist');
-                cy.get('span').contains('myFavoriteProject2').should('not.exist');
+                cy.get('span').contains(myFavoriteProject1.name).should('not.exist');
+                cy.get('span').contains(myFavoriteProject2.name).should('not.exist');
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
-                cy.get('span').contains('myFavoriteProject1').should('exist');
-                cy.get('span').contains('myFavoriteProject2').should('exist');
+                cy.get('span').contains(myFavoriteProject1.name).should('exist');
+                cy.get('span').contains(myFavoriteProject2.name).should('exist');
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
 
                 //check if the correct public favorites are displayed in the side panel
-                cy.get('span').contains('myPublicFavoriteProject1').should('not.exist');
-                cy.get('span').contains('myPublicFavoriteProject2').should('not.exist');
+                cy.get('span').contains(myPublicFavoriteProject1.name).should('not.exist');
+                cy.get('span').contains(myPublicFavoriteProject2.name).should('not.exist');
                 cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
-                cy.get('span').contains('myPublicFavoriteProject1').should('exist');
-                cy.get('span').contains('myPublicFavoriteProject2').should('exist');
+                cy.get('span').contains(myPublicFavoriteProject1.name).should('exist');
+                cy.get('span').contains(myPublicFavoriteProject2.name).should('exist');
                 cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
 
                 //double check both sets
-                cy.get('span').contains('myFavoriteProject1').should('not.exist');
-                cy.get('span').contains('myFavoriteProject2').should('not.exist');
+                cy.get('span').contains(myFavoriteProject1.name).should('not.exist');
+                cy.get('span').contains(myFavoriteProject2.name).should('not.exist');
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
-                cy.get('span').contains('myFavoriteProject1').should('exist');
-                cy.get('span').contains('myFavoriteProject2').should('exist');
+                cy.get('span').contains(myFavoriteProject1.name).should('exist');
+                cy.get('span').contains(myFavoriteProject2.name).should('exist');
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
 
-                cy.get('span').contains('myPublicFavoriteProject1').should('not.exist');
-                cy.get('span').contains('myPublicFavoriteProject2').should('not.exist');
+                cy.get('span').contains(myPublicFavoriteProject1.name).should('not.exist');
+                cy.get('span').contains(myPublicFavoriteProject2.name).should('not.exist');
                 cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
-                cy.get('span').contains('myPublicFavoriteProject1').should('exist');
-                cy.get('span').contains('myPublicFavoriteProject2').should('exist');
+                cy.get('span').contains(myPublicFavoriteProject1.name).should('exist');
+                cy.get('span').contains(myPublicFavoriteProject2.name).should('exist');
                 cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
 
                 // Keep favorites open
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
 
                 // Trash favorited project
-                cy.get('[data-cy=data-table]').contains('myFavoriteProject1').rightclick();
+                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
                 // Check removed from favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', 'myFavoriteProject1');
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', myFavoriteProject1.name);
                 // Untrash favorited project
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
-                cy.get('[data-cy=data-table]').contains('myFavoriteProject1').rightclick();
+                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
                 // Check project restored to favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', 'myFavoriteProject1');
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
 
                 // Trash favorited collection
