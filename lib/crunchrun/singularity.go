@@ -7,6 +7,7 @@ package crunchrun
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -247,10 +248,16 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 	// FreshBase.invalidate().  This is helpful if Sync() above
 	// did not in fact do what we wanted.
 	imageDir, _ := path.Split(imageFilename)
-	_, err = os.ReadFile(path.Join(imageDir, ".arvados#collection"))
+	buf, err := os.ReadFile(path.Join(imageDir, ".arvados#collection"))
 	if err != nil {
 		return fmt.Errorf("could not sync image collection: %w", err)
 	}
+	var synced arvados.Collection
+	err = json.Unmarshal(buf, &synced)
+	if err != nil {
+		return fmt.Errorf("could not parse .arvados#collection: %w", err)
+	}
+	e.logf("saved image in %s with PDH %s", sifCollection.UUID, synced.PortableDataHash)
 
 	// update TTL to now + two weeks
 	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
