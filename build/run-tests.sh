@@ -723,7 +723,7 @@ install_services/workbench2() {
 
 do_migrate() {
     timer_reset
-    task="db:migrate"
+    local task="db:migrate"
     case "$1" in
         "")
             ;;
@@ -739,17 +739,16 @@ do_migrate() {
     check_arvados_config services/api
     (
         set -x
-        cd "$WORKSPACE/services/api" \
-            && eval env RAILS_ENV=test bundle exec rake $task ${@}
-        result="$?"
+        env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+            bundle exec rake $task ${@}
     )
-    checkexit "$result" "services/api $task"
+    checkexit "$?" "services/api $task"
 }
 
 migrate_down_services/api() {
     echo "running db:migrate:down"
-    cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test bundle exec rake db:migrate:down ${testargs[services/api]}
+    env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+        bundle exec rake db:migrate:down ${testargs[services/api]}
     checkexit "$?" "services/api db:migrate:down"
 }
 
