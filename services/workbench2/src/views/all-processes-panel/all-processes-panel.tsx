@@ -16,11 +16,11 @@ import { ArvadosTheme } from "common/custom-theme";
 import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
 import {
     ProcessStatus,
+    ResourceName,
+    ResourceOwnerWithName,
+    ResourceType,
     ContainerRunTime,
-    renderType,
-    RenderName,
-    RenderOwnerName,
-    renderCreatedAtDate,
+    ResourceCreatedAtDate,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -30,6 +30,7 @@ import { ContainerRequestResource, ContainerRequestState } from "models/containe
 import { RootState } from "store/store";
 import { createTree } from "models/tree";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
+import { getProcess } from "store/processes/process";
 import { ResourcesState } from "store/resources/resources";
 import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
 
@@ -61,14 +62,14 @@ export interface AllProcessesPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
+export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResource> = [
     {
         name: AllProcessesPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: uuid => <ResourceName uuid={uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.STATUS,
@@ -76,21 +77,21 @@ export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (resource) => <ProcessStatus uuid={resource.uuid} />,
+        render: uuid => <ProcessStatus uuid={uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialProcessTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: uuid => <ResourceType uuid={uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} />,
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,
@@ -98,14 +99,14 @@ export const allProcessesPanelColumns: DataColumns<ContainerRequestResource> = [
         configurable: true,
         sort: { direction: SortDirection.DESC, field: "createdAt" },
         filters: createTree(),
-        render: (resource) => renderCreatedAtDate(resource),
+        render: uuid => <ResourceCreatedAtDate uuid={uuid} />,
     },
     {
         name: AllProcessesPanelColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ContainerRunTime uuid={resource.uuid} />,
+        render: uuid => <ContainerRunTime uuid={uuid} />,
     },
 ];
 
@@ -113,11 +114,17 @@ interface AllProcessesPanelDataProps {
     resources: ResourcesState;
 }
 
+interface AllProcessesPanelActionProps {
+    onItemClick: (item: string) => void;
+    onDialogOpen: (ownerUuid: string) => void;
+    onItemDoubleClick: (item: string) => void;
+}
 const mapStateToProps = (state: RootState): AllProcessesPanelDataProps => ({
     resources: state.resources,
 });
 
 type AllProcessesPanelProps = AllProcessesPanelDataProps &
+    AllProcessesPanelActionProps &
     DispatchProp &
     WithStyles<CssRules> &
     RouteComponentProps<{ id: string }>;
@@ -125,17 +132,19 @@ type AllProcessesPanelProps = AllProcessesPanelDataProps &
 export const AllProcessesPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<AllProcessesPanelProps> {
-
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContainerRequestResource) => {
-                this.props.dispatch<any>(openProcessContextMenu(event, resource));
-                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const process = getProcess(resourceUuid)(this.props.resources);
+                if (process) {
+                    this.props.dispatch<any>(openProcessContextMenu(event, process));
+                }
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             };
 
-            handleRowDoubleClick = ({uuid}: ContainerRequestResource) => {
+            handleRowDoubleClick = (uuid: string) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             };
 
-            handleRowClick = ({uuid}: ContainerRequestResource) => {
+            handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

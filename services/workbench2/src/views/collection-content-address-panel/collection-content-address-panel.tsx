@@ -18,18 +18,19 @@ import {
     resourceUuidToContextMenuKind,
     openContextMenu
 } from 'store/context-menu/context-menu-actions';
+import { ResourceKind } from 'models/resource';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { connect } from 'react-redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { createTree } from 'models/tree';
 import {
-    RenderName,
-    RenderOwnerName,
-    renderLastModifiedDate,
-    renderResourceStatus,
+    ResourceName,
+    ResourceOwnerName,
+    ResourceLastModifiedDate,
+    ResourceStatus
 } from 'views-components/data-explorer/renderers';
-import { ResourcesState } from 'store/resources/resources';
+import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
 import { CollectionResource } from 'models/collection';
 
@@ -64,28 +65,28 @@ enum CollectionContentAddressPanelColumnNames {
     LAST_MODIFIED = "Last modified"
 }
 
-export const collectionContentAddressPanelColumns: DataColumns<CollectionResource> = [
+export const collectionContentAddressPanelColumns: DataColumns<string, CollectionResource> = [
     {
         name: CollectionContentAddressPanelColumnNames.COLLECTION_WITH_THIS_ADDRESS,
         selected: true,
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceStatus(resource),
+        render: uuid => <ResourceStatus uuid={uuid} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LOCATION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} />,
+        render: uuid => <ResourceOwnerName uuid={uuid} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,
@@ -93,14 +94,14 @@ export const collectionContentAddressPanelColumns: DataColumns<CollectionResourc
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource),
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
 ];
 
 interface CollectionContentAddressPanelActionProps {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: CollectionResource) => void;
-    onItemClick: (resource: CollectionResource) => void;
-    onItemDoubleClick: (resource: CollectionResource) => void;
+    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, uuid: string) => void;
+    onItemClick: (item: string) => void;
+    onItemDoubleClick: (item: string) => void;
 }
 
 interface CollectionContentAddressPanelDataProps {
@@ -112,27 +113,28 @@ const mapStateToProps = ({ resources }: RootState): CollectionContentAddressPane
 })
 
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
-    onContextMenu: (event, resource) => {
-        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
-        if (menuKind) {
+    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
+        const resource = getResource<CollectionResource>(resourceUuid)(resources);
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+        if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: resource ? resource.name : '',
                 description: resource ? resource.description : '',
                 storageClassesDesired: resource ? resource.storageClassesDesired : [],
-                uuid: resource.uuid,
-                ownerUuid: resource.ownerUuid,
-                kind: resource.kind,
-                menuKind: menuKind
+                uuid: resourceUuid,
+                ownerUuid: '',
+                kind: ResourceKind.NONE,
+                menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(resource.uuid));
+        dispatch<any>(loadDetailsPanel(resourceUuid));
     },
-    onItemClick: ({uuid}: CollectionResource) => {
+    onItemClick: (uuid: string) => {
         dispatch<any>(toggleOne(uuid))
         dispatch<any>(deselectAllOthers(uuid))
         dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: ({uuid}: CollectionResource) => {
+    onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
     }
 });
@@ -154,16 +156,18 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         <BackIcon className={this.props.classes.backIcon} />
                         Back
                     </Button>
-                    <div className={this.props.classes.content}><DataExplorer
-                        id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
-                        hideSearchInput
-                        onRowClick={this.props.onItemClick}
-                        onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu}
-                        contextMenuColumn={true}
-                        title={`Content address: ${this.props.match.params.id}`}
-                        defaultViewIcon={CollectionIcon}
-                        defaultViewMessages={['Collections with this content address not found.']}/>
+                    <div className={this.props.classes.content}>
+                        <DataExplorer
+                            id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
+                            hideSearchInput
+                            onRowClick={this.props.onItemClick}
+                            onRowDoubleClick={this.props.onItemDoubleClick}
+                            onContextMenu={this.props.onContextMenu(this.props.resources)}
+                            contextMenuColumn={false}
+                            title={`Content address: ${this.props.match.params.id}`}
+                            defaultViewIcon={CollectionIcon}
+                            defaultViewMessages={['Collections with this content address not found.']}
+                        />
                     </div>
                 </div>;
             }

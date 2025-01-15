@@ -96,14 +96,14 @@ describe("<DataExplorer />", () => {
             { name: "Column 1", render: cy.stub(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters },
             { name: "Column 2", render: cy.stub(), selected: true, configurable: true, sortDirection: SortDirection.ASC, filters: {}, sort: true }
         ];
-        const resourceItems = [{ name: "item 1" }];
+        const items = [{ name: "item 1" }];
         cy.mount(
             <Provider store={store}>
               <ThemeProvider theme={CustomTheme}>
                 <DataExplorer
                     {...mockDataExplorerProps()}
                     columns={columns}
-                    resourceItems={resourceItems}
+                    items={items}
                     onFiltersChange={onFiltersChange}
                     onSortToggle={onSortToggle}
                     onRowClick={onRowClick}
@@ -118,7 +118,7 @@ describe("<DataExplorer />", () => {
         //check onRowClick
         cy.get('[data-cy=data-table-row]').should('exist');
         cy.get('[data-cy=data-table-row]').click();
-        cy.get('@onRowClick').should('have.been.calledWith', resourceItems[0]);
+        cy.get('@onRowClick').should('have.been.calledWith', items[0]);
         //check onFiltersChange
         cy.contains('Column 1').click();
         cy.get('[data-cy=tree-li]').contains('Filters').click();
@@ -168,7 +168,6 @@ const mockDataExplorerProps = () => ({
     fetchMode: DataTableFetchMode.PAGINATED,
     columns: [],
     items: [],
-    resourceItems: [],
     itemsAvailable: 0,
     contextActions: [],
     searchValue: "",

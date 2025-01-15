@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Typography, Tooltip, IconButton } from '@mui/material';
+import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -16,8 +16,7 @@ import { ListResults } from 'services/common-service/common-service';
 import { MoreVerticalIcon, AddUserIcon } from 'components/icon/icon';
 import { VirtualMachineLogins, VirtualMachinesResource } from 'models/virtual-machines';
 import { openVirtualMachinesContextMenu } from 'store/context-menu/context-menu-actions';
-import { VirtualMachineHostname, VirtualMachineLogin } from 'views-components/data-explorer/renderers';
-import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
+import { ResourceUuid, VirtualMachineHostname, VirtualMachineLogin } from 'views-components/data-explorer/renderers';
 
 type CssRules = 'moreOptionsButton' | 'moreOptions' | 'chipsRoot' | 'vmTableWrapper';
 
@@ -121,15 +120,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
         <TableBody>
             {props.virtualMachines.items.map((machine, index) =>
                 <TableRow key={index}>
-                    <TableCell>
-                        <Typography
-                            data-cy="uuid"
-                            noWrap
-                        >
-                            {machine.uuid}
-                            {(machine.uuid && <CopyToClipboardSnackbar value={machine.uuid} />) || "-"}
-                        </Typography>
-                    </TableCell>
+                    <TableCell><ResourceUuid uuid={machine.uuid} /></TableCell>
                     <TableCell><VirtualMachineHostname uuid={machine.uuid} /></TableCell>
                     <TableCell>
                         <Grid container spacing={1} className={props.classes.chipsRoot}>

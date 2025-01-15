@@ -103,9 +103,6 @@ export const loadVirtualMachinesAdminData = () =>
 
             const getAllLogins = await services.virtualMachineService.getAllLogins();
             dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
-        } catch (e) {
-            console.error('Failed to load some virtual machines: ',e);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Failed to load some virtual machines.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         } finally {
             dispatch(progressIndicatorActions.STOP_WORKING("virtual-machines-admin"));
         }

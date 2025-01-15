@@ -9,19 +9,22 @@ import { SubprocessPanelRoot, SubprocessPanelActionProps, SubprocessPanelDataPro
 import { RootState } from "store/store";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { getProcess } from "store/processes/process";
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
-import { ProcessResource } from "models/process";
 
 const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => ({
-    onContextMenu: (event, resource) => {
-            dispatch<any>(openProcessContextMenu(event, resource));
+    onContextMenu: (event, resourceUuid, resources) => {
+        const process = getProcess(resourceUuid)(resources);
+        if (process) {
+            dispatch<any>(openProcessContextMenu(event, process));
+        }
     },
-    onRowClick: ({uuid}: ProcessResource) => {
+    onRowClick: (uuid: string) => {
         dispatch<any>(toggleOne(uuid))
         dispatch<any>(deselectAllOthers(uuid))
         dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: ({uuid}: ProcessResource) => {
+    onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
     },
 });

@@ -10,7 +10,7 @@ import withStyles from '@mui/styles/withStyles';
 import { User, getUserDisplayName } from "models/user";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "components/icon/icon";
-import { connect } from 'react-redux';
+import { DispatchProp, connect } from 'react-redux';
 import { authActions, getNewExtraToken } from 'store/auth/auth-action';
 import { RootState } from "store/store";
 import { openTokenDialog } from 'store/token-dialog/token-dialog-actions';
@@ -22,7 +22,6 @@ import {
 } from 'store/navigation/navigation-action';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
-import { Dispatch } from 'redux';
 
 interface AccountMenuProps {
     user?: User;
@@ -32,32 +31,12 @@ interface AccountMenuProps {
     localCluster: string;
 }
 
-interface AccountMenuActionProps {
-    onLogout: () => void;
-    getNewExtraToken: (reuseExtra?: boolean) => void;
-    openTokenDialog: () => void;
-    navigateToSshKeysUser: () => void;
-    navigateToSiteManager: () => void;
-    navigateToMyAccount: () => void;
-    navigateToLinkAccount: () => void;
-}
-
 const mapStateToProps = (state: RootState): AccountMenuProps => ({
     user: state.auth.user,
     currentRoute: state.router.location ? state.router.location.pathname : '',
     workbenchURL: state.auth.config.workbenchUrl,
     apiToken: state.auth.apiToken,
     localCluster: state.auth.localCluster
-});
-
-const mapDispatchToProps = (dispatch: Dispatch): AccountMenuActionProps => ({
-    onLogout: () => dispatch<any>(authActions.LOGOUT({ deleteLinkData: true, preservePath: false })),
-    getNewExtraToken: (reuseExtra: boolean) => dispatch<any>(getNewExtraToken(reuseExtra)),
-    openTokenDialog: () => dispatch<any>(openTokenDialog),
-    navigateToSshKeysUser: () => dispatch<any>(navigateToSshKeysUser),
-    navigateToSiteManager: () => dispatch<any>(navigateToSiteManager),
-    navigateToMyAccount: () => dispatch<any>(navigateToMyAccount),
-    navigateToLinkAccount: () => dispatch<any>(navigateToLinkAccount),
 });
 
 type CssRules = 'link';
@@ -70,23 +49,22 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
 });
 
 export const AccountMenuComponent =
-    ({ user, currentRoute, localCluster, onLogout, getNewExtraToken, openTokenDialog, navigateToSshKeysUser, navigateToSiteManager, navigateToMyAccount, navigateToLinkAccount }: AccountMenuProps & AccountMenuActionProps & WithStyles<CssRules>) => {
-        let accountMenuItems = <>
-            <MenuItem onClick={() => {
-                getNewExtraToken(true);
-                openTokenDialog();
-            }}>Get API token</MenuItem>
-            <MenuItem onClick={navigateToSshKeysUser}>SSH Keys</MenuItem>
-            <MenuItem onClick={navigateToSiteManager}>Site Manager</MenuItem>
-            <MenuItem onClick={navigateToMyAccount}>My account</MenuItem>
-            <MenuItem onClick={navigateToLinkAccount}>Link account</MenuItem>
-        </>;
+    ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
+        let accountMenuItems = [
+            <MenuItem key={'get-api-token'} onClick={() => {
+                dispatch<any>(getNewExtraToken(true));
+                dispatch(openTokenDialog);
+            }}>Get API token</MenuItem>,
+            <MenuItem key={'ssh-keys'} onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>,
+            <MenuItem key={'site-manager'} onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>,
+            <MenuItem key={'my-account'} onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>,
+            <MenuItem key={'link-account'} onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>,
+        ];
 
         const reduceItemsFn: (a: React.ReactElement[],
             b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
 
-        accountMenuItems = React.createElement(React.Fragment, null,
-            pluginConfig.accountMenuList.reduce(reduceItemsFn, React.Children.toArray(accountMenuItems.props.children)));
+        accountMenuItems = pluginConfig.accountMenuList.reduce(reduceItemsFn, accountMenuItems);
 
         return user
             ? <DropdownMenu
@@ -98,13 +76,12 @@ export const AccountMenuComponent =
                     {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
                 {user.isActive && accountMenuItems}
-                <MenuItem data-cy="logout-menuitem"
-                    onClick={onLogout}
-                    >
+                <MenuItem key={'logout'} data-cy="logout-menuitem"
+                    onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
                 </MenuItem>
             </DropdownMenu>
             : null;
     };
 
-export const AccountMenu = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(AccountMenuComponent));
+export const AccountMenu = withStyles(styles)(connect(mapStateToProps)(AccountMenuComponent));

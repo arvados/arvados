@@ -160,8 +160,6 @@ addMenuActionSet(ContextMenuKind.FROZEN_MANAGEABLE_PROJECT, frozenManageableProj
 
 storeRedirects();
 
-let store: RootStore;
-
 fetchConfig().then(({ config, apiHost }) => {
     const history = createBrowserHistory();
 
@@ -188,7 +186,7 @@ fetchConfig().then(({ config, apiHost }) => {
     // be sure this is initiated before the app starts
     servicesProvider.setServices(services);
 
-    store = configureStore(history, services, config);
+    const store = configureStore(history, services, config);
 
     servicesProvider.setStore(store);
 

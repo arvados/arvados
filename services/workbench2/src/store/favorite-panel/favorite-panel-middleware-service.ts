@@ -30,7 +30,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
     }
 
     getTypeFilters(dataExplorer: DataExplorer) {
-        const columns = dataExplorer.columns as DataColumns<GroupContentsResource>;
+        const columns = dataExplorer.columns as DataColumns<string, GroupContentsResource>;
         return serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
     }
 

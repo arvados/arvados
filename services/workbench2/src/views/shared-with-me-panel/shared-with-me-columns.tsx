@@ -4,33 +4,30 @@
 
 import { DataColumns } from 'components/data-table/data-column';
 import {
+    ResourceName,
     ProcessStatus as ResourceStatus,
+    ResourceType,
+    ResourceOwnerWithNameLink,
+    ResourcePortableDataHash,
+    ResourceFileSize,
+    ResourceFileCount,
+    ResourceUUID,
+    ResourceContainerUuid,
     ContainerRunTime,
-    renderType,
-    RenderName,
-    renderPortableDataHash,
-    RenderOwnerName,
-    renderFileSize,
-    renderFileCount,
-    renderUuidWithCopy,
-    renderModifiedByUserUuid,
-    renderVersion,
-    renderCreatedAtDate,
-    renderLastModifiedDate,
-    renderTrashDate,
-    renderDeleteDate,
-    renderContainerUuid,
     ResourceOutputUuid,
     ResourceLogUuid,
-    renderResourceParentProcess,
+    ResourceParentProcess,
+    ResourceModifiedByUserUuid,
+    ResourceVersion,
+    ResourceCreatedAtDate,
+    ResourceLastModifiedDate,
+    ResourceTrashDate,
+    ResourceDeleteDate,
 } from 'views-components/data-explorer/renderers';
 import { ProjectResource } from 'models/project';
 import { createTree } from 'models/tree';
 import { SortDirection } from 'components/data-table/data-column';
 import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
-import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { ContainerRequestResource } from 'models/container-request';
-import { CollectionResource } from "models/collection";
 
 export enum SharedWithMePanelColumnNames {
     NAME = 'Name',
@@ -54,14 +51,14 @@ export enum SharedWithMePanelColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionResource> = [
+export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
     {
         name: SharedWithMePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: (uuid) => <ResourceName uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.STATUS,
@@ -69,98 +66,98 @@ export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionR
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (resource) => <ResourceStatus uuid={resource.uuid} />,
+        render: (uuid) => <ResourceStatus uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialResourceTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: (uuid) => <ResourceType uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.OWNER,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} link={true} />,
+        render: (uuid) => <ResourceOwnerWithNameLink uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.PORTABLE_DATA_HASH,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderPortableDataHash(resource),
+        render: (uuid) => <ResourcePortableDataHash uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileSize(resource),
+        render: (uuid) => <ResourceFileSize uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.FILE_COUNT,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileCount(resource),
+        render: (uuid) => <ResourceFileCount uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderUuidWithCopy({uuid: resource.uuid}),
+        render: (uuid) => <ResourceUUID uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.CONTAINER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderContainerUuid(resource),
+        render: (uuid) => <ResourceContainerUuid uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.RUNTIME,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => <ContainerRunTime uuid={resource.uuid} />,
+        render: (uuid) => <ContainerRunTime uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.OUTPUT_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <ResourceOutputUuid resource={resource} />,
+        render: (uuid) => <ResourceOutputUuid uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.LOG_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <ResourceLogUuid resource={resource} />,
+        render: (uuid) => <ResourceLogUuid uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.PARENT_PROCESS,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceParentProcess(resource),
+        render: (uuid) => <ResourceParentProcess uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.MODIFIED_BY_USER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderModifiedByUserUuid(resource),
+        render: (uuid) => <ResourceModifiedByUserUuid uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.VERSION,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderVersion(resource),
+        render: (uuid) => <ResourceVersion uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.CREATED_AT,
@@ -168,7 +165,7 @@ export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionR
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'createdAt' },
         filters: createTree(),
-        render: (resource) => renderCreatedAtDate(resource),
+        render: (uuid) => <ResourceCreatedAtDate uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.LAST_MODIFIED,
@@ -176,7 +173,7 @@ export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionR
         configurable: true,
         sort: { direction: SortDirection.DESC, field: 'modifiedAt' },
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource),
+        render: (uuid) => <ResourceLastModifiedDate uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.TRASH_AT,
@@ -184,7 +181,7 @@ export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionR
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
         filters: createTree(),
-        render: (resource) => renderTrashDate(resource),
+        render: (uuid) => <ResourceTrashDate uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.DELETE_AT,
@@ -192,6 +189,6 @@ export const sharedWithMePanelColumns: DataColumns<ProjectResource | CollectionR
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'deleteAt' },
         filters: createTree(),
-        render: (resource) => renderDeleteDate(resource),
+        render: (uuid) => <ResourceDeleteDate uuid={uuid} />,
     },
 ];

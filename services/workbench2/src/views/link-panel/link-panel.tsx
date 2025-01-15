@@ -15,7 +15,6 @@ import {
     LinkPanelRootDataProps
 } from 'views/link-panel/link-panel-root';
 import { ResourceKind } from 'models/resource';
-import { LinkResource } from 'models/link';
 
 const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
     return {
@@ -24,19 +23,19 @@ const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): LinkPanelRootActionProps => ({
-    onContextMenu: (event, resource: LinkResource) => {
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid));
+    onContextMenu: (event, resourceUuid) => {
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',
-                uuid: resource.uuid,
+                uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.LINK,
                 menuKind: kind
             }));
         }
     },
-    onItemClick: (resource: LinkResource) => { return; },
+    onItemClick: (resourceUuid: string) => { return; },
     onItemDoubleClick: uuid => { return; }
 });
 

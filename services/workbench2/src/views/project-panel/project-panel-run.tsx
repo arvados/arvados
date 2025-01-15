@@ -11,20 +11,20 @@ import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
 import {
     ContainerRunTime,
-    renderType,
-    RenderName,
-    RenderOwnerName,
-    renderUuidWithCopy,
-    renderModifiedByUserUuid,
-    renderCreatedAtDate,
-    renderLastModifiedDate,
-    renderTrashDate,
-    renderDeleteDate,
-    renderResourceStatus,
-    renderContainerUuid,
-    ResourceOutputUuid,
+    ResourceContainerUuid,
+    ResourceCreatedAtDate,
+    ResourceDeleteDate,
+    ResourceLastModifiedDate,
     ResourceLogUuid,
-    renderResourceParentProcess,
+    ResourceModifiedByUserUuid,
+    ResourceName,
+    ResourceOutputUuid,
+    ResourceOwnerWithName,
+    ResourceParentProcess,
+    ResourceStatus,
+    ResourceTrashDate,
+    ResourceType,
+    ResourceUUID,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
@@ -32,8 +32,6 @@ import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { getResource } from "store/resources/resources";
-import { GroupContentsResource } from "services/groups-service/groups-service";
-import { ContainerRequestResource } from "models/container-request";
 
 export enum ProjectPanelRunColumnNames {
     NAME = 'Name',
@@ -57,14 +55,14 @@ export enum ProjectPanelRunColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelRunColumns: DataColumns<ProjectResource> = [
+export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
     {
         name: ProjectPanelRunColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: (uuid) => <ResourceName uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.STATUS,
@@ -72,70 +70,70 @@ export const projectPanelRunColumns: DataColumns<ProjectResource> = [
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: (resource) => renderResourceStatus(resource),
+        render: (uuid) => <ResourceStatus uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialProcessTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: (uuid) => <ResourceType uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} />,
+        render: (uuid) => <ResourceOwnerWithName uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderUuidWithCopy({uuid: resource.uuid}),
+        render: (uuid) => <ResourceUUID uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.CONTAINER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: GroupContentsResource) => renderContainerUuid(resource),
+        render: (uuid) => <ResourceContainerUuid uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.RUNTIME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ContainerRunTime uuid={resource.uuid} />,
+        render: (uuid) => <ContainerRunTime uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.OUTPUT_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <ResourceOutputUuid resource={resource} />,
+        render: (uuid) => <ResourceOutputUuid uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.LOG_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource: ContainerRequestResource) => <ResourceLogUuid resource={resource} />,
+        render: (uuid) => <ResourceLogUuid uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.PARENT_PROCESS,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderResourceParentProcess(resource),
+        render: (uuid) => <ResourceParentProcess uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.MODIFIED_BY_USER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderModifiedByUserUuid(resource),
+        render: (uuid) => <ResourceModifiedByUserUuid uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.CREATED_AT,
@@ -143,7 +141,7 @@ export const projectPanelRunColumns: DataColumns<ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'createdAt' },
         filters: createTree(),
-        render: (resource) => renderCreatedAtDate(resource),
+        render: (uuid) => <ResourceCreatedAtDate uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.LAST_MODIFIED,
@@ -151,7 +149,7 @@ export const projectPanelRunColumns: DataColumns<ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.DESC, field: 'modifiedAt' },
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource),
+        render: (uuid) => <ResourceLastModifiedDate uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.TRASH_AT,
@@ -159,7 +157,7 @@ export const projectPanelRunColumns: DataColumns<ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
         filters: createTree(),
-        render: (resource) => renderTrashDate(resource),
+        render: (uuid) => <ResourceTrashDate uuid={uuid} />,
     },
     {
         name: ProjectPanelRunColumnNames.DELETE_AT,
@@ -167,7 +165,7 @@ export const projectPanelRunColumns: DataColumns<ProjectResource> = [
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'deleteAt' },
         filters: createTree(),
-        render: (resource) => renderDeleteDate(resource),
+        render: (uuid) => <ResourceDeleteDate uuid={uuid} />,
     },
 ];
 
@@ -176,9 +174,9 @@ const DEFAULT_VIEW_MESSAGES = ['No workflow runs found'];
 interface ProjectPanelRunProps {
     project?: ProjectResource;
     paperClassName?: string;
-    onRowClick: (item: ContainerRequestResource) => void;
-    onRowDoubleClick: ({uuid}: ContainerRequestResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContainerRequestResource) => void;
+    onRowClick: (uuid: string) => void;
+    onRowDoubleClick: (uuid: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
 }
 
 const mapStateToProps = (state: RootState): Pick<ProjectPanelRunProps, 'project'> => {

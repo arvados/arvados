@@ -15,26 +15,23 @@ import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multis
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
-import { getResource } from "store/resources/resources";
-import { Resource } from "models/resource";
 
 interface Props {
     id: string;
-    onRowClick: (resource: Resource) => void;
-    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: Resource, isAdmin?: boolean) => void;
-    onRowDoubleClick: (resource: Resource) => void;
+    onRowClick: (item: any) => void;
+    onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
+    onRowDoubleClick: (item: any) => void;
+    extractKey?: (item: any) => React.Key;
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel, resources}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
     const working = !!progressIndicator.some(p => p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const isMSToolbarVisible = multiselect.isVisible;
-    const resourceItems = dataExplorerState.items.map(item => getResource<Resource>(item)(resources)).filter((resource): resource is Resource => Boolean(resource));
     return {
         ...dataExplorerState,
-        resourceItems,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
@@ -48,7 +45,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
 
 const mapDispatchToProps = () => {
     return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
-        onSetColumns: (columns: DataColumns<any>) => {
+        onSetColumns: (columns: DataColumns<any, any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
         },
 
@@ -56,15 +53,15 @@ const mapDispatchToProps = () => {
             dispatch(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id, searchValue }));
         },
 
-        onColumnToggle: (column: DataColumn<any>) => {
+        onColumnToggle: (column: DataColumn<any, any>) => {
             dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
         },
 
-        onSortToggle: (column: DataColumn<any>) => {
+        onSortToggle: (column: DataColumn<any, any>) => {
             dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
         },
 
-        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any>) => {
+        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any, any>) => {
             dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
         },
 

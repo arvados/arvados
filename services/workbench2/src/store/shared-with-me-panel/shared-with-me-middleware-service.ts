@@ -109,7 +109,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
 };
 
 const getFilters = (dataExplorer: DataExplorer, authState: AuthState) => {
-    const columns = dataExplorer.columns as DataColumns<ProjectResource>;
+    const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SharedWithMePanelColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
     const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);

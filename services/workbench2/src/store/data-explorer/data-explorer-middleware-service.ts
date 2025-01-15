@@ -24,7 +24,7 @@ export abstract class DataExplorerMiddlewareService {
     }
 
     public getColumnFilters<T>(
-        columns: DataColumns<T>,
+        columns: DataColumns<T, any>,
         columnName: string
     ): DataTableFilters {
         return getDataExplorerColumnFilters(columns, columnName);
@@ -51,7 +51,7 @@ export abstract class DataExplorerMiddlewareService {
 }
 
 export const getDataExplorerColumnFilters = <T>(
-    columns: DataColumns<T>,
+    columns: DataColumns<T, any>,
     columnName: string
 ): DataTableFilters => {
     const column = columns.find((c) => c.name === columnName);

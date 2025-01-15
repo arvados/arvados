@@ -127,8 +127,9 @@ export const ProjectPanel = withStyles(styles)(
                 return resource.ownerUuid === this.props.currentItemId;
             };
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const { resources, isAdmin } = this.props;
+                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
                 // When viewing the contents of a filter group, all contents should be treated as read only.
                 let readonly = false;
                 const project = getResource<GroupResource>(this.props.currentItemId)(resources);
@@ -136,7 +137,7 @@ export const ProjectPanel = withStyles(styles)(
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(
                         openContextMenu(event, {
@@ -154,14 +155,14 @@ export const ProjectPanel = withStyles(styles)(
                         })
                     );
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             };
 
-            handleRowDoubleClick = ({uuid}: Resource) => {
+            handleRowDoubleClick = (uuid: string) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             };
 
-            handleRowClick = ({uuid}: Resource) => {
+            handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));
