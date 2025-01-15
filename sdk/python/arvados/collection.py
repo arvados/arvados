@@ -1234,17 +1234,24 @@ class Collection(RichCollectionBase):
           the collection's API record from the API server. If not specified,
           uses the `num_retries` provided when this instance was constructed.
         """
+
+        token_refresh_period = 60*60
+        time_since_last_token_refresh = (time.time() - self._token_refresh_timestamp)
         upstream_response = None
+
         if other is None:
             if self._manifest_locator is None:
                 raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
+
+            if re.match(arvados.util.portable_data_hash_pattern, self._manifest_locator) and time_since_last_token_refresh < token_refresh_period:
+                return
+
             upstream_response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
             other = CollectionReader(upstream_response["manifest_text"])
 
-        time_since_last_token_refresh = (time.time() - self._token_refresh_timestamp)
         if self.committed():
             # 1st case, no local changes, content is the same
-            if self.portable_data_hash() == other.portable_data_hash() and time_since_last_token_refresh < (60*60):
+            if self.portable_data_hash() == other.portable_data_hash() and time_since_last_token_refresh < token_refresh_period:
                 # No difference in content.  Remember the API record
                 # (metadata such as name or properties may have changed)
                 # but don't update the token refresh timestamp.

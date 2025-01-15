@@ -517,8 +517,6 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     @use_counter
     def flush(self):
-        if not self.writable():
-            return
         with llfuse.lock_released:
             with self._updating_lock:
                 if self.collection.committed():
