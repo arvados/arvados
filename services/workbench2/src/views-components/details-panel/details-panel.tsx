@@ -32,7 +32,7 @@ import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
-type CssRules = 'root' | 'container' | 'headerContainer' | 'headerIcon' | 'tabContainer';
+type CssRules = 'root' | 'container' | 'headerContainer' | 'headerIcon' | 'tabContainerWrapper' | 'tabContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -50,6 +50,14 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerIcon: {
         fontSize: '2.125rem',
+    },
+    tabContainerWrapper: {
+        // Grid container wrapper prevents horizontal overflow
+        // Flex styles prevent unscrollable vertical overflow
+        overflowY: 'scroll',
+        flexGrow: 1,
+        flexShrink: 1,
+        flexBasis: 'inherit',
     },
     tabContainer: {
         overflow: 'auto',
@@ -212,8 +220,10 @@ export const DetailsPanel = withStyles(styles)(
                                 }
                             </Tabs>
                         </Grid>
-                        <Grid item xs className={this.props.classes.tabContainer} >
-                            {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
+                        <Grid item container className={this.props.classes.tabContainerWrapper}>
+                            <Grid item xs className={this.props.classes.tabContainer}>
+                                {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
+                            </Grid>
                         </Grid>
                     </Grid >
                 );
