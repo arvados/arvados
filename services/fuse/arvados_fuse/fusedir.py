@@ -1223,10 +1223,7 @@ class ProjectDirectory(Directory):
     def writable(self):
         if not self._enable_write:
             return False
-        with llfuse.lock_released:
-            if not self._current_user:
-                self._current_user = self.api.users().current().execute(num_retries=self.num_retries)
-            return self._current_user["uuid"] in self.project_object.get("writable_by", [])
+        return self.project_object.get("can_write") is True
 
     def persisted(self):
         return True
