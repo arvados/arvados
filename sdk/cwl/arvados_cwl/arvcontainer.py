@@ -20,6 +20,7 @@ from cwltool.errors import WorkflowException
 from cwltool.process import UnsupportedRequirement, shortname
 from cwltool.utils import aslist, adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.job import JobBase
+from cwltool.builder import substitute
 
 import arvados.collection
 
@@ -374,8 +375,33 @@ class ArvadosContainer(JobBase):
 
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
-            for gb in self.globpatterns:
-                gb = self.builder.do_eval(gb)
+            for gp in self.globpatterns:
+                if isinstance(gp, dict):
+                    # dict of two keys, 'glob' and 'pattern' which
+                    # means we need to predict the names of secondary
+                    # files to capture.
+                    pattern = gp["pattern"]
+                    if "${" in pattern or "$(" in pattern:
+                        # pattern is an expression, so evaluate it first
+                        pattern = self.builder.do_eval(pattern)
+
+                        # If we get a string back, that's the expected
+                        # file name for the secondary file.  However,
+                        # it is legal for this to return a file object
+                        # or an array.  In that case we'll just
+                        # capture everything.
+
+                        if isinstance(pattern, str):
+                            gb = pattern
+                        else:
+                            output_glob.append("**")
+                            break
+                    else:
+                        gb = self.builder.do_eval(gp["glob"])
+
+                elif isinstance(gp, str):
+                    gb = self.builder.do_eval(gp)
+
                 if not gb:
                     continue
                 for gbeval in aslist(gb):
@@ -383,6 +409,30 @@ class ArvadosContainer(JobBase):
                         gbeval = gbeval[len(self.outdir)+1:]
                     while gbeval.startswith("./"):
                         gbeval = gbeval[2:]
+
+                    if isinstance(gp, dict):
+                        # pattern is not an expression or we would
+                        # have handled this earlier, so it must be
+                        # a simple substitution on the secondary
+                        # file name.
+                        #
+                        # 'pattern' was assigned in the earlier code block
+                        #
+                        # if there's a wild card in the glob, figure
+                        # out if there's enough text after it that the
+                        # suffix substitution can be done correctly.
+                        cutpos = max(gbeval.find("*"), gbeval.find("]"))
+                        if cutpos > -1:
+                            tail = gbeval[cutpos+1:]
+                            if tail.count(".") < pattern.count("^"):
+                                # the known suffix in the glob has
+                                # fewer dotted extensions than the
+                                # substition pattern wants to remove,
+                                # so we can't accurately predict
+                                # correct name glob in advance.
+                                gbeval = ""
+                        if gbeval:
+                            gbeval = substitute(gbeval, pattern)
 
                     if gbeval in (self.outdir, "", "."):
                         output_glob.append("**")

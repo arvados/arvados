@@ -12,7 +12,6 @@ from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException
 from arvados.util import portable_data_hash_pattern
 from cwltool.utils import aslist
-from cwltool.builder import substitute
 
 from typing import Sequence, Mapping
 
@@ -97,12 +96,9 @@ class ArvadosCommandTool(CommandLineTool):
                     self.globpatterns.append(gb)
                 if "secondaryFiles" in inputschema:
                     for sf in aslist(inputschema["secondaryFiles"]):
-                        if "$(" in sf["pattern"] or "${" in sf["pattern"]:
-                            self.globpatterns.append("**")
-                        else:
-                            for gb in aslist(inputschema["outputBinding"]["glob"]):
-                                subst = substitute(gb, sf["pattern"])
-                                self.globpatterns.append(subst)
+                        for gb in aslist(inputschema["outputBinding"]["glob"]):
+                            self.globpatterns.append({"pattern": sf["pattern"], "glob": gb})
+
 
 
     def make_job_runner(self, runtimeContext):
