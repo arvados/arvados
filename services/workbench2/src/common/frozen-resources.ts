@@ -4,8 +4,9 @@
 
 import { ProjectResource } from "models/project";
 import { getResource } from "store/resources/resources";
+import { memoize } from "lodash";
 
-export const resourceIsFrozen = (resource: any, resources): boolean => {
+export const resourceIsFrozen = memoize((resource: any, resources): boolean => {
     let isFrozen: boolean = !!resource.frozenByUuid;
     let ownerUuid: string | undefined = resource?.ownerUuid;
 
@@ -16,4 +17,4 @@ export const resourceIsFrozen = (resource: any, resources): boolean => {
     }
 
     return isFrozen;
-}
+})
