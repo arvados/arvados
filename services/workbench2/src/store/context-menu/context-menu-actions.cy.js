@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
-import { resourceUuidToContextMenuKind } from './context-menu-actions';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
@@ -138,7 +138,7 @@ describe('context-menu-actions', () => {
 
                 let menuKind;
                 try {
-                    menuKind = store.dispatch(resourceUuidToContextMenuKind(resourceUuid, forceReadonly))
+                    menuKind = store.dispatch(resourceToMenuKind(resourceUuid, forceReadonly))
                     expect(menuKind).to.equal(expected);
                 } catch (err) {
                     console.error('Failed Assertion: ', err.message);

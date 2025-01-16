@@ -18,9 +18,10 @@ import { formatDate, formatFileSize } from 'common/formatters';
 import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 export type CssRules = 'versionBrowserHeader'
     | 'versionBrowserItem'
@@ -156,7 +157,7 @@ const vbMapDispatchToProps = () =>
     (dispatch: Dispatch): CollectionVersionBrowserDispatchProps => ({
         showVersion: (collection) => dispatch<any>(navigateTo(collection.uuid)),
         handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource) => {
-            const menuKind = dispatch<any>(resourceUuidToContextMenuKind(collection.uuid));
+            const menuKind = dispatch<any>(resourceToMenuKind(collection.uuid));
             if (collection && menuKind) {
                 dispatch<any>(openContextMenu(event, {
                     name: collection.name,

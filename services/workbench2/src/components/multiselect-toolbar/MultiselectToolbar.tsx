@@ -12,8 +12,8 @@ import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { Resource, ResourceKind, extractUuidKind, EditableResource } from "models/resource";
-import { getResource, getResourceWithEditableStatus, ResourcesState } from "store/resources/resources";
+import { Resource, ResourceKind, extractUuidKind } from "models/resource";
+import { getResource, ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
@@ -22,16 +22,13 @@ import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-pro
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
-import { resourceIsFrozen } from "common/frozen-resources";
 import { GroupResource, GroupClass } from "models/group";
-import { User } from "models/user";
-import { isProcessCancelable, getProcess } from "store/processes/process";
-import { CollectionResource } from "models/collection";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
+import { resourceToMenuKind } from "common/resource-to-menu-kind";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
@@ -60,18 +57,20 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export type MultiselectToolbarProps = {
+export type MultiselectToolbarDataProps = {
     checkedList: TCheckedList;
     selectedResourceUuid: string | null;
     iconProps: IconProps
-    user: User | null
     disabledButtons: Set<string>
     auth: AuthState;
     location: string;
     forceMultiSelectMode?: boolean;
     injectedStyles?: string;
-    unfreezeRequiresAdmin?: boolean;
+};
+
+type MultiselectToolbarActionProps = {
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
+    resourceToMenukind: (uuid: string) => ContextMenuKind | undefined;
 };
 
 type IconProps = {
@@ -92,11 +91,11 @@ export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles, unfreezeRequiresAdmin } = props;
+    withStyles(styles)((props: MultiselectToolbarDataProps & MultiselectToolbarActionProps & WithStyles<CssRules>) => {
+        const { classes, checkedList, iconProps, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
-        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [msResourceToContextMenuKind(selectedResourceUuid, iconProps.resources, user, !!unfreezeRequiresAdmin)] : null
+        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -219,93 +218,6 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const msResourceToContextMenuKind = (uuid: string, resources: ResourcesState, user: User | null, unfreezeRequiresAdmin: boolean, readonly = false ): (ContextMenuKind | ResourceKind) | undefined => {
-    if (!user) return;
-    const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
-    const { isAdmin } = user;
-    const kind = extractUuidKind(uuid);
-
-    const isFrozen = resource?.kind && resource.kind === ResourceKind.PROJECT ? resourceIsFrozen(resource, resources) : false;
-    const isEditable = (user.isAdmin || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
-    const { canManage, canWrite } = resource || {};
-
-    switch (kind) {
-        case ResourceKind.PROJECT:
-            if (isFrozen) {
-                return isAdmin 
-                ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                : canManage 
-                    ? unfreezeRequiresAdmin
-                        ? ContextMenuKind.MANAGEABLE_PROJECT
-                        : ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
-                    : isEditable 
-                        ? ContextMenuKind.FROZEN_PROJECT
-                        : ContextMenuKind.READONLY_PROJECT;
-            }
-
-            if (resource?.groupClass === GroupClass.ROLE) {
-                return ContextMenuKind.GROUPS;
-            }
-
-            if (isAdmin && !readonly) {
-                if (resource?.groupClass === GroupClass.FILTER) {
-                    return ContextMenuKind.FILTER_GROUP_ADMIN;
-                }
-                return ContextMenuKind.PROJECT_ADMIN;
-            }
-
-            if(canManage === false && canWrite === true) return ContextMenuKind.WRITEABLE_PROJECT;
-
-            return isEditable
-                ? resource && resource.groupClass !== GroupClass.FILTER
-                    ? ContextMenuKind.PROJECT
-                    : ContextMenuKind.FILTER_GROUP
-                : ContextMenuKind.READONLY_PROJECT;
-        case ResourceKind.COLLECTION:
-            const c = getResource<CollectionResource>(uuid)(resources);
-            if (c === undefined) {
-                return;
-            }
-            const parent = getResource<GroupResource>(c.ownerUuid)(resources);
-            const isWriteable = parent?.canWrite === true && parent.canManage === false;
-            const isOldVersion = c.uuid !== c.currentVersionUuid;
-            const isTrashed = c.isTrashed;
-            return isOldVersion
-                ? ContextMenuKind.OLD_VERSION_COLLECTION
-                : isTrashed && isEditable
-                    ? ContextMenuKind.TRASHED_COLLECTION
-                    : isAdmin && isEditable
-                        ? ContextMenuKind.COLLECTION_ADMIN
-                        : isEditable 
-                            ? isWriteable
-                                ? ContextMenuKind.WRITEABLE_COLLECTION 
-                                : ContextMenuKind.COLLECTION
-                            : ContextMenuKind.READONLY_COLLECTION;
-        case ResourceKind.PROCESS:
-            const process = getProcess(uuid)(resources);
-                const processParent = process ? getResource<any>(process.containerRequest.ownerUuid)(resources) : undefined;
-                const { canWrite: canWriteProcess } = processParent || {};
-                const isRunning = process && isProcessCancelable(process);
-                return isAdmin 
-                        ? isRunning
-                            ? ContextMenuKind.RUNNING_PROCESS_ADMIN
-                            : ContextMenuKind.PROCESS_ADMIN
-                        : isRunning
-                            ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                            : canWriteProcess 
-                                ? ContextMenuKind.PROCESS_RESOURCE
-                                : ContextMenuKind.READONLY_PROCESS_RESOURCE;
-        case ResourceKind.USER:
-            return isAdmin ? ContextMenuKind.ROOT_PROJECT_ADMIN : ContextMenuKind.ROOT_PROJECT;
-        case ResourceKind.LINK:
-            return ContextMenuKind.LINK;
-        case ResourceKind.WORKFLOW:
-            return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;
-        default:
-            return;
-    }
-};
-
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters): MultiSelectMenuAction[] {
     const rawResult: Set<MultiSelectMenuAction> = new Set();
     const resultNames = new Set();
@@ -339,18 +251,15 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
     return filteredResult;
 }
 
-
 //--------------------------------------------------//
 
 function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResourceUuid}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
-        user: auth && auth.user ? auth.user : null,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
         selectedResourceUuid,
         location: window.location.pathname,
-        unfreezeRequiresAdmin: auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin,
         iconProps: {
             resources,
             favorites,
@@ -361,6 +270,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
+        resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
             const currentList = selectedToArray(checkedList)
