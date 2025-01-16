@@ -1868,13 +1868,6 @@ CREATE INDEX collections_trgm_text_search_idx ON public.collections USING gin ((
 
 
 --
--- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX container_requests_full_text_search_idx ON public.container_requests USING gin (to_tsvector('english'::regconfig, substr((((((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text) || ' '::text) || COALESCE((output_properties)::text, ''::text)) || ' '::text) || COALESCE(output_glob, ''::text)), 0, 8000)));
-
-
---
 -- Name: container_requests_index_on_properties; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3356,6 +3349,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20240618121312'),
 ('20240627201747'),
 ('20240820202230'),
-('20241118110000');
+('20241118110000'),
+('20250115145250');
 
 
