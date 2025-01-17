@@ -60,7 +60,7 @@ export const resourceToMenuKind =
         switch (kind) {
             case ResourceKind.PROJECT:
                 const unfreezeRequiresAdmin = getUnfreezeRequiresAdmin(auth);
-                const isFilterGroup = resource.groupClass !== GroupClass.FILTER;
+                const isFilterGroup = resource.groupClass === GroupClass.FILTER;
                 return getProjectMenuKind({isAdmin, isFrozen, isEditable, canManage, canWrite, unfreezeRequiresAdmin, isFilterGroup, readonly});
             case ResourceKind.COLLECTION:
                 const collectionParent = getResource<GroupResource>(resource.ownerUuid)(resources);
@@ -99,13 +99,13 @@ const getProjectMenuKind = ({ isAdmin, readonly, isFrozen, canManage, canWrite, 
         return ContextMenuKind.READONLY_PROJECT;
     }
 
-    if (canManage === false && canWrite === true) {
-        return ContextMenuKind.WRITEABLE_PROJECT;
-    }
-
     if (isAdmin && !readonly) {
         if (isFilterGroup) return ContextMenuKind.FILTER_GROUP_ADMIN;
         return ContextMenuKind.PROJECT_ADMIN;
+    }
+
+    if (canManage === false && canWrite === true) {
+        return ContextMenuKind.WRITEABLE_PROJECT;
     }
 
     if (!isEditable) {
