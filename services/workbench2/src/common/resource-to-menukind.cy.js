@@ -11,7 +11,7 @@ import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { GroupClass } from 'models/group';
 
 describe('context-menu-actions', () => {
-    describe('resourceUuidToContextMenuKind', () => {
+    describe('resourceToMenuKind', () => {
         const middlewares = [thunk];
         const mockStore = configureStore(middlewares);
         const userUuid = 'zzzzz-tpzed-bbbbbbbbbbbbbbb';
