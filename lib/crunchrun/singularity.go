@@ -7,6 +7,7 @@ package crunchrun
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -204,6 +206,8 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 		if err != nil {
 			return err
 		}
+	} else if err != nil {
+		return fmt.Errorf("error while checking for existing image file: %s", err)
 	}
 
 	if containerClient == nil {
@@ -211,16 +215,27 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 		return nil
 	}
 
-	// update TTL to now + two weeks
-	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
+	imageDir, _ := path.Split(imageFilename)
+	buf, err := os.ReadFile(path.Join(imageDir, ".arvados#collection"))
+	if err != nil {
+		return fmt.Errorf("could not sync image collection: %w", err)
+	}
+	var synced arvados.Collection
+	err = json.Unmarshal(buf, &synced)
+	if err != nil {
+		return fmt.Errorf("could not parse .arvados#collection: %w", err)
+	}
+	e.logf("saved converted image in %s with PDH %s", sifCollection.UUID, synced.PortableDataHash)
 
+	// Rename our new cached image collection so other containers
+	// can use it.
+	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
 	uuidPath, err := containerClient.PathForUUID("update", sifCollection.UUID)
 	if err != nil {
 		e.logf("error PathForUUID: %v", err)
 		return nil
 	}
-	var imageCollection arvados.Collection
-	err = containerClient.RequestAndDecode(&imageCollection,
+	err = containerClient.RequestAndDecode(nil,
 		arvados.EndpointCollectionUpdate.Method,
 		uuidPath,
 		nil, map[string]interface{}{
@@ -229,23 +244,17 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 				"trash_at": exp.UTC().Format(time.RFC3339),
 			},
 		})
-	if err == nil {
-		// If we just wrote the image to the cache, the
-		// response also returns the updated PDH
-		e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, imageCollection.PortableDataHash)
-		return nil
-	}
-
-	e.logf("error updating/renaming collection for cached sif image: %v", err)
-	// Failed to update but maybe it lost a race and there is
-	// another cached collection in the same place, so check the cache
-	// again
-	sifCollection, err = e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient)
 	if err != nil {
-		return err
+		// Error is probably a name collision caused by
+		// another crunch-run process is converting the same
+		// image concurrently.  Log the error in case
+		// something more interesting happened.
+		//
+		// Either way, we have the PDH of a converted image,
+		// so we can still proceed.
+		e.logf("using converted image anyway, despite error renaming collection: %v", err)
 	}
-	e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, sifCollection.PortableDataHash)
-
+	e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, synced.PortableDataHash)
 	return nil
 }
 
