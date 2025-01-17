@@ -40,17 +40,40 @@ type ProcessToMenuArgs = {
     canWriteProcess: boolean;
 };
 
-type MenuKindResource = Pick<Resource, 'uuid' | 'kind'> &
+type ProjectMenuKind = ContextMenuKind.PROJECT
+    | ContextMenuKind.PROJECT_ADMIN
+    | ContextMenuKind.FROZEN_PROJECT
+    | ContextMenuKind.FROZEN_PROJECT_ADMIN
+    | ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
+    | ContextMenuKind.MANAGEABLE_PROJECT
+    | ContextMenuKind.READONLY_PROJECT
+    | ContextMenuKind.WRITEABLE_PROJECT
+    | ContextMenuKind.FILTER_GROUP
+    | ContextMenuKind.FILTER_GROUP_ADMIN;
+
+type CollectionMenuKind = ContextMenuKind.COLLECTION
+    | ContextMenuKind.READONLY_COLLECTION
+    | ContextMenuKind.WRITEABLE_COLLECTION
+    | ContextMenuKind.OLD_VERSION_COLLECTION
+    | ContextMenuKind.TRASHED_COLLECTION
+    | ContextMenuKind.COLLECTION_ADMIN;
+
+type ProcessMenuKind = ContextMenuKind.PROCESS_RESOURCE
+    | ContextMenuKind.PROCESS_ADMIN
+    | ContextMenuKind.RUNNING_PROCESS_RESOURCE
+    | ContextMenuKind.RUNNING_PROCESS_ADMIN
+    | ContextMenuKind.READONLY_PROCESS_RESOURCE;
+
+type MenuKindResource = Resource &
     Pick<TrashableResource, 'isTrashed'> &
     Pick<GroupResource, 'name' | 'groupClass' | 'canWrite' | 'canManage'> &
     Pick<CollectionResource, 'currentVersionUuid' | 'ownerUuid'> &
     Pick<User, 'isAdmin'>;
 
-export const resourceToMenuKind =
-    (uuid: string, readonly = false) =>
+export const resourceToMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState): ContextMenuKind | undefined => {
         const { auth, resources } = getState();
-        const resource = getResource(uuid)(resources) as unknown as MenuKindResource;
+        const resource = getResource<MenuKindResource>(uuid)(resources);
         if (!resource) return;
         const { kind, canManage = false, canWrite = false } = resource;
         const isAdmin = auth.user?.isAdmin || false;
@@ -70,7 +93,7 @@ export const resourceToMenuKind =
                 return getCollectionMenuKind({ isAdmin, isEditable, isOldVersion, isTrashed, isOnlyWriteable });
             case ResourceKind.PROCESS:
                 const process = getProcess(uuid)(resources);
-                const canWriteProcess = process ? getResource<any>(process.containerRequest.ownerUuid)(resources).canWrite : false;
+                const canWriteProcess = !!(process && getResource<GroupResource>(process.containerRequest.ownerUuid)(resources)?.canWrite);
                 const isRunning = process ? isProcessCancelable(process) : false;
                 return getProcessMenuKind({ isAdmin, isRunning, canWriteProcess });
             case ResourceKind.USER:
@@ -84,7 +107,7 @@ export const resourceToMenuKind =
         }
     };
 
-const getProjectMenuKind = ({ isAdmin, readonly, isFrozen, canManage, canWrite, unfreezeRequiresAdmin, isEditable, isFilterGroup }: ProjectToMenuArgs) => {
+const getProjectMenuKind = ({ isAdmin, readonly, isFrozen, canManage, canWrite, unfreezeRequiresAdmin, isEditable, isFilterGroup }: ProjectToMenuArgs): ProjectMenuKind => {
     if (isFrozen) {
         if (isAdmin) {
             return ContextMenuKind.FROZEN_PROJECT_ADMIN;
@@ -117,7 +140,7 @@ const getProjectMenuKind = ({ isAdmin, readonly, isFrozen, canManage, canWrite, 
     return ContextMenuKind.PROJECT;
 };
 
-const getCollectionMenuKind = ({ isAdmin, isEditable, isOnlyWriteable, isOldVersion, isTrashed }: CollectionToMenuArgs) => {
+const getCollectionMenuKind = ({ isAdmin, isEditable, isOnlyWriteable, isOldVersion, isTrashed }: CollectionToMenuArgs): CollectionMenuKind => {
     if (isOldVersion) {
         return ContextMenuKind.OLD_VERSION_COLLECTION;
     }
@@ -137,7 +160,7 @@ const getCollectionMenuKind = ({ isAdmin, isEditable, isOnlyWriteable, isOldVers
     return isOnlyWriteable ? ContextMenuKind.WRITEABLE_COLLECTION : ContextMenuKind.COLLECTION;
 };
 
-const getProcessMenuKind = ({ isAdmin, isRunning, canWriteProcess }: ProcessToMenuArgs): ContextMenuKind => {
+const getProcessMenuKind = ({ isAdmin, isRunning, canWriteProcess }: ProcessToMenuArgs): ProcessMenuKind => {
     if (isAdmin) {
         return isRunning ? ContextMenuKind.RUNNING_PROCESS_ADMIN : ContextMenuKind.PROCESS_ADMIN;
     }
