@@ -321,75 +321,83 @@ class CollectionDirectoryBase(Directory):
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
+        if event in (arvados.collection.TOK, arvados.collection.WRITE):
+            # We don't care about TOK events, that means only token
+            # signatures were updated, and WRITE events were initiated
+            # locally.
+            return
+
         # These are events from the Collection object (ADD/DEL/MOD)
         # emitted by operations on the Collection object (like
         # "mkdirs" or "remove"), and by "update", which we need to
         # synchronize with our FUSE objects that are assigned inodes.
-        if collection == self.collection:
-            name = self.sanitize_filename(name)
+        if collection != self.collection:
+            return
 
-            #
-            # It's possible for another thread to have llfuse.lock and
-            # be waiting on collection.lock.  Meanwhile, we released
-            # llfuse.lock earlier in the stack, but are still holding
-            # on to the collection lock, and now we need to re-acquire
-            # llfuse.lock.  If we don't release the collection lock,
-            # we'll deadlock where we're holding the collection lock
-            # waiting for llfuse.lock and the other thread is holding
-            # llfuse.lock and waiting for the collection lock.
-            #
-            # The correct locking order here is to take llfuse.lock
-            # first, then the collection lock.
-            #
-            # Since collection.lock is an RLock, it might be locked
-            # multiple times, so we need to release it multiple times,
-            # keep a count, then re-lock it the correct number of
-            # times.
-            #
-            lockcount = 0
-            try:
-                while True:
-                    self.collection.lock.release()
-                    lockcount += 1
-            except RuntimeError:
-                pass
+        name = self.sanitize_filename(name)
 
-            try:
-                with llfuse.lock:
-                    with self.collection.lock:
-                        if event == arvados.collection.ADD:
-                            self.new_entry(name, item, self.mtime())
-                        elif event == arvados.collection.DEL:
-                            ent = self._entries[name]
-                            del self._entries[name]
+        #
+        # It's possible for another thread to have llfuse.lock and
+        # be waiting on collection.lock.  Meanwhile, we released
+        # llfuse.lock earlier in the stack, but are still holding
+        # on to the collection lock, and now we need to re-acquire
+        # llfuse.lock.  If we don't release the collection lock,
+        # we'll deadlock where we're holding the collection lock
+        # waiting for llfuse.lock and the other thread is holding
+        # llfuse.lock and waiting for the collection lock.
+        #
+        # The correct locking order here is to take llfuse.lock
+        # first, then the collection lock.
+        #
+        # Since collection.lock is an RLock, it might be locked
+        # multiple times, so we need to release it multiple times,
+        # keep a count, then re-lock it the correct number of
+        # times.
+        #
+        lockcount = 0
+        try:
+            while True:
+                self.collection.lock.release()
+                lockcount += 1
+        except RuntimeError:
+            pass
+
+        try:
+            with llfuse.lock:
+                with self.collection.lock:
+                    if event == arvados.collection.ADD:
+                        self.new_entry(name, item, self.mtime())
+                    elif event == arvados.collection.DEL:
+                        ent = self._entries[name]
+                        del self._entries[name]
+                        self.inodes.invalidate_entry(self, name)
+                        self.inodes.del_entry(ent)
+                    elif event == arvados.collection.MOD:
+                        # MOD events have (modified_from, newitem)
+                        newitem = item[1]
+                        entry = None
+                        if hasattr(newitem, "fuse_entry") and newitem.fuse_entry is not None:
+                            entry = newitem.fuse_entry
+                        elif name in self._entries:
+                            entry = self._entries[name]
+
+                        if entry is not None:
+                            entry.invalidate()
+                            self.inodes.invalidate_inode(entry)
+
+                        if name in self._entries:
                             self.inodes.invalidate_entry(self, name)
-                            self.inodes.del_entry(ent)
-                        elif event == arvados.collection.MOD:
-                            # MOD events have (modified_from, newitem)
-                            newitem = item[1]
-                            entry = None
-                            if hasattr(newitem, "fuse_entry") and newitem.fuse_entry is not None:
-                                entry = newitem.fuse_entry
-                            elif name in self._entries:
-                                entry = self._entries[name]
 
-                            if entry is not None:
-                                entry.invalidate()
-                                self.inodes.invalidate_inode(entry)
+                    # we don't care about TOK events, those mean
+                    # only token signatures were updated
 
-                            if name in self._entries:
-                                self.inodes.invalidate_entry(self, name)
-
-                        # we don't care about TOK events, those mean
-                        # only token signatures were updated
-
-                        if self.collection_record_file is not None:
-                            self.collection_record_file.invalidate()
-                            self.inodes.invalidate_inode(self.collection_record_file)
-            finally:
-                while lockcount > 0:
-                    self.collection.lock.acquire()
-                    lockcount -= 1
+                    if self.collection_record_file is not None:
+                        self.collection_record_file.invalidate()
+                        self.inodes.invalidate_inode(self.collection_record_file)
+        finally:
+            while lockcount > 0:
+                self.collection.lock.acquire()
+                lockcount -= 1
 
     def populate(self, mtime):
         self._mtime = mtime

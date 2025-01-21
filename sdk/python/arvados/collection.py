@@ -30,7 +30,7 @@ from stat import *
 
 from ._internal import streams
 from .api import ThreadSafeAPIClient
-from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock
+from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock, ADD, DEL, MOD, TOK, WRITE
 from .keep import KeepLocator, KeepClient
 import arvados.config as config
 import arvados.errors as errors
@@ -58,14 +58,7 @@ else:
 
 _logger = logging.getLogger('arvados.collection')
 
-ADD = "add"
-"""Argument value for `Collection` methods to represent an added item"""
-DEL = "del"
-"""Argument value for `Collection` methods to represent a removed item"""
-MOD = "mod"
-"""Argument value for `Collection` methods to represent a modified item"""
-TOK = "tok"
-"""Argument value for `Collection` methods to represent an item with token differences"""
+
 FILE = "file"
 """`create_type` value for `Collection.find_or_create`"""
 COLLECTION = "collection"
