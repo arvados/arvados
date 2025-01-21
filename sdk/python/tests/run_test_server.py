@@ -799,6 +799,23 @@ def setup_config():
                             }
                         }
                     },
+                    "LDAP": {
+                        "Enable": False,
+                        # URL used by lib/controller/localdb/login_ldap_docker_test
+                        "URL": "ldap://arvados-test-openldap/",
+                        "StartTLS": False,
+                        "SearchBase": "dc=example,dc=org",
+                        # Default credentials for osixia/openldap:1.3.0
+                        "SearchBindUser": "cn=admin,dc=example,dc=org",
+                        "SearchBindPassword": "admin",
+                    },
+                    "PAM": {
+                        "Enable": False,
+                        # Without this specific DefaultEmailDomain, inserted users
+                        # would prevent subsequent database/reset from working (see
+                        # database_controller.rb).
+                        "DefaultEmailDomain": "example.com",
+                    },
                 },
                 "SystemLogs": {
                     "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),

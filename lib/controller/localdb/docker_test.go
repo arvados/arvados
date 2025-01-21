@@ -13,29 +13,21 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-type pgproxy struct {
+type tcpProxy struct {
 	net.Listener
 }
 
-// newPgProxy sets up a TCP proxy, listening on all interfaces, that
-// forwards all connections to the cluster's PostgreSQL server. This
-// allows the caller to run a docker container that can connect to a
-// postgresql instance that listens on the test host's loopback
-// interface.
+// newTCPProxy sets up a TCP proxy that forwards all connections to the
+// given host and port. This allows the caller to run a docker container that
+// can connect to cluster service on the test host's loopback interface.
 //
-// Caller is responsible for calling Close() on the returned pgproxy.
-func newPgProxy(c *check.C, cluster *arvados.Cluster) *pgproxy {
-	host := cluster.PostgreSQL.Connection["host"]
-	if host == "" {
-		host = "localhost"
-	}
-	port := cluster.PostgreSQL.Connection["port"]
-	if port == "" {
-		port = "5432"
-	}
+// listenAddr is the IP address of the interface to listen on. Pass an empty
+// string to listen on all interfaces.
+//
+// Caller is responsible for calling Close() on the returned tcpProxy.
+func newTCPProxy(c *check.C, listenAddr, host, port string) *tcpProxy {
 	target := net.JoinHostPort(host, port)
-
-	ln, err := net.Listen("tcp", ":")
+	ln, err := net.Listen("tcp", net.JoinHostPort(listenAddr, ""))
 	c.Assert(err, check.IsNil)
 	go func() {
 		for {
@@ -45,7 +37,7 @@ func newPgProxy(c *check.C, cluster *arvados.Cluster) *pgproxy {
 			}
 			c.Assert(err, check.IsNil)
 			go func() {
-				c.Logf("pgproxy accepted connection from %s", downstream.RemoteAddr().String())
+				c.Logf("tcpProxy accepted connection from %s", downstream.RemoteAddr().String())
 				defer downstream.Close()
 				upstream, err := net.Dial("tcp", target)
 				if err != nil {
@@ -58,11 +50,36 @@ func newPgProxy(c *check.C, cluster *arvados.Cluster) *pgproxy {
 			}()
 		}
 	}()
-	c.Logf("pgproxy listening at %s", ln.Addr().String())
-	return &pgproxy{Listener: ln}
+	c.Logf("tcpProxy listening at %s", ln.Addr().String())
+	return &tcpProxy{Listener: ln}
 }
 
-func (proxy *pgproxy) Port() string {
+func (proxy *tcpProxy) Port() string {
 	_, port, _ := net.SplitHostPort(proxy.Addr().String())
 	return port
+}
+
+// newPgProxy sets up a tcpProxy for the cluster's PostgreSQL database.
+func newPgProxy(c *check.C, cluster *arvados.Cluster, listenAddr string) *tcpProxy {
+	host := cluster.PostgreSQL.Connection["host"]
+	if host == "" {
+		host = "localhost"
+	}
+	port := cluster.PostgreSQL.Connection["port"]
+	if port == "" {
+		port = "5432"
+	}
+	return newTCPProxy(c, listenAddr, host, port)
+}
+
+// newInternalProxy sets up a tcpProxy for an InternalURL of the given service.
+func newInternalProxy(c *check.C, service arvados.Service, listenAddr string) *tcpProxy {
+	for intURL, _ := range service.InternalURLs {
+		host, port, err := net.SplitHostPort(intURL.Host)
+		if err == nil && port != "" {
+			return newTCPProxy(c, listenAddr, host, port)
+		}
+	}
+	c.Fatal("no valid InternalURLs found for service")
+	return nil
 }
