@@ -68,6 +68,7 @@
           - diffutils
           - g++
           - git
+          - jq
           - libnss-systemd
           - make
           - nginx

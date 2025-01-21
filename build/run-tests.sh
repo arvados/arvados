@@ -153,6 +153,9 @@ sanity_checks() {
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
+    echo -n "jq: "
+    jq --version ||
+        fatal "No jq. Try: apt-get install jq"
     echo -n 'libcurl curl.h: '
     find /usr/include -path '*/curl/curl.h' | egrep --max-count=1 . \
         || fatal "No libcurl curl.h. Try: apt-get install libcurl4-gnutls-dev"
@@ -211,7 +214,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$("${VENV3DIR}/bin/python3" -c "import yaml; print(list(yaml.safe_load(open('$ARVADOS_CONFIG','r'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0])")
+    base="$(yq -r "(.Clusters.zzzzz.Services.$svc.InternalURLs | keys)[0]" "$ARVADOS_CONFIG")"
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -364,7 +367,8 @@ setup_virtualenv() {
     # Hence we must install these dependencies this early for the rest of the
     # script to work.
     # s3cmd is used by controller and keep-web tests.
-    pip install PyYAML s3cmd || fatal "failed to install test dependencies in virtualenv"
+    # yq is used by controller tests and this script.
+    pip install PyYAML s3cmd "yq~=3.4" || fatal "failed to install test dependencies in virtualenv"
     do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 
@@ -689,8 +693,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$("${VENV3DIR}/bin/python3" -c "import yaml; print(yaml.safe_load(open('$ARVADOS_CONFIG','r'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname'])") \
-        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+        && psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
