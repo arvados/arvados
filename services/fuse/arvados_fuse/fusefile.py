@@ -17,11 +17,13 @@ class File(FreshBase):
 
     __slots__ = ("inode", "parent_inode", "_mtime")
 
-    def __init__(self, parent_inode, _mtime=0):
+    def __init__(self, parent_inode, _mtime=0, poll=False, poll_time=0):
         super(File, self).__init__()
         self.inode = None
         self.parent_inode = parent_inode
         self._mtime = _mtime
+        self._poll = poll
+        self._poll_time = poll_time
 
     def size(self):
         return 0
@@ -50,8 +52,8 @@ class FuseArvadosFile(File):
 
     __slots__ = ('arvfile', '_enable_write')
 
-    def __init__(self, parent_inode, arvfile, _mtime, enable_write):
-        super(FuseArvadosFile, self).__init__(parent_inode, _mtime)
+    def __init__(self, parent_inode, arvfile, _mtime, enable_write, poll, poll_time):
+        super(FuseArvadosFile, self).__init__(parent_inode, _mtime, poll=poll, poll_time=poll_time)
         self.arvfile = arvfile
         self._enable_write = enable_write
 
@@ -66,9 +68,6 @@ class FuseArvadosFile(File):
     def writeto(self, off, buf, num_retries=0):
         with llfuse.lock_released:
             return self.arvfile.writeto(off, buf, num_retries)
-
-    def stale(self):
-        return False
 
     def writable(self):
         return self._enable_write and self.arvfile.writable()

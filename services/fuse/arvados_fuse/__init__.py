@@ -858,6 +858,10 @@ class Operations(llfuse.Operations):
 
         fh = next(self._filehandles_counter)
 
+        if p.stale():
+            self.inodes.invalidate_inode(p)
+            p.fresh()
+
         parent_inode = self.inodes[p.parent_inode] if p.parent_inode in self.inodes else None
         self._filehandles[fh] = FileHandle(fh, p, parent_inode, open_for_writing)
         self.inodes.touch(p)
@@ -1085,6 +1089,7 @@ class Operations(llfuse.Operations):
     def fsync(self, fh, datasync):
         if fh in self._filehandles:
             self._filehandles[fh].flush(True)
+            self.inodes.invalidate_inode(self._filehandles[fh].obj)
 
     def fsyncdir(self, fh, datasync):
         if fh in self._filehandles:

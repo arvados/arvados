@@ -317,7 +317,7 @@ class CollectionDirectoryBase(Directory):
             ))
             self._entries[name].populate(mtime)
         else:
-            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime, self._enable_write))
+            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime, self._enable_write, self._poll, self._poll_time))
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
@@ -367,12 +367,19 @@ class CollectionDirectoryBase(Directory):
                         elif event == arvados.collection.MOD:
                             # MOD events have (modified_from, newitem)
                             newitem = item[1]
+                            entry = None
                             if hasattr(newitem, "fuse_entry") and newitem.fuse_entry is not None:
-                                newitem.fuse_entry.invalidate()
-                                self.inodes.invalidate_inode(newitem.fuse_entry)
+                                entry = newitem.fuse_entry
                             elif name in self._entries:
-                                self._entries[name].invalidate()
-                                self.inodes.invalidate_inode(self._entries[name])
+                                entry = self._entries[name]
+
+                            if entry is not None:
+                                entry.invalidate()
+                                self.inodes.invalidate_inode(entry)
+
+                            if name in self._entries:
+                                self.inodes.invalidate_entry(self, name)
+
                         # we don't care about TOK events, those mean
                         # only token signatures were updated
 
@@ -1029,7 +1036,7 @@ class ProjectDirectory(Directory):
                  "_current_user", "_full_listing", "storage_classes", "recursively_contained")
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
-                 project_object, poll=True, poll_time=3, storage_classes=None):
+                 project_object, poll=True, poll_time=15, storage_classes=None):
         super(ProjectDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
