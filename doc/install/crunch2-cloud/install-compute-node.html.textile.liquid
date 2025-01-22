@@ -203,7 +203,7 @@ h3(#run-ansible). Run Ansible
 If you installed Ansible inside a virtualenv, activate that virtualenv now. Then, in the @tools/compute-images@ directory of your Arvados source checkout, run @ansible-playbook@ with your inventory and configuration:
 
 <notextile>
-<pre><code>arvados/tools/compute-images$ <span class="userinput">ansible-playbook --ask-become-pass --inventory=inventory.ini --extra-vars=@host_config.yml</span>
+<pre><code>arvados/tools/compute-images$ <span class="userinput">ansible-playbook --ask-become-pass --inventory=inventory.ini --extra-vars=@host_config.yml ../ansible/build-compute-image.yml</span>
 </code></pre>
 </notextile>
 
