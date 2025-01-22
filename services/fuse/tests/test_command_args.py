@@ -73,13 +73,18 @@ class MountArgsTest(unittest.TestCase):
     @noexit
     def test_default_all(self):
         args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--poll-time=27',
             '--foreground', self.mntdir])
         self.assertEqual(args.mode, None)
         self.mnt = arvados_fuse.command.Mount(args)
+
         e = self.check_ent_type(arvados_fuse.ProjectDirectory, 'home')
         self.assertEqual(e.project_object['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
+        self.assertEqual(e._poll_time, 27)
+
         e = self.check_ent_type(arvados_fuse.MagicDirectory, 'by_id')
+        self.assertEqual(e._poll_time, 27)
 
         e = self.check_ent_type(arvados_fuse.StringFile, 'README')
         readme = e.readfrom(0, -1).decode()
@@ -129,11 +134,16 @@ class MountArgsTest(unittest.TestCase):
         cid = c[id_type]
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--collection', cid,
+            '--poll-time=27',
             '--foreground', self.mntdir])
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.CollectionDirectory)
         self.assertEqual(e.collection_locator, cid)
         self.assertEqual(id_type == 'uuid', self.mnt.listen_for_events)
+        if id_type == 'uuid':
+            self.assertEqual(e._poll_time, 27)
+        else:
+            self.assertGreaterEqual(e._poll_time, 60*60)
 
     def test_collection_pdh(self):
         self.test_collection('portable_data_hash')
@@ -149,6 +159,7 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(e.project_object['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
         self.assertEqual(True, self.mnt.listen_for_events)
+        self.assertEqual(e._poll_time, 15)
 
     def test_mutually_exclusive_args(self):
         cid = run_test_server.fixture('collections')['public_text_file']['uuid']
@@ -174,6 +185,7 @@ class MountArgsTest(unittest.TestCase):
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.ProjectDirectory)
         self.assertEqual(e.project_object['uuid'], uuid)
+        self.assertEqual(e._poll_time, 15)
 
     @noexit
     def test_shared(self):

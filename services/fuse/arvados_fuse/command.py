@@ -346,6 +346,13 @@ Filesystem character encoding
             metavar='CLASSES',
             help="Comma-separated list of storage classes to request for new collections",
         )
+        plumbing.add_argument(
+            '--poll-time',
+            metavar='SECONDS',
+            default=15,
+            type=int,
+            help="Upper limit on how long mount contents may be out of date with upstream Arvados (default 15 seconds)",
+        )
         # This is a hidden argument used by tests.  Normally this
         # value will be extracted from the cluster config, but mocking
         # the cluster config under the presence of multiple threads
@@ -582,7 +589,6 @@ class Mount(object):
         elif self.args.mode == 'home':
             dir_class = ProjectDirectory
             dir_args.append(usr)
-            dir_args.append(True)
         elif self.args.mode == 'all':
             self.args.mount_by_id = ['by_id']
             self.args.mount_by_tag = ['by_tag']
@@ -592,9 +598,9 @@ class Mount(object):
 
         if dir_class is not None:
             if dir_class in [TagsDirectory, CollectionDirectory]:
-                ent = dir_class(*dir_args)
+                ent = dir_class(*dir_args, poll_time=self.args.poll_time)
             else:
-                ent = dir_class(*dir_args, storage_classes=storage_classes)
+                ent = dir_class(*dir_args, storage_classes=storage_classes, poll_time=self.args.poll_time)
             self.operations.inodes.add_entry(ent)
             self.listen_for_events = ent.want_event_subscribe()
             return
@@ -608,17 +614,25 @@ class Mount(object):
         dir_args[0] = e.inode
 
         for name in self.args.mount_by_id:
-            self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=False, storage_classes=storage_classes))
+            self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=False,
+                                                    storage_classes=storage_classes,
+                                                    poll_time=self.args.poll_time))
         for name in self.args.mount_by_pdh:
-            self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=True))
+            self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=True,
+                                                    poll_time=self.args.poll_time))
         for name in self.args.mount_by_tag:
             self._add_mount(e, name, TagsDirectory(*dir_args))
         for name in self.args.mount_home:
-            self._add_mount(e, name, ProjectDirectory(*dir_args, project_object=usr, poll=True, storage_classes=storage_classes))
+            self._add_mount(e, name, ProjectDirectory(*dir_args, project_object=usr,
+                                                      storage_classes=storage_classes,
+                                                      poll_time=self.args.poll_time))
         for name in self.args.mount_shared:
-            self._add_mount(e, name, SharedDirectory(*dir_args, exclude=usr, poll=True, storage_classes=storage_classes))
+            self._add_mount(e, name, SharedDirectory(*dir_args, exclude=usr,
+                                                     storage_classes=storage_classes,
+                                                     poll_time=self.args.poll_time))
         for name in self.args.mount_tmp:
-            self._add_mount(e, name, TmpCollectionDirectory(*dir_args, storage_classes=storage_classes))
+            self._add_mount(e, name, TmpCollectionDirectory(*dir_args,
+                                                            storage_classes=storage_classes))
 
         if mount_readme:
             text = self._readme_text(

@@ -291,11 +291,12 @@ class CollectionDirectoryBase(Directory):
 
     __slots__ = ("collection", "collection_root", "collection_record_file")
 
-    def __init__(self, parent_inode, inodes, enable_write, filters, collection, collection_root):
+    def __init__(self, parent_inode, inodes, enable_write, filters, collection, collection_root, poll_time=15):
         super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, enable_write, filters)
         self.collection = collection
         self.collection_root = collection_root
         self.collection_record_file = None
+        self._poll_time = poll_time
 
     def new_entry(self, name, item, mtime):
         name = self.sanitize_filename(name)
@@ -314,10 +315,13 @@ class CollectionDirectoryBase(Directory):
                 self._filters,
                 item,
                 self.collection_root,
+                poll_time=self._poll_time
             ))
             self._entries[name].populate(mtime)
         else:
-            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime, self._enable_write, self._poll, self._poll_time))
+            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime,
+                                                                        self._enable_write,
+                                                                        self._poll, self._poll_time))
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
@@ -486,7 +490,9 @@ class CollectionDirectory(CollectionDirectoryBase):
     __slots__ = ("api", "num_retries", "collection_locator",
                  "_manifest_size", "_writable", "_updating_lock")
 
-    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters=None, collection_record=None, explicit_collection=None):
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write,
+                 filters=None, collection_record=None,
+                 poll_time=15):
         super(CollectionDirectory, self).__init__(parent_inode, inodes, enable_write, filters, None, self)
         self.api = api
         self.num_retries = num_retries
@@ -503,7 +509,7 @@ class CollectionDirectory(CollectionDirectoryBase):
 
         if is_uuid:
             # It is a uuid, it may be updated upstream, so recheck it periodically.
-            self._poll_time = 15
+            self._poll_time = poll_time
         else:
             # It is not a uuid.  For immutable collections, collection
             # only needs to be refreshed if it is very long lived
@@ -718,6 +724,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         # save to the backend
         super(TmpCollectionDirectory, self).__init__(
             parent_inode, inodes, True, filters, collection, self)
+        self._poll = False
         self.populate(self.mtime())
 
     def collection_record(self):
@@ -788,12 +795,15 @@ and the directory will appear if it exists.
 
 """.lstrip()
 
-    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters, pdh_only=False, storage_classes=None):
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
+                 pdh_only=False, storage_classes=None, poll_time=15):
         super(MagicDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.pdh_only = pdh_only
         self.storage_classes = storage_classes
+        self._poll = False
+        self._poll_time = poll_time
 
     def __setattr__(self, name, value):
         super(MagicDirectory, self).__setattr__(name, value)
@@ -811,7 +821,9 @@ and the directory will appear if it exists.
                     self.num_retries,
                     self._enable_write,
                     self._filters,
-                    self.pdh_only,
+                    pdh_only=self.pdh_only,
+                    storage_classes=self.storage_classes,
+                    poll_time=self._poll_time
                 ))
 
     def __contains__(self, k):
@@ -843,6 +855,7 @@ and the directory will appear if it exists.
                     self._filters,
                     project[u'items'][0],
                     storage_classes=self.storage_classes,
+                    poll_time=self._poll_time
                 ))
             else:
                 e = self.inodes.add_entry(CollectionDirectory(
@@ -853,6 +866,7 @@ and the directory will appear if it exists.
                     self._enable_write,
                     self._filters,
                     k,
+                    poll_time=self._poll_time
                 ))
 
             if e.update():
@@ -1014,14 +1028,14 @@ class ProjectDirectory(Directory):
                  "_current_user", "_full_listing", "storage_classes", "recursively_contained")
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
-                 project_object, poll=True, poll_time=15, storage_classes=None):
+                 project_object, poll_time=15, storage_classes=None):
         super(ProjectDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.project_object = project_object
         self.project_object_file = None
         self.project_uuid = project_object['uuid']
-        self._poll = poll
+        self._poll = True
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
         self._current_user = None
@@ -1047,12 +1061,13 @@ class ProjectDirectory(Directory):
     def createDirectory(self, i):
         common_args = (self.inode, self.inodes, self.api, self.num_retries, self._enable_write, self._filters)
         if collection_uuid_pattern.match(i['uuid']):
-            return CollectionDirectory(*common_args, i)
+            return CollectionDirectory(*common_args, i, poll_time=self._poll_time)
         elif group_uuid_pattern.match(i['uuid']):
-            return ProjectDirectory(*common_args, i, self._poll, self._poll_time, self.storage_classes)
+            return ProjectDirectory(*common_args, i, poll_time=self._poll_time,
+                                    storage_classes=self.storage_classes)
         elif link_uuid_pattern.match(i['uuid']):
             if i['head_kind'] == 'arvados#collection' or portable_data_hash_pattern.match(i['head_uuid']):
-                return CollectionDirectory(*common_args, i['head_uuid'])
+                return CollectionDirectory(*common_args, i['head_uuid'], poll_time=self._poll_time)
             else:
                 return None
         elif uuid_pattern.match(i['uuid']):
@@ -1337,7 +1352,7 @@ class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
-                 exclude, poll=False, poll_time=60, storage_classes=None):
+                 exclude, poll_time=60, storage_classes=None):
         super(SharedDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
@@ -1455,7 +1470,6 @@ class SharedDirectory(Directory):
                     self._enable_write,
                     self._filters,
                     i[1],
-                    poll=self._poll,
                     poll_time=self._poll_time,
                     storage_classes=self.storage_classes,
                 ),
