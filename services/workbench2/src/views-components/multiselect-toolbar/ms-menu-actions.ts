@@ -18,6 +18,8 @@ import { togglePublicFavorite } from "store/public-favorites/public-favorites-ac
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
+import { ToggleFavoriteAction } from 'views-components/context-menu/actions/favorite-action';
+import { TogglePublicFavoriteAction } from 'views-components/context-menu/actions/public-favorite-action';
 
 export type MultiSelectMenuAction = {
     name: string;
@@ -35,19 +37,24 @@ export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];
 
 const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS } = ContextMenuActionNames;
 
-const msToggleFavoriteAction: MultiSelectMenuAction = {
+const msToggleFavoriteAction: any = {
     name: ADD_TO_FAVORITES,
-    icon: AddFavoriteIcon,
-    hasAlts: true,
-    altName: 'Remove from Favorites',
-    altIcon: RemoveFavoriteIcon,
+    component: ToggleFavoriteAction,
     isForMulti: false,
-    useAlts: (uuid: string, iconProps) => {
-        return checkFavorite(uuid, iconProps.favorites);
-    },
     execute: (dispatch, resources) => {
-        dispatch<any>(toggleFavorite(resources[0])).then(() => {
+        dispatch(toggleFavorite(resources[0])).then(() => {
             dispatch(favoritePanelActions.REQUEST_ITEMS());
+        });
+    },
+};
+
+const msTogglePublicFavoriteAction: any = {
+    name: ADD_TO_PUBLIC_FAVORITES,
+    component: TogglePublicFavoriteAction,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch(togglePublicFavorite(resources[0])).then(() => {
+            dispatch(publicFavoritePanelActions.REQUEST_ITEMS());
         });
     },
 };
@@ -79,23 +86,6 @@ const msAdvancedAction: MultiSelectMenuAction  = {
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
-    },
-};
-
-const msTogglePublicFavoriteAction: MultiSelectMenuAction = {
-    name: ADD_TO_PUBLIC_FAVORITES,
-    icon: PublicFavoriteIcon,
-    hasAlts: true,
-    altName: 'Remove from public favorites',
-    altIcon: PublicFavoriteIcon,
-    isForMulti: false,
-    useAlts: (uuid: string, iconProps) => {
-        return iconProps.publicFavorites[uuid] === true
-    },
-    execute: (dispatch, resources) => {
-        dispatch<any>(togglePublicFavorite(resources[0])).then(() => {
-            dispatch(publicFavoritePanelActions.REQUEST_ITEMS());
-        });
     },
 };
 

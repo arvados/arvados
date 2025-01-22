@@ -13,7 +13,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 const toolbarIconClass = {
     width: '1rem',
     marginLeft: '-0.5rem',
-    marginTop: '0.15rem',
+    marginTop: '0.25rem',
 }
 
 const mapStateToProps = (state: RootState) => ({
