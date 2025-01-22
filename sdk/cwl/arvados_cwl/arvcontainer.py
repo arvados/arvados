@@ -376,34 +376,58 @@ class ArvadosContainer(JobBase):
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
             for gp in self.globpatterns:
-                if isinstance(gp, dict):
+                if isinstance(gp, str):
+                    gb = self.builder.do_eval(gp)
+                elif isinstance(gp, dict):
                     # dict of two keys, 'glob' and 'pattern' which
-                    # means we need to predict the names of secondary
-                    # files to capture.
+                    # means we should try to predict the names of
+                    # secondary files to capture.
+                    gb = self.builder.do_eval(gp["glob"])
                     pattern = gp["pattern"]
+
                     if "${" in pattern or "$(" in pattern:
-                        # pattern is an expression, so evaluate it first
-                        pattern = self.builder.do_eval(pattern)
+                        # pattern is an expression, need to evaluate
+                        # it first.
+                        try:
+                            if '*' in gb or "]" in gb:
+                                # glob has wildcards, so we can't
+                                # predict the secondary file name.
+                                # Capture everything.
+                                output_glob.append("**")
+                                break
 
-                        # If we get a string back, that's the expected
-                        # file name for the secondary file.  However,
-                        # it is legal for this to return a file object
-                        # or an array.  In that case we'll just
-                        # capture everything.
-
-                        if isinstance(pattern, str):
-                            gb = pattern
-                        else:
+                            # After evealuating 'glob' we have a
+                            # expected name we can provide to the
+                            # expression.
+                            nr, ne = os.path.splitext(gb)
+                            pattern = self.builder.do_eval(pattern, context={
+                                "basename": os.path.basename(gb),
+                                "nameext": ne,
+                                "nameroot": nr,
+                            })
+                        except:
+                            # Something failed in the expression, like
+                            # maybe it tried to access another field
+                            # in 'self'.
                             output_glob.append("**")
                             break
-                    else:
-                        gb = self.builder.do_eval(gp["glob"])
 
-                elif isinstance(gp, str):
-                    gb = self.builder.do_eval(gp)
+                        if isinstance(pattern, str):
+                            # If we get a string back, that's the expected
+                            # file name for the secondary file.
+                            gb = pattern
+                        else:
+                            # However, it is legal for this to return a
+                            # file object or an array.  In that case we'll
+                            # just capture everything.
+                            output_glob.append("**")
+                            break
+                else:
+                    raise Exception("Expected glob pattern to be a str or dict, was %s" % gp)
 
                 if not gb:
                     continue
+
                 for gbeval in aslist(gb):
                     if gbeval.startswith(self.outdir+"/"):
                         gbeval = gbeval[len(self.outdir)+1:]
