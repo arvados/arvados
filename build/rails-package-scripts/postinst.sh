@@ -60,6 +60,7 @@ run_and_report() {
 }
 
 report_not_ready() {
+    local exitcode="$1"; shift
     local reason="$1"; shift
     local doc_url="${1:-}"; shift
     case "$doc_url" in
@@ -77,7 +78,7 @@ Please refer to the documentation for next steps:
 After you do that, resume $PACKAGE_NAME setup by running:
   $RESETUP_CMD
 EOF
-    exit 0
+    exit "${exitcode:-20}"
 }
 
 setup_confdirs() {
@@ -182,7 +183,7 @@ if ! [ -x "$BUNDLE" ]; then
     BUNDLE="$BUNDLE$ruby_minor_ver"
     if ! [ -x "$BUNDLE" ]; then
         echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
-        exit 1
+        exit 11
     fi
 fi
 
@@ -204,7 +205,7 @@ run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 local passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
 if ! [ -x "$passenger" ]; then
     echo "Error: failed to find \`passenger\` command after installing bundle" >&2
-    exit 1
+    exit 12
 fi
 "$BUNDLE" exec "$passenger-config" build-native-support
 # `passenger-config install-standalone-runtime` downloads an agent, but at
@@ -252,9 +253,9 @@ echo "... done."
 # warn about config errors (deprecated/removed keys from
 # previous version, etc)
 if ! run_and_report "Checking configuration for completeness" "$BUNDLE" exec bin/rake config:check; then
-    report_not_ready "you must add required configuration settings to /etc/arvados/config.yml" "#update-config"
+    report_not_ready 21 "you must add required configuration settings to /etc/arvados/config.yml" "#update-config"
 elif ! prepare_database; then
-    report_not_ready "database setup could not be completed"
+    report_not_ready 22 "database setup could not be completed"
 else
     systemd_ctl try-restart arvados-railsapi.service
 fi
