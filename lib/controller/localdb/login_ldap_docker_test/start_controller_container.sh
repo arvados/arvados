@@ -3,6 +3,11 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
+#
+# This script starts a test controller container, waits for it to respond, then
+# writes its IP address on stdout. It requires the Docker network name and test
+# temporary directory path as arguments. Additional arguments are passed through
+# to `docker run` so you can, e.g., mount additional files like `/setup.sh`.
 
 set -e
 set -u

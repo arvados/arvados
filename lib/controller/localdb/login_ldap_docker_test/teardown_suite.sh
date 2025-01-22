@@ -3,6 +3,9 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
+#
+# This script stops all Docker containers running on the named network, then
+# removes the network itself.
 
 set -e
 set -u

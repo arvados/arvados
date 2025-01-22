@@ -1,6 +1,11 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
+//
+// This is an integration test of controller's different Login methods.
+// Each test creates a different Login configuration and runs controller in a
+// Docker container with it. It runs other Docker containers for supporting
+// services.
 
 package localdb
 
@@ -22,9 +27,9 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var _ = check.Suite(&LDAPDockerSuite{})
+var _ = check.Suite(&LoginDockerSuite{})
 
-type LDAPDockerSuite struct {
+type LoginDockerSuite struct {
 	localdbSuite
 	tmpdir     string
 	netName    string
@@ -33,7 +38,7 @@ type LDAPDockerSuite struct {
 	railsProxy *tcpProxy
 }
 
-func (s *LDAPDockerSuite) setUpDockerNetwork() (string, error) {
+func (s *LoginDockerSuite) setUpDockerNetwork() (string, error) {
 	netName := "arvados-net-" + path.Base(path.Dir(s.tmpdir))
 	cmd := exec.Command("docker", "network", "create", netName)
 	cmd.Stderr = os.Stderr
@@ -43,7 +48,9 @@ func (s *LDAPDockerSuite) setUpDockerNetwork() (string, error) {
 	return netName, nil
 }
 
-func (s *LDAPDockerSuite) ipFromCmd(cmd *exec.Cmd) (string, error) {
+// Run cmd and read stdout looking for an IP address on a line by itself.
+// Return the last one found.
+func (s *LoginDockerSuite) ipFromCmd(cmd *exec.Cmd) (string, error) {
 	cmd.Stderr = os.Stderr
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -72,7 +79,12 @@ func (s *LDAPDockerSuite) ipFromCmd(cmd *exec.Cmd) (string, error) {
 	}
 }
 
-func (s *LDAPDockerSuite) SetUpSuite(c *check.C) {
+// SetUpSuite creates a Docker network, starts an openldap server in it, and
+// creates user account fixtures in LDAP.
+// We used to use the LDAP server for multiple tests. We don't currently, but
+// there are pros and cons to starting it here vs. in each individaul test, so
+// it's staying here for now.
+func (s *LoginDockerSuite) SetUpSuite(c *check.C) {
 	s.localdbSuite.SetUpSuite(c)
 	s.tmpdir = c.MkDir()
 	var err error
@@ -87,7 +99,9 @@ func (s *LDAPDockerSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
-func (s *LDAPDockerSuite) TearDownSuite(c *check.C) {
+// TearDownSuite stops all containers running on the Docker network we set up,
+// then deletes the network itself.
+func (s *LoginDockerSuite) TearDownSuite(c *check.C) {
 	if s.netName != "" {
 		cmd := exec.Command("login_ldap_docker_test/teardown_suite.sh", s.netName)
 		cmd.Stderr = os.Stderr
@@ -97,7 +111,9 @@ func (s *LDAPDockerSuite) TearDownSuite(c *check.C) {
 	s.localdbSuite.TearDownSuite(c)
 }
 
-func (s *LDAPDockerSuite) setUpConfig(c *check.C) {
+// Create a test cluster configuration in the test temporary directory.
+// Update it to use the current PostgreSQL and RailsAPI proxies.
+func (s *LoginDockerSuite) setUpConfig(c *check.C) {
 	src, err := os.Open(os.Getenv("ARVADOS_CONFIG"))
 	c.Assert(err, check.IsNil)
 	defer src.Close()
@@ -125,7 +141,9 @@ func (s *LDAPDockerSuite) setUpConfig(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
-func (s *LDAPDockerSuite) updateConfig(expr string, arg *map[string]interface{}) error {
+// Update the test cluster configuration with the given yq expression.
+// The expression can use `$arg` to refer to the object passed in as `arg`.
+func (s *LoginDockerSuite) updateConfig(expr string, arg *map[string]interface{}) error {
 	jsonArg, err := json.Marshal(arg)
 	if err != nil {
 		return err
@@ -137,21 +155,29 @@ func (s *LDAPDockerSuite) updateConfig(expr string, arg *map[string]interface{})
 	return cmd.Run()
 }
 
-func (s *LDAPDockerSuite) enableLogin(key string) error {
+// Update the test cluster configuration to use the named login method.
+func (s *LoginDockerSuite) enableLogin(key string) error {
 	login := make(map[string]interface{})
 	login["Test"] = &map[string]bool{"Enable": false}
 	login[key] = &map[string]bool{"Enable": true}
 	return s.updateConfig(".Clusters.zzzzz.Login |= (. * $arg)", &login)
 }
 
-func (s *LDAPDockerSuite) SetUpTest(c *check.C) {
+// SetUpTest does all the common preparation for a controller test container:
+// it creates TCP proxies for PostgreSQL and RailsAPI on the test host, then
+// writes a new Arvados cluster configuration pointed at those for servers to
+// use.
+func (s *LoginDockerSuite) SetUpTest(c *check.C) {
 	s.localdbSuite.SetUpTest(c)
 	s.pgProxy = newPgProxy(c, s.cluster, s.netAddr)
 	s.railsProxy = newInternalProxy(c, s.cluster.Services.RailsAPI, s.netAddr)
 	s.setUpConfig(c)
 }
 
-func (s *LDAPDockerSuite) TearDownTest(c *check.C) {
+// TearDownTest looks for the `controller.cid` file created when we start the
+// test container. If found, it stops that container and deletes the file.
+// Then it closes the TCP proxies created by SetUpTest.
+func (s *LoginDockerSuite) TearDownTest(c *check.C) {
 	cidPath := path.Join(s.tmpdir, "controller.cid")
 	if cid, err := os.ReadFile(cidPath); err == nil {
 		cmd := exec.Command("docker", "stop", strings.TrimSpace(string(cid)))
@@ -167,7 +193,7 @@ func (s *LDAPDockerSuite) TearDownTest(c *check.C) {
 	s.localdbSuite.TearDownTest(c)
 }
 
-func (s *LDAPDockerSuite) startController(args ...string) (*url.URL, error) {
+func (s *LoginDockerSuite) startController(args ...string) (*url.URL, error) {
 	args = append([]string{s.netName, s.tmpdir}, args...)
 	cmd := exec.Command("login_ldap_docker_test/start_controller_container.sh", args...)
 	ip, err := s.ipFromCmd(cmd)
@@ -180,7 +206,7 @@ func (s *LDAPDockerSuite) startController(args ...string) (*url.URL, error) {
 	}, nil
 }
 
-func (s *LDAPDockerSuite) parseResponse(resp *http.Response, body any) error {
+func (s *LoginDockerSuite) parseResponse(resp *http.Response, body any) error {
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -208,7 +234,7 @@ func (s *LDAPDockerSuite) parseResponse(resp *http.Response, body any) error {
 	}
 }
 
-func (s *LDAPDockerSuite) authenticate(server *url.URL, username, password string) (*arvados.APIClientAuthorization, error) {
+func (s *LoginDockerSuite) authenticate(server *url.URL, username, password string) (*arvados.APIClientAuthorization, error) {
 	reqURL := server.JoinPath("/arvados/v1/users/authenticate").String()
 	reqValues := url.Values{
 		"username": {username},
@@ -223,7 +249,7 @@ func (s *LDAPDockerSuite) authenticate(server *url.URL, username, password strin
 	return token, err
 }
 
-func (s *LDAPDockerSuite) getCurrentUser(server *url.URL, token string) (*arvados.User, error) {
+func (s *LoginDockerSuite) getCurrentUser(server *url.URL, token string) (*arvados.User, error) {
 	reqURL := server.JoinPath("/arvados/v1/users/current").String()
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
@@ -239,7 +265,7 @@ func (s *LDAPDockerSuite) getCurrentUser(server *url.URL, token string) (*arvado
 	return user, err
 }
 
-func (s *LDAPDockerSuite) TestLoginPAMCallingLDAP(c *check.C) {
+func (s *LoginDockerSuite) TestLoginPAM(c *check.C) {
 	err := s.enableLogin("PAM")
 	c.Assert(err, check.IsNil)
 	setupPath, err := filepath.Abs("login_ldap_docker_test/setup_pam_test.sh")
@@ -247,9 +273,11 @@ func (s *LDAPDockerSuite) TestLoginPAMCallingLDAP(c *check.C) {
 	arvURL, err := s.startController("-v", setupPath+":/setup.sh:ro")
 	c.Assert(err, check.IsNil)
 	_, err = s.authenticate(arvURL, "foo-bar", "nosecret")
-	c.Check(err, check.ErrorMatches, `401 Unauthorized: PAM: Authentication failure \(with username "foo-bar" and password\)`)
+	c.Check(err, check.ErrorMatches,
+		`401 Unauthorized: PAM: Authentication failure \(with username "foo-bar" and password\)`)
 	_, err = s.authenticate(arvURL, "expired", "secret")
-	c.Check(err, check.ErrorMatches, `401 Unauthorized: PAM: Authentication failure; "Your account has expired; please contact your system administrator\."`)
+	c.Check(err, check.ErrorMatches,
+		`401 Unauthorized: PAM: Authentication failure; "Your account has expired; please contact your system administrator\."`)
 	aca, err := s.authenticate(arvURL, "foo-bar", "secret")
 	if c.Check(err, check.IsNil) {
 		user, err := s.getCurrentUser(arvURL, aca.TokenV2())
@@ -260,13 +288,14 @@ func (s *LDAPDockerSuite) TestLoginPAMCallingLDAP(c *check.C) {
 	}
 }
 
-func (s *LDAPDockerSuite) TestLoginLDAPBuiltin(c *check.C) {
+func (s *LoginDockerSuite) TestLoginLDAPBuiltin(c *check.C) {
 	err := s.enableLogin("LDAP")
 	c.Assert(err, check.IsNil)
 	arvURL, err := s.startController()
 	c.Assert(err, check.IsNil)
 	_, err = s.authenticate(arvURL, "foo-bar", "nosecret")
-	c.Check(err, check.ErrorMatches, `401 Unauthorized: LDAP: Authentication failure \(with username "foo-bar" and password\)`)
+	c.Check(err, check.ErrorMatches,
+		`401 Unauthorized: LDAP: Authentication failure \(with username "foo-bar" and password\)`)
 	aca, err := s.authenticate(arvURL, "foo-bar", "secret")
 	if c.Check(err, check.IsNil) {
 		user, err := s.getCurrentUser(arvURL, aca.TokenV2())

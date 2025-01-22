@@ -3,6 +3,9 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
+#
+# This script is the entrypoint for a container run by setup_suite.sh to create
+# user account fixtures in LDAP.
 
 set -e
 set -u

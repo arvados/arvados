@@ -3,6 +3,10 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
+#
+# This script determines and records what image should be used for test
+# controller containers, then starts an LDAP server and adds user account
+# fixtures to it.
 
 set -e
 set -u
