@@ -427,6 +427,7 @@ class Mount(object):
             self.operations.events.close(timeout=self.args.unmount_timeout)
         subprocess.call(["fusermount", "-u", "-z", self.args.mountpoint])
         self.llfuse_thread.join(timeout=self.args.unmount_timeout)
+        self.api.keep.block_cache.clear()
         if self.llfuse_thread.is_alive():
             self.logger.warning("Mount.__exit__:"
                                 " llfuse thread still alive %fs after umount"

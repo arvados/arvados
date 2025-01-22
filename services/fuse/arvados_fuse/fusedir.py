@@ -321,11 +321,6 @@ class CollectionDirectoryBase(Directory):
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
-        if event in (arvados.collection.TOK, arvados.collection.WRITE):
-            # We don't care about TOK events, that means only token
-            # signatures were updated, and WRITE events were initiated
-            # locally.
-            return
 
         # These are events from the Collection object (ADD/DEL/MOD)
         # emitted by operations on the Collection object (like
@@ -388,8 +383,8 @@ class CollectionDirectoryBase(Directory):
                         if name in self._entries:
                             self.inodes.invalidate_entry(self, name)
 
-                    # we don't care about TOK events, those mean
-                    # only token signatures were updated
+                    # TOK and WRITE events just invalidate the
+                    # collection record file.
 
                     if self.collection_record_file is not None:
                         self.collection_record_file.invalidate()
@@ -724,31 +719,6 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         super(TmpCollectionDirectory, self).__init__(
             parent_inode, inodes, True, filters, collection, self)
         self.populate(self.mtime())
-
-    def on_event(self, *args, **kwargs):
-        super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
-        if self.collection_record_file is None:
-            return
-
-        # See discussion in CollectionDirectoryBase.on_event
-        lockcount = 0
-        try:
-            while True:
-                self.collection.lock.release()
-                lockcount += 1
-        except RuntimeError:
-            pass
-
-        try:
-            with llfuse.lock:
-                with self.collection.lock:
-                    self.collection_record_file.invalidate()
-                    self.inodes.invalidate_inode(self.collection_record_file)
-                    _logger.debug("%s invalidated collection record", self.inode)
-        finally:
-            while lockcount > 0:
-                self.collection.lock.acquire()
-                lockcount -= 1
 
     def collection_record(self):
         with llfuse.lock_released:

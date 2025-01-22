@@ -8,7 +8,7 @@ import logging
 import re
 import time
 
-from .fresh import FreshBase, convertTime
+from .fresh import FreshBase, convertTime, check_update
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
@@ -145,17 +145,15 @@ class FuncToJSONFile(StringFile):
         # caching entirely.
         self.allow_attr_cache = False
 
+    @check_update
     def size(self):
-        self._update()
         return super(FuncToJSONFile, self).size()
 
+    @check_update
     def readfrom(self, *args, **kwargs):
-        self._update()
         return super(FuncToJSONFile, self).readfrom(*args, **kwargs)
 
-    def _update(self):
-        if not self.stale():
-            return
+    def update(self):
         self._mtime = time.time()
         obj = self.func()
         self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
