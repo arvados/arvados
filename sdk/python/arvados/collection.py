@@ -988,8 +988,13 @@ class RichCollectionBase(CollectionBase):
           was modified.
 
         * item: arvados.arvfile.ArvadosFile |
-          arvados.collection.Subcollection --- The new contents at `name`
-          within `collection`.
+          arvados.collection.Subcollection --- For ADD events, the new
+          contents at `name` within `collection`; for DEL events, the
+          item that was removed.  For MOD and TOK events, a 2-tuple of
+          the previous item and the new item (may be the same object
+          or different, depending on whether the action involved it
+          being modified in place or replaced).
+
         """
         if self._callback:
             self._callback(event, collection, name, item)
