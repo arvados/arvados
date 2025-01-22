@@ -376,6 +376,7 @@ class ArvadosContainer(JobBase):
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
             for gp in self.globpatterns:
+                pattern = ""
                 if isinstance(gp, str):
                     gb = self.builder.do_eval(gp)
                 elif isinstance(gp, dict):
@@ -401,6 +402,7 @@ class ArvadosContainer(JobBase):
                             # expression.
                             nr, ne = os.path.splitext(gb)
                             pattern = self.builder.do_eval(pattern, context={
+                                "path": gb,
                                 "basename": os.path.basename(gb),
                                 "nameext": ne,
                                 "nameroot": nr,
@@ -416,6 +418,7 @@ class ArvadosContainer(JobBase):
                             # If we get a string back, that's the expected
                             # file name for the secondary file.
                             gb = pattern
+                            pattern = ""
                         else:
                             # However, it is legal for this to return a
                             # file object or an array.  In that case we'll
@@ -434,7 +437,7 @@ class ArvadosContainer(JobBase):
                     while gbeval.startswith("./"):
                         gbeval = gbeval[2:]
 
-                    if isinstance(gp, dict):
+                    if len(pattern) > 0:
                         # pattern is not an expression or we would
                         # have handled this earlier, so it must be
                         # a simple substitution on the secondary
