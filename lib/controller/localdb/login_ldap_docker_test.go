@@ -74,6 +74,8 @@ func (s *LoginDockerSuite) ipFromCmd(cmd *exec.Cmd) (string, error) {
 		return "", err
 	} else if readErr != io.EOF {
 		return "", readErr
+	} else if ip == nil {
+		return "", fmt.Errorf("no IP address found in the output of %v", cmd)
 	} else {
 		return ip.String(), nil
 	}
