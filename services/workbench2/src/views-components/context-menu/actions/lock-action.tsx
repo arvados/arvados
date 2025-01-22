@@ -3,43 +3,56 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { ListItemIcon, ListItemText, ListItem } from "@mui/material";
+import { ListItemIcon, ListItemText, ListItem, Tooltip } from "@mui/material";
 import { FreezeIcon, UnfreezeIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { ProjectResource } from "models/project";
-import { withRouter, RouteComponentProps } from "react-router";
 import { resourceIsFrozen } from "common/frozen-resources";
+import { getResource } from "store/resources/resources";
+import { GroupResource } from "models/group";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { memoize } from "lodash";
+import { ResourcesState } from "store/resources/resources";
 
-const mapStateToProps = (state: RootState, props: { onClick: () => {} }) => ({
-    isAdmin: !!state.auth.user?.isAdmin,
-    isLocked: !!(state.resources[state.contextMenu.resource!.uuid] as ProjectResource).frozenByUuid,
-    canManage: (state.resources[state.contextMenu.resource!.uuid] as ProjectResource).canManage,
-    canUnfreeze: !state.auth.remoteHostsConfig[state.auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin,
-    resource: state.contextMenu.resource,
+const toolbarIconClass = {
+    width: '1rem',
+    marginLeft: '-0.5rem',
+    marginTop: '0.25rem',
+}
+
+const mapStateToProps = (state: RootState) => ({
+    contextMenuResource: state.contextMenu.resource,
+    selectedResourceUuid: state.selectedResourceUuid,
     resources: state.resources,
-    onClick: props.onClick
 });
 
-export const ToggleLockAction = withRouter(connect(mapStateToProps)((props: {
-    resource: any,
-    resources: any,
-    onClick: () => void,
-    state: RootState, isAdmin: boolean, isLocked: boolean, canManage: boolean, canUnfreeze: boolean,
-} & RouteComponentProps) =>
-    (props.canManage && !props.isLocked) || (props.isLocked && props.canManage && (props.canUnfreeze || props.isAdmin))  ? 
-        resourceIsFrozen(props.resource, props.resources) ? null :
-            <ListItem
-                button
-                onClick={props.onClick} >
-                <ListItemIcon>
-                    {props.isLocked
+type ToggleLockActionProps = {
+    isInToolbar: boolean;
+    selectedResourceUuid: string;
+    contextMenuResource: ContextMenuResource,
+    resources: ResourcesState,
+    onClick: () => void;
+};
+
+export const ToggleLockAction = connect(mapStateToProps)(memoize((props: ToggleLockActionProps) => {
+    const lockResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResource?.uuid;
+    const isLocked = resourceIsFrozen(getResource<GroupResource>(lockResourceUuid)(props.resources), props.resources);
+
+    return (
+        <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
+            <ListItem button onClick={props.onClick} data-cy="toggle-lock-action">
+                <ListItemIcon style={props.isInToolbar ? toolbarIconClass : {}}>
+                    {isLocked
                         ? <UnfreezeIcon />
                         : <FreezeIcon />}
                 </ListItemIcon>
-                <ListItemText style={{ textDecoration: 'none' }}>
-                    {props.isLocked
-                        ? <>Unfreeze project</>
-                        : <>Freeze project</>}
-                </ListItemText>
-            </ListItem > : null));
+                {!props.isInToolbar &&
+                    <ListItemText style={{ textDecoration: 'none' }}>
+                        {isLocked
+                            ? <>Unfreeze project</>
+                            : <>Freeze project</>}
+                    </ListItemText>}
+            </ListItem >
+        </Tooltip>
+    );
+}));

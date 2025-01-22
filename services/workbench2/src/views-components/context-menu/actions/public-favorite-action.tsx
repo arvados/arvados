@@ -17,14 +17,13 @@ const toolbarIconClass = {
 }
 
 const mapStateToProps = (state: RootState) => ({
-    isPublicFavorite: state.contextMenu.resource !== undefined && state.publicFavorites[state.contextMenu.resource.uuid] === true,
     contextMenuResource: state.contextMenu.resource,
     selectedResourceUuid: state.selectedResourceUuid,
     publicFavorites: state.publicFavorites,
 });
 
 type TogglePublicFavoriteActionProps = {
-    isInToolbar?: boolean;
+    isInToolbar: boolean;
     contextMenuResource: ContextMenuResource;
     selectedResourceUuid?: string;
     publicFavorites: PublicFavoritesState;
