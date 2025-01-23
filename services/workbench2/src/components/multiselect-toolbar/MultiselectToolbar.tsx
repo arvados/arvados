@@ -69,6 +69,7 @@ export type MultiselectToolbarDataProps = {
 };
 
 type MultiselectToolbarActionProps = {
+    executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => void;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
     resourceToMenukind: (uuid: string) => ContextMenuKind | undefined;
 };
@@ -117,6 +118,8 @@ export const MultiselectToolbar = connect(
 
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
+        const fetchedResources = selectedToArray(targetResources).map(uuid => iconProps.resources[uuid]);
+
         return (
             <React.Fragment>
                 <Toolbar
@@ -125,12 +128,12 @@ export const MultiselectToolbar = connect(
                     data-cy='multiselect-toolbar'
                     >
                     {memoizedActions.length ? (
-                        <IntersectionObserverWrapper 
+                        <IntersectionObserverWrapper
                             menuLength={memoizedActions.length}
                             key={actions.map(a => a.name).join(',')}
                             >
                             {memoizedActions.map((action, i) =>{
-                                const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
+                                const { name } = action;
                             return action.name === ContextMenuActionNames.DIVIDER ? (
                                 action.component && (
                                     <div
@@ -141,16 +144,9 @@ export const MultiselectToolbar = connect(
                                         <action.component />
                                     </div>
                                 )
-                            ) : hasAlts ? (
-                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
-                                    <IconButton
-                                        data-cy='multiselect-button'
-                                        disabled={disabledButtons.has(name)}
-                                        onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
-                                        className={classes.icon}
-                                        size="large">
-                                        {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                    </IconButton>
+                            ) : action.component ? (
+                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} style={{color: 'blue'}}>
+                                    <action.component isInToolbar={true} onClick={()=>props.executeComponent(action.execute, fetchedResources)} />
                                 </span>
                             ) : (
                                 //data-targetid is used to determine what goes to the overflow menu
@@ -271,6 +267,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
         resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
+        executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
             const currentList = selectedToArray(checkedList)

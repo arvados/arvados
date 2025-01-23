@@ -8,7 +8,6 @@ import { AddFavoriteIcon, RemoveFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { FavoritesState } from "store/favorites/favorites-reducer";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 const toolbarIconClass = {
     width: '1rem',
@@ -16,22 +15,22 @@ const toolbarIconClass = {
     marginTop: '0.25rem',
 }
 
-const mapStateToProps = (state: RootState) => ({
-    contextMenuResource: state.contextMenu.resource,
+const mapStateToProps = (state: RootState): Pick<ToggleFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'favorites'> => ({
+    contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
     selectedResourceUuid: state.selectedResourceUuid,
     favorites: state.favorites,
 });
 
 type ToggleFavoriteActionProps = {
-    isInToolbar?: boolean,
-    contextMenuResource?: ContextMenuResource,
+    isInToolbar: boolean,
+    contextMenuResourceUuid: string,
     selectedResourceUuid?: string,
     favorites: FavoritesState,
     onClick: () => void
 }
 
 export const ToggleFavoriteAction = connect(mapStateToProps)((props: ToggleFavoriteActionProps) => {
-    const faveResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResource?.uuid;
+    const faveResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
     const isFavorite = faveResourceUuid !== undefined && props.favorites[faveResourceUuid] === true;
 
     return <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>

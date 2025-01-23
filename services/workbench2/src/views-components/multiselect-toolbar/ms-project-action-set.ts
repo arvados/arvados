@@ -7,22 +7,21 @@ import { ContextMenuActionNames } from "views-components/context-menu/context-me
 import { openMoveProjectDialog } from 'store/projects/project-move-actions';
 import { toggleProjectTrashed } from 'store/trash/trash-actions';
 import {
-    FreezeIcon,
     MoveToIcon,
     NewProjectIcon,
     RenameIcon,
-    UnfreezeIcon,
     ShareIcon,
     CopyIcon,
 } from 'components/icon/icon';
-import { RestoreFromTrashIcon, TrashIcon, FolderSharedIcon, Link } from 'components/icon/icon';
-import { getResource } from 'store/resources/resources';
+import { FolderSharedIcon, Link } from 'components/icon/icon';
 import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 import { openProjectUpdateDialog } from 'store/projects/project-update-actions';
 import { freezeProject, unfreezeProject } from 'store/projects/project-lock-actions';
 import { openWebDavS3InfoDialog } from 'store/collections/collection-info-actions';
 import { copyToClipboardAction, copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
+import { ToggleLockAction } from 'views-components/context-menu/actions/lock-action';
+import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
 
 const {
     ADD_TO_FAVORITES,
@@ -91,38 +90,26 @@ const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
     },
 };
 
-export const msToggleTrashAction: MultiSelectMenuAction = {
+export const msToggleTrashAction: any = {
     name: MOVE_TO_TRASH,
-    icon: TrashIcon,
-    hasAlts: true,
-    altName: 'Restore from Trash',
-    altIcon: RestoreFromTrashIcon,
+    component: ToggleTrashAction,
     isForMulti: true,
-    useAlts: (uuid, iconProps) => {
-        return uuid ? (getResource(uuid)(iconProps.resources) as any)?.isTrashed : false;
-    },
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
-            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
+            dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
         }
     },
 };
 
-const msFreezeProjectAction: MultiSelectMenuAction = {
+const msFreezeProjectAction: any = {
     name: FREEZE_PROJECT,
-    icon: FreezeIcon,
-    hasAlts: true,
-    altName: 'Unfreeze Project',
-    altIcon: UnfreezeIcon,
+    component: ToggleLockAction,
     isForMulti: false,
-    useAlts: (uuid, iconProps) => {
-        return uuid ? !!(getResource(uuid)(iconProps.resources) as any).frozenByUuid : false;
-    },
     execute: (dispatch, resources) => {
         if ((resources[0] as any).frozenByUuid) {
-            dispatch<any>(unfreezeProject(resources[0].uuid));
+            dispatch(unfreezeProject(resources[0].uuid));
         } else {
-            dispatch<any>(freezeProject(resources[0].uuid));
+            dispatch(freezeProject(resources[0].uuid));
         }
     },
 };

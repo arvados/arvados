@@ -10,7 +10,6 @@ import { RootState } from "store/store";
 import { resourceIsFrozen } from "common/frozen-resources";
 import { getResource } from "store/resources/resources";
 import { GroupResource } from "models/group";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { memoize } from "lodash";
 import { ResourcesState } from "store/resources/resources";
 
@@ -20,8 +19,8 @@ const toolbarIconClass = {
     marginTop: '0.25rem',
 }
 
-const mapStateToProps = (state: RootState) => ({
-    contextMenuResource: state.contextMenu.resource,
+const mapStateToProps = (state: RootState): Pick<ToggleLockActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources'> => ({
+    contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
     selectedResourceUuid: state.selectedResourceUuid,
     resources: state.resources,
 });
@@ -29,13 +28,13 @@ const mapStateToProps = (state: RootState) => ({
 type ToggleLockActionProps = {
     isInToolbar: boolean;
     selectedResourceUuid: string;
-    contextMenuResource: ContextMenuResource,
+    contextMenuResourceUuid: string,
     resources: ResourcesState,
     onClick: () => void;
 };
 
 export const ToggleLockAction = connect(mapStateToProps)(memoize((props: ToggleLockActionProps) => {
-    const lockResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResource?.uuid;
+    const lockResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
     const isLocked = resourceIsFrozen(getResource<GroupResource>(lockResourceUuid)(props.resources), props.resources);
 
     return (
