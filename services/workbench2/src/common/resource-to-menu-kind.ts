@@ -8,7 +8,7 @@ import { AuthState } from 'store/auth/auth-reducer';
 import { getResource } from 'store/resources/resources';
 import { Resource, ResourceKind } from 'models/resource';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { GroupResource, GroupClass, isGroupResource } from 'models/group';
+import { GroupResource, GroupClass, isGroupResource, isUserGroup } from 'models/group';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getProcess, isProcessCancelable } from 'store/processes/process';
 import { isCollectionResource } from 'models/collection';
@@ -72,6 +72,9 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
         const isFrozen = resourceIsFrozen(resource, resources);
         const isEditable = getIsEditable(isAdmin, resource, resources, readonly, isFrozen);
 
+        if (isUserGroup(resource)) {
+            return ContextMenuKind.GROUPS
+        }
         if (isGroupResource(resource)) {
             const { canManage, canWrite } = resource;
             const unfreezeRequiresAdmin = getUnfreezeRequiresAdmin(auth);
