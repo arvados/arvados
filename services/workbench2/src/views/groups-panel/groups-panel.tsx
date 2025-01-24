@@ -16,14 +16,14 @@ import { RenderName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
-import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
+import { Resource } from 'models/resource'
 
 type CssRules = "root";
 
@@ -72,7 +72,12 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: any) => {
     return {
-        onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
+        onContextMenu: (event, resource) => {
+            const menuKind = dispatch(resourceToMenuKind(resource.uuid));
+            if (menuKind && resource) {
+                dispatch(openContextMenu(event, {...resource, menuKind}));
+            }
+        },
         onNewGroup: () => dispatch(openCreateGroupDialog()),
         handleRowClick: ({uuid}: GroupResource) => {
             dispatch(toggleOne(uuid))
@@ -85,7 +90,7 @@ const mapDispatchToProps = (dispatch: any) => {
 export interface GroupsPanelProps {
     onNewGroup: () => void;
     handleRowClick: (item: GroupResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: ContextMenuResource) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: Resource) => void;
 }
 
 export const GroupsPanel = withStyles(styles)(connect(
@@ -101,7 +106,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                         data-cy="groups-panel-data-explorer"
                         onRowClick={this.props.handleRowClick}
                         onRowDoubleClick={noop}
-                        onContextMenu={this.handleContextMenu}
+                        onContextMenu={this.props.onContextMenu}
                         contextMenuColumn={false}
                         hideColumnSelector
                         actions={
@@ -117,18 +122,5 @@ export const GroupsPanel = withStyles(styles)(connect(
                         } />
                     </div>
             );
-        }
-
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupResource) => {
-            if (resource) {
-                this.props.onContextMenu(event, {
-                    name: resource.name,
-                    uuid: resource.uuid,
-                    description: resource.description,
-                    ownerUuid: resource.ownerUuid,
-                    kind: resource.kind,
-                    menuKind: ContextMenuKind.GROUPS
-                });
-            }
         }
     }));
