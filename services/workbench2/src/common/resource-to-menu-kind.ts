@@ -76,7 +76,7 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
             return ContextMenuKind.GROUPS
         }
         if (isGroupResource(resource)) {
-            const { canManage, canWrite } = resource;
+            const { canManage = false, canWrite = false } = resource;
             const unfreezeRequiresAdmin = getUnfreezeRequiresAdmin(auth);
             const isFilterGroup = resource.groupClass === GroupClass.FILTER;
             return getProjectMenuKind({ isAdmin, isFrozen, isEditable, canManage, canWrite, unfreezeRequiresAdmin, isFilterGroup, readonly });
