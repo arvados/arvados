@@ -17,7 +17,7 @@ import { PermissionService } from 'services/permission-service/permission-servic
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
 import { PROJECT_CREATE_FORM_NAME } from 'store/projects/project-create-actions';
-import { selectedToArray, isGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar';
+import { selectedToArray, isRoleGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 
@@ -52,7 +52,7 @@ export const openGroupAttributes = (uuid: string) =>
 export const removeGroup = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { multiselect, resources } = getState();
-        const groupsToRemove = selectedToArray(multiselect.checkedList).filter(uuid => isGroupResource(uuid, resources));
+        const groupsToRemove = selectedToArray(multiselect.checkedList).filter(uuid => isRoleGroupResource(uuid, resources));
         if (!groupsToRemove.length) groupsToRemove.push(uuid);
         for (const group of groupsToRemove) {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));

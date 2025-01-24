@@ -191,13 +191,13 @@ export function selectedToKindSet(checkedList: TCheckedList, resources: Resource
     const setifiedList = new Set<string>();
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {
-            isGroupResource(key, resources) ? setifiedList.add(ContextMenuKind.GROUPS) : setifiedList.add(extractUuidKind(key) as string);
+            isRoleGroupResource(key, resources) ? setifiedList.add(ContextMenuKind.GROUPS) : setifiedList.add(extractUuidKind(key) as string);
         }
     }
     return setifiedList;
 }
 
-export const isGroupResource = (uuid: string, resources: ResourcesState): boolean => {
+export const isRoleGroupResource = (uuid: string, resources: ResourcesState): boolean => {
     const resource = getResource(uuid)(resources);
     if(!resource) return false;
     return resource.kind === ResourceKind.PROJECT && (resource as GroupResource).groupClass === GroupClass.ROLE;
@@ -207,7 +207,7 @@ function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Reco
     const result = {};
     selectedToArray(checkedList).forEach(uuid => {
         const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
-        const kind = isGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : resource.kind;
+        const kind = isRoleGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : resource.kind;
         if (!result[kind]) result[kind] = [];
         result[kind].push(resource);
     });
@@ -277,7 +277,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
             switch (selectedAction.name) {
                 case ContextMenuActionNames.MOVE_TO:
                 case ContextMenuActionNames.REMOVE:
-                    const firstResourceKind = isGroupResource(currentList[0], resources)
+                    const firstResourceKind = isRoleGroupResource(currentList[0], resources)
                         ? ContextMenuKind.GROUPS
                         : (getResource(currentList[0])(resources) as ContainerRequestResource | Resource).kind;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResourceKind]);
