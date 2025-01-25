@@ -476,11 +476,26 @@ class ArvadosContainer(JobBase):
                 runtime_constraints["ram"] = ram * ram_multiplier[self.attempt_count]
 
             container_request["state"] = "Committed"
-            response = self.arvrunner.api.container_requests().update(
-                uuid=self.uuid,
-                body=container_request,
-                **extra_submit_params
-            ).execute(num_retries=self.arvrunner.num_retries)
+            try:
+                response = self.arvrunner.api.container_requests().update(
+                    uuid=self.uuid,
+                    body=container_request,
+                    **extra_submit_params
+                ).execute(num_retries=self.arvrunner.num_retries)
+            except Exception as e:
+                # If the request was actually processed but we didn't
+                # receive a response, we'll re-try the request, but if
+                # the container went directly from "Committed" to
+                # "Final", the retry attempt will fail with a state
+                # change error.  So if there's an error, double check
+                # to see if the container is in the expected state.
+                #
+                # See discussion on #22160
+                response = self.arvrunner.api.container_requests().get(
+                    uuid=self.uuid
+                ).execute(num_retries=self.arvrunner.num_retries)
+                if response.get("state") not in ("Committed", "Final"):
+                    raise
 
             self.arvrunner.process_submitted(self)
             self.attempt_count += 1
