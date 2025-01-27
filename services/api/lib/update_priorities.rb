@@ -8,7 +8,7 @@ def row_lock_for_priority_update container_uuid
   # everything that gets touched by either a priority update or state
   # update.
   # This method assumes we are already in a transaction.
-  conn.exec_query %{
+  ActiveRecord::Base.connection.exec_query %{
         select containers.id from containers where containers.uuid in (
   select pri_container_uuid from container_tree($1)
 UNION
