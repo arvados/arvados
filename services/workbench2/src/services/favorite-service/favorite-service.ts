@@ -80,7 +80,8 @@ export class FavoriteService {
                     .getFilters()
             })
             .then(({ items }) => resourceUuids.reduce((results, uuid) => {
-                const isFavorite = items.some(item => item.headUuid === uuid);
+                const filteredItems = items.filter(item => !!item.headUuid && item.headUuid === uuid && item.linkClass === LinkClass.STAR);
+                const isFavorite = filteredItems.some(item => item.headUuid === uuid);
                 return { ...results, [uuid]: isFavorite };
             }, {}));
     }

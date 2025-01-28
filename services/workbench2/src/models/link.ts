@@ -20,3 +20,7 @@ export enum LinkClass {
     PERMISSION = 'permission',
     PRESET = 'preset',
 }
+
+export const hasCreateLinkProperties = (potentialLink: any): boolean => {
+    return !!potentialLink.ownerUuid &&!!potentialLink.headUuid && !!potentialLink.tailUuid && !!potentialLink.linkClass && !!potentialLink.name;
+};

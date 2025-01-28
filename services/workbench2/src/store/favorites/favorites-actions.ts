@@ -8,6 +8,7 @@ import { RootState } from "../store";
 import { getUserUuid } from "common/getuser";
 import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
+import { LinkClass, hasCreateLinkProperties } from "models/link";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
@@ -38,6 +39,18 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                 : "Adding to favorites...",
             kind: SnackbarKind.INFO
         }));
+
+        const favoriteData = {
+            ownerUuid: userUuid,
+            tailUuid: userUuid,
+            headUuid: resource.uuid,
+            linkClass: LinkClass.STAR,
+            name: resource.name
+        };
+
+        if (!hasCreateLinkProperties(favoriteData)) {
+            return Promise.reject("Missing favorite data");
+        }
 
         const promise: any = isFavorite
             ? services.favoriteService.delete({ userUuid, resourceUuid: resource.uuid })
