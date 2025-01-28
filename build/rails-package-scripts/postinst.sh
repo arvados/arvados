@@ -21,8 +21,6 @@ if [ -z "$RESETUP_CMD" ]; then
    echo "$PACKAGE_NAME postinst skipped: don't recognize the distribution from /etc/os-release" >&2
    exit 0
 fi
-# Default documentation URL. This can be set to a more specific URL.
-NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html"
 # This will be set to a command path after we install the version we need.
 BUNDLE=
 
@@ -59,6 +57,28 @@ run_and_report() {
         echo " failed."
     fi
     return $retcode
+}
+
+report_not_ready() {
+    local exitcode="$1"; shift
+    local reason="$1"; shift
+    local doc_url="${1:-}"; shift
+    case "$doc_url" in
+        http://* | https://* ) ;;
+        /*) doc_url="https://doc.arvados.org${doc_url}" ;;
+        \#*) doc_url="https://doc.arvados.org/install/install-api-server.html${doc_url}" ;;
+        *) doc_url="https://doc.arvados.org/install/${doc_url}" ;;
+    esac
+    cat >&2 <<EOF
+NOTE: The $PACKAGE_NAME package was not configured completely because
+$reason.
+Please refer to the documentation for next steps:
+  <$doc_url>
+
+After you do that, resume $PACKAGE_NAME setup by running:
+  $RESETUP_CMD
+EOF
+    exit "${exitcode:-20}"
 }
 
 setup_confdirs() {
@@ -139,84 +159,83 @@ prepare_database() {
   fi
 }
 
-configure_version() {
-  case "$DISTRO_FAMILY" in
-      debian) WWW_OWNER=www-data ;;
-      rhel) WWW_OWNER="$(id --group --name nginx || true)" ;;
-  esac
+case "$DISTRO_FAMILY" in
+    debian) WWW_OWNER=www-data ;;
+    rhel) WWW_OWNER="$(id --group --name nginx || true)" ;;
+esac
 
-  # Before we do anything else, make sure some directories and files are in place
-  if [ ! -e $SHARED_PATH/log ]; then mkdir -p $SHARED_PATH/log; fi
-  if [ ! -e $RELEASE_PATH/tmp ]; then mkdir -p $RELEASE_PATH/tmp; fi
-  if [ ! -e $RELEASE_PATH/log ]; then ln -s $SHARED_PATH/log $RELEASE_PATH/log; fi
-  if [ ! -e $SHARED_PATH/log/production.log ]; then touch $SHARED_PATH/log/production.log; fi
+# Before we do anything else, make sure some directories and files are in place
+if [ ! -e $SHARED_PATH/log ]; then mkdir -p $SHARED_PATH/log; fi
+if [ ! -e $RELEASE_PATH/tmp ]; then mkdir -p $RELEASE_PATH/tmp; fi
+if [ ! -e $RELEASE_PATH/log ]; then ln -s $SHARED_PATH/log $RELEASE_PATH/log; fi
+if [ ! -e $SHARED_PATH/log/production.log ]; then touch $SHARED_PATH/log/production.log; fi
 
-  cd "$RELEASE_PATH"
-  export RAILS_ENV=production
+cd "$RELEASE_PATH"
+export RAILS_ENV=production
 
-  run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
-  local ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-  BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
-  if ! [ -x "$BUNDLE" ]; then
-      # Some distros (at least Ubuntu 24.04) append the Ruby version to the
-      # executable name, but that isn't reflected in the output of
-      # `gem contents`. Check for that version.
-      BUNDLE="$BUNDLE$ruby_minor_ver"
-      if ! [ -x "$BUNDLE" ]; then
-          echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
-          return 1
-      fi
-  fi
+run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
+local ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
+BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+if ! [ -x "$BUNDLE" ]; then
+    # Some distros (at least Ubuntu 24.04) append the Ruby version to the
+    # executable name, but that isn't reflected in the output of
+    # `gem contents`. Check for that version.
+    BUNDLE="$BUNDLE$ruby_minor_ver"
+    if ! [ -x "$BUNDLE" ]; then
+        echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
+        exit 11
+    fi
+fi
 
-  local bundle_path="$SHARED_PATH/vendor_bundle"
-  run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-                 "$BUNDLE" config set --local path "$bundle_path"
+local bundle_path="$SHARED_PATH/vendor_bundle"
+run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
+               "$BUNDLE" config set --local path "$bundle_path"
 
-  # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
-  # which are already installed system-wide, which causes bundle activation to
-  # fail later. Work around this by installing all gems manually.
-  find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
-      | run_and_report "Installing bundle gems" xargs -0r \
-                       gem install --conservative --ignore-dependencies \
-                       --local --no-document --quiet \
-                       --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
-  run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
-  run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
+# As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
+# which are already installed system-wide, which causes bundle activation to
+# fail later. Work around this by installing all gems manually.
+find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
+    | run_and_report "Installing bundle gems" xargs -0r \
+                     gem install --conservative --ignore-dependencies \
+                     --local --no-document --quiet \
+                     --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
+run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
+run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
-  local passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
-  if ! [ -x "$passenger" ]; then
-      echo "Error: failed to find \`passenger\` command after installing bundle" >&2
-      return 1
-  fi
-  "$BUNDLE" exec "$passenger-config" build-native-support
-  # `passenger-config install-standalone-runtime` downloads an agent, but at
-  # least with Passenger 6.0.23 (late 2024), that version tends to segfault.
-  # Compiling our own is safer.
-  "$BUNDLE" exec "$passenger-config" compile-agent --auto --optimize
-  "$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
+local passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
+if ! [ -x "$passenger" ]; then
+    echo "Error: failed to find \`passenger\` command after installing bundle" >&2
+    exit 12
+fi
+"$BUNDLE" exec "$passenger-config" build-native-support
+# `passenger-config install-standalone-runtime` downloads an agent, but at
+# least with Passenger 6.0.23 (late 2024), that version tends to segfault.
+# Compiling our own is safer.
+"$BUNDLE" exec "$passenger-config" compile-agent --auto --optimize
+"$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
 
-  echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
-  setup_confdirs /etc/arvados "$CONFIG_PATH"
-  setup_conffile environments/production.rb environments/production.rb.example \
-      || true
-  # Rails 5.2 does not tolerate dangling symlinks in the initializers
-  # directory, and this one can still be there, left over from a previous
-  # version of the API server package.
-  rm -f $RELEASE_PATH/config/initializers/omniauth.rb
-  echo "... done."
+echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
+setup_confdirs /etc/arvados "$CONFIG_PATH"
+setup_conffile environments/production.rb environments/production.rb.example \
+    || true
+# Rails 5.2 does not tolerate dangling symlinks in the initializers
+# directory, and this one can still be there, left over from a previous
+# version of the API server package.
+rm -f $RELEASE_PATH/config/initializers/omniauth.rb
+echo "... done."
 
-  echo -n "Extending systemd unit configuration ..."
-  local systemd_group
-  if [ -z "$WWW_OWNER" ]; then
-      systemd_group="%N"
-  else
-      systemd_group="$(systemd_quote "$WWW_OWNER")"
-  fi
-  install -d /lib/systemd/system/arvados-railsapi.service.d
-  # The 20 prefix is chosen so most user overrides should come after, which
-  # is what most admins will expect, but there's still space to put drop-ins
-  # earlier.
-  cat >/lib/systemd/system/arvados-railsapi.service.d/20-postinst.conf <<EOF
+echo -n "Extending systemd unit configuration ..."
+local systemd_group
+if [ -z "$WWW_OWNER" ]; then
+    systemd_group="%N"
+else
+    systemd_group="$(systemd_quote "$WWW_OWNER")"
+fi
+install -d /lib/systemd/system/arvados-railsapi.service.d
+# The 20 prefix is chosen so most user overrides should come after, which
+# is what most admins will expect, but there's still space to put drop-ins
+# earlier.
+cat >/lib/systemd/system/arvados-railsapi.service.d/20-postinst.conf <<EOF
 [Service]
 ExecStartPre=+/bin/chgrp $systemd_group log tmp
 ExecStartPre=+-/bin/chgrp $systemd_group \${PASSENGER_LOG_FILE}
@@ -228,34 +247,15 @@ ExecReload=
 ExecReload=$(systemd_quote "$BUNDLE") exec $(systemd_quote "$passenger-config") reopen-logs
 ${WWW_OWNER:+SupplementaryGroups=$WWW_OWNER}
 EOF
-  systemd_ctl daemon-reload
-  echo "... done."
+systemd_ctl daemon-reload
+echo "... done."
 
-  if [ -n "$NOT_READY_REASON" ]; then
-      :
-  # warn about config errors (deprecated/removed keys from
-  # previous version, etc)
-  elif ! run_and_report "Checking configuration for completeness" "$BUNDLE" exec bin/rake config:check; then
-      NOT_READY_REASON="you must add required configuration settings to /etc/arvados/config.yml"
-      NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html#update-config"
-  elif ! prepare_database; then
-      NOT_READY_REASON="database setup could not be completed"
-  fi
-
-  if [ -z "$NOT_READY_REASON" ]; then
-      systemd_ctl try-restart arvados-railsapi.service
-  fi
-}
-
-configure_version
-if [ -n "$NOT_READY_REASON" ]; then
-    cat >&2 <<EOF
-NOTE: The $PACKAGE_NAME package was not configured completely because
-$NOT_READY_REASON.
-Please refer to the documentation for next steps:
-  <$NOT_READY_DOC_URL>
-
-After you do that, resume $PACKAGE_NAME setup by running:
-  $RESETUP_CMD
-EOF
+# warn about config errors (deprecated/removed keys from
+# previous version, etc)
+if ! run_and_report "Checking configuration for completeness" "$BUNDLE" exec bin/rake config:check; then
+    report_not_ready 21 "you must add required configuration settings to /etc/arvados/config.yml" "#update-config"
+elif ! prepare_database; then
+    report_not_ready 22 "database setup could not be completed"
+else
+    systemd_ctl try-restart arvados-railsapi.service
 fi
