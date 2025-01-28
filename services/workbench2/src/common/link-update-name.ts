@@ -31,8 +31,12 @@ const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getSt
         }
         // Any other error we keep the entry but skip updating the name
         if (!headResource) {
-            if (!link.name) console.error('Could not validate link', link, 'because link head', link.headUuid, 'is not available');
-            return link;
+            console.error('Could not validate link', link, 'because link head', link.headUuid, 'is not available');
+            // if it's missing name, we can't render it, so skip it
+            if (!link.name) {
+                return undefined
+            };
+            return link
         }
     }
     // If resource is trashed, filter it out
@@ -54,7 +58,7 @@ const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getSt
 export const verifyAndUpdateLinks = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource[]> => {
     // Verify and update links in paralell
     const updatedLinks = links.map((link) => verifyAndUpdateLink(link, dispatch, getState, services));
-    // Filter out undefined links (trashed, malformed or 404)
+    // Filter out undefined links (trashed, or 404)
     const validLinks = (await Promise.all(updatedLinks)).filter((link): link is LinkResource => (link !== undefined));
 
     return Promise.resolve(validLinks);
