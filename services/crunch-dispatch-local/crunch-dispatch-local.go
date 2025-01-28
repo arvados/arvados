@@ -165,19 +165,18 @@ func startFunc(container arvados.Container, cmd *exec.Cmd) error {
 }
 
 type ResourceAlloc struct {
-	uuid     string
-	vcpus    int
-	ram      int64
-	rocmGpus []string
-	cudaGpus []string
+	uuid  string
+	vcpus int
+	ram   int64
+	gpus  []string
 }
 
 type ResourceRequest struct {
 	uuid     string
 	vcpus    int
 	ram      int64
-	rocmGpus int
-	cudaGpus int
+	gpuStack string
+	gpus     int
 	ready    chan ResourceAlloc
 }
 
@@ -199,8 +198,17 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 	availableCUDAGpus := strings.Split(os.Getenv("CUDA_VISIBLE_DEVICES"), ",")
 	availableROCmGpus := strings.Split(os.Getenv("AMD_VISIBLE_DEVICES"), ",")
 
-	maxCUDAGpus := len(availableCUDAGpus)
-	maxROCmGpus := len(availableROCmGpus)
+	gpuStack := ""
+	maxGpus := 0
+	availableGpus := []string{}
+
+	if maxGpus = len(availableCUDAGpus); maxGpus > 0 {
+		gpuStack = "cuda"
+		availableGpus = availableCUDAGpus
+	} else if maxGpus = len(availableROCmGpus); maxGpus > 0 {
+		gpuStack = "rocm"
+		availableGpus := availableROCmGpus
+	}
 
 	availableVcpus := maxVcpus
 	availableRam := maxRam
@@ -216,16 +224,13 @@ NextEvent:
 		case rr := <-lr.releaseResources:
 			availableVcpus += rr.vcpus
 			availableRam += rr.ram
-			for _, gpu := range rr.cudaGpus {
-				availableCUDAGpus = append(availableCUDAGpus, gpu)
-			}
-			for _, gpu := range rr.rocmGpus {
-				availableROCmGpus = append(availableROCmGpus, gpu)
+			for _, gpu := range rr.gpus {
+				availableGpus = append(availableGpus, gpu)
 			}
 
-			logger.Infof("%v released allocation (cpus: %v ram: %v gpus: %v %v); now available (cpus: %v ram: %v gpus: %v %v)",
-				rr.uuid, rr.vcpus, rr.ram, rr.cudaGpus, rr.rocmGpus,
-				availableVcpus, availableRam, availableCUDAGpus, availableROCmGpus)
+			logger.Infof("%v released allocation (cpus: %v ram: %v gpus: %v %v); now available (cpus: %v ram: %v gpus: %v)",
+				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
+				availableVcpus, availableRam, availableGpus)
 
 		case <-lr.ctx.Done():
 			return
@@ -233,14 +238,14 @@ NextEvent:
 
 		for len(pending) > 0 {
 			rr := pending[0]
-			if rr.vcpus < 1 || rr.vcpus > maxVcpus || rr.ram < 1 || rr.ram > maxRam || rr.cudaGpus > maxCUDAGpus || rr.rocmGpus > maxROCmGpus {
+			if rr.vcpus < 1 || rr.vcpus > maxVcpus || rr.ram < 1 || rr.ram > maxRam || rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
 				// resource request can never be fulfilled,
 				// return a zero struct
 				rr.ready <- ResourceAlloc{}
 				continue
 			}
 
-			if rr.vcpus > availableVcpus || rr.ram > availableRam || rr.cudaGpus > len(availableCUDAGpus) || rr.rocmGpus > len(availableROCmGpus) {
+			if rr.vcpus > availableVcpus || rr.ram > availableRam || rr.gpus > len(availableGpus) {
 				logger.Infof("Insufficient resources to start %v, waiting for next event", rr.uuid)
 				// can't be scheduled yet, go up to
 				// the top and wait for the next event
@@ -252,19 +257,15 @@ NextEvent:
 			availableVcpus -= rr.vcpus
 			availableRam -= rr.ram
 
-			for i := 0; i < rr.cudaGpus; i++ {
-				alloc.cudaGpus = append(alloc.cudaGpus, availableCUDAGpus[len(availableCUDAGpus)-1])
-				availableCUDAGpus = availableCUDAGpus[0 : len(availableCUDAGpus)-1]
-			}
-			for i := 0; i < rr.rocmGpus; i++ {
-				alloc.rocmGpus = append(alloc.rocmGpus, availableROCmGpus[len(availableROCmGpus)-1])
-				availableROCmGpus = availableROCmGpus[0 : len(availableROCmGpus)-1]
+			for i := 0; i < rr.gpus; i++ {
+				alloc.gpus = append(alloc.gpus, availableGpus[len(availableGpus)-1])
+				availableGpus = availableGpus[0 : len(availableGpus)-1]
 			}
 			rr.ready <- alloc
 
-			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v %v); now available (cpus: %v ram: %v gpus: %v %v)",
-				rr.uuid, rr.vcpus, rr.ram, rr.cudaGpus, rr.rocmGpus,
-				availableVcpus, availableRam, availableCUDAGpus, availableROCmGpus)
+			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v %v); now available (cpus: %v ram: %v gpus: %v)",
+				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
+				availableVcpus, availableRam, availableGpus)
 
 			// shift array down
 			for i := 0; i < len(pending)-1; i++ {
@@ -292,14 +293,21 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 	if container.State == dispatch.Locked {
 
+		gpuStack := container.RuntimeConstraints.GPU.Stack
+		gpus := container.RuntimeConstraints.GPU.DeviceCount
+		if container.RuntimeConstraints.CUDA.DeviceCount > 0 {
+			gpuStack = "cuda"
+			gpus = container.RuntimeConstraints.CUDA.DeviceCount
+		}
+
 		resourceRequest := ResourceRequest{
 			uuid:  container.UUID,
 			vcpus: container.RuntimeConstraints.VCPUs,
 			ram: (container.RuntimeConstraints.RAM +
 				container.RuntimeConstraints.KeepCacheRAM +
 				int64(lr.cluster.Containers.ReserveExtraRAM)),
-			cudaGpus: container.RuntimeConstraints.CUDA.DeviceCount,
-			rocmGpus: container.RuntimeConstraints.ROCm.DeviceCount,
+			gpuStack: gpuStack,
+			gpus:     gpus,
 			ready:    make(chan ResourceAlloc)}
 
 		select {
@@ -358,11 +366,11 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		fmt.Fprint(h, container.UUID)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("GatewayAuthSecret=%x", h.Sum(nil)))
 
-		if resourceAlloc.rocmGpus != nil {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("AMD_VISIBLE_DEVICES=%v", strings.Join(resourceAlloc.rocmGpus, ",")))
+		if resourceAlloc.gpuStack == "rocm" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("AMD_VISIBLE_DEVICES=%v", strings.Join(resourceAlloc.gpus, ",")))
 		}
-		if resourceAlloc.cudaGpus != nil {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("CUDA_VISIBLE_DEVICES=%v", strings.Join(resourceAlloc.cudaGpus, ",")))
+		if resourceAlloc.gpuStack == "cuda" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("CUDA_VISIBLE_DEVICES=%v", strings.Join(resourceAlloc.gpus, ",")))
 		}
 
 		dispatcher.Logger.Printf("starting container %v", uuid)

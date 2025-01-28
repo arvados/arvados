@@ -462,6 +462,15 @@ type CUDAFeatures struct {
 	DeviceCount        int
 }
 
+type GPUFeatures struct {
+	// as of this writing, stack is "cuda" or "rocm"
+	Stack          string
+	DriverVersion  string
+	HardwareTarget string
+	DeviceCount    int
+	VRAM           int
+}
+
 type InstanceType struct {
 	Name            string `json:"-"`
 	ProviderType    string
@@ -473,6 +482,7 @@ type InstanceType struct {
 	Price           float64
 	Preemptible     bool
 	CUDA            CUDAFeatures
+	GPU             GPUFeatures
 }
 
 type ContainersConfig struct {

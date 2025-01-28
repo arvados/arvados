@@ -305,6 +305,8 @@ class Container < ArvadosModel
         resolved_runtime_constraints.delete('keep_cache_ram'),
       ].uniq,
     }
+
+    # Note: deprecated in favor of the more general "GPU" constraint below
     resolved_cuda = resolved_runtime_constraints['cuda']
     if resolved_cuda.nil? or resolved_cuda['device_count'] == 0
       runtime_constraint_variations[:cuda] = [
@@ -322,18 +324,22 @@ class Container < ArvadosModel
       ].uniq
     end
 
-    resolved_rocm = resolved_runtime_constraints['rocm']
-    if resolved_rocm.nil? or resolved_rocm['device_count'] == 0
-      runtime_constraint_variations[:rocm] = [
-        # Check for constraints without rocm
+    resolved_gpu = resolved_runtime_constraints['gpu']
+    if resolved_gpu.nil? or resolved_gpu['device_count'] == 0
+      runtime_constraint_variations[:gpu] = [
+        # Check for constraints without gpu
         # (containers that predate the constraint)
         nil,
-        # The default "don't need ROCM" value
+        # The default "don't need GPUs" value
         {
+          'stack' => '',
+          'driver_version' => '',
+          'hardware_target' => [],
           'device_count' => 0,
+          'vram' => 0,
         },
         # The requested value
-        resolved_runtime_constraints.delete('rocm')
+        resolved_runtime_constraints.delete('gpu')
       ].uniq
     end
 
