@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupClass, GroupResource } from "./group";
+import { GroupClass, GroupResource, isGroupResource } from "./group";
+import { Resource } from "./resource";
 
 export interface ProjectResource extends GroupResource {
     frozenByUuid: null | string;
@@ -11,4 +12,8 @@ export interface ProjectResource extends GroupResource {
 
 export const getProjectUrl = (uuid: string) => {
     return `/projects/${uuid}`;
+};
+
+export const isProjectResource = (resource: Resource): resource is ProjectResource => {
+    return isGroupResource(resource) && 'frozenByUuid' in resource;
 };
