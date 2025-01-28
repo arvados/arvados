@@ -26,6 +26,7 @@ from typing import (
     Container,
     Dict,
     Iterator,
+    List,
     TypeVar,
     Union,
 )
@@ -407,7 +408,7 @@ def csv_to_list(text: str) -> list[str]:
             words[key] = None
     return list(words)
 
-def storage_classes_from_config(config: dict[str, Any], default_only: bool = True, fallback: str = "default") -> list[str]:
+def storage_classes_from_config(config: Dict[str, Any], default_only: bool=True, fallback: str="default") -> List[str]:
     """Convenience function for getting the list of storage classes from the
     API client config dict.
 
