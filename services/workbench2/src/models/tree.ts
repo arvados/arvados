@@ -79,11 +79,13 @@ export const mapTreeValues = <T, R>(mapFn: (value: T) => R) => (tree: Tree<T>): 
         .map(mapNodeValue(mapFn))
         .reduce((newTree, node) => setNode(node)(newTree), createTree<R>());
 
-export const mapTree = <T, R = T>(mapFn: (node: TreeNode<T>) => TreeNode<R>) => (tree: Tree<T>): Tree<R> =>
-    getNodeDescendantsIds('')(tree)
+export const mapTree = <T, R = T>(mapFn: (node: TreeNode<T>) => TreeNode<R>) => (tree: Tree<T>): Tree<R> => {
+    const mappedTree = getNodeDescendantsIds('')(tree)
         .map(id => getNode(id)(tree))
         .map(mapFn)
-        .reduce((newTree, node) => setNode(node)(newTree), createTree<R>());
+        .reduce((newTree, node) => setNode(node)(newTree), createTree<R>())
+    return Object.keys(mappedTree).length === 0 ? tree as any : mappedTree;
+};
 
 export const getNodeAncestors = (id: string) => <T>(tree: Tree<T>) =>
     mapIdsToNodes(getNodeAncestorsIds(id)(tree))(tree);

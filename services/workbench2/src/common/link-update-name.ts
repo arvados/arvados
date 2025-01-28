@@ -55,7 +55,7 @@ export const verifyAndUpdateLinks = async (links: LinkResource[], dispatch: Disp
     // Verify and update links in paralell
     const updatedLinks = links.map((link) => verifyAndUpdateLink(link, dispatch, getState, services));
     // Filter out undefined links (trashed, malformed or 404)
-    const validLinks = (await Promise.all(updatedLinks)).filter((link): link is LinkResource => (link !== undefined && !!link.headUuid));
+    const validLinks = (await Promise.all(updatedLinks)).filter((link): link is LinkResource => (link !== undefined));
 
     return Promise.resolve(validLinks);
 };
