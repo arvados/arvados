@@ -8,12 +8,8 @@ def row_lock_for_priority_update container_uuid
   # everything that gets touched by either a priority update or state
   # update.
   # This method assumes we are already in a transaction.
-  max_retries = 6
-  conn = ActiveRecord::Base.connection
-  conn.exec_query 'SAVEPOINT row_lock_for_priority_update'
-  begin
-    conn.exec_query %{
-        select containers.uuid from containers where containers.uuid in (
+  ActiveRecord::Base.connection.exec_query %{
+        select containers.id from containers where containers.uuid in (
   select pri_container_uuid from container_tree($1)
 UNION
   select container_requests.requesting_container_uuid from container_requests
@@ -21,31 +17,8 @@ UNION
           and container_requests.state = 'Committed'
           and container_requests.requesting_container_uuid is not NULL
 )
-        order by containers.uuid for update of containers
+        order by containers.id for update of containers
   }, 'select_for_update_priorities', [container_uuid]
-  rescue ActiveRecord::Deadlocked => rn
-    # bug #21540
-    #
-    # Despite deliberately taking the locks in uuid order, reportedly
-    # this method still occasionally deadlocks with another request
-    # handler that is also doing updates on the same container tree.
-    # This happens infrequently so we don't know how to reproduce it
-    # or precisely what circumstances cause it.
-    #
-    # However, in this situation it is safe to retry because this
-    # query has no effect on the database content, its only job is to
-    # acquire a set of row locks so we can safely update the container
-    # records later.
-
-    raise if max_retries == 0
-    max_retries -= 1
-
-    # Wait random 0-10 seconds then rollback and retry
-    sleep(rand(10))
-
-    conn.exec_query 'ROLLBACK TO SAVEPOINT row_lock_for_priority_update'
-    retry
-  end
 end
 
 def update_priorities starting_container_uuid

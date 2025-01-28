@@ -98,6 +98,18 @@ class ApplicationControllerTest < ActionController::TestCase
     end
   end
 
+  [[500, ActiveRecord::Deadlocked],
+   [500, ActiveRecord::QueryAborted],
+   [422, ActiveRecord::RecordNotUnique]].each do |status, etype|
+    test "return status #{status} for #{etype}" do
+      Group.stubs(:new).raises(etype)
+      @controller = Arvados::V1::GroupsController.new
+      authorize_with :active
+      post :create, params: {group: {}}
+      assert_response status
+    end
+  end
+
   test "exceptions with backtraces get logged at exception_backtrace key" do
     Group.stubs(:new).raises(Exception, 'Whoops')
     Rails.logger.expects(:info).with(any_parameters) do |param|
