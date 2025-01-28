@@ -12,7 +12,7 @@ import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { Resource, ResourceKind, extractUuidKind } from "models/resource";
+import { Resource, extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
@@ -22,7 +22,7 @@ import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-pro
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
-import { GroupResource, GroupClass } from "models/group";
+import { isUserGroup } from "models/group";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
@@ -199,8 +199,7 @@ export function selectedToKindSet(checkedList: TCheckedList, resources: Resource
 
 export const isRoleGroupResource = (uuid: string, resources: ResourcesState): boolean => {
     const resource = getResource(uuid)(resources);
-    if(!resource) return false;
-    return resource.kind === ResourceKind.PROJECT && (resource as GroupResource).groupClass === GroupClass.ROLE;
+    return isUserGroup(resource);
 };
 
 function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
