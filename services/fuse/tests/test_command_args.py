@@ -73,7 +73,7 @@ class MountArgsTest(unittest.TestCase):
     @noexit
     def test_default_all(self):
         args = arvados_fuse.command.ArgumentParser().parse_args([
-            '--poll-time=27',
+            '--refresh-time=27',
             '--foreground', self.mntdir])
         self.assertEqual(args.mode, None)
         self.mnt = arvados_fuse.command.Mount(args)
@@ -134,7 +134,7 @@ class MountArgsTest(unittest.TestCase):
         cid = c[id_type]
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--collection', cid,
-            '--poll-time=27',
+            '--refresh-time=27',
             '--foreground', self.mntdir])
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.CollectionDirectory)
