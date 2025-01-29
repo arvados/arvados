@@ -96,7 +96,7 @@ class Handle(object):
     def release(self):
         self.obj.dec_use()
 
-    def flush(self):
+    def flush(self, force):
         pass
 
 
@@ -104,10 +104,24 @@ class FileHandle(Handle):
     """Connects a numeric file handle to a File  object that has
     been opened by the client."""
 
-    def flush(self):
-        if self.obj.writable():
-            return self.obj.flush()
+    def __init__(self, fh, obj, parent_obj, open_for_writing):
+        super(FileHandle, self).__init__(fh, obj)
+        self.parent_obj = parent_obj
+        if self.parent_obj is not None:
+            self.parent_obj.inc_use()
+        self.open_for_writing = open_for_writing
 
+    def release(self):
+        super(FileHandle, self).release()
+        if self.parent_obj is not None:
+            self.parent_obj.dec_use()
+
+    def flush(self, force):
+        if not self.open_for_writing and not force:
+            return
+        self.obj.flush()
+        if self.parent_obj is not None:
+            self.parent_obj.flush()
 
 class DirectoryHandle(Handle):
     """Connects a numeric file handle to a Directory object that has
@@ -131,6 +145,9 @@ class DirectoryHandle(Handle):
         for ent in self.entries:
             ent[1].dec_use()
         super(DirectoryHandle, self).release()
+
+    def flush(self, force):
+        self.obj.flush()
 
 
 class InodeCache(object):
@@ -835,11 +852,18 @@ class Operations(llfuse.Operations):
         if isinstance(p, Directory):
             raise llfuse.FUSEError(errno.EISDIR)
 
-        if ((flags & os.O_WRONLY) or (flags & os.O_RDWR)) and not p.writable():
+        open_for_writing = (flags & os.O_WRONLY) or (flags & os.O_RDWR)
+        if open_for_writing and not p.writable():
             raise llfuse.FUSEError(errno.EPERM)
 
         fh = next(self._filehandles_counter)
-        self._filehandles[fh] = FileHandle(fh, p)
+
+        if p.stale():
+            p.checkupdate()
+            self.inodes.invalidate_inode(p)
+
+        parent_inode = self.inodes[p.parent_inode] if p.parent_inode in self.inodes else None
+        self._filehandles[fh] = FileHandle(fh, p, parent_inode, open_for_writing)
         self.inodes.touch(p)
 
         # Normally, we will have received an "update" event if the
@@ -905,7 +929,7 @@ class Operations(llfuse.Operations):
         if fh in self._filehandles:
             _logger.debug("arv-mount release fh %i", fh)
             try:
-                self._filehandles[fh].flush()
+                self._filehandles[fh].flush(False)
             except Exception:
                 raise
             finally:
@@ -1009,7 +1033,7 @@ class Operations(llfuse.Operations):
         # The file entry should have been implicitly created by callback.
         f = p[name]
         fh = next(self._filehandles_counter)
-        self._filehandles[fh] = FileHandle(fh, f)
+        self._filehandles[fh] = FileHandle(fh, f, p, True)
         self.inodes.touch(p)
 
         f.inc_ref()
@@ -1060,13 +1084,16 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def flush(self, fh):
         if fh in self._filehandles:
-            self._filehandles[fh].flush()
+            self._filehandles[fh].flush(False)
 
     def fsync(self, fh, datasync):
-        self.flush(fh)
+        if fh in self._filehandles:
+            self._filehandles[fh].flush(True)
+            self.inodes.invalidate_inode(self._filehandles[fh].obj)
 
     def fsyncdir(self, fh, datasync):
-        self.flush(fh)
+        if fh in self._filehandles:
+            self._filehandles[fh].flush(True)
 
     @catch_exceptions
     def mknod(self, parent_inode, name, mode, rdev, ctx=None):
