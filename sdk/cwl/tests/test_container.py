@@ -1729,8 +1729,14 @@ class TestContainer(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        ("Uncommitted",),
+        ("Committed",),
+        ("Final",),
+
+    ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_recheck_on_error(self, keepdocker):
+    def test_recheck_on_error(self, get_state, keepdocker):
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -1759,7 +1765,7 @@ class TestContainer(unittest.TestCase):
 
         # Test that if update() raises an exception, we re-check the
         # container request record to see if we can proceed anyway.
-        runner.api.container_requests().update.side_effect = Exception("Invalid transition from 'Final' to 'Committed'")
+        runner.api.container_requests().update.side_effect = Exception("Invalid state transition")
 
         runner.api.container_requests().create().execute.return_value = {
             'state': 'Uncommitted',
@@ -1767,13 +1773,14 @@ class TestContainer(unittest.TestCase):
             "container_uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
         }
         runner.api.container_requests().get().execute.return_value = {
-            'state': 'Final',
+            'state': get_state,
             'uuid': "zzzzz-xvhdp-zzzzzzzzzzzzzz1",
         }
 
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
             j.run(runtimeContext)
             runner.api.container_requests().get.assert_called_with(uuid="zzzzz-xvhdp-zzzzzzzzzzzzzz1")
+            assert j.attempt_count == (0 if get_state == "Uncommitted" else 1)
 
 
 class TestWorkflow(unittest.TestCase):
