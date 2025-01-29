@@ -35,7 +35,8 @@ type ToggleLockActionProps = {
 
 export const ToggleLockAction = connect(mapStateToProps)(memoize((props: ToggleLockActionProps) => {
     const lockResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
-    const isLocked = resourceIsFrozen(getResource<GroupResource>(lockResourceUuid)(props.resources), props.resources);
+    const resource = getResource<GroupResource>(lockResourceUuid)(props.resources);
+    const isLocked = resource ? resourceIsFrozen(resource, props.resources) : false;
 
     return (
         <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
