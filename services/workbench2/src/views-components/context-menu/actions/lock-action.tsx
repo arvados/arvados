@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { ListItemIcon, ListItemText, ListItem, Tooltip, IconButton } from "@mui/material";
+import { ListItemIcon, ListItemText, ListItem, Tooltip, IconButton, Typography } from "@mui/material";
 import { FreezeIcon, UnfreezeIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
@@ -56,8 +56,8 @@ export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentIte
                 </ListItemIcon>
                     <ListItemText style={{ textDecoration: 'none' }}>
                         {isLocked
-                            ? <>Unfreeze project</>
-                            : <>Freeze project</>}
+                            ? <Typography>Unfreeze project</Typography>
+                            : <Typography>Freeze project</Typography>}
                     </ListItemText>
             </ListItem>)}
         </Tooltip>
