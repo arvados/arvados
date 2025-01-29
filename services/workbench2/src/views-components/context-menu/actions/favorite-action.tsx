@@ -3,23 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { ListItemIcon, ListItemText, ListItem, Tooltip } from "@mui/material";
+import { ListItemIcon, ListItemText, ListItem, Tooltip, IconButton, Typography } from "@mui/material";
 import { AddFavoriteIcon, RemoveFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { FavoritesState } from "store/favorites/favorites-reducer";
-
-const toolbarIconClass = {
-    width: '1rem',
-    marginLeft: '-0.5rem',
-    marginTop: '0.25rem',
-}
-
-const mapStateToProps = (state: RootState): Pick<ToggleFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'favorites'> => ({
-    contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
-    selectedResourceUuid: state.selectedResourceUuid,
-    favorites: state.favorites,
-});
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { componentItemStyles, ComponentCssRules } from "../component-item-styles";
 
 type ToggleFavoriteActionProps = {
     isInToolbar: boolean,
@@ -29,25 +20,42 @@ type ToggleFavoriteActionProps = {
     onClick: () => void
 }
 
-export const ToggleFavoriteAction = connect(mapStateToProps)((props: ToggleFavoriteActionProps) => {
+const mapStateToProps = (state: RootState): Pick<ToggleFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'favorites'> => ({
+    contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
+    selectedResourceUuid: state.selectedResourceUuid,
+    favorites: state.favorites,
+});
+
+export const ToggleFavoriteAction = connect(mapStateToProps)(withStyles(componentItemStyles)((props: ToggleFavoriteActionProps & WithStyles<ComponentCssRules>) => {
     const faveResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
     const isFavorite = faveResourceUuid !== undefined && props.favorites[faveResourceUuid] === true;
 
     return <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-        <ListItem
-            button
-            onClick={props.onClick}>
-            <ListItemIcon style={props.isInToolbar ? toolbarIconClass : {}}>
-                {isFavorite
-                    ? <RemoveFavoriteIcon />
-                    : <AddFavoriteIcon />}
-            </ListItemIcon>
-            {!props.isInToolbar &&
-                <ListItemText style={{ textDecoration: 'none' }}>
+        {props.isInToolbar ? (
+            <IconButton
+                className={props.classes.toolbarButton}
+                onClick={props.onClick}>
+                <ListItemIcon className={props.classes.toolbarIcon}>
                     {isFavorite
-                        ? <>Remove from favorites</>
-                        : <>Add to favorites</>}
-                </ListItemText>}
-        </ListItem >
+                        ? <RemoveFavoriteIcon />
+                        : <AddFavoriteIcon />}
+                </ListItemIcon>
+            </IconButton>
+        ) : (
+            <ListItem
+                button
+                onClick={props.onClick}>
+                <ListItemIcon>
+                    {isFavorite
+                        ? <RemoveFavoriteIcon />
+                        : <AddFavoriteIcon />}
+                </ListItemIcon>
+                <ListItemText style={{ textDecoration: 'none' }}>
+                {isFavorite
+                        ? <Typography>Remove from favorites</Typography>
+                        : <Typography>Add to favorites</Typography>}
+                </ListItemText>
+        </ListItem>
+        )}
     </Tooltip>
-});
+}));
