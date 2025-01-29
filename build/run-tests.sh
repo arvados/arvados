@@ -721,6 +721,37 @@ install_services/workbench2() {
         && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
 }
 
+do_migrate() {
+    timer_reset
+    local task="db:migrate"
+    case "$1" in
+        "")
+            ;;
+        rollback)
+            task="db:rollback"
+            shift
+            ;;
+        *)
+            task="db:migrate:$1"
+            shift
+            ;;
+    esac
+    check_arvados_config services/api
+    (
+        set -x
+        env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+            bundle exec rake $task ${@}
+    )
+    checkexit "$?" "services/api $task"
+}
+
+migrate_down_services/api() {
+    echo "running db:migrate:down"
+    env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+        bundle exec rake db:migrate:down ${testargs[services/api]}
+    checkexit "$?" "services/api db:migrate:down"
+}
+
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
@@ -889,14 +920,17 @@ test_go() {
 
 help_interactive() {
     echo "== Interactive commands:"
-    echo "TARGET                 (short for 'test DIR')"
+    echo "TARGET                   (short for 'test DIR')"
     echo "test TARGET"
-    echo "10 test TARGET         (run test 10 times)"
-    echo "test TARGET -check.vv  (pass arguments to test)"
+    echo "10 test TARGET           (run test 10 times)"
+    echo "test TARGET -check.vv    (pass arguments to test)"
     echo "install TARGET"
-    echo "install env            (go/python libs)"
-    echo "install deps           (go/python libs + arvados components needed for integration tests)"
-    echo "reset                  (...services used by integration tests)"
+    echo "install env              (go/python libs)"
+    echo "install deps             (go/python libs + arvados components needed for integration tests)"
+    echo "migrate                  (run outstanding migrations)"
+    echo "migrate rollback         (revert most recent migration)"
+    echo "migrate <dir> VERSION=n  (revert and/or run a single migration; <dir> is up|down|redo)"
+    echo "reset                    (...services used by integration tests)"
     echo "exit"
     echo "== Test targets:"
     printf "%s\n" "${!testfuncargs[@]}" | sort | column
@@ -1065,6 +1099,9 @@ else
                 ;;
             "reset")
                 stop_services
+                ;;
+            "migrate")
+                do_migrate ${target} ${opts}
                 ;;
             "test" | "install")
                 case "$target" in

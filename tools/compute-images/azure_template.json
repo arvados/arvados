@@ -46,7 +46,7 @@
   "provisioners": [{
       "type": "ansible",
       "command": "{{user `ansible_command`}}",
-      "playbook_file": "ansible/build-compute-image.yml",
+      "playbook_file": "../ansible/build-compute-image.yml",
       "user": "{{user `ssh_user`}}",
       "extra_arguments": [
           "--extra-vars", "arvados_cluster_id={{ user `arvados_cluster` }}",

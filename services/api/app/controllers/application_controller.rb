@@ -166,7 +166,17 @@ class ApplicationController < ActionController::Base
     else
       errors = [e.inspect]
     end
-    status = e.respond_to?(:http_status) ? e.http_status : 422
+
+    case e
+    when ActiveRecord::Deadlocked,
+         ActiveRecord::ConnectionNotEstablished,
+         ActiveRecord::LockWaitTimeout,
+         ActiveRecord::QueryAborted
+      status = 500
+    else
+      status = e.respond_to?(:http_status) ? e.http_status : 422
+    end
+
     send_error(*errors, status: status)
   end
 

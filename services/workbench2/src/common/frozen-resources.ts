@@ -2,12 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProjectResource } from "models/project";
+import { ProjectResource, isProjectResource } from "models/project";
+import { Resource } from "models/resource";
 import { getResource } from "store/resources/resources";
+import { ResourcesState } from "store/resources/resources";
 import { memoize } from "lodash";
 
-export const resourceIsFrozen = memoize((resource: any, resources): boolean => {
-    let isFrozen: boolean = !!resource.frozenByUuid;
+export const resourceIsFrozen = memoize((resource: Resource, resources: ResourcesState): boolean => {
+    let isFrozen: boolean = isProjectResource(resource) ? !!resource.frozenByUuid : false;
     let ownerUuid: string | undefined = resource?.ownerUuid;
 
     while(!isFrozen && !!ownerUuid && ownerUuid.indexOf('000000000000000') === -1) {

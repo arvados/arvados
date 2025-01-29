@@ -15,7 +15,7 @@ import { RootState } from 'store/store';
 import { CloseIcon } from 'components/icon/icon';
 import { EmptyResource } from 'models/empty';
 import { Dispatch } from "redux";
-import { ResourceKind } from "models/resource";
+import { ResourceKind, isResourceResource } from "models/resource";
 import { ProjectDetails } from "./project-details";
 import { RootProjectDetails } from './root-project-details';
 import { CollectionDetails } from "./collection-details";
@@ -99,7 +99,7 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
 
     let isFrozen = false;
-    if (resource) {
+    if (resource && isResourceResource(resource)) {
         isFrozen = resourceIsFrozen(resource, resources);
     }
 

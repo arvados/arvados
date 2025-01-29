@@ -6,13 +6,12 @@ import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { AuthState } from 'store/auth/auth-reducer';
 import { getResource } from 'store/resources/resources';
-import { Resource, TrashableResource, ResourceKind } from 'models/resource';
+import { Resource, ResourceKind } from 'models/resource';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { GroupResource, GroupClass } from 'models/group';
+import { GroupResource, GroupClass, isGroupResource, isUserGroup } from 'models/group';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getProcess, isProcessCancelable } from 'store/processes/process';
-import { CollectionResource } from 'models/collection';
-import { User } from 'models/user';
+import { isCollectionResource } from 'models/collection';
 import { ResourcesState } from 'store/resources/resources';
 
 type ProjectToMenuArgs = {
@@ -64,33 +63,32 @@ type ProcessMenuKind = ContextMenuKind.PROCESS_RESOURCE
     | ContextMenuKind.RUNNING_PROCESS_ADMIN
     | ContextMenuKind.READONLY_PROCESS_RESOURCE;
 
-type MenuKindResource = Resource &
-    Pick<TrashableResource, 'isTrashed'> &
-    Pick<GroupResource, 'name' | 'groupClass' | 'canWrite' | 'canManage'> &
-    Pick<CollectionResource, 'currentVersionUuid' | 'ownerUuid'> &
-    Pick<User, 'isAdmin'>;
-
 export const resourceToMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState): ContextMenuKind | undefined => {
         const { auth, resources } = getState();
-        const resource = getResource<MenuKindResource>(uuid)(resources);
+        const resource = getResource<Resource>(uuid)(resources);
         if (!resource) return;
-        const { kind, canManage = false, canWrite = false } = resource;
         const isAdmin = auth.user?.isAdmin || false;
         const isFrozen = resourceIsFrozen(resource, resources);
         const isEditable = getIsEditable(isAdmin, resource, resources, readonly, isFrozen);
 
-        switch (kind) {
-            case ResourceKind.PROJECT:
-                const unfreezeRequiresAdmin = getUnfreezeRequiresAdmin(auth);
-                const isFilterGroup = resource.groupClass === GroupClass.FILTER;
-                return getProjectMenuKind({ isAdmin, isFrozen, isEditable, canManage, canWrite, unfreezeRequiresAdmin, isFilterGroup, readonly });
-            case ResourceKind.COLLECTION:
-                const collectionParent = getResource<GroupResource>(resource.ownerUuid)(resources);
-                const isOnlyWriteable = collectionParent?.canWrite === true && collectionParent.canManage === false;
-                const isOldVersion = resource.uuid !== resource.currentVersionUuid;
-                const isTrashed = resource.isTrashed || false;
-                return getCollectionMenuKind({ isAdmin, isEditable, isOldVersion, isTrashed, isOnlyWriteable });
+        if (isUserGroup(resource)) {
+            return ContextMenuKind.GROUPS
+        }
+        if (isGroupResource(resource)) {
+            const { canManage = false, canWrite = false } = resource;
+            const unfreezeRequiresAdmin = getUnfreezeRequiresAdmin(auth);
+            const isFilterGroup = resource.groupClass === GroupClass.FILTER;
+            return getProjectMenuKind({ isAdmin, isFrozen, isEditable, canManage, canWrite, unfreezeRequiresAdmin, isFilterGroup, readonly });
+        }
+        if (isCollectionResource(resource)){
+            const collectionParent = getResource<GroupResource>(resource.ownerUuid)(resources);
+            const isOnlyWriteable = collectionParent?.canWrite === true && collectionParent.canManage === false;
+            const isOldVersion = resource.uuid !== resource.currentVersionUuid;
+            const isTrashed = resource.isTrashed || false;
+            return getCollectionMenuKind({ isAdmin, isEditable, isOldVersion, isTrashed, isOnlyWriteable });
+        }
+        switch (resource.kind) {
             case ResourceKind.PROCESS:
                 const process = getProcess(uuid)(resources);
                 const canWriteProcess = !!(process && getResource<GroupResource>(process.containerRequest.ownerUuid)(resources)?.canWrite);
@@ -179,7 +177,7 @@ const getUnfreezeRequiresAdmin = (auth: AuthState) => {
     return Object.keys(remoteHostsConfig).some((k) => remoteHostsConfig[k].clusterConfig.API.UnfreezeProjectRequiresAdmin);
 };
 
-const getIsEditable = (isAdmin: boolean, resource: MenuKindResource, resources: ResourcesState, readonly: boolean, isFrozen: boolean) => {
-    const isEditable = (resources[resource.ownerUuid] as GroupResource)?.canWrite || resource.canWrite;
+const getIsEditable = (isAdmin: boolean, resource: Resource, resources: ResourcesState, readonly: boolean, isFrozen: boolean) => {
+    const isEditable = (resources[resource.ownerUuid] as GroupResource)?.canWrite || (isGroupResource(resource) && resource.canWrite);
     return (isAdmin || isEditable) && !readonly && !isFrozen;
 };
