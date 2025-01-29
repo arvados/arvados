@@ -99,8 +99,6 @@ class ArvadosCommandTool(CommandLineTool):
                         for gb in aslist(inputschema["outputBinding"]["glob"]):
                             self.globpatterns.append({"pattern": sf["pattern"], "glob": gb})
 
-
-
     def make_job_runner(self, runtimeContext):
         if runtimeContext.work_api == "containers":
             return partial(ArvadosContainer, self.arvrunner, runtimeContext, self.globpatterns)

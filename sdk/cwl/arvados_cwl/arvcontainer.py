@@ -375,27 +375,27 @@ class ArvadosContainer(JobBase):
 
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
-            for gp in self.globpatterns:
-                pattern = ""
-                if isinstance(gp, str):
-                    gb = self.builder.do_eval(gp)
-                elif isinstance(gp, dict):
-                    # dict of two keys, 'glob' and 'pattern' which
-                    # means we should try to predict the names of
-                    # secondary files to capture.
-                    gb = self.builder.do_eval(gp["glob"])
-                    pattern = gp["pattern"]
+            try:
+                for gp in self.globpatterns:
+                    pattern = ""
+                    gb = None
+                    if isinstance(gp, str):
+                        gb = self.builder.do_eval(gp)
+                    elif isinstance(gp, dict):
+                        # dict of two keys, 'glob' and 'pattern' which
+                        # means we should try to predict the names of
+                        # secondary files to capture.
+                        gb = self.builder.do_eval(gp["glob"])
+                        pattern = gp["pattern"]
 
-                    if "${" in pattern or "$(" in pattern:
-                        # pattern is an expression, need to evaluate
-                        # it first.
-                        try:
+                        if "${" in pattern or "$(" in pattern:
+                            # pattern is an expression, need to evaluate
+                            # it first.
                             if '*' in gb or "]" in gb:
                                 # glob has wildcards, so we can't
                                 # predict the secondary file name.
                                 # Capture everything.
-                                output_glob.append("**")
-                                break
+                                raise Exception("glob has wildcards, cannot predict secondary file name")
 
                             # After evealuating 'glob' we have a
                             # expected name we can provide to the
@@ -407,71 +407,75 @@ class ArvadosContainer(JobBase):
                                 "nameext": ne,
                                 "nameroot": nr,
                             })
-                        except:
-                            # Something failed in the expression, like
-                            # maybe it tried to access another field
-                            # in 'self'.
-                            output_glob.append("**")
-                            break
 
-                        if isinstance(pattern, str):
-                            # If we get a string back, that's the expected
-                            # file name for the secondary file.
-                            gb = pattern
-                            pattern = ""
-                        else:
-                            # However, it is legal for this to return a
-                            # file object or an array.  In that case we'll
-                            # just capture everything.
-                            output_glob.append("**")
-                            break
-                else:
-                    raise Exception("Expected glob pattern to be a str or dict, was %s" % gp)
-
-                if not gb:
-                    continue
-
-                for gbeval in aslist(gb):
-                    if gbeval.startswith(self.outdir+"/"):
-                        gbeval = gbeval[len(self.outdir)+1:]
-                    while gbeval.startswith("./"):
-                        gbeval = gbeval[2:]
-
-                    if len(pattern) > 0:
-                        # pattern is not an expression or we would
-                        # have handled this earlier, so it must be
-                        # a simple substitution on the secondary
-                        # file name.
-                        #
-                        # 'pattern' was assigned in the earlier code block
-                        #
-                        # if there's a wild card in the glob, figure
-                        # out if there's enough text after it that the
-                        # suffix substitution can be done correctly.
-                        cutpos = max(gbeval.find("*"), gbeval.find("]"))
-                        if cutpos > -1:
-                            tail = gbeval[cutpos+1:]
-                            if tail.count(".") < pattern.count("^"):
-                                # the known suffix in the glob has
-                                # fewer dotted extensions than the
-                                # substition pattern wants to remove,
-                                # so we can't accurately predict
-                                # correct name glob in advance.
-                                gbeval = ""
-                        if gbeval:
-                            gbeval = substitute(gbeval, pattern)
-
-                    if gbeval in (self.outdir, "", "."):
-                        output_glob.append("**")
-                    elif gbeval.endswith("/"):
-                        output_glob.append(gbeval+"**")
+                            if isinstance(pattern, str):
+                                # If we get a string back, that's the expected
+                                # file name for the secondary file.
+                                gb = pattern
+                                pattern = ""
+                            else:
+                                # However, it is legal for this to return a
+                                # file object or an array.  In that case we'll
+                                # just capture everything.
+                                raise Exception("secondary file expression did not evaluate to a string")
                     else:
-                        output_glob.append(gbeval)
-                        output_glob.append(gbeval + "/**")
+                        # Should never happen, globpatterns is
+                        # constructed in arvtool from data that has
+                        # already gone through schema validation, but
+                        # still good to have a fallback.
+                        raise Exception("Expected glob pattern to be a str or dict, was %s" % gp)
 
-            if "**" in output_glob:
-                # if it's going to match all, prefer not to provide it
-                # at all.
+                    if not gb:
+                        continue
+
+                    for gbeval in aslist(gb):
+                        if gbeval.startswith(self.outdir+"/"):
+                            gbeval = gbeval[len(self.outdir)+1:]
+                        while gbeval.startswith("./"):
+                            gbeval = gbeval[2:]
+
+                        if len(pattern) > 0:
+                            # pattern is not an expression or we would
+                            # have handled this earlier, so it must be
+                            # a simple substitution on the secondary
+                            # file name.
+                            #
+                            # 'pattern' was assigned in the earlier code block
+                            #
+                            # if there's a wild card in the glob, figure
+                            # out if there's enough text after it that the
+                            # suffix substitution can be done correctly.
+                            cutpos = max(gbeval.find("*"), gbeval.find("]"))
+                            if cutpos > -1:
+                                tail = gbeval[cutpos+1:]
+                                if tail.count(".") < pattern.count("^"):
+                                    # the known suffix in the glob has
+                                    # fewer dotted extensions than the
+                                    # substition pattern wants to remove,
+                                    # so we can't accurately predict
+                                    # correct name glob in advance.
+                                    gbeval = ""
+                            if gbeval:
+                                gbeval = substitute(gbeval, pattern)
+
+                        if gbeval in (self.outdir, "", "."):
+                            output_glob.append("**")
+                        elif gbeval.endswith("/"):
+                            output_glob.append(gbeval+"**")
+                        else:
+                            output_glob.append(gbeval)
+                            output_glob.append(gbeval + "/**")
+
+                if "**" in output_glob:
+                    # if it's going to match all, prefer not to provide it
+                    # at all.
+                    output_glob.clear()
+            except:
+                # Something failed, maybe in do_eval, such as trying
+                # to access a field in 'self' we didn't populate.  It
+                # might still work post-execution when we have all the
+                # outputs available, but right now we don't have
+                # enough data to set output_glob.
                 output_glob.clear()
 
             if output_glob:
