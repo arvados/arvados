@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { ListItemIcon, ListItemText, ListItem, Tooltip } from "@mui/material";
+import { ListItemIcon, ListItemText, ListItem, Tooltip, IconButton } from "@mui/material";
 import { FreezeIcon, UnfreezeIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
@@ -12,18 +12,9 @@ import { getResource } from "store/resources/resources";
 import { GroupResource } from "models/group";
 import { memoize } from "lodash";
 import { ResourcesState } from "store/resources/resources";
-
-const toolbarIconClass = {
-    width: '1rem',
-    marginLeft: '-0.5rem',
-    marginTop: '0.25rem',
-}
-
-const mapStateToProps = (state: RootState): Pick<ToggleLockActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources'> => ({
-    contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
-    selectedResourceUuid: state.selectedResourceUuid,
-    resources: state.resources,
-});
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { componentItemStyles, ComponentCssRules } from "../component-item-styles";
 
 type ToggleLockActionProps = {
     isInToolbar: boolean;
@@ -33,26 +24,42 @@ type ToggleLockActionProps = {
     onClick: () => void;
 };
 
-export const ToggleLockAction = connect(mapStateToProps)(memoize((props: ToggleLockActionProps) => {
+const mapStateToProps = (state: RootState): Pick<ToggleLockActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources'> => ({
+    contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
+    selectedResourceUuid: state.selectedResourceUuid,
+    resources: state.resources,
+});
+
+export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentItemStyles)(memoize((props: ToggleLockActionProps & WithStyles<ComponentCssRules>) => {
     const lockResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
     const resource = getResource<GroupResource>(lockResourceUuid)(props.resources);
     const isLocked = resource ? resourceIsFrozen(resource, props.resources) : false;
 
     return (
         <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
+            {props.isInToolbar ? (
+                <IconButton
+                className={props.classes.toolbarButton}
+                onClick={props.onClick}>
+                <ListItemIcon className={props.classes.toolbarIcon}>
+                        {isLocked
+                            ? <UnfreezeIcon />
+                            : <FreezeIcon />}
+                    </ListItemIcon>
+                </IconButton>
+            ) : (
             <ListItem button onClick={props.onClick} data-cy="toggle-lock-action">
-                <ListItemIcon style={props.isInToolbar ? toolbarIconClass : {}}>
+                <ListItemIcon>
                     {isLocked
                         ? <UnfreezeIcon />
                         : <FreezeIcon />}
                 </ListItemIcon>
-                {!props.isInToolbar &&
                     <ListItemText style={{ textDecoration: 'none' }}>
                         {isLocked
                             ? <>Unfreeze project</>
                             : <>Freeze project</>}
-                    </ListItemText>}
-            </ListItem >
+                    </ListItemText>
+            </ListItem>)}
         </Tooltip>
     );
-}));
+})));
