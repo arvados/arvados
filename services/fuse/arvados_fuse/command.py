@@ -351,7 +351,7 @@ Filesystem character encoding
             metavar='SECONDS',
             default=15,
             type=int,
-            help="Upper limit on how long mount contents may be out of date with upstream Arvados before being refreshed (default 15 seconds)",
+            help="Upper limit on how long mount contents may be out of date with upstream Arvados before being refreshed on next access (default 15 seconds)",
         )
         # This is a hidden argument used by tests.  Normally this
         # value will be extracted from the cluster config, but mocking
