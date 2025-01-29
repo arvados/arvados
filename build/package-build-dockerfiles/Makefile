@@ -52,10 +52,10 @@ NODETARBALL=${NODETARBALL_$(HOSTTYPE)}
 common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL)
 
 common-generated/$(GOTARBALL): common-generated
-	curl -fL -o common-generated/$(GOTARBALL) https://dl.google.com/go/$(GOTARBALL)
+	curl -fL -o $@ https://dl.google.com/go/$(@F)
 
 common-generated/$(NODETARBALL): common-generated
-	curl -fL -o common-generated/$(NODETARBALL) https://nodejs.org/dist/v$(NODEVERSION)/$(NODETARBALL)
+	curl -fL -o $@ https://nodejs.org/dist/v$(NODEVERSION)/$(@F)
 
 common-generated:
 	mkdir common-generated
