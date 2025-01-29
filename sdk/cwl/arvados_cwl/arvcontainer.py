@@ -395,7 +395,7 @@ class ArvadosContainer(JobBase):
                                 # glob has wildcards, so we can't
                                 # predict the secondary file name.
                                 # Capture everything.
-                                raise Exception("glob has wildcards, cannot predict secondary file name")
+                                raise RuntimeError("glob has wildcards, cannot predict secondary file name")
 
                             # After evealuating 'glob' we have a
                             # expected name we can provide to the
@@ -417,13 +417,13 @@ class ArvadosContainer(JobBase):
                                 # However, it is legal for this to return a
                                 # file object or an array.  In that case we'll
                                 # just capture everything.
-                                raise Exception("secondary file expression did not evaluate to a string")
+                                raise RuntimeError("secondary file expression did not evaluate to a string")
                     else:
                         # Should never happen, globpatterns is
                         # constructed in arvtool from data that has
                         # already gone through schema validation, but
                         # still good to have a fallback.
-                        raise Exception("Expected glob pattern to be a str or dict, was %s" % gp)
+                        raise TypeError("Expected glob pattern to be a str or dict, was %s" % gp)
 
                     if not gb:
                         continue
