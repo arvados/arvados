@@ -30,6 +30,10 @@ export const getResource = memoize(<T extends Resource = Resource>(id: string) =
     (state: ResourcesState): T | undefined =>
         state[id] as T);
 
+export const getResourceFromState = memoize(<T extends Resource = Resource>(id: string, resources: ResourcesState): T | undefined => {
+    return resources[id] as T | undefined;
+})
+
 export const setResource = <T extends Resource>(id: string, data: T) =>
     (state: ResourcesState) => ({
         ...state,
