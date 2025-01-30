@@ -21,6 +21,7 @@ import { kebabCase } from 'lodash';
 import { Resource } from 'models/resource';
 import { ResourcesState } from 'store/resources/resources';
 import { TreePicker } from 'store/tree-picker/tree-picker';
+import { isEqual } from 'lodash';
 
 type CssRules = 'list'
               | 'listItem'
@@ -529,5 +530,6 @@ export const TreeComponent = withStyles(styles)(
 // return true to prevent re-render, false to allow re-render
 function preventRerender<T>(prevProps: TreeProps<T>, nextProps: TreeProps<T>) {
     if(prevProps.treePicker !== nextProps.treePicker) return false;
+    if(!!nextProps.items && !isEqual(prevProps.items, nextProps.items)) return false;
     return true;
 }
