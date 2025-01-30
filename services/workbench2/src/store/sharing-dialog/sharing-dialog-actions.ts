@@ -24,7 +24,7 @@ import { getDialog } from 'store/dialog/dialog-reducer';
 import { PermissionLevel, PermissionResource } from 'models/permission';
 import { differenceWith } from "lodash";
 import { withProgress } from "store/progress-indicator/with-progress";
-import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import {
     extractUuidObjectType,
@@ -51,13 +51,13 @@ export const connectSharingDialogProgress = withProgress(SHARING_DIALOG_NAME);
 
 
 export const saveSharingDialogChanges = async (dispatch: Dispatch, getState: () => RootState) => {
-    dispatch(progressIndicatorsActions.START_WORKING(SHARING_DIALOG_NAME));
+    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
     await dispatch<any>(savePublicPermissionChanges);
     await dispatch<any>(saveManagementChanges);
     await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
     await dispatch<any>(loadSharingDialog);
-    dispatch(progressIndicatorsActions.STOP_WORKING(SHARING_DIALOG_NAME));
+    dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
 
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
     if (dialog && dialog.data.refresh) {
@@ -75,7 +75,7 @@ export const createSharingToken = (expDate: Date | undefined) => async (dispatch
     if (dialog) {
         const resourceUuid = dialog.data.resourceUuid;
         if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
-            dispatch(progressIndicatorsActions.START_WORKING(SHARING_DIALOG_NAME));
+            dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
             try {
                 const sharingToken = await apiClientAuthorizationService.createCollectionSharingToken(resourceUuid, expDate);
                 dispatch(resourcesActions.SET_RESOURCES([sharingToken]));
@@ -91,14 +91,14 @@ export const createSharingToken = (expDate: Date | undefined) => async (dispatch
                     kind: SnackbarKind.ERROR,
                 }));
             } finally {
-                dispatch(progressIndicatorsActions.STOP_WORKING(SHARING_DIALOG_NAME));
+                dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
             }
         }
     }
 };
 
 export const deleteSharingToken = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, { apiClientAuthorizationService }: ServiceRepository) => {
-    dispatch(progressIndicatorsActions.START_WORKING(SHARING_DIALOG_NAME));
+    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
     try {
         await apiClientAuthorizationService.delete(uuid);
         dispatch(resourcesActions.DELETE_RESOURCES([uuid]));
@@ -114,7 +114,7 @@ export const deleteSharingToken = (uuid: string) => async (dispatch: Dispatch, g
             kind: SnackbarKind.ERROR,
         }));
     } finally {
-        dispatch(progressIndicatorsActions.STOP_WORKING(SHARING_DIALOG_NAME));
+        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
     }
 };
 
@@ -123,7 +123,7 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
     const sharingURLsDisabled = getState().auth.config.clusterConfig.Workbench.DisableSharingURLsUI;
     if (dialog) {
-        dispatch(progressIndicatorsActions.START_WORKING(SHARING_DIALOG_NAME));
+        dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
         try {
             const resourceUuid = dialog.data.resourceUuid;
             await dispatch<any>(initializeManagementForm);
@@ -140,7 +140,7 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
             }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: SHARING_DIALOG_NAME }));
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(SHARING_DIALOG_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
         }
     }
 };
@@ -151,7 +151,7 @@ export const initializeManagementForm = async (dispatch: Dispatch, getState: () 
     if (!dialog) {
         return;
     }
-    dispatch(progressIndicatorsActions.START_WORKING(SHARING_DIALOG_NAME));
+    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
     try {
         const resourceUuid = dialog?.data.resourceUuid;
         const { items: permissionLinks } = await permissionService.listResourcePermissions(resourceUuid);
@@ -209,7 +209,7 @@ export const initializeManagementForm = async (dispatch: Dispatch, getState: () 
 
         dispatch(initialize(SHARING_MANAGEMENT_FORM_NAME, managementFormData));
     } finally {
-        dispatch(progressIndicatorsActions.STOP_WORKING(SHARING_DIALOG_NAME));
+        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
     }
 };
 

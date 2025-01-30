@@ -19,7 +19,7 @@ import { UserResource } from 'models/user';
 import { UserPanelColumnNames } from 'views/user-panel/user-panel';
 import { BuiltinGroups, getBuiltinGroupUuid } from 'models/group';
 import { LinkClass } from 'models/link';
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class UserMiddlewareService extends DataExplorerMiddlewareService {
@@ -31,7 +31,7 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const users = await this.services.userService.list(getParams(dataExplorer));
             api.dispatch(updateResources(users.items));
             api.dispatch(setItems(users));
@@ -48,7 +48,7 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         } catch {
             api.dispatch(couldNotFetchUsers());
         } finally {
-            api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+            api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
 

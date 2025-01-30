@@ -13,7 +13,7 @@ import { Config } from 'common/config';
 import { matchTokenRoute, matchFedTokenRoute } from 'routes/routes';
 import { createServices, setAuthorizationHeader } from "services/services";
 import { cancelLinking } from 'store/link-account-panel/link-account-panel-actions';
-import { progressIndicatorsActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 import { addRemoteConfig, getRemoteHostConfig } from './auth-action-session';
 import { getTokenV2 } from 'models/api-client-authorization';
 
@@ -65,11 +65,11 @@ const init = (config: Config) => async (dispatch: Dispatch, getState: () => Root
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
 
     if (token && token !== "undefined") {
-        dispatch(progressIndicatorsActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
+        dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
         try {
             await dispatch<any>(saveApiToken(token));
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
         }
     }
 };

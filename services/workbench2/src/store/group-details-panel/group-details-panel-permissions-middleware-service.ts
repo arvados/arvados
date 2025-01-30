@@ -19,7 +19,7 @@ import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-a
 import { ProjectResource } from "models/project";
 import { CollectionResource } from "models/collection";
 import { UserResource } from "models/user";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -34,7 +34,7 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
             // No-op if data explorer is not set since refresh may be triggered from elsewhere
         } else {
             try {
-                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 // Get items
                 const permissionsOut = await this.services.permissionService.list(getParams(dataExplorer, groupUuid));
@@ -80,7 +80,7 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
             } finally {
-                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

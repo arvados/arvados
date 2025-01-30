@@ -18,7 +18,7 @@ import { ServiceRepository } from 'services/services';
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { uploadCollectionFiles } from './collection-upload-actions';
 import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { isProjectOrRunProcessRoute } from 'store/projects/project-create-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { CollectionResource } from "models/collection";
@@ -58,7 +58,7 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
         dispatch(startSubmit(COLLECTION_CREATE_FORM_NAME));
         let newCollection: CollectionResource | undefined;
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
             newCollection = await services.collectionService.create(data, false);
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
@@ -83,6 +83,6 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
             }
             return;
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
         }
     };

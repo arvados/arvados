@@ -14,7 +14,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { GroupResource, GroupClass } from 'models/group';
 import { SortDirection } from 'components/data-table/data-column';
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { ListArguments, ListResults } from "services/common-service/common-service";
 import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 
@@ -69,7 +69,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
             api.dispatch(groupsPanelDataExplorerIsNotSet());
         } else {
             try {
-                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 // Get items
                 const groups = await this.services.groupsService.list(this.getParams(dataExplorer));
@@ -102,7 +102,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
             } catch (e) {
                 api.dispatch(couldNotFetchGroupList());
             } finally {
-                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

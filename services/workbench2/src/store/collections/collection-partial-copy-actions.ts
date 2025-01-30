@@ -11,7 +11,7 @@ import { ServiceRepository } from 'services/services';
 import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 import { updateResources } from 'store/resources/resources-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -75,7 +75,7 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
         if (fileSelection.collection) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
-                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
 
                 // Copy files
                 const updatedCollection = await services.collectionService.copyFiles(
@@ -112,7 +112,7 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
                 }
             } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
-                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
     };
@@ -153,7 +153,7 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
         if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
-                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
 
                 // Copy files
                 const updatedCollection = await services.collectionService.copyFiles(
@@ -179,7 +179,7 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
                 }
             } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
-                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
             }
         }
     };
@@ -208,7 +208,7 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
         if (fileSelection.collection) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
-                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
 
                 // Copy files
                 const collections = await Promise.all(fileSelection.selectedPaths.map((path) =>
@@ -246,7 +246,7 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
                 }
             } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
-                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             }
         }
     };

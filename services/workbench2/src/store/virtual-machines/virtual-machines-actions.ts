@@ -19,7 +19,7 @@ import { deleteResources, updateResources } from 'store/resources/resources-acti
 import { Participant } from "views-components/sharing-dialog/participant-select";
 import { initialize, reset } from "redux-form";
 import { getUserDisplayName, UserResource } from "models/user";
-import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
@@ -74,7 +74,7 @@ const loadRequestedDate = () =>
 export const loadVirtualMachinesAdminData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(progressIndicatorsActions.START_WORKING("virtual-machines-admin"));
+            dispatch(progressIndicatorActions.START_WORKING("virtual-machines-admin"));
             dispatch<any>(loadRequestedDate());
 
             const virtualMachines = await services.virtualMachineService.list();
@@ -104,14 +104,14 @@ export const loadVirtualMachinesAdminData = () =>
             const getAllLogins = await services.virtualMachineService.getAllLogins();
             dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING("virtual-machines-admin"));
+            dispatch(progressIndicatorActions.STOP_WORKING("virtual-machines-admin"));
         }
     };
 
 export const loadVirtualMachinesUserData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(progressIndicatorsActions.START_WORKING("virtual-machines-user"));
+            dispatch(progressIndicatorActions.START_WORKING("virtual-machines-user"));
 
             dispatch<any>(loadRequestedDate());
             const user = getState().auth.user;
@@ -126,7 +126,7 @@ export const loadVirtualMachinesUserData = () =>
             dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
             dispatch(virtualMachinesActions.SET_LINKS(links));
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING("virtual-machines-user"));
+            dispatch(progressIndicatorActions.STOP_WORKING("virtual-machines-user"));
         }
     };
 

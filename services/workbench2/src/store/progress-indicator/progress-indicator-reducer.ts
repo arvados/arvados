@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProgressIndicatorsAction, progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { ProgressIndicatorAction, progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 type ProgressIndicatorState = string[];
 
 const initialState: ProgressIndicatorState = [];
 
-export const progressIndicatorsReducer = (state: ProgressIndicatorState = initialState, action: ProgressIndicatorsAction) => {
-    return progressIndicatorsActions.match(action, {
+export const progressIndicatorReducer = (state: ProgressIndicatorState = initialState, action: ProgressIndicatorAction) => {
+    return progressIndicatorActions.match(action, {
         START_WORKING: id => [...state, id],
         STOP_WORKING: id => state.filter(p => p !== id),
         default: () => state,

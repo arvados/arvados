@@ -11,7 +11,7 @@ import { propertiesActions } from 'store/properties/properties-actions';
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {
         user: state.auth.user,
-        progressIndicator: state.progressIndicators,
+        progressIndicator: state.progressIndicator,
         buildInfo: state.appInfo.buildInfo,
         uuidPrefix: state.auth.localCluster,
         linkAccountPanel: state.linkAccountPanel,

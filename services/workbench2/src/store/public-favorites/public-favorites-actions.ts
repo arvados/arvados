@@ -8,7 +8,7 @@ import { RootState } from "../store";
 import { checkPublicFavorite } from "./public-favorites-reducer";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { SidePanelTreeCategory, loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
@@ -23,7 +23,7 @@ export type PublicFavoritesAction = UnionOf<typeof publicFavoritesActions>;
 
 export const togglePublicFavorite = (resource: { uuid: string; name: string }) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-        dispatch(progressIndicatorsActions.START_WORKING("togglePublicFavorite"));
+        dispatch(progressIndicatorActions.START_WORKING("togglePublicFavorite"));
         dispatch<any>(addDisabledButton(ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES))
         const uuidPrefix = getState().auth.config.uuidPrefix;
         const uuid = `${uuidPrefix}-j7d0g-publicfavorites`;
@@ -52,11 +52,11 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
                     kind: SnackbarKind.SUCCESS
                 }));
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES))
-                dispatch(progressIndicatorsActions.STOP_WORKING("togglePublicFavorite"));
+                dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));
                 dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.PUBLIC_FAVORITES));
             })
             .catch((e: any) => {
-                dispatch(progressIndicatorsActions.STOP_WORKING("togglePublicFavorite"));
+                dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));
                 throw e;
             });
     };

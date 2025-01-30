@@ -15,7 +15,7 @@ import {
 } from "common/config";
 import { normalizeURLPath } from "common/url";
 import { Session, SessionStatus } from "models/session";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { AuthService } from "services/auth-service/auth-service";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import jsSHA from "jssha";
@@ -178,7 +178,7 @@ export const validateSessions = (useApiClient?: AxiosInstance) =>
         const sessions = getState().auth.sessions;
         const activeSession = getActiveSession(sessions);
         if (activeSession) {
-            dispatch(progressIndicatorsActions.START_WORKING("sessionsValidation"));
+            dispatch(progressIndicatorActions.START_WORKING("sessionsValidation"));
             for (const session of sessions) {
                 if (session.status === SessionStatus.INVALIDATED) {
                     try {
@@ -202,7 +202,7 @@ export const validateSessions = (useApiClient?: AxiosInstance) =>
                 }
             }
             services.authService.saveSessions(getState().auth.sessions);
-            dispatch(progressIndicatorsActions.STOP_WORKING("sessionsValidation"));
+            dispatch(progressIndicatorActions.STOP_WORKING("sessionsValidation"));
         }
     };
 

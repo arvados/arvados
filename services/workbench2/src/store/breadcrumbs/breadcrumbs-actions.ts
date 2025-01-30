@@ -24,7 +24,7 @@ import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, Reso
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'store/side-panel-tree/side-panel-tree-actions';
 import { WorkflowResource } from 'models/workflow';
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -60,7 +60,7 @@ const resourceToBreadcrumb = (resource: (CollectionResource | ContainerRequestRe
 export const setSidePanelBreadcrumbs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(uuid + "-breadcrumbs"));
+            dispatch(progressIndicatorActions.START_WORKING(uuid + "-breadcrumbs"));
             const ancestors = await services.ancestorsService.ancestors(uuid, '');
             dispatch(updateResources(ancestors));
 
@@ -126,7 +126,7 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
         } catch (e) {
             console.log("Error setting breadcrumbs "+e);
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(uuid + "-breadcrumbs"));
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-breadcrumbs"));
         }
     };
 
@@ -139,7 +139,7 @@ export const setTrashBreadcrumbs = (uuid: string) =>
 export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(uuid + "-breadcrumbs"));
+            dispatch(progressIndicatorActions.START_WORKING(uuid + "-breadcrumbs"));
             const ancestors = await services.ancestorsService.ancestors(uuid, '');
             dispatch(updateResources(ancestors));
             const initialBreadcrumbs: Breadcrumb[] = [
@@ -180,7 +180,7 @@ export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
             }
             dispatch(setBreadcrumbs(breadcrumbs));
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(uuid + "-breadcrumbs"));
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-breadcrumbs"));
         }
     };
 

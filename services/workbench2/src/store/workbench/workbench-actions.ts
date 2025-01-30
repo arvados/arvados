@@ -57,7 +57,7 @@ import { workflowPanelActions } from "store/workflow-panel/workflow-panel-action
 import { loadSshKeysPanel } from "store/auth/auth-action-ssh";
 import { loadLinkAccountPanel, linkAccountPanelActions } from "store/link-account-panel/link-account-panel-actions";
 import { loadSiteManagerPanel } from "store/auth/auth-action-session";
-import { progressIndicatorsActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 import { extractUuidKind, Resource, ResourceKind } from "models/resource";
 import { FilterBuilder } from "services/api/filter-builder";
 import { GroupContentsResource } from "services/groups-service/groups-service";
@@ -119,14 +119,14 @@ export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<an
             kind: SnackbarKind.WARNING,
         })
     } finally {
-        if (getState().progressIndicators.includes(WORKBENCH_LOADING_SCREEN)) {
-            dispatch(progressIndicatorsActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        if (getState().progressIndicator.includes(WORKBENCH_LOADING_SCREEN)) {
+            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
         }
     }
 };
 
 export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(progressIndicatorsActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
+    dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
     const { auth, router } = getState();
     const { user } = auth;
     if (user) {
@@ -240,7 +240,7 @@ export const loadProject = (uuid: string) =>
             return;
         }
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(uuid));
+            dispatch(progressIndicatorActions.START_WORKING(uuid));
             if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
                 // Load another users home projects
                 dispatch(finishLoadingProject(uuid));
@@ -273,7 +273,7 @@ export const loadProject = (uuid: string) =>
                 dispatch<any>(setSidePanelBreadcrumbs(userUuid));
             }
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(uuid));
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid));
         }
     });
 
@@ -385,7 +385,7 @@ export const loadCollection = (uuid: string) =>
     handleFirstTimeLoad(async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const userUuid = getUserUuid(getState());
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(uuid));
+            dispatch(progressIndicatorActions.START_WORKING(uuid));
             if (userUuid) {
                 const match = await loadGroupContentsResource({
                     uuid,
@@ -424,7 +424,7 @@ export const loadCollection = (uuid: string) =>
                 }
             }
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(uuid));
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid));
         }
     });
 
@@ -548,7 +548,7 @@ export const moveCollection =
 export const loadProcess = (uuid: string) =>
     handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState) => {
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(uuid));
+            dispatch(progressIndicatorActions.START_WORKING(uuid));
             const process = await dispatch<any>(loadProcessPanel(uuid));
             if (process) {
                 await dispatch<any>(finishLoadingProject(process.containerRequest.ownerUuid));
@@ -557,7 +557,7 @@ export const loadProcess = (uuid: string) =>
                 dispatch<any>(loadDetailsPanel(uuid));
             }
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(uuid));
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid));
         }
     });
 

@@ -12,7 +12,7 @@ import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { getResource } from "store/resources/resources";
 import { CollectionResource } from "models/collection";
@@ -31,14 +31,14 @@ export const moveCollection =
         dispatch(startSubmit(COLLECTION_MOVE_FORM_NAME));
         let cachedCollection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
-            dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
             if (!cachedCollection) {
                 cachedCollection = await services.collectionService.get(resource.uuid);
             }
             const collection = await services.collectionService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
             dispatch(projectPanelDataActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
-            dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
             return { ...cachedCollection, ...collection };
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -52,7 +52,7 @@ export const moveCollection =
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not move the collection.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
             }
-            dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
             return;
         }
     };

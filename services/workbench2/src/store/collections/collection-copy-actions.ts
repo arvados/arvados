@@ -10,7 +10,7 @@ import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { getResource } from "store/resources/resources";
 import { CollectionResource } from "models/collection";
@@ -78,6 +78,6 @@ export const copyCollection =
             }
             return;
         } finally {
-            dispatch(progressIndicatorsActions.STOP_WORKING(formName));
+            dispatch(progressIndicatorActions.STOP_WORKING(formName));
         }
     };

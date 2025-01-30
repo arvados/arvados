@@ -23,7 +23,7 @@ import { ProjectResource } from "models/project";
 import { updateResources } from "store/resources/resources-actions";
 import { getProperty } from "store/properties/properties";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { ListResults } from "services/common-service/common-service";
 import { loadContainers } from "store/processes/processes-actions";
@@ -53,7 +53,7 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
         } else {
             try {
                 api.dispatch<any>(projectPanelRunActions.SET_IS_NOT_FOUND({ isNotFound: false }));
-                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 // Get items
                 const containerRequests = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, projectUuid, !!isProjectTrashed));
@@ -80,7 +80,7 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
                 }
             } finally {
                 if (!background) {
-                    api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+                    api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
                     api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
                 }
             }

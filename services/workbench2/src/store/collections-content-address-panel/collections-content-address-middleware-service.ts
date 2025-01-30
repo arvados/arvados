@@ -11,7 +11,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { resourcesActions } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
-import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
 import { updateFavorites } from 'store/favorites/favorites-actions';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
@@ -36,7 +36,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
             api.dispatch(collectionPanelDataExplorerIsNotSet());
         } else {
             try {
-                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 const state = api.getState();
                 const userUuid = getUserUuid(state);
@@ -106,7 +106,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                 }));
                 api.dispatch(couldNotFetchCollections());
             } finally {
-                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

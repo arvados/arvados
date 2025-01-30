@@ -10,7 +10,7 @@ import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile,
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { navigateTo } from "store/navigation/navigation-action";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
@@ -76,7 +76,7 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
         if (fileSelection.collection) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
-                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
 
                 // Move files
                 const updatedCollection = await services.collectionService.moveFiles(
@@ -109,7 +109,7 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
                 }
             } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
-                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             }
         }
     };
@@ -150,7 +150,7 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
         if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
-                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
 
                 // Move files
                 const updatedCollection = await services.collectionService.moveFiles(
@@ -178,7 +178,7 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                 }
             } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
-                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             }
         }
     };
@@ -207,7 +207,7 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
         if (fileSelection.collection) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
-                dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
 
                 // Move files
                 const collections = await Promise.all(fileSelection.selectedPaths.map((path) =>
@@ -246,7 +246,7 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                 }
             } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
-                dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             }
         }
     };

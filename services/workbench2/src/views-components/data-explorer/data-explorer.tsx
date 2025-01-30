@@ -25,7 +25,7 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicators: progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
     const working = progressIndicator.includes(id);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";

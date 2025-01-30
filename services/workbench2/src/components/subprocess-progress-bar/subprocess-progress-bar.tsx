@@ -46,7 +46,6 @@ export interface ProgressBarDataProps {
     parentResource: Process | ProjectResource | undefined;
     dataExplorer: DataExplorerState;
     dataExplorerId?: string;
-    typeFilter?: string;
 }
 
 export interface ProgressBarActionProps {

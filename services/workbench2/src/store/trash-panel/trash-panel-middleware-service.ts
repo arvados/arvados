@@ -20,7 +20,7 @@ import { updateFavorites } from "store/favorites/favorites-actions";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { updateResources } from "store/resources/resources-actions";
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { DataExplorer, getDataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
@@ -42,7 +42,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         const userUuid = getUserUuid(api.getState());
         if (!userUuid) { return; }
         try {
-            if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
             // Get items
             const listResults = await this.services.groupsService
@@ -65,7 +65,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             }));
             api.dispatch(couldNotFetchTrashContents());
         } finally {
-            api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+            api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
         api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
     }

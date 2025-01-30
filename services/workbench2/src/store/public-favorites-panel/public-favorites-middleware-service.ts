@@ -15,7 +15,7 @@ import { publicFavoritePanelActions } from 'store/public-favorites-panel/public-
 import { DataColumns } from 'components/data-table/data-column';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { LinkClass, LinkResource } from 'models/link';
-import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { ListArguments, ListResults } from 'services/common-service/common-service';
@@ -69,7 +69,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
             try {
-                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 const uuidPrefix = api.getState().auth.config.uuidPrefix;
                 const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
@@ -99,7 +99,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 }));
                 api.dispatch(couldNotFetchPublicFavorites());
             } finally {
-                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

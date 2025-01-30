@@ -16,7 +16,7 @@ import { dialogActions } from "store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { CollectionResource } from 'models/collection';
-import { progressIndicatorsActions } from "store/progress-indicator/progress-indicator-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
@@ -46,7 +46,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
         dispatch(startSubmit(COLLECTION_UPDATE_FORM_NAME));
-        dispatch(progressIndicatorsActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
+        dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
 
         const cachedCollection = getResource<CollectionResource>(collection.uuid)(getState().resources);
         services.collectionService.update(uuid, {
@@ -58,7 +58,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
-            dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully updated.",
                 hideDuration: 2000,
@@ -68,7 +68,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
             dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
         }).catch (e => {
-            dispatch(progressIndicatorsActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));

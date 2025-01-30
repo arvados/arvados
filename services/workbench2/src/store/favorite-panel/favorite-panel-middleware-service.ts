@@ -14,7 +14,7 @@ import { favoritePanelActions } from "./favorite-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
@@ -76,7 +76,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             userNotAvailable();
         } else {
             try {
-                if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 // Get items
                 const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, uuid));
@@ -103,7 +103,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 }));
                 api.dispatch(couldNotFetchFavoritesContents());
             } finally {
-                api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

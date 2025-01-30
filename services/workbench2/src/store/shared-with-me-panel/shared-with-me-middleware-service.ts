@@ -24,7 +24,7 @@ import { ProjectResource } from 'models/project';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
-import { progressIndicatorsActions } from 'store/progress-indicator/progress-indicator-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { AuthState } from 'store/auth/auth-reducer';
 import { SharedWithMePanelColumnNames } from 'views/shared-with-me-panel/shared-with-me-columns';
 import { buildProcessStatusFilters, serializeResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
@@ -39,7 +39,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            if (!background) { api.dispatch(progressIndicatorsActions.START_WORKING(this.getId())); }
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const response = await this.services.groupsService
                 .contents('', getParams(dataExplorer, state.auth));
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
@@ -50,7 +50,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         } catch (e) {
             api.dispatch(couldNotFetchSharedItems());
         } finally {
-            api.dispatch(progressIndicatorsActions.STOP_WORKING(this.getId()));
+            api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
 
