@@ -37,10 +37,11 @@ ubuntu2404/generated: common-generated-all
 GOTARBALL_=DOES_NOT_EXIST
 NODETARBALL_=DOES_NOT_EXIST
 GOVERSION=$(shell grep 'const goversion =' ../../lib/install/deps.go |awk -F'"' '{print $$2}')
+NODEVERSION=14.21.3
 GOTARBALL_x86_64=go$(GOVERSION).linux-amd64.tar.gz
-NODETARBALL_x86_64=node-v12.22.12-linux-x64.tar.xz
+NODETARBALL_x86_64=node-v$(NODEVERSION)-linux-x64.tar.xz
 GOTARBALL_aarch64=go$(GOVERSION).linux-arm64.tar.gz
-NODETARBALL_aarch64=node-v12.22.12-linux-arm64.tar.xz
+NODETARBALL_aarch64=node-v$(NODEVERSION)-linux-arm64.tar.xz
 
 # Get the bash variable $HOSTTYPE (this requires the SHELL line above)
 HOSTTYPE=$(shell echo $${HOSTTYPE})
@@ -51,10 +52,10 @@ NODETARBALL=${NODETARBALL_$(HOSTTYPE)}
 common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL)
 
 common-generated/$(GOTARBALL): common-generated
-	wget -cqO common-generated/$(GOTARBALL) https://dl.google.com/go/$(GOTARBALL)
+	curl -fL -o $@ https://dl.google.com/go/$(@F)
 
 common-generated/$(NODETARBALL): common-generated
-	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v12.22.12/$(NODETARBALL)
+	curl -fL -o $@ https://nodejs.org/dist/v$(NODEVERSION)/$(@F)
 
 common-generated:
 	mkdir common-generated

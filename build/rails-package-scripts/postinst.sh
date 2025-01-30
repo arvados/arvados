@@ -174,7 +174,7 @@ cd "$RELEASE_PATH"
 export RAILS_ENV=production
 
 run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
-local ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
+ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
 BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
 if ! [ -x "$BUNDLE" ]; then
     # Some distros (at least Ubuntu 24.04) append the Ruby version to the
@@ -187,7 +187,7 @@ if ! [ -x "$BUNDLE" ]; then
     fi
 fi
 
-local bundle_path="$SHARED_PATH/vendor_bundle"
+bundle_path="$SHARED_PATH/vendor_bundle"
 run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
                "$BUNDLE" config set --local path "$bundle_path"
 
@@ -202,7 +202,7 @@ find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
-local passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
+passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
 if ! [ -x "$passenger" ]; then
     echo "Error: failed to find \`passenger\` command after installing bundle" >&2
     exit 12
@@ -225,7 +225,6 @@ rm -f $RELEASE_PATH/config/initializers/omniauth.rb
 echo "... done."
 
 echo -n "Extending systemd unit configuration ..."
-local systemd_group
 if [ -z "$WWW_OWNER" ]; then
     systemd_group="%N"
 else

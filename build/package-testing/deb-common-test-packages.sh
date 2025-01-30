@@ -25,13 +25,12 @@ dpkg-query --show > "$ARV_PACKAGES_DIR/$1.before"
 
 apt-get $DASHQQ_UNLESS_DEBUG --allow-insecure-repositories update
 
-apt-get $DASHQQ_UNLESS_DEBUG -y --allow-unauthenticated install "$1" >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
+apt-get $DASHQQ_UNLESS_DEBUG -y --allow-unauthenticated install "$1" >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG" ||
+    install_status=$?
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.after"
 
-set +e
-diff "$ARV_PACKAGES_DIR/$1.before" "$ARV_PACKAGES_DIR/$1.after" > "$ARV_PACKAGES_DIR/$1.diff"
-set -e
+diff "$ARV_PACKAGES_DIR/$1.before" "$ARV_PACKAGES_DIR/$1.after" > "$ARV_PACKAGES_DIR/$1.diff" || true
 
 mkdir -p /tmp/opts
 cd /tmp/opts
@@ -64,4 +63,11 @@ if [[ "$DEBUG" != "0" ]]; then
   done
 fi
 
-exec /jenkins/package-testing/common-test-packages.sh "$1"
+case "${install_status:-0}-$1" in
+    0-* | 100-arvados-api-server )
+        exec /jenkins/package-testing/common-test-packages.sh "$1"
+        ;;
+    *)
+        exit "$install_status"
+        ;;
+esac
