@@ -289,22 +289,24 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description,
-                    kind, storageClassesDesired, properties } = this.state.item as CollectionResource;
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
-                const resource = {
-                    uuid,
-                    ownerUuid,
-                    name,
-                    description,
-                    storageClassesDesired,
-                    kind,
-                    menuKind,
-                    properties,
-                };
-                // Avoid expanding/collapsing the panel
-                event.stopPropagation();
-                this.props.dispatch<any>(openContextMenu(event, resource));
+                if(this.state.item) {
+                    const { uuid, ownerUuid, name, description,
+                        kind, storageClassesDesired, properties } = this.state.item;
+                    const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
+                    const resource = {
+                        uuid,
+                        ownerUuid,
+                        name,
+                        description,
+                        storageClassesDesired,
+                        kind,
+                        menuKind,
+                        properties,
+                    };
+                    // Avoid expanding/collapsing the panel
+                    event.stopPropagation();
+                    this.props.dispatch<any>(openContextMenu(event, resource));
+                }
             }
 
             onCopy = (message: string) =>
