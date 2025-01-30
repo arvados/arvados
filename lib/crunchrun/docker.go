@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -136,7 +137,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			KernelMemory: spec.RAM, // kernel portion
 		},
 	}
-	if spec.CUDADeviceCount != 0 {
+	if spec.GPUStack == "cuda" && spec.GPUDeviceCount > 0 {
 		var deviceIds []string
 		if cudaVisibleDevices := os.Getenv("CUDA_VISIBLE_DEVICES"); cudaVisibleDevices != "" {
 			// If a resource manager such as slurm or LSF told
@@ -144,7 +145,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			deviceIds = strings.Split(cudaVisibleDevices, ",")
 		}
 
-		deviceCount := spec.CUDADeviceCount
+		deviceCount := spec.GPUDeviceCount
 		if len(deviceIds) > 0 {
 			// Docker won't accept both non-empty
 			// DeviceIDs and a non-zero Count
@@ -173,19 +174,18 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute", "utility"}},
 		})
 	}
-	//if spec.ROCmDeviceCount != 0 {
-	// there's no container toolkit for ROCm so we're gonna have to do this the hard way.
+	if spec.GPUStack == "rocm" && spec.GPUDeviceCount > 0 {
+		// there's no container toolkit for ROCm so we're gonna have to do this the hard way.
 
-	// fortunately, the minimum version of this seems to be this:
-	// rendergroup=$(getent group render | cut -d: -f3)
-	// videogroup=$(getent group video | cut -d: -f3)
-	// docker run -it --device=/dev/kfd --device=/dev/dri/renderD128 --user $(id -u) --group-add $videogroup --group-add $rendergroup "$@"
+		// fortunately, the minimum version of this seems to be this:
+		// rendergroup=$(getent group render | cut -d: -f3)
+		// videogroup=$(getent group video | cut -d: -f3)
+		// docker run -it --device=/dev/kfd --device=/dev/dri/renderD128 --user $(id -u) --group-add $videogroup --group-add $rendergroup "$@"
 
-	// Need to do some basic device detection, they show
-	// up in /dev/dri but want to be able to tell the
-	// difference between iGPU and eGPU
+		// Need to do some basic device detection, they show
+		// up in /dev/dri but want to be able to tell the
+		// difference between iGPU and eGPU
 
-	if amdVisibleDevices := os.Getenv("AMD_VISIBLE_DEVICES"); amdVisibleDevices != "" {
 		hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
 			PathInContainer:   "/dev/kfd",
 			PathOnHost:        "/dev/kfd",
@@ -196,20 +196,40 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
 		}
 
-		for _, dev := range strings.Split(amdVisibleDevices, ",") {
-			intDev, err := strconv.Atoi(dev)
+		var deviceIndexes []int
+		if amdVisibleDevices := os.Getenv("AMD_VISIBLE_DEVICES"); amdVisibleDevices != "" {
+			// If a resource manager/dispatcher told us to
+			// select specific devices, so we need to
+			// propagate that.
+			for _, dev := range strings.Split(amdVisibleDevices, ",") {
+				intDev, err := strconv.Atoi(dev)
+				if err != nil {
+					continue
+				}
+				deviceIndexes = append(deviceIndexes, intDev)
+			}
+		} else {
+			// Try every device, we'll check if it
+			// actually exists below.
+			for i := 0; i < 128; i++ {
+				deviceIndexes = append(deviceIndexes, i)
+			}
+		}
+		for _, intDev := range deviceIndexes {
+			devPath := fmt.Sprintf("/dev/dri/renderD%v", 128+intDev)
+			info, err := os.Stat(devPath)
 			if err != nil {
 				continue
 			}
-			devPath := fmt.Sprintf("/dev/dri/renderD%v", 128+intDev)
 			hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
 				PathInContainer:   devPath,
 				PathOnHost:        devPath,
 				CgroupPermissions: "rwm",
 			})
-			info, _ = os.Stat(devPath)
 			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-				hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
+				if !slices.Contains(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid)) {
+					hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
+				}
 			}
 		}
 	}

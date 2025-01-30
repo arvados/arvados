@@ -1014,25 +1014,26 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 		ram = 0
 	}
 
-	if runner.Container.RuntimeConstraints.CUDA.DeviceCount > 0 {
+	if runner.Container.RuntimeConstraints.GPU.Stack == "cuda" {
 		nvidiaModprobe(runner.CrunchLog)
 	}
 
 	return runner.executor.Create(containerSpec{
-		Image:           imageID,
-		VCPUs:           runner.Container.RuntimeConstraints.VCPUs,
-		RAM:             ram,
-		WorkingDir:      workdir,
-		Env:             env,
-		BindMounts:      bindmounts,
-		Command:         runner.Container.Command,
-		EnableNetwork:   enableNetwork,
-		CUDADeviceCount: runner.Container.RuntimeConstraints.CUDA.DeviceCount,
-		NetworkMode:     runner.networkMode,
-		CgroupParent:    runner.setCgroupParent,
-		Stdin:           stdin,
-		Stdout:          stdout,
-		Stderr:          stderr,
+		Image:          imageID,
+		VCPUs:          runner.Container.RuntimeConstraints.VCPUs,
+		RAM:            ram,
+		WorkingDir:     workdir,
+		Env:            env,
+		BindMounts:     bindmounts,
+		Command:        runner.Container.Command,
+		EnableNetwork:  enableNetwork,
+		GPUStack:       runner.Container.RuntimeConstraints.GPU.Stack,
+		GPUDeviceCount: runner.Container.RuntimeConstraints.GPU.DeviceCount,
+		NetworkMode:    runner.networkMode,
+		CgroupParent:   runner.setCgroupParent,
+		Stdin:          stdin,
+		Stdout:         stdout,
+		Stderr:         stderr,
 	})
 }
 

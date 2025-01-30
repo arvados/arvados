@@ -106,7 +106,7 @@ type GPURuntimeConstraints struct {
 	DriverVersion  string   `json:"driver_version"`
 	HardwareTarget []string `json:"hardware_target"`
 	DeviceCount    int      `json:"device_count"`
-	VRAM           int      `json:"vram"`
+	VRAM           int64    `json:"vram"`
 }
 
 // RuntimeConstraints specify a container's compute resources (RAM,

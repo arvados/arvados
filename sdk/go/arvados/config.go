@@ -468,7 +468,7 @@ type GPUFeatures struct {
 	DriverVersion  string
 	HardwareTarget string
 	DeviceCount    int
-	VRAM           int
+	VRAM           ByteSize
 }
 
 type InstanceType struct {

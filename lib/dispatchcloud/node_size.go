@@ -8,6 +8,7 @@ import (
 	"errors"
 	"math"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -130,8 +131,30 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 	var types []arvados.InstanceType
 	var maxPrice float64
 	for _, it := range cc.InstanceTypes {
-		driverInsuff, driverErr := versionLess(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDA.DriverVersion)
-		capabilityInsuff, capabilityErr := versionLess(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDA.HardwareCapability)
+		driverInsuff, driverErr := versionLess(it.GPU.DriverVersion, ctr.RuntimeConstraints.GPU.DriverVersion)
+
+		var capabilityInsuff bool
+		var capabilityErr error
+		if ctr.RuntimeConstraints.GPU.Stack == "cuda" {
+			if len(ctr.RuntimeConstraints.GPU.HardwareTarget) > 1 {
+				// Check if the node's capability
+				// exactly matches any of the
+				// requested capability. For CUDA,
+				// this is the hardware capability in
+				// X.Y format.
+				capabilityInsuff = !slices.Contains(ctr.RuntimeConstraints.GPU.HardwareTarget, it.GPU.HardwareTarget)
+			} else if len(ctr.RuntimeConstraints.GPU.HardwareTarget) == 1 {
+				// version compare.
+				capabilityInsuff, capabilityErr = versionLess(it.GPU.HardwareTarget, ctr.RuntimeConstraints.GPU.HardwareTarget[0])
+			} else {
+				capabilityInsuff = true
+			}
+		} else if ctr.RuntimeConstraints.GPU.Stack == "rocm" {
+			// Check if the node's hardware matches any of
+			// the requested hardware.  For rocm, this is
+			// a gfxXXXX LLVM target.
+			capabilityInsuff = !slices.Contains(ctr.RuntimeConstraints.GPU.HardwareTarget, it.GPU.HardwareTarget)
+		}
 
 		switch {
 		// reasons to reject a node
@@ -140,9 +163,11 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 		case int64(it.RAM) < needRAM: // insufficient RAM
 		case it.VCPUs < needVCPUs: // insufficient VCPUs
 		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
-		case it.CUDA.DeviceCount < ctr.RuntimeConstraints.CUDA.DeviceCount: // insufficient CUDA devices
-		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && (driverInsuff || driverErr != nil): // insufficient driver version
-		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && (capabilityInsuff || capabilityErr != nil): // insufficient hardware capability
+		case it.GPU.Stack != ctr.RuntimeConstraints.GPU.Stack: // incompatible GPU software stack (or none available)
+		case it.GPU.DeviceCount < ctr.RuntimeConstraints.GPU.DeviceCount: // insufficient GPU devices
+		case int64(it.GPU.VRAM) < ctr.RuntimeConstraints.GPU.VRAM: // insufficient VRAM per GPU
+		case ctr.RuntimeConstraints.GPU.DeviceCount > 0 && (driverInsuff || driverErr != nil): // insufficient driver version
+		case ctr.RuntimeConstraints.GPU.DeviceCount > 0 && (capabilityInsuff || capabilityErr != nil): // insufficient hardware capability
 			// Don't select this node
 		default:
 			// Didn't reject the node, so select it

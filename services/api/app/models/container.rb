@@ -207,6 +207,17 @@ class Container < ArvadosModel
     if rc['keep_cache_disk'] == 0 and rc['keep_cache_ram'] == 0
       rc['keep_cache_disk'] = bound_keep_cache_disk(rc['ram'])
     end
+    if rc['cuda']
+      # Legacy API to request Nvidia GPUs, convert it so downstream
+      # code only has to handle generic GPU requests.
+      rc['gpu'] = {
+          'device_count' => rc['cuda']['device_count'],
+          'driver_version' => rc['cuda']['driver_version'],
+          'hardware_target' => [rc['cuda']['hardware_capability']],
+          'stack' => 'cuda',
+          'vram' => 0,
+      }
+    end
     rc
   end
 
@@ -306,7 +317,8 @@ class Container < ArvadosModel
       ].uniq,
     }
 
-    # Note: deprecated in favor of the more general "GPU" constraint below
+    # Note: deprecated in favor of the more general "GPU" constraint below.
+    # Kept for backwards compatability.
     resolved_cuda = resolved_runtime_constraints['cuda']
     if resolved_cuda.nil? or resolved_cuda['device_count'] == 0
       runtime_constraint_variations[:cuda] = [
@@ -332,10 +344,10 @@ class Container < ArvadosModel
         nil,
         # The default "don't need GPUs" value
         {
-          'stack' => '',
+          'device_count' => 0,
           'driver_version' => '',
           'hardware_target' => [],
-          'device_count' => 0,
+          'stack' => '',
           'vram' => 0,
         },
         # The requested value

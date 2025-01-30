@@ -253,7 +253,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
     m = {"F" => {"kind" => "3"}, "E" => {"kind" => "2"}, "D" => {"kind" => "1"}}
-    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "keep_cache_disk" => 0, "API" => true, "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}}
+    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "keep_cache_disk" => 0, "API" => true, "gpu" => {"stack": "", "device_count":0, "driver_version": "", "hardware_target": [], "vram": 0}}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     c.reload
     assert_equal Container.deep_sort_hash(env).to_json, c.environment.to_json

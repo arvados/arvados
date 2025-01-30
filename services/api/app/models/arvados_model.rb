@@ -961,16 +961,11 @@ class ArvadosModel < ApplicationRecord
     # in the database.
     self.runtime_constraints = {
       'API' => false,
-      'cuda' => {
-        'device_count' => 0,
-        'driver_version' => '',
-        'hardware_capability' => '',
-      },
       'gpu' => {
-        'stack' => '',
+        'device_count' => 0,
         'driver_version' => '',
         'hardware_target' => [],
-        'device_count' => 0,
+        'stack' => '',
         'vram' => 0,
       },
       'keep_cache_disk' => 0,
