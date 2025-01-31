@@ -802,12 +802,12 @@ def setup_config():
                     "LDAP": {
                         "Enable": False,
                         # URL used by lib/controller/localdb/login_ldap_docker_test
-                        "URL": "ldap://arvados-test-openldap/",
+                        "URL": "ldap://arvados-test-openldap:1389/",
                         "StartTLS": False,
                         "SearchBase": "dc=example,dc=org",
                         # Default credentials for osixia/openldap:1.3.0
                         "SearchBindUser": "cn=admin,dc=example,dc=org",
-                        "SearchBindPassword": "admin",
+                        "SearchBindPassword": "adminpassword",
                     },
                     "PAM": {
                         "Enable": False,

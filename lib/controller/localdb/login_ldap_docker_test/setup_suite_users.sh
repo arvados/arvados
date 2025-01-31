@@ -14,9 +14,9 @@ set -o pipefail
 result=0
 for tries in $(seq 9 -1 0); do
     ldapadd \
-        -H ldap://arvados-test-openldap/ \
+        -H ldap://arvados-test-openldap:1389/ \
         -D cn=admin,dc=example,dc=org \
-        -w admin \
+        -w adminpassword \
         -f /add_example_user.ldif ||
         result=$?
     # ldapadd uses exit code 68 to mean "user already exists."
