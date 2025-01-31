@@ -111,7 +111,7 @@ func (s *LoginDockerSuite) setUpConfig(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(closeErr, check.IsNil)
 
-	pgconn := &map[string]interface{}{
+	pgconn := map[string]interface{}{
 		"host": s.netAddr,
 		"port": s.pgProxy.Port(),
 	}
@@ -121,17 +121,17 @@ func (s *LoginDockerSuite) setUpConfig(c *check.C) {
 	intURLs := make(map[string]interface{})
 	railsURL := "https://" + net.JoinHostPort(s.netAddr, s.railsProxy.Port())
 	intURLs[railsURL] = &intVal
-	err = s.updateConfig(".Clusters.zzzzz.Services.RailsAPI.InternalURLs = $arg", &intURLs)
+	err = s.updateConfig(".Clusters.zzzzz.Services.RailsAPI.InternalURLs = $arg", intURLs)
 	c.Assert(err, check.IsNil)
 	intURLs = make(map[string]interface{})
 	intURLs["http://0.0.0.0:80"] = &intVal
-	err = s.updateConfig(".Clusters.zzzzz.Services.Controller.InternalURLs = $arg", &intURLs)
+	err = s.updateConfig(".Clusters.zzzzz.Services.Controller.InternalURLs = $arg", intURLs)
 	c.Assert(err, check.IsNil)
 }
 
 // Update the test cluster configuration with the given yq expression.
 // The expression can use `$arg` to refer to the object passed in as `arg`.
-func (s *LoginDockerSuite) updateConfig(expr string, arg *map[string]interface{}) error {
+func (s *LoginDockerSuite) updateConfig(expr string, arg map[string]interface{}) error {
 	jsonArg, err := json.Marshal(arg)
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (s *LoginDockerSuite) enableLogin(key string) error {
 	login := make(map[string]interface{})
 	login["Test"] = &map[string]bool{"Enable": false}
 	login[key] = &map[string]bool{"Enable": true}
-	return s.updateConfig(".Clusters.zzzzz.Login |= (. * $arg)", &login)
+	return s.updateConfig(".Clusters.zzzzz.Login |= (. * $arg)", login)
 }
 
 // SetUpTest does all the common preparation for a controller test container:
