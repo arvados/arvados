@@ -232,7 +232,7 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 		"cheap_gpu": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu",
 			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "8.0", DriverVersion: "10.0", VRAM: 2 * GiB}},
 
-		"more_vram": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "more_vram",
+		"more_vram": {Price: 2.3, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "more_vram",
 			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "8.0", DriverVersion: "10.0", VRAM: 8 * GiB}},
 
 		"invalid_gpu": {Price: 1.9, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "invalid_gpu",
@@ -243,6 +243,9 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 
 		"cheap_gpu_rocm": {Price: 1.9, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu_rocm",
 			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1103", DriverVersion: "6.2", VRAM: 8 * GiB}},
+
+		"unspecified_vram": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "unspecified_vram",
+			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1104", DriverVersion: "6.2", VRAM: 0}},
 
 		"non_gpu": {Price: 1.1, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "non_gpu"},
 	}
@@ -331,6 +334,16 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				VRAM:           2000000000,
 			},
 			SelectedInstance: "cheap_gpu_rocm",
+		},
+		GPUTestCase{
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "rocm",
+				DeviceCount:    1,
+				HardwareTarget: []string{"gfx1104"},
+				DriverVersion:  "6.2",
+				VRAM:           2000000000,
+			},
+			SelectedInstance: "unspecified_vram",
 		},
 		GPUTestCase{
 			GPU: arvados.GPURuntimeConstraints{

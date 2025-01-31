@@ -21,6 +21,18 @@ type deprRequestLimits struct {
 	MultiClusterRequestConcurrency *int
 }
 
+type deprCUDAFeatures struct {
+	DriverVersion      string
+	HardwareCapability string
+	DeviceCount        int
+}
+
+type deprInstanceType struct {
+	CUDA *deprCUDAFeatures
+}
+
+type deprInstanceTypeMap map[string]deprInstanceType
+
 type deprCluster struct {
 	RequestLimits deprRequestLimits
 	NodeProfiles  map[string]nodeProfile
@@ -35,6 +47,7 @@ type deprCluster struct {
 		SendUserSetupNotificationEmail *bool
 		SupportEmailAddress            *string
 	}
+	InstanceTypes deprInstanceTypeMap
 }
 
 type deprecatedConfig struct {
@@ -113,6 +126,20 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 		if dst, n := &cluster.Login.Google.AlternateEmailAddresses, dcluster.Login.GoogleAlternateEmailAddresses; n != nil && *n != *dst {
 			*dst = *n
+		}
+		for name, instanceType := range dcluster.InstanceTypes {
+			if instanceType.CUDA != nil {
+				updInstanceType := cluster.InstanceTypes[name]
+				updInstanceType.GPU = arvados.GPUFeatures{
+					Stack:          "cuda",
+					DriverVersion:  instanceType.CUDA.DriverVersion,
+					HardwareTarget: instanceType.CUDA.HardwareCapability,
+					DeviceCount:    instanceType.CUDA.DeviceCount,
+					VRAM:           0,
+				}
+				cluster.InstanceTypes[name] = updInstanceType
+				ldr.Logger.Warnf("InstanceType '%v' has deprecated CUDA section, should be migrated to GPU section")
+			}
 		}
 
 		cfg.Clusters[id] = cluster

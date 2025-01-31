@@ -175,16 +175,14 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 		})
 	}
 	if spec.GPUStack == "rocm" && spec.GPUDeviceCount > 0 {
-		// there's no container toolkit for ROCm so we're gonna have to do this the hard way.
+		// there's no container toolkit or builtin Docker
+		// support for ROCm so we just provide the devices to
+		// the container ourselves.
 
 		// fortunately, the minimum version of this seems to be this:
 		// rendergroup=$(getent group render | cut -d: -f3)
 		// videogroup=$(getent group video | cut -d: -f3)
 		// docker run -it --device=/dev/kfd --device=/dev/dri/renderD128 --user $(id -u) --group-add $videogroup --group-add $rendergroup "$@"
-
-		// Need to do some basic device detection, they show
-		// up in /dev/dri but want to be able to tell the
-		// difference between iGPU and eGPU
 
 		hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
 			PathInContainer:   "/dev/kfd",
@@ -193,6 +191,9 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 		})
 		info, _ := os.Stat("/dev/kfd")
 		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+			// Make sure the container has access
+			// to the group id that allow it to
+			// access the device.
 			hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
 		}
 
@@ -209,8 +210,8 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 				deviceIndexes = append(deviceIndexes, intDev)
 			}
 		} else {
-			// Try every device, we'll check if it
-			// actually exists below.
+			// Try every device, we'll check below to see
+			// which ones actually exists.
 			for i := 0; i < 128; i++ {
 				deviceIndexes = append(deviceIndexes, i)
 			}
@@ -227,6 +228,9 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 				CgroupPermissions: "rwm",
 			})
 			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+				// Make sure the container has access
+				// to the group id that allow it to
+				// access the device.
 				if !slices.Contains(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid)) {
 					hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
 				}

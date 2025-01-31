@@ -359,3 +359,27 @@ func fmtKeepBalanceConfig(param string) string {
 }
 `, param)
 }
+
+func (s *LoadSuite) TestDeprecatedCUDA(c *check.C) {
+	checkEquivalent(c, `
+Clusters:
+ z1111:
+  InstanceTypes:
+     gpuInstance:
+       CUDA:
+         DriverVersion: "11.0"
+         HardwareCapability: "9.0"
+         DeviceCount: 1
+`, `
+Clusters:
+ z1111:
+  InstanceTypes:
+     gpuInstance:
+       GPU:
+         DriverVersion: "11.0"
+         HardwareTarget: "9.0"
+         DeviceCount: 1
+         Stack: "cuda"
+         VRAM: 0
+`)
+}

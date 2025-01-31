@@ -1657,11 +1657,26 @@ Clusters:
         # given here is used to compute container cost estimates.
         Price: 0.1
         Preemptible: false
-        # Include this section if the node type includes GPU (CUDA) support
-        CUDA:
+        # Include this section if the node type includes GPU support
+        #
+        # Stacks: the software stack, currently "cuda" or "rocm"
+        #
+        # DriverVersion: should be in X.Y format
+        #
+        # HardwareTarget:
+        #   For CUDA, this is the Compute Capability in X.Y format.
+        #
+        #   For ROCm, this is the LLVM target (e.g. gfx1100) for the GPU hardware
+        #
+        # DeviceCount: the number GPUs
+        #
+        # VRAM: The amount of VRAM per GPU
+        GPU:
+          Stack: "cuda"
           DriverVersion: "11.0"
-          HardwareCapability: "9.0"
+          HardwareTarget: "9.0"
           DeviceCount: 1
+          VRAM: 8000000000
 
     StorageClasses:
 

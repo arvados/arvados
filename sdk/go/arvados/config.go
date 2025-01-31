@@ -456,12 +456,6 @@ type RemoteCluster struct {
 	ActivateUsers bool
 }
 
-type CUDAFeatures struct {
-	DriverVersion      string
-	HardwareCapability string
-	DeviceCount        int
-}
-
 type GPUFeatures struct {
 	// as of this writing, stack is "cuda" or "rocm"
 	Stack          string
@@ -481,7 +475,6 @@ type InstanceType struct {
 	AddedScratch    ByteSize
 	Price           float64
 	Preemptible     bool
-	CUDA            CUDAFeatures
 	GPU             GPUFeatures
 }
 

@@ -165,7 +165,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
 		case it.GPU.Stack != ctr.RuntimeConstraints.GPU.Stack: // incompatible GPU software stack (or none available)
 		case it.GPU.DeviceCount < ctr.RuntimeConstraints.GPU.DeviceCount: // insufficient GPU devices
-		case int64(it.GPU.VRAM) < ctr.RuntimeConstraints.GPU.VRAM: // insufficient VRAM per GPU
+		case it.GPU.VRAM > 0 && int64(it.GPU.VRAM) < ctr.RuntimeConstraints.GPU.VRAM: // insufficient VRAM per GPU
 		case ctr.RuntimeConstraints.GPU.DeviceCount > 0 && (driverInsuff || driverErr != nil): // insufficient driver version
 		case ctr.RuntimeConstraints.GPU.DeviceCount > 0 && (capabilityInsuff || capabilityErr != nil): // insufficient hardware capability
 			// Don't select this node
