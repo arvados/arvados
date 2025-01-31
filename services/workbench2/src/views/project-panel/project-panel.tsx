@@ -26,6 +26,7 @@ import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-p
 import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
+import { getProperty } from 'store/properties/properties';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -59,25 +60,19 @@ const panelsData: MPVPanelState[] = [
 ];
 
 interface ProjectPanelDataProps {
-    currentItemId: string;
+    currentItemId: string | undefined;
     resources: ResourcesState;
-    project: GroupResource;
     isAdmin: boolean;
-    userUuid: string;
-    dataExplorerItems: any;
-    working: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-const mapStateToProps = (state: RootState) => {
-    const currentItemId = state.properties[PROJECT_PANEL_CURRENT_UUID];
-    const project = state.resources[currentItemId] as GroupResource;
+const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
+    const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
     return {
         currentItemId,
-        project,
         resources: state.resources,
-        userUuid: state.auth.user!.uuid,
+        isAdmin: state.auth.user!.isAdmin,
     };
 }
 
@@ -132,11 +127,11 @@ export const ProjectPanel = withStyles(styles)(
             };
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { resources, isAdmin } = this.props;
+                const { resources, isAdmin, currentItemId } = this.props;
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
                 // When viewing the contents of a filter group, all contents should be treated as read only.
                 let readonly = false;
-                const project = getResource<GroupResource>(this.props.currentItemId)(resources);
+                const project = currentItemId ? getResource<GroupResource>(currentItemId)(resources) : undefined;
                 if (project && project.groupClass === GroupClass.FILTER) {
                     readonly = true;
                 }

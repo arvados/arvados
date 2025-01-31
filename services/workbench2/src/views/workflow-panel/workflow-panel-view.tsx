@@ -122,7 +122,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
 ];
 
 export const WorkflowPanelView = (props: WorkflowPanelProps) => {
-    const workflow = props.workflows?.find(workflow => workflow.uuid === props.uuid) || undefined;
+    const workflow = props.uuid ? props.workflows?.find(workflow => workflow.uuid === props.uuid) : undefined;
     return <Grid container spacing={2} style={{ minHeight: '500px' }}>
         <Grid item xs={6}>
             <DataExplorer

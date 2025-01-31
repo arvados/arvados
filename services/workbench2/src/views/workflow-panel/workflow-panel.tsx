@@ -12,7 +12,7 @@ import { RootState } from 'store/store';
 import { WORKFLOW_PANEL_DETAILS_UUID } from 'store/workflow-panel/workflow-panel-actions';
 
 const mapStateToProps = (state: RootState): WorkflowPanelDataProps => {
-    const uuid = state.properties[WORKFLOW_PANEL_DETAILS_UUID];
+    const uuid: string | undefined  = state.properties[WORKFLOW_PANEL_DETAILS_UUID];
     const workflows = state.runProcessPanel.workflows;
     return {
         uuid,

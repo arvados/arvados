@@ -16,7 +16,6 @@ import { ResourceKind, TrashableResource } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
 import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
-import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
@@ -138,7 +137,6 @@ export const trashPanelColumns: DataColumns<string, CollectionResource> = [
 ];
 
 interface TrashPanelDataProps {
-    currentItemId: string;
     resources: ResourcesState;
 }
 
@@ -146,7 +144,6 @@ type TrashPanelProps = TrashPanelDataProps & DispatchProp & WithStyles<CssRules>
 
 export const TrashPanel = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: state.properties[PROJECT_PANEL_CURRENT_UUID],
         resources: state.resources
     }))(
         class extends React.Component<TrashPanelProps> {

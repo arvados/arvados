@@ -179,8 +179,8 @@ interface ProjectPanelRunProps {
 }
 
 const mapStateToProps = (state: RootState): Pick<ProjectPanelRunProps, 'project'> => {
-    const projectUuid = state.properties[PROJECT_PANEL_CURRENT_UUID];
-    const project = state.resources[projectUuid] as ProjectResource;
+    const projectUuid: string | undefined = state.properties[PROJECT_PANEL_CURRENT_UUID];
+    const project = projectUuid ? state.resources[projectUuid] as ProjectResource | undefined : undefined;
     return {
         project,
     };

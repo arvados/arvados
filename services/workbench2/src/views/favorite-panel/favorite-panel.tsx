@@ -40,6 +40,7 @@ import { GroupClass, GroupResource } from 'models/group';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { getProperty } from 'store/properties/properties';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -115,7 +116,7 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
 ];
 
 interface FavoritePanelDataProps {
-    currentItemId: any;
+    currentItemId: string | undefined;
     favorites: FavoritesState;
     resources: ResourcesState;
     userUuid: string;
@@ -130,7 +131,7 @@ const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
     resources: state.resources,
     userUuid: state.auth.user!.uuid,
-    currentItemId: state.properties[PROJECT_PANEL_CURRENT_UUID],
+    currentItemId: getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties),
 });
 
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
@@ -141,11 +142,11 @@ export const FavoritePanel = withStyles(styles)(
         class extends React.Component<FavoritePanelProps> {
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { resources } = this.props;
+                const { resources, currentItemId } = this.props;
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
 
                 let readonly = false;
-                const project = getResource<GroupResource>(this.props.currentItemId)(resources);
+                const project = currentItemId ? getResource<GroupResource>(currentItemId)(resources) : undefined;
 
                 if (project && project.groupClass === GroupClass.FILTER) {
                     readonly = true;

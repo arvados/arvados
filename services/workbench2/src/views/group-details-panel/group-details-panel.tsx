@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-
+import { getResourceFromState } from 'store/resources/resources';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-column';
 import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
@@ -21,6 +21,7 @@ import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
 import { PermissionResource } from 'models/permission';
+import { getProperty } from 'store/properties/properties';
 
 type CssRules = "root" | "content";
 
@@ -130,8 +131,8 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
 ];
 
 const mapStateToProps = (state: RootState) => {
-    const groupUuid = state.properties[GROUP_DETAILS_MEMBERS_PANEL_ID];
-    const group = state.resources[groupUuid || ''];
+    const groupUuid = getProperty<string>(GROUP_DETAILS_MEMBERS_PANEL_ID)(state.properties);
+    const group = groupUuid ? getResourceFromState<GroupResource>(groupUuid, state.resources) : undefined;
     const userUuid = state.auth.user?.uuid;
 
     return {
@@ -149,7 +150,7 @@ export interface GroupDetailsPanelProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
     userUuid: string;
-    group: GroupResource;
+    group: GroupResource | undefined;
 }
 
 type GroupDetailsPanelState = {
@@ -177,7 +178,7 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
         }
 
         componentDidUpdate(prevProps: Readonly<GroupDetailsPanelProps>, prevState: Readonly<{}>, snapshot?: any): void {
-            if (prevProps.userUuid!== this.props.userUuid || prevProps.group !== this.props.group) {
+            if (this.props.group && (prevProps.userUuid!== this.props.userUuid || prevProps.group !== this.props.group)) {
                 this.setState({ groupCanManage: this.groupCanManage(this.props.userUuid, this.props.group) });
             }
         }
