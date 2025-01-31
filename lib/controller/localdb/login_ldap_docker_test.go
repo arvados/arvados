@@ -107,8 +107,9 @@ func (s *LoginDockerSuite) setUpConfig(c *check.C) {
 	dst, err := os.Create(path.Join(s.tmpdir, "arvados.yml"))
 	c.Assert(err, check.IsNil)
 	_, err = io.Copy(dst, src)
-	dst.Close()
+	closeErr := dst.Close()
 	c.Assert(err, check.IsNil)
+	c.Assert(closeErr, check.IsNil)
 
 	pgconn := &map[string]interface{}{
 		"host": s.netAddr,
