@@ -80,7 +80,7 @@ func (s *LoginDockerSuite) SetUpSuite(c *check.C) {
 	s.netAddr, err = s.ipFromCmd(exec.Command("docker", "network", "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", s.netName))
 	c.Assert(err, check.IsNil)
-	setup := exec.Command("login_ldap_docker_test/setup_suite.sh", s.netName, s.tmpdir)
+	setup := exec.Command("login_docker_test/setup_suite.sh", s.netName, s.tmpdir)
 	setup.Stderr = os.Stderr
 	err = setup.Run()
 	c.Assert(err, check.IsNil)
@@ -90,7 +90,7 @@ func (s *LoginDockerSuite) SetUpSuite(c *check.C) {
 // then deletes the network itself.
 func (s *LoginDockerSuite) TearDownSuite(c *check.C) {
 	if s.netName != "" {
-		cmd := exec.Command("login_ldap_docker_test/teardown_suite.sh", s.netName)
+		cmd := exec.Command("login_docker_test/teardown_suite.sh", s.netName)
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		c.Check(err, check.IsNil)
@@ -183,7 +183,7 @@ func (s *LoginDockerSuite) TearDownTest(c *check.C) {
 
 func (s *LoginDockerSuite) startController(args ...string) (*url.URL, error) {
 	args = append([]string{s.netName, s.tmpdir}, args...)
-	cmd := exec.Command("login_ldap_docker_test/start_controller_container.sh", args...)
+	cmd := exec.Command("login_docker_test/start_controller_container.sh", args...)
 	ip, err := s.ipFromCmd(cmd)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (s *LoginDockerSuite) getCurrentUser(server *url.URL, token string) (*arvad
 func (s *LoginDockerSuite) TestLoginPAM(c *check.C) {
 	err := s.enableLogin("PAM")
 	c.Assert(err, check.IsNil)
-	setupPath, err := filepath.Abs("login_ldap_docker_test/setup_pam_test.sh")
+	setupPath, err := filepath.Abs("login_docker_test/setup_pam_test.sh")
 	c.Assert(err, check.IsNil)
 	arvURL, err := s.startController("-v", setupPath+":/setup.sh:ro")
 	c.Assert(err, check.IsNil)
