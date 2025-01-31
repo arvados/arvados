@@ -174,7 +174,7 @@ func (s *LoginDockerSuite) TearDownTest(c *check.C) {
 		c.Check(err, check.IsNil)
 	}
 	if err := os.Remove(cidPath); err != nil {
-		c.Check(err, check.Equals, os.ErrNotExist)
+		c.Check(os.IsNotExist(err), check.Equals, true)
 	}
 	s.railsProxy.Close()
 	s.pgProxy.Close()
