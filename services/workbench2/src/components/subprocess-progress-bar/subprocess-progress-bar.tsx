@@ -83,13 +83,13 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
         const shouldPollProcess = isProcess(parentResource) ? isProcessRunning(parentResource) : false;
 
-        let typeFilter = useRef<string | undefined >(undefined);
+        let typeFilter = useRef({});
 
         useEffect(() => {
             if (dataExplorerId) {
                 const dataExplorerState = getDataExplorer(dataExplorer, dataExplorerId);
                 const columns = dataExplorerState.columns as DataColumns<string, ProcessResource>;
-                typeFilter.current = serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
+                typeFilter.current = getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE);
             }
         }, [dataExplorer, dataExplorerId]);
 
@@ -108,7 +108,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         //   project contains steps in an active state (shouldPollProject)
         useAsyncInterval(async () => {
             if (parentUuid && typeFilter.current) {
-                fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
+                fetchProcessProgressBarStatus(parentUuid, serializeOnlyProcessTypeFilters(false)(typeFilter.current))
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
@@ -129,7 +129,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         //     as a result of a fetch so the data is already up to date
         useEffect(() => {
             if (!shouldPollProcess && parentUuid) {
-                fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
+                fetchProcessProgressBarStatus(parentUuid, serializeOnlyProcessTypeFilters(false)(typeFilter.current))
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
