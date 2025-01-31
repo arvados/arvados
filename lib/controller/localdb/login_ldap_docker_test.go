@@ -10,7 +10,7 @@
 package localdb
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -52,33 +53,18 @@ func (s *LoginDockerSuite) setUpDockerNetwork() (string, error) {
 // Return the last one found.
 func (s *LoginDockerSuite) ipFromCmd(cmd *exec.Cmd) (string, error) {
 	cmd.Stderr = os.Stderr
-	outPipe, err := cmd.StdoutPipe()
+	out, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	err = cmd.Start()
-	if err != nil {
-		return "", err
-	}
-	stdout := bufio.NewReader(outPipe)
-	var ip net.IP
-	var readErr error
-	for readErr == nil {
-		var line string
-		line, readErr = stdout.ReadString('\n')
-		if lineIP := net.ParseIP(strings.TrimSuffix(line, "\n")); lineIP != nil {
-			ip = lineIP
+	lines := bytes.Split(out, []byte{'\n'})
+	slices.Reverse(lines)
+	for _, line := range lines {
+		if ip := net.ParseIP(string(line)); ip != nil {
+			return ip.String(), nil
 		}
 	}
-	if err := cmd.Wait(); err != nil {
-		return "", err
-	} else if readErr != io.EOF {
-		return "", readErr
-	} else if ip == nil {
-		return "", fmt.Errorf("no IP address found in the output of %v", cmd)
-	} else {
-		return ip.String(), nil
-	}
+	return "", fmt.Errorf("no IP address found in the output of %v", cmd)
 }
 
 // SetUpSuite creates a Docker network, starts an openldap server in it, and
