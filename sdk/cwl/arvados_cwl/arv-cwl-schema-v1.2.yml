@@ -330,17 +330,11 @@ $graph:
       doc: |
         Maximum number of GPU devices to request.  If not specified,
         same as `cudaDeviceCountMin`.
-    cudaVramMin:
-      type: ['null', int, cwl:Expression]
-      default: 0
+    cudaVram:
+      type: ['null', long, cwl:Expression]
+      default: 1024
       doc: |
-        Minimum amount of VRAM to request, in mebibytes (2**20).  If not specified,
-        same as `cudaVramMax`.
-    cudaVramMax:
-      type: ['null', int, cwl:Expression]
-      doc: |
-        Maximum amount of VRAM to request.  If not specified,
-        same as `cudaVramMin`.
+        Amount of VRAM to request, in mebibytes (2**20)
 
 
 - name: ROCmRequirement
@@ -378,17 +372,11 @@ $graph:
       doc: |
         Maximum number of GPU devices to request.  If not specified,
         same as `rocmDeviceCountMin`.
-    rocmVramMin:
-      type: ['null', int, cwl:Expression]
+    rocmVram:
+      type: ['null', long, cwl:Expression]
       default: 1024
       doc: |
-        Minimum amount of VRAM to request, in mebibytes (2**20).  If not specified,
-        same as `rocmVramMax`.
-    rocmVramMax:
-      type: ['null', int, cwl:Expression]
-      doc: |
-        Maximum amount of VRAM to request.  If not specified,
-        same as `rocmVramMin`.
+        Amount of VRAM to request, in mebibytes (2**20).
 
 - name: UsePreemptible
   type: record

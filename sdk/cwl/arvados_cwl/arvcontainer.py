@@ -318,10 +318,10 @@ class ArvadosContainer(JobBase):
                     "device_count": resources.get("cudaDeviceCount", 1),
                     "driver_version": cuda_req["cudaVersionMin"],
                     "hardware_target": aslist(cuda_req["cudaComputeCapability"]),
-                    "vram": resources.get("vram", 1024),
+                    "vram": cuda_req["cudaVram"]*1024*1024,
                 }
             else:
-                # Backwards compatability
+                # Legacy API
                 runtime_constraints["cuda"] = {
                     "device_count": resources.get("cudaDeviceCount", 1),
                     "driver_version": cuda_req["cudaVersionMin"],
@@ -330,13 +330,16 @@ class ArvadosContainer(JobBase):
 
         rocm_req, _ = self.get_requirement("http://arvados.org/cwl#ROCmRequirement")
         if rocm_req:
-            runtime_constraints["gpu"] = {
-                "stack": "rocm",
-                "device_count": resources.get("rocmDeviceCount"),
-                "driver_version": resources["rocmDriverVersion"],
-                "hardware_target": aslist(resources["rocmTarget"]),
-                "vram": "vram": resources.get("vram", 1024),
-            }
+            if self.arvrunner.api._rootDesc["revision"] >= "20250128":
+                runtime_constraints["gpu"] = {
+                    "stack": "rocm",
+                    "device_count": rocm_req["rocmDeviceCountMin"],
+                    "driver_version": rocm_req["rocmDriverVersion"],
+                    "hardware_target": aslist(rocm_req["rocmTarget"]),
+                    "vram": rocm_req["rocmVram"]*1024*1024,
+                }
+            else:
+                raise WorkflowException("Arvados API server does not support ROCm (requires Arvados 3.1+)")
 
         if runtimeContext.enable_preemptible is False:
             scheduling_parameters["preemptible"] = False
