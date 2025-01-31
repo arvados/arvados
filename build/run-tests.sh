@@ -591,6 +591,21 @@ check_arvados_config() {
         cd "$WORKSPACE"
         eval $(python3 sdk/python/tests/run_test_server.py setup_config)
     fi
+    # Set all PostgreSQL connection variables, and write a .pgpass, to connect
+    # to the test database, so test scripts can write `psql` commands with no
+    # additional configuration.
+    export PGPASSFILE="$WORKSPACE/tmp/.pgpass"
+    if [[ "$ARVADOS_CONFIG" -nt "$PGPASSFILE" ]]; then
+        # services/api/config/arvados_config.rb hardcodes `arvados_test` as the
+        # database name.
+        export PGDATABASE=arvados_test
+        export PGHOST="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.host "$ARVADOS_CONFIG")"
+        export PGPORT="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.port "$ARVADOS_CONFIG")"
+        export PGUSER="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.user "$ARVADOS_CONFIG")"
+        local pgpassword="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.password "$ARVADOS_CONFIG")"
+        echo "$PGHOST:$PGPORT:$PGDATABASE:$PGUSER:$pgpassword" >"$PGPASSFILE"
+        chmod 0600 "$PGPASSFILE"
+    fi
 }
 
 do_install() {
@@ -692,8 +707,7 @@ install_services/api() {
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
-    cd "$WORKSPACE/services/api" \
-        && psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+    psql -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$PGDATABASE';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
