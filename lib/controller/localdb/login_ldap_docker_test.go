@@ -1,11 +1,6 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
-//
-// This is an integration test of controller's different Login methods.
-// Each test creates a different Login configuration and runs controller in a
-// Docker container with it. It runs other Docker containers for supporting
-// services.
 
 package localdb
 
@@ -30,6 +25,10 @@ import (
 
 var _ = check.Suite(&LoginDockerSuite{})
 
+// LoginDockerSuite is an integration test of controller's different Login
+// methods.  Each test creates a different Login configuration and runs
+// controller in a Docker container with it. It runs other Docker containers
+// for supporting services.
 type LoginDockerSuite struct {
 	localdbSuite
 	tmpdir     string
