@@ -460,7 +460,7 @@ runtime_token:
       kind: tmp
       capacity: 24000000000
 
-cuda_container:
+legacy_cuda_container:
   uuid: zzzzz-dz642-cudagpcontainer
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Complete
@@ -470,19 +470,19 @@ cuda_container:
   updated_at: 2016-01-11 11:11:11.111111111 Z
   started_at: 2016-01-11 11:11:11.111111111 Z
   finished_at: 2016-01-12 11:12:13.111111111 Z
-  container_image: test
+  container_image: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   cwd: test
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   output_path: test
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   runtime_constraints:
-    ram: 12000000000
-    vcpus: 4
     cuda:
+      device_count: 1
       driver_version: "11.0"
       hardware_capability: "9.0"
-      device_count: 1
+    ram: 12000000000
+    vcpus: 4
   secret_mounts: {}
   secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 

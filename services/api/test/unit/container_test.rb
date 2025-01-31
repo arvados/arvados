@@ -647,16 +647,19 @@ class ContainerTest < ActiveSupport::TestCase
     # No cuda
     no_cuda_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"},
                                                 runtime_constraints: {"vcpus" => 1, "ram" => 1, "keep_cache_disk"=>0, "keep_cache_ram"=>268435456, "API" => false,
-                                                                      "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}},})
+                                                                      "cuda" => {"device_count" => 0, "driver_version" => "", "hardware_capability" => ""}},})
     c1, _ = minimal_new(no_cuda_attrs)
     assert_equal Container::Queued, c1.state
 
     # has cuda
     cuda_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"},
                                                 runtime_constraints: {"vcpus" => 1, "ram" => 1, "keep_cache_disk"=>0, "keep_cache_ram"=>268435456, "API" => false,
-                                                                      "cuda" => {"device_count":1, "driver_version": "11.0", "hardware_capability": "9.0"}},})
+                                                                      "cuda" => {"device_count" => 1, "driver_version" => "11.0", "hardware_capability" => "9.0"}},})
     c2, _ = minimal_new(cuda_attrs)
     assert_equal Container::Queued, c2.state
+
+    no_cuda_attrs[:runtime_constraints] = Container.resolve_runtime_constraints(no_cuda_attrs[:runtime_constraints])
+    cuda_attrs[:runtime_constraints] = Container.resolve_runtime_constraints(cuda_attrs[:runtime_constraints])
 
     # should find the no cuda one
     reused = Container.find_reusable(no_cuda_attrs)
@@ -665,6 +668,73 @@ class ContainerTest < ActiveSupport::TestCase
 
     # should find the cuda one
     reused = Container.find_reusable(cuda_attrs)
+    assert_not_nil reused
+    assert_equal reused.uuid, c2.uuid
+  end
+
+  test "find_reusable with legacy cuda" do
+    set_user_from_auth :active
+
+    # has cuda
+
+    cuda_attrs = {
+      command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"],
+      cwd: "test",
+      environment: {},
+      output_path: "test",
+      output_glob: [],
+      container_image: "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
+      mounts: {},
+      runtime_constraints: Container.resolve_runtime_constraints({
+        "cuda" => {
+          "device_count" => 1,
+          "driver_version" => "11.0",
+          "hardware_capability" => "9.0",
+        },
+        "ram" => 12000000000,
+        "vcpus" => 4,
+      }),
+      scheduling_parameters: {},
+      secret_mounts: {},
+    }
+
+    Rails.configuration.Containers.LogReuseDecisions = true
+    # should find the gpu one
+    reused = Container.find_reusable(cuda_attrs)
+    assert_not_nil reused
+    assert_equal reused.uuid, containers(:legacy_cuda_container).uuid
+
+  end
+
+  test "find_reusable method with gpu" do
+    set_user_from_auth :active
+    # No gpu
+    no_gpu_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"},
+                                                runtime_constraints: {"vcpus" => 1, "ram" => 1, "keep_cache_disk"=>0, "keep_cache_ram"=>268435456, "API" => false,
+                                                                      "gpu" => {"device_count" => 0, "driver_version" => "",
+                                                                                "hardware_target" => [], "stack" => "", "vram" => 0}},})
+    c1, _ = minimal_new(no_gpu_attrs)
+    assert_equal Container::Queued, c1.state
+
+    # wants gpu
+    gpu_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"},
+                                                runtime_constraints: {"vcpus" => 1, "ram" => 1, "keep_cache_disk"=>0, "keep_cache_ram"=>268435456, "API" => false,
+                                                                      "gpu" => {"device_count" => 1, "driver_version" => "11.0",
+                                                                                "hardware_target" => ["9.0"], "stack" => "cuda",
+                                                                                "vram" => 2000000000}},})
+    c2, _ = minimal_new(gpu_attrs)
+    assert_equal Container::Queued, c2.state
+
+    no_gpu_attrs[:runtime_constraints] = Container.resolve_runtime_constraints(no_gpu_attrs[:runtime_constraints])
+    gpu_attrs[:runtime_constraints] = Container.resolve_runtime_constraints(gpu_attrs[:runtime_constraints])
+
+    # should find the no gpu one
+    reused = Container.find_reusable(no_gpu_attrs)
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+
+    # should find the gpu one
+    reused = Container.find_reusable(gpu_attrs)
     assert_not_nil reused
     assert_equal reused.uuid, c2.uuid
   end

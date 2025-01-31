@@ -218,7 +218,7 @@ class Container < ArvadosModel
           'vram' => 0,
       }
     end
-    rc
+    self.deep_sort_hash(rc)
   end
 
   # Return a mounts hash suitable for a Container, i.e., with every
@@ -317,25 +317,6 @@ class Container < ArvadosModel
       ].uniq,
     }
 
-    # Note: deprecated in favor of the more general "GPU" constraint below.
-    # Kept for backwards compatability.
-    resolved_cuda = resolved_runtime_constraints['cuda']
-    if resolved_cuda.nil? or resolved_cuda['device_count'] == 0
-      runtime_constraint_variations[:cuda] = [
-        # Check for constraints without cuda
-        # (containers that predate the constraint)
-        nil,
-        # The default "don't need CUDA" value
-        {
-          'device_count' => 0,
-          'driver_version' => '',
-          'hardware_capability' => '',
-        },
-        # The requested value
-        resolved_runtime_constraints.delete('cuda')
-      ].uniq
-    end
-
     resolved_gpu = resolved_runtime_constraints['gpu']
     if resolved_gpu.nil? or resolved_gpu['device_count'] == 0
       runtime_constraint_variations[:gpu] = [
@@ -353,6 +334,34 @@ class Container < ArvadosModel
         # The requested value
         resolved_runtime_constraints.delete('gpu')
       ].uniq
+    end
+
+    # Note: deprecated in favor of the more general "GPU" constraint above
+    # Kept for backwards compatability.
+    resolved_cuda = resolved_runtime_constraints['cuda']
+    if resolved_cuda.nil? or resolved_cuda['device_count'] == 0
+      runtime_constraint_variations[:cuda] = [
+        # Check for constraints without cuda
+        # (containers that predate the constraint)
+        nil,
+        # The default "don't need CUDA" value
+        {
+          'device_count' => 0,
+          'driver_version' => '',
+          'hardware_capability' => '',
+        },
+        # The requested value
+        resolved_runtime_constraints.delete('cuda')
+      ].uniq
+    else
+      # Need to check
+      # a) for legacy containers that only mention CUDA
+      # b) for new containers that were submitted with the old API that
+      # list both CUDA and GPU
+      runtime_constraint_variations[:gpu] = [
+        nil,
+        resolved_runtime_constraints.delete('gpu')
+      ]
     end
 
     reusable_runtime_constraints = hash_product(**runtime_constraint_variations)
