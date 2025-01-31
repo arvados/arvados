@@ -203,22 +203,16 @@ func (s *LoginDockerSuite) parseResponse(resp *http.Response, body any) error {
 	if resp.StatusCode < 400 {
 		return json.Unmarshal(respBody, body)
 	}
-	errBody := make(map[string]interface{})
-	err = json.Unmarshal(respBody, &errBody)
+	var errResp struct {
+		Errors []string
+	}
+	err = json.Unmarshal(respBody, &errResp)
 	if err != nil {
-		return fmt.Errorf("%s: error unmarshaling error response: %w", resp.Status, err)
-	}
-	errors, ok := errBody["errors"]
-	if !ok {
-		return fmt.Errorf("%s: error response did not include 'errors' key", resp.Status)
-	}
-	errList, ok := errors.([]interface{})
-	if !ok {
-		return fmt.Errorf("%s: error response 'errors' was not an array", resp.Status)
-	} else if len(errList) == 0 {
-		return fmt.Errorf("%s: error response with empty 'errors'", resp.Status)
+		return err
+	} else if len(errResp.Errors) == 0 {
+		return fmt.Errorf("%s with no Errors in response", resp.Status)
 	} else {
-		return fmt.Errorf("%s: %s", resp.Status, errList[0])
+		return fmt.Errorf("%s: %s", resp.Status, strings.Join(errResp.Errors, ":"))
 	}
 }
 
