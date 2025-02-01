@@ -716,6 +716,7 @@ def setup_config():
         pgconnection = {
 	    "client_encoding": "utf8",
 	    "host": "localhost",
+	    "port": "5432",
 	    "dbname": "arvados_test",
 	    "user": "arvados",
 	    "password": "insecure_arvados_test",
