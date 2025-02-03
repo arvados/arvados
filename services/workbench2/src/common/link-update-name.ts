@@ -18,7 +18,7 @@ type NameableResource = Resource & { name?: string };
  */
 const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource | undefined> => {
     //head resource should already be in the store
-    let headResource = getResourceFromState<Resource>(link.headUuid, getState().resources);
+    let headResource = getResourceFromState<Resource>(link.headUuid)(getState().resources);
     //If resource not in store, fetch it
     if (!headResource) {
         try {

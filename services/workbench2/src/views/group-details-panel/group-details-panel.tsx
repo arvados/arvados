@@ -132,7 +132,7 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
 
 const mapStateToProps = (state: RootState) => {
     const groupUuid = getProperty<string>(GROUP_DETAILS_MEMBERS_PANEL_ID)(state.properties);
-    const group = groupUuid ? getResourceFromState<GroupResource>(groupUuid, state.resources) : undefined;
+    const group = groupUuid ? getResourceFromState<GroupResource>(groupUuid)(state.resources) : undefined;
     const userUuid = state.auth.user?.uuid;
 
     return {

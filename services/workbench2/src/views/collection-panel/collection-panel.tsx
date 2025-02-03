@@ -158,12 +158,12 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
 
             componentDidMount() {
-                const collection = getResourceFromState<CollectionResource>(this.props.match.params.id, this.props.resources);
+                const collection = getResourceFromState<CollectionResource>(this.props.match.params.id)(this.props.resources);
                 if (this.state.item && collection) {
                     this.props.dispatch<any>(setSelectedResourceUuid(collection.uuid))
                     this.setState({
                         item: collection,
-                        itemOwner: getResourceFromState<GroupResource | UserResource>(collection.ownerUuid, this.props.resources),
+                        itemOwner: getResourceFromState<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources),
                         isOldVersion: collection.currentVersionUuid !== collection.uuid,
                     });
                 };
@@ -177,8 +177,9 @@ export const CollectionPanel = withStyles(styles)(connect(
 
             componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<CollectionPanelState>, snapshot?: any ): void {
                 const { currentUserUUID, resources } = this.props;
-                const collection = getResourceFromState<CollectionResource>(this.props.match.params.id, this.props.resources);
-                const itemOwner = collection ? getResourceFromState<GroupResource | UserResource>(collection.ownerUuid, this.props.resources) : undefined;
+                const collection = getResourceFromState<CollectionResource>(this.props.match.params.id)(this.props.resources);
+                const itemOwner = collection ? getResourceFromState<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources) : undefined;
+                if (!this.state.item && collection) this.setState({ item: collection });
                 if (collection) {
                     if (prevState.item !== collection) {
                         this.props.dispatch<any>(setSelectedResourceUuid(collection.uuid))

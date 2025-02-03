@@ -336,7 +336,7 @@ function treePickerToTreeItems<T>(tree: Tree<T>, resources: ResourcesState){
         const node = getNode(id)(tree) || initTreeNode({ id: '', value: 'InvalidNode' });
         const items = getNodeChildrenIds(node.id)(tree)
             .map(treePickerToTreeItems(tree, resources));
-        const resource = getResourceFromState<Resource>(node.id, resources);
+        const resource = getResourceFromState<Resource>(node.id)(resources);
 
         return {
             active: node.active,
