@@ -10,7 +10,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strconv"
@@ -128,9 +127,8 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		pgIsReady := exec.CommandContext(ctx, "pg_isready", "--timeout=10")
-		pgIsReady.Env = opts.env
-		if pgIsReady.Run() == nil {
+		err := super.RunProgram(ctx, super.tempdir, opts, "pg_isready", "--timeout=10")
+		if err == nil {
 			break
 		}
 		time.Sleep(time.Second / 2)
