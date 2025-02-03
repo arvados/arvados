@@ -445,7 +445,7 @@ class ArvadosContainer(JobBase):
                         while gbeval.startswith("./"):
                             gbeval = gbeval[2:]
 
-                        if len(pattern) > 0:
+                        if pattern:
                             # pattern is not an expression or we would
                             # have handled this earlier, so it must be
                             # a simple substitution on the secondary
