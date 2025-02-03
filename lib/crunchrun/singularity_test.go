@@ -112,6 +112,8 @@ func (s *singularitySuite) setupMount(c *C) (mountdir string) {
 		"--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid",
 		"--disable-event-listening",
 		mountdir)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
 	err := cmd.Start()
 	c.Assert(err, IsNil)
 	return
