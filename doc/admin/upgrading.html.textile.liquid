@@ -40,6 +40,36 @@ The Arvados Rails API server now runs from a standalone Passenger server to simp
 <pre><code># <span class="userinput">systemctl enable --now arvados-railsapi.service</span>
 </code></pre></notextile>
 
+h3. Generalized configuration for GPU compute nodes
+
+As part of adding support for AMD GPUs in Arvados 3.1, the @CUDA@ section of @InstanceType@ definitions is now deprecated in favor of a new @GPU@ section that is generalized for both CUDA and ROCm.
+
+Where previously there would be a @CUDA@ section:
+
+<pre>
+  InstanceTypes:
+     gpuInstance:
+       CUDA:
+         DriverVersion: "11.0"
+         HardwareCapability: "9.0"
+         DeviceCount: 1
+</pre>
+
+The configuration file should now be updated to use a @GPU@ section:
+
+<pre>
+  InstanceTypes:
+     gpuInstance:
+       GPU:
+         Stack: "cuda"
+         DriverVersion: "11.0"
+         HardwareTarget: "9.0"
+         DeviceCount: 1
+         VRAM: 8GiB
+</pre>
+
+To minimize disruption, the config loader will perform an automatic migration when it sees a deprecated @CUDA@ field and a emit warning.  Admins are advised to update the configuration file.
+
 h2(#v3_0_0). v3.0.0 (2024-11-12)
 
 "previous: Upgrading to 2.7.4":#v2_7_4

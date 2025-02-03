@@ -15,8 +15,8 @@ table(table table-bordered table-condensed).
 |keep_cache_disk|integer|When the container process accesses data from Keep via the filesystem, that data will be cached on disk, up to this amount in bytes.|Optional. If your cluster is configured to use a disk cache by default, the default size will match your @ram@ constraint, bounded between 2GiB and 32GiB.|
 |keep_cache_ram|integer|When the container process accesses data from Keep via the filesystem, that data will be cached in memory, up to this amount in bytes.|Optional. If your cluster is configured to use a RAM cache by default, the administrator sets a default cache size.|
 |API|boolean|When set, ARVADOS_API_HOST and ARVADOS_API_TOKEN will be set, and container will have networking enabled to access the Arvados API server.|Optional.|
-|cuda|object|Request CUDA GPU support.  Deprecated, you should use the 'gpu' option.|Optional.|
-|gpu|object|Request CUDA GPU support, see below|Optional.|
+|gpu|object|Request GPU support, see below|Optional.|
+|cuda|object|Old way to request CUDA GPU support, included for backwards compatability only.  Use the 'gpu' field instead.|Deprecated.|
 
 h3. GPU support
 
