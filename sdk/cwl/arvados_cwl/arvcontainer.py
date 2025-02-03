@@ -41,6 +41,9 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 def cleanup_name_for_collection(name):
     return name.replace("/", " ")
 
+class OutputGlobError(Exception):
+    pass
+
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
@@ -380,12 +383,18 @@ class ArvadosContainer(JobBase):
                     pattern = ""
                     gb = None
                     if isinstance(gp, str):
-                        gb = self.builder.do_eval(gp)
+                        try:
+                            gb = self.builder.do_eval(gp)
+                        except:
+                            raise OutputGlobError()
                     elif isinstance(gp, dict):
                         # dict of two keys, 'glob' and 'pattern' which
                         # means we should try to predict the names of
                         # secondary files to capture.
-                        gb = self.builder.do_eval(gp["glob"])
+                        try:
+                            gb = self.builder.do_eval(gp["glob"])
+                        except:
+                            raise OutputGlobError()
                         pattern = gp["pattern"]
 
                         if "${" in pattern or "$(" in pattern:
@@ -395,19 +404,21 @@ class ArvadosContainer(JobBase):
                                 # glob has wildcards, so we can't
                                 # predict the secondary file name.
                                 # Capture everything.
-                                raise RuntimeError("glob has wildcards, cannot predict secondary file name")
+                                raise OutputGlobError("glob has wildcards, cannot predict secondary file name")
 
                             # After evealuating 'glob' we have a
                             # expected name we can provide to the
                             # expression.
                             nr, ne = os.path.splitext(gb)
-                            pattern = self.builder.do_eval(pattern, context={
-                                "path": gb,
-                                "basename": os.path.basename(gb),
-                                "nameext": ne,
-                                "nameroot": nr,
-                            })
-
+                            try:
+                                pattern = self.builder.do_eval(pattern, context={
+                                    "path": gb,
+                                    "basename": os.path.basename(gb),
+                                    "nameext": ne,
+                                    "nameroot": nr,
+                                })
+                            except:
+                                raise OutputGlobError()
                             if isinstance(pattern, str):
                                 # If we get a string back, that's the expected
                                 # file name for the secondary file.
@@ -417,7 +428,7 @@ class ArvadosContainer(JobBase):
                                 # However, it is legal for this to return a
                                 # file object or an array.  In that case we'll
                                 # just capture everything.
-                                raise RuntimeError("secondary file expression did not evaluate to a string")
+                                raise OutputGlobError("secondary file expression did not evaluate to a string")
                     else:
                         # Should never happen, globpatterns is
                         # constructed in arvtool from data that has
@@ -470,12 +481,8 @@ class ArvadosContainer(JobBase):
                     # if it's going to match all, prefer not to provide it
                     # at all.
                     output_glob.clear()
-            except:
-                # Something failed, maybe in do_eval, such as trying
-                # to access a field in 'self' we didn't populate.  It
-                # might still work post-execution when we have all the
-                # outputs available, but right now we don't have
-                # enough data to set output_glob.
+            except OutputGlobError as e:
+                logger.debug("OutputGlobError %s", e, exc_info=e)
                 output_glob.clear()
 
             if output_glob:
