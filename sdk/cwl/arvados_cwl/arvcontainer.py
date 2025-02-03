@@ -41,8 +41,9 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 def cleanup_name_for_collection(name):
     return name.replace("/", " ")
 
-class OutputGlobError(Exception):
+class OutputGlobError(RuntimeError):
     pass
+
 
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
@@ -386,7 +387,7 @@ class ArvadosContainer(JobBase):
                         try:
                             gb = self.builder.do_eval(gp)
                         except:
-                            raise OutputGlobError()
+                            raise OutputGlobError("Expression evaluation failed")
                     elif isinstance(gp, dict):
                         # dict of two keys, 'glob' and 'pattern' which
                         # means we should try to predict the names of
@@ -394,7 +395,7 @@ class ArvadosContainer(JobBase):
                         try:
                             gb = self.builder.do_eval(gp["glob"])
                         except:
-                            raise OutputGlobError()
+                            raise OutputGlobError("Expression evaluation failed")
                         pattern = gp["pattern"]
 
                         if "${" in pattern or "$(" in pattern:
@@ -418,7 +419,7 @@ class ArvadosContainer(JobBase):
                                     "nameroot": nr,
                                 })
                             except:
-                                raise OutputGlobError()
+                                raise OutputGlobError("Expression evaluation failed")
                             if isinstance(pattern, str):
                                 # If we get a string back, that's the expected
                                 # file name for the secondary file.
@@ -482,7 +483,7 @@ class ArvadosContainer(JobBase):
                     # at all.
                     output_glob.clear()
             except OutputGlobError as e:
-                logger.debug("OutputGlobError %s", e, exc_info=e)
+                logger.debug("Unable to set a more specific output_glob (this is not an error): %s", e.args[0], exc_info=e)
                 output_glob.clear()
 
             if output_glob:
