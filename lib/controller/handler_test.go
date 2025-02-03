@@ -598,7 +598,7 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	c.Check(user.Authorization.TokenV2(), check.Equals, auth.TokenV2())
 }
 
-func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, skippedFields map[string]bool) {
+func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, skippedFields map[string]string) {
 	var proxied, direct map[string]interface{}
 	var err error
 
@@ -634,14 +634,20 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 
 	// Check that all RailsAPI provided keys exist on the controller response.
 	for k := range direct {
-		if _, ok := skippedFields[k]; ok {
+		var skipKey string
+		var ok bool
+		if skipKey, ok = skippedFields[k]; ok && skipKey == "" {
 			continue
-		} else if val, ok := proxied[k]; !ok {
+		}
+		if val, ok := proxied[k]; !ok {
 			c.Errorf("%s's key %q missing on controller's response.", direct["kind"], k)
 		} else if direct["kind"] == "arvados#collection" && k == "manifest_text" {
 			// Tokens differ from request to request
 			c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
 		} else {
+			if skipKey != "" {
+				delete(val.(map[string]interface{}), skipKey)
+			}
 			c.Check(val, check.DeepEquals, direct[k],
 				check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
 		}
@@ -685,12 +691,12 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	json.Unmarshal(resp.Body.Bytes(), &auth)
 	c.Assert(auth.UUID, check.Not(check.Equals), "")
 
-	testCases := map[string]map[string]bool{
-		"api_client_authorizations/" + auth.UUID:                       {"modified_by_client_uuid": true, "modified_by_user_uuid": true},
+	testCases := map[string]map[string]string{
+		"api_client_authorizations/" + auth.UUID:                       {"modified_by_client_uuid": "", "modified_by_user_uuid": ""},
 		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
 		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     nil,
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
-		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: {"runtime_constraints": "cuda"},
 		"groups/" + arvadostest.AProjectUUID:                           nil,
 		"keep_services/" + ksUUID:                                      nil,
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,

@@ -100,10 +100,12 @@ func (s *suite) SetUpTest(c *check.C) {
 			"runtime_constraints": arvados.RuntimeConstraints{
 				RAM:   16000000,
 				VCPUs: 1,
-				CUDA: arvados.CUDARuntimeConstraints{
-					DeviceCount:        1,
-					DriverVersion:      "11.0",
-					HardwareCapability: "8.0",
+				GPU: arvados.GPURuntimeConstraints{
+					Stack:          "cuda",
+					DeviceCount:    1,
+					DriverVersion:  "11.0",
+					HardwareTarget: []string{"8.0"},
+					VRAM:           8000000000,
 				},
 			},
 			"container_image":     arvadostest.DockerImage112PDH,

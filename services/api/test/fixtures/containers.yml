@@ -16,10 +16,12 @@ queued:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
-    cuda:
+    gpu:
+      stack: ""
       driver_version: ""
       hardware_capability: ""
       device_count: 0
+      vram: 0
   mounts:
     /tmp:
       kind: tmp

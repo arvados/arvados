@@ -370,6 +370,9 @@ Clusters:
          DriverVersion: "11.0"
          HardwareCapability: "9.0"
          DeviceCount: 1
+  Containers:
+    LSF:
+      BsubCUDAArguments: ["-gpu"]
 `, `
 Clusters:
  z1111:
@@ -381,5 +384,8 @@ Clusters:
          DeviceCount: 1
          Stack: "cuda"
          VRAM: 0
+  Containers:
+    LSF:
+      BsubGPUArguments: ["-gpu"]
 `)
 }

@@ -165,10 +165,11 @@ func startFunc(container arvados.Container, cmd *exec.Cmd) error {
 }
 
 type ResourceAlloc struct {
-	uuid  string
-	vcpus int
-	ram   int64
-	gpus  []string
+	uuid     string
+	vcpus    int
+	ram      int64
+	gpuStack string
+	gpus     []string
 }
 
 type ResourceRequest struct {
@@ -207,7 +208,7 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 		availableGpus = availableCUDAGpus
 	} else if maxGpus = len(availableROCmGpus); maxGpus > 0 {
 		gpuStack = "rocm"
-		availableGpus := availableROCmGpus
+		availableGpus = availableROCmGpus
 	}
 
 	availableVcpus := maxVcpus
@@ -258,6 +259,7 @@ NextEvent:
 			availableRam -= rr.ram
 
 			for i := 0; i < rr.gpus; i++ {
+				alloc.gpuStack = alloc.gpuStack
 				alloc.gpus = append(alloc.gpus, availableGpus[len(availableGpus)-1])
 				availableGpus = availableGpus[0 : len(availableGpus)-1]
 			}
@@ -295,10 +297,6 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 		gpuStack := container.RuntimeConstraints.GPU.Stack
 		gpus := container.RuntimeConstraints.GPU.DeviceCount
-		if container.RuntimeConstraints.CUDA.DeviceCount > 0 {
-			gpuStack = "cuda"
-			gpus = container.RuntimeConstraints.CUDA.DeviceCount
-		}
 
 		resourceRequest := ResourceRequest{
 			uuid:  container.UUID,

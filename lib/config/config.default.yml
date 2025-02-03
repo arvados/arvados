@@ -1321,8 +1321,8 @@ Clusters:
 
         # Arguments that will be appended to the bsub command line
         # when submitting Arvados containers as LSF jobs with
-        # runtime_constraints.cuda.device_count > 0
-        BsubCUDAArguments: ["-gpu", "num=%G"]
+        # runtime_constraints.gpu.device_count > 0
+        BsubGPUArguments: ["-gpu", "num=%G"]
 
         # Use sudo to switch to this user account when submitting LSF
         # jobs.

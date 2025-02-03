@@ -321,15 +321,15 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		"%M": fmt.Sprintf("%d", mem),
 		"%T": fmt.Sprintf("%d", tmp),
 		"%U": container.UUID,
-		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.CUDA.DeviceCount),
+		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.GPU.DeviceCount),
 		"%W": fmt.Sprintf("%d", maxrunminutes),
 	}
 
 	re := regexp.MustCompile(`%.`)
 	var substitutionErrors string
 	argumentTemplate := disp.Cluster.Containers.LSF.BsubArgumentsList
-	if container.RuntimeConstraints.CUDA.DeviceCount > 0 {
-		argumentTemplate = append(argumentTemplate, disp.Cluster.Containers.LSF.BsubCUDAArguments...)
+	if container.RuntimeConstraints.GPU.DeviceCount > 0 {
+		argumentTemplate = append(argumentTemplate, disp.Cluster.Containers.LSF.BsubGPUArguments...)
 	}
 	for idx, a := range argumentTemplate {
 		if idx > 0 && (argumentTemplate[idx-1] == "-W" || argumentTemplate[idx-1] == "-We") && a == "%W" && maxrunminutes == 0 {

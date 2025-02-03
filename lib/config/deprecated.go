@@ -47,6 +47,11 @@ type deprCluster struct {
 		SendUserSetupNotificationEmail *bool
 		SupportEmailAddress            *string
 	}
+	Containers struct {
+		LSF struct {
+			BsubCUDAArguments *[]string
+		}
+	}
 	InstanceTypes deprInstanceTypeMap
 }
 
@@ -112,6 +117,10 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 			*dst = *b
 			ldr.Logger.Warnf("using your old config key Mail.SendUserSetupNotificationEmail -- but you should rename it to Users.SendUserSetupNotificationEmail")
 		}
+		if dst, n := &cluster.Containers.LSF.BsubGPUArguments, dcluster.Containers.LSF.BsubCUDAArguments; n != nil {
+			*dst = *n
+			ldr.Logger.Warnf("using you old config key Containers.LSF.BsubCUDAArguments -- but you should rename it to Containers.LSF.BsubGPUArguments")
+		}
 
 		// Google* moved to Google.*
 		if dst, n := &cluster.Login.Google.ClientID, dcluster.Login.GoogleClientID; n != nil && *n != *dst {
@@ -127,6 +136,7 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		if dst, n := &cluster.Login.Google.AlternateEmailAddresses, dcluster.Login.GoogleAlternateEmailAddresses; n != nil && *n != *dst {
 			*dst = *n
 		}
+
 		for name, instanceType := range dcluster.InstanceTypes {
 			if instanceType.CUDA != nil {
 				updInstanceType := cluster.InstanceTypes[name]

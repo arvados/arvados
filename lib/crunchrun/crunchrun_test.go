@@ -748,7 +748,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 		c.Check(s.executor.created.RAM, Equals, int64(1000000))
 		c.Check(s.executor.created.NetworkMode, Equals, "default")
 		c.Check(s.executor.created.EnableNetwork, Equals, false)
-		c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
+		c.Check(s.executor.created.GPUDeviceCount, Equals, 0)
 		fmt.Fprintln(s.executor.created.Stdout, "hello world")
 		return 0
 	})
@@ -1234,33 +1234,15 @@ func (s *TestSuite) TestEnableCUDADeviceCount(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {"cuda": {"device_count": 2}},
+    "runtime_constraints": {"gpu": {"device_count": 2, "stack": "cuda", "hardware_target": ["9.0"], "driver_version": "11.0", vram: 8000000000}},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
 }`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, "ok")
 		return 0
 	})
-	c.Check(s.executor.created.CUDADeviceCount, Equals, 2)
-}
-
-func (s *TestSuite) TestEnableCUDAHardwareCapability(c *C) {
-	s.fullRunHelper(c, `{
-    "command": ["pwd"],
-    "container_image": "`+arvadostest.DockerImage112PDH+`",
-    "cwd": "/bin",
-    "environment": {},
-    "mounts": {"/tmp": {"kind": "tmp"} },
-    "output_path": "/tmp",
-    "priority": 1,
-    "runtime_constraints": {"cuda": {"hardware_capability": "foo"}},
-    "state": "Locked",
-    "output_storage_classes": ["foo", "bar"]
-}`, nil, func() int {
-		fmt.Fprintln(s.executor.created.Stdout, "ok")
-		return 0
-	})
-	c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
+	c.Check(s.executor.created.GPUDeviceCount, Equals, 2)
+	c.Check(s.executor.created.GPUStack, Equals, "cuda")
 }
 
 func (s *TestSuite) TestStopOnSignal(c *C) {
