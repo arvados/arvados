@@ -40,11 +40,15 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		return nil
 	}
 
-	iamroot := false
-	if u, err := user.Current(); err != nil {
+	postgresUser, err := user.Current()
+	iamroot := postgresUser.Uid == "0"
+	if err != nil {
 		return fmt.Errorf("user.Current(): %w", err)
-	} else if u.Uid == "0" {
-		iamroot = true
+	} else if iamroot {
+		postgresUser, err = user.Lookup("postgres")
+		if err != nil {
+			return fmt.Errorf("user.Lookup(\"postgres\"): %s", err)
+		}
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -61,11 +65,14 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 	}
 	prog, args := filepath.Join(bindir, "initdb"), []string{"-D", datadir, "-E", "utf8"}
 	opts := runOptions{}
+	opts.env = append(opts.env,
+		"PGHOST="+super.cluster.PostgreSQL.Connection["host"],
+		"PGPORT="+super.cluster.PostgreSQL.Connection["port"],
+		"PGUSER="+postgresUser.Username,
+		"PGDATABASE=",
+		"PGPASSFILE=",
+	)
 	if iamroot {
-		postgresUser, err := user.Lookup("postgres")
-		if err != nil {
-			return fmt.Errorf("user.Lookup(\"postgres\"): %s", err)
-		}
 		postgresUID, err := strconv.Atoi(postgresUser.Uid)
 		if err != nil {
 			return fmt.Errorf("user.Lookup(\"postgres\"): non-numeric uid?: %q", postgresUser.Uid)
@@ -104,8 +111,6 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		}
 	}
 
-	port := super.cluster.PostgreSQL.Connection["port"]
-
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
@@ -116,10 +121,6 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 			"-h", super.cluster.PostgreSQL.Connection["host"],
 			"-p", super.cluster.PostgreSQL.Connection["port"],
 		}
-		opts := runOptions{}
-		if iamroot {
-			opts.user = "postgres"
-		}
 		fail(super.RunProgram(ctx, super.tempdir, opts, prog, args...))
 	}()
 
@@ -127,18 +128,18 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if exec.CommandContext(ctx, "pg_isready", "--timeout=10", "--host="+super.cluster.PostgreSQL.Connection["host"], "--port="+port).Run() == nil {
+		pgIsReady := exec.CommandContext(ctx, "pg_isready", "--timeout=10")
+		pgIsReady.Env = opts.env
+		if pgIsReady.Run() == nil {
 			break
 		}
 		time.Sleep(time.Second / 2)
 	}
 	pgconn := arvados.PostgreSQLConnection{
 		"host":   datadir,
-		"port":   port,
+		"port":   super.cluster.PostgreSQL.Connection["port"],
+		"user":   postgresUser.Username,
 		"dbname": "postgres",
-	}
-	if iamroot {
-		pgconn["user"] = "postgres"
 	}
 	db, err := sql.Open("postgres", pgconn.String())
 	if err != nil {
