@@ -4,7 +4,7 @@
 
 import { LinkService } from "../link-service/link-service";
 import { GroupsService, GroupContentsResource } from "../groups-service/groups-service";
-import { LinkClass } from "models/link";
+import { LinkClass, hasCreateLinkProperties, NewFavoriteLink } from "models/link";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { ListResults } from 'services/common-service/common-service';
 
@@ -23,13 +23,17 @@ export class FavoriteService {
     ) { }
 
     create(data: { userUuid: string; resource: { uuid: string; name: string } }) {
-        return this.linkService.create({
+        const newLink: NewFavoriteLink = {
             ownerUuid: data.userUuid,
             tailUuid: data.userUuid,
             headUuid: data.resource.uuid,
             linkClass: LinkClass.STAR,
             name: data.resource.name
-        });
+        }
+        if (!hasCreateLinkProperties(newLink)) {
+            return Promise.reject("Unable to create favorite: missing link properties");
+        }
+        return this.linkService.create(newLink);
     }
 
     delete(data: { userUuid: string; resourceUuid: string; }) {

@@ -12,7 +12,6 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { SidePanelTreeCategory, loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
-import { LinkClass, hasCreateLinkProperties } from "models/link";
 
 export const publicFavoritesActions = unionize({
     TOGGLE_PUBLIC_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -36,18 +35,6 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
                 : "Adding to public favorites...",
             kind: SnackbarKind.INFO
         }));
-
-        const pubFavoriteData = {
-            ownerUuid: uuid,
-            tailUuid: uuid,
-            headUuid: resource.uuid,
-            linkClass: LinkClass.STAR,
-            name: resource.name
-        };
-
-        if (!hasCreateLinkProperties(pubFavoriteData)) {
-            return Promise.reject("Missing public favorite data");
-        }
 
         const promise: any = isPublicFavorite
             ? services.favoriteService.delete({ userUuid: uuid, resourceUuid: resource.uuid })
