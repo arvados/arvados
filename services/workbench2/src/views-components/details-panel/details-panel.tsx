@@ -32,7 +32,7 @@ import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
-type CssRules = 'root' | 'container' | 'headerContainer' | 'headerIcon' | 'tabContainerWrapper' | 'tabContainer';
+type CssRules = 'root' | 'container' | 'headerContainer' | 'headerTitleWrapper' | 'headerIconWrapper' | 'headerIcon' | 'tabContainerWrapper' | 'tabContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -47,6 +47,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["600"],
         margin: `${theme.spacing(1)} 0`,
         textAlign: 'center',
+    },
+    headerIconWrapper: {
+        margin: '0 10px',
+    },
+    headerTitleWrapper: {
+        overflow: 'hidden',
     },
     headerIcon: {
         fontSize: '2.125rem',
@@ -193,12 +199,12 @@ export const DetailsPanel = withStyles(styles)(
                             className={classes.headerContainer}
                             container
                             alignItems='center'
-                            justifyContent='space-around'
+                            justifyContent='space-between'
                             wrap="nowrap">
-                            <Grid item xs={2}>
+                            <Grid item className={classes.headerIconWrapper}>
                                 {item.getIcon(classes.headerIcon)}
                             </Grid>
-                            <Grid item xs={8}>
+                            <Grid item className={classes.headerTitleWrapper}>
                                 <Tooltip title={item.getTitle()}>
                                     <Typography variant='h6' noWrap>
                                         {item.getTitle()}
