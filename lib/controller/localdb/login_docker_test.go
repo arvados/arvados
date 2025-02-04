@@ -120,11 +120,11 @@ func (s *LoginDockerSuite) setUpConfig(c *check.C) {
 	intVal := make(map[string]string)
 	intURLs := make(map[string]interface{})
 	railsURL := "https://" + net.JoinHostPort(s.netAddr, s.railsProxy.Port())
-	intURLs[railsURL] = &intVal
+	intURLs[railsURL] = intVal
 	err = s.updateConfig(".Clusters.zzzzz.Services.RailsAPI.InternalURLs = $arg", intURLs)
 	c.Assert(err, check.IsNil)
 	intURLs = make(map[string]interface{})
-	intURLs["http://0.0.0.0:80"] = &intVal
+	intURLs["http://0.0.0.0:80"] = intVal
 	err = s.updateConfig(".Clusters.zzzzz.Services.Controller.InternalURLs = $arg", intURLs)
 	c.Assert(err, check.IsNil)
 }
@@ -146,8 +146,8 @@ func (s *LoginDockerSuite) updateConfig(expr string, arg map[string]interface{})
 // Update the test cluster configuration to use the named login method.
 func (s *LoginDockerSuite) enableLogin(key string) error {
 	login := make(map[string]interface{})
-	login["Test"] = &map[string]bool{"Enable": false}
-	login[key] = &map[string]bool{"Enable": true}
+	login["Test"] = map[string]bool{"Enable": false}
+	login[key] = map[string]bool{"Enable": true}
 	return s.updateConfig(".Clusters.zzzzz.Login |= (. * $arg)", login)
 }
 
