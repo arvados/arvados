@@ -254,12 +254,15 @@ func (s *LoginDockerSuite) TestLoginPAM(c *check.C) {
 	c.Assert(err, check.IsNil)
 	arvURL, err := s.startController("-v", setupPath+":/setup.sh:ro")
 	c.Assert(err, check.IsNil)
+
 	_, err = s.authenticate(arvURL, "foo-bar", "nosecret")
 	c.Check(err, check.ErrorMatches,
 		`401 Unauthorized: PAM: Authentication failure \(with username "foo-bar" and password\)`)
+
 	_, err = s.authenticate(arvURL, "expired", "secret")
 	c.Check(err, check.ErrorMatches,
 		`401 Unauthorized: PAM: Authentication failure; "Your account has expired; please contact your system administrator\."`)
+
 	aca, err := s.authenticate(arvURL, "foo-bar", "secret")
 	if c.Check(err, check.IsNil) {
 		user, err := s.getCurrentUser(arvURL, aca.TokenV2())
@@ -275,9 +278,11 @@ func (s *LoginDockerSuite) TestLoginLDAPBuiltin(c *check.C) {
 	c.Assert(err, check.IsNil)
 	arvURL, err := s.startController()
 	c.Assert(err, check.IsNil)
+
 	_, err = s.authenticate(arvURL, "foo-bar", "nosecret")
 	c.Check(err, check.ErrorMatches,
 		`401 Unauthorized: LDAP: Authentication failure \(with username "foo-bar" and password\)`)
+
 	aca, err := s.authenticate(arvURL, "foo-bar", "secret")
 	if c.Check(err, check.IsNil) {
 		user, err := s.getCurrentUser(arvURL, aca.TokenV2())
