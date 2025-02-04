@@ -802,11 +802,12 @@ def setup_config():
                     },
                     "LDAP": {
                         "Enable": False,
-                        # URL used by lib/controller/localdb/login_ldap_docker_test
+                        # Hostname used by lib/controller/localdb/login_docker_test
+                        # Other settings are the defaults for the
+                        # bitnami/openldap Docker image it uses
                         "URL": "ldap://arvados-test-openldap:1389/",
                         "StartTLS": False,
                         "SearchBase": "dc=example,dc=org",
-                        # Default credentials for osixia/openldap:1.3.0
                         "SearchBindUser": "cn=admin,dc=example,dc=org",
                         "SearchBindPassword": "adminpassword",
                     },
