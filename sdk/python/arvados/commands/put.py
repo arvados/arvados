@@ -140,7 +140,10 @@ physical storage devices (e.g., disks) should have a copy of each data
 block. Default is to use the server-provided default (if any) or 2.
 """)
 
-upload_opts.add_argument('--storage-classes', default="", help="""
+upload_opts.add_argument(
+    '--storage-classes',
+    type=arv_cmd.UniqueSplit(),
+    help="""
 Specify comma separated list of storage classes to be used when saving data to Keep.
 """)
 
@@ -1220,11 +1223,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     else:
         reporter = None
 
-    #  Split storage-classes argument
-    # Input may be pathological (empty string, all commas, etc.), which will be
-    # treated as if missing.
-    storage_classes = arvados.util.csv_to_list(args.storage_classes) or None
-
     # Setup exclude regex from all the --exclude arguments provided
     name_patterns = []
     exclude_paths = []
@@ -1283,7 +1281,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                                  owner_uuid = project_uuid,
                                  ensure_unique_name = True,
                                  update_collection = args.update_collection,
-                                 storage_classes=storage_classes,
+                                 storage_classes=args.storage_classes,
                                  logger=logger,
                                  dry_run=args.dry_run,
                                  follow_links=args.follow_links,

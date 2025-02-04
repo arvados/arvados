@@ -208,3 +208,27 @@ class TestRangedValue:
     def test_invalid_values(self, cmpint, s):
         with pytest.raises(ValueError):
             cmpint(s)
+
+
+class TestUniqueSplit:
+    @pytest.fixture(scope='class')
+    def argtype(self):
+        return cmd_util.UniqueSplit()
+
+    @pytest.mark.parametrize('arg', [
+        'foo',
+        'foo,bar',
+        'foo, bar, baz',
+        'foo , bar , baz , quux',
+    ])
+    def test_basic_parse(self, arg, argtype):
+        expected = ['foo', 'bar', 'baz', 'quux'][:arg.count(',') + 1]
+        assert argtype(arg) == expected
+
+    @pytest.mark.parametrize('arg', [
+        'foo, foo, bar',
+        'foo, bar, foo',
+        'foo, bar, bar',
+    ])
+    def test_uniqueness(self, arg, argtype):
+        assert argtype(arg) == ['foo', 'bar']

@@ -16,6 +16,7 @@ import pycurl
 
 import arvados
 import arvados.collection
+import arvados._internal
 from .pycurl import PyCurlHelper
 
 logger = logging.getLogger('arvados.http_import')
@@ -250,11 +251,8 @@ def check_cached_url(api, project_uuid, url, etags,
                      utcnow=datetime.datetime.utcnow,
                      varying_url_params="",
                      prefer_cached_downloads=False):
-
     logger.info("Checking Keep for %s", url)
-
-    varying_params = arvados.util.csv_to_list(varying_url_params)
-
+    varying_params = set(arvados._internal.parse_seq(varying_url_params))
     parsed = urllib.parse.urlparse(url)
     query = [q for q in urllib.parse.parse_qsl(parsed.query)
              if q[0] not in varying_params]

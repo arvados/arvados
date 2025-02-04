@@ -7,12 +7,15 @@ import dataclasses
 import errno
 import json
 import logging
+import operator
 import os
 import re
 import signal
 import sys
 
 import typing as t
+
+from .. import _internal
 
 FILTER_STR_RE = re.compile(r'''
 ^\(
@@ -36,6 +39,17 @@ class RangedValue(t.Generic[T]):
             return value
         else:
             raise ValueError(f"{value!r} is not a valid value")
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class UniqueSplit(t.Generic[T]):
+    """Parse a string into a list of unique values"""
+    split: t.Callable[[str], t.Iterable[str]]=operator.methodcaller('split', ',')
+    clean: t.Callable[[str], str]=operator.methodcaller('strip')
+    check: t.Callable[[str], bool]=bool
+
+    def __call__(self, s: str) -> T:
+        return list(_internal.uniq(_internal.parse_seq(s, self.split, self.clean, self.check)))
 
 
 retry_opt = argparse.ArgumentParser(add_help=False)

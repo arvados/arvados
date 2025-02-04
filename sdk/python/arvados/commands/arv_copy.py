@@ -122,7 +122,8 @@ use the destination's default replication-level setting (if found),
 or the fallback value 2.
 """)
     copy_opts.add_argument(
-        '--storage-classes', dest='storage_classes', default="",
+        '--storage-classes',
+        type=arv_cmd.UniqueSplit(),
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
     copy_opts.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
@@ -140,8 +141,6 @@ or the fallback value 2.
         description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
-
-    args.storage_classes = arvados.util.csv_to_list(args.storage_classes)
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -888,17 +887,16 @@ def copy_from_http(url, src, dst, args):
 
     project_uuid = args.project_uuid
     # Ensure string of varying parameters is well-formed
-    varying_url_params = ",".join(arvados.util.csv_to_list(args.varying_url_params))
     prefer_cached_downloads = args.prefer_cached_downloads
 
     cached = http_to_keep.check_cached_url(src, project_uuid, url, {},
-                                           varying_url_params=varying_url_params,
+                                           varying_url_params=args.varying_url_params,
                                            prefer_cached_downloads=prefer_cached_downloads)
     if cached[2] is not None:
         return copy_collection(cached[2], src, dst, args)
 
     cached = http_to_keep.http_to_keep(dst, project_uuid, url,
-                                       varying_url_params=varying_url_params,
+                                       varying_url_params=args.varying_url_params,
                                        prefer_cached_downloads=prefer_cached_downloads)
 
     if cached is not None:
