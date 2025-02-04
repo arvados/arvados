@@ -16,7 +16,7 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
 import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
-import { ResourcesState, getResourceFromState } from 'store/resources/resources';
+import { ResourcesState, getResource } from 'store/resources/resources';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
@@ -158,12 +158,12 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
 
             componentDidMount() {
-                const collection = getResourceFromState<CollectionResource>(this.props.match.params.id)(this.props.resources);
+                const collection = getResource<CollectionResource>(this.props.match.params.id)(this.props.resources);
                 if (this.state.item && collection) {
                     this.props.dispatch<any>(setSelectedResourceUuid(collection.uuid))
                     this.setState({
                         item: collection,
-                        itemOwner: getResourceFromState<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources),
+                        itemOwner: getResource<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources),
                         isOldVersion: collection.currentVersionUuid !== collection.uuid,
                     });
                 };
@@ -177,8 +177,8 @@ export const CollectionPanel = withStyles(styles)(connect(
 
             componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<CollectionPanelState>, snapshot?: any ): void {
                 const { currentUserUUID, resources } = this.props;
-                const collection = getResourceFromState<CollectionResource>(this.props.match.params.id)(this.props.resources);
-                const itemOwner = collection ? getResourceFromState<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources) : undefined;
+                const collection = getResource<CollectionResource>(this.props.match.params.id)(this.props.resources);
+                const itemOwner = collection ? getResource<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources) : undefined;
                 if (!this.state.item && collection) this.setState({ item: collection });
                 if (collection) {
                     if (prevState.item !== collection) {

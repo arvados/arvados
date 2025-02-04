@@ -18,7 +18,7 @@ import { Resource, ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
 import { kebabCase } from 'lodash';
-import { ResourcesState, getResourceFromState } from 'store/resources/resources';
+import { ResourcesState, getResource } from 'store/resources/resources';
 import { TreePicker } from 'store/tree-picker/tree-picker';
 import { isEqual } from 'lodash';
 
@@ -336,7 +336,7 @@ function treePickerToTreeItems<T>(tree: Tree<T>, resources: ResourcesState){
         const node = getNode(id)(tree) || initTreeNode({ id: '', value: 'InvalidNode' });
         const items = getNodeChildrenIds(node.id)(tree)
             .map(treePickerToTreeItems(tree, resources));
-        const resource = getResourceFromState<Resource>(node.id)(resources);
+        const resource = getResource<Resource>(node.id)(resources);
 
         return {
             active: node.active,

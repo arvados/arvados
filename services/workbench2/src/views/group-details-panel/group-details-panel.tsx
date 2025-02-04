@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { getResourceFromState } from 'store/resources/resources';
+import { getResource } from 'store/resources/resources';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-column';
 import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
@@ -132,7 +132,7 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
 
 const mapStateToProps = (state: RootState) => {
     const groupUuid = getProperty<string>(GROUP_DETAILS_MEMBERS_PANEL_ID)(state.properties);
-    const group = groupUuid ? getResourceFromState<GroupResource>(groupUuid)(state.resources) : undefined;
+    const group = groupUuid ? getResource<GroupResource>(groupUuid)(state.resources) : undefined;
     const userUuid = state.auth.user?.uuid;
 
     return {
