@@ -595,17 +595,15 @@ check_arvados_config() {
     # to the test database, so test scripts can write `psql` commands with no
     # additional configuration.
     export PGPASSFILE="$WORKSPACE/tmp/.pgpass"
-    if [[ "$ARVADOS_CONFIG" -nt "$PGPASSFILE" ]]; then
-        # services/api/config/arvados_config.rb hardcodes `arvados_test` as the
-        # database name.
-        export PGDATABASE=arvados_test
-        export PGHOST="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.host "$ARVADOS_CONFIG")"
-        export PGPORT="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.port "$ARVADOS_CONFIG")"
-        export PGUSER="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.user "$ARVADOS_CONFIG")"
-        local pgpassword="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.password "$ARVADOS_CONFIG")"
-        echo "$PGHOST:$PGPORT:$PGDATABASE:$PGUSER:$pgpassword" >"$PGPASSFILE"
-        chmod 0600 "$PGPASSFILE"
-    fi
+    # services/api/config/arvados_config.rb hardcodes `arvados_test` as the
+    # database name.
+    export PGDATABASE=arvados_test
+    export PGHOST="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.host "$ARVADOS_CONFIG")"
+    export PGPORT="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.port "$ARVADOS_CONFIG")"
+    export PGUSER="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.user "$ARVADOS_CONFIG")"
+    local pgpassword="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.password "$ARVADOS_CONFIG")"
+    echo "$PGHOST:$PGPORT:$PGDATABASE:$PGUSER:$pgpassword" >"$PGPASSFILE"
+    chmod 0600 "$PGPASSFILE"
 }
 
 do_install() {
