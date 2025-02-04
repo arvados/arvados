@@ -32,7 +32,16 @@ import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
-type CssRules = 'root' | 'container' | 'headerContainer' | 'headerTitleWrapper' | 'headerIconWrapper' | 'headerIcon' | 'tabContainerWrapper' | 'tabContainer';
+type CssRules =
+    | "root"
+    | "container"
+    | "headerContainer"
+    | "headerTitleWrapper"
+    | "headerIconWrapper"
+    | "headerIcon"
+    | "tabContainerWrapper"
+    | "tabContainer"
+    | "tab";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -68,6 +77,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tabContainer: {
         overflow: 'auto',
         padding: theme.spacing(1),
+    },
+    tab: {
+        borderBottom: `1px solid ${theme.palette.grey[300]}`,
     },
 });
 
@@ -222,7 +234,7 @@ export const DetailsPanel = withStyles(styles)(
                                 variant='fullWidth'
                                 value={(item.getTabLabels().length >= tabNr + 1) ? tabNr : 0}>
                                 {item.getTabLabels().map((tabLabel, idx) =>
-                                    <Tab key={`tab-label-${idx}`} data-cy={`details-panel-tab-${tabLabel}`} disableRipple label={tabLabel} />)
+                                    <Tab className={classes.tab} key={`tab-label-${idx}`} data-cy={`details-panel-tab-${tabLabel}`} disableRipple label={tabLabel} />)
                                 }
                             </Tabs>
                         </Grid>
