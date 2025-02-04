@@ -16,11 +16,12 @@ import { WorkflowResource } from 'models/workflow';
 import { ProcessOutputCollectionFiles } from 'views/process-panel/process-output-collection-files';
 import { WorkflowDetailsAttributes, RegisteredWorkflowPanelDataProps, getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
 import { getResource } from 'store/resources/resources';
-import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io-card';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { WorkflowProcessesPanel } from './workflow-processes-panel';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules =
     'root'
@@ -213,7 +214,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
             handleContextMenu = (event: React.MouseEvent<any>) => {
                 const { uuid, ownerUuid, name, description,
                     kind } = this.props.item;
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
+                const menuKind = this.props.dispatch<any>(resourceToMenuKind(uuid));
                 const resource = {
                     uuid,
                     ownerUuid,

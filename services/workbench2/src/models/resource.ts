@@ -111,3 +111,12 @@ export const extractUuidKind = (uuid: string = '') => {
             return match ? ResourceKind.COLLECTION : undefined;
     }
 };
+
+export const isResourceResource = (resource: any): resource is Resource => {
+    return resource && isResourceUuid(resource.uuid) && containsAllResourceProps(resource);
+};
+
+const containsAllResourceProps = (obj: any) => {
+    const resourceKeys = Object.keys({} as Resource);
+    return Object.keys(obj).every(key => resourceKeys.includes(key));
+};

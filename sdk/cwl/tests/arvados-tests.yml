@@ -562,3 +562,32 @@
   }
   tool: wf/output_dir_wf.cwl
   doc: "test same file appearing in output of both Directory and array"
+
+- job: 22466/input.yml
+  output: {
+    "metrics_file": {
+        "location": "metrics.txt",
+        "basename": "metrics.txt",
+        "class": "File",
+        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "size": 0
+    },
+    "deduped_bam": {
+        "location": "fake.deduped.bam",
+        "basename": "fake.deduped.bam",
+        "class": "File",
+        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "size": 0,
+        "secondaryFiles": [
+            {
+                "basename": "fake.deduped.bai",
+                "location": "fake.deduped.bai",
+                "class": "File",
+                "size": 0,
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709"
+            }
+        ]
+    }
+  }
+  tool: 22466-output-glob-expressions-secondaryfile.cwl
+  doc: "test bug 22466"

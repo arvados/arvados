@@ -2,28 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource, EditableResource } from "models/resource";
+import { Resource } from "models/resource";
 import { ResourceKind } from 'models/resource';
-import { GroupResource } from "models/group";
 
 export type ResourcesState = { [key: string]: Resource };
-
-export const getResourceWithEditableStatus = <T extends GroupResource & EditableResource>(id: string, userUuid?: string) =>
-    (state: ResourcesState): T | undefined => {
-        if (state[id] === undefined) { return; }
-
-        const resource = JSON.parse(JSON.stringify(state[id])) as T;
-
-        if (resource) {
-            if (resource.canWrite === undefined) {
-                resource.isEditable = (state[resource.ownerUuid] as GroupResource)?.canWrite;
-            } else {
-                resource.isEditable = resource.canWrite;
-            }
-        }
-
-        return resource;
-    };
 
 export const getResource = <T extends Resource = Resource>(id: string) =>
     (state: ResourcesState): T | undefined =>

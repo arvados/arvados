@@ -1807,6 +1807,62 @@ class TestContainer(unittest.TestCase):
             self.assertEqual(None, kwargs['body'].get('output_glob'))
 
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        ("Uncommitted",),
+        ("Committed",),
+        ("Final",),
+
+    ])
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_recheck_on_error(self, get_state, keepdocker):
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2"
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, False)
+
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+
+        # Test that if update() raises an exception, we re-check the
+        # container request record to see if we can proceed anyway.
+        runner.api.container_requests().update.side_effect = Exception("Invalid state transition")
+
+        runner.api.container_requests().create().execute.return_value = {
+            'state': 'Uncommitted',
+            'uuid': "zzzzz-xvhdp-zzzzzzzzzzzzzz1",
+            "container_uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+        }
+        runner.api.container_requests().get().execute.return_value = {
+            'state': get_state,
+            'uuid': "zzzzz-xvhdp-zzzzzzzzzzzzzz1",
+        }
+
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().get.assert_called_with(uuid="zzzzz-xvhdp-zzzzzzzzzzzzzz1")
+            assert j.attempt_count == (0 if get_state == "Uncommitted" else 1)
+
+
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()

@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
-import { resourceUuidToContextMenuKind } from './context-menu-actions';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
+import { ResourceKind } from 'models/resource';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { GroupClass } from 'models/group';
 
 describe('context-menu-actions', () => {
-    describe('resourceUuidToContextMenuKind', () => {
+    describe('resourceToMenuKind', () => {
         const middlewares = [thunk];
         const mockStore = configureStore(middlewares);
         const userUuid = 'zzzzz-tpzed-bbbbbbbbbbbbbbb';
@@ -47,8 +48,8 @@ describe('context-menu-actions', () => {
 
                 // FIXME: WB2 doesn't currently have context menu for trashed projects
                 // [projectUuid, false, true, true, false, ContextMenuKind.TRASHED_PROJECT],
-                [projectUuid, false, true, false, false, ContextMenuKind.PROJECT],
-                [projectUuid, false, true, false, true, ContextMenuKind.READONLY_PROJECT],
+                [projectUuid, false, true, false, false, ContextMenuKind.WRITEABLE_PROJECT],
+                [projectUuid, false, true, false, true, ContextMenuKind.WRITEABLE_PROJECT],
                 [projectUuid, false, false, true, false, ContextMenuKind.READONLY_PROJECT],
                 [projectUuid, false, false, false, false, ContextMenuKind.READONLY_PROJECT],
                 // [projectUuid, true, true, true, false, ContextMenuKind.TRASHED_PROJECT],
@@ -98,33 +99,40 @@ describe('context-menu-actions', () => {
                             ownerUuid: projectUuid,
                             currentVersionUuid: headCollectionUuid,
                             isTrashed: isTrashed,
+                            kind: ResourceKind.COLLECTION,
                         },
                         [oldCollectionUuid]: {
                             uuid: oldCollectionUuid,
                             currentVersionUuid: headCollectionUuid,
                             isTrashed: isTrashed,
+                            kind: ResourceKind.COLLECTION,
                         },
                         [projectUuid]: {
                             uuid: projectUuid,
                             ownerUuid: isEditable ? userUuid : otherUserUuid,
                             canWrite: isEditable,
                             groupClass: GroupClass.PROJECT,
+                            kind: ResourceKind.PROJECT,
                         },
                         [filterGroupUuid]: {
                             uuid: filterGroupUuid,
                             ownerUuid: isEditable ? userUuid : otherUserUuid,
                             canWrite: isEditable,
                             groupClass: GroupClass.FILTER,
+                            kind: ResourceKind.PROJECT,
                         },
                         [linkUuid]: {
                             uuid: linkUuid,
+                            kind: ResourceKind.LINK,
                         },
                         [userUuid]: {
                             uuid: userUuid,
+                            kind: ResourceKind.USER,
                         },
                         [containerRequestUuid]: {
                             uuid: containerRequestUuid,
                             ownerUuid: projectUuid,
+                            kind: ResourceKind.CONTAINER_REQUEST,
                         },
                     },
                     auth: {
@@ -138,7 +146,7 @@ describe('context-menu-actions', () => {
 
                 let menuKind;
                 try {
-                    menuKind = store.dispatch(resourceUuidToContextMenuKind(resourceUuid, forceReadonly))
+                    menuKind = store.dispatch(resourceToMenuKind(resourceUuid, forceReadonly))
                     expect(menuKind).to.equal(expected);
                 } catch (err) {
                     console.error('Failed Assertion: ', err.message);

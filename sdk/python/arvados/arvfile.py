@@ -23,8 +23,16 @@ from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
 from .retry import retry_method
 
+ADD = "add"
+"""Argument value for `Collection` methods to represent an added item"""
+DEL = "del"
+"""Argument value for `Collection` methods to represent a removed item"""
 MOD = "mod"
+"""Argument value for `Collection` methods to represent a modified item"""
+TOK = "tok"
+"""Argument value for `Collection` methods to represent an item with token differences"""
 WRITE = "write"
+"""Argument value for `Collection` methods to represent that a file was written to"""
 
 _logger = logging.getLogger('arvados.arvfile')
 
@@ -841,6 +849,8 @@ class ArvadosFile(object):
     def replace_contents(self, other):
         """Replace segments of this file with segments from another `ArvadosFile` object."""
 
+        eventtype = TOK if self == other else MOD
+
         map_loc = {}
         self._segments = []
         for other_segment in other.segments():
@@ -857,6 +867,7 @@ class ArvadosFile(object):
             self._segments.append(streams.Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
 
         self.set_committed(False)
+        self.parent.notify(eventtype, self.parent, self.name, (self, self))
 
     def __eq__(self, other):
         if other is self:

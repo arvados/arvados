@@ -291,11 +291,12 @@ class CollectionDirectoryBase(Directory):
 
     __slots__ = ("collection", "collection_root", "collection_record_file")
 
-    def __init__(self, parent_inode, inodes, enable_write, filters, collection, collection_root):
+    def __init__(self, parent_inode, inodes, enable_write, filters, collection, collection_root, poll_time=15):
         super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, enable_write, filters)
         self.collection = collection
         self.collection_root = collection_root
         self.collection_record_file = None
+        self._poll_time = poll_time
 
     def new_entry(self, name, item, mtime):
         name = self.sanitize_filename(name)
@@ -314,69 +315,88 @@ class CollectionDirectoryBase(Directory):
                 self._filters,
                 item,
                 self.collection_root,
+                poll_time=self._poll_time
             ))
             self._entries[name].populate(mtime)
         else:
-            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime, self._enable_write))
+            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime,
+                                                                        self._enable_write,
+                                                                        self._poll, self._poll_time))
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
+
         # These are events from the Collection object (ADD/DEL/MOD)
         # emitted by operations on the Collection object (like
         # "mkdirs" or "remove"), and by "update", which we need to
         # synchronize with our FUSE objects that are assigned inodes.
-        if collection == self.collection:
-            name = self.sanitize_filename(name)
+        if collection != self.collection:
+            return
 
-            #
-            # It's possible for another thread to have llfuse.lock and
-            # be waiting on collection.lock.  Meanwhile, we released
-            # llfuse.lock earlier in the stack, but are still holding
-            # on to the collection lock, and now we need to re-acquire
-            # llfuse.lock.  If we don't release the collection lock,
-            # we'll deadlock where we're holding the collection lock
-            # waiting for llfuse.lock and the other thread is holding
-            # llfuse.lock and waiting for the collection lock.
-            #
-            # The correct locking order here is to take llfuse.lock
-            # first, then the collection lock.
-            #
-            # Since collection.lock is an RLock, it might be locked
-            # multiple times, so we need to release it multiple times,
-            # keep a count, then re-lock it the correct number of
-            # times.
-            #
-            lockcount = 0
-            try:
-                while True:
-                    self.collection.lock.release()
-                    lockcount += 1
-            except RuntimeError:
-                pass
+        name = self.sanitize_filename(name)
 
-            try:
-                with llfuse.lock:
-                    with self.collection.lock:
-                        if event == arvados.collection.ADD:
-                            self.new_entry(name, item, self.mtime())
-                        elif event == arvados.collection.DEL:
-                            ent = self._entries[name]
-                            del self._entries[name]
+        #
+        # It's possible for another thread to have llfuse.lock and
+        # be waiting on collection.lock.  Meanwhile, we released
+        # llfuse.lock earlier in the stack, but are still holding
+        # on to the collection lock, and now we need to re-acquire
+        # llfuse.lock.  If we don't release the collection lock,
+        # we'll deadlock where we're holding the collection lock
+        # waiting for llfuse.lock and the other thread is holding
+        # llfuse.lock and waiting for the collection lock.
+        #
+        # The correct locking order here is to take llfuse.lock
+        # first, then the collection lock.
+        #
+        # Since collection.lock is an RLock, it might be locked
+        # multiple times, so we need to release it multiple times,
+        # keep a count, then re-lock it the correct number of
+        # times.
+        #
+        lockcount = 0
+        try:
+            while True:
+                self.collection.lock.release()
+                lockcount += 1
+        except RuntimeError:
+            pass
+
+        try:
+            with llfuse.lock:
+                with self.collection.lock:
+                    if event == arvados.collection.ADD:
+                        self.new_entry(name, item, self.mtime())
+                    elif event == arvados.collection.DEL:
+                        ent = self._entries[name]
+                        del self._entries[name]
+                        self.inodes.invalidate_entry(self, name)
+                        self.inodes.del_entry(ent)
+                    elif event == arvados.collection.MOD:
+                        # MOD events have (modified_from, newitem)
+                        newitem = item[1]
+                        entry = None
+                        if hasattr(newitem, "fuse_entry") and newitem.fuse_entry is not None:
+                            entry = newitem.fuse_entry
+                        elif name in self._entries:
+                            entry = self._entries[name]
+
+                        if entry is not None:
+                            entry.invalidate()
+                            self.inodes.invalidate_inode(entry)
+
+                        if name in self._entries:
                             self.inodes.invalidate_entry(self, name)
-                            self.inodes.del_entry(ent)
-                        elif event == arvados.collection.MOD:
-                            if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
-                                self.inodes.invalidate_inode(item.fuse_entry)
-                            elif name in self._entries:
-                                self.inodes.invalidate_inode(self._entries[name])
 
-                        if self.collection_record_file is not None:
-                            self.collection_record_file.invalidate()
-                            self.inodes.invalidate_inode(self.collection_record_file)
-            finally:
-                while lockcount > 0:
-                    self.collection.lock.acquire()
-                    lockcount -= 1
+                    # TOK and WRITE events just invalidate the
+                    # collection record file.
+
+                    if self.collection_record_file is not None:
+                        self.collection_record_file.invalidate()
+                        self.inodes.invalidate_inode(self.collection_record_file)
+        finally:
+            while lockcount > 0:
+                self.collection.lock.acquire()
+                lockcount -= 1
 
     def populate(self, mtime):
         self._mtime = mtime
@@ -470,16 +490,13 @@ class CollectionDirectory(CollectionDirectoryBase):
     __slots__ = ("api", "num_retries", "collection_locator",
                  "_manifest_size", "_writable", "_updating_lock")
 
-    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters=None, collection_record=None, explicit_collection=None):
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write,
+                 filters=None, collection_record=None,
+                 poll_time=15):
         super(CollectionDirectory, self).__init__(parent_inode, inodes, enable_write, filters, None, self)
         self.api = api
         self.num_retries = num_retries
         self._poll = True
-        try:
-            self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
-        except:
-            _logger.debug("Error getting blobSignatureTtl from discovery document: %s", sys.exc_info()[0])
-            self._poll_time = 60*60
 
         if isinstance(collection_record, dict):
             self.collection_locator = collection_record['uuid']
@@ -487,9 +504,25 @@ class CollectionDirectory(CollectionDirectoryBase):
         else:
             self.collection_locator = collection_record
             self._mtime = 0
+
+        is_uuid = (self.collection_locator is not None) and (uuid_pattern.match(self.collection_locator) is not None)
+
+        if is_uuid:
+            # It is a uuid, it may be updated upstream, so recheck it periodically.
+            self._poll_time = poll_time
+        else:
+            # It is not a uuid.  For immutable collections, collection
+            # only needs to be refreshed if it is very long lived
+            # (long enough that there's a risk of the blob signatures
+            # expiring).
+            try:
+                self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
+            except:
+                _logger.debug("Error getting blobSignatureTtl from discovery document: %s", sys.exc_info()[0])
+                self._poll_time = 60*60
+
+        self._writable = is_uuid and enable_write
         self._manifest_size = 0
-        if self.collection_locator:
-            self._writable = (uuid_pattern.match(self.collection_locator) is not None) and enable_write
         self._updating_lock = threading.Lock()
 
     def same(self, i):
@@ -500,8 +533,6 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     @use_counter
     def flush(self):
-        if not self.writable():
-            return
         with llfuse.lock_released:
             with self._updating_lock:
                 if self.collection.committed():
@@ -541,10 +572,6 @@ class CollectionDirectory(CollectionDirectoryBase):
     @use_counter
     def update(self):
         try:
-            if self.collection is not None and portable_data_hash_pattern.match(self.collection_locator):
-                # It's immutable, nothing to update
-                return True
-
             if self.collection_locator is None:
                 # No collection locator to retrieve from
                 self.fresh()
@@ -697,32 +724,8 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         # save to the backend
         super(TmpCollectionDirectory, self).__init__(
             parent_inode, inodes, True, filters, collection, self)
+        self._poll = False
         self.populate(self.mtime())
-
-    def on_event(self, *args, **kwargs):
-        super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
-        if self.collection_record_file is None:
-            return
-
-        # See discussion in CollectionDirectoryBase.on_event
-        lockcount = 0
-        try:
-            while True:
-                self.collection.lock.release()
-                lockcount += 1
-        except RuntimeError:
-            pass
-
-        try:
-            with llfuse.lock:
-                with self.collection.lock:
-                    self.collection_record_file.invalidate()
-                    self.inodes.invalidate_inode(self.collection_record_file)
-                    _logger.debug("%s invalidated collection record", self.inode)
-        finally:
-            while lockcount > 0:
-                self.collection.lock.acquire()
-                lockcount -= 1
 
     def collection_record(self):
         with llfuse.lock_released:
@@ -792,12 +795,15 @@ and the directory will appear if it exists.
 
 """.lstrip()
 
-    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters, pdh_only=False, storage_classes=None):
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
+                 pdh_only=False, storage_classes=None, poll_time=15):
         super(MagicDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.pdh_only = pdh_only
         self.storage_classes = storage_classes
+        self._poll = False
+        self._poll_time = poll_time
 
     def __setattr__(self, name, value):
         super(MagicDirectory, self).__setattr__(name, value)
@@ -815,7 +821,9 @@ and the directory will appear if it exists.
                     self.num_retries,
                     self._enable_write,
                     self._filters,
-                    self.pdh_only,
+                    pdh_only=self.pdh_only,
+                    storage_classes=self.storage_classes,
+                    poll_time=self._poll_time
                 ))
 
     def __contains__(self, k):
@@ -847,6 +855,7 @@ and the directory will appear if it exists.
                     self._filters,
                     project[u'items'][0],
                     storage_classes=self.storage_classes,
+                    poll_time=self._poll_time
                 ))
             else:
                 e = self.inodes.add_entry(CollectionDirectory(
@@ -857,6 +866,7 @@ and the directory will appear if it exists.
                     self._enable_write,
                     self._filters,
                     k,
+                    poll_time=self._poll_time
                 ))
 
             if e.update():
@@ -1018,14 +1028,14 @@ class ProjectDirectory(Directory):
                  "_current_user", "_full_listing", "storage_classes", "recursively_contained")
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
-                 project_object, poll=True, poll_time=3, storage_classes=None):
+                 project_object, poll_time=15, storage_classes=None):
         super(ProjectDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.project_object = project_object
         self.project_object_file = None
         self.project_uuid = project_object['uuid']
-        self._poll = poll
+        self._poll = True
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
         self._current_user = None
@@ -1051,12 +1061,13 @@ class ProjectDirectory(Directory):
     def createDirectory(self, i):
         common_args = (self.inode, self.inodes, self.api, self.num_retries, self._enable_write, self._filters)
         if collection_uuid_pattern.match(i['uuid']):
-            return CollectionDirectory(*common_args, i)
+            return CollectionDirectory(*common_args, i, poll_time=self._poll_time)
         elif group_uuid_pattern.match(i['uuid']):
-            return ProjectDirectory(*common_args, i, self._poll, self._poll_time, self.storage_classes)
+            return ProjectDirectory(*common_args, i, poll_time=self._poll_time,
+                                    storage_classes=self.storage_classes)
         elif link_uuid_pattern.match(i['uuid']):
             if i['head_kind'] == 'arvados#collection' or portable_data_hash_pattern.match(i['head_uuid']):
-                return CollectionDirectory(*common_args, i['head_uuid'])
+                return CollectionDirectory(*common_args, i['head_uuid'], poll_time=self._poll_time)
             else:
                 return None
         elif uuid_pattern.match(i['uuid']):
@@ -1212,10 +1223,7 @@ class ProjectDirectory(Directory):
     def writable(self):
         if not self._enable_write:
             return False
-        with llfuse.lock_released:
-            if not self._current_user:
-                self._current_user = self.api.users().current().execute(num_retries=self.num_retries)
-            return self._current_user["uuid"] in self.project_object.get("writable_by", [])
+        return self.project_object.get("can_write") is True
 
     def persisted(self):
         return True
@@ -1344,7 +1352,7 @@ class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
-                 exclude, poll=False, poll_time=60, storage_classes=None):
+                 exclude, poll_time=60, storage_classes=None):
         super(SharedDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
@@ -1462,7 +1470,6 @@ class SharedDirectory(Directory):
                     self._enable_write,
                     self._filters,
                     i[1],
-                    poll=self._poll,
                     poll_time=self._poll_time,
                     storage_classes=self.storage_classes,
                 ),

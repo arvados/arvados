@@ -9,6 +9,7 @@ import { filterResources } from '../resources/resources';
 import { ResourceKind, Resource, extractUuidKind } from 'models/resource';
 import { getTimeDiff } from 'common/formatters';
 import { ArvadosTheme } from 'common/custom-theme';
+import { memoize } from 'lodash';
 
 export interface Process {
     containerRequest: ContainerRequestResource;
@@ -40,7 +41,9 @@ export enum ProcessProperties {
  * @param uuid container request associated with process
  * @returns a Process object with containerRequest and optional container or undefined
  */
-export const getProcess = (uuid: string) => (resources: ResourcesState): Process | undefined => {
+
+// both memoizes are needed to avoid x18 calls
+export const getProcess = memoize((uuid: string) => memoize((resources: ResourcesState): Process | undefined => {
     if (extractUuidKind(uuid) === ResourceKind.CONTAINER_REQUEST) {
         const containerRequest = getResource<ContainerRequestResource>(uuid)(resources);
         if (containerRequest) {
@@ -54,7 +57,7 @@ export const getProcess = (uuid: string) => (resources: ResourcesState): Process
         }
     }
     return;
-};
+}));
 
 export const getSubprocesses = (uuid: string) => (resources: ResourcesState) => {
     const process = getProcess(uuid)(resources);
@@ -233,14 +236,14 @@ export const isProcessResumable = ({ containerRequest, container }: Process): bo
                     container.state === ContainerState.COMPLETE))
 );
 
-export const isProcessCancelable = ({ containerRequest, container }: Process): boolean => (
+export const isProcessCancelable = memoize(({ containerRequest, container }: Process): boolean => (
     containerRequest.priority !== null &&
     containerRequest.priority > 0 &&
     container !== undefined &&
     (container.state === ContainerState.QUEUED ||
         container.state === ContainerState.LOCKED ||
         container.state === ContainerState.RUNNING)
-);
+));
 
 const isSubprocess = (containerUuid: string) => (resource: Resource) =>
     resource.kind === ResourceKind.CONTAINER_REQUEST
