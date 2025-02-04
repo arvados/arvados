@@ -257,9 +257,9 @@ NextEvent:
 
 			availableVcpus -= rr.vcpus
 			availableRam -= rr.ram
+			alloc.gpuStack = rr.gpuStack
 
 			for i := 0; i < rr.gpus; i++ {
-				alloc.gpuStack = alloc.gpuStack
 				alloc.gpus = append(alloc.gpus, availableGpus[len(availableGpus)-1])
 				availableGpus = availableGpus[0 : len(availableGpus)-1]
 			}

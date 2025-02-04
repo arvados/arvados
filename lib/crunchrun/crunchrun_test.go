@@ -1234,7 +1234,7 @@ func (s *TestSuite) TestEnableCUDADeviceCount(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {"gpu": {"device_count": 2, "stack": "cuda", "hardware_target": ["9.0"], "driver_version": "11.0", vram: 8000000000}},
+    "runtime_constraints": {"gpu": {"device_count": 2, "stack": "cuda", "hardware_target": ["9.0"], "driver_version": "11.0", "vram": 8000000000}},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
 }`, nil, func() int {
