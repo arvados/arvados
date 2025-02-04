@@ -85,7 +85,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
 
         let typeFilter = useRef({});
 
-        const columns = dataExplorerId ? getDataExplorer(dataExplorer, dataExplorerId).columns as DataColumns<string, ProcessResource> : undefined;
+        const columns = dataExplorerId ? (getDataExplorer(dataExplorer, dataExplorerId).columns as DataColumns<string, ProcessResource>)[ProjectPanelRunColumnNames.TYPE] : undefined;
 
         useEffect(() => {
             if (dataExplorerId) {
