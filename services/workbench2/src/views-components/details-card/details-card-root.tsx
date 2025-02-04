@@ -5,24 +5,22 @@
 import React from 'react';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
-import { ProjectResource } from 'models/project';
 import { Resource, ResourceKind } from 'models/resource';
-import { UserResource } from 'models/user';
 import { UserCard } from './user-details-card';
 import { ProjectCard } from './project-details-card';
+import { getResource, ResourcesState } from 'store/resources/resources';
 
-const mapStateToProps = ({ resources, properties }: RootState) => {
-    const currentResource: Resource | undefined = resources[properties.currentRouteUuid];
-    return {
-        currentResource,
-    };
+const mapStateToProps = ({ resources }: RootState) => {
+    return { resources };
 };
 
 type DetailsCardProps = {
-    currentResource: ProjectResource | UserResource;
+    currentItemId: string | undefined;
+    resources: ResourcesState;
 };
 
-export const DetailsCardRoot = connect(mapStateToProps)(({ currentResource }: DetailsCardProps) => {
+export const DetailsCardRoot = connect(mapStateToProps)(({  currentItemId, resources }: DetailsCardProps) => {
+    const currentResource = currentItemId ? getResource<Resource>(currentItemId)(resources) : undefined;
     if (!currentResource) {
         return null;
     }

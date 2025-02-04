@@ -10,9 +10,10 @@ import { WorfklowPanelActionProps, WorkflowPanelDataProps } from './workflow-pan
 import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
 import { RootState } from 'store/store';
 import { WORKFLOW_PANEL_DETAILS_UUID } from 'store/workflow-panel/workflow-panel-actions';
+import { getProperty } from 'store/properties/properties';
 
 const mapStateToProps = (state: RootState): WorkflowPanelDataProps => {
-    const uuid: string | undefined  = state.properties[WORKFLOW_PANEL_DETAILS_UUID];
+    const uuid = getProperty<string>(WORKFLOW_PANEL_DETAILS_UUID)(state.properties);
     const workflows = state.runProcessPanel.workflows;
     return {
         uuid,
