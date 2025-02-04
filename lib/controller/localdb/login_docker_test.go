@@ -208,7 +208,7 @@ func (s *LoginDockerSuite) parseResponse(resp *http.Response, body any) error {
 	}
 	err = json.Unmarshal(respBody, &errResp)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s with malformed JSON response: %w", resp.Status, err)
 	} else if len(errResp.Errors) == 0 {
 		return fmt.Errorf("%s with no Errors in response", resp.Status)
 	} else {
