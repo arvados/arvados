@@ -23,9 +23,9 @@ from schema_salad.ref_resolver import file_uri, uri_file_path
 
 import arvados
 import arvados.config
+import arvados.util
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
-from arvados.util import storage_classes_from_config
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
@@ -962,7 +962,10 @@ The 'jobs' API is no longer supported.
             if storage_class_req and storage_class_req.get("finalStorageClass"):
                 storage_classes = aslist(storage_class_req["finalStorageClass"])
             else:
-                storage_classes = runtimeContext.storage_classes or storage_classes_from_config(self.api.config())
+                storage_classes = (
+                    runtimeContext.storage_classes
+                    or list(arvados.util.iter_storage_classes(self.api.config()))
+                )
 
             output_properties = {}
             output_properties_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")

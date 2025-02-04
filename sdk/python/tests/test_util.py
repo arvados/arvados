@@ -8,6 +8,7 @@ import subprocess
 import unittest
 
 import parameterized
+import pytest
 from unittest import mock
 
 import arvados
@@ -196,3 +197,36 @@ class KeysetListAllTestCase(unittest.TestCase):
         self.assertTrue(len(calls) >= 2, "list_func() not called enough to exhaust items")
         for args, kwargs in calls:
             self.assertEqual(set(kwargs.get('select', ())), expect_select)
+
+
+class TestIterStorageClasses:
+    @pytest.fixture
+    def mixed_config(self):
+        return {'StorageClasses': {
+            'foo': {'Default': False},
+            'bar': {'Default': True},
+            'baz': {'Default': True},
+        }}
+
+    @pytest.fixture
+    def nodef_config(self):
+        return {'StorageClasses': {
+            'foo': {'Default': False},
+            'bar': {'Default': False},
+        }}
+
+    def test_defaults(self, mixed_config):
+        assert list(arvados.util.iter_storage_classes(mixed_config)) == ['bar', 'baz']
+
+    def test_custom_check(self, mixed_config):
+        assert list(arvados.util.iter_storage_classes(mixed_config, bool)) == ['foo', 'bar', 'baz']
+
+    def test_default_fallback(self, nodef_config):
+        assert list(arvados.util.iter_storage_classes(nodef_config)) == ['default']
+
+    def test_custom_fallback(self, nodef_config):
+        assert list(arvados.util.iter_storage_classes(nodef_config, fallback='fb')) == ['fb']
+
+    def test_no_fallback(self, nodef_config):
+        assert list(arvados.util.iter_storage_classes(nodef_config, fallback='')) == []
+

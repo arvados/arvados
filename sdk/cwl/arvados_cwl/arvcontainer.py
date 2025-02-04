@@ -23,7 +23,7 @@ from cwltool.job import JobBase
 from cwltool.builder import substitute
 
 import arvados.collection
-from arvados.util import storage_classes_from_config
+import arvados.util
 
 import crunchstat_summary.summarizer
 import crunchstat_summary.reader
@@ -313,7 +313,10 @@ class ArvadosContainer(JobBase):
             if storage_class_req and storage_class_req.get("intermediateStorageClass"):
                 container_request["output_storage_classes"] = aslist(storage_class_req["intermediateStorageClass"])
             else:
-                container_request["output_storage_classes"] = runtimeContext.intermediate_storage_classes or storage_classes_from_config(self.arvrunner.api.config())
+                container_request["output_storage_classes"] = (
+                    runtimeContext.intermediate_storage_classes
+                    or list(arvados.util.iter_storage_classes(self.arvrunner.api.config()))
+                )
 
         cuda_req, _ = self.get_requirement("http://commonwl.org/cwltool#CUDARequirement")
         if cuda_req:
