@@ -85,6 +85,8 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
 
         let typeFilter = useRef({});
 
+        const columns = dataExplorerId ? getDataExplorer(dataExplorer, dataExplorerId).columns as DataColumns<string, ProcessResource> : undefined;
+
         useEffect(() => {
             if (dataExplorerId) {
                 const dataExplorerState = getDataExplorer(dataExplorer, dataExplorerId);
@@ -137,7 +139,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
                         }
                     });
             }
-        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter]);
+        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter, columns]);
 
         let tooltip = "";
         if (progressCounts) {
