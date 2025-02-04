@@ -33,6 +33,7 @@ func (s *singularitySuite) SetUpSuite(c *C) {
 		s.executor, err = newSingularityExecutor(c.Logf)
 		c.Assert(err, IsNil)
 	}
+	arvadostest.StartKeep(2, true)
 }
 
 func (s *singularitySuite) TearDownSuite(c *C) {
