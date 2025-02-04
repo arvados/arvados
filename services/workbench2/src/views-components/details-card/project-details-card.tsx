@@ -159,8 +159,11 @@ export const ProjectCard = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: ProjectCardProps) => {
+        if (!props.currentResource) {
+            return null;
+        }
         const { classes, currentResource, frozenByFullName, handleCardClick, isSelected } = props;
-        const { name, description, uuid } = currentResource as ProjectResource;
+        const { name, description, uuid } = currentResource;
         const [showDescription, setShowDescription] = React.useState(false);
 
         const toggleDescription = () => {
