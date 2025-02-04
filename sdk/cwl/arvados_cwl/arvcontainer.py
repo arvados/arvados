@@ -20,6 +20,7 @@ from cwltool.errors import WorkflowException
 from cwltool.process import UnsupportedRequirement, shortname
 from cwltool.utils import aslist, adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.job import JobBase
+from cwltool.builder import substitute
 
 import arvados.collection
 
@@ -39,6 +40,10 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 def cleanup_name_for_collection(name):
     return name.replace("/", " ")
+
+class OutputGlobError(RuntimeError):
+    pass
+
 
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
@@ -374,27 +379,111 @@ class ArvadosContainer(JobBase):
 
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
-            for gb in self.globpatterns:
-                gb = self.builder.do_eval(gb)
-                if not gb:
-                    continue
-                for gbeval in aslist(gb):
-                    if gbeval.startswith(self.outdir+"/"):
-                        gbeval = gbeval[len(self.outdir)+1:]
-                    while gbeval.startswith("./"):
-                        gbeval = gbeval[2:]
+            try:
+                for gp in self.globpatterns:
+                    pattern = ""
+                    gb = None
+                    if isinstance(gp, str):
+                        try:
+                            gb = self.builder.do_eval(gp)
+                        except:
+                            raise OutputGlobError("Expression evaluation failed")
+                    elif isinstance(gp, dict):
+                        # dict of two keys, 'glob' and 'pattern' which
+                        # means we should try to predict the names of
+                        # secondary files to capture.
+                        try:
+                            gb = self.builder.do_eval(gp["glob"])
+                        except:
+                            raise OutputGlobError("Expression evaluation failed")
+                        pattern = gp["pattern"]
 
-                    if gbeval in (self.outdir, "", "."):
-                        output_glob.append("**")
-                    elif gbeval.endswith("/"):
-                        output_glob.append(gbeval+"**")
+                        if "${" in pattern or "$(" in pattern:
+                            # pattern is an expression, need to evaluate
+                            # it first.
+                            if '*' in gb or "]" in gb:
+                                # glob has wildcards, so we can't
+                                # predict the secondary file name.
+                                # Capture everything.
+                                raise OutputGlobError("glob has wildcards, cannot predict secondary file name")
+
+                            # After evealuating 'glob' we have a
+                            # expected name we can provide to the
+                            # expression.
+                            nr, ne = os.path.splitext(gb)
+                            try:
+                                pattern = self.builder.do_eval(pattern, context={
+                                    "path": gb,
+                                    "basename": os.path.basename(gb),
+                                    "nameext": ne,
+                                    "nameroot": nr,
+                                })
+                            except:
+                                raise OutputGlobError("Expression evaluation failed")
+                            if isinstance(pattern, str):
+                                # If we get a string back, that's the expected
+                                # file name for the secondary file.
+                                gb = pattern
+                                pattern = ""
+                            else:
+                                # However, it is legal for this to return a
+                                # file object or an array.  In that case we'll
+                                # just capture everything.
+                                raise OutputGlobError("secondary file expression did not evaluate to a string")
                     else:
-                        output_glob.append(gbeval)
-                        output_glob.append(gbeval + "/**")
+                        # Should never happen, globpatterns is
+                        # constructed in arvtool from data that has
+                        # already gone through schema validation, but
+                        # still good to have a fallback.
+                        raise TypeError("Expected glob pattern to be a str or dict, was %s" % gp)
 
-            if "**" in output_glob:
-                # if it's going to match all, prefer not to provide it
-                # at all.
+                    if not gb:
+                        continue
+
+                    for gbeval in aslist(gb):
+                        if gbeval.startswith(self.outdir+"/"):
+                            gbeval = gbeval[len(self.outdir)+1:]
+                        while gbeval.startswith("./"):
+                            gbeval = gbeval[2:]
+
+                        if pattern:
+                            # pattern is not an expression or we would
+                            # have handled this earlier, so it must be
+                            # a simple substitution on the secondary
+                            # file name.
+                            #
+                            # 'pattern' was assigned in the earlier code block
+                            #
+                            # if there's a wild card in the glob, figure
+                            # out if there's enough text after it that the
+                            # suffix substitution can be done correctly.
+                            cutpos = max(gbeval.find("*"), gbeval.find("]"))
+                            if cutpos > -1:
+                                tail = gbeval[cutpos+1:]
+                                if tail.count(".") < pattern.count("^"):
+                                    # the known suffix in the glob has
+                                    # fewer dotted extensions than the
+                                    # substition pattern wants to remove,
+                                    # so we can't accurately predict
+                                    # correct name glob in advance.
+                                    gbeval = ""
+                            if gbeval:
+                                gbeval = substitute(gbeval, pattern)
+
+                        if gbeval in (self.outdir, "", "."):
+                            output_glob.append("**")
+                        elif gbeval.endswith("/"):
+                            output_glob.append(gbeval+"**")
+                        else:
+                            output_glob.append(gbeval)
+                            output_glob.append(gbeval + "/**")
+
+                if "**" in output_glob:
+                    # if it's going to match all, prefer not to provide it
+                    # at all.
+                    output_glob.clear()
+            except OutputGlobError as e:
+                logger.debug("Unable to set a more specific output_glob (this is not an error): %s", e.args[0], exc_info=e)
                 output_glob.clear()
 
             if output_glob:
