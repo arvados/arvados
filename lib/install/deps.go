@@ -192,6 +192,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jdk-headless",
 			"default-jre-headless",
 			"gettext",
+			"jq",
 			"libffi-dev",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests
