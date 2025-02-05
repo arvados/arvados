@@ -172,7 +172,9 @@ export function configureStore(history: History, services: ServiceRepository, co
     middlewares = pluginConfig.middlewares.reduce(reduceMiddlewaresFn, middlewares);
 
     const enhancer = composeWithDevTools({
-        /* options */
+        /* uncomment to turn on stack trace in redux-devtools
+        re-comment afterwards to prevent performance impact */
+                // trace: true,
     })(applyMiddleware(redirectToMiddleware, ...middlewares));
     const store = createStore(rootReducer, enhancer);
 

@@ -87,7 +87,7 @@ describe("FavoriteService", () => {
     });
 
     it("checks if resources are present in favorites", async () => {
-        const list = cy.stub().returns(Promise.resolve({ items: [{ headUuid: "foo" }] })).as("list");
+        const list = cy.stub().returns(Promise.resolve({ items: [{ headUuid: "foo", linkClass: LinkClass.STAR }] })).as("list");
         const listFilters = new FilterBuilder()
             .addIn("head_uuid", ["foo", "oof"])
             .addEqual("owner_uuid", "userUuid")

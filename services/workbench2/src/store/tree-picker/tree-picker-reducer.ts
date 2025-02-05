@@ -75,6 +75,7 @@ const receiveNodes = <V>(nodes: Array<TreeNode<V>>) => (parent: string) => (stat
         newState = setNode({ ...parentNode, children: [] })(state);
     }
     return nodes.reduce((tree, node) => {
+        if (!node.id) return tree;
         const preexistingNode = getNode(node.id)(state);
         if (preexistingNode) {
             node = { ...preexistingNode, value: node.value };
