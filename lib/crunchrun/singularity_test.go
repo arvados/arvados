@@ -219,25 +219,36 @@ func (s *singularitySuite) TestImageCache_SkipEmpty(c *C) {
 
 	err = e.LoadImage(setup.dockerImageID, arvadostest.BusyboxDockerImage(c), arvados.Container{RuntimeUserUUID: arvadostest.ActiveUserUUID}, mountdir, setup.containerClient)
 	c.Check(err, IsNil)
+	c.Check(e.imageFilename, Equals, e.tmpdir+"/image.sif")
 
 	// tmpdir should contain symlink to docker image archive.
 	tarListing, err := exec.Command("tar", "tvf", e.tmpdir+"/image.tar").CombinedOutput()
 	c.Check(err, IsNil)
 	c.Check(string(tarListing), Matches, `(?ms).*/layer.tar.*`)
 
-	// converted singularity image should be in tmpdir (instead of
-	// a collection).
-	fi, err := os.Stat(e.tmpdir + "/image.sif")
+	// converted singularity image should be non-empty.
+	fi, err := os.Stat(e.imageFilename)
 	if c.Check(err, IsNil) {
 		c.Check(int(fi.Size()), Not(Equals), 0)
 	}
 }
 
-func (s *singularitySuite) TestImageCache_Concurrent(c *C) {
-	n := 10
-	mountdirs := make([]string, n)
-	execs := make([]*singularityExecutor, n)
-	setups := make([]singularitySuiteLoadTestSetup, n)
+func (s *singularitySuite) TestImageCache_Concurrency_1(c *C) {
+	s.testImageCache(c, 1)
+}
+
+func (s *singularitySuite) TestImageCache_Concurrency_2(c *C) {
+	s.testImageCache(c, 2)
+}
+
+func (s *singularitySuite) TestImageCache_Concurrency_10(c *C) {
+	s.testImageCache(c, 10)
+}
+
+func (s *singularitySuite) testImageCache(c *C, concurrency int) {
+	mountdirs := make([]string, concurrency)
+	execs := make([]*singularityExecutor, concurrency)
+	setups := make([]singularitySuiteLoadTestSetup, concurrency)
 	for i := range execs {
 		mountdirs[i] = s.setupMount(c)
 		defer s.teardownMount(c, mountdirs[i])
@@ -261,9 +272,12 @@ func (s *singularitySuite) TestImageCache_Concurrent(c *C) {
 	wg.Wait()
 
 	for i, e := range execs {
-		fusepath0 := strings.TrimPrefix(execs[0].imageFilename, mountdirs[0])
 		fusepath := strings.TrimPrefix(e.imageFilename, mountdirs[i])
-		c.Check(fusepath, Equals, fusepath0)
+		// imageFilename should be in the fuse mount, not
+		// e.tmpdir.
 		c.Check(fusepath, Not(Equals), execs[0].imageFilename)
+		// Below fuse mountpoint, paths should all be equal.
+		fusepath0 := strings.TrimPrefix(execs[0].imageFilename, mountdirs[0])
+		c.Check(fusepath, Equals, fusepath0)
 	}
 }
