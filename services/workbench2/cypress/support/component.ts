@@ -39,5 +39,37 @@ import { mount } from 'cypress/react'
 
 Cypress.Commands.add('mount', mount)
 
+/*
+    The following is a workaraound for Arvados Issue #22483 which is known and persists in Cypress v14+:
+    https://github.com/cypress-io/cypress/issues/28644
+    The entire if statement can be removed once the bug is fixed by Cypress.
+*/
+if (window.Cypress) {
+    // Prevent chunk loading errors from failing tests
+    const originalOnError = window.onerror;
+    window.onerror = (msg, source, lineno, colno, err) => {
+        if (err && err.message && err.message.includes('Loading chunk')) {
+            console.warn('Chunk loading error intercepted:', err);
+            return false;
+        }
+        return originalOnError?.(msg, source, lineno, colno, err);
+    };
+
+    window.addEventListener('unhandledrejection', (event) => {
+        if (event.reason && event.reason.message && event.reason.message.includes('Loading chunk')) {
+            event.preventDefault();
+            console.warn('Chunk loading rejection intercepted:', event.reason);
+        }
+    });
+
+    window.addEventListener('error', (event) => {
+        if (event.error?.message?.includes('Loading chunk')) {
+            event.preventDefault();
+            cy.log('Chunk loading error detected - reloading page');
+            window.location.reload();
+        }
+    });
+}
+
 // Example use:
 // cy.mount(<MyComponent />)
