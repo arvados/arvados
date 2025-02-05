@@ -31,8 +31,6 @@ import { SubprocessProgressBar } from "components/subprocess-progress-bar/subpro
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
-import { getProperty } from "store/properties/properties";
-import { getResource } from "store/resources/resources";
 
 export enum ProjectPanelRunColumnNames {
     NAME = 'Name',
@@ -181,8 +179,8 @@ interface ProjectPanelRunProps {
 }
 
 const mapStateToProps = (state: RootState): Pick<ProjectPanelRunProps, 'project'> => {
-    const projectUuid = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
-    const project = projectUuid ? getResource<ProjectResource>(projectUuid)(state.resources) : undefined;
+    const projectUuid: string | undefined = state.properties[PROJECT_PANEL_CURRENT_UUID];
+    const project = projectUuid ? state.resources[projectUuid] as ProjectResource | undefined : undefined;
     return {
         project,
     };

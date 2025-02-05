@@ -87,7 +87,7 @@ export const ProjectPanel = withStyles(styles)(
             render() {
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
-                    <DetailsCardRoot currentItemId={this.props.currentItemId} />
+                    <DetailsCardRoot />
                     <MPVContainer
                         className={classes.mpvRoot}
                         panelStates={panelsData}
