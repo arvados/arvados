@@ -29,8 +29,8 @@ class ArvRuntimeContext(RuntimeContext):
         self.submit_runner_image = None
         self.wait = True
         self.cwl_runner_job = None
-        self.storage_classes = "default"
-        self.intermediate_storage_classes = "default"
+        self.storage_classes = []
+        self.intermediate_storage_classes = []
         self.current_container = None
         self.http_timeout = 300
         self.submit_runner_cluster = None

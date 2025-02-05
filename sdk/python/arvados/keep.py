@@ -774,7 +774,7 @@ class KeepClient(object):
             classes_confirmed = {}
             try:
                 scch = result['headers']['x-keep-storage-classes-confirmed']
-                for confirmation in scch.replace(' ', '').split(','):
+                for confirmation in arvados.util.csv_to_list(scch):
                     if '=' in confirmation:
                         stored_class, stored_copies = confirmation.split('=')[:2]
                         classes_confirmed[stored_class] = int(stored_copies)
