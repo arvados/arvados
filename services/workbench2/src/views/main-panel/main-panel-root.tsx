@@ -39,6 +39,7 @@ export interface MainPanelRootDataProps {
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
+    isDetailsPanelOpen: boolean;
     currentSideWidth: number;
     currentRoute: string;
 }
@@ -53,7 +54,7 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, loading, working, user, buildInfo, uuidPrefix,
         isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout,
-        sidePanelIsCollapsed, isTransitioning, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
+        sidePanelIsCollapsed, isTransitioning, isDetailsPanelOpen, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
 
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');
@@ -89,6 +90,7 @@ export const MainPanelRoot = withStyles(styles)(
                         sessionIdleTimeout={sessionIdleTimeout}
                         sidePanelIsCollapsed={sidePanelIsCollapsed}
                         isTransitioning={isTransitioning}
+                        isDetailsPanelOpen={isDetailsPanelOpen}
                         currentSideWidth={currentSideWidth}/>
                     : <InactivePanel />)
                     : <LoginPanel />}
