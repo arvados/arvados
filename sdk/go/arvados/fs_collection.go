@@ -568,6 +568,11 @@ func (fs *collectionFileSystem) repackTree(ctx context.Context, opts RepackOptio
 	if err != nil {
 		return 0, err
 	}
+	replaced, err := fs.replaceSegments(repacked)
+	if err != nil {
+		return 0, err
+	}
+	nReplaced := len(replaced)
 
 	fs.repackedMtx.Lock()
 	if len(repacked) == 0 {
@@ -593,11 +598,7 @@ func (fs *collectionFileSystem) repackTree(ctx context.Context, opts RepackOptio
 	}
 	fs.repackedMtx.Unlock()
 
-	replaced, err := fs.replaceSegments(repacked)
-	if err != nil {
-		return 0, err
-	}
-	return len(replaced), nil
+	return nReplaced, nil
 }
 
 func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment) (bool, error) {
