@@ -239,7 +239,22 @@ NextEvent:
 
 		for len(pending) > 0 {
 			rr := pending[0]
-			if rr.vcpus < 1 || rr.vcpus > maxVcpus || rr.ram < 1 || rr.ram > maxRam || rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
+			if rr.vcpus < 1 || rr.vcpus > maxVcpus {
+				logger.Infof("%v requested vcpus %v but maxVcpus is %v", rr.uuid, rr.vcpus, maxVcpus)
+				// resource request can never be fulfilled,
+				// return a zero struct
+				rr.ready <- ResourceAlloc{}
+				continue
+			}
+			if rr.ram < 1 || rr.ram > maxRam {
+				logger.Infof("%v requested ram %v but maxRam is %v", rr.uuid, rr.ram, maxRam)
+				// resource request can never be fulfilled,
+				// return a zero struct
+				rr.ready <- ResourceAlloc{}
+				continue
+			}
+			if rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
+				logger.Infof("%v requested %v gpus with stack %v but maxGpus is %v and gpuStack is %v", rr.uuid, rr.gpus, rr.gpuStack, maxGpus, gpuStack)
 				// resource request can never be fulfilled,
 				// return a zero struct
 				rr.ready <- ResourceAlloc{}
