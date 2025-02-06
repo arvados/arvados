@@ -203,10 +203,10 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 	maxGpus := 0
 	availableGpus := []string{}
 
-	if maxGpus = len(availableCUDAGpus); maxGpus > 0 {
+	if maxGpus = len(availableCUDAGpus); maxGpus > 0 && availableCUDAGpus[0] != "" {
 		gpuStack = "cuda"
 		availableGpus = availableCUDAGpus
-	} else if maxGpus = len(availableROCmGpus); maxGpus > 0 {
+	} else if maxGpus = len(availableROCmGpus); maxGpus > 0 && availableROCmGpus[0] != "" {
 		gpuStack = "rocm"
 		availableGpus = availableROCmGpus
 	}
@@ -254,7 +254,7 @@ NextEvent:
 				continue
 			}
 			if rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
-				logger.Infof("%v requested %v gpus with stack %v but maxGpus is %v and gpuStack is %v", rr.uuid, rr.gpus, rr.gpuStack, maxGpus, gpuStack)
+				logger.Infof("%v requested %v gpus with stack %v but maxGpus is %v and gpuStack is %q", rr.uuid, rr.gpus, rr.gpuStack, maxGpus, gpuStack)
 				// resource request can never be fulfilled,
 				// return a zero struct
 				rr.ready <- ResourceAlloc{}
