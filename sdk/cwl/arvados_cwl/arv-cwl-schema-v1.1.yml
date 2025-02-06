@@ -371,7 +371,7 @@ $graph:
         Maximum number of GPU devices to request.  If not specified,
         same as `rocmDeviceCountMin`.
     rocmVram:
-      type: ['null', long, cwl:Expression]
+      type: [long, cwl:Expression]
       default: 1024
       doc: |
         Amount of VRAM to request, in mebibytes (2**20).

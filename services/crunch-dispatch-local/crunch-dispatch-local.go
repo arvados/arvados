@@ -229,7 +229,7 @@ NextEvent:
 				availableGpus = append(availableGpus, gpu)
 			}
 
-			logger.Infof("%v released allocation (cpus: %v ram: %v gpus: %v %v); now available (cpus: %v ram: %v gpus: %v)",
+			logger.Infof("%v released allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
 				availableVcpus, availableRam, availableGpus)
 
@@ -265,7 +265,7 @@ NextEvent:
 			}
 			rr.ready <- alloc
 
-			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v %v); now available (cpus: %v ram: %v gpus: %v)",
+			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
 				availableVcpus, availableRam, availableGpus)
 
