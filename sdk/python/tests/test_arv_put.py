@@ -1442,6 +1442,11 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(len(collection['storage_classes_desired']), 1)
         self.assertEqual(collection['storage_classes_desired'][0], 'default')
 
+    def test_put_collection_with_duplicate_and_malformed_storage_classes_specified(self):
+        collection = self.run_and_find_collection("", ['--storage-classes', ' foo, bar  ,baz,,  bar, foo, , ,'])
+        self.assertEqual(len(collection['storage_classes_desired']), 3)
+        self.assertEqual(collection['storage_classes_desired'], ['foo', 'bar', 'baz'])
+
     def test_exclude_filename_pattern(self):
         tmpdir = self.make_tmpdir()
         tmpsubdir = os.path.join(tmpdir, 'subdir')

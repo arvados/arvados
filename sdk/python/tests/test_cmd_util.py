@@ -12,6 +12,7 @@ import unittest
 
 from pathlib import Path
 
+import pytest
 from parameterized import parameterized
 
 import arvados.commands._util as cmd_util
@@ -192,3 +193,42 @@ class JSONArgumentValidationTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as exc_check:
             parser(json_value)
         self.assertEqual(exc_check.exception.args, (json_value,))
+
+
+class TestRangedValue:
+    @pytest.fixture(scope='class')
+    def cmpint(self):
+        return cmd_util.RangedValue(int, range(-1, 2))
+
+    @pytest.mark.parametrize('s', ['-1', '0', '1'])
+    def test_valid_values(self, cmpint, s):
+        assert cmpint(s) == int(s)
+
+    @pytest.mark.parametrize('s', ['foo', '-2', '2', '0.2', '', ' '])
+    def test_invalid_values(self, cmpint, s):
+        with pytest.raises(ValueError):
+            cmpint(s)
+
+
+class TestUniqueSplit:
+    @pytest.fixture(scope='class')
+    def argtype(self):
+        return cmd_util.UniqueSplit()
+
+    @pytest.mark.parametrize('arg', [
+        'foo',
+        'foo,bar',
+        'foo, bar, baz',
+        'foo , bar , baz , quux',
+    ])
+    def test_basic_parse(self, arg, argtype):
+        expected = ['foo', 'bar', 'baz', 'quux'][:arg.count(',') + 1]
+        assert argtype(arg) == expected
+
+    @pytest.mark.parametrize('arg', [
+        'foo, foo, bar',
+        'foo, bar, foo',
+        'foo, bar, bar',
+    ])
+    def test_uniqueness(self, arg, argtype):
+        assert argtype(arg) == ['foo', 'bar']
