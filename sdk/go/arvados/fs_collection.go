@@ -673,67 +673,101 @@ func (fs *collectionFileSystem) replaceSegments(m map[BlockSegment]BlockSegment)
 	return changed, nil
 }
 
+// See (*collectionFileSystem)planRepack.
+var repackBucketThreshold = []struct {
+	maxIn  int
+	minOut int
+}{
+	{maxIn: 1 << 23, minOut: 1 << 25},
+	{maxIn: 1 << 21, minOut: 1 << 24},
+	{maxIn: 1 << 19, minOut: 1 << 22},
+	{maxIn: 1 << 17, minOut: 1 << 20},
+	{maxIn: 1 << 15, minOut: 1 << 18},
+	{maxIn: 1 << 13, minOut: 1 << 16},
+	{maxIn: 1 << 11, minOut: 1 << 14},
+	{maxIn: 1 << 9, minOut: 1 << 12},
+	{maxIn: 1 << 7, minOut: 1 << 10},
+	{maxIn: 1 << 5, minOut: 1 << 8},
+	{maxIn: 1 << 3, minOut: 1 << 6},
+}
+
 // Produce a list of segment merges that would result in a more
 // efficient packing.  Each element in the returned plan is a slice of
 // 2+ segments with a combined length no greater than maxBlockSize.
 //
 // Caller must have lock on given root node.
 func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptions, root *dirnode) (plan [][]storedSegment, err error) {
-	var tomerge []storedSegment
+	if opts.CachedOnly {
+		// TODO: use diskCacheProber
+		return nil, errors.New("CacheOnly not yet implemented")
+	}
+	// TODO: depending on opts, plan as if large but underutilized
+	// blocks are short blocks.
+	blockSize := make(map[string]int)
+	bucketBlocks := make([][]string, len(repackBucketThreshold))
 	root.walkSegments(func(seg segment) segment {
 		if ss, ok := seg.(storedSegment); ok {
-			if ss.size < maxBlockSize/2 {
-				// Regardless of segment length, the
-				// block itself is short, so we should
-				// try to repack.
-				tomerge = append(tomerge, ss)
+			hash := stripAllHints(ss.locator)
+			if blockSize[hash] == 0 {
+				blockSize[hash] = ss.size
+				for bucket, threshold := range repackBucketThreshold {
+					if ss.size >= threshold.maxIn {
+						break
+					}
+					bucketBlocks[bucket] = append(bucketBlocks[bucket], hash)
+				}
 			}
-			// TODO: also repack if segment length is
-			// short and block is long but underutilized.
 		}
 		return seg
 	})
-	if len(tomerge) < 2 {
-		return nil, nil
-	}
-	// Below we'll copy (non-duplicate) segments from tomerge to
-	// pendingPlan.  Our return value "plan" will consist of
-	// slices of pendingPlan's backing array.
-	pendingPlan := make([]storedSegment, 0, len(tomerge))
-	pendingLen := 0
-	dedup := make(map[BlockSegment]bool)
-	for _, seg := range tomerge {
-		if bs := seg.blockSegment().StripAllHints(); dedup[bs] {
-			// We already decided [not] to merge an
-			// identical segment, so there's no need to
-			// repeat the decision, or include it in any
-			// future merge.
-			continue
-		} else {
-			dedup[bs] = true
+	// blockPlan[oldhash] == idx means plan[idx] will merge all
+	// segments in <oldhash> into a new block.
+	blockPlan := make(map[string]int)
+	pending := []string{}
+	for bucket := range bucketBlocks {
+		pending = pending[:0]
+		pendingSize := 0
+		for _, hash := range bucketBlocks[bucket] {
+			if _, planned := blockPlan[hash]; planned {
+				// already planned to merge this block
+				// in a different bucket
+				continue
+			}
+			size := blockSize[hash]
+			if pendingSize+size > maxBlockSize {
+				for _, hash := range pending {
+					blockPlan[hash] = len(plan)
+				}
+				plan = append(plan, nil)
+				pending = pending[:0]
+				pendingSize = 0
+			}
+			pendingSize += size
+			pending = append(pending, hash)
 		}
-		if opts.CachedOnly {
-			// TODO: use diskCacheProber
-			return nil, errors.New("CacheOnly not yet implemented")
+		if pendingSize >= repackBucketThreshold[bucket].minOut {
+			for _, hash := range pending {
+				blockPlan[hash] = len(plan)
+			}
+			plan = append(plan, nil)
 		}
-		if pendingLen+seg.length > maxBlockSize {
-			plan = append(plan, pendingPlan)
-			// Plan references slices of pendingPlan's
-			// backing array, so we need to use the unused
-			// portion of pendingPlan here instead of
-			// reusing pendingPlan[:0].
-			pendingPlan = pendingPlan[len(pendingPlan):]
-			pendingLen = 0
+	}
+	// We have decided which blocks to merge.  Now we collect all
+	// of the segments that reference those blocks, and return
+	// that as the final plan.
+	root.walkSegments(func(seg segment) segment {
+		ss, ok := seg.(storedSegment)
+		if !ok {
+			return seg
 		}
-		pendingPlan = append(pendingPlan, seg)
-		pendingLen += seg.length
-	}
-	if pendingLen >= maxBlockSize/2 {
-		plan = append(plan, pendingPlan)
-	} else {
-		// TODO: repack very small segments even if less than
-		// maxBlockSize/2
-	}
+		hash := stripAllHints(ss.locator)
+		idx, planning := blockPlan[hash]
+		if !planning {
+			return seg
+		}
+		plan[idx] = append(plan[idx], ss)
+		return seg
+	})
 	return plan, nil
 }
 

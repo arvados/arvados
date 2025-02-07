@@ -1900,6 +1900,10 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 		})
 		return len(blocks)
 	}
+	tRepackNoop := time.Duration(0)
+	nRepackNoop := 0
+	tRepackTotal := time.Duration(0)
+	nRepackTotal := 0
 	for _, path := range bytes.Split(buf, []byte("\n")) {
 		path := string(path)
 		if path == "" ||
@@ -1931,16 +1935,32 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 
 		err = cfs.Flush("", true)
 		c.Assert(err, check.IsNil)
+		t0 := time.Now()
 		_, err = cfs.Repack(context.Background(), RepackOptions{})
+		tRepack := time.Since(t0)
+		tRepackTotal += tRepack
+		nRepackTotal++
 		c.Assert(err, check.IsNil)
 
-		if bw := bytesWritten(); bw > bytesContent+bytesRewritten {
+		if bw := bytesWritten(); bytesRewritten < bw-bytesContent {
+			c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d -- just rewrote %d in %v", bytesContent, bw, bytesRewritten, blocksInManifest(), bw-bytesContent-bytesRewritten, tRepack)
 			bytesRewritten = bw - bytesContent
-			c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", bytesContent, bw, bytesRewritten, blocksInManifest())
+			if bytesRewritten/16 > bytesContent {
+				// Rewriting data >16x on average
+				// means something is terribly wrong
+				// -- give up now instead of going
+				// OOM.
+				c.FailNow()
+			}
+		} else {
+			tRepackNoop += tRepack
+			nRepackNoop++
 		}
 	}
 	c.Assert(err, check.IsNil)
 	c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", bytesContent, bytesWritten(), bytesRewritten, blocksInManifest())
+	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
+	c.Logf("spent %v on %d Repack calls that had no effect, average %v per call", tRepackNoop, nRepackNoop, tRepackNoop/time.Duration(nRepackNoop))
 }
 
 func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
