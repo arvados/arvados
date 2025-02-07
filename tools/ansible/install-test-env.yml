@@ -158,6 +158,7 @@
           - "127.0.0.1/24"
           - "::1/128"
 
+    # Workbench build dependencies
     - name: Install Node.js
       become: yes
       ansible.builtin.unarchive:
@@ -183,6 +184,24 @@
         - npm
         - yarn
         - yarnpkg
+    # Configuration to run Workbench
+    - name: Configure Workbench sysctls
+      become: yes
+      ansible.builtin.copy:
+        content: |
+          ### This file is managed by Ansible
+          # React sets many inotify watchers and needs the limit increased.
+          fs.inotify.max_user_watches = 524288
+        dest: /etc/sysctl.d/arvados-workbench.conf
+        owner: root
+        group: root
+        mode: 0644
+      register: workbench_sysctl
+    - name: Load Workbench sysctls
+      when: workbench_sysctl.changed
+      become: yes
+      ansible.builtin.command:
+        cmd: "sysctl --load={{ workbench_sysctl.dest|quote }}"
 
     - ansible.builtin.include_role:
         name: arvados_database
