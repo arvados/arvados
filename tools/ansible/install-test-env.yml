@@ -79,6 +79,9 @@
           # build/run-tests.sh
           - bsdextrautils
           - net-tools
+          # build/run-build-packages*.sh
+          - createrepo-c
+          - dpkg-dev
           # doc
           - linkchecker
           # lib/controller
