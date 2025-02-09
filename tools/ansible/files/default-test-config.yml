@@ -13,5 +13,5 @@ Clusters:
         host: localhost
         port: "5432"
         dbname: arvados_test
-        user: arvados_test
+        user: arvados
         password: insecure_arvados_test
