@@ -188,23 +188,32 @@
         - yarn
         - yarnpkg
     # Configuration to run Workbench
-    - name: Configure Workbench sysctls
+    - name: Check fs.inotify.max_user_watches sysctl value
+      ansible.builtin.command:
+        cmd: /sbin/sysctl --values fs.inotify.max_user_watches
+      register: max_user_watches_value
+    - name: Increase fs.inotify.max_user_watches
+      vars:
+        max_user_watches_wanted: 524288
+      when: "max_user_watches_value.stdout|int < max_user_watches_wanted"
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - sysctl
+          - "fs.inotify.max_user_watches={{ max_user_watches_wanted }}"
+      register: max_user_watches_set
+    - name: Set fs.inotify.max_user_watches permanently
+      when: max_user_watches_set.changed
       become: yes
       ansible.builtin.copy:
         content: |
           ### This file is managed by Ansible
           # React sets many inotify watchers and needs the limit increased.
-          fs.inotify.max_user_watches = 524288
+          {{ max_user_watches_set.stdout }}
         dest: /etc/sysctl.d/arvados-workbench.conf
         owner: root
         group: root
         mode: 0644
-      register: workbench_sysctl
-    - name: Load Workbench sysctls
-      when: workbench_sysctl.changed
-      become: yes
-      ansible.builtin.command:
-        cmd: "sysctl --load={{ workbench_sysctl.dest|quote }}"
 
     - ansible.builtin.include_role:
         name: arvados_database
