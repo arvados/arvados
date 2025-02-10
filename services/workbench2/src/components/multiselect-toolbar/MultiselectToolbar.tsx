@@ -93,7 +93,7 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarDataProps & MultiselectToolbarActionProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
+        const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null

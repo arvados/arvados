@@ -4,7 +4,7 @@
 
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 
-export type ComponentCssRules = "toolbarIcon" | "toolbarButton";
+export type ComponentCssRules = "toolbarIcon" | "toolbarButton" | "disabled";
 
 export const componentItemStyles: CustomStyleRulesCallback<ComponentCssRules> = theme => ({
     toolbarIcon: {
@@ -13,5 +13,9 @@ export const componentItemStyles: CustomStyleRulesCallback<ComponentCssRules> = 
     toolbarButton: {
         width: '3rem',
         height: '3rem',
+    },
+    disabled: {
+        color: theme.palette.grey[400],
+        cursor: 'none',
     },
 });

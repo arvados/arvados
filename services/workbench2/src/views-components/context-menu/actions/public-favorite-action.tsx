@@ -11,11 +11,14 @@ import { PublicFavoritesState } from "store/public-favorites/public-favorites-re
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { componentItemStyles, ComponentCssRules } from "../component-item-styles";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
+import classNames from "classnames";
 
-const mapStateToProps = (state: RootState): Pick<TogglePublicFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'publicFavorites'> => ({
+const mapStateToProps = (state: RootState): Pick<TogglePublicFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'publicFavorites' | 'disabledButtons'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
     selectedResourceUuid: state.selectedResourceUuid,
     publicFavorites: state.publicFavorites,
+    disabledButtons: new Set<string>(state.multiselect.disabledButtons),
 });
 
 type TogglePublicFavoriteActionProps = {
@@ -23,19 +26,24 @@ type TogglePublicFavoriteActionProps = {
     contextMenuResourceUuid: string;
     selectedResourceUuid?: string;
     publicFavorites: PublicFavoritesState;
+    disabledButtons: Set<string>,
     onClick: () => void;
 };
 
 export const TogglePublicFavoriteAction = connect(mapStateToProps)(withStyles(componentItemStyles)((props: TogglePublicFavoriteActionProps & WithStyles<ComponentCssRules>) => {
-    const publicFaveUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
-    const isPublicFavorite = publicFaveUuid !== undefined && props.publicFavorites[publicFaveUuid] === true;
+    const { classes, onClick, isInToolbar, contextMenuResourceUuid, selectedResourceUuid, publicFavorites, disabledButtons } = props;
+
+    const publicFaveUuid = isInToolbar ? selectedResourceUuid : contextMenuResourceUuid;
+    const isPublicFavorite = publicFaveUuid !== undefined && publicFavorites[publicFaveUuid] === true;
+    const isDisabled = disabledButtons.has(ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES);
 
     return <Tooltip title={isPublicFavorite ? "Remove from public favorites" : "Add to public favorites"}>
-        {props.isInToolbar ? (
+        {isInToolbar ? (
             <IconButton
-                className={props.classes.toolbarButton}
-                onClick={props.onClick}>
-                <ListItemIcon className={props.classes.toolbarIcon}>
+                className={classes.toolbarButton}
+                disabled={isDisabled}
+                onClick={onClick}>
+                <ListItemIcon className={classNames(classes.toolbarIcon, isDisabled && classes.disabled)}>
                     {isPublicFavorite
                         ? <PublicFavoriteIcon />
                         : <PublicFavoriteIcon />}
@@ -44,7 +52,7 @@ export const TogglePublicFavoriteAction = connect(mapStateToProps)(withStyles(co
         ) : (
             <ListItem
                 button
-                onClick={props.onClick}>
+                onClick={onClick}>
                 <ListItemIcon>
                     {isPublicFavorite
                         ? <PublicFavoriteIcon />

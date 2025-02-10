@@ -11,31 +11,39 @@ import { FavoritesState } from "store/favorites/favorites-reducer";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { componentItemStyles, ComponentCssRules } from "../component-item-styles";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
+import classNames from "classnames";
 
 type ToggleFavoriteActionProps = {
     isInToolbar: boolean,
     contextMenuResourceUuid: string,
     selectedResourceUuid?: string,
     favorites: FavoritesState,
+    disabledButtons: Set<string>,
     onClick: () => void
 }
 
-const mapStateToProps = (state: RootState): Pick<ToggleFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'favorites'> => ({
+const mapStateToProps = (state: RootState): Pick<ToggleFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'favorites' | 'disabledButtons'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
     selectedResourceUuid: state.selectedResourceUuid,
     favorites: state.favorites,
+    disabledButtons: new Set<string>(state.multiselect.disabledButtons),
 });
 
 export const ToggleFavoriteAction = connect(mapStateToProps)(withStyles(componentItemStyles)((props: ToggleFavoriteActionProps & WithStyles<ComponentCssRules>) => {
-    const faveResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
-    const isFavorite = faveResourceUuid !== undefined && props.favorites[faveResourceUuid] === true;
+    const { classes, onClick, isInToolbar, contextMenuResourceUuid, selectedResourceUuid, favorites, disabledButtons } = props;
+
+    const faveResourceUuid = isInToolbar ? selectedResourceUuid : contextMenuResourceUuid;
+    const isFavorite = faveResourceUuid !== undefined && favorites[faveResourceUuid] === true;
+    const isDisabled = disabledButtons.has(ContextMenuActionNames.ADD_TO_FAVORITES);
 
     return <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
         {props.isInToolbar ? (
             <IconButton
-                className={props.classes.toolbarButton}
-                onClick={props.onClick}>
-                <ListItemIcon className={props.classes.toolbarIcon}>
+                className={classes.toolbarButton}
+                disabled={isDisabled}
+                onClick={onClick}>
+                <ListItemIcon className={classNames(classes.toolbarIcon, isDisabled && classes.disabled)}>
                     {isFavorite
                         ? <RemoveFavoriteIcon />
                         : <AddFavoriteIcon />}
@@ -44,7 +52,7 @@ export const ToggleFavoriteAction = connect(mapStateToProps)(withStyles(componen
         ) : (
             <ListItem
                 button
-                onClick={props.onClick}>
+                onClick={onClick}>
                 <ListItemIcon>
                     {isFavorite
                         ? <RemoveFavoriteIcon />

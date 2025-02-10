@@ -15,40 +15,48 @@ import { ResourcesState } from "store/resources/resources";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { componentItemStyles, ComponentCssRules } from "../component-item-styles";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
+import classNames from "classnames";
 
 type ToggleLockActionProps = {
     isInToolbar: boolean;
     selectedResourceUuid: string;
     contextMenuResourceUuid: string,
     resources: ResourcesState,
+    disabledButtons: Set<string>,
     onClick: () => void;
 };
 
-const mapStateToProps = (state: RootState): Pick<ToggleLockActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources'> => ({
+const mapStateToProps = (state: RootState): Pick<ToggleLockActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources' | 'disabledButtons'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
     selectedResourceUuid: state.selectedResourceUuid,
     resources: state.resources,
+    disabledButtons: new Set<string>(state.multiselect.disabledButtons),
 });
 
 export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentItemStyles)(memoize((props: ToggleLockActionProps & WithStyles<ComponentCssRules>) => {
-    const lockResourceUuid = props.isInToolbar ? props.selectedResourceUuid : props.contextMenuResourceUuid;
-    const resource = getResource<GroupResource>(lockResourceUuid)(props.resources);
-    const isLocked = resource ? resourceIsFrozen(resource, props.resources) : false;
+    const { classes, onClick, isInToolbar, contextMenuResourceUuid, selectedResourceUuid, resources, disabledButtons } = props;
+
+    const lockResourceUuid = isInToolbar ? selectedResourceUuid : contextMenuResourceUuid;
+    const resource = getResource<GroupResource>(lockResourceUuid)(resources);
+    const isLocked = resource ? resourceIsFrozen(resource, resources) : false;
+    const isDisabled = disabledButtons.has(ContextMenuActionNames.FREEZE_PROJECT);
 
     return (
         <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
-            {props.isInToolbar ? (
+            {isInToolbar ? (
                 <IconButton
-                className={props.classes.toolbarButton}
-                onClick={props.onClick}>
-                <ListItemIcon className={props.classes.toolbarIcon}>
+                className={classes.toolbarButton}
+                disabled={isDisabled}
+                onClick={onClick}>
+                <ListItemIcon className={classNames(classes.toolbarIcon, isDisabled && classes.disabled)}>
                         {isLocked
                             ? <UnfreezeIcon />
                             : <FreezeIcon />}
                     </ListItemIcon>
                 </IconButton>
             ) : (
-            <ListItem button onClick={props.onClick} data-cy="toggle-lock-action">
+            <ListItem button onClick={onClick} data-cy="toggle-lock-action">
                 <ListItemIcon>
                     {isLocked
                         ? <UnfreezeIcon />
