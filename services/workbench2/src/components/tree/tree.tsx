@@ -529,6 +529,21 @@ export const TreeComponent = withStyles(styles)(
 // return true to prevent re-render, false to allow re-render
 function preventRerender<T>(prevProps: TreeProps<T>, nextProps: TreeProps<T>) {
     if(prevProps.treePicker !== nextProps.treePicker) return false;
+    if (haveResourcesUpdated(nextProps)) return false;
     if(!!nextProps.items && !isEqual(prevProps.items, nextProps.items)) return false;
     return true;
+}
+
+// we don't want to update on every resource update, just the resources that are already in the tree
+function haveResourcesUpdated<T>(nextProps: TreeProps<T>) {
+    const { treePicker, pickerId, resources = {} } = nextProps;
+    const nextTreeItems = treePicker && pickerId && treePicker[pickerId];
+    if (nextTreeItems) {
+        for (const id in nextTreeItems) {
+            if (resources[id] && !isEqual(resources[id], nextTreeItems[id].value)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
