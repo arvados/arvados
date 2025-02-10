@@ -339,12 +339,6 @@ with_test_gemset() {
     GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
 }
 
-gem_uninstall_if_exists() {
-    if gem list "$1\$" | egrep '^\w'; then
-        gem uninstall --force --all --executables "$1"
-    fi
-}
-
 setup_virtualenv() {
     if [[ -z "${VENV3DIR:-}" ]]; then
         fatal "setup_virtualenv called before \$VENV3DIR was set"
@@ -663,8 +657,7 @@ install_doc() {
 install_gem() {
     gemname=$1
     srcpath=$2
-    with_test_gemset gem_uninstall_if_exists "$gemname" \
-        && cd "$WORKSPACE/$srcpath" \
+    cd "$WORKSPACE/$srcpath" \
         && bundle_install_trylocal \
         && gem build "$gemname.gemspec" \
         && with_test_gemset gem install --no-document $(ls -t "$gemname"-*.gem|head -n1)
