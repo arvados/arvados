@@ -6,13 +6,14 @@ import React from 'react';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { ProjectResource } from 'models/project';
-import { Resource, ResourceKind } from 'models/resource';
+import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
 import { UserCard } from './user-details-card';
 import { ProjectCard } from './project-details-card';
+import { getResource } from 'store/resources/resources';
 
 const mapStateToProps = ({ resources, properties }: RootState) => {
-    const currentResource: Resource | undefined = resources[properties.currentRouteUuid];
+    const currentResource = getResource(properties.currentRouteUuid)(resources);
     return {
         currentResource,
     };
