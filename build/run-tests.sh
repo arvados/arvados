@@ -683,8 +683,6 @@ install_sdk/cli() {
 }
 
 install_services/login-sync() {
-    install_gem arvados-google-api-client sdk/ruby-google-api-client
-    install_gem arvados sdk/ruby
     install_gem arvados-login-sync services/login-sync
 }
 
