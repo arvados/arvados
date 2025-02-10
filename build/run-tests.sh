@@ -80,6 +80,11 @@ GEMHOME=
 R_LIBS=
 export LANG=en_US.UTF-8
 
+# setup_ruby_environment will set this to the path of the `bundle` executable
+# it installs. This stub will cause commands to fail if they try to run before
+# that.
+BUNDLE=false
+
 short=
 only_install=
 temp=
@@ -333,6 +338,11 @@ setup_ruby_environment() {
     echo "Gem search path is GEM_PATH=$GEM_PATH"
     gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
         || fatal 'install bundler'
+    BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+    if [[ ! -x "$BUNDLE" ]]; then
+        BUNDLE=false
+        fatal "could not find 'bundle' executable after installation"
+    fi
 }
 
 with_test_gemset() {
@@ -640,11 +650,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! bundle install --local --no-deployment; then
+        if ! "$BUNDLE" install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            bundle install --no-deployment
+            "$BUNDLE" install --no-deployment
         fi
-        bundle package
+        "$BUNDLE" package
     )
 }
 
@@ -749,7 +759,7 @@ do_migrate() {
     (
         set -x
         env -C "$WORKSPACE/services/api" RAILS_ENV=test \
-            bundle exec rake $task ${@}
+            "$BUNDLE" exec rake $task ${@}
     )
     checkexit "$?" "services/api $task"
 }
@@ -757,14 +767,14 @@ do_migrate() {
 migrate_down_services/api() {
     echo "running db:migrate:down"
     env -C "$WORKSPACE/services/api" RAILS_ENV=test \
-        bundle exec rake db:migrate:down ${testargs[services/api]}
+        "$BUNDLE" exec rake db:migrate:down ${testargs[services/api]}
     checkexit "$?" "services/api db:migrate:down"
 }
 
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
-        bundle exec rake linkchecker \
+        "$BUNDLE" exec rake linkchecker \
         arvados_api_host="$arvados_api_host" \
         arvados_workbench_host="https://workbench.$arvados_api_host" \
         baseurl="file://$WORKSPACE/doc/.site/" \
@@ -798,12 +808,12 @@ test_arvados_version.py() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$BUNDLE" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/ruby-google-api-client() {
@@ -820,7 +830,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -829,7 +839,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/workbench2_units() {
