@@ -14,7 +14,6 @@ export const UserDetailsActionSet: MultiSelectMenuActionSet= [
         {
             name: ContextMenuActionNames.VIEW_DETAILS,
             icon: DetailsIcon,
-            hasAlts: false,
             isForMulti: false,
             execute: (dispatch, resources) => {
                 dispatch<any>(openDetailsPanel(resources[0].uuid));
@@ -23,7 +22,6 @@ export const UserDetailsActionSet: MultiSelectMenuActionSet= [
         {
             name: ContextMenuActionNames.USER_ACCOUNT,
             icon: UserPanelIcon,
-            hasAlts: false,
             isForMulti: false,
             execute: (dispatch, resources) => {
                 dispatch<any>(navigateToUserProfile(resources[0].uuid));
@@ -32,7 +30,6 @@ export const UserDetailsActionSet: MultiSelectMenuActionSet= [
         {
             name: ContextMenuActionNames.API_DETAILS,
             icon: AdvancedIcon,
-            hasAlts: false,
             isForMulti: false,
             execute: (dispatch, resources) => {
                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));

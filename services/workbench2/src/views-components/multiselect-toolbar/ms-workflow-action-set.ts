@@ -15,7 +15,6 @@ const { OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, COPY_UUID, VIEW_DETAILS, API_DE
 const msRunWorkflow: MultiSelectMenuAction = {
     name: RUN_WORKFLOW,
     icon: StartIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openRunProcess(resources[0].uuid, resources[0].ownerUuid, resources[0].name));
@@ -25,7 +24,6 @@ const msRunWorkflow: MultiSelectMenuAction = {
 const msDeleteWorkflow: MultiSelectMenuAction = {
     name: DELETE_WORKFLOW,
     icon: DeleteForever,
-    hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resources) => {
         for (const resource of [...resources]){
@@ -37,7 +35,6 @@ const msDeleteWorkflow: MultiSelectMenuAction = {
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyToClipboardAction(resources));
@@ -47,7 +44,6 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
     icon: CopyIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
@@ -57,7 +53,6 @@ const msCopyUuid: MultiSelectMenuAction  = {
 const msShareAction: MultiSelectMenuAction  = {
     name: SHARE,
     icon: ShareIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openSharingDialog(resources[0].uuid));

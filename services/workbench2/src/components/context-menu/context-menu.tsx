@@ -12,7 +12,6 @@ export interface ContextMenuItem {
     name?: string | React.ComponentType;
     icon?: IconType;
     component?: React.ComponentType<any>;
-    adminOnly?: boolean;
     filters?: ((state: RootState, resource: ContextMenuResource) => boolean)[]
 }
 

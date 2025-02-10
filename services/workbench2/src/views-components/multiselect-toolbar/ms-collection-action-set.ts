@@ -21,7 +21,6 @@ const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, O
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
     icon: FileCopyOutlinedIcon,
-    hasAlts: false,
     isForMulti: true,
     execute: (dispatch, [...resources]) => {
         if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
@@ -32,7 +31,6 @@ const msCopyCollection: MultiSelectMenuAction = {
 const msMoveCollection: MultiSelectMenuAction = {
     name: MOVE_TO,
     icon: MoveToIcon,
-    hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resources) => dispatch<any>(openMoveCollectionDialog(resources[0])),
 }
@@ -41,7 +39,6 @@ const msToggleTrashAction: MultiSelectMenuAction = {
     name: MOVE_TO_TRASH,
     icon: TrashIcon,
     isForMulti: true,
-    hasAlts: false,
     execute: (dispatch, resources: ContextMenuResource[]) => {
         for (const resource of [...resources]) {
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
@@ -52,7 +49,6 @@ const msToggleTrashAction: MultiSelectMenuAction = {
 const msEditCollection: MultiSelectMenuAction = {
     name: ContextMenuActionNames.EDIT_COLLECTION,
     icon: RenameIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openCollectionUpdateDialog(resources[0]));
@@ -62,7 +58,6 @@ const msEditCollection: MultiSelectMenuAction = {
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyToClipboardAction(resources));
@@ -72,7 +67,6 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
     icon: CopyIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
@@ -82,7 +76,6 @@ const msCopyUuid: MultiSelectMenuAction  = {
 const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
     name: OPEN_WITH_3RD_PARTY_CLIENT,
     icon: FolderSharedIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
@@ -92,7 +85,6 @@ const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
 const msShareAction: MultiSelectMenuAction  = {
     name: SHARE,
     icon: ShareIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openSharingDialog(resources[0].uuid));

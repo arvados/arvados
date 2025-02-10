@@ -43,7 +43,6 @@ const {
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyToClipboardAction(resources));
@@ -53,7 +52,6 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
     icon: CopyIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
@@ -63,7 +61,6 @@ const msCopyUuid: MultiSelectMenuAction  = {
 const msEditProjectAction: MultiSelectMenuAction = {
     name: EDIT_PROJECT,
     icon: RenameIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openProjectUpdateDialog(resources[0]));
@@ -73,7 +70,6 @@ const msEditProjectAction: MultiSelectMenuAction = {
 const msMoveToAction: MultiSelectMenuAction = {
     name: MOVE_TO,
     icon: MoveToIcon,
-    hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resource) => {
         dispatch<any>(openMoveProjectDialog(resource[0]));
@@ -83,7 +79,6 @@ const msMoveToAction: MultiSelectMenuAction = {
 const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
     name: OPEN_WITH_3RD_PARTY_CLIENT,
     icon: FolderSharedIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
@@ -117,7 +112,6 @@ const msFreezeProjectAction: any = {
 const msNewProjectAction: MultiSelectMenuAction = {
     name: NEW_PROJECT,
     icon: NewProjectIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources): void => {
         dispatch<any>(openProjectCreateDialog(resources[0].uuid));
@@ -127,7 +121,6 @@ const msNewProjectAction: MultiSelectMenuAction = {
 const msShareAction: MultiSelectMenuAction  = {
     name: SHARE,
     icon: ShareIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openSharingDialog(resources[0].uuid));

@@ -16,7 +16,6 @@ const {REMOVE, COPY_AND_RERUN_PROCESS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, ADD_TO
 const msCopyAndRerunProcess: MultiSelectMenuAction = {
     name: COPY_AND_RERUN_PROCESS,
     icon: ReRunProcessIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
@@ -28,7 +27,6 @@ const msCopyAndRerunProcess: MultiSelectMenuAction = {
 const msRemoveProcess: MultiSelectMenuAction = {
     name: REMOVE,
     icon: DeleteForever,
-    hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resources) => {
         dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
@@ -38,7 +36,6 @@ const msRemoveProcess: MultiSelectMenuAction = {
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
     icon: CopyIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
@@ -48,7 +45,6 @@ const msCopyUuid: MultiSelectMenuAction  = {
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyToClipboardAction(resources));
@@ -59,7 +55,6 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 // const msMoveTo: MultiSelectMenuAction = {
 //     name: MOVE_TO,
 //     icon: MoveToIcon,
-//     hasAlts: false,
 //     isForMulti: true,
 //     execute: (dispatch, resources) => {
 //         dispatch<any>(openMoveProcessDialog(resources[0]));
@@ -69,7 +64,6 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 const msViewOutputs: MultiSelectMenuAction = {
     name: OUTPUTS,
     icon: OutputIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
                 if (resources[0]) {
@@ -81,7 +75,6 @@ const msViewOutputs: MultiSelectMenuAction = {
 const msEditProcess: MultiSelectMenuAction = {
     name: EDIT_PROCESS,
     icon: RenameIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openProcessUpdateDialog(resources[0]));
@@ -91,7 +84,6 @@ const msEditProcess: MultiSelectMenuAction = {
 const msCancelProcess: MultiSelectMenuAction = {
     name: CANCEL,
     icon: StopIcon,
-    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(cancelRunningWorkflow(resources[0].uuid));
