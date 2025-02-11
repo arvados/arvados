@@ -1936,7 +1936,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 		bytesContent += len(data)
 		filesCreated++
 
-		err = cfs.Flush("", true)
+		_, err = cfs.MarshalManifest("")
 		c.Assert(err, check.IsNil)
 		t0 := time.Now()
 		_, err = cfs.Repack(context.Background(), RepackOptions{})
