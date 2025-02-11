@@ -1962,9 +1962,11 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\n", filesCreated, bytesContent, blocksInManifest(), bytesWritten())
 	}
 	c.Check(err, check.IsNil)
-	err = os.Mkdir("./tmp", 0777)
-	c.Check(err, check.IsNil)
-	err = os.WriteFile("./tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0777)
+	err = os.Mkdir("tmp", 0777)
+	if !os.IsExist(err) {
+		c.Check(err, check.IsNil)
+	}
+	err = os.WriteFile("tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0777)
 	c.Check(err, check.IsNil)
 	c.Logf("filesCreated %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", filesCreated, bytesContent, bytesWritten(), bytesRewritten, blocksInManifest())
 	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
