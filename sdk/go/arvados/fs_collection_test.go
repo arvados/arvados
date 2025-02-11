@@ -1882,6 +1882,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 	buf, err := exec.Command("git", "-C", gitdir, "ls-files").CombinedOutput()
 	c.Assert(err, check.IsNil, check.Commentf("%s", buf))
 	dirsCreated := make(map[string]bool)
+	filesCreated := 0
 	bytesContent := 0
 	bytesRewritten := 0
 	bytesWritten := func() (n int) {
@@ -1904,6 +1905,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 	nRepackNoop := 0
 	tRepackTotal := time.Duration(0)
 	nRepackTotal := 0
+	stats := bytes.NewBuffer(nil)
 	for _, path := range bytes.Split(buf, []byte("\n")) {
 		path := string(path)
 		if path == "" ||
@@ -1932,6 +1934,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 		err = f.Close()
 		c.Assert(err, check.IsNil)
 		bytesContent += len(data)
+		filesCreated++
 
 		err = cfs.Flush("", true)
 		c.Assert(err, check.IsNil)
@@ -1943,7 +1946,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 		c.Assert(err, check.IsNil)
 
 		if bw := bytesWritten(); bytesRewritten < bw-bytesContent {
-			c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d -- just rewrote %d in %v", bytesContent, bw, bytesRewritten, blocksInManifest(), bw-bytesContent-bytesRewritten, tRepack)
+			c.Logf("filesCreated %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d -- just rewrote %d in %v", filesCreated, bytesContent, bw, bytesRewritten, blocksInManifest(), bw-bytesContent-bytesRewritten, tRepack)
 			bytesRewritten = bw - bytesContent
 			if bytesRewritten/16 > bytesContent {
 				// Rewriting data >16x on average
@@ -1956,9 +1959,14 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 			tRepackNoop += tRepack
 			nRepackNoop++
 		}
+		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\n", filesCreated, bytesContent, blocksInManifest(), bytesWritten())
 	}
-	c.Assert(err, check.IsNil)
-	c.Logf("bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", bytesContent, bytesWritten(), bytesRewritten, blocksInManifest())
+	c.Check(err, check.IsNil)
+	err = os.Mkdir("./tmp", 0777)
+	c.Check(err, check.IsNil)
+	err = os.WriteFile("./tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0777)
+	c.Check(err, check.IsNil)
+	c.Logf("filesCreated %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", filesCreated, bytesContent, bytesWritten(), bytesRewritten, blocksInManifest())
 	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
 	c.Logf("spent %v on %d Repack calls that had no effect, average %v per call", tRepackNoop, nRepackNoop, tRepackNoop/time.Duration(nRepackNoop))
 }
