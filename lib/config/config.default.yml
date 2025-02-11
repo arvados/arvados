@@ -1648,6 +1648,7 @@ Clusters:
         RAM: 128MiB
         IncludedScratch: 16GB
         AddedScratch: 0
+
         # Hourly price ($), used to select node types for containers,
         # and to calculate estimated container costs. For spot
         # instances on EC2, this is also used as the maximum price
@@ -1657,25 +1658,29 @@ Clusters:
         # given here is used to compute container cost estimates.
         Price: 0.1
         Preemptible: false
-        # Include this section if the node type includes GPU support
-        #
-        # Stacks: the software stack, currently "cuda" or "rocm"
-        #
-        # DriverVersion: should be in X.Y format
-        #
-        # HardwareTarget:
-        #   For CUDA, this is the Compute Capability in X.Y format.
-        #
-        #   For ROCm, this is the LLVM target (e.g. gfx1100) for the GPU hardware
-        #
-        # DeviceCount: the number GPUs
-        #
-        # VRAM: The amount of VRAM per GPU
+
+        # Include this section if the instance type includes GPU support
         GPU:
+          # The software stack, currently "cuda" or "rocm"
           Stack: "cuda"
+
+          # The version of the driver installed on this instance, in
+          # X.Y format
           DriverVersion: "11.0"
+
+          # The architecture or capabilities of the GPU hardware
+          #
+          #   For 'cuda', this is the Compute Capability in X.Y
+          #   format.
+          #
+          #   For 'rocm', this is the LLVM target (e.g. gfx1100) for
+          #   the GPU hardware.
           HardwareTarget: "9.0"
+
+          # The number GPUs on this instance
           DeviceCount: 1
+
+          # The amount of VRAM per GPU
           VRAM: 8000000000
 
     StorageClasses:

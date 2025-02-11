@@ -38,11 +38,11 @@ type suite struct {
 }
 
 func (s *suite) TearDownTest(c *check.C) {
-	arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	arvadostest.ResetDB(c)
 }
 
 func (s *suite) SetUpTest(c *check.C) {
-	arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	arvadostest.ResetDB(c)
 
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.IsNil)

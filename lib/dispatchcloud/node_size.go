@@ -135,7 +135,9 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 
 		var capabilityInsuff bool
 		var capabilityErr error
-		if ctr.RuntimeConstraints.GPU.Stack == "cuda" {
+		if ctr.RuntimeConstraints.GPU.Stack == "" {
+			// do nothing
+		} else if ctr.RuntimeConstraints.GPU.Stack == "cuda" {
 			if len(ctr.RuntimeConstraints.GPU.HardwareTarget) > 1 {
 				// Check if the node's capability
 				// exactly matches any of the
@@ -154,6 +156,12 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 			// the requested hardware.  For rocm, this is
 			// a gfxXXXX LLVM target.
 			capabilityInsuff = !slices.Contains(ctr.RuntimeConstraints.GPU.HardwareTarget, it.GPU.HardwareTarget)
+		} else {
+			// not blank, "cuda", or "rocm" so that's an error
+			return nil, ConstraintsNotSatisfiableError{
+				errors.New(fmt.Sprintf("Invalid GPU stack %q, expected to be blank or one of 'cuda' or 'rocm'", ctr.RuntimeConstraints.GPU.Stack)),
+				availableTypes,
+			}
 		}
 
 		switch {

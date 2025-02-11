@@ -87,17 +87,17 @@ To specify instance types with NVIDIA GPUs, the compute image must be built with
         IncludedScratch: 125GB
         Price: 0.56
         GPU:
-	  Stack: "cuda"
+          Stack: "cuda"
           DriverVersion: "11.4"
           HardwareTarget: "7.5"
           DeviceCount: 1
-	  VRAM: 16GiB
+          VRAM: 16GiB
 </code></pre>
 </notextile>
 
-The @DriverVersion@ is the version of the CUDA toolkit installed in your compute image (in X.Y format, do not include the patchlevel).
+The @DriverVersion@ is the version of the CUDA toolkit installed in your compute image (in "X.Y" format, do not include the patchlevel).
 
-The @HardwareTarget@ is the "CUDA compute capability of the GPUs available for this instance type":https://developer.nvidia.com/cuda-gpus .
+The @HardwareTarget@ is the "CUDA compute capability of the GPUs available for this instance type":https://developer.nvidia.com/cuda-gpus in "X.Y" format.
 
 The @DeviceCount@ is the number of GPU cores available for this instance type.
 
@@ -116,19 +116,19 @@ To specify instance types with AMD GPUs, the compute image must be built with RO
         IncludedScratch: 125GB
         Price: 0.56
         GPU:
-	  Stack: "rocm"
+          Stack: "rocm"
           DriverVersion: "6.2"
           HardwareTarget: "gfx1100"
           DeviceCount: 1
-	  VRAM: 16GiB
+          VRAM: 16GiB
 </code></pre>
 </notextile>
 
-The @DriverVersion@ is the version of the ROCm toolkit installed in your compute image (in X.Y format, do not include the patchlevel).
+@DriverVersion@ is the version of the ROCm toolkit installed in your compute image (in "X.Y" format, do not include the patchlevel).
 
-The @HardwareTarget@ (e.g. gfx1100) corresponds to the GPU architecture and capabilities of the device.  Use @rocminfo@ to determine your hardware target.  See also https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name").
+@HardwareTarget@ (e.g. gfx1100) corresponds to the GPU architecture of the device.  Use @rocminfo@ to determine your hardware target.  See also https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name").
 
-The @DeviceCount@ is the number of GPU cores available for this instance type.
+@DeviceCount@ is the number of GPU cores available for this instance type.
 
 @VRAM@ is the amount of VRAM available per GPU device.
 

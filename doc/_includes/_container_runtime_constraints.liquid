@@ -26,7 +26,7 @@ table(table table-bordered table-condensed).
 |device_count|int|Number of GPUs to request.|Count greater than 0 enables GPU support.|
 |driver_version|string|Minimum driver version, in "X.Y" format.|Required when device_count > 0|
 |hardware_target|array of strings|For CUDA: a single item with minimum CUDA hardware capability, in "X.Y" format, or multiple items listing CUDA specific hardware capability versions, one of which must be an exact match on the compute node the container is scheduled on.
-For ROCm: A list of one or more hardware targets (e.g. gfx1100) corresponding to the GPU architectures supported by the container.  Use @rocminfo@ to determine what hardware targets you have.  See also https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name")|Required when device_count > 0|
+For ROCm: A list of one or more hardware targets (e.g. gfx1100) corresponding to the GPU architectures supported by the container.  To be scheduled, at least one item in this list must match the @HardwareTarget@ of one of the cluster's @InstanceTypes@.|Required when device_count > 0|
 |vram|int|Amount of VRAM to request, in bytes.||
 
 h3. CUDA support (deprecated)

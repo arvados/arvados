@@ -284,7 +284,7 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 		args = append(args, "--nv")
 	}
 	if e.spec.GPUStack == "rocm" && e.spec.GPUDeviceCount > 0 {
-		e.logf("AMD GPUs (ROCm) are not currently supported on the Singularity container runner.")
+		args = append(args, "--rocm")
 	}
 
 	// If we ask for resource limits that aren't supported,

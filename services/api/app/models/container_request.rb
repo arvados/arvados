@@ -429,6 +429,12 @@ class ContainerRequest < ArvadosModel
       end
 
       if runtime_constraints['gpu']
+        v = runtime_constraints['gpu'][k]['stack']
+        if not [nil, '', 'cuda', 'rocm'].include? v
+            errors.add(:runtime_constraints,
+                       "[gpu.stack]=#{v.inspect} must be one of 'cuda' or 'rocm' or be empty")
+        end
+
         ['device_count', 'vram'].each do |k|
           v = runtime_constraints['gpu'][k]
           if !v.is_a?(Integer) || v < 0
