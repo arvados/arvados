@@ -21,9 +21,7 @@ import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiat
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { ContainerRequestResource } from "models/container-request";
-import { FavoritesState } from "store/favorites/favorites-reducer";
 import { isUserGroup } from "models/group";
-import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
@@ -60,12 +58,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export type MultiselectToolbarDataProps = {
     checkedList: TCheckedList;
     selectedResourceUuid: string | null;
-    iconProps: IconProps
+    resources: ResourcesState;
     disabledButtons: Set<string>
     auth: AuthState;
     location: string;
-    forceMultiSelectMode?: boolean;
-    injectedStyles?: string;
 };
 
 type MultiselectToolbarActionProps = {
@@ -74,10 +70,9 @@ type MultiselectToolbarActionProps = {
     resourceToMenukind: (uuid: string) => ContextMenuKind | undefined;
 };
 
-type IconProps = {
-    resources: ResourcesState;
-    favorites: FavoritesState;
-    publicFavorites: PublicFavoritesState;
+type MultiselectToolbarRecievedProps = {
+    forceMultiSelectMode?: boolean;
+    injectedStyles?: string;
 }
 
 const detailsCardPaths = [
@@ -88,16 +83,18 @@ export const usesDetailsCard = (location: string): boolean => {
     return detailsCardPaths.some(path => location.includes(path))
 }
 
+type MultiselectToolbarProps = MultiselectToolbarDataProps & MultiselectToolbarActionProps & MultiselectToolbarRecievedProps & WithStyles<CssRules>;
+
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)((props: MultiselectToolbarDataProps & MultiselectToolbarActionProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles } = props;
+    withStyles(styles)((props: MultiselectToolbarProps) => {
+        const { classes, checkedList, resources, location, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
-        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
+        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
         const rawActions =
@@ -118,7 +115,7 @@ export const MultiselectToolbar = connect(
 
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
-        const fetchedResources = selectedToArray(targetResources).map(uuid => iconProps.resources[uuid]);
+        const fetchedResources = selectedToArray(targetResources).map(uuid => resources[uuid]);
 
         return (
             <React.Fragment>
@@ -155,7 +152,7 @@ export const MultiselectToolbar = connect(
                                     <IconButton
                                         data-cy='multiselect-button'
                                         onClick={() => {
-                                            props.executeMulti(action, targetResources, iconProps.resources)}}
+                                            props.executeMulti(action, targetResources, resources)}}
                                         className={classes.icon}
                                         size="large">
                                         {action.icon({})}
@@ -248,22 +245,18 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
 //--------------------------------------------------//
 
-function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResourceUuid}: RootState) {
+function mapStateToProps({auth, multiselect, resources, selectedResourceUuid}: RootState): MultiselectToolbarDataProps {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
         selectedResourceUuid,
         location: window.location.pathname,
-        iconProps: {
-            resources,
-            favorites,
-            publicFavorites
-        }
+        resources,
     }
 }
 
-function mapDispatchToProps(dispatch: Dispatch) {
+function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
     return {
         resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
         executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
