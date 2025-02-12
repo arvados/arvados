@@ -6,6 +6,7 @@ package dispatchcloud
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"slices"
@@ -160,7 +161,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 			// not blank, "cuda", or "rocm" so that's an error
 			return nil, ConstraintsNotSatisfiableError{
 				errors.New(fmt.Sprintf("Invalid GPU stack %q, expected to be blank or one of 'cuda' or 'rocm'", ctr.RuntimeConstraints.GPU.Stack)),
-				availableTypes,
+				[]arvados.InstanceType{},
 			}
 		}
 
