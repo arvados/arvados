@@ -7,10 +7,10 @@ import { RootState } from "store/store";
 import { contextMenuActions, ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
 import { createAnchorAt } from "components/popover/helpers";
-import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
+import { ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
-import { sortMenuItems, ContextMenuKind, menuDirection } from "./menu-item-sort";
+import { getMenuActionSet } from "common/menu-action-set-actions";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 
@@ -62,17 +62,3 @@ const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionPr
 });
 
 export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenuComponent);
-
-const menuActionSets = new Map<string, ContextMenuActionSet>();
-
-export const addMenuActionSet = (name: ContextMenuKind, itemSet: ContextMenuActionSet) => {
-    const sorted = itemSet.map(items => sortMenuItems(name, items, menuDirection.VERTICAL));
-    menuActionSets.set(name, sorted);
-};
-
-const emptyActionSet: ContextMenuActionSet = [];
-const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
-    resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
-
-export const getMenuActionSetByKind = (kind: ContextMenuKind): ContextMenuActionSet =>
-    menuActionSets.get(kind) || emptyActionSet;
