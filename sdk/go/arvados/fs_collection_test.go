@@ -1867,22 +1867,93 @@ func (s *CollectionFSSuite) TestRepackData(c *check.C) {
 	}
 }
 
-func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
-	s.testRepackCost(c)
+type dataToWrite struct {
+	path string
+	data func() []byte
 }
 
-func (s *CollectionFSSuite) testRepackCost(c *check.C) {
-	s.kc.blocks = make(map[string][]byte)
-	testfs, err := (&Collection{}).FileSystem(nil, s.kc)
-	c.Assert(err, check.IsNil)
-	cfs := testfs.(*collectionFileSystem)
+func dataToWrite_SourceTree(c *check.C) (writes []dataToWrite) {
 	gitdir, err := filepath.Abs("../../..")
 	c.Assert(err, check.IsNil)
 	infs := os.DirFS(gitdir)
 	buf, err := exec.Command("git", "-C", gitdir, "ls-files").CombinedOutput()
 	c.Assert(err, check.IsNil, check.Commentf("%s", buf))
+	for _, path := range bytes.Split(buf, []byte("\n")) {
+		path := string(path)
+		if path == "" ||
+			strings.HasPrefix(path, "tools/arvbox/lib/arvbox/docker/service") &&
+				strings.HasSuffix(path, "/run") {
+			// dangling symlink
+			continue
+		}
+		fi, err := fs.Stat(infs, path)
+		c.Assert(err, check.IsNil)
+		if fi.IsDir() || fi.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		writes = append(writes, dataToWrite{
+			path: path,
+			data: func() []byte {
+				data, err := fs.ReadFile(infs, path)
+				c.Assert(err, check.IsNil)
+				return data
+			},
+		})
+	}
+	return
+}
+
+func dataToWrite_ConstantSizeFilesInDirs(c *check.C, ndirs, nfiles, filesize, chunksize int) (writes []dataToWrite) {
+	for chunk := 0; chunk == 0 || (chunksize > 0 && chunk < (filesize+chunksize-1)/chunksize); chunk++ {
+		for i := 0; i < nfiles; i++ {
+			datasize := filesize
+			if chunksize > 0 {
+				datasize = chunksize
+				if remain := filesize - chunk*chunksize; remain < chunksize {
+					datasize = remain
+				}
+			}
+			data := make([]byte, datasize)
+			copy(data, []byte(fmt.Sprintf("%d", i)))
+			writes = append(writes, dataToWrite{
+				path: fmt.Sprintf("dir%d/file%d", i*ndirs/nfiles, i),
+				data: func() []byte { return data },
+			})
+		}
+	}
+	return
+}
+
+func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
+	s.testRepackCost(c, dataToWrite_SourceTree(c))
+}
+
+func (s *CollectionFSSuite) TestRepackCost_1000x_1M_Files(c *check.C) {
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 1000, 1000000, 0))
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files(c *check.C) {
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 0))
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files_1M_Chunks(c *check.C) {
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 1000000))
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files_1M_Chunks(c *check.C) {
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 1000000))
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files(c *check.C) {
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 0))
+}
+
+func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite) {
+	s.kc.blocks = make(map[string][]byte)
+	testfs, err := (&Collection{}).FileSystem(nil, s.kc)
+	c.Assert(err, check.IsNil)
+	cfs := testfs.(*collectionFileSystem)
 	dirsCreated := make(map[string]bool)
-	filesCreated := 0
 	bytesContent := 0
 	bytesWritten := func() (n int) {
 		s.kc.Lock()
@@ -1904,37 +1975,25 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 	nRepackNoop := 0
 	tRepackTotal := time.Duration(0)
 	nRepackTotal := 0
+	filesWritten := make(map[string]bool)
 	stats := bytes.NewBuffer(nil)
-	fmt.Fprint(stats, "files\tbytes_in_files\tblocks\tbytes_written_backend\tn_repacked\tn_repack_noop\tseconds_repacking\n")
-	for _, path := range bytes.Split(buf, []byte("\n")) {
-		path := string(path)
-		if path == "" ||
-			strings.HasPrefix(path, "tools/arvbox/lib/arvbox/docker/service") &&
-				strings.HasSuffix(path, "/run") {
-			// dangling symlink
-			continue
-		}
-		fi, err := fs.Stat(infs, path)
-		c.Assert(err, check.IsNil)
-		if fi.IsDir() || fi.Mode()&os.ModeSymlink != 0 {
-			continue
-		}
-		for i, c := range path {
-			if c == '/' && !dirsCreated[path[:i]] {
-				testfs.Mkdir(path[:i], 0700)
-				dirsCreated[path[:i]] = true
+	fmt.Fprint(stats, "writes\tfiles\tbytes_in_files\tblocks\tbytes_written_backend\tn_repacked\tn_repack_noop\tseconds_repacking\n")
+	for writeIndex, write := range writes {
+		for i, c := range write.path {
+			if c == '/' && !dirsCreated[write.path[:i]] {
+				testfs.Mkdir(write.path[:i], 0700)
+				dirsCreated[write.path[:i]] = true
 			}
 		}
-		data, err := fs.ReadFile(infs, path)
+		f, err := testfs.OpenFile(write.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
 		c.Assert(err, check.IsNil)
-		f, err := testfs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0700)
-		c.Assert(err, check.IsNil)
+		filesWritten[write.path] = true
+		data := write.data()
 		_, err = f.Write(data)
 		c.Assert(err, check.IsNil)
 		err = f.Close()
 		c.Assert(err, check.IsNil)
 		bytesContent += len(data)
-		filesCreated++
 
 		_, err = cfs.MarshalManifest("")
 		c.Assert(err, check.IsNil)
@@ -1945,32 +2004,30 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C) {
 		tRepackTotal += tRepack
 		nRepackTotal++
 
-		if n > 0 {
-			bw := bytesWritten()
-			c.Logf("files %d bytesContent %d bytesWritten %d blocksInManifest %d secondsRepack %g", filesCreated, bytesContent, bw, blocksInManifest(), tRepack.Seconds())
-			if bw/16 > bytesContent {
-				// Rewriting data >16x on average
-				// means something is terribly wrong
-				// -- give up now instead of going
-				// OOM.
-				c.FailNow()
-			}
-		} else {
+		if n == 0 {
 			tRepackNoop += tRepack
 			nRepackNoop++
+		} else if bytesWritten()/16 > bytesContent {
+			// Rewriting data >16x on average means
+			// something is terribly wrong -- give up now
+			// instead of going OOM.
+			c.FailNow()
 		}
-		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\t%d\t%d\t%.06f\n", filesCreated, bytesContent, blocksInManifest(), bytesWritten(), nRepackTotal-nRepackNoop, nRepackNoop, tRepackTotal.Seconds())
+		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.06f\n", writeIndex+1, len(filesWritten), bytesContent, blocksInManifest(), bytesWritten(), nRepackTotal-nRepackNoop, nRepackNoop, tRepackTotal.Seconds())
 	}
 	c.Check(err, check.IsNil)
+
+	c.Logf("writes %d files %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", len(writes), len(filesWritten), bytesContent, bytesWritten(), bytesWritten()-bytesContent, blocksInManifest())
+	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
+	c.Logf("spent %v on %d Repack calls that had no effect, average %v per call", tRepackNoop, nRepackNoop, tRepackNoop/time.Duration(nRepackNoop))
+
+	// write stats to tmp/{testname}_stats.tsv
 	err = os.Mkdir("tmp", 0777)
 	if !os.IsExist(err) {
 		c.Check(err, check.IsNil)
 	}
 	err = os.WriteFile("tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0666)
 	c.Check(err, check.IsNil)
-	c.Logf("filesCreated %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", filesCreated, bytesContent, bytesWritten(), bytesWritten()-bytesContent, blocksInManifest())
-	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
-	c.Logf("spent %v on %d Repack calls that had no effect, average %v per call", tRepackNoop, nRepackNoop, tRepackNoop/time.Duration(nRepackNoop))
 }
 
 func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
