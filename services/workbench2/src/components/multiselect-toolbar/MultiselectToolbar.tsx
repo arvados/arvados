@@ -17,7 +17,7 @@ import { getResource, ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
-import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
+// import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { ContainerRequestResource } from "models/container-request";
@@ -27,7 +27,7 @@ import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
-import { getMenuActionSetByKind } from "views-components/context-menu/context-menu";
+import { getMenuActionSetByKind } from "common/menu-action-set-actions";
 import { intersection } from "lodash";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
@@ -198,15 +198,20 @@ export const isRoleGroupResource = (uuid: string, resources: ResourcesState): bo
     return isUserGroup(resource);
 };
 
-function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
+function groupByKind(dispatch: Dispatch, checkedList: TCheckedList, resources: ResourcesState): [Record<string, ContextMenuResource[]>, ContextMenuKind | undefined] {
     const result = {};
-    selectedToArray(checkedList).forEach(uuid => {
+    let firstResourceKind: ContextMenuKind | undefined;
+    selectedToArray(checkedList).forEach((uuid, i) => {
+        const menuKind = dispatch<any>(resourceToMenuKind(uuid));
         const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
-        const kind = isRoleGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : resource.kind;
+        const kind = isRoleGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : menuKind;
+        if (i === 0) {
+            firstResourceKind = kind;
+        }
         if (!result[kind]) result[kind] = [];
         result[kind].push(resource);
     });
-    return result;
+    return [result, firstResourceKind];
 }
 
 function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): MultiSelectMenuAction[] {
@@ -221,6 +226,10 @@ function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): MultiSele
                             .filter(action => commonNames.has(action.name) && action.isForMulti);
 
     return Array.from(new Set(commonActions));
+}
+
+function findActionByName(name: string, actionSet: MultiSelectMenuActionSet) {
+    return actionSet[0].find(action => action.name === name);
 }
 
 //--------------------------------------------------//
@@ -242,28 +251,26 @@ function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
         resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
         executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
-            const kindGroups = groupByKind(checkedList, resources);
-            const currentList = selectedToArray(checkedList)
-            switch (selectedAction.name) {
-                case ContextMenuActionNames.MOVE_TO:
-                case ContextMenuActionNames.REMOVE:
-                    const firstResourceKind = isRoleGroupResource(currentList[0], resources)
-                        ? ContextMenuKind.GROUPS
-                        : (getResource(currentList[0])(resources) as ContainerRequestResource | Resource).kind;
-                    const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResourceKind]);
+            const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources)).filter(resource => !!resource);
+            const allMenuKinds: ContextMenuKind[] = selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind) as ContextMenuKind[];
+            const groupedActionSets = allMenuKinds.reduce((result, menuKind: ContextMenuKind): Record<string, ContextMenuAction[]> => {
+                    if (!result[menuKind]) {result[menuKind] = []};
+                    result[menuKind].push(findActionByName(selectedAction.name, getMenuActionSetByKind(menuKind)));
+                    return result;
+                }, {});
+            if (selectedAction.name === ContextMenuActionNames.MOVE_TO || selectedAction.name === ContextMenuActionNames.REMOVE) {
+                const [kindGroups, firstResourceKind] = groupByKind(dispatch, checkedList, resources);
+                if (firstResourceKind) {
+                    const action = findActionByName(selectedAction.name, [selectActionsByKind([firstResourceKind])]);
                     if (action) action.execute(dispatch, kindGroups[firstResourceKind]);
-                    break;
-                case ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD:
-                    const selectedResources = currentList.map(uuid => getResource(uuid)(resources));
-                    dispatch<any>(copyToClipboardAction(selectedResources));
-                    break;
-                default:
-                    for (const kind in kindGroups) {
-                        const action = findActionByName(selectedAction.name as string, kindToActionSet[kind]);
-                        if (action) action.execute(dispatch, kindGroups[kind]);
-                    }
-                    break;
+                }
             }
+            selectedResources.forEach(resource => {
+                if (!resource) return;
+                const corrsepondingActionSet = groupedActionSets[dispatch<any>(resourceToMenuKind(resource.uuid))!];
+                if (!corrsepondingActionSet) return;
+                corrsepondingActionSet.forEach(action => action.execute(dispatch, [resource]));
+            })
         },
     };
 }

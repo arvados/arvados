@@ -9,7 +9,7 @@ import { RootState } from "store/store";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export interface ContextMenuItem {
-    name?: string;
+    name: string;
     icon?: IconType;
     component?: React.ComponentType<any>;
     filters?: ((state: RootState, resource: ContextMenuResource) => boolean)[]

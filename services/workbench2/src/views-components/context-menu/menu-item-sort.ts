@@ -6,7 +6,6 @@ import { ContextMenuAction } from './context-menu-action-set';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { sortByProperty } from 'common/array-utils';
 import { horizontalMenuDivider, verticalMenuDivider } from './actions/context-menu-divider';
-import { MultiSelectMenuAction } from 'views-components/multiselect-toolbar/ms-menu-actions';
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
@@ -182,7 +181,7 @@ export const menuDirection = {
     HORIZONTAL: 'horizontal'
 }
 
-export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] | MultiSelectMenuAction[] => {
+export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] => {
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name
     if (!preferredOrder) return menuItems.sort(sortByProperty("name"));
