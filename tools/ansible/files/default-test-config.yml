@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# These are the "default" Arvados test database credentials.
+# You can use this file as the `arvados_config_file` for the
+# `install-test-env.yml` playbook in low-security applications.
+
+Clusters:
+  zzzzz:
+    PostgreSQL:
+      Connection:
+        host: localhost
+        port: "5432"
+        dbname: arvados_test
+        user: arvados
+        password: insecure_arvados_test

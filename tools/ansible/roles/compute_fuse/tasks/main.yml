@@ -6,6 +6,7 @@
 # Assumes you've already installed FUSE.
 
 - name: Configure FUSE with user_allow_other
+  become: yes
   ansible.builtin.lineinfile:
     path: /etc/fuse.conf
     regexp: "^[# ]*user_allow_other *$"

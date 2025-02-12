@@ -80,6 +80,11 @@ GEMHOME=
 R_LIBS=
 export LANG=en_US.UTF-8
 
+# setup_ruby_environment will set this to the path of the `bundle` executable
+# it installs. This stub will cause commands to fail if they try to run before
+# that.
+BUNDLE=false
+
 short=
 only_install=
 temp=
@@ -333,16 +338,15 @@ setup_ruby_environment() {
     echo "Gem search path is GEM_PATH=$GEM_PATH"
     gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
         || fatal 'install bundler'
+    BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+    if [[ ! -x "$BUNDLE" ]]; then
+        BUNDLE=false
+        fatal "could not find 'bundle' executable after installation"
+    fi
 }
 
 with_test_gemset() {
     GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
-}
-
-gem_uninstall_if_exists() {
-    if gem list "$1\$" | egrep '^\w'; then
-        gem uninstall --force --all --executables "$1"
-    fi
 }
 
 setup_virtualenv() {
@@ -646,11 +650,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! bundle install --local --no-deployment; then
+        if ! "$BUNDLE" install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            bundle install --no-deployment
+            "$BUNDLE" install --no-deployment
         fi
-        bundle package
+        "$BUNDLE" package
     )
 }
 
@@ -663,8 +667,7 @@ install_doc() {
 install_gem() {
     gemname=$1
     srcpath=$2
-    with_test_gemset gem_uninstall_if_exists "$gemname" \
-        && cd "$WORKSPACE/$srcpath" \
+    cd "$WORKSPACE/$srcpath" \
         && bundle_install_trylocal \
         && gem build "$gemname.gemspec" \
         && with_test_gemset gem install --no-document $(ls -t "$gemname"-*.gem|head -n1)
@@ -690,8 +693,6 @@ install_sdk/cli() {
 }
 
 install_services/login-sync() {
-    install_gem arvados-google-api-client sdk/ruby-google-api-client
-    install_gem arvados sdk/ruby
     install_gem arvados-login-sync services/login-sync
 }
 
@@ -758,7 +759,7 @@ do_migrate() {
     (
         set -x
         env -C "$WORKSPACE/services/api" RAILS_ENV=test \
-            bundle exec rake $task ${@}
+            "$BUNDLE" exec rake $task ${@}
     )
     checkexit "$?" "services/api $task"
 }
@@ -766,14 +767,14 @@ do_migrate() {
 migrate_down_services/api() {
     echo "running db:migrate:down"
     env -C "$WORKSPACE/services/api" RAILS_ENV=test \
-        bundle exec rake db:migrate:down ${testargs[services/api]}
+        "$BUNDLE" exec rake db:migrate:down ${testargs[services/api]}
     checkexit "$?" "services/api db:migrate:down"
 }
 
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
-        bundle exec rake linkchecker \
+        "$BUNDLE" exec rake linkchecker \
         arvados_api_host="$arvados_api_host" \
         arvados_workbench_host="https://workbench.$arvados_api_host" \
         baseurl="file://$WORKSPACE/doc/.site/" \
@@ -807,12 +808,12 @@ test_arvados_version.py() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$BUNDLE" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/ruby-google-api-client() {
@@ -829,7 +830,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -838,7 +839,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/workbench2_units() {
