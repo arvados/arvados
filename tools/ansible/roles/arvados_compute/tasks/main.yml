@@ -1,0 +1,34 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Install and configure core software necessary to run containers with
+# crunch-run. This includes at least one container engine and optionally
+# GPU support.
+# You can set flags documented in defaults/main.yml to control which software
+# gets installed.
+# Note this only covers everything "under" crunch-run: it does not configure
+# the node to receive dispatched jobs. Test nodes want to be able to install
+# this software without that configuration.
+
+- name: Install Arvados compute packages
+  become: yes
+  ansible.builtin.apt:
+    name: "{{ arvados_compute_packages + ['fuse'] }}"
+
+- name: Configure FUSE with user_allow_other
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/fuse.conf
+    regexp: "^[# ]*user_allow_other *$"
+    line: user_allow_other
+
+- ansible.builtin.include_role:
+    name: arvados_docker
+  when: arvados_compute_docker|bool
+- ansible.builtin.include_role:
+    name: compute_singularity
+  when: arvados_compute_singularity|bool
+- ansible.builtin.include_role:
+    name: compute_nvidia
+  when: arvados_compute_nvidia|bool

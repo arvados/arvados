@@ -55,20 +55,15 @@
         purge: true
         name:
           - unattended-upgrades
-    - name: Install Arvados FUSE driver
-      ansible.builtin.apt:
-        name: python3-arvados-fuse
 
-    - include_role:
-        name: compute_nvidia
-      when: "arvados_compute_nvidia|default(false)|bool"
-    - include_role:
-        name: "compute_{{ arvados_cluster.Containers.RuntimeEngine }}"
-    - include_role:
+    - ansible.builtin.include_role:
         name: compute_encrypt_tmp
-    - include_role:
-        name: compute_fuse
-    - include_role:
+    - ansible.builtin.include_role:
+        name: arvados_compute
+    - ansible.builtin.include_role:
+        name: compute_docker
+      when: "arvados_cluster.Containers.RuntimeEngine == 'docker'"
+    - ansible.builtin.include_role:
         name: compute_user
 
     - name: Configure locale

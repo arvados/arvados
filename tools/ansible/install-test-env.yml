@@ -120,13 +120,13 @@
           - xvfb
 
     - ansible.builtin.include_role:
-        name: arvados_docker
-    - ansible.builtin.include_role:
         name: arvados_go
     - ansible.builtin.include_role:
-        name: compute_fuse
-    - ansible.builtin.include_role:
-        name: compute_singularity
+        name: arvados_compute
+      vars:
+        arvados_compute_packages: []
+        arvados_compute_docker: true
+        arvados_compute_singularity: true
 
     # RailsAPI tests depend on the en_US.UTF-8 locale.
     # It must be generated before starting the PostgreSQL server.
