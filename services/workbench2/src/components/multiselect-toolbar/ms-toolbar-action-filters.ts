@@ -52,7 +52,10 @@ const {
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
-const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new Set(actionSet[0].map((action) => action.name));
+const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new Set(actionSet[0].reduce<string[]>((prev, next) => {
+    if (next.name) prev.push(next.name);
+    return prev;
+}, []));
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],

@@ -18,9 +18,9 @@ import { ToggleFavoriteAction } from 'views-components/context-menu/actions/favo
 import { TogglePublicFavoriteAction } from 'views-components/context-menu/actions/public-favorite-action';
 
 export type MultiSelectMenuAction = {
-    name: string;
-    icon: IconType;
-    isForMulti: boolean;
+    name?: string;
+    icon?: IconType;
+    isForMulti?: boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
 };
 

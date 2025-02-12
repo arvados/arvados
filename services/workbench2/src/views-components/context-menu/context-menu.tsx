@@ -73,3 +73,6 @@ export const addMenuActionSet = (name: ContextMenuKind, itemSet: ContextMenuActi
 const emptyActionSet: ContextMenuActionSet = [];
 const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
     resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
+
+export const getMenuActionSetByKind = (kind: ContextMenuKind): ContextMenuActionSet =>
+    menuActionSets.get(kind) || emptyActionSet;

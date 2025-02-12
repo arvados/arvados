@@ -27,6 +27,7 @@ export const groupActionSet: ContextMenuActionSet = [
         {
             name: ContextMenuActionNames.REMOVE,
             icon: RemoveIcon,
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveGroupDialog(resources[0].uuid));
             },

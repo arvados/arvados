@@ -117,6 +117,7 @@ export const processResourceActionSet: ContextMenuActionSet = [
         {
             name: ContextMenuActionNames.REMOVE,
             icon: DeleteForever,
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
             },

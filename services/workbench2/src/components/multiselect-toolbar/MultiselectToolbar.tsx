@@ -27,6 +27,8 @@ import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
+import { getMenuActionSetByKind } from "views-components/context-menu/context-menu";
+import { intersection } from "lodash";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
@@ -65,6 +67,7 @@ export type MultiselectToolbarDataProps = {
 };
 
 type MultiselectToolbarActionProps = {
+    getAllMenukinds: (checkedList: TCheckedList) => ContextMenuKind[];
     executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => void;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
     resourceToMenukind: (uuid: string) => ContextMenuKind | undefined;
@@ -94,13 +97,13 @@ export const MultiselectToolbar = connect(
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
-        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, resources));
+        const currentResourceKinds = singleResourceKind && !!singleResourceKind[0] ? singleResourceKind : props.getAllMenukinds(checkedList);
         const currentPathIsTrash = window.location.pathname === "/trash";
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
+                : selectActionsByKind(currentResourceKinds as ContextMenuKind[]).filter((action) =>
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
 
@@ -206,41 +209,18 @@ function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Reco
     return result;
 }
 
-function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<string>): Array<MultiSelectMenuAction> {
-    return actionArray[0].filter(action => filters.has(action.name as string));
-}
+function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): MultiSelectMenuAction[] {
+    if (currentResourceKinds.length === 0) return [];
+    const allMenuActionSets = currentResourceKinds.map(kind => getMenuActionSetByKind(kind)).map(actionSetArray => actionSetArray[0]);
+    //if only one selected, return all actions
+    if (currentResourceKinds.length === 1) return allMenuActionSets[0];
+    const actionNames = allMenuActionSets.map(actionSet => actionSet.map(action => action.name));
+    const commonNames = new Set(intersection(...actionNames));
+    const commonActions = allMenuActionSets
+                            .reduce((prev, next) => prev.concat(next), [])
+                            .filter(action => commonNames.has(action.name) && action.isForMulti);
 
-function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters): MultiSelectMenuAction[] {
-    const rawResult: Set<MultiSelectMenuAction> = new Set();
-    const resultNames = new Set();
-    const allFiltersArray: MultiSelectMenuAction[][] = []
-    currentResourceKinds.forEach(kind => {
-        if (filterSet[kind]) {
-            const actions = filterActions(...filterSet[kind]);
-            allFiltersArray.push(actions);
-            actions.forEach(action => {
-                if (!resultNames.has(action.name)) {
-                    rawResult.add(action);
-                    resultNames.add(action.name);
-                }
-            });
-        }
-    });
-
-    const filteredNameSet = allFiltersArray.map(filterArray => {
-        const resultSet = new Set<string>();
-        filterArray.forEach(action => resultSet.add(action.name as string || ""));
-        return resultSet;
-    });
-
-    const filteredResult = Array.from(rawResult).filter(action => {
-        for (let i = 0; i < filteredNameSet.length; i++) {
-            if (!filteredNameSet[i].has(action.name as string)) return false;
-        }
-        return true;
-    });
-
-    return filteredResult;
+    return Array.from(new Set(commonActions));
 }
 
 //--------------------------------------------------//
@@ -258,6 +238,7 @@ function mapStateToProps({auth, multiselect, resources, selectedResourceUuid}: R
 
 function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
     return {
+        getAllMenukinds: (checkedList: TCheckedList) => selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind),
         resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
         executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {

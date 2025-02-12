@@ -56,6 +56,7 @@ export const workflowActionSet: ContextMenuActionSet = [
         {
             icon: DeleteForever,
             name: "Delete Workflow",
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveWorkflowDialog(resources[0], resources.length));
             },
