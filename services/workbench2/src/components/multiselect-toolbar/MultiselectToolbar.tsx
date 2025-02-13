@@ -224,7 +224,11 @@ function mapStateToProps({auth, multiselect, resources, selectedResourceUuid}: R
 function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
     return {
         getAllMenukinds: (checkedList: TCheckedList) => selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind),
-        resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
+        resourceToMenukind: (uuid: string)=> {
+            const kind = dispatch<any>(resourceToMenuKind(uuid))
+            if (kind === ContextMenuKind.ROOT_PROJECT) return ContextMenuKind.USER_DETAILS;
+            return kind;
+        },
         executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources)).filter(resource => !!resource);
