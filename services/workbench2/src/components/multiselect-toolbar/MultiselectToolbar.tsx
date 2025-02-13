@@ -11,10 +11,8 @@ import withStyles from '@mui/styles/withStyles';
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
-import { IconType } from "components/icon/icon";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 import { isUserGroup } from "models/group";
@@ -52,14 +50,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: "center",
     },
 });
-
-
-type MultiSelectMenuAction = {
-    name?: string;
-    icon?: IconType;
-    isForMulti?: boolean;
-    execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
-};
 
 export type MultiselectToolbarDataProps = {
     checkedList: TCheckedList;
@@ -111,7 +101,7 @@ export const MultiselectToolbar = connect(
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
 
-        const actions: ContextMenuAction[] | MultiSelectMenuAction[] = sortMenuItems(
+        const actions: ContextMenuAction[] = sortMenuItems(
             singleResourceKind && singleResourceKind.length ? (singleResourceKind[0] as ContextMenuKind) : ContextMenuKind.MULTI,
             rawActions,
             menuDirection.HORIZONTAL
@@ -138,16 +128,14 @@ export const MultiselectToolbar = connect(
                             >
                             {memoizedActions.map((action, i) =>{
                                 const { name } = action;
-                            return action.name === ContextMenuActionNames.DIVIDER ? (
-                                action.component && (
-                                    <div
-                                        className={classes.divider}
-                                        data-targetid={`${name}${i}`}
-                                        key={`${name}${i}`}
-                                    >
-                                        <action.component />
-                                    </div>
-                                )
+                            return action.name === ContextMenuActionNames.DIVIDER && action.component ? (
+                                <div
+                                    className={classes.divider}
+                                    data-targetid={`${name}${i}`}
+                                    key={`${name}${i}`}
+                                >
+                                    {<action.component />}
+                                </div>
                             ) : action.component ? (
                                 <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name}>
                                     <action.component isInToolbar={true} onClick={()=>props.executeComponent(action.execute, fetchedResources)} />
@@ -162,14 +150,14 @@ export const MultiselectToolbar = connect(
                                             props.executeMulti(action, targetResources, resources)}}
                                         className={classes.icon}
                                         size="large">
-                                        {action.icon({})}
+                                        {action.icon ? action.icon({}) : <span></span>}
                                     </IconButton>
                                 </span>
                             );
                             })}
                         </IntersectionObserverWrapper>
                     ) : (
-                        <></>
+                        <span></span>
                     )}
                 </Toolbar>
             </React.Fragment>
