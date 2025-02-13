@@ -12,12 +12,11 @@ import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { Resource, extractUuidKind } from "models/resource";
+import { extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
 import { IconType } from "components/icon/icon";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
-import { ContainerRequestResource } from "models/container-request";
 import { isUserGroup } from "models/group";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
@@ -203,22 +202,6 @@ export const isRoleGroupResource = (uuid: string, resources: ResourcesState): bo
     return isUserGroup(resource);
 };
 
-function groupByKind(dispatch: Dispatch, checkedList: TCheckedList, resources: ResourcesState): [Record<string, ContextMenuResource[]>, ContextMenuKind | undefined] {
-    const result = {};
-    let firstResourceKind: ContextMenuKind | undefined;
-    selectedToArray(checkedList).forEach((uuid, i) => {
-        const menuKind = dispatch<any>(resourceToMenuKind(uuid));
-        const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
-        const kind = isRoleGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : menuKind;
-        if (i === 0) {
-            firstResourceKind = kind;
-        }
-        if (!result[kind]) result[kind] = [];
-        result[kind].push(resource);
-    });
-    return [result, firstResourceKind];
-}
-
 function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): ContextMenuAction[] {
     if (currentResourceKinds.length === 0) return [];
     const allMenuActionSets = currentResourceKinds.map(kind => getMenuActionSetByKind(kind)).map(actionSetArray => actionSetArray[0]);
@@ -257,19 +240,13 @@ function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
         executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources)).filter(resource => !!resource);
-            const allMenuKinds: ContextMenuKind[] = selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind) as ContextMenuKind[];
+            const allMenuKinds: ContextMenuKind[] = selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind);
             const groupedActionSets = allMenuKinds.reduce((result, menuKind: ContextMenuKind): Record<string, ContextMenuAction[]> => {
                     if (!result[menuKind]) {result[menuKind] = []};
-                    result[menuKind].push(findActionByName(selectedAction.name, getMenuActionSetByKind(menuKind)));
+                    const action = findActionByName(selectedAction.name, getMenuActionSetByKind(menuKind));
+                    if (action) result[menuKind].push(action);
                     return result;
                 }, {});
-            if (selectedAction.name === ContextMenuActionNames.MOVE_TO || selectedAction.name === ContextMenuActionNames.REMOVE) {
-                const [kindGroups, firstResourceKind] = groupByKind(dispatch, checkedList, resources);
-                if (firstResourceKind) {
-                    const action = findActionByName(selectedAction.name, [selectActionsByKind([firstResourceKind])]);
-                    if (action) action.execute(dispatch, kindGroups[firstResourceKind]);
-                }
-            }
             selectedResources.forEach(resource => {
                 if (!resource) return;
                 const corrsepondingActionSet = groupedActionSets[dispatch<any>(resourceToMenuKind(resource.uuid))!];
