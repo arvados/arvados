@@ -14,12 +14,9 @@ import { TCheckedList } from "components/data-table/data-table";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { Resource, extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
-import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { IconType } from "components/icon/icon";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
-// import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
-import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
-import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 import { ContainerRequestResource } from "models/container-request";
 import { isUserGroup } from "models/group";
 import { AuthState } from "store/auth/auth-reducer";
@@ -57,6 +54,14 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
+
+type MultiSelectMenuAction = {
+    name?: string;
+    icon?: IconType;
+    isForMulti?: boolean;
+    execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
+};
+
 export type MultiselectToolbarDataProps = {
     checkedList: TCheckedList;
     selectedResourceUuid: string | null;
@@ -69,7 +74,7 @@ export type MultiselectToolbarDataProps = {
 type MultiselectToolbarActionProps = {
     getAllMenukinds: (checkedList: TCheckedList) => ContextMenuKind[];
     executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => void;
-    executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
+    executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
     resourceToMenukind: (uuid: string) => ContextMenuKind | undefined;
 };
 
@@ -102,7 +107,7 @@ export const MultiselectToolbar = connect(
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [msToggleTrashAction]
+                ? [toggleTrashAction]
                 : selectActionsByKind(currentResourceKinds as ContextMenuKind[]).filter((action) =>
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
@@ -145,7 +150,7 @@ export const MultiselectToolbar = connect(
                                     </div>
                                 )
                             ) : action.component ? (
-                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} style={{color: 'blue'}}>
+                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name}>
                                     <action.component isInToolbar={true} onClick={()=>props.executeComponent(action.execute, fetchedResources)} />
                                 </span>
                             ) : (
@@ -214,7 +219,7 @@ function groupByKind(dispatch: Dispatch, checkedList: TCheckedList, resources: R
     return [result, firstResourceKind];
 }
 
-function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): MultiSelectMenuAction[] {
+function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): ContextMenuAction[] {
     if (currentResourceKinds.length === 0) return [];
     const allMenuActionSets = currentResourceKinds.map(kind => getMenuActionSetByKind(kind)).map(actionSetArray => actionSetArray[0]);
     //if only one selected, return all actions
@@ -228,7 +233,7 @@ function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): MultiSele
     return Array.from(new Set(commonActions));
 }
 
-function findActionByName(name: string, actionSet: MultiSelectMenuActionSet) {
+function findActionByName(name: string, actionSet: ContextMenuAction[][]) {
     return actionSet[0].find(action => action.name === name);
 }
 

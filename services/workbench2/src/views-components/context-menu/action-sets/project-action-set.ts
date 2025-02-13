@@ -109,7 +109,9 @@ export const toggleTrashAction = {
     name: ContextMenuActionNames.MOVE_TO_TRASH,
     isForMulti: true,
     execute: (dispatch, resources) => {
-        dispatch(toggleProjectTrashed(resources[0].uuid, resources[0].ownerUuid, resources[0].isTrashed!!, resources.length > 1));
+        for (const resource of [...resources]) {
+            dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
+        }
     },
 };
 
