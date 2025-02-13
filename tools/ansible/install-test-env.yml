@@ -4,28 +4,18 @@
 #
 # install-test-env.yml - Ansible playbook to set up a host to run Arvados tests
 #
-# THIS IS A PROTOTYPE - NOT FULLY TESTED.
-# The goal is you should be able to run this playbook on a host, clone the
-# Arvados source, and run `build/run-tests.sh`. It might not be 100% of the
-# way there but what's currently here gets the majority of tests passing on
-# Debian 12.
+# After you run this playbook on a host, you should be able to clone the
+# Arvados git repository and run `build/run-tests.sh`.
+# As of February 2025 this has been tested to work on Debian 11 and Debian 12.
+# A few tests fail on Debian 12 because they haven't been adapted to newer
+# software yet.
 #
 # In order to use this playbook, you must write an Arvados `config.yml` with
-# PostgreSQL connection details for the `zzzzz` cluster, like so:
-#
-# Clusters:
-#   zzzzz:
-#     PostgreSQL:
-#       Connection:
-#         host: localhost
-#         port: "5432"
-#         dbname: arvados_test
-#         user: arvados_test
-#         password: insecure_arvados_test
-#
-# You can edit `dbname`, `user`, and `password` to taste.
-# Pass the path of this file to `ansible-playbook` with
-# `-e arvados_config=config.yml`.
+# PostgreSQL connection details for the `zzzzz` cluster.
+# `files/default-test-config.yml` has the default credentials used by tests.
+# You can copy that file and edit `dbname`, `user`, and `password` to taste.
+# Pass the path of your file to `ansible-playbook` with
+# `-e arvados_config_file=config.yml`.
 
 - name: Load Arvados configuration
   hosts: all
