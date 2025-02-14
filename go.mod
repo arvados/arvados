@@ -2,7 +2,7 @@ module git.arvados.org/arvados.git
 
 go 1.21
 
-toolchain go1.21.10
+toolchain go1.22.4
 
 require (
 	dario.cat/mergo v1.0.0
