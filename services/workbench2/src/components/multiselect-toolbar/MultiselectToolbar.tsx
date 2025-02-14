@@ -226,7 +226,6 @@ function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
         getAllMenukinds: (checkedList: TCheckedList) => selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind),
         resourceToMenukind: (uuid: string)=> {
             const kind = dispatch<any>(resourceToMenuKind(uuid))
-            if (kind === ContextMenuKind.ROOT_PROJECT) return ContextMenuKind.USER_DETAILS;
             return kind;
         },
         executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),

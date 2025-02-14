@@ -141,6 +141,12 @@ const rootProjectOrder = [
     ContextMenuActionNames.API_DETAILS,
 ];
 
+const userDetailsOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.USER_ACCOUNT,
+    ContextMenuActionNames.API_DETAILS,
+];
+
 const defaultMultiOrder = [
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
@@ -182,6 +188,8 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
 
     [ContextMenuKind.ROOT_PROJECT]: rootProjectOrder,
     [ContextMenuKind.ROOT_PROJECT_ADMIN]: rootProjectOrder,
+
+    [ContextMenuKind.USER_DETAILS]: userDetailsOrder,
 };
 
 export const menuDirection = {
