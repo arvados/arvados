@@ -34,8 +34,9 @@ type ToggleTrashActionProps = {
 export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentItemStyles)((props: ToggleTrashActionProps & WithStyles<ComponentCssRules>) => {
     const { classes, onClick, isInToolbar, contextMenuResourceUuid, selectedResourceUuid, resources, disabledButtons } = props;
 
+    const currentPathIsTrash = window.location.pathname === "/trash";
     const trashResourceUuid = isInToolbar ? selectedResourceUuid : contextMenuResourceUuid;
-    const isTrashed = getResource<GroupResource>(trashResourceUuid)(resources)?.isTrashed;
+    const isTrashed = getResource<GroupResource>(trashResourceUuid)(resources)?.isTrashed || currentPathIsTrash;
     const isDisabled = disabledButtons.has(ContextMenuActionNames.MOVE_TO_TRASH);
 
     return (
