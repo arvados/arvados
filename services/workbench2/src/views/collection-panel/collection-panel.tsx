@@ -137,7 +137,6 @@ type CollectionPanelState = {
     item: CollectionResource | null;
     itemOwner: GroupResource | UserResource | null;
     isWritable: boolean;
-    isFrozen: boolean;
     isOldVersion: boolean
 }
 
@@ -153,20 +152,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                 item: null,
                 itemOwner: null,
                 isWritable: false,
-                isFrozen: false,
                 isOldVersion: false,
-            }
-
-            componentDidMount() {
-                const collection = getResource<CollectionResource>(this.props.match.params.id)(this.props.resources);
-                if (this.state.item && collection) {
-                    this.props.dispatch<any>(setSelectedResourceUuid(collection.uuid))
-                    this.setState({
-                        item: collection,
-                        itemOwner: getResource<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources),
-                        isOldVersion: collection.currentVersionUuid !== collection.uuid,
-                    });
-                };
             }
 
             shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps & RouteComponentProps<{ id: string }>>, nextState: Readonly<CollectionPanelState>, nextContext: any ): boolean {
