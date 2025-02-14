@@ -171,9 +171,9 @@ export interface TreeProps<T> {
 }
 
 export enum TreeItemWeight {
-    NORMAL = 0,
-    LIGHT = 1,
-    DARK = 2,
+    NORMAL,
+    LIGHT,
+    DARK,
 };
 
 export interface TreeItemWithWeight {

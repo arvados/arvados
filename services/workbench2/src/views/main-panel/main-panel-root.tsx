@@ -19,8 +19,7 @@ import { RouterState } from "react-router-redux";
 import parse from 'parse-duration';
 import { Config } from 'common/config';
 import { LinkAccountPanelState, LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
-
-const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
+import { WORKBENCH_LOADING_SCREEN } from 'store/progress-indicator/progress-indicator-actions';
 
 type CssRules = 'root';
 
