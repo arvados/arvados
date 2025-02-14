@@ -1106,6 +1106,7 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=context-menu]").contains("Move selected into separate collections").click();
             cy.get("[data-cy=form-dialog]").contains("Projects").click();
             cy.get("[data-cy=form-submit-btn]").click();
+            cy.get("[data-cy=form-dialog]").should("not.exist", { timeout: 10000 });
 
             // Verify created collections
             cy.waitForDom().get(".layout-pane-primary", { timeout: 12000 }).contains("Projects").click();
