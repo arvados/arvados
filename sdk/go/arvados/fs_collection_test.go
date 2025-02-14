@@ -1593,7 +1593,7 @@ func (s *CollectionFSSuite) testPlanRepack(c *check.C, manifest string, expectPl
 	fs, err := (&Collection{ManifestText: manifest}).FileSystem(nil, &keepClientStub{})
 	c.Assert(err, check.IsNil)
 	cfs := fs.(*collectionFileSystem)
-	repl, err := cfs.planRepack(context.Background(), RepackOptions{}, cfs.root.(*dirnode))
+	repl, err := cfs.planRepack(context.Background(), RepackOptions{Full: true}, cfs.root.(*dirnode))
 	c.Assert(err, check.IsNil)
 
 	// we always expect kc==cfs, so we fill this in instead of
@@ -2011,6 +2011,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite) {
 			// Rewriting data >16x on average means
 			// something is terribly wrong -- give up now
 			// instead of going OOM.
+			c.Logf("something is terribly wrong -- bytesWritten %d >> bytesContent %d", bytesWritten(), bytesContent)
 			c.FailNow()
 		}
 		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.06f\n", writeIndex+1, len(filesWritten), bytesContent, blocksInManifest(), bytesWritten(), nRepackTotal-nRepackNoop, nRepackNoop, tRepackTotal.Seconds())

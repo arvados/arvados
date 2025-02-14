@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -674,10 +675,16 @@ func (fs *collectionFileSystem) replaceSegments(m map[BlockSegment]BlockSegment)
 }
 
 // See (*collectionFileSystem)planRepack.
-var repackBucketThreshold = []struct {
+type repackBucketThreshold struct {
 	maxIn  int
 	minOut int
-}{
+}
+
+var fullRepackBucketThresholds = []repackBucketThreshold{
+	{maxIn: 1 << 25, minOut: 1 << 25},
+}
+
+var repackBucketThresholds = []repackBucketThreshold{
 	{maxIn: 1 << 23, minOut: 1 << 25},
 	{maxIn: 1 << 21, minOut: 1 << 24},
 	{maxIn: 1 << 19, minOut: 1 << 22},
@@ -697,6 +704,12 @@ var repackBucketThreshold = []struct {
 //
 // Caller must have lock on given root node.
 func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptions, root *dirnode) (plan [][]storedSegment, err error) {
+	var thresholds []repackBucketThreshold
+	if opts.Full {
+		thresholds = fullRepackBucketThresholds
+	} else {
+		thresholds = repackBucketThresholds
+	}
 	if opts.CachedOnly {
 		// TODO: use diskCacheProber
 		return nil, errors.New("CacheOnly not yet implemented")
@@ -704,13 +717,13 @@ func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptio
 	// TODO: depending on opts, plan as if large but underutilized
 	// blocks are short blocks.
 	blockSize := make(map[string]int)
-	bucketBlocks := make([][]string, len(repackBucketThreshold))
+	bucketBlocks := make([][]string, len(thresholds))
 	root.walkSegments(func(seg segment) segment {
 		if ss, ok := seg.(storedSegment); ok {
 			hash := stripAllHints(ss.locator)
 			if blockSize[hash] == 0 {
 				blockSize[hash] = ss.size
-				for bucket, threshold := range repackBucketThreshold {
+				for bucket, threshold := range thresholds {
 					if ss.size >= threshold.maxIn {
 						break
 					}
@@ -728,9 +741,8 @@ func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptio
 		pending = pending[:0]
 		pendingSize := 0
 		for _, hash := range bucketBlocks[bucket] {
-			if _, planned := blockPlan[hash]; planned {
+			if _, planned := blockPlan[hash]; planned || slices.Contains(pending, hash) {
 				// already planned to merge this block
-				// in a different bucket
 				continue
 			}
 			size := blockSize[hash]
@@ -745,7 +757,7 @@ func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptio
 			pendingSize += size
 			pending = append(pending, hash)
 		}
-		if pendingSize >= repackBucketThreshold[bucket].minOut {
+		if pendingSize >= thresholds[bucket].minOut {
 			for _, hash := range pending {
 				blockPlan[hash] = len(plan)
 			}
@@ -755,17 +767,17 @@ func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptio
 	// We have decided which blocks to merge.  Now we collect all
 	// of the segments that reference those blocks, and return
 	// that as the final plan.
+	done := make(map[storedSegment]bool)
 	root.walkSegments(func(seg segment) segment {
 		ss, ok := seg.(storedSegment)
 		if !ok {
 			return seg
 		}
 		hash := stripAllHints(ss.locator)
-		idx, planning := blockPlan[hash]
-		if !planning {
-			return seg
+		if idx, planning := blockPlan[hash]; planning && !done[ss] {
+			plan[idx] = append(plan[idx], ss)
+			done[ss] = true
 		}
-		plan[idx] = append(plan[idx], ss)
 		return seg
 	})
 	return plan, nil
