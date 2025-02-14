@@ -26,6 +26,7 @@ from typing import (
     Container,
     Dict,
     Iterator,
+    List,
     TypeVar,
     Union,
 )
@@ -378,3 +379,22 @@ def trim_name(collectionname: str) -> str:
         collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
 
     return collectionname
+
+def iter_storage_classes(
+        config: Dict[str, Any],
+        check: Callable[[Dict[str, Any]], bool]=operator.methodcaller('get', 'Default'),
+        fallback: str="default",
+) -> Iterator[str]:
+    """Read storage classes from the API client config
+
+    This function iterates storage class names for classes in `config` that
+    pass `check`. If no matches are found but `fallback` is given, it is
+    yielded.
+    """
+    any_found = False
+    for key, value in config.get("StorageClasses", {}).items():
+        if check(value):
+            any_found = True
+            yield key
+    if fallback and not any_found:
+        yield fallback

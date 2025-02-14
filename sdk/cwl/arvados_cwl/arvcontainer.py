@@ -23,6 +23,7 @@ from cwltool.job import JobBase
 from cwltool.builder import substitute
 
 import arvados.collection
+import arvados.util
 
 import crunchstat_summary.summarizer
 import crunchstat_summary.reader
@@ -312,7 +313,10 @@ class ArvadosContainer(JobBase):
             if storage_class_req and storage_class_req.get("intermediateStorageClass"):
                 container_request["output_storage_classes"] = aslist(storage_class_req["intermediateStorageClass"])
             else:
-                container_request["output_storage_classes"] = runtimeContext.intermediate_storage_classes.strip().split(",")
+                container_request["output_storage_classes"] = (
+                    runtimeContext.intermediate_storage_classes
+                    or list(arvados.util.iter_storage_classes(self.arvrunner.api.config()))
+                )
 
         cuda_req, _ = self.get_requirement("http://commonwl.org/cwltool#CUDARequirement")
         if cuda_req:
@@ -931,11 +935,11 @@ class RunnerContainer(Runner):
         if runtimeContext.debug:
             command.append("--debug")
 
-        if runtimeContext.storage_classes != "default" and runtimeContext.storage_classes:
-            command.append("--storage-classes=" + runtimeContext.storage_classes)
+        if runtimeContext.storage_classes:
+            command.append("--storage-classes=" + ",".join(runtimeContext.storage_classes))
 
-        if runtimeContext.intermediate_storage_classes != "default" and runtimeContext.intermediate_storage_classes:
-            command.append("--intermediate-storage-classes=" + runtimeContext.intermediate_storage_classes)
+        if runtimeContext.intermediate_storage_classes:
+            command.append("--intermediate-storage-classes=" + ",".join(runtimeContext.intermediate_storage_classes))
 
         if runtimeContext.on_error:
             command.append("--on-error=" + self.on_error)
@@ -959,7 +963,7 @@ class RunnerContainer(Runner):
             command.append("--disable-preemptible")
 
         if runtimeContext.varying_url_params:
-            command.append("--varying-url-params="+runtimeContext.varying_url_params)
+            command.append("--varying-url-params=" + runtimeContext.varying_url_params)
 
         if runtimeContext.prefer_cached_downloads:
             command.append("--prefer-cached-downloads")

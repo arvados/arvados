@@ -247,7 +247,7 @@ def _logfilename(label):
     # us.
     cat = subprocess.Popen(
         stdbuf+['cat', fifo],
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE)
     _detachedSubprocesses.append(cat)
     tee = subprocess.Popen(
@@ -371,7 +371,7 @@ def run(leave_running_atexit=False):
          '--ssl-certificate', 'tmp/self-signed.pem',
          '--ssl-certificate-key', 'tmp/self-signed.key'],
         env=env,
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf)
     _detachedSubprocesses.append(railsapi)
@@ -452,7 +452,7 @@ def run_controller():
     controller = subprocess.Popen(
         ["arvados-server", "controller"],
         env=_service_environ(),
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf,
         close_fds=True)
@@ -476,7 +476,7 @@ def run_ws():
     ws = subprocess.Popen(
         ["arvados-server", "ws"],
         env=_service_environ(),
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf,
         close_fds=True)
@@ -511,15 +511,14 @@ def _start_keep(n, blob_signing=False):
     keep_cmd = ["arvados-server", "keepstore", "-config", conf]
 
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
-        with open('/dev/null') as _stdin:
-            child = subprocess.Popen(
-                keep_cmd,
-                env=_service_environ(),
-                stdin=_stdin,
-                stdout=logf,
-                stderr=logf,
-                close_fds=True)
-            _detachedSubprocesses.append(child)
+        child = subprocess.Popen(
+            keep_cmd,
+            env=_service_environ(),
+            stdin=subprocess.DEVNULL,
+            stdout=logf,
+            stderr=logf,
+            close_fds=True)
+        _detachedSubprocesses.append(child)
 
     print('child.pid is %d'%child.pid, file=sys.stderr)
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
@@ -582,7 +581,7 @@ def run_keep_proxy():
     kp = subprocess.Popen(
         ['arvados-server', 'keepproxy'],
         env=env,
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf,
         close_fds=True)
@@ -625,7 +624,7 @@ def run_keep_web():
     keepweb = subprocess.Popen(
         ['arvados-server', 'keep-web'],
         env=_service_environ(),
-        stdin=open('/dev/null'),
+        stdin=subprocess.DEVNULL,
         stdout=logf,
         stderr=logf)
     _detachedSubprocesses.append(keepweb)
@@ -682,7 +681,9 @@ def run_nginx():
         ['nginx',
          '-g', 'error_log stderr notice; pid '+_pidfile('nginx')+';',
          '-c', conffile],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=sys.stderr)
     _detachedSubprocesses.append(nginx)
     _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'])
 
@@ -715,6 +716,7 @@ def setup_config():
         pgconnection = {
 	    "client_encoding": "utf8",
 	    "host": "localhost",
+	    "port": "5432",
 	    "dbname": "arvados_test",
 	    "user": "arvados",
 	    "password": "insecure_arvados_test",
@@ -797,6 +799,24 @@ def setup_config():
                                 "Password": "xyzzy"
                             }
                         }
+                    },
+                    "LDAP": {
+                        "Enable": False,
+                        # Hostname used by lib/controller/localdb/login_docker_test
+                        # Other settings are the defaults for the
+                        # bitnami/openldap Docker image it uses
+                        "URL": "ldap://arvados-test-openldap:1389/",
+                        "StartTLS": False,
+                        "SearchBase": "dc=example,dc=org",
+                        "SearchBindUser": "cn=admin,dc=example,dc=org",
+                        "SearchBindPassword": "adminpassword",
+                    },
+                    "PAM": {
+                        "Enable": False,
+                        # Without this specific DefaultEmailDomain, inserted users
+                        # would prevent subsequent database/reset from working (see
+                        # database_controller.rb).
+                        "DefaultEmailDomain": "example.com",
                     },
                 },
                 "SystemLogs": {
@@ -952,18 +972,17 @@ if __name__ == "__main__":
         'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', type=str, help="one of {}".format(actions))
+    parser.add_argument(
+        'action',
+        metavar='ACTION',
+        choices=actions,
+        help="one of %(choices)s",
+    )
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
     parser.add_argument('--num-keep-servers', metavar='int', type=int, default=2, help="Number of keep servers desired")
     parser.add_argument('--keep-blob-signing', action="store_true", help="Enable blob signing for keepstore servers")
 
     args = parser.parse_args()
-
-    if args.action not in actions:
-        print("Unrecognized action '{}'. Actions are: {}.".
-              format(args.action, actions),
-              file=sys.stderr)
-        sys.exit(1)
     # Create a new process group so our child processes don't exit on
     # ^C in run-tests.sh interactive mode.
     os.setpgid(0, 0)

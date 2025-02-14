@@ -101,4 +101,24 @@ describe('TreePickerReducer', () => {
             status: TreeNodeStatus.LOADED,
         });
     });
+
+    it('does not set malformed node', () => {
+        const node = initTreeNode({ id: '1', value: '1' });
+        const malformedNode = initTreeNode({ id: '', value: NaN });
+        const newState = pipe(
+            (state) => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: node.id, nodes: [node], pickerId: "projects" })),
+            state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: malformedNode.id, nodes: [malformedNode], pickerId: "projects" })),
+        )({ projects: createTree() });
+        expect(getNode(node.id)(newState.projects)).to.deep.equal({
+            active: false,
+            children: [ "1" ],
+            expanded: false,
+            id: "1",
+            parent: "1",
+            selected: false,
+            status: "INITIAL",
+            value: "1"
+        });
+        expect(getNode(malformedNode.id)(newState.projects)).to.equal(undefined);
+    });
 });

@@ -9,7 +9,6 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { Transition } from 'react-transition-group';
 import { ArvadosTheme } from 'common/custom-theme';
-import classnames from "classnames";
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import { CloseIcon } from 'components/icon/icon';
@@ -33,36 +32,54 @@ import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
-type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
+type CssRules =
+    | "root"
+    | "container"
+    | "headerContainer"
+    | "headerTitleWrapper"
+    | "headerIconWrapper"
+    | "headerIcon"
+    | "tabContainerWrapper"
+    | "tabContainer"
+    | "tab";
 
-const DRAWER_WIDTH = 320;
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
-        borderLeft: `1px solid ${theme.palette.divider}`,
         height: '100%',
         overflow: 'hidden',
-        transition: `width ${SLIDE_TIMEOUT}ms ease`,
-        width: 0,
-    },
-    opened: {
-        width: DRAWER_WIDTH,
     },
     container: {
         maxWidth: 'none',
-        width: DRAWER_WIDTH,
     },
     headerContainer: {
         color: theme.palette.grey["600"],
         margin: `${theme.spacing(1)} 0`,
         textAlign: 'center',
     },
+    headerIconWrapper: {
+        margin: '0 10px',
+    },
+    headerTitleWrapper: {
+        overflow: 'hidden',
+    },
     headerIcon: {
         fontSize: '2.125rem',
+    },
+    tabContainerWrapper: {
+        // Grid container wrapper prevents horizontal overflow
+        // Flex styles prevent unscrollable vertical overflow
+        overflowY: 'scroll',
+        flexGrow: 1,
+        flexShrink: 1,
+        flexBasis: 'inherit',
     },
     tabContainer: {
         overflow: 'auto',
         padding: theme.spacing(1),
+    },
+    tab: {
+        borderBottom: `1px solid ${theme.palette.grey[300]}`,
     },
 });
 
@@ -158,7 +175,7 @@ export const DetailsPanel = withStyles(styles)(
                     <Grid
                         container
                         direction="column"
-                        className={classnames([classes.root, { [classes.opened]: isOpened }])}>
+                        className={classes.root}>
                         <Transition
                             in={isOpened}
                             timeout={SLIDE_TIMEOUT}
@@ -194,12 +211,12 @@ export const DetailsPanel = withStyles(styles)(
                             className={classes.headerContainer}
                             container
                             alignItems='center'
-                            justifyContent='space-around'
+                            justifyContent='space-between'
                             wrap="nowrap">
-                            <Grid item xs={2}>
+                            <Grid item className={classes.headerIconWrapper}>
                                 {item.getIcon(classes.headerIcon)}
                             </Grid>
-                            <Grid item xs={8}>
+                            <Grid item className={classes.headerTitleWrapper}>
                                 <Tooltip title={item.getTitle()}>
                                     <Typography variant='h6' noWrap>
                                         {item.getTitle()}
@@ -217,12 +234,14 @@ export const DetailsPanel = withStyles(styles)(
                                 variant='fullWidth'
                                 value={(item.getTabLabels().length >= tabNr + 1) ? tabNr : 0}>
                                 {item.getTabLabels().map((tabLabel, idx) =>
-                                    <Tab key={`tab-label-${idx}`} data-cy={`details-panel-tab-${tabLabel}`} disableRipple label={tabLabel} />)
+                                    <Tab className={classes.tab} key={`tab-label-${idx}`} data-cy={`details-panel-tab-${tabLabel}`} disableRipple label={tabLabel} />)
                                 }
                             </Tabs>
                         </Grid>
-                        <Grid item xs className={this.props.classes.tabContainer} >
-                            {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
+                        <Grid item container className={this.props.classes.tabContainerWrapper}>
+                            <Grid item xs className={this.props.classes.tabContainer}>
+                                {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
+                            </Grid>
                         </Grid>
                     </Grid >
                 );

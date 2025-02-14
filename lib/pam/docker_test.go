@@ -111,9 +111,9 @@ func (s *DockerSuite) runTestClient(c *check.C, args ...string) (stdout, stderr 
 		"run", "--rm",
 		"--hostname", "testvm2.shell",
 		"--add-host", "zzzzz.arvadosapi.com:" + s.hostip,
-		"-v", s.tmpdir + "/pam_arvados.so:/usr/lib/pam_arvados.so:ro",
-		"-v", s.tmpdir + "/conffile:/usr/share/pam-configs/arvados:ro",
-		"-v", s.tmpdir + "/testclient:/testclient:ro",
+		"--mount", "type=bind,src=" + s.tmpdir + "/pam_arvados.so,dst=/usr/lib/pam_arvados.so,readonly",
+		"--mount", "type=bind,src=" + s.tmpdir + "/conffile,dst=/usr/share/pam-configs/arvados,readonly",
+		"--mount", "type=bind,src=" + s.tmpdir + "/testclient,dst=/testclient,readonly",
 		"debian:bookworm",
 		"/testclient"}, args...)...)
 	stdout = &bytes.Buffer{}

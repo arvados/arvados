@@ -4,28 +4,18 @@
 #
 # install-test-env.yml - Ansible playbook to set up a host to run Arvados tests
 #
-# THIS IS A PROTOTYPE - NOT FULLY TESTED.
-# The goal is you should be able to run this playbook on a host, clone the
-# Arvados source, and run `build/run-tests.sh`. It might not be 100% of the
-# way there but what's currently here gets the majority of tests passing on
-# Debian 12.
+# After you run this playbook on a host, you should be able to clone the
+# Arvados git repository and run `build/run-tests.sh`.
+# As of February 2025 this has been tested to work on Debian 11 and Debian 12.
+# A few tests fail on Debian 12 because they haven't been adapted to newer
+# software yet.
 #
 # In order to use this playbook, you must write an Arvados `config.yml` with
-# PostgreSQL connection details for the `zzzzz` cluster, like so:
-#
-# Clusters:
-#   zzzzz:
-#     PostgreSQL:
-#       Connection:
-#         host: localhost
-#         port: "5432"
-#         dbname: arvados_test
-#         user: arvados_test
-#         password: insecure_arvados_test
-#
-# You can edit `dbname`, `user`, and `password` to taste.
-# Pass the path of this file to `ansible-playbook` with
-# `-e arvados_config=config.yml`.
+# PostgreSQL connection details for the `zzzzz` cluster.
+# `files/default-test-config.yml` has the default credentials used by tests.
+# You can copy that file and edit `dbname`, `user`, and `password` to taste.
+# Pass the path of your file to `ansible-playbook` with
+# `-e arvados_config_file=config.yml`.
 
 - name: Load Arvados configuration
   hosts: all
@@ -42,10 +32,6 @@
 
 - hosts: all
   vars:
-    # Arvados tests are hardcoded to use an arvados_test database, so we always
-    # set that up. A different dbname is assumed to be a development database
-    # and we set that up too.
-    arvados_dev_databases: "{{ [arvados_cluster.PostgreSQL.Connection.dbname, 'arvados_test']|unique }}"
     arvados_dev_user: "{{ ansible_user_id }}"
     arvados_nodejs_version: "14.21.3"
     arvados_nodejs_destdir: "/opt/node-v{{ arvados_nodejs_version }}-linux-x64"
@@ -68,6 +54,7 @@
           - diffutils
           - g++
           - git
+          - jq
           - libnss-systemd
           - make
           - nginx
@@ -82,6 +69,9 @@
           # build/run-tests.sh
           - bsdextrautils
           - net-tools
+          # build/run-build-packages*.sh
+          - createrepo-c
+          - dpkg-dev
           # doc
           - linkchecker
           # lib/controller
@@ -156,11 +146,12 @@
         name: arvados_postgresql
       vars:
         arvados_postgresql_hba_users: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
-        arvados_postgresql_hba_databases: "{{ arvados_dev_databases|join(',') }}"
+        arvados_postgresql_hba_databases: "{{ arvados_cluster.PostgreSQL.Connection.dbname }}"
         arvados_postgresql_hba_sources:
           - "127.0.0.1/24"
           - "::1/128"
 
+    # Workbench build dependencies
     - name: Install Node.js
       become: yes
       ansible.builtin.unarchive:
@@ -186,16 +177,42 @@
         - npm
         - yarn
         - yarnpkg
+    # Configuration to run Workbench
+    - name: Check fs.inotify.max_user_watches sysctl value
+      ansible.builtin.command:
+        cmd: /sbin/sysctl --values fs.inotify.max_user_watches
+      register: max_user_watches_value
+    - name: Increase fs.inotify.max_user_watches
+      vars:
+        max_user_watches_wanted: 524288
+      when: "max_user_watches_value.stdout|int < max_user_watches_wanted"
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - sysctl
+          - "fs.inotify.max_user_watches={{ max_user_watches_wanted }}"
+      register: max_user_watches_set
+    - name: Set fs.inotify.max_user_watches permanently
+      when: max_user_watches_set.changed
+      become: yes
+      ansible.builtin.copy:
+        content: |
+          ### This file is managed by Ansible
+          # React sets many inotify watchers and needs the limit increased.
+          {{ max_user_watches_set.stdout }}
+        dest: /etc/sysctl.d/arvados-workbench.conf
+        owner: root
+        group: root
+        mode: 0644
 
     - ansible.builtin.include_role:
         name: arvados_database
       vars:
-        arvados_database_name: "{{ item }}"
+        arvados_database_name: "{{ arvados_cluster.PostgreSQL.Connection.dbname }}"
         arvados_database_user_name: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
         arvados_database_user_password: "{{ arvados_cluster.PostgreSQL.Connection.password }}"
         # Let the test user drop and recreate the database wholesale
         arvados_database_role_attr_flags: CREATEDB
-      loop: "{{ arvados_dev_databases }}"
 
     - name: Set up Arvados development user
       become: yes
