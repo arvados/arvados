@@ -207,17 +207,7 @@ class Container < ArvadosModel
     if rc['keep_cache_disk'] == 0 and rc['keep_cache_ram'] == 0
       rc['keep_cache_disk'] = bound_keep_cache_disk(rc['ram'])
     end
-    if rc['cuda'] && rc['cuda']['device_count'] > 0
-      # Legacy API to request Nvidia GPUs, convert it so downstream
-      # code only has to handle generic GPU requests.
-      rc['gpu'] = {
-          'device_count' => rc['cuda']['device_count'],
-          'driver_version' => rc['cuda']['driver_version'],
-          'hardware_target' => [rc['cuda']['hardware_capability']],
-          'stack' => 'cuda',
-          'vram' => 0,
-      }
-    end
+    ContainerRequest.translate_cuda_to_gpu rc
     self.deep_sort_hash(rc)
   end
 

@@ -95,12 +95,6 @@ type Mount struct {
 	Capacity          int64       `json:"capacity"`
 }
 
-type CUDARuntimeConstraints struct {
-	DriverVersion      string `json:"driver_version"`
-	HardwareCapability string `json:"hardware_capability"`
-	DeviceCount        int    `json:"device_count"`
-}
-
 type GPURuntimeConstraints struct {
 	Stack          string   `json:"stack"`
 	DriverVersion  string   `json:"driver_version"`
@@ -112,13 +106,12 @@ type GPURuntimeConstraints struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API           bool                   `json:"API"`
-	RAM           int64                  `json:"ram"`
-	VCPUs         int                    `json:"vcpus"`
-	KeepCacheRAM  int64                  `json:"keep_cache_ram"`
-	KeepCacheDisk int64                  `json:"keep_cache_disk"`
-	CUDA          CUDARuntimeConstraints `json:"cuda"`
-	GPU           GPURuntimeConstraints  `json:"gpu"`
+	API           bool                  `json:"API"`
+	RAM           int64                 `json:"ram"`
+	VCPUs         int                   `json:"vcpus"`
+	KeepCacheRAM  int64                 `json:"keep_cache_ram"`
+	KeepCacheDisk int64                 `json:"keep_cache_disk"`
+	GPU           GPURuntimeConstraints `json:"gpu"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters

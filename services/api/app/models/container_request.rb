@@ -39,6 +39,7 @@ class ContainerRequest < ArvadosModel
   after_find :fill_container_defaults_after_find
   after_initialize { @state_was_when_initialized = self.state_was } # see finalize_if_needed
   before_validation :fill_field_defaults, :if => :new_record?
+  before_validation :fill_cuda_to_gpu
   before_validation :fill_container_defaults
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
@@ -326,6 +327,24 @@ class ContainerRequest < ArvadosModel
     self.output_ttl ||= 0
     self.output_glob ||= []
     self.priority ||= 0
+  end
+
+  def fill_cuda_to_gpu
+    ContainerRequest.translate_cuda_to_gpu attributes['runtime_constraints']
+  end
+
+  def self.translate_cuda_to_gpu rc
+    if rc['cuda'] && rc['cuda']['device_count'] > 0
+      # Legacy API to request Nvidia GPUs, convert it so downstream
+      # code only has to handle generic GPU requests.
+      rc['gpu'] = {
+          'device_count' => rc['cuda']['device_count'],
+          'driver_version' => rc['cuda']['driver_version'],
+          'hardware_target' => [rc['cuda']['hardware_capability']],
+          'stack' => 'cuda',
+          'vram' => 0,
+      }
+    end
   end
 
   def set_container
