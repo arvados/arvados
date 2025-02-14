@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-compute_go_version: "{{ arvados_go_version|default('1.22.4') }}"
+compute_go_version: "{{ arvados_go_version|default('1.23.6') }}"
 compute_singularity_destdir: "/opt/singularity-{{ compute_singularity_version }}"
 compute_singularity_version: "3.10.4"
 compute_singularity_url: "https://github.com/sylabs/singularity"
