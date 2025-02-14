@@ -43,6 +43,7 @@ export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentIt
         <Tooltip title={isTrashed ? "Restore" : "Move to trash"}>
             {isInToolbar ? (
                 <IconButton
+                    data-cy='multiselect-button'
                     className={classes.toolbarButton}
                     disabled={isDisabled}
                     onClick={onClick}>

@@ -46,6 +46,7 @@ export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentIte
         <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
             {isInToolbar ? (
                 <IconButton
+                data-cy='multiselect-button'
                 className={classes.toolbarButton}
                 disabled={isDisabled}
                 onClick={onClick}>

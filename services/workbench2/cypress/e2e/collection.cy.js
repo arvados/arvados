@@ -63,7 +63,7 @@ describe("Collection panel tests", function () {
             cy.waitForDom()
             cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
             msButtonTooltips.forEach((tooltip, index) => {
-                cy.get('[data-cy=multiselect-button]').eq(index).parent().should('have.attr', 'aria-label', tooltip)
+                cy.get('[data-cy=multiselect-button]').eq(index).parent().should('have.attr', 'data-targetid', tooltip)
             })
     })
 

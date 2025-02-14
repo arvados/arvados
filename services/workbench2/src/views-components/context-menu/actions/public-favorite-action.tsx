@@ -40,6 +40,7 @@ export const TogglePublicFavoriteAction = connect(mapStateToProps)(withStyles(co
     return <Tooltip title={isPublicFavorite ? "Remove from public favorites" : "Add to public favorites"}>
         {isInToolbar ? (
             <IconButton
+                data-cy='multiselect-button'
                 className={classes.toolbarButton}
                 disabled={isDisabled}
                 onClick={onClick}>
