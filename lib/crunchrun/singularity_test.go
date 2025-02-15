@@ -77,13 +77,14 @@ func (s *singularityStubSuite) TestSingularityExecArgs(c *C) {
 	e, err := newSingularityExecutor(c.Logf)
 	c.Assert(err, IsNil)
 	err = e.Create(containerSpec{
-		WorkingDir:      "/WorkingDir",
-		Env:             map[string]string{"FOO": "bar"},
-		BindMounts:      map[string]bindmount{"/mnt": {HostPath: "/hostpath", ReadOnly: true}},
-		EnableNetwork:   false,
-		CUDADeviceCount: 3,
-		VCPUs:           2,
-		RAM:             12345678,
+		WorkingDir:     "/WorkingDir",
+		Env:            map[string]string{"FOO": "bar"},
+		BindMounts:     map[string]bindmount{"/mnt": {HostPath: "/hostpath", ReadOnly: true}},
+		EnableNetwork:  false,
+		GPUStack:       "cuda",
+		GPUDeviceCount: 3,
+		VCPUs:          2,
+		RAM:            12345678,
 	})
 	c.Check(err, IsNil)
 	e.imageFilename = "/fake/image.sif"

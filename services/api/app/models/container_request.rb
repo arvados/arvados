@@ -39,6 +39,7 @@ class ContainerRequest < ArvadosModel
   after_find :fill_container_defaults_after_find
   after_initialize { @state_was_when_initialized = self.state_was } # see finalize_if_needed
   before_validation :fill_field_defaults, :if => :new_record?
+  before_validation :fill_cuda_to_gpu
   before_validation :fill_container_defaults
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
@@ -328,6 +329,24 @@ class ContainerRequest < ArvadosModel
     self.priority ||= 0
   end
 
+  def fill_cuda_to_gpu
+    ContainerRequest.translate_cuda_to_gpu attributes['runtime_constraints']
+  end
+
+  def self.translate_cuda_to_gpu rc
+    if rc['cuda'] && rc['cuda']['device_count'] > 0
+      # Legacy API to request Nvidia GPUs, convert it so downstream
+      # code only has to handle generic GPU requests.
+      rc['gpu'] = {
+          'device_count' => rc['cuda']['device_count'],
+          'driver_version' => rc['cuda']['driver_version'],
+          'hardware_target' => [rc['cuda']['hardware_capability']],
+          'stack' => 'cuda',
+          'vram' => 0,
+      }
+    end
+  end
+
   def set_container
     if (container_uuid_changed? and
         not current_user.andand.is_admin and
@@ -424,6 +443,46 @@ class ContainerRequest < ArvadosModel
           if !v.is_a?(String) || (runtime_constraints['cuda']['device_count'] > 0 && v.to_f == 0.0)
             errors.add(:runtime_constraints,
                        "[cuda.#{k}]=#{v.inspect} must be a string in format 'X.Y'")
+          end
+        end
+      end
+
+      if runtime_constraints['gpu']
+        k = 'stack'
+        v = runtime_constraints['gpu'][k]
+        if not [nil, '', 'cuda', 'rocm'].include? v
+            errors.add(:runtime_constraints,
+                       "[gpu.#{k}]=#{v.inspect} must be one of 'cuda' or 'rocm' or be empty")
+        end
+
+        ['device_count', 'vram'].each do |k|
+          v = runtime_constraints['gpu'][k]
+          if !v.is_a?(Integer) || v < 0
+            errors.add(:runtime_constraints,
+                       "[gpu.#{k}]=#{v.inspect} must be a positive or zero integer")
+          end
+        end
+
+        if runtime_constraints['gpu']['device_count'] > 0
+          k = 'driver_version'
+          v = runtime_constraints['gpu'][k]
+          if !v.is_a?(String) || v.to_f == 0.0
+            errors.add(:runtime_constraints,
+                       "[gpu.#{k}]=#{v.inspect} must be a string in format 'X.Y'")
+          end
+
+          k = 'hardware_target'
+          v = runtime_constraints['gpu'][k]
+          if v.is_a?(Array)
+            v.each do |tgt|
+              if !tgt.is_a?(String)
+                errors.add(:runtime_constraints,
+                           "[gpu.#{k}]=#{v.inspect} must be an array of strings")
+              end
+            end
+          else
+            errors.add(:runtime_constraints,
+                       "[gpu.#{k}]=#{v.inspect} must be an array of strings")
           end
         end
       end

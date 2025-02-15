@@ -38,10 +38,12 @@ type suite struct {
 }
 
 func (s *suite) TearDownTest(c *check.C) {
-	arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	arvadostest.ResetDB(c)
 }
 
 func (s *suite) SetUpTest(c *check.C) {
+	arvadostest.ResetDB(c)
+
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.IsNil)
 	cluster, err := cfg.GetCluster("")
@@ -55,6 +57,19 @@ func (s *suite) SetUpTest(c *check.C) {
 			VCPUs:           4,
 			IncludedScratch: 100 << 30,
 			Scratch:         100 << 30,
+		},
+		"biggest_available_node_with_gpu": arvados.InstanceType{
+			RAM:             100 << 30, // 100 GiB
+			VCPUs:           4,
+			IncludedScratch: 100 << 30,
+			Scratch:         100 << 30,
+			GPU: arvados.GPUFeatures{
+				Stack:          "cuda",
+				DriverVersion:  "11.0",
+				HardwareTarget: "8.0",
+				DeviceCount:    2,
+				VRAM:           8000000000,
+			},
 		}}
 	s.disp = newHandler(context.Background(), cluster, arvadostest.SystemRootToken, prometheus.NewRegistry()).(*dispatcher)
 	s.disp.lsfcli.stubCommand = func(string, ...string) *exec.Cmd {
@@ -98,12 +113,14 @@ func (s *suite) SetUpTest(c *check.C) {
 	err = arvados.NewClientFromEnv().RequestAndDecode(&s.crCUDARequest, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{
 		"container_request": map[string]interface{}{
 			"runtime_constraints": arvados.RuntimeConstraints{
-				RAM:   16000000,
-				VCPUs: 1,
-				CUDA: arvados.CUDARuntimeConstraints{
-					DeviceCount:        1,
-					DriverVersion:      "11.0",
-					HardwareCapability: "8.0",
+				RAM:   16000000000,
+				VCPUs: 4,
+				GPU: arvados.GPURuntimeConstraints{
+					Stack:          "cuda",
+					DeviceCount:    1,
+					DriverVersion:  "11.0",
+					HardwareTarget: []string{"8.0"},
+					VRAM:           8000000000,
 				},
 			},
 			"container_image":     arvadostest.DockerImage112PDH,
@@ -208,12 +225,12 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 			case s.crCUDARequest.ContainerUUID:
 				c.Check(args, check.DeepEquals, []string{
 					"-J", s.crCUDARequest.ContainerUUID,
-					"-n", "1",
-					"-D", "528MB",
-					"-R", "rusage[mem=528MB:tmp=256MB] span[hosts=1]",
-					"-R", "select[mem>=528MB]",
-					"-R", "select[tmp>=256MB]",
-					"-R", "select[ncpus>=1]",
+					"-n", "4",
+					"-D", "15515MB",
+					"-R", "rusage[mem=15515MB:tmp=15515MB] span[hosts=1]",
+					"-R", "select[mem>=15515MB]",
+					"-R", "select[tmp>=15515MB]",
+					"-R", "select[ncpus>=4]",
 					"-gpu", "num=1"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]

@@ -344,8 +344,11 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 		// Note this allows the container to listen on the
 		// host's external ports.
 	}
-	if e.spec.CUDADeviceCount != 0 {
+	if e.spec.GPUStack == "cuda" && e.spec.GPUDeviceCount > 0 {
 		args = append(args, "--nv")
+	}
+	if e.spec.GPUStack == "rocm" && e.spec.GPUDeviceCount > 0 {
+		args = append(args, "--rocm")
 	}
 
 	// If we ask for resource limits that aren't supported,

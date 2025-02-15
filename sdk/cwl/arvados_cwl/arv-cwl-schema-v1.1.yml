@@ -328,6 +328,53 @@ $graph:
       doc: |
         Maximum number of GPU devices to request.  If not specified,
         same as `cudaDeviceCountMin`.
+    cudaVram:
+      type: ['null', long, cwl:Expression]
+      default: 1024
+      doc: |
+        Amount of VRAM to request, in mebibytes (2**20)
+
+
+- name: ROCmRequirement
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Require support for AMD ROCm (GPU hardware acceleration).
+  fields:
+    class:
+      type: string
+      doc: 'arv:ROCmRequirement'
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    rocmDriverVersion:
+      type: string
+      doc: |
+        Compatible ROCm driver version, in X.Y format, e.g. "6.2".
+    rocmTarget:
+      type:
+        - 'string'
+        - 'string[]'
+      doc: |
+        Compatible GPU architecture/ROCm LLVM targets, e.g. "gfx1100".
+    rocmDeviceCountMin:
+      type: ['null', int, cwl:Expression]
+      default: 1
+      doc: |
+        Minimum number of GPU devices to request.  If not specified,
+        same as `rocmDeviceCountMax`.  If neither are specified,
+        default 1.
+    rocmDeviceCountMax:
+      type: ['null', int, cwl:Expression]
+      doc: |
+        Maximum number of GPU devices to request.  If not specified,
+        same as `rocmDeviceCountMin`.
+    rocmVram:
+      type: [long, cwl:Expression]
+      default: 1024
+      doc: |
+        Amount of VRAM to request, in mebibytes (2**20).
 
 - name: UsePreemptible
   type: record
