@@ -66,12 +66,6 @@
     - ansible.builtin.include_role:
         name: compute_user
 
-    - name: Configure locale
-      ansible.builtin.lineinfile:
-        path: /etc/locale.gen
-        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
-        line: en_US.UTF-8 UTF-8
-      notify: locale-gen
     - name: Configure DNS
       ansible.builtin.lineinfile:
         path: /etc/dhcp/dhclient.conf
@@ -84,5 +78,3 @@
       ansible.builtin.debug:
         msg: Skipping apt update handler before an apt upgrade
         verbosity: 1
-    - name: locale-gen
-      ansible.builtin.command: locale-gen
