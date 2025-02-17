@@ -9,6 +9,7 @@ arvados_compute_packages:
   - python3-arvados-fuse
 
 # These flags control which container and GPU engine(s) get installed.
+arvados_compute_amd_rocm: false
 arvados_compute_docker: "{{ arvados_cluster.Containers.RuntimeEngine|default('docker') == 'docker' }}"
 arvados_compute_nvidia: false
 arvados_compute_singularity: "{{ arvados_cluster.Containers.RuntimeEngine|default('') == 'singularity' }}"

@@ -30,5 +30,8 @@
     name: compute_singularity
   when: arvados_compute_singularity|bool
 - ansible.builtin.include_role:
+    name: compute_amd_rocm
+  when: arvados_compute_amd_rocm|bool
+- ansible.builtin.include_role:
     name: compute_nvidia
   when: arvados_compute_nvidia|bool

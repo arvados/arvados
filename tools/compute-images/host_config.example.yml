@@ -28,6 +28,12 @@ arvados_config_file: /etc/arvados/config.yml
 # file with the dispatcher's public key here.
 #compute_authorized_keys: /dev/null
 
+# `arvados_compute_amd_rocm` is a flag that determines whether or not
+# AMD ROCm and associated drivers will be installed in the compute
+# node image. Set this to true if you want your Arvados cluster to
+# support containers with ROCm requirements.
+#arvados_compute_amd_rocm: true
+
 # `arvados_compute_nvidia` is a flag that determines whether or not
 # NVIDIA CUDA and associated drivers will be installed in the compute
 # node image. Set this to true if you want your Arvados cluster to

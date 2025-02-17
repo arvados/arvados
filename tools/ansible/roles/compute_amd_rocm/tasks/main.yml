@@ -1,0 +1,39 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Check for AMD ROCm distribution support
+  ansible.builtin.fail:
+    msg: "This role does not know where to find AMD's apt repository for {{ ansible_distribution_release }}"
+  when: arvados_compute_amd_rocm_suites_map[ansible_distribution_release] is undefined
+
+- name: Install AMD ROCm package pins
+  ansible.builtin.copy:
+    src: arvados-amd-rocm.pref
+    dest: /etc/apt/preferences.d/arvados-amd-rocm.pref
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install AMD GPU+ROCm apt repositories
+  ansible.builtin.deb822_repository:
+    name: amd_rocm
+    types: deb
+    uris:
+      - "https://repo.radeon.com/amdgpu/{{ arvados_compute_amd_rocm_version }}/ubuntu"
+      - "https://repo.radeon.com/rocm/apt/{{ arvados_compute_amd_rocm_version }}"
+    suites:
+      - "{{ arvados_compute_amd_rocm_suites_map[ansible_distribution_release] }}"
+    components:
+      - main
+    architectures:
+      - amd64
+    signed_by: https://repo.radeon.com/rocm/rocm.gpg.key
+  register: amd_rocm_repo
+
+- name: Install AMD ROCm packages
+  ansible.builtin.apt:
+    update_cache: "{{ amd_rocm_repo.changed }}"
+    name:
+      - amdgpu-dkms
+      - rocm

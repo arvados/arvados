@@ -1,0 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_compute_pin_packages: true
+arvados_compute_amd_rocm_suites_map:
+  bookworm: jammy
+  jammy: jammy
+  noble: noble
+arvados_compute_amd_rocm_version: "{{ '6.3.2' if arvados_compute_pin_packages else 'latest' }}"
