@@ -1834,11 +1834,13 @@ func NewContainerRunner(dispatcherClient *arvados.Client,
 		if err != nil {
 			return nil, nil, nil, err
 		}
+		cl.Retries = 10
 		cl.ApiToken = token
 		kc, err := keepclient.MakeKeepClient(cl)
 		if err != nil {
 			return nil, nil, nil, err
 		}
+		kc.Retries = 10
 		c2 := arvados.NewClientFromEnv()
 		c2.AuthToken = token
 		return cl, kc, c2, nil
@@ -1977,7 +1979,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		log.Printf("%s: %v", containerUUID, err)
 		return 1
 	}
-	kc.Retries = 4
+	kc.Retries = 10
 
 	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, containerUUID)
 	if err != nil {
