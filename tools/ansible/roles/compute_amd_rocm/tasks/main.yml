@@ -7,6 +7,11 @@
     msg: "This role does not know where to find AMD's apt repository for {{ ansible_distribution_release }}"
   when: arvados_compute_amd_rocm_suites_map[ansible_distribution_release] is undefined
 
+# Unlike most of our package pins, this file does not pin any specific
+# version, it just prioritizes AMD's repository for the specific packages
+# that need it. AMD publishes a separate apt repository for every version,
+# and we specify the version we want through the repository URL in the next
+# task.
 - name: Install AMD ROCm package pins
   ansible.builtin.copy:
     src: arvados-amd-rocm.pref
