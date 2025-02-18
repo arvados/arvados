@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import {
+    Resource,
     ResourceKind,
     TrashableResource,
     ResourceWithProperties
@@ -62,6 +63,10 @@ export const defaultCollectionSelectedFields = [
 
 export const getCollectionUrl = (uuid: string) => {
     return `/collections/${uuid}`;
+};
+
+export const isCollectionResource = (resource: Resource): resource is CollectionResource => {
+    return resource && resource.kind === ResourceKind.COLLECTION;
 };
 
 export enum CollectionType {

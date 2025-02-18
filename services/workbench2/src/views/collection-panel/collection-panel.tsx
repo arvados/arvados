@@ -17,7 +17,7 @@ import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
 import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
 import { ResourcesState, getResource } from 'store/resources/resources';
-import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
@@ -32,6 +32,7 @@ import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-p
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules =
     'root'
@@ -276,24 +277,23 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                if(this.state.item) {
-                    const { uuid, ownerUuid, name, description,
-                        kind, storageClassesDesired, properties } = this.state.item;
-                    const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
-                    const resource = {
-                        uuid,
-                        ownerUuid,
-                        name,
-                        description,
-                        storageClassesDesired,
-                        kind,
-                        menuKind,
-                        properties,
-                    };
-                    // Avoid expanding/collapsing the panel
-                    event.stopPropagation();
-                    this.props.dispatch<any>(openContextMenu(event, resource));
-                }
+                if (!this.state.item) return;
+                const { uuid, ownerUuid, name, description,
+                    kind, storageClassesDesired, properties } = this.state.item;
+                const menuKind = this.props.dispatch<any>(resourceToMenuKind(uuid));
+                const resource = {
+                    uuid,
+                    ownerUuid,
+                    name,
+                    description,
+                    storageClassesDesired,
+                    kind,
+                    menuKind,
+                    properties,
+                };
+                // Avoid expanding/collapsing the panel
+                event.stopPropagation();
+                this.props.dispatch<any>(openContextMenu(event, resource));
             }
 
             onCopy = (message: string) =>

@@ -7,25 +7,22 @@ import { ContextMenuPosition } from "./context-menu-reducer";
 import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 import { Dispatch } from "redux";
 import { RootState } from "store/store";
-import { getResource, getResourceWithEditableStatus } from "../resources/resources";
+import { getResource } from "../resources/resources";
 import { UserResource } from "models/user";
 import { isSidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
-import { extractUuidKind, ResourceKind, EditableResource, Resource } from "models/resource";
-import { Process, isProcessCancelable } from "store/processes/process";
+import { extractUuidKind, ResourceKind, Resource } from "models/resource";
 import { RepositoryResource } from "models/repositories";
 import { SshKeyResource } from "models/ssh-key";
 import { VirtualMachinesResource } from "models/virtual-machines";
 import { KeepServiceResource } from "models/keep-services";
-import { ProcessResource } from "models/process";
-import { CollectionResource } from "models/collection";
-import { GroupClass, GroupResource } from "models/group";
 import { GroupContentsResource } from "services/groups-service/groups-service";
 import { LinkResource } from "models/link";
-import { resourceIsFrozen } from "common/frozen-resources";
 import { ProjectResource } from "models/project";
-import { getProcess } from "store/processes/process";
+import { Process } from "store/processes/process";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { selectOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
+import { ContainerRequestResource } from "models/container-request";
+import { resourceToMenuKind } from "common/resource-to-menu-kind";
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition; resource: ContextMenuResource }>(),
@@ -178,7 +175,7 @@ export const openRootProjectContextMenu =
 export const openProjectContextMenu =
     (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => (dispatch: Dispatch, getState: () => RootState) => {
         const res = getResource<GroupContentsResource>(resourceUuid)(getState().resources);
-        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+        const menuKind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (res && menuKind) {
             dispatch<any>(
                 openContextMenu(event, {
@@ -207,18 +204,18 @@ export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, i
 };
 
 export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, process: Process) => (dispatch: Dispatch, getState: () => RootState) => {
-    const res = getResource<ProcessResource>(process.containerRequest.uuid)(getState().resources);
-    if (res) {
-        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(res.uuid));
+    const res = getResource<ContainerRequestResource>(process.containerRequest.uuid)(getState().resources);
+    const menuKind = dispatch<any>(resourceToMenuKind(process.containerRequest.uuid));
+    if (res && menuKind) {
         dispatch<any>(
             openContextMenu(event, {
-                uuid: res.uuid,
-                ownerUuid: res.ownerUuid,
+                uuid: process.containerRequest.uuid,
+                ownerUuid: process.containerRequest.ownerUuid,
                 kind: menuKind,
-                name: res.name,
-                description: res.description,
-                outputUuid: res.outputUuid || "",
-                workflowUuid: res.properties.template_uuid || "",
+                name: process.containerRequest.name,
+                description: process.containerRequest.description,
+                outputUuid: process.containerRequest.outputUuid || "",
+                workflowUuid: process.containerRequest.properties.template_uuid || "",
                 menuKind
             })
         );
@@ -251,89 +248,6 @@ export const openUserContextMenu = (event: React.MouseEvent<HTMLElement>, user: 
         })
     );
 };
-
-export const resourceUuidToContextMenuKind =
-    (uuid: string, readonly = false) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const auth = getState().auth;
-        const { resources } = getState();
-        const { isAdmin: isAdminUser, uuid: userUuid } = auth.user!;
-        const unfreezeRequiresAdmin = auth.remoteHostsConfig ? auth.remoteHostsConfig[auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin : undefined;
-        const kind = extractUuidKind(uuid);
-        const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(resources);
-        const isFrozen = resourceIsFrozen(resource, resources);
-        const isEditable = (isAdminUser || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
-        const { canManage, canWrite } = resource || {};
-
-        switch (kind) {
-            case ResourceKind.PROJECT:
-                if (isFrozen) {
-                    return isAdminUser 
-                    ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
-                    : canManage 
-                        ? unfreezeRequiresAdmin
-                            ? ContextMenuKind.MANAGEABLE_PROJECT
-                            : ContextMenuKind.FROZEN_MANAGEABLE_PROJECT
-                        : isEditable 
-                            ? ContextMenuKind.FROZEN_PROJECT
-                            : ContextMenuKind.READONLY_PROJECT;
-                }
-
-                if(canManage === false && canWrite === true) return ContextMenuKind.WRITEABLE_PROJECT;
-
-                return isAdminUser && !readonly
-                    ? resource && resource.groupClass !== GroupClass.FILTER
-                        ? ContextMenuKind.PROJECT_ADMIN
-                        : ContextMenuKind.FILTER_GROUP_ADMIN
-                    : isEditable
-                    ? resource && resource.groupClass !== GroupClass.FILTER
-                        ? ContextMenuKind.PROJECT
-                        : ContextMenuKind.FILTER_GROUP
-                    : ContextMenuKind.READONLY_PROJECT;
-            case ResourceKind.COLLECTION:
-                const c = getResource<CollectionResource>(uuid)(resources);
-                if (c === undefined) {
-                    return;
-                }
-                const collectionParent = getResource<GroupResource>(c.ownerUuid)(resources);
-                const isWriteable = collectionParent?.canWrite === true && collectionParent.canManage === false;
-                const isOldVersion = c.uuid !== c.currentVersionUuid;
-                const isTrashed = c.isTrashed;
-                return isOldVersion
-                    ? ContextMenuKind.OLD_VERSION_COLLECTION
-                    : isTrashed && isEditable
-                        ? ContextMenuKind.TRASHED_COLLECTION
-                        : isAdminUser && isEditable
-                            ? ContextMenuKind.COLLECTION_ADMIN
-                            : isEditable
-                                ? isWriteable
-                                    ? ContextMenuKind.WRITEABLE_COLLECTION 
-                                    : ContextMenuKind.COLLECTION
-                                : ContextMenuKind.READONLY_COLLECTION;
-            case ResourceKind.PROCESS:
-                const process = getProcess(uuid)(resources);
-                const processParent = process ? getResource<any>(process.containerRequest.ownerUuid)(resources) : undefined;
-                const { canWrite: canWriteProcess } = processParent || {};
-                const isRunning = process && isProcessCancelable(process);
-                return isAdminUser 
-                        ? isRunning
-                            ? ContextMenuKind.RUNNING_PROCESS_ADMIN
-                            : ContextMenuKind.PROCESS_ADMIN
-                        : isRunning
-                            ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                            : canWriteProcess 
-                                ? ContextMenuKind.PROCESS_RESOURCE
-                                : ContextMenuKind.READONLY_PROCESS_RESOURCE;
-            case ResourceKind.USER:
-                return ContextMenuKind.ROOT_PROJECT;
-            case ResourceKind.LINK:
-                return ContextMenuKind.LINK;
-            case ResourceKind.WORKFLOW:
-                return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;
-            default:
-                return;
-        }
-    };
 
 export const openSearchResultsContextMenu =
     (event: React.MouseEvent<HTMLElement>, uuid: string) => (dispatch: Dispatch, getState: () => RootState) => {

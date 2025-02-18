@@ -25,7 +25,6 @@ import {
 import { FavoriteIcon } from 'components/icon/icon';
 import {
     openContextMenu,
-    resourceUuidToContextMenuKind
 } from 'store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -41,6 +40,7 @@ import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { getProperty } from 'store/properties/properties';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -152,7 +152,7 @@ export const FavoritePanel = withStyles(styles)(
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
 
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {

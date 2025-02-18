@@ -22,7 +22,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { PopperProps } from '@mui/material/Popper';
 import { WithStyles } from '@mui/styles';
 import { noop } from 'lodash';
-import { isGroup } from 'common/isGroup';
+import { isUserGroup } from 'models/group';
 import { sortByKey } from 'common/objects';
 import { TabbedList } from 'components/tabbedList/tabbed-list';
 
@@ -93,8 +93,8 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                     this.setState({ tabbedListContents: { groups: [], users: [] } });
                 }
                 if (prevProps.suggestions !== suggestions) {
-                    const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
-                    const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
+                    const users = sortByKey<Suggestion>(suggestions.filter(item => !isUserGroup(item)), 'fullName');
+                    const groups = sortByKey<Suggestion>(suggestions.filter(item => isUserGroup(item)), 'name');
                     this.setState({ tabbedListContents: { groups: groups, users: users } });
                 }
                 if (prevState.selectedTab !== this.state.selectedTab) {
@@ -239,7 +239,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         if (ev.key === 'Tab' && this.isSuggestionBoxOpen() && this.props.category === AutocompleteCat.SHARING) {
             ev.preventDefault();
             // Cycle through tabs, or loop back to the first tab
-            this.setState({ selectedTab: ((this.state.selectedTab + 1) % Object.keys(this.state.tabbedListContents).length)} || 0)
+            this.setState({ selectedTab: ((this.state.selectedTab + 1) % Object.keys(this.state.tabbedListContents).length)});
         }
         if (ev.key === 'ArrowUp') {
             ev.preventDefault();
@@ -332,7 +332,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     renderSharingSuggestion = (suggestion: Suggestion) => {
         return <ListItemText>
                     <Typography className={this.props.classes.listItemStyle} data-cy="sharing-suggestion">
-                        { isGroup(suggestion) ? `${(suggestion as any).name}` : `${(suggestion as any).fullName} (${(suggestion as any).email})` }
+                        { isUserGroup(suggestion) ? `${(suggestion as any).name}` : `${(suggestion as any).fullName} (${(suggestion as any).email})` }
                     </Typography>
                 </ListItemText>;
     }

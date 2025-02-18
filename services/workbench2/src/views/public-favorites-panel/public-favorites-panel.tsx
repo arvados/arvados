@@ -25,7 +25,6 @@ import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
 import {
     openContextMenu,
-    resourceUuidToContextMenuKind
 } from 'store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -39,6 +38,7 @@ import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -132,7 +132,7 @@ const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavor
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
     onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
         const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+        const kind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (kind && resource) {
             dispatch<any>(openContextMenu(event, {
                 name: resource.name,

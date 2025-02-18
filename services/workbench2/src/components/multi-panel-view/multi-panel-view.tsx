@@ -17,6 +17,7 @@ type CssRules =
     | 'root'
     | 'gridContainerRoot'
     | 'exclusiveGridContainerRoot'
+    | 'symmetricTabs'
     | 'gridItemRoot'
     | 'paperRoot'
     | 'button'
@@ -37,6 +38,11 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     exclusiveGridContainerRoot: {
         marginTop: 0,
+    },
+    symmetricTabs: {
+        "& button": {
+            flexBasis: "0",
+        },
     },
     gridItemRoot: {
         paddingTop: '0 !important',
@@ -295,7 +301,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
         };
 
         buttonBar = mutuallyExclusive ?
-            <Tabs value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
+            <Tabs className={classes.symmetricTabs} value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
                 {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
             </Tabs> :
             <Grid container item direction="row" className={classes.buttonBarGridContainer}>

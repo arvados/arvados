@@ -917,9 +917,9 @@ The 'jobs' API is no longer supported.
             raise
         except:
             if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
-                logger.error("Interrupted, workflow will be cancelled")
+                logger.error("Interrupted, workflow will be cancelled", exc_info=self.debug)
             elif isinstance(sys.exc_info()[1], WorkflowException):
-                logger.error("Workflow execution failed:\n%s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
+                logger.error("Workflow execution failed:\n%s", sys.exc_info()[1], exc_info=self.debug)
             else:
                 logger.exception("Workflow execution failed")
 

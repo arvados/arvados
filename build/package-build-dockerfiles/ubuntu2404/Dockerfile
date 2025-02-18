@@ -13,9 +13,9 @@ ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-amd64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
-ONBUILD ADD generated/node-v12.22.12-linux-x64.tar.xz /usr/local/
-ONBUILD RUN env -C /usr/local/node-v12.22.12-linux-x64/bin ./node npm install -g yarn
-ONBUILD RUN ln -sf /usr/local/node-v12.22.12-linux-x64/bin/* /usr/local/bin/
+ONBUILD ADD generated/node-v14.21.3-linux-x64.tar.xz /usr/local/
+ONBUILD RUN env -C /usr/local/node-v14.21.3-linux-x64/bin ./node npm install -g yarn
+ONBUILD RUN ln -sf /usr/local/node-v14.21.3-linux-x64/bin/* /usr/local/bin/
 # On x86, we want some cross-compilation support for arm64
 # Add gcc-aarch64-linux-gnu to compile go binaries for arm64
 ONBUILD COPY ports.list /etc/apt/sources.list.d/
@@ -32,9 +32,9 @@ ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-arm64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
-ONBUILD ADD generated/node-v12.22.12-linux-arm64.tar.xz /usr/local/
-ONBUILD RUN env -C /usr/local/node-v12.22.12-linux-arm64/bin ./node npm install -g yarn
-ONBUILD RUN ln -sf /usr/local/node-v12.22.12-linux-arm64/bin/* /usr/local/bin/
+ONBUILD ADD generated/node-v14.21.3-linux-arm64.tar.xz /usr/local/
+ONBUILD RUN env -C /usr/local/node-v14.21.3-linux-arm64/bin ./node npm install -g yarn
+ONBUILD RUN ln -sf /usr/local/node-v14.21.3-linux-arm64/bin/* /usr/local/bin/
 
 FROM build_${HOSTTYPE}
 

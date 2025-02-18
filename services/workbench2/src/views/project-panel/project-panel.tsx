@@ -12,7 +12,7 @@ import { RootState } from 'store/store';
 import { Resource } from 'models/resource';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
-import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { ArvadosTheme } from 'common/custom-theme';
@@ -27,6 +27,7 @@ import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
 import { getProperty } from 'store/properties/properties';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -136,7 +137,7 @@ export const ProjectPanel = withStyles(styles)(
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(
                         openContextMenu(event, {

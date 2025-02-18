@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import {
+    Resource,
     ResourceKind,
     ResourceWithProperties,
     RESOURCE_UUID_REGEX,
@@ -42,6 +43,14 @@ export const isBuiltinGroup = (uuid: string) => {
     const match = RESOURCE_UUID_REGEX.exec(uuid);
     const parts = match ? match[0].split('-') : [];
     return parts.length === 3 && parts[1] === ResourceObjectType.GROUP && Object.values<string>(BuiltinGroups).includes(parts[2]);
+};
+
+export const isUserGroup = (resource: any): resource is GroupResource => {
+    return resource && resource.kind === ResourceKind.GROUP && resource.groupClass === GroupClass.ROLE;
+};
+
+export const isGroupResource = (resource: Resource): resource is GroupResource => {
+    return resource && resource.kind === ResourceKind.GROUP;
 };
 
 export const selectedFieldsOfGroup = [

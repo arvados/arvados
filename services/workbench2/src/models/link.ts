@@ -20,3 +20,9 @@ export enum LinkClass {
     PERMISSION = 'permission',
     PRESET = 'preset',
 }
+
+export type NewFavoriteLink = Pick<LinkResource, 'ownerUuid' | 'tailUuid' | 'headUuid' | 'linkClass' | 'name'>;
+
+export const hasCreateLinkProperties = (potentialLink: NewFavoriteLink): boolean => {
+    return !!potentialLink.ownerUuid && !!potentialLink.headUuid && !!potentialLink.tailUuid && !!potentialLink.linkClass && !!potentialLink.name;
+};

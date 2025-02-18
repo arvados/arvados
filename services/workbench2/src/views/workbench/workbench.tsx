@@ -109,8 +109,9 @@ import { ElementListReducer } from "common/plugintypes";
 import { COLLAPSE_ICON_SIZE } from "views-components/side-panel-toggle/side-panel-toggle";
 import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
+import classNames from "classnames";
 
-type CssRules = "root" | "container" | "splitter" | "asidePanel" | "contentWrapper" | "content";
+type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -128,6 +129,27 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             pointerEvents: "none",
             cursor: "pointer",
         },
+    },
+    splitterSidePanel: {
+        "& > .layout-splitter::after": {
+            content: `""`,
+            marginLeft: "3px", // Matches splitter line width
+            width: "8px",
+            display: "block",
+            position: "relative",
+            height: "100%",
+            zIndex: 100, // Needed for drag handle to overlap middle panel
+        }
+    },
+    splitterDetails: {
+        "& > .layout-splitter::after": {
+            content: `""`,
+            marginLeft: "-8px",
+            width: "8px",
+            display: "block",
+            position: "relative",
+            height: "100%",
+        }
     },
     asidePanel: {
         paddingTop: theme.spacing(1),
@@ -154,19 +176,27 @@ interface WorkbenchDataProps {
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
+    isDetailsPanelOpen: boolean;
     currentSideWidth: number;
 }
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
 
-const defaultSplitterSize = 90;
+const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
 
-const getSplitterInitialSize = () => {
+const defaultSidePanelSplitterSize = 90;
+const getSidePanelSplitterInitialSize = () => {
     const splitterSize = localStorage.getItem("splitterSize");
-    return splitterSize ? Number(splitterSize) : defaultSplitterSize;
+    return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
 };
 
-const saveSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
+const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
+
+const defaultDetailsPanelSplitterSize = 320;
+const getDetailsPanelSplitterInitialSize = () => {
+    const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
+    return splitterSize ? Number(splitterSize) : defaultDetailsPanelSplitterSize;
+};
 
 let routes = (
     <>
@@ -298,7 +328,7 @@ routes = React.createElement(
 );
 
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
-const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActive, sessionIdleTimeout, currentSideWidth } = props
+const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsPanelOpen, isUserActive, sessionIdleTimeout, currentSideWidth } = props
 
     const applyCollapsedState = (savedWidthInPx) => {
         const rightPanel: Element = document.getElementsByClassName("layout-pane")[1];
@@ -307,11 +337,11 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
         const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
 
         if(isTransitioning && !!rightPanel) {
-            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSplitterInitialSize()}%`};`)
+            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`)
         }
 
         if (rightPanel) {
-            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSplitterInitialSize()}%`};`);
+            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`);
         }
         const splitter = document.getElementsByClassName("layout-splitter")[0];
         sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
@@ -345,13 +375,13 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                 className={classes.container}
             >
                 <SplitterLayout
-                    customClassName={classes.splitter}
+                    customClassName={classNames(classes.splitter, classes.splitterSidePanel)}
                     percentage={true}
                     primaryIndex={0}
                     primaryMinSize={10}
-                    secondaryInitialSize={getSplitterInitialSize()}
+                    secondaryInitialSize={getSidePanelSplitterInitialSize()}
                     secondaryMinSize={40}
-                    onSecondaryPaneSizeChange={saveSplitterSize}
+                    onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
                 >
                     {isUserActive && isNotLinking && (
                         <Grid
@@ -369,32 +399,48 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                         container
                         item
                         xs
-                        component="main"
-                        direction="column"
-                        className={classes.contentWrapper}
                     >
-                        <Grid
-                            item
-                            xs
+                        <SplitterLayout
+                            customClassName={classNames(classes.splitter, classes.splitterDetails)}
+                            percentage={false}
+                            primaryIndex={0}
+                            primaryMinSize={300}
+                            secondaryInitialSize={getDetailsPanelSplitterInitialSize()}
+                            secondaryMinSize={250}
+                            onSecondaryPaneSizeChange={saveDetailsSplitterSize}
                         >
-                            {isNotLinking && <MainContentBar />}
-                        </Grid>
-                        <Grid
-                            className={classes.content}
-                        >
-                            <Switch>
-                                {routes.props.children}
-                                <Route
-                                    path={Routes.NO_MATCH}
-                                    component={NotFoundPanel}
-                                />
-                            </Switch>
-                        </Grid>
+                            <Grid
+                                container
+                                item
+                                xs
+                                component="main"
+                                direction="column"
+                                className={classes.contentWrapper}
+                            >
+                                <Grid
+                                    item
+                                    xs
+                                >
+                                    {isNotLinking && <MainContentBar />}
+                                </Grid>
+                                <Grid
+                                    className={classes.content}
+                                >
+                                    <Switch>
+                                        {routes.props.children}
+                                        <Route
+                                            path={Routes.NO_MATCH}
+                                            component={NotFoundPanel}
+                                        />
+                                    </Switch>
+                                </Grid>
+                            </Grid>
+                            {isDetailsPanelOpen && <Grid item style={{height: "100%"}}>
+                                <DetailsPanel />
+                            </Grid>}
+                        </SplitterLayout>
                     </Grid>
                 </SplitterLayout>
-            </Grid>
-            <Grid item>
-                <DetailsPanel />
             </Grid>
             <AdvancedTabDialog />
             <AttributesApiClientAuthorizationDialog />

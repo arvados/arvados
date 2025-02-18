@@ -18,6 +18,7 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         config: state.auth.config,
         sidePanelIsCollapsed: state.sidePanel.collapsedState,
         isTransitioning: state.detailsPanel.isTransitioning,
+        isDetailsPanelOpen: state.detailsPanel.isOpened,
         currentSideWidth: state.sidePanel.currentSideWidth,
         router: state.router,
     };

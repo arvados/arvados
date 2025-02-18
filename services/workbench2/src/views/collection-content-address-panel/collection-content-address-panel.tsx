@@ -15,7 +15,6 @@ import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from 'store/collections-content-
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { Dispatch } from 'redux';
 import {
-    resourceUuidToContextMenuKind,
     openContextMenu
 } from 'store/context-menu/context-menu-actions';
 import { ResourceKind } from 'models/resource';
@@ -33,6 +32,7 @@ import {
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
 import { CollectionResource } from 'models/collection';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = 'backLink' | 'backIcon' | 'root' | 'content';
 
@@ -115,8 +115,8 @@ const mapStateToProps = ({ resources }: RootState): CollectionContentAddressPane
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
     onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
         const resource = getResource<CollectionResource>(resourceUuid)(resources);
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
-        if (kind) {
+        const menuKind = dispatch<any>(resourceToMenuKind(resourceUuid));
+        if (menuKind) {
             dispatch<any>(openContextMenu(event, {
                 name: resource ? resource.name : '',
                 description: resource ? resource.description : '',
@@ -124,7 +124,7 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelAc
                 uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
-                menuKind: kind
+                menuKind
             }));
         }
         dispatch<any>(loadDetailsPanel(resourceUuid));

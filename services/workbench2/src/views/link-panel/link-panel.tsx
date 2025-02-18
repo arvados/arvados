@@ -7,7 +7,6 @@ import { connect } from "react-redux";
 import { RootState } from 'store/store';
 import {
     openContextMenu,
-    resourceUuidToContextMenuKind
 } from 'store/context-menu/context-menu-actions';
 import {
     LinkPanelRoot,
@@ -15,6 +14,7 @@ import {
     LinkPanelRootDataProps
 } from 'views/link-panel/link-panel-root';
 import { ResourceKind } from 'models/resource';
+import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
     return {
@@ -24,7 +24,7 @@ const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
 
 const mapDispatchToProps = (dispatch: Dispatch): LinkPanelRootActionProps => ({
     onContextMenu: (event, resourceUuid) => {
-        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+        const kind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',

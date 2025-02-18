@@ -12,7 +12,7 @@ $(basename $0): Install and test Arvados components.
 Exit non-zero if any tests fail.
 
 Syntax:
-        $(basename $0) WORKSPACE=/path/to/arvados [options]
+        WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 Options:
 
@@ -34,8 +34,6 @@ Options:
                all but the last are ignored.
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
-WORKSPACE=path Arvados source tree to test.
-CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests.
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 sdk/python_test="tests/test_api.py::ArvadosApiTest"
@@ -45,16 +43,23 @@ lib/dispatchcloud_test="-check.vv"
                with services/keepstore_test etc.)
 ARVADOS_DEBUG=1
                Print more debug messages
-envvar=value   Set \$envvar to value. Primarily useful for WORKSPACE,
-               *_test, and other examples shown above.
+ARVADOS_...=...
+               Set other ARVADOS_* env vars (note ARVADOS_* vars are
+               removed from the environment by this script when it
+               starts, so the usual way of passing them will not work)
 
 Assuming "--skip install" is not given, all components are installed
 into \$GOPATH, \$VENDIR, and \$GEMHOME before running any tests. Many
 test suites depend on other components being installed, and installing
 everything tends to be quicker than debugging dependencies.
 
-As a special concession to the current CI server config, CONFIGSRC
-defaults to $HOME/arvados-api-server if that directory exists.
+Environment variables:
+
+WORKSPACE=path Arvados source tree to test.
+CONFIGSRC=path Dir with config.yml file containing PostgreSQL section
+               for use by tests.  As a special concession to the
+               current CI server config, CONFIGSRC defaults to
+               $HOME/arvados-api-server if that directory exists.
 
 More information and background:
 
@@ -149,7 +154,7 @@ sanity_checks() {
         || fatal "No nginx. Try: apt-get install nginx"
     echo -n 'npm: '
     npm --version \
-        || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v12.22.12-linux-x64/bin/{node,npm} /usr/local/bin/"
+        || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v14.21.3/node-v14.21.3-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v14.21.3-linux-x64/bin/{node,npm} /usr/local/bin/"
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
@@ -721,6 +726,37 @@ install_services/workbench2() {
         && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
 }
 
+do_migrate() {
+    timer_reset
+    local task="db:migrate"
+    case "$1" in
+        "")
+            ;;
+        rollback)
+            task="db:rollback"
+            shift
+            ;;
+        *)
+            task="db:migrate:$1"
+            shift
+            ;;
+    esac
+    check_arvados_config services/api
+    (
+        set -x
+        env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+            bundle exec rake $task ${@}
+    )
+    checkexit "$?" "services/api $task"
+}
+
+migrate_down_services/api() {
+    echo "running db:migrate:down"
+    env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+        bundle exec rake db:migrate:down ${testargs[services/api]}
+    checkexit "$?" "services/api db:migrate:down"
+}
+
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
@@ -889,14 +925,17 @@ test_go() {
 
 help_interactive() {
     echo "== Interactive commands:"
-    echo "TARGET                 (short for 'test DIR')"
+    echo "TARGET                   (short for 'test DIR')"
     echo "test TARGET"
-    echo "10 test TARGET         (run test 10 times)"
-    echo "test TARGET -check.vv  (pass arguments to test)"
+    echo "10 test TARGET           (run test 10 times)"
+    echo "test TARGET -check.vv    (pass arguments to test)"
     echo "install TARGET"
-    echo "install env            (go/python libs)"
-    echo "install deps           (go/python libs + arvados components needed for integration tests)"
-    echo "reset                  (...services used by integration tests)"
+    echo "install env              (go/python libs)"
+    echo "install deps             (go/python libs + arvados components needed for integration tests)"
+    echo "migrate                  (run outstanding migrations)"
+    echo "migrate rollback         (revert most recent migration)"
+    echo "migrate <dir> VERSION=n  (revert and/or run a single migration; <dir> is up|down|redo)"
+    echo "reset                    (...services used by integration tests)"
     echo "exit"
     echo "== Test targets:"
     printf "%s\n" "${!testfuncargs[@]}" | sort | column
@@ -994,7 +1033,7 @@ do
             args="${arg#*=}"
             testargs["${suite%:py3}"]="$args"
             ;;
-        *=*)
+        ARVADOS_*=*)
             eval export $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
             ;;
         *)
@@ -1065,6 +1104,9 @@ else
                 ;;
             "reset")
                 stop_services
+                ;;
+            "migrate")
+                do_migrate ${target} ${opts}
                 ;;
             "test" | "install")
                 case "$target" in

@@ -332,6 +332,10 @@ class KeepBlockCache(object):
 
         self.cap_cache()
 
+    def clear(self):
+        with self._cache_lock:
+            self._cache.clear()
+            self.cache_total = 0
 
 class _Counter:
     def __init__(self, v=0):
