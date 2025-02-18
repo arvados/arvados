@@ -23,6 +23,7 @@ import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
 import { getMenuActionSetByKind } from "common/menu-action-set-actions";
 import { intersection } from "lodash";
+import { matchTrashRoute } from "routes/routes";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
@@ -57,7 +58,7 @@ export type MultiselectToolbarDataProps = {
     resources: ResourcesState;
     disabledButtons: Set<string>
     auth: AuthState;
-    location: string;
+    pathName: string;
 };
 
 type MultiselectToolbarActionProps = {
@@ -87,12 +88,12 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps) => {
-        const { classes, checkedList, resources, location, forceMultiSelectMode, injectedStyles } = props;
+        const { classes, checkedList, resources, pathName, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
-        const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
+        const selectedResourceUuid = usesDetailsCard(pathName) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
         const currentResourceKinds = singleResourceKind && !!singleResourceKind[0] ? singleResourceKind : props.getAllMenukinds(checkedList);
-        const currentPathIsTrash = window.location.pathname === "/trash";
+        const currentPathIsTrash = matchTrashRoute(pathName || "");
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
@@ -216,7 +217,7 @@ function mapStateToProps({auth, multiselect, resources, selectedResourceUuid}: R
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
         selectedResourceUuid,
-        location: window.location.pathname,
+        pathName: window.location.pathname,
         resources,
     }
 }

@@ -14,12 +14,14 @@ import withStyles from '@mui/styles/withStyles';
 import { componentItemStyles, ComponentCssRules } from "../component-item-styles";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import classNames from "classnames";
+import { matchTrashRoute } from "routes/routes";
 
-const mapStateToProps = (state: RootState): Pick<ToggleTrashActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources' | 'disabledButtons'> => ({
+const mapStateToProps = (state: RootState): Pick<ToggleTrashActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources' | 'disabledButtons' | 'pathname'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
     selectedResourceUuid: state.selectedResourceUuid,
     resources: state.resources,
     disabledButtons: new Set<string>(state.multiselect.disabledButtons),
+    pathname: state.router.location?.pathname,
 });
 
 type ToggleTrashActionProps = {
@@ -28,13 +30,14 @@ type ToggleTrashActionProps = {
     selectedResourceUuid: string;
     resources: ResourcesState
     disabledButtons: Set<string>,
+    pathname: string | undefined;
     onClick: () => void;
 };
 
 export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentItemStyles)((props: ToggleTrashActionProps & WithStyles<ComponentCssRules>) => {
     const { classes, onClick, isInToolbar, contextMenuResourceUuid, selectedResourceUuid, resources, disabledButtons } = props;
 
-    const currentPathIsTrash = window.location.pathname === "/trash";
+    const currentPathIsTrash = matchTrashRoute(props.pathname || "");
     const trashResourceUuid = isInToolbar ? selectedResourceUuid : contextMenuResourceUuid;
     const isTrashed = getResource<GroupResource>(trashResourceUuid)(resources)?.isTrashed || currentPathIsTrash;
     const isDisabled = disabledButtons.has(ContextMenuActionNames.MOVE_TO_TRASH);
