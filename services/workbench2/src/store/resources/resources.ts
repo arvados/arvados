@@ -4,12 +4,13 @@
 
 import { Resource } from "models/resource";
 import { ResourceKind } from 'models/resource';
+import { memoize } from "lodash";
 
 export type ResourcesState = { [key: string]: Resource };
 
-export const getResource = <T extends Resource = Resource>(id: string) =>
+export const getResource = memoize(<T extends Resource = Resource>(id: string | undefined) =>
     (state: ResourcesState): T | undefined =>
-        state[id] as T;
+        id ? state[id] as T : undefined);
 
 export const setResource = <T extends Resource>(id: string, data: T) =>
     (state: ResourcesState) => ({

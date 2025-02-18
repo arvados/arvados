@@ -11,7 +11,7 @@ import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermiss
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
-import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
@@ -21,7 +21,7 @@ import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
 import { PermissionResource } from 'models/permission';
-import { getProperty } from 'store/properties/properties';
+import { getUserUuid } from 'common/getuser';
 
 type CssRules = "root" | "content";
 
@@ -131,9 +131,9 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
 ];
 
 const mapStateToProps = (state: RootState) => {
-    const groupUuid = getProperty<string>(GROUP_DETAILS_MEMBERS_PANEL_ID)(state.properties);
+    const groupUuid = getCurrentGroupDetailsPanelUuid(state);
     const group = groupUuid ? getResource<GroupResource>(groupUuid)(state.resources) : undefined;
-    const userUuid = state.auth.user?.uuid;
+    const userUuid = getUserUuid(state);
 
     return {
         userUuid,

@@ -14,7 +14,7 @@ import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
@@ -26,7 +26,6 @@ import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-p
 import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
-import { getProperty } from 'store/properties/properties';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
@@ -69,7 +68,7 @@ interface ProjectPanelDataProps {
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
-    const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
+    const currentItemId = getProjectPanelCurrentUuid(state);
     return {
         currentItemId,
         resources: state.resources,
