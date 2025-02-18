@@ -34,6 +34,11 @@
       - libnvidia-container-tools
       - nvidia-container-toolkit
 
+# The NVIDIA driver sets up configuration to load its module
+# unconditionally.  These tasks make the module load conditional so that the
+# same image can be used whether or not the booted node has an NVIDIA GPU.
+# (The AMD driver already makes itself conditional, so we don't need this
+# support there.)
 - name: Copy nvidia.conf modules to nvidia.avail
   ansible.builtin.copy:
     src: /etc/modules-load.d/nvidia.conf

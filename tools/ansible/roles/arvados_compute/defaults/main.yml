@@ -1,0 +1,15 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# List of Arvados packages to install.
+# You can set this empty if you intend to install from source/PyPI.
+arvados_compute_packages:
+  - crunch-run
+  - python3-arvados-fuse
+
+# These flags control which container and GPU engine(s) get installed.
+arvados_compute_amd_rocm: false
+arvados_compute_docker: "{{ arvados_cluster.Containers.RuntimeEngine|default('docker') == 'docker' }}"
+arvados_compute_nvidia: false
+arvados_compute_singularity: "{{ arvados_cluster.Containers.RuntimeEngine|default('') == 'singularity' }}"
