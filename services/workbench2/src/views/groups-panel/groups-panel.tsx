@@ -16,14 +16,14 @@ import { ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
-import { ResourcesState } from 'store/resources/resources';
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
-import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = "root";
 
@@ -72,12 +72,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: any) => {
     return {
-        onContextMenu: (event, resource) => {
-            const menuKind = dispatch(resourceToMenuKind(resource.uuid));
-            if (menuKind && resource) {
-                dispatch(openContextMenu(event, {...resource, menuKind}));
-            }
-        },
+        onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
         onNewGroup: () => dispatch(openCreateGroupDialog()),
         handleRowClick: (uuid: string) => {
             dispatch(toggleOne(uuid))
@@ -107,7 +102,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                         data-cy="groups-panel-data-explorer"
                         onRowClick={this.props.handleRowClick}
                         onRowDoubleClick={noop}
-                        onContextMenu={this.props.onContextMenu}
+                        onContextMenu={this.handleContextMenu}
                         contextMenuColumn={false}
                         hideColumnSelector
                         actions={
@@ -123,5 +118,19 @@ export const GroupsPanel = withStyles(styles)(connect(
                         } />
                     </div>
             );
+        }
+
+        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
+            if (resource) {
+                this.props.onContextMenu(event, {
+                    name: resource.name,
+                    uuid: resource.uuid,
+                    description: resource.description,
+                    ownerUuid: resource.ownerUuid,
+                    kind: resource.kind,
+                    menuKind: ContextMenuKind.GROUPS
+                });
+            }
         }
     }));
