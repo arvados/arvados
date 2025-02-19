@@ -30,7 +30,7 @@ from stat import *
 
 from ._internal import streams
 from .api import ThreadSafeAPIClient
-from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock
+from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock, ADD, DEL, MOD, TOK, WRITE
 from .keep import KeepLocator, KeepClient
 import arvados.config as config
 import arvados.errors as errors
@@ -58,14 +58,7 @@ else:
 
 _logger = logging.getLogger('arvados.collection')
 
-ADD = "add"
-"""Argument value for `Collection` methods to represent an added item"""
-DEL = "del"
-"""Argument value for `Collection` methods to represent a removed item"""
-MOD = "mod"
-"""Argument value for `Collection` methods to represent a modified item"""
-TOK = "tok"
-"""Argument value for `Collection` methods to represent an item with token differences"""
+
 FILE = "file"
 """`create_type` value for `Collection.find_or_create`"""
 COLLECTION = "collection"
@@ -922,9 +915,12 @@ class RichCollectionBase(CollectionBase):
                         # Overwrite path with new item; this can happen if
                         # path was a file and is now a collection or vice versa
                         self.copy(final, path, overwrite=True)
-                else:
-                    # Local is missing (presumably deleted) or local doesn't
-                    # match the "start" value, so save change to conflict file
+                elif event_type == MOD:
+                    # Local doesn't match the "start" value or local
+                    # is missing (presumably deleted) so save change
+                    # to conflict file.  Don't do this for TOK events
+                    # which means the file didn't change but only had
+                    # tokens updated.
                     self.copy(final, conflictpath)
             elif event_type == DEL:
                 if local == initial:
@@ -992,8 +988,13 @@ class RichCollectionBase(CollectionBase):
           was modified.
 
         * item: arvados.arvfile.ArvadosFile |
-          arvados.collection.Subcollection --- The new contents at `name`
-          within `collection`.
+          arvados.collection.Subcollection --- For ADD events, the new
+          contents at `name` within `collection`; for DEL events, the
+          item that was removed.  For MOD and TOK events, a 2-tuple of
+          the previous item and the new item (may be the same object
+          or different, depending on whether the action involved it
+          being modified in place or replaced).
+
         """
         if self._callback:
             self._callback(event, collection, name, item)
@@ -1134,7 +1135,7 @@ class Collection(RichCollectionBase):
         self._manifest_text = None
         self._portable_data_hash = None
         self._api_response = None
-        self._past_versions = set()
+        self._token_refresh_timestamp = 0
 
         self.lock = threading.RLock()
         self.events = None
@@ -1201,20 +1202,6 @@ class Collection(RichCollectionBase):
         return True
 
     @synchronized
-    def known_past_version(
-            self,
-            modified_at_and_portable_data_hash: Tuple[Optional[str], Optional[str]]
-    ) -> bool:
-        """Indicate whether an API record for this collection has been seen before
-
-        As this collection object loads records from the API server, it records
-        their `modified_at` and `portable_data_hash` fields. This method accepts
-        a 2-tuple with values for those fields, and returns `True` if the
-        combination was previously loaded.
-        """
-        return modified_at_and_portable_data_hash in self._past_versions
-
-    @synchronized
     @retry_method
     def update(
             self,
@@ -1245,23 +1232,61 @@ class Collection(RichCollectionBase):
           the collection's API record from the API server. If not specified,
           uses the `num_retries` provided when this instance was constructed.
         """
+
+        token_refresh_period = 60*60
+        time_since_last_token_refresh = (time.time() - self._token_refresh_timestamp)
+        upstream_response = None
+
         if other is None:
             if self._manifest_locator is None:
                 raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
-            response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
-            if (self.known_past_version((response.get("modified_at"), response.get("portable_data_hash"))) and
-                response.get("portable_data_hash") != self.portable_data_hash()):
-                # The record on the server is different from our current one, but we've seen it before,
-                # so ignore it because it's already been merged.
-                # However, if it's the same as our current record, proceed with the update, because we want to update
-                # our tokens.
+
+            if re.match(arvados.util.portable_data_hash_pattern, self._manifest_locator) and time_since_last_token_refresh < token_refresh_period:
                 return
-            else:
-                self._remember_api_response(response)
-            other = CollectionReader(response["manifest_text"])
-        baseline = CollectionReader(self._manifest_text)
+
+            upstream_response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
+            other = CollectionReader(upstream_response["manifest_text"])
+
+        if self.committed():
+            # 1st case, no local changes, content is the same
+            if self.portable_data_hash() == other.portable_data_hash() and time_since_last_token_refresh < token_refresh_period:
+                # No difference in content.  Remember the API record
+                # (metadata such as name or properties may have changed)
+                # but don't update the token refresh timestamp.
+                if upstream_response is not None:
+                    self._remember_api_response(upstream_response)
+                return
+
+            # 2nd case, no local changes, but either upstream changed
+            # or we want to refresh tokens.
+
+            self.apply(self.diff(other))
+            if upstream_response is not None:
+                self._remember_api_response(upstream_response)
+            self._update_token_timestamp()
+            self.set_committed(True)
+            return
+
+        # 3rd case, upstream changed, but we also have uncommitted
+        # changes that we want to incorporate so they don't get lost.
+
+        # _manifest_text stores the text from last time we received a
+        # record from the API server.  This is the state of the
+        # collection before our uncommitted changes.
+        baseline = Collection(self._manifest_text)
+
+        # Get the set of changes between our baseline and the other
+        # collection and apply them to self.
+        #
+        # If a file was modified in both 'self' and 'other', the
+        # 'apply' method keeps the contents of 'self' and creates a
+        # conflict file with the contents of 'other'.
         self.apply(baseline.diff(other))
-        self._manifest_text = self.manifest_text()
+
+        # Remember the new baseline, changes to a file
+        if upstream_response is not None:
+            self._remember_api_response(upstream_response)
+
 
     @synchronized
     def _my_api(self):
@@ -1295,7 +1320,11 @@ class Collection(RichCollectionBase):
 
     def _remember_api_response(self, response):
         self._api_response = response
-        self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
+        self._manifest_text = self._api_response['manifest_text']
+        self._portable_data_hash = self._api_response['portable_data_hash']
+
+    def _update_token_timestamp(self):
+        self._token_refresh_timestamp = time.time()
 
     def _populate_from_api_server(self):
         # As in KeepClient itself, we must wait until the last
@@ -1308,8 +1337,7 @@ class Collection(RichCollectionBase):
         self._remember_api_response(self._my_api().collections().get(
             uuid=self._manifest_locator).execute(
                 num_retries=self.num_retries))
-        self._manifest_text = self._api_response['manifest_text']
-        self._portable_data_hash = self._api_response['portable_data_hash']
+
         # If not overriden via kwargs, we should try to load the
         # replication_desired and storage_classes_desired from the API server
         if self.replication_desired is None:
@@ -1534,8 +1562,6 @@ class Collection(RichCollectionBase):
                 uuid=self._manifest_locator,
                 body=body
                 ).execute(num_retries=num_retries))
-            self._manifest_text = self._api_response["manifest_text"]
-            self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed(True)
         elif body:
             self._remember_api_response(self._my_api().collections().update(
@@ -1654,12 +1680,7 @@ class Collection(RichCollectionBase):
                 body["preserve_version"] = preserve_version
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
-            text = self._api_response["manifest_text"]
-
             self._manifest_locator = self._api_response["uuid"]
-            self._portable_data_hash = self._api_response["portable_data_hash"]
-
-            self._manifest_text = text
             self.set_committed(True)
 
         return text
@@ -1743,6 +1764,7 @@ class Collection(RichCollectionBase):
                 stream_name = None
                 state = STREAM_NAME
 
+        self._update_token_timestamp()
         self.set_committed(True)
 
     @synchronized

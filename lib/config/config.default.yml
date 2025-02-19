@@ -1321,8 +1321,8 @@ Clusters:
 
         # Arguments that will be appended to the bsub command line
         # when submitting Arvados containers as LSF jobs with
-        # runtime_constraints.cuda.device_count > 0
-        BsubCUDAArguments: ["-gpu", "num=%G"]
+        # runtime_constraints.gpu.device_count > 0
+        BsubGPUArguments: ["-gpu", "num=%G"]
 
         # Use sudo to switch to this user account when submitting LSF
         # jobs.
@@ -1648,6 +1648,7 @@ Clusters:
         RAM: 128MiB
         IncludedScratch: 16GB
         AddedScratch: 0
+
         # Hourly price ($), used to select node types for containers,
         # and to calculate estimated container costs. For spot
         # instances on EC2, this is also used as the maximum price
@@ -1657,11 +1658,30 @@ Clusters:
         # given here is used to compute container cost estimates.
         Price: 0.1
         Preemptible: false
-        # Include this section if the node type includes GPU (CUDA) support
-        CUDA:
+
+        # Include this section if the instance type includes GPU support
+        GPU:
+          # The software stack, currently "cuda" or "rocm"
+          Stack: "cuda"
+
+          # The version of the driver installed on this instance, in
+          # X.Y format
           DriverVersion: "11.0"
-          HardwareCapability: "9.0"
+
+          # The architecture or capabilities of the GPU hardware
+          #
+          #   For 'cuda', this is the Compute Capability in X.Y
+          #   format.
+          #
+          #   For 'rocm', this is the LLVM target (e.g. gfx1100) for
+          #   the GPU hardware.
+          HardwareTarget: "9.0"
+
+          # The number GPUs on this instance
           DeviceCount: 1
+
+          # The amount of VRAM per GPU
+          VRAM: 8000000000
 
     StorageClasses:
 

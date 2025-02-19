@@ -67,7 +67,7 @@ $ <code class="userinput">arv copy --help</code>
 usage: arv-copy [-h] [--version] [-v] [--progress] [--no-progress] [-f]
                 [--src SOURCE_ARVADOS] [--dst DESTINATION_ARVADOS]
                 [--recursive] [--no-recursive] [--project-uuid PROJECT_UUID]
-                [--storage-classes STORAGE_CLASSES]
+                [--replication N] [--storage-classes STORAGE_CLASSES]
                 [--varying-url-params VARYING_URL_PARAMS]
                 [--prefer-cached-downloads] [--retries RETRIES]
                 object_uuid
@@ -107,6 +107,12 @@ optional arguments:
   --project-uuid PROJECT_UUID
                         The UUID of the project at the destination to which
                         the collection or workflow should be copied.
+  --replication N
+                        Number of replicas per storage class for the copied
+                        collections at the destination. If not provided (or if
+                        provided with invalid value), use the destination's
+                        default replication-level setting (if found), or the
+                        fallback value 2.
   --storage-classes STORAGE_CLASSES
                         Comma separated list of storage classes to be used
                         when saving data to the destinaton Arvados instance.

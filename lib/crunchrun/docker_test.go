@@ -41,13 +41,14 @@ func (s *dockerStubSuite) TestDockerContainerConfig(c *C) {
 	e, err := newDockerExecutor("zzzzz-zzzzz-zzzzzzzzzzzzzzz", c.Logf, time.Second/2)
 	c.Assert(err, IsNil)
 	cfg, hostCfg := e.config(containerSpec{
-		VCPUs:           4,
-		RAM:             123123123,
-		WorkingDir:      "/WorkingDir",
-		Env:             map[string]string{"FOO": "bar"},
-		BindMounts:      map[string]bindmount{"/mnt": {HostPath: "/hostpath", ReadOnly: true}},
-		EnableNetwork:   false,
-		CUDADeviceCount: 3,
+		VCPUs:          4,
+		RAM:            123123123,
+		WorkingDir:     "/WorkingDir",
+		Env:            map[string]string{"FOO": "bar"},
+		BindMounts:     map[string]bindmount{"/mnt": {HostPath: "/hostpath", ReadOnly: true}},
+		EnableNetwork:  false,
+		GPUStack:       "cuda",
+		GPUDeviceCount: 3,
 	})
 	c.Check(cfg.WorkingDir, Equals, "/WorkingDir")
 	c.Check(cfg.Env, DeepEquals, []string{"FOO=bar"})

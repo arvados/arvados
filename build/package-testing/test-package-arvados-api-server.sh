@@ -54,7 +54,7 @@ case "$TARGET" in
     rocky*)
         cat_dropins | expect_grep 1 "^SupplementaryGroups="
         microdnf --assumeyes install nginx
-        microdnf --assumeyes reinstall "$PACKAGE_NAME"
+        microdnf --assumeyes reinstall "$PACKAGE_NAME" || test $? -eq 1
         check_gem_dirs "package reinstall"
         cat_dropins | expect_grep 0 -x SupplementaryGroups=nginx
         ;;

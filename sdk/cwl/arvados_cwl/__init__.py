@@ -183,11 +183,18 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of the CWL standards.", default=False)
-    parser.add_argument('--storage-classes', default="default",
-                        help="Specify comma separated list of storage classes to be used when saving final workflow output to Keep.")
-    parser.add_argument('--intermediate-storage-classes', default="default",
-                        help="Specify comma separated list of storage classes to be used when saving intermediate workflow output to Keep.")
-
+    parser.add_argument(
+        '--storage-classes',
+        type=arv_cmd.UniqueSplit(),
+        default=[],
+        help="Specify comma separated list of storage classes to be used when saving final workflow output to Keep.",
+    )
+    parser.add_argument(
+        '--intermediate-storage-classes',
+        type=arv_cmd.UniqueSplit(),
+        default=[],
+        help="Specify comma separated list of storage classes to be used when saving intermediate workflow output to Keep.",
+    )
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
                         default=0)
@@ -297,6 +304,7 @@ def add_arv_hints():
         "http://arvados.org/cwl#KeepCacheTypeRequirement",
         "http://arvados.org/cwl#OutOfMemoryRetry",
         "http://arvados.org/cwl#PreemptionBehavior",
+        "http://arvados.org/cwl#ROCmRequirement",
     ])
 
 def exit_signal_handler(sigcode, frame):

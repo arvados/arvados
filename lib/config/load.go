@@ -342,7 +342,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.checkUnlistedKeepstores(cc),
 			ldr.checkLocalKeepBlobBuffers(cc),
 			ldr.checkStorageClasses(cc),
-			ldr.checkCUDAVersions(cc),
+			ldr.checkGPUVersions(cc),
 			// TODO: check non-empty Rendezvous on
 			// services other than Keepstore
 		} {
@@ -546,19 +546,15 @@ func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
 	return nil
 }
 
-func (ldr *Loader) checkCUDAVersions(cc arvados.Cluster) error {
+func (ldr *Loader) checkGPUVersions(cc arvados.Cluster) error {
 	for _, it := range cc.InstanceTypes {
-		if it.CUDA.DeviceCount == 0 {
+		if it.GPU.DeviceCount == 0 {
 			continue
 		}
 
-		_, err := strconv.ParseFloat(it.CUDA.DriverVersion, 64)
+		_, err := strconv.ParseFloat(it.GPU.DriverVersion, 64)
 		if err != nil {
-			return fmt.Errorf("InstanceType %q has invalid CUDA.DriverVersion %q, expected format X.Y (%v)", it.Name, it.CUDA.DriverVersion, err)
-		}
-		_, err = strconv.ParseFloat(it.CUDA.HardwareCapability, 64)
-		if err != nil {
-			return fmt.Errorf("InstanceType %q has invalid CUDA.HardwareCapability %q, expected format X.Y (%v)", it.Name, it.CUDA.HardwareCapability, err)
+			return fmt.Errorf("InstanceType %q has invalid GPU.DriverVersion %q, expected format X.Y (%v)", it.Name, it.GPU.DriverVersion, err)
 		}
 	}
 	return nil

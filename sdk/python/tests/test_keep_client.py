@@ -1565,6 +1565,11 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         os.makedirs(os.path.join(self.disk_cache_dir, self.locator[0:3]))
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "wb") as f:
             f.write(self.data)
+            # We want KeepBlockCache to consider this file older than the
+            # next file we write. Date it well in the past (a little over a
+            # day) to ensure that happens regardless of filesystem settings.
+            old_mtime = time.time() - 90000
+            os.utime(f.fileno(), (old_mtime, old_mtime))
 
         os.makedirs(os.path.join(self.disk_cache_dir, "acb"))
         with open(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock"), "wb") as f:

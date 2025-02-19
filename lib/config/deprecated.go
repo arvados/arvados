@@ -21,6 +21,18 @@ type deprRequestLimits struct {
 	MultiClusterRequestConcurrency *int
 }
 
+type deprCUDAFeatures struct {
+	DriverVersion      string
+	HardwareCapability string
+	DeviceCount        int
+}
+
+type deprInstanceType struct {
+	CUDA *deprCUDAFeatures
+}
+
+type deprInstanceTypeMap map[string]deprInstanceType
+
 type deprCluster struct {
 	RequestLimits deprRequestLimits
 	NodeProfiles  map[string]nodeProfile
@@ -35,6 +47,12 @@ type deprCluster struct {
 		SendUserSetupNotificationEmail *bool
 		SupportEmailAddress            *string
 	}
+	Containers struct {
+		LSF struct {
+			BsubCUDAArguments *[]string
+		}
+	}
+	InstanceTypes deprInstanceTypeMap
 }
 
 type deprecatedConfig struct {
@@ -99,6 +117,10 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 			*dst = *b
 			ldr.Logger.Warnf("using your old config key Mail.SendUserSetupNotificationEmail -- but you should rename it to Users.SendUserSetupNotificationEmail")
 		}
+		if dst, n := &cluster.Containers.LSF.BsubGPUArguments, dcluster.Containers.LSF.BsubCUDAArguments; n != nil {
+			*dst = *n
+			ldr.Logger.Warnf("using you old config key Containers.LSF.BsubCUDAArguments -- but you should rename it to Containers.LSF.BsubGPUArguments")
+		}
 
 		// Google* moved to Google.*
 		if dst, n := &cluster.Login.Google.ClientID, dcluster.Login.GoogleClientID; n != nil && *n != *dst {
@@ -113,6 +135,21 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 		if dst, n := &cluster.Login.Google.AlternateEmailAddresses, dcluster.Login.GoogleAlternateEmailAddresses; n != nil && *n != *dst {
 			*dst = *n
+		}
+
+		for name, instanceType := range dcluster.InstanceTypes {
+			if instanceType.CUDA != nil {
+				updInstanceType := cluster.InstanceTypes[name]
+				updInstanceType.GPU = arvados.GPUFeatures{
+					Stack:          "cuda",
+					DriverVersion:  instanceType.CUDA.DriverVersion,
+					HardwareTarget: instanceType.CUDA.HardwareCapability,
+					DeviceCount:    instanceType.CUDA.DeviceCount,
+					VRAM:           0,
+				}
+				cluster.InstanceTypes[name] = updInstanceType
+				ldr.Logger.Warnf("InstanceType '%v' has deprecated CUDA section, should be migrated to GPU section")
+			}
 		}
 
 		cfg.Clusters[id] = cluster

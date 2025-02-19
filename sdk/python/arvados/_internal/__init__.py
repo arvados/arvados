@@ -10,9 +10,14 @@ time.
 """
 
 import functools
+import operator
 import re
 import time
 import warnings
+
+import typing as t
+
+HT = t.TypeVar('HT', bound=t.Hashable)
 
 class Timer:
     def __init__(self, verbose=False):
@@ -81,3 +86,29 @@ def deprecated(version=None, preferred=None):
         deprecated_wrapper.__doc__ = docstring
         return deprecated_wrapper
     return deprecated_decorator
+
+
+def parse_seq(
+        s: str,
+        split: t.Callable[[str], t.Iterable[str]]=operator.methodcaller('split', ','),
+        clean: t.Callable[[str], str]=operator.methodcaller('strip'),
+        check: t.Callable[[str], bool]=bool,
+) -> t.Iterator[str]:
+    """Split, clean, and filter a string into multiple items
+
+    The default arguments split on commas, strip substrings, and skip empty
+    items.
+    """
+    return (word for substr in split(s) if check(word := clean(substr)))
+
+
+def uniq(it: t.Iterable[HT]) -> t.Iterator[HT]:
+    """Yield only unique items from an iterable
+
+    The items must be hashable.
+    """
+    seen = set()
+    for item in it:
+        if item not in seen:
+            seen.add(item)
+            yield item

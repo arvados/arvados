@@ -31,7 +31,7 @@ import arvados.errors
 import arvados.retry as retry
 import arvados.util
 
-from ._internal import basedirs, diskcache, Timer
+from ._internal import basedirs, diskcache, Timer, parse_seq
 from ._internal.pycurl import PyCurlHelper
 
 _logger = logging.getLogger('arvados.keep')
@@ -332,6 +332,10 @@ class KeepBlockCache(object):
 
         self.cap_cache()
 
+    def clear(self):
+        with self._cache_lock:
+            self._cache.clear()
+            self.cache_total = 0
 
 class _Counter:
     def __init__(self, v=0):
@@ -767,13 +771,13 @@ class KeepClient(object):
             except (KeyError, ValueError):
                 replicas_stored = 1
 
-            classes_confirmed = {}
+            classes_confirmed = collections.defaultdict(int)
             try:
                 scch = result['headers']['x-keep-storage-classes-confirmed']
-                for confirmation in scch.replace(' ', '').split(','):
-                    if '=' in confirmation:
-                        stored_class, stored_copies = confirmation.split('=')[:2]
-                        classes_confirmed[stored_class] = int(stored_copies)
+                for confirmation in parse_seq(scch):
+                    stored_class, _, stored_copies = confirmation.partition('=')
+                    if stored_copies:
+                        classes_confirmed[stored_class] += int(stored_copies)
             except (KeyError, ValueError):
                 # Storage classes confirmed header missing or corrupt
                 classes_confirmed = None

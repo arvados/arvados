@@ -26,6 +26,7 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
         sidePanelIsCollapsed: state.sidePanel.collapsedState,
         isTransitioning: state.detailsPanel.isTransitioning,
+        isDetailsPanelOpen: state.detailsPanel.isOpened,
         currentSideWidth: state.sidePanel.currentSideWidth,
         currentRoute: state.router.location ? state.router.location.pathname : '',
     };

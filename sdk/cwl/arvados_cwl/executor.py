@@ -23,6 +23,7 @@ from schema_salad.ref_resolver import file_uri, uri_file_path
 
 import arvados
 import arvados.config
+import arvados.util
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
 
@@ -654,12 +655,6 @@ The 'jobs' API is no longer supported.
 
         runtimeContext = runtimeContext.copy()
 
-        default_storage_classes = ",".join([k for k,v in self.api.config().get("StorageClasses", {"default": {"Default": True}}).items() if v.get("Default") is True])
-        if runtimeContext.storage_classes == "default":
-            runtimeContext.storage_classes = default_storage_classes
-        if runtimeContext.intermediate_storage_classes == "default":
-            runtimeContext.intermediate_storage_classes = default_storage_classes
-
         if not runtimeContext.name:
             self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
             if git_info.get("http://arvados.org/cwl#gitDescribe"):
@@ -917,9 +912,9 @@ The 'jobs' API is no longer supported.
             raise
         except:
             if sys.exc_info()[0] is KeyboardInterrupt or sys.exc_info()[0] is SystemExit:
-                logger.error("Interrupted, workflow will be cancelled")
+                logger.error("Interrupted, workflow will be cancelled", exc_info=self.debug)
             elif isinstance(sys.exc_info()[1], WorkflowException):
-                logger.error("Workflow execution failed:\n%s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
+                logger.error("Workflow execution failed:\n%s", sys.exc_info()[1], exc_info=self.debug)
             else:
                 logger.exception("Workflow execution failed")
 
@@ -967,7 +962,10 @@ The 'jobs' API is no longer supported.
             if storage_class_req and storage_class_req.get("finalStorageClass"):
                 storage_classes = aslist(storage_class_req["finalStorageClass"])
             else:
-                storage_classes = runtimeContext.storage_classes.strip().split(",")
+                storage_classes = (
+                    runtimeContext.storage_classes
+                    or list(arvados.util.iter_storage_classes(self.api.config()))
+                )
 
             output_properties = {}
             output_properties_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")

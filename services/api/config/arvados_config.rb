@@ -235,14 +235,6 @@ if default_storage_classes.length == 0
 end
 $arvados_config["DefaultStorageClasses"] = default_storage_classes.sort
 
-#
-# Special case for test database where there's no database.yml,
-# because the Arvados config.yml doesn't have a concept of multiple
-# rails environments.
-#
-if ::Rails.env.to_s == "test" && db_config["test"].nil?
-  $arvados_config["PostgreSQL"]["Connection"]["dbname"] = "arvados_test"
-end
 if ::Rails.env.to_s == "test"
   # Use template0 when creating a new database. Avoids
   # character-encoding/collation problems.

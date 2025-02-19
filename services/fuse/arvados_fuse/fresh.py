@@ -150,3 +150,10 @@ class FreshBase(object):
                 return t
         else:
             return self._poll_time
+
+    def update(self):
+        pass
+
+    def checkupdate(self):
+        if self.stale():
+            self.update()

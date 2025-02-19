@@ -1,0 +1,12 @@
+### This file is managed by Ansible ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+Package: hipcc rocm rocminfo rocm-*
+Pin: origin "repo.radeon.com"
+Pin-Priority: 550
+
+Package: *
+Pin: origin "repo.radeon.com"
+Pin-Priority: 100

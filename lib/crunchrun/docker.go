@@ -10,8 +10,11 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"slices"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -134,7 +137,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			KernelMemory: spec.RAM, // kernel portion
 		},
 	}
-	if spec.CUDADeviceCount != 0 {
+	if spec.GPUStack == "cuda" && spec.GPUDeviceCount > 0 {
 		var deviceIds []string
 		if cudaVisibleDevices := os.Getenv("CUDA_VISIBLE_DEVICES"); cudaVisibleDevices != "" {
 			// If a resource manager such as slurm or LSF told
@@ -142,7 +145,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			deviceIds = strings.Split(cudaVisibleDevices, ",")
 		}
 
-		deviceCount := spec.CUDADeviceCount
+		deviceCount := spec.GPUDeviceCount
 		if len(deviceIds) > 0 {
 			// Docker won't accept both non-empty
 			// DeviceIDs and a non-zero Count
@@ -171,6 +174,70 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute", "utility"}},
 		})
 	}
+	if spec.GPUStack == "rocm" && spec.GPUDeviceCount > 0 {
+		// there's no container toolkit or builtin Docker
+		// support for ROCm so we just provide the devices to
+		// the container ourselves.
+
+		// fortunately, the minimum version of this seems to be this:
+		// rendergroup=$(getent group render | cut -d: -f3)
+		// videogroup=$(getent group video | cut -d: -f3)
+		// docker run -it --device=/dev/kfd --device=/dev/dri/renderD128 --user $(id -u) --group-add $videogroup --group-add $rendergroup "$@"
+
+		hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
+			PathInContainer:   "/dev/kfd",
+			PathOnHost:        "/dev/kfd",
+			CgroupPermissions: "rwm",
+		})
+		info, _ := os.Stat("/dev/kfd")
+		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+			// Make sure the container has access
+			// to the group id that allow it to
+			// access the device.
+			hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
+		}
+
+		var deviceIndexes []int
+		if amdVisibleDevices := os.Getenv("AMD_VISIBLE_DEVICES"); amdVisibleDevices != "" {
+			// If a resource manager/dispatcher told us to
+			// select specific devices, so we need to
+			// propagate that.
+			for _, dev := range strings.Split(amdVisibleDevices, ",") {
+				intDev, err := strconv.Atoi(dev)
+				if err != nil {
+					continue
+				}
+				deviceIndexes = append(deviceIndexes, intDev)
+			}
+		} else {
+			// Try every device, we'll check below to see
+			// which ones actually exists.
+			for i := 0; i < 128; i++ {
+				deviceIndexes = append(deviceIndexes, i)
+			}
+		}
+		for _, intDev := range deviceIndexes {
+			devPath := fmt.Sprintf("/dev/dri/renderD%v", 128+intDev)
+			info, err := os.Stat(devPath)
+			if err != nil {
+				continue
+			}
+			hostCfg.Devices = append(hostCfg.Devices, dockercontainer.DeviceMapping{
+				PathInContainer:   devPath,
+				PathOnHost:        devPath,
+				CgroupPermissions: "rwm",
+			})
+			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+				// Make sure the container has access
+				// to the group id that allow it to
+				// access the device.
+				if !slices.Contains(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid)) {
+					hostCfg.GroupAdd = append(hostCfg.GroupAdd, fmt.Sprintf("%v", stat.Gid))
+				}
+			}
+		}
+	}
+
 	for path, mount := range spec.BindMounts {
 		bind := mount.HostPath + ":" + path
 		if mount.ReadOnly {

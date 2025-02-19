@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
+	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -82,7 +83,9 @@ func (s *TestSuite) TestIntegration(c *C) {
 
 	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) error {
 		defer cancel()
-		return (&LocalRun{startCmd, make(chan bool, 8), ctx, &cl}).run(d, c, s)
+		lr := LocalRun{startCmd, make(chan ResourceRequest), make(chan ResourceAlloc), ctx, &cl}
+		go lr.throttle(logrus.StandardLogger())
+		return lr.run(d, c, s)
 	}
 
 	err = dispatcher.Run(ctx)
@@ -127,11 +130,34 @@ func (s *MockArvadosServerSuite) Test_APIErrorUpdatingContainerState(c *C) {
 func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
 	apiStubResponses["/arvados/v1/containers"] =
-		arvadostest.StubResponse{200, string(`{"items_available":1, "items":[{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2","State":"Queued","Priority":1}]}`)}
+		arvadostest.StubResponse{200, string(`{"items_available":1, "items":[{
+"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2",
+"state":"Queued",
+"priority":1,
+"runtime_constraints": {
+  "vcpus": 1,
+  "ram": 1000000
+}}]}`)}
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx2/lock"] =
-		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2", "state":"Locked", "priority":1, "locked_by_uuid": "zzzzz-gj3su-000000000000000"}`)}
+		arvadostest.StubResponse{200, string(`{
+"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2",
+"state":"Locked",
+"priority":1,
+"locked_by_uuid": "zzzzz-gj3su-000000000000000",
+"runtime_constraints": {
+  "vcpus": 1,
+  "ram": 1000000
+}}`)}
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx2"] =
-		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2", "state":"Running", "priority":1, "locked_by_uuid": "zzzzz-gj3su-000000000000000"}`)}
+		arvadostest.StubResponse{200, string(`{
+"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx2",
+"state":"Running",
+"priority":1,
+"locked_by_uuid": "zzzzz-gj3su-000000000000000",
+"runtime_constraints": {
+  "vcpus": 1,
+  "ram": 1000000
+}}`)}
 
 	testWithServerStub(c, apiStubResponses, "echo",
 		`after \\"echo\\" process termination, container state for zzzzz-dz642-xxxxxxxxxxxxxx2 is \\"Running\\"; updating it to \\"Cancelled\\"`)
@@ -140,10 +166,25 @@ func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
 func (s *MockArvadosServerSuite) Test_ErrorRunningContainer(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
 	apiStubResponses["/arvados/v1/containers"] =
-		arvadostest.StubResponse{200, string(`{"items_available":1, "items":[{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3","State":"Queued","Priority":1}]}`)}
+		arvadostest.StubResponse{200, string(`{"items_available":1, "items":[{
+"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3",
+"state":"Queued",
+"priority":1,
+"runtime_constraints": {
+  "vcpus": 1,
+  "ram": 1000000
+}}]}`)}
 
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx3/lock"] =
-		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3", "state":"Locked", "priority":1}`)}
+		arvadostest.StubResponse{200, string(`{
+"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3",
+"state":"Locked",
+"priority":1,
+"runtime_constraints": {
+  "vcpus": 1,
+  "ram": 1000000
+}
+}`)}
 
 	testWithServerStub(c, apiStubResponses, "nosuchcommand", `error starting \\"nosuchcommand\\" for zzzzz-dz642-xxxxxxxxxxxxxx3`)
 }
@@ -186,10 +227,13 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	}
 
 	cl := arvados.Cluster{Containers: arvados.ContainersConfig{RuntimeEngine: "docker"}}
+	runningCmds = make(map[string]*exec.Cmd)
 
 	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) error {
 		defer cancel()
-		return (&LocalRun{startCmd, make(chan bool, 8), ctx, &cl}).run(d, c, s)
+		lr := LocalRun{startCmd, make(chan ResourceRequest), make(chan ResourceAlloc), ctx, &cl}
+		go lr.throttle(logrus.StandardLogger())
+		return lr.run(d, c, s)
 	}
 
 	re := regexp.MustCompile(`(?ms).*` + expected + `.*`)

@@ -1139,105 +1139,185 @@ class TestContainer(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        # Legacy CUDA API
+        ({
+            "class": "http://commonwl.org/cwltool#CUDARequirement",
+            "cudaVersionMin": "11.0",
+            "cudaComputeCapability": "9.0",
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'cuda': {
+                'device_count': 1,
+                'driver_version': "11.0",
+                'hardware_capability': "9.0"
+            }
+        }, "20210628"),
+        ({
+            "class": "http://commonwl.org/cwltool#CUDARequirement",
+            "cudaVersionMin": "11.0",
+            "cudaComputeCapability": "9.0",
+            "cudaDeviceCountMin": 2
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'cuda': {
+                'device_count': 2,
+                'driver_version': "11.0",
+                'hardware_capability': "9.0"
+            }
+        }, "20210628"),
+        ({
+            "class": "http://commonwl.org/cwltool#CUDARequirement",
+            "cudaVersionMin": "11.0",
+            "cudaComputeCapability": ["4.0", "5.0"],
+            "cudaDeviceCountMin": 2
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'cuda': {
+                'device_count': 2,
+                'driver_version': "11.0",
+                'hardware_capability': "4.0"
+            }
+        }, "20210628"),
+
+        # New GPU API
+        ({
+            "class": "http://commonwl.org/cwltool#CUDARequirement",
+            "cudaVersionMin": "11.0",
+            "cudaComputeCapability": "9.0",
+            "cudaVram": 8000,
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'gpu': {
+                'device_count': 1,
+                'driver_version': "11.0",
+                'hardware_target': ["9.0"],
+                'stack': "cuda",
+                'vram': 8000*1024*1024,
+            }
+        }, "20250128"),
+        ({
+            "class": "http://commonwl.org/cwltool#CUDARequirement",
+            "cudaVersionMin": "11.0",
+            "cudaComputeCapability": "9.0",
+            "cudaDeviceCountMin": 2,
+            "cudaVram": 8000,
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'gpu': {
+                'device_count': 2,
+                'driver_version': "11.0",
+                'hardware_target': ["9.0"],
+                'stack': "cuda",
+                'vram': 8000*1024*1024,
+            }
+        }, "20250128"),
+        ({
+            "class": "http://commonwl.org/cwltool#CUDARequirement",
+            "cudaVersionMin": "11.0",
+            "cudaComputeCapability": ["4.0", "5.0"],
+            "cudaDeviceCountMin": 2,
+            "cudaVram": 8000,
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'gpu': {
+                'device_count': 2,
+                'driver_version': "11.0",
+                'hardware_target': ["4.0", "5.0"],
+                'stack': "cuda",
+                'vram': 8000*1024*1024,
+            }
+        }, "20250128"),
+
+        # ROCm
+        ({
+            "class": "http://arvados.org/cwl#ROCmRequirement",
+            "rocmDriverVersion": "6.2",
+            "rocmTarget": ["gfx1100", "gfx1103"],
+            "rocmDeviceCountMin": 1,
+            "rocmVram": 8000,
+        }, {
+            'vcpus': 1,
+            'ram': 268435456,
+            'gpu': {
+                'device_count': 1,
+                'driver_version': "6.2",
+                'hardware_target': ["gfx1100", "gfx1103"],
+                'stack': "rocm",
+                'vram': 8000*1024*1024,
+            }
+        }, "20250128"),
+
+    ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_cuda_requirement(self, keepdocker):
+    def test_gpu_requirement(self, test_cwl_req, test_arv_req, apiRevision, keepdocker):
         arvados_cwl.add_arv_hints()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
-        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api._rootDesc = {"revision": apiRevision}
         runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        test_cwl_req = [{
-                "class": "http://commonwl.org/cwltool#CUDARequirement",
-                "cudaVersionMin": "11.0",
-                "cudaComputeCapability": "9.0",
-            }, {
-                "class": "http://commonwl.org/cwltool#CUDARequirement",
-                "cudaVersionMin": "11.0",
-                "cudaComputeCapability": "9.0",
-                "cudaDeviceCountMin": 2
-            }, {
-                "class": "http://commonwl.org/cwltool#CUDARequirement",
-                "cudaVersionMin": "11.0",
-                "cudaComputeCapability": ["4.0", "5.0"],
-                "cudaDeviceCountMin": 2
-            }]
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "nvidia-smi",
+            "arguments": [],
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
+            "requirements": [test_cwl_req]
+        })
 
-        test_arv_req = [{
-            'device_count': 1,
-            'driver_version': "11.0",
-            'hardware_capability': "9.0"
-        }, {
-            'device_count': 2,
-            'driver_version': "11.0",
-            'hardware_capability': "9.0"
-        }, {
-            'device_count': 2,
-            'driver_version': "11.0",
-            'hardware_capability': "4.0"
-        }]
+        loadingContext, runtimeContext = self.helper(runner, True)
 
-        for test_case in range(0, len(test_cwl_req)):
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
 
-            tool = cmap({
-                "inputs": [],
-                "outputs": [],
-                "baseCommand": "nvidia-smi",
-                "arguments": [],
-                "id": "",
-                "cwlVersion": "v1.2",
-                "class": "CommandLineTool",
-                "requirements": [test_cwl_req[test_case]]
-            })
-
-            loadingContext, runtimeContext = self.helper(runner, True)
-
-            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
-            arvtool.formatgraph = None
-
-            for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
-                j.run(runtimeContext)
-                runner.api.container_requests().create.assert_called_with(
-                    body=JsonDiffMatcher({
-                        'environment': {
-                            'HOME': '/var/spool/cwl',
-                            'TMPDIR': '/tmp'
-                        },
-                        'name': 'test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
-                        'runtime_constraints': {
-                            'vcpus': 1,
-                            'ram': 268435456,
-                            'cuda': test_arv_req[test_case]
-                        },
-                        'use_existing': True,
-                        'priority': 500,
-                        'mounts': {
-                            '/tmp': {'kind': 'tmp',
-                                     "capacity": 1073741824
-                                 },
-                            '/var/spool/cwl': {'kind': 'tmp',
-                                               "capacity": 1073741824 }
-                        },
-                        'state': 'Committed',
-                        'output_name': 'Output from step test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
-                        'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                        'output_path': '/var/spool/cwl',
-                        'output_ttl': 0,
-                        'container_image': '99999999999999999999999999999993+99',
-                        'command': ['nvidia-smi'],
-                        'cwd': '/var/spool/cwl',
-                        'scheduling_parameters': {},
-                        'properties': {'cwl_input': {}},
-                        'secret_mounts': {},
-                        'output_storage_classes': ["default"]
-                    }))
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_True',
+                    'runtime_constraints': test_arv_req,
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output from step test_run_True',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['nvidia-smi'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {'cwl_input': {}},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
+                }))
 
 
     # The test passes no builder.resources
@@ -1725,6 +1805,62 @@ class TestContainer(unittest.TestCase):
                               ], kwargs['body'].get('output_glob'))
         else:
             self.assertEqual(None, kwargs['body'].get('output_glob'))
+
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        ("Uncommitted",),
+        ("Committed",),
+        ("Final",),
+
+    ])
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_recheck_on_error(self, get_state, keepdocker):
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2"
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, False)
+
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+
+        # Test that if update() raises an exception, we re-check the
+        # container request record to see if we can proceed anyway.
+        runner.api.container_requests().update.side_effect = Exception("Invalid state transition")
+
+        runner.api.container_requests().create().execute.return_value = {
+            'state': 'Uncommitted',
+            'uuid': "zzzzz-xvhdp-zzzzzzzzzzzzzz1",
+            "container_uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+        }
+        runner.api.container_requests().get().execute.return_value = {
+            'state': get_state,
+            'uuid': "zzzzz-xvhdp-zzzzzzzzzzzzzz1",
+        }
+
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().get.assert_called_with(uuid="zzzzz-xvhdp-zzzzzzzzzzzzzz1")
+            assert j.attempt_count == (0 if get_state == "Uncommitted" else 1)
 
 
 class TestWorkflow(unittest.TestCase):

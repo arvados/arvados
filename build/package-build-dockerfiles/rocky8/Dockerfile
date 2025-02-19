@@ -13,10 +13,10 @@ ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-amd64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
-ONBUILD ADD generated/node-v12.22.12-linux-x64.tar.xz /usr/local/
-ONBUILD RUN ln -s /usr/local/node-v12.22.12-linux-x64/bin/* /usr/local/bin/
+ONBUILD ADD generated/node-v14.21.3-linux-x64.tar.xz /usr/local/
+ONBUILD RUN ln -s /usr/local/node-v14.21.3-linux-x64/bin/* /usr/local/bin/
 ONBUILD RUN npm install -g yarn
-ONBUILD RUN ln -sf /usr/local/node-v12.22.12-linux-x64/bin/* /usr/local/bin/
+ONBUILD RUN ln -sf /usr/local/node-v14.21.3-linux-x64/bin/* /usr/local/bin/
 
 FROM rockylinux:8.8-minimal as build_aarch64
 ONBUILD ARG BRANCH
@@ -25,10 +25,10 @@ ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-arm64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
-ONBUILD ADD generated/node-v12.22.12-linux-arm64.tar.xz /usr/local/
-ONBUILD RUN ln -s /usr/local/node-v12.22.12-linux-arm64/bin/* /usr/local/bin/
+ONBUILD ADD generated/node-v14.21.3-linux-arm64.tar.xz /usr/local/
+ONBUILD RUN ln -s /usr/local/node-v14.21.3-linux-arm64/bin/* /usr/local/bin/
 ONBUILD RUN npm install -g yarn
-ONBUILD RUN ln -sf /usr/local/node-v12.22.12-linux-arm64/bin/* /usr/local/bin/
+ONBUILD RUN ln -sf /usr/local/node-v14.21.3-linux-arm64/bin/* /usr/local/bin/
 
 FROM build_${HOSTTYPE}
 
