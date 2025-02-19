@@ -6,7 +6,6 @@ import { ContextMenuAction } from './context-menu-action-set';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { sortByProperty } from 'common/array-utils';
 import { horizontalMenuDivider, verticalMenuDivider } from './actions/context-menu-divider';
-import { MultiSelectMenuAction } from 'views-components/multiselect-toolbar/ms-menu-actions';
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
@@ -99,6 +98,14 @@ const projectOrder = [
     ContextMenuActionNames.API_DETAILS,
 ];
 
+const groupOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.EDIT_PROJECT,
+    ContextMenuActionNames.MOVE_TO_TRASH,
+];
+
 const collectionOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
@@ -129,6 +136,12 @@ const workflowOrder = [
 ]
 
 const rootProjectOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.USER_ACCOUNT,
+    ContextMenuActionNames.API_DETAILS,
+];
+
+const userDetailsOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.USER_ACCOUNT,
     ContextMenuActionNames.API_DETAILS,
@@ -168,13 +181,15 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.WORKFLOW]: workflowOrder,
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 
-    [ContextMenuKind.GROUPS]: projectOrder,
+    [ContextMenuKind.GROUPS]: groupOrder,
 
     [ContextMenuKind.FILTER_GROUP]: projectOrder,
     [ContextMenuKind.FILTER_GROUP_ADMIN]: projectOrder,
 
     [ContextMenuKind.ROOT_PROJECT]: rootProjectOrder,
     [ContextMenuKind.ROOT_PROJECT_ADMIN]: rootProjectOrder,
+
+    [ContextMenuKind.USER_DETAILS]: userDetailsOrder,
 };
 
 export const menuDirection = {
@@ -182,7 +197,7 @@ export const menuDirection = {
     HORIZONTAL: 'horizontal'
 }
 
-export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] | MultiSelectMenuAction[] => {
+export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] => {
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name
     if (!preferredOrder) return menuItems.sort(sortByProperty("name"));
@@ -203,7 +218,7 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
     });
     [...menuItems].forEach((item) => {
         if (bucketMap.has(item.name)) bucketMap.set(item.name, item);
-        else leftovers.push(item);
+        else if (item.name !== ContextMenuActionNames.DIVIDER) leftovers.push(item);
     });
 
     const result =  Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null).reduce((acc, val)=>{

@@ -98,6 +98,7 @@ export const shareAction = {
 export const moveToAction = {
     icon: MoveToIcon,
     name: ContextMenuActionNames.MOVE_TO,
+    isForMulti: true,
     execute: (dispatch, resource) => {
         dispatch(openMoveProjectDialog(resource[0]));
     },
@@ -106,8 +107,11 @@ export const moveToAction = {
 export const toggleTrashAction = {
     component: ToggleTrashAction,
     name: ContextMenuActionNames.MOVE_TO_TRASH,
+    isForMulti: true,
     execute: (dispatch, resources) => {
-        dispatch(toggleProjectTrashed(resources[0].uuid, resources[0].ownerUuid, resources[0].isTrashed!!, resources.length > 1));
+        for (const resource of [...resources]) {
+            dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
+        }
     },
 };
 

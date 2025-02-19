@@ -72,6 +72,7 @@ const commonActionSet: ContextMenuActionSet = [
         {
             icon: FileCopyOutlinedIcon,
             name: ContextMenuActionNames.MAKE_A_COPY,
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
                 else dispatch<any>(openMultiCollectionCopyDialog(resources[0]));
@@ -128,11 +129,13 @@ export const collectionActionSet: ContextMenuActionSet = [
         {
             icon: MoveToIcon,
             name: ContextMenuActionNames.MOVE_TO,
+            isForMulti: true,
             execute: (dispatch, resources) => dispatch<any>(openMoveCollectionDialog(resources[0])),
         },
         {
             component: ToggleTrashAction,
             name: ContextMenuActionNames.MOVE_TO_TRASH,
+            isForMulti: true,
             execute: (dispatch, resources: ContextMenuResource[]) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
