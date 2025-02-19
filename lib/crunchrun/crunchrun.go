@@ -1014,25 +1014,26 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 		ram = 0
 	}
 
-	if runner.Container.RuntimeConstraints.CUDA.DeviceCount > 0 {
+	if runner.Container.RuntimeConstraints.GPU.Stack == "cuda" {
 		nvidiaModprobe(runner.CrunchLog)
 	}
 
 	return runner.executor.Create(containerSpec{
-		Image:           imageID,
-		VCPUs:           runner.Container.RuntimeConstraints.VCPUs,
-		RAM:             ram,
-		WorkingDir:      workdir,
-		Env:             env,
-		BindMounts:      bindmounts,
-		Command:         runner.Container.Command,
-		EnableNetwork:   enableNetwork,
-		CUDADeviceCount: runner.Container.RuntimeConstraints.CUDA.DeviceCount,
-		NetworkMode:     runner.networkMode,
-		CgroupParent:    runner.setCgroupParent,
-		Stdin:           stdin,
-		Stdout:          stdout,
-		Stderr:          stderr,
+		Image:          imageID,
+		VCPUs:          runner.Container.RuntimeConstraints.VCPUs,
+		RAM:            ram,
+		WorkingDir:     workdir,
+		Env:            env,
+		BindMounts:     bindmounts,
+		Command:        runner.Container.Command,
+		EnableNetwork:  enableNetwork,
+		GPUStack:       runner.Container.RuntimeConstraints.GPU.Stack,
+		GPUDeviceCount: runner.Container.RuntimeConstraints.GPU.DeviceCount,
+		NetworkMode:    runner.networkMode,
+		CgroupParent:   runner.setCgroupParent,
+		Stdin:          stdin,
+		Stdout:         stdout,
+		Stderr:         stderr,
 	})
 }
 
@@ -1833,11 +1834,13 @@ func NewContainerRunner(dispatcherClient *arvados.Client,
 		if err != nil {
 			return nil, nil, nil, err
 		}
+		cl.Retries = 10
 		cl.ApiToken = token
 		kc, err := keepclient.MakeKeepClient(cl)
 		if err != nil {
 			return nil, nil, nil, err
 		}
+		kc.Retries = 10
 		c2 := arvados.NewClientFromEnv()
 		c2.AuthToken = token
 		return cl, kc, c2, nil
@@ -1976,7 +1979,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		log.Printf("%s: %v", containerUUID, err)
 		return 1
 	}
-	kc.Retries = 4
+	kc.Retries = 10
 
 	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, containerUUID)
 	if err != nil {

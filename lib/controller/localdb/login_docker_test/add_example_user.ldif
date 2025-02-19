@@ -1,0 +1,50 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+dn: cn=bar,dc=example,dc=org
+objectClass: posixGroup
+objectClass: top
+cn: bar
+gidNumber: 11111
+description: "Example group 'bar'"
+
+dn: uid=foo-bar,dc=example,dc=org
+uid: foo-bar
+cn: "Foo Bar"
+givenName: Foo
+sn: Bar
+mail: foo-bar-baz@example.com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+shadowMax: -1
+shadowMin: 1
+shadowWarning: 7
+shadowLastChange: 10701
+loginShell: /bin/bash
+uidNumber: 11111
+gidNumber: 11111
+homeDirectory: /home/foo-bar
+userPassword: ${passwordhash}
+
+dn: uid=expired,dc=example,dc=org
+uid: expired
+cn: "Exp Ired"
+givenName: Exp
+sn: Ired
+mail: expired@example.com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+shadowMax: 180
+shadowMin: 1
+shadowWarning: 7
+shadowLastChange: 10701
+loginShell: /bin/bash
+uidNumber: 11112
+gidNumber: 11111
+homeDirectory: /home/expired
+userPassword: ${passwordhash}

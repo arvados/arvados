@@ -34,6 +34,7 @@ For portability, most Arvados extensions should go into the @hints@ section of y
 * "ProcessProperties":#ProcessProperties
 * "OutputCollectionProperties":#OutputCollectionProperties
 * "CUDARequirement":#CUDARequirement
+* "ROCmRequirement":#ROCmRequirement
 * "UsePreemptible":#UsePreemptible
 * "PreemptionBehavior":#PreemptionBehavior
 * "OutOfMemoryRetry":#OutOfMemoryRetry
@@ -88,6 +89,14 @@ hints:
     cudaComputeCapability: "9.0"
     cudaDeviceCountMin: 1
     cudaDeviceCountMax: 1
+    cudaVram: 8000
+
+  arv:ROCmRequirement:
+    rocmDriverVersion: "6.2"
+    rocmTarget: ["gfx1100", "gfx1103"]
+    rocmDeviceCountMin: 1
+    rocmDeviceCountMax: 1
+    rocmVram: 8000
 
   arv:UsePreemptible:
     usePreemptible: true
@@ -220,6 +229,19 @@ table(table table-bordered table-condensed).
 |cudaComputeCapability|string|Required.  The minimum CUDA hardware capability (in 'X.Y' format) required by the application's PTX or C++ GPU code (will be JIT compiled for the available hardware).|
 |cudaDeviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
 |cudaDeviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @cudaDeviceCountMin@.|
+|cudaVram|integer|Requested amount of VRAM per device, in mebibytes (2**20)|
+
+h2(#ROCmRequirement). cwltool:ROCmRequirement
+
+Request support for AMD ROCm GPU acceleration in the container.  Assumes that the ROCm runtime (SDK) is installed in the container, and the host will inject the AMD devices (@/dev/kfd@ and @/dev/dri/renderD*@) container.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|rocmDriverVersion|string|Required.  The ROCm SDK version corresponding to the minimum driver version supported by the container (generally, the SDK version 'X.Y' the application was compiled against).|
+|rocmTarget|array of string|Required.  A list of one or more hardware targets (e.g. gfx1100) corresponding to the GPU architectures supported by the container.  Use @rocminfo@ to determine what hardware targets you have.  See also https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name").|
+|rocmDeviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
+|rocmDeviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @rocmDeviceCountMin@.|
+|rocmVram|integer|Requested amount of VRAM per device, in mebibytes (2**20)|
 
 h2(#UsePreemptible). arv:UsePreemptible
 

@@ -8,11 +8,15 @@ package main
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -22,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
+	"github.com/pbnjay/memory"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,7 +57,7 @@ func main() {
 
 	flags.StringVar(&crunchRunCommand,
 		"crunch-run-command",
-		"/usr/bin/crunch-run",
+		"",
 		"Crunch command to run container")
 
 	getVersion := flags.Bool(
@@ -80,6 +85,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
 		os.Exit(1)
+	}
+
+	if crunchRunCommand == "" {
+		crunchRunCommand = cluster.Containers.CrunchRunCommand
 	}
 
 	logger := baseLogger.WithField("ClusterID", cluster.ClusterID)
@@ -115,10 +124,14 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	localRun := LocalRun{startFunc, make(chan ResourceRequest), make(chan ResourceAlloc), ctx, cluster}
+
+	go localRun.throttle(logger)
+
 	dispatcher := dispatch.Dispatcher{
 		Logger:       logger,
 		Arv:          arv,
-		RunContainer: (&LocalRun{startFunc, make(chan bool, 8), ctx, cluster}).run,
+		RunContainer: localRun.run,
 		PollPeriod:   time.Duration(*pollInterval) * time.Second,
 	}
 
@@ -151,11 +164,134 @@ func startFunc(container arvados.Container, cmd *exec.Cmd) error {
 	return cmd.Start()
 }
 
+type ResourceAlloc struct {
+	uuid     string
+	vcpus    int
+	ram      int64
+	gpuStack string
+	gpus     []string
+}
+
+type ResourceRequest struct {
+	uuid     string
+	vcpus    int
+	ram      int64
+	gpuStack string
+	gpus     int
+	ready    chan ResourceAlloc
+}
+
 type LocalRun struct {
 	startCmd         func(container arvados.Container, cmd *exec.Cmd) error
-	concurrencyLimit chan bool
+	requestResources chan ResourceRequest
+	releaseResources chan ResourceAlloc
 	ctx              context.Context
 	cluster          *arvados.Cluster
+}
+
+func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
+	maxVcpus := runtime.NumCPU()
+	var maxRam int64 = int64(memory.TotalMemory())
+
+	logger.Infof("AMD_VISIBLE_DEVICES=%v", os.Getenv("AMD_VISIBLE_DEVICES"))
+	logger.Infof("CUDA_VISIBLE_DEVICES=%v", os.Getenv("CUDA_VISIBLE_DEVICES"))
+
+	availableCUDAGpus := strings.Split(os.Getenv("CUDA_VISIBLE_DEVICES"), ",")
+	availableROCmGpus := strings.Split(os.Getenv("AMD_VISIBLE_DEVICES"), ",")
+
+	gpuStack := ""
+	maxGpus := 0
+	availableGpus := []string{}
+
+	if maxGpus = len(availableCUDAGpus); maxGpus > 0 && availableCUDAGpus[0] != "" {
+		gpuStack = "cuda"
+		availableGpus = availableCUDAGpus
+	} else if maxGpus = len(availableROCmGpus); maxGpus > 0 && availableROCmGpus[0] != "" {
+		gpuStack = "rocm"
+		availableGpus = availableROCmGpus
+	}
+
+	availableVcpus := maxVcpus
+	availableRam := maxRam
+
+	pending := []ResourceRequest{}
+
+NextEvent:
+	for {
+		select {
+		case rr := <-lr.requestResources:
+			pending = append(pending, rr)
+
+		case rr := <-lr.releaseResources:
+			availableVcpus += rr.vcpus
+			availableRam += rr.ram
+			for _, gpu := range rr.gpus {
+				availableGpus = append(availableGpus, gpu)
+			}
+
+			logger.Infof("%v released allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
+				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
+				availableVcpus, availableRam, availableGpus)
+
+		case <-lr.ctx.Done():
+			return
+		}
+
+		for len(pending) > 0 {
+			rr := pending[0]
+			if rr.vcpus < 1 || rr.vcpus > maxVcpus {
+				logger.Infof("%v requested vcpus %v but maxVcpus is %v", rr.uuid, rr.vcpus, maxVcpus)
+				// resource request can never be fulfilled,
+				// return a zero struct
+				rr.ready <- ResourceAlloc{}
+				continue
+			}
+			if rr.ram < 1 || rr.ram > maxRam {
+				logger.Infof("%v requested ram %v but maxRam is %v", rr.uuid, rr.ram, maxRam)
+				// resource request can never be fulfilled,
+				// return a zero struct
+				rr.ready <- ResourceAlloc{}
+				continue
+			}
+			if rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
+				logger.Infof("%v requested %v gpus with stack %v but maxGpus is %v and gpuStack is %q", rr.uuid, rr.gpus, rr.gpuStack, maxGpus, gpuStack)
+				// resource request can never be fulfilled,
+				// return a zero struct
+				rr.ready <- ResourceAlloc{}
+				continue
+			}
+
+			if rr.vcpus > availableVcpus || rr.ram > availableRam || rr.gpus > len(availableGpus) {
+				logger.Infof("Insufficient resources to start %v, waiting for next event", rr.uuid)
+				// can't be scheduled yet, go up to
+				// the top and wait for the next event
+				continue NextEvent
+			}
+
+			alloc := ResourceAlloc{uuid: rr.uuid, vcpus: rr.vcpus, ram: rr.ram}
+
+			availableVcpus -= rr.vcpus
+			availableRam -= rr.ram
+			alloc.gpuStack = rr.gpuStack
+
+			for i := 0; i < rr.gpus; i++ {
+				alloc.gpus = append(alloc.gpus, availableGpus[len(availableGpus)-1])
+				availableGpus = availableGpus[0 : len(availableGpus)-1]
+			}
+			rr.ready <- alloc
+
+			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
+				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
+				availableVcpus, availableRam, availableGpus)
+
+			// shift array down
+			for i := 0; i < len(pending)-1; i++ {
+				pending[i] = pending[i+1]
+			}
+			pending = pending[0 : len(pending)-1]
+		}
+
+	}
 }
 
 // Run a container.
@@ -174,14 +310,42 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 	if container.State == dispatch.Locked {
 
+		gpuStack := container.RuntimeConstraints.GPU.Stack
+		gpus := container.RuntimeConstraints.GPU.DeviceCount
+
+		resourceRequest := ResourceRequest{
+			uuid:  container.UUID,
+			vcpus: container.RuntimeConstraints.VCPUs,
+			ram: (container.RuntimeConstraints.RAM +
+				container.RuntimeConstraints.KeepCacheRAM +
+				int64(lr.cluster.Containers.ReserveExtraRAM)),
+			gpuStack: gpuStack,
+			gpus:     gpus,
+			ready:    make(chan ResourceAlloc)}
+
 		select {
-		case lr.concurrencyLimit <- true:
+		case lr.requestResources <- resourceRequest:
 			break
 		case <-lr.ctx.Done():
 			return lr.ctx.Err()
 		}
 
-		defer func() { <-lr.concurrencyLimit }()
+		var resourceAlloc ResourceAlloc
+		select {
+		case resourceAlloc = <-resourceRequest.ready:
+		case <-lr.ctx.Done():
+			return lr.ctx.Err()
+		}
+
+		if resourceAlloc.vcpus == 0 {
+			dispatcher.Logger.Warnf("Container resource request %v cannot be fulfilled.", uuid)
+			dispatcher.UpdateState(uuid, dispatch.Cancelled)
+			return nil
+		}
+
+		defer func() {
+			lr.releaseResources <- resourceAlloc
+		}()
 
 		select {
 		case c := <-status:
@@ -197,10 +361,30 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		waitGroup.Add(1)
 		defer waitGroup.Done()
 
-		cmd := exec.Command(crunchRunCommand, "--runtime-engine="+lr.cluster.Containers.RuntimeEngine, uuid)
+		args := []string{"--runtime-engine=" + lr.cluster.Containers.RuntimeEngine}
+		args = append(args, lr.cluster.Containers.CrunchRunArgumentsList...)
+		args = append(args, uuid)
+
+		cmd := exec.Command(crunchRunCommand, args...)
 		cmd.Stdin = nil
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
+
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%v", os.Getenv("PATH")))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("TMPDIR=%v", os.Getenv("TMPDIR")))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("ARVADOS_API_HOST=%v", os.Getenv("ARVADOS_API_HOST")))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("ARVADOS_API_TOKEN=%v", os.Getenv("ARVADOS_API_TOKEN")))
+
+		h := hmac.New(sha256.New, []byte(lr.cluster.SystemRootToken))
+		fmt.Fprint(h, container.UUID)
+		cmd.Env = append(cmd.Env, fmt.Sprintf("GatewayAuthSecret=%x", h.Sum(nil)))
+
+		if resourceAlloc.gpuStack == "rocm" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("AMD_VISIBLE_DEVICES=%v", strings.Join(resourceAlloc.gpus, ",")))
+		}
+		if resourceAlloc.gpuStack == "cuda" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("CUDA_VISIBLE_DEVICES=%v", strings.Join(resourceAlloc.gpus, ",")))
+		}
 
 		dispatcher.Logger.Printf("starting container %v", uuid)
 

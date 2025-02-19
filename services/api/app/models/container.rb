@@ -207,7 +207,8 @@ class Container < ArvadosModel
     if rc['keep_cache_disk'] == 0 and rc['keep_cache_ram'] == 0
       rc['keep_cache_disk'] = bound_keep_cache_disk(rc['ram'])
     end
-    rc
+    ContainerRequest.translate_cuda_to_gpu rc
+    self.deep_sort_hash(rc)
   end
 
   # Return a mounts hash suitable for a Container, i.e., with every
@@ -305,6 +306,28 @@ class Container < ArvadosModel
         resolved_runtime_constraints.delete('keep_cache_ram'),
       ].uniq,
     }
+
+    resolved_gpu = resolved_runtime_constraints['gpu']
+    if resolved_gpu.nil? or resolved_gpu['device_count'] == 0
+      runtime_constraint_variations[:gpu] = [
+        # Check for constraints without gpu
+        # (containers that predate the constraint)
+        nil,
+        # The default "don't need GPUs" value
+        {
+          'device_count' => 0,
+          'driver_version' => '',
+          'hardware_target' => [],
+          'stack' => '',
+          'vram' => 0,
+        },
+        # The requested value
+        resolved_runtime_constraints.delete('gpu')
+      ].uniq
+    end
+
+    # Note: deprecated in favor of the more general "GPU" constraint above
+    # Kept for backwards compatability.
     resolved_cuda = resolved_runtime_constraints['cuda']
     if resolved_cuda.nil? or resolved_cuda['device_count'] == 0
       runtime_constraint_variations[:cuda] = [
@@ -320,7 +343,17 @@ class Container < ArvadosModel
         # The requested value
         resolved_runtime_constraints.delete('cuda')
       ].uniq
+    else
+      # Need to check
+      # a) for legacy containers that only mention CUDA
+      # b) for new containers that were submitted with the old API that
+      # list both CUDA and GPU
+      runtime_constraint_variations[:gpu] = [
+        nil,
+        resolved_runtime_constraints.delete('gpu')
+      ]
     end
+
     reusable_runtime_constraints = hash_product(**runtime_constraint_variations)
                                      .map { |v| resolved_runtime_constraints.merge(v) }
 

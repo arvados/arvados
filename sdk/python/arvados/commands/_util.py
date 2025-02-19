@@ -3,13 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import dataclasses
 import errno
 import json
 import logging
+import operator
 import os
 import re
 import signal
 import sys
+
+import typing as t
+
+from .. import _internal
 
 FILTER_STR_RE = re.compile(r'''
 ^\(
@@ -19,16 +25,41 @@ FILTER_STR_RE = re.compile(r'''
 \ *\)$
 ''', re.ASCII | re.VERBOSE)
 
-def _pos_int(s):
-    num = int(s)
-    if num < 0:
-        raise ValueError("can't accept negative value: %s" % (num,))
-    return num
+T = t.TypeVar('T')
+
+@dataclasses.dataclass(unsafe_hash=True)
+class RangedValue(t.Generic[T]):
+    """Validate that an argument string is within a valid range of values"""
+    parse_func: t.Callable[[str], T]
+    valid_range: t.Container[T]
+
+    def __call__(self, s: str) -> T:
+        value = self.parse_func(s)
+        if value in self.valid_range:
+            return value
+        else:
+            raise ValueError(f"{value!r} is not a valid value")
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class UniqueSplit(t.Generic[T]):
+    """Parse a string into a list of unique values"""
+    split: t.Callable[[str], t.Iterable[str]]=operator.methodcaller('split', ',')
+    clean: t.Callable[[str], str]=operator.methodcaller('strip')
+    check: t.Callable[[str], bool]=bool
+
+    def __call__(self, s: str) -> T:
+        return list(_internal.uniq(_internal.parse_seq(s, self.split, self.clean, self.check)))
+
 
 retry_opt = argparse.ArgumentParser(add_help=False)
-retry_opt.add_argument('--retries', type=_pos_int, default=10, help="""
-Maximum number of times to retry server requests that encounter temporary
-failures (e.g., server down).  Default 10.""")
+retry_opt.add_argument(
+    '--retries',
+    type=RangedValue(int, range(0, sys.maxsize)),
+    default=10,
+    help="""Maximum number of times to retry server requests that encounter
+temporary failures (e.g., server down).  Default %(default)r.
+""")
 
 def _ignore_error(error):
     return None

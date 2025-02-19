@@ -95,7 +95,7 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
                 const isRunning = process ? isProcessCancelable(process) : false;
                 return getProcessMenuKind({ isAdmin, isRunning, canWriteProcess });
             case ResourceKind.USER:
-                return ContextMenuKind.ROOT_PROJECT;
+                return ContextMenuKind.USER_DETAILS;
             case ResourceKind.LINK:
                 return ContextMenuKind.LINK;
             case ResourceKind.WORKFLOW:

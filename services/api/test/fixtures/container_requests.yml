@@ -20,10 +20,12 @@ queued:
   runtime_constraints:
     vcpus: 1
     ram: 123
-    cuda:
-      driver_version: ""
-      hardware_capability: ""
+    gpu:
       device_count: 0
+      driver_version: ""
+      hardware_target: []
+      stack: ""
+      vram: 0
   mounts: {}
 
 running:

@@ -1355,3 +1355,96 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 	checkwebdavlogs(cr)
 	return outcoll, logcfs
 }
+
+func (s *IntegrationSuite) TestCUDAContainerReuse(c *check.C) {
+	// Check that the legacy "CUDA" API still works.
+
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	_, ac1, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+
+	crInput := map[string]interface{}{
+		"command":         []string{"echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"},
+		"cwd":             "test",
+		"environment":     map[string]interface{}{},
+		"output_path":     "test",
+		"output_glob":     []string{},
+		"container_image": "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
+		"mounts":          map[string]interface{}{},
+		"runtime_constraints": map[string]interface{}{
+			"cuda": map[string]interface{}{
+				"device_count":        1,
+				"driver_version":      "11.0",
+				"hardware_capability": "9.0",
+			},
+			"ram":   12000000000,
+			"vcpus": 4,
+		},
+		"state": "Committed",
+	}
+
+	var outCR arvados.ContainerRequest
+	err := ac1.RequestAndDecode(&outCR, "POST", "/arvados/v1/container_requests", nil,
+		map[string]interface{}{"container_request": crInput})
+	c.Check(err, check.IsNil)
+
+	c.Check(outCR.RuntimeConstraints.GPU.Stack, check.Equals, "cuda")
+	c.Check(outCR.RuntimeConstraints.GPU.DriverVersion, check.Equals, "11.0")
+	c.Check(outCR.RuntimeConstraints.GPU.HardwareTarget, check.DeepEquals, []string{"9.0"})
+	c.Check(outCR.RuntimeConstraints.GPU.DeviceCount, check.Equals, 1)
+	c.Check(outCR.RuntimeConstraints.GPU.VRAM, check.Equals, int64(0))
+
+	var outCR2 arvados.ContainerRequest
+	err = ac1.RequestAndDecode(&outCR2, "POST", "/arvados/v1/container_requests", nil,
+		map[string]interface{}{"container_request": crInput})
+	c.Check(err, check.IsNil)
+
+	c.Check(outCR.ContainerUUID, check.Equals, outCR2.ContainerUUID)
+}
+
+func (s *IntegrationSuite) TestGPUContainerReuse(c *check.C) {
+	// Test container reuse using the "GPU" API
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	_, ac1, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+
+	crInput := map[string]interface{}{
+		"command":         []string{"echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"},
+		"cwd":             "test",
+		"environment":     map[string]interface{}{},
+		"output_path":     "test",
+		"output_glob":     []string{},
+		"container_image": "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
+		"mounts":          map[string]interface{}{},
+		"runtime_constraints": map[string]interface{}{
+			"gpu": map[string]interface{}{
+				"stack":           "cuda",
+				"device_count":    1,
+				"driver_version":  "11.0",
+				"hardware_target": []string{"9.0"},
+				"vram":            8000000000,
+			},
+			"ram":   12000000000,
+			"vcpus": 4,
+		},
+		"state": "Committed",
+	}
+
+	var outCR arvados.ContainerRequest
+	err := ac1.RequestAndDecode(&outCR, "POST", "/arvados/v1/container_requests", nil,
+		map[string]interface{}{"container_request": crInput})
+	c.Check(err, check.IsNil)
+
+	c.Check(outCR.RuntimeConstraints.GPU.Stack, check.Equals, "cuda")
+	c.Check(outCR.RuntimeConstraints.GPU.DriverVersion, check.Equals, "11.0")
+	c.Check(outCR.RuntimeConstraints.GPU.HardwareTarget, check.DeepEquals, []string{"9.0"})
+	c.Check(outCR.RuntimeConstraints.GPU.DeviceCount, check.Equals, 1)
+	c.Check(outCR.RuntimeConstraints.GPU.VRAM, check.Equals, int64(8000000000))
+
+	var outCR2 arvados.ContainerRequest
+	err = ac1.RequestAndDecode(&outCR2, "POST", "/arvados/v1/container_requests", nil,
+		map[string]interface{}{"container_request": crInput})
+	c.Check(err, check.IsNil)
+
+	c.Check(outCR.ContainerUUID, check.Equals, outCR2.ContainerUUID)
+}

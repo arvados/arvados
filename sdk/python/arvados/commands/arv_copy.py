@@ -112,7 +112,18 @@ If not provided, will use the default client configuration from the environment 
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the collection or workflow should be copied.')
     copy_opts.add_argument(
-        '--storage-classes', dest='storage_classes',
+        '--replication',
+        type=arv_cmd.RangedValue(int, range(1, sys.maxsize)),
+        metavar='N',
+        help="""
+Number of replicas per storage class for the copied collections at the destination.
+If not provided (or if provided with invalid value),
+use the destination's default replication-level setting (if found),
+or the fallback value 2.
+""")
+    copy_opts.add_argument(
+        '--storage-classes',
+        type=arv_cmd.UniqueSplit(),
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
     copy_opts.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
@@ -130,9 +141,6 @@ If not provided, will use the default client configuration from the environment 
         description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
-
-    if args.storage_classes:
-        args.storage_classes = [x for x in args.storage_classes.strip().replace(' ', '').split(',') if x]
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -587,6 +595,14 @@ def copy_collection(obj_uuid, src, dst, args):
             ).execute(num_retries=args.retries)['manifest_text']
             return create_collection_from(c, src, dst, args)
 
+    if args.replication is None:
+        # Obtain default or fallback collection replication setting on the
+        # destination
+        try:
+            args.replication = int(dst.config()["Collections"]["DefaultReplication"])
+        except (KeyError, TypeError, ValueError):
+            args.replication = 2
+
     # Fetch the collection's manifest.
     manifest = c['manifest_text']
     logger.debug("Copying collection %s with manifest: <%s>", obj_uuid, manifest)
@@ -678,7 +694,7 @@ def copy_collection(obj_uuid, src, dst, args):
 
             try:
                 logger.debug("Putting block %s (%s bytes)", blockhash, loc.size)
-                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
+                dst_locator = dst_keep.put(data, copies=args.replication, classes=(args.storage_classes or []))
                 with lock:
                     dst_locators[blockhash] = dst_locator
                     bytes_written += loc.size
@@ -870,17 +886,17 @@ def uuid_type(api, object_uuid):
 def copy_from_http(url, src, dst, args):
 
     project_uuid = args.project_uuid
-    varying_url_params = args.varying_url_params
+    # Ensure string of varying parameters is well-formed
     prefer_cached_downloads = args.prefer_cached_downloads
 
     cached = http_to_keep.check_cached_url(src, project_uuid, url, {},
-                                           varying_url_params=varying_url_params,
+                                           varying_url_params=args.varying_url_params,
                                            prefer_cached_downloads=prefer_cached_downloads)
     if cached[2] is not None:
         return copy_collection(cached[2], src, dst, args)
 
     cached = http_to_keep.http_to_keep(dst, project_uuid, url,
-                                       varying_url_params=varying_url_params,
+                                       varying_url_params=args.varying_url_params,
                                        prefer_cached_downloads=prefer_cached_downloads)
 
     if cached is not None:

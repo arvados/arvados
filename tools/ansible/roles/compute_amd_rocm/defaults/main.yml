@@ -1,0 +1,13 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_compute_pin_packages: true
+arvados_compute_amd_rocm_suites_map:
+  bookworm: jammy
+  jammy: jammy
+  noble: noble
+# This version string is used in the AMD apt repository URLs.
+# You can provide a version number the same way AMD spells it
+# (e.g., "6.3", "6.3.1", "6.3.2", etc.) or the special string "latest".
+arvados_compute_amd_rocm_version: "{{ '6.3.2' if arvados_compute_pin_packages else 'latest' }}"

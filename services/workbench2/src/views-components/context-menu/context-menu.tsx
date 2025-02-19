@@ -5,10 +5,11 @@
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { contextMenuActions, ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem, getMenuActionSet } from "components/context-menu/context-menu";
+import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
 import { ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
+import { getMenuActionSet } from "common/menu-action-set-actions";
 
 type DataProps = Pick<ContextMenuProps, "contextMenu" | "items"> & { resource?: ContextMenuResource };
 

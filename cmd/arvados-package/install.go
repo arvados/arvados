@@ -45,7 +45,7 @@ func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr
 		cmd := exec.CommandContext(ctx, "docker", "run",
 			"--name", depsCtrName,
 			"--tmpfs", "/tmp:exec,mode=01777",
-			"-v", absPackageDir+":/pkg:ro",
+			"--mount", "type=bind,src="+absPackageDir+",dst=/pkg,readonly",
 			"--env", "DEBIAN_FRONTEND=noninteractive",
 			opts.TargetOS,
 			"bash", "-c", `
@@ -87,7 +87,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 	}
 	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
 		"--tmpfs=/tmp:exec,mode=01777",
-		"--volume="+absPackageDir+":/pkg:ro",
+		"--mount=type=bind,src="+absPackageDir+",dst=/pkg,readonly",
 		"--env=DEBIAN_FRONTEND=noninteractive")
 	if opts.Live != "" {
 		cmd.Args = append(cmd.Args,
@@ -98,7 +98,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 			"--publish=:4440-4460:4440-4460",
 			"--publish=:9000-9020:9000-9020",
 			"--add-host="+opts.Live+":0.0.0.0",
-			"--volume=/var/lib/acme:/var/lib/acme:ro")
+			"--mount=type=bind,src=/var/lib/acme,dst=/var/lib/acme,readonly")
 	} else {
 		cmd.Args = append(cmd.Args,
 			"--env=domain=localhost",

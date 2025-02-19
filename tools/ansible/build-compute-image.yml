@@ -55,28 +55,17 @@
         purge: true
         name:
           - unattended-upgrades
-    - name: Install Arvados FUSE driver
-      ansible.builtin.apt:
-        name: python3-arvados-fuse
 
-    - include_role:
-        name: compute_nvidia
-      when: "arvados_compute_nvidia|default(false)|bool"
-    - include_role:
-        name: "compute_{{ arvados_cluster.Containers.RuntimeEngine }}"
-    - include_role:
+    - ansible.builtin.include_role:
         name: compute_encrypt_tmp
-    - include_role:
-        name: compute_fuse
-    - include_role:
+    - ansible.builtin.include_role:
+        name: arvados_compute
+    - ansible.builtin.include_role:
+        name: compute_docker
+      when: "arvados_cluster.Containers.RuntimeEngine == 'docker'"
+    - ansible.builtin.include_role:
         name: compute_user
 
-    - name: Configure locale
-      ansible.builtin.lineinfile:
-        path: /etc/locale.gen
-        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
-        line: en_US.UTF-8 UTF-8
-      notify: locale-gen
     - name: Configure DNS
       ansible.builtin.lineinfile:
         path: /etc/dhcp/dhclient.conf
@@ -89,5 +78,3 @@
       ansible.builtin.debug:
         msg: Skipping apt update handler before an apt upgrade
         verbosity: 1
-    - name: locale-gen
-      ansible.builtin.command: locale-gen

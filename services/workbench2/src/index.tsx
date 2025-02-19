@@ -20,7 +20,7 @@ import { ThemeProvider, Theme, StyledEngineProvider } from "@mui/material/styles
 import { CustomTheme } from "common/custom-theme";
 import { fetchConfig } from "common/config";
 import servicesProvider from "common/service-provider";
-import { addMenuActionSet } from "components/context-menu/context-menu";
+import { addMenuActionSet } from "common/menu-action-set-actions";
 import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
 import {

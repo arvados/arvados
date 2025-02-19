@@ -67,6 +67,7 @@ export enum ContextMenuActionNames {
 }
 
 export interface ContextMenuAction extends ContextMenuItem {
+    isForMulti?: boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
 }
 

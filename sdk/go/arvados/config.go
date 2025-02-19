@@ -456,10 +456,13 @@ type RemoteCluster struct {
 	ActivateUsers bool
 }
 
-type CUDAFeatures struct {
-	DriverVersion      string
-	HardwareCapability string
-	DeviceCount        int
+type GPUFeatures struct {
+	// as of this writing, stack is "cuda" or "rocm"
+	Stack          string
+	DriverVersion  string
+	HardwareTarget string
+	DeviceCount    int
+	VRAM           ByteSize
 }
 
 type InstanceType struct {
@@ -472,7 +475,7 @@ type InstanceType struct {
 	AddedScratch    ByteSize
 	Price           float64
 	Preemptible     bool
-	CUDA            CUDAFeatures
+	GPU             GPUFeatures
 }
 
 type ContainersConfig struct {
@@ -511,7 +514,7 @@ type ContainersConfig struct {
 	LSF struct {
 		BsubSudoUser       string
 		BsubArgumentsList  []string
-		BsubCUDAArguments  []string
+		BsubGPUArguments   []string
 		MaxRunTimeOverhead Duration
 		MaxRunTimeDefault  Duration
 	}

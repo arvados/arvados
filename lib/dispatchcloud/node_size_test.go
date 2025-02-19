@@ -217,65 +217,141 @@ func (*NodeSizeSuite) TestScratchForDockerImage(c *check.C) {
 
 func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 	menu := map[string]arvados.InstanceType{
-		"costly":         {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly", CUDA: arvados.CUDAFeatures{DeviceCount: 2, HardwareCapability: "9.0", DriverVersion: "11.0"}},
-		"low_capability": {Price: 2.1, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "low_capability", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "8.0", DriverVersion: "11.0"}},
-		"best":           {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "9.0", DriverVersion: "11.0"}},
-		"low_driver":     {Price: 2.1, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "low_driver", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "9.0", DriverVersion: "10.0"}},
-		"cheap_gpu":      {Price: 2.0, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "8.0", DriverVersion: "10.0"}},
-		"invalid_gpu":    {Price: 1.9, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "invalid_gpu", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "12.0.12", DriverVersion: "12.0.12"}},
-		"non_gpu":        {Price: 1.1, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "non_gpu"},
+		"costly": {Price: 4.4, RAM: 4 * GiB, VCPUs: 8, Scratch: 2 * GiB, Name: "costly",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 2, HardwareTarget: "9.0", DriverVersion: "11.0", VRAM: 2 * GiB}},
+
+		"low_capability": {Price: 2.1, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "low_capability",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "8.0", DriverVersion: "11.0", VRAM: 2 * GiB}},
+
+		"best": {Price: 2.2, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "best",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "9.0", DriverVersion: "11.0", VRAM: 2 * GiB}},
+
+		"low_driver": {Price: 2.1, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "low_driver",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "9.0", DriverVersion: "10.0", VRAM: 2 * GiB}},
+
+		"cheap_gpu": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "8.0", DriverVersion: "10.0", VRAM: 2 * GiB}},
+
+		"more_vram": {Price: 2.3, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "more_vram",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "8.0", DriverVersion: "10.0", VRAM: 8 * GiB}},
+
+		"invalid_gpu": {Price: 1.9, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "invalid_gpu",
+			GPU: arvados.GPUFeatures{Stack: "cuda", DeviceCount: 1, HardwareTarget: "12.0.12", DriverVersion: "12.0.12", VRAM: 2 * GiB}},
+
+		"gpu_rocm": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "gpu_rocm",
+			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1100", DriverVersion: "6.2", VRAM: 20 * GiB}},
+
+		"cheap_gpu_rocm": {Price: 1.9, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu_rocm",
+			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1103", DriverVersion: "6.2", VRAM: 8 * GiB}},
+
+		"unspecified_vram": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "unspecified_vram",
+			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1104", DriverVersion: "6.2", VRAM: 0}},
+
+		"non_gpu": {Price: 1.1, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "non_gpu"},
 	}
 
 	type GPUTestCase struct {
-		CUDA             arvados.CUDARuntimeConstraints
+		GPU              arvados.GPURuntimeConstraints
 		SelectedInstance string
 	}
 	cases := []GPUTestCase{
 		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        1,
-				HardwareCapability: "9.0",
-				DriverVersion:      "11.0",
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "cuda",
+				DeviceCount:    1,
+				HardwareTarget: []string{"9.0"},
+				DriverVersion:  "11.0",
+				VRAM:           2000000000,
 			},
 			SelectedInstance: "best",
 		},
 		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        2,
-				HardwareCapability: "9.0",
-				DriverVersion:      "11.0",
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "cuda",
+				DeviceCount:    2,
+				HardwareTarget: []string{"9.0"},
+				DriverVersion:  "11.0",
+				VRAM:           2000000000,
 			},
 			SelectedInstance: "costly",
 		},
 		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        1,
-				HardwareCapability: "8.0",
-				DriverVersion:      "11.0",
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "cuda",
+				DeviceCount:    1,
+				HardwareTarget: []string{"8.0"},
+				DriverVersion:  "11.0",
+				VRAM:           2000000000,
 			},
 			SelectedInstance: "low_capability",
 		},
 		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        1,
-				HardwareCapability: "9.0",
-				DriverVersion:      "10.0",
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "cuda",
+				DeviceCount:    1,
+				HardwareTarget: []string{"9.0"},
+				DriverVersion:  "10.0",
+				VRAM:           2000000000,
 			},
 			SelectedInstance: "low_driver",
 		},
 		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        1,
-				HardwareCapability: "",
-				DriverVersion:      "10.0",
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "cuda",
+				DeviceCount:    1,
+				HardwareTarget: []string{"8.0"},
+				DriverVersion:  "11.0",
+				VRAM:           8000000000,
+			},
+			SelectedInstance: "more_vram",
+		},
+		GPUTestCase{
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "cuda",
+				DeviceCount:    1,
+				HardwareTarget: []string{},
+				DriverVersion:  "10.0",
+				VRAM:           2000000000,
 			},
 			SelectedInstance: "",
 		},
 		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        0,
-				HardwareCapability: "9.0",
-				DriverVersion:      "11.0",
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "rocm",
+				DeviceCount:    1,
+				HardwareTarget: []string{"gfx1100"},
+				DriverVersion:  "6.2",
+				VRAM:           2000000000,
+			},
+			SelectedInstance: "gpu_rocm",
+		},
+		GPUTestCase{
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "rocm",
+				DeviceCount:    1,
+				HardwareTarget: []string{"gfx1100", "gfx1103"},
+				DriverVersion:  "6.2",
+				VRAM:           2000000000,
+			},
+			SelectedInstance: "cheap_gpu_rocm",
+		},
+		GPUTestCase{
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "rocm",
+				DeviceCount:    1,
+				HardwareTarget: []string{"gfx1104"},
+				DriverVersion:  "6.2",
+				VRAM:           2000000000,
+			},
+			SelectedInstance: "unspecified_vram",
+		},
+		GPUTestCase{
+			GPU: arvados.GPURuntimeConstraints{
+				Stack:          "",
+				DeviceCount:    0,
+				HardwareTarget: []string{""},
+				DriverVersion:  "",
+				VRAM:           0,
 			},
 			SelectedInstance: "non_gpu",
 		},
@@ -290,7 +366,7 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				VCPUs:        2,
 				RAM:          987654321,
 				KeepCacheRAM: 123456789,
-				CUDA:         tc.CUDA,
+				GPU:          tc.GPU,
 			},
 		})
 		if len(best) > 0 {

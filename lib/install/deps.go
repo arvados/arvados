@@ -32,7 +32,7 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const goversion = "1.21.10"
+const goversion = "1.23.6"
 
 const (
 	defaultRubyVersion        = "3.2.2"
@@ -192,6 +192,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jdk-headless",
 			"default-jre-headless",
 			"gettext",
+			"jq",
 			"libffi-dev",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests

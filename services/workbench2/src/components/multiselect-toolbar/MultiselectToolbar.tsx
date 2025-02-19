@@ -11,24 +11,19 @@ import withStyles from '@mui/styles/withStyles';
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { Resource, extractUuidKind } from "models/resource";
+import { extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
-import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
-import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
-import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
-import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
-import { ContainerRequestResource } from "models/container-request";
-import { FavoritesState } from "store/favorites/favorites-reducer";
+import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 import { isUserGroup } from "models/group";
-import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
+import { getMenuActionSetByKind } from "common/menu-action-set-actions";
+import { intersection } from "lodash";
+import { matchTrashRoute } from "routes/routes";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
@@ -60,25 +55,22 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export type MultiselectToolbarDataProps = {
     checkedList: TCheckedList;
     selectedResourceUuid: string | null;
-    iconProps: IconProps
+    resources: ResourcesState;
     disabledButtons: Set<string>
     auth: AuthState;
-    location: string;
-    forceMultiSelectMode?: boolean;
-    injectedStyles?: string;
+    pathName: string;
 };
 
 type MultiselectToolbarActionProps = {
-    executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
+    getAllMenukinds: (checkedList: TCheckedList) => ContextMenuKind[];
+    executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => void;
+    executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
     resourceToMenukind: (uuid: string) => ContextMenuKind | undefined;
 };
 
-type MultiselectToolbarProps = MultiselectToolbarActionProps & MultiselectToolbarDataProps & WithStyles<CssRules>;
-
-type IconProps = {
-    resources: ResourcesState;
-    favorites: FavoritesState;
-    publicFavorites: PublicFavoritesState;
+type MultiselectToolbarRecievedProps = {
+    forceMultiSelectMode?: boolean;
+    injectedStyles?: string;
 }
 
 const detailsCardPaths = [
@@ -89,27 +81,28 @@ export const usesDetailsCard = (location: string): boolean => {
     return detailsCardPaths.some(path => location.includes(path))
 }
 
+type MultiselectToolbarProps = MultiselectToolbarDataProps & MultiselectToolbarActionProps & MultiselectToolbarRecievedProps & WithStyles<CssRules>;
+
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)(React.memo((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, location, forceMultiSelectMode, injectedStyles } = props;
+    withStyles(styles)(React.memo((props: MultiselectToolbarProps) => {
+        const { classes, checkedList, resources, pathName, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
-        const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
+        const selectedResourceUuid = usesDetailsCard(pathName) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
-        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
-        const currentPathIsTrash = window.location.pathname === "/trash";
-        const disabledButtons = new Set<string>(props.disabledButtons);
+        const currentResourceKinds = singleResourceKind && !!singleResourceKind[0] ? singleResourceKind : props.getAllMenukinds(checkedList);
+        const currentPathIsTrash = matchTrashRoute(pathName || "");
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
+                ? [toggleTrashAction]
+                : selectActionsByKind(currentResourceKinds as ContextMenuKind[]).filter((action) =>
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
 
-        const actions: ContextMenuAction[] | MultiSelectMenuAction[] = sortMenuItems(
+        const actions: ContextMenuAction[] = sortMenuItems(
             singleResourceKind && singleResourceKind.length ? (singleResourceKind[0] as ContextMenuKind) : ContextMenuKind.MULTI,
             rawActions,
             menuDirection.HORIZONTAL
@@ -119,6 +112,8 @@ export const MultiselectToolbar = connect(
         const memoizedActions = useMemo(() => actions, [currentResourceKinds, currentPathIsTrash, selectedResourceUuid]);
 
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
+
+        const fetchedResources = selectedToArray(targetResources).map(uuid => resources[uuid]);
 
         return (
             <React.Fragment>
@@ -133,27 +128,18 @@ export const MultiselectToolbar = connect(
                             key={actions.map(a => a.name).join(',')}
                             >
                             {memoizedActions.map((action, i) =>{
-                                const { hasAlts, shouldUseAlts, name, altName, icon, altIcon } = action;
-                            return action.name === ContextMenuActionNames.DIVIDER ? (
-                                action.component && (
-                                    <div
-                                        className={classes.divider}
-                                        data-targetid={`${name}${i}`}
-                                        key={`${name}${i}`}
-                                    >
-                                        <action.component />
-                                    </div>
-                                )
-                            ) : hasAlts ? (
-                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name} data-title={(shouldUseAlts && shouldUseAlts(selectedResourceUuid, iconProps)) ? altName : name}>
-                                    <IconButton
-                                        data-cy='multiselect-button'
-                                        disabled={disabledButtons.has(name)}
-                                        onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
-                                        className={classes.icon}
-                                        size="large">
-                                        {currentPathIsTrash || (shouldUseAlts && shouldUseAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                    </IconButton>
+                                const { name } = action;
+                            return action.name === ContextMenuActionNames.DIVIDER && action.component ? (
+                                <div
+                                    className={classes.divider}
+                                    data-targetid={`${name}${i}`}
+                                    key={`${name}${i}`}
+                                >
+                                    {<action.component />}
+                                </div>
+                            ) : action.component ? (
+                                <span className={classes.iconContainer} key={`${name}${i}`} data-targetid={name}>
+                                    <action.component isInToolbar={true} onClick={()=>props.executeComponent(action.execute, fetchedResources)} />
                                 </span>
                             ) : (
                                 //data-targetid is used to determine what goes to the overflow menu
@@ -162,17 +148,17 @@ export const MultiselectToolbar = connect(
                                     <IconButton
                                         data-cy='multiselect-button'
                                         onClick={() => {
-                                            props.executeMulti(action, targetResources, iconProps.resources)}}
+                                            props.executeMulti(action, targetResources, resources)}}
                                         className={classes.icon}
                                         size="large">
-                                        {action.icon({})}
+                                        {action.icon ? action.icon({}) : <span></span>}
                                     </IconButton>
                                 </span>
                             );
                             })}
                         </IntersectionObserverWrapper>
                     ) : (
-                        <></>
+                        <span></span>
                     )}
                 </Toolbar>
             </React.Fragment>
@@ -216,97 +202,60 @@ export const isRoleGroupResource = (uuid: string, resources: ResourcesState): bo
     return isUserGroup(resource);
 };
 
-function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
-    const result = {};
-    selectedToArray(checkedList).forEach(uuid => {
-        const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
-        const kind = isRoleGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : resource.kind;
-        if (!result[kind]) result[kind] = [];
-        result[kind].push(resource);
-    });
-    return result;
+function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): ContextMenuAction[] {
+    if (currentResourceKinds.length === 0) return [];
+    const allMenuActionSets = currentResourceKinds.map(kind => getMenuActionSetByKind(kind)).map(actionSetArray => actionSetArray[0]);
+    //if only one selected, return all actions
+    if (currentResourceKinds.length === 1) return allMenuActionSets[0];
+    const actionNames = allMenuActionSets.map(actionSet => actionSet.map(action => action.name));
+    const commonNames = new Set(intersection(...actionNames));
+    const commonActions = allMenuActionSets
+                            .reduce((prev, next) => prev.concat(next), [])
+                            .filter(action => commonNames.has(action.name) && action.isForMulti);
+
+    return Array.from(new Set(commonActions));
 }
 
-function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<string>): Array<MultiSelectMenuAction> {
-    return actionArray[0].filter(action => filters.has(action.name as string));
-}
-
-function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters): MultiSelectMenuAction[] {
-    const rawResult: Set<MultiSelectMenuAction> = new Set();
-    const resultNames = new Set();
-    const allFiltersArray: MultiSelectMenuAction[][] = []
-    currentResourceKinds.forEach(kind => {
-        if (filterSet[kind]) {
-            const actions = filterActions(...filterSet[kind]);
-            allFiltersArray.push(actions);
-            actions.forEach(action => {
-                if (!resultNames.has(action.name)) {
-                    rawResult.add(action);
-                    resultNames.add(action.name);
-                }
-            });
-        }
-    });
-
-    const filteredNameSet = allFiltersArray.map(filterArray => {
-        const resultSet = new Set<string>();
-        filterArray.forEach(action => resultSet.add(action.name as string || ""));
-        return resultSet;
-    });
-
-    const filteredResult = Array.from(rawResult).filter(action => {
-        for (let i = 0; i < filteredNameSet.length; i++) {
-            if (!filteredNameSet[i].has(action.name as string)) return false;
-        }
-        return true;
-    });
-
-    return filteredResult;
+function findActionByName(name: string, actionSet: ContextMenuAction[][]) {
+    return actionSet[0].find(action => action.name === name);
 }
 
 //--------------------------------------------------//
 
-function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResourceUuid}: RootState) {
+function mapStateToProps({auth, multiselect, resources, selectedResourceUuid}: RootState): MultiselectToolbarDataProps {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
         selectedResourceUuid,
-        location: window.location.pathname,
-        iconProps: {
-            resources,
-            favorites,
-            publicFavorites
-        }
+        pathName: window.location.pathname,
+        resources,
     }
 }
 
-function mapDispatchToProps(dispatch: Dispatch) {
+function mapDispatchToProps(dispatch: Dispatch): MultiselectToolbarActionProps {
     return {
-        resourceToMenukind: (uuid: string)=> dispatch<any>(resourceToMenuKind(uuid)),
+        getAllMenukinds: (checkedList: TCheckedList) => selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind),
+        resourceToMenukind: (uuid: string)=> {
+            const kind = dispatch<any>(resourceToMenuKind(uuid))
+            return kind;
+        },
+        executeComponent: (fn: (dispatch: Dispatch, res: any[]) => void, resources: any[]) => fn(dispatch, resources),
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
-            const kindGroups = groupByKind(checkedList, resources);
-            const currentList = selectedToArray(checkedList)
-            switch (selectedAction.name) {
-                case ContextMenuActionNames.MOVE_TO:
-                case ContextMenuActionNames.REMOVE:
-                    const firstResourceKind = isRoleGroupResource(currentList[0], resources)
-                        ? ContextMenuKind.GROUPS
-                        : (getResource(currentList[0])(resources) as ContainerRequestResource | Resource).kind;
-                    const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResourceKind]);
-                    if (action) action.execute(dispatch, kindGroups[firstResourceKind]);
-                    break;
-                case ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD:
-                    const selectedResources = currentList.map(uuid => getResource(uuid)(resources));
-                    dispatch<any>(copyToClipboardAction(selectedResources));
-                    break;
-                default:
-                    for (const kind in kindGroups) {
-                        const action = findActionByName(selectedAction.name as string, kindToActionSet[kind]);
-                        if (action) action.execute(dispatch, kindGroups[kind]);
-                    }
-                    break;
-            }
+            const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources)).filter(resource => !!resource);
+            const allMenuKinds: ContextMenuKind[] = selectedToArray(checkedList).map(uuid => dispatch<any>(resourceToMenuKind(uuid))).filter(kind => !!kind);
+            const groupedActionSets = allMenuKinds.reduce((result, menuKind: ContextMenuKind): Record<string, ContextMenuAction[]> => {
+                    if (!result[menuKind]) {result[menuKind] = []};
+                    const action = findActionByName(selectedAction.name, getMenuActionSetByKind(menuKind));
+                    if (action) result[menuKind].push(action);
+                    return result;
+                }, {});
+            selectedResources.forEach(resource => {
+                if (!resource) return;
+                const corrsepondingActionSet = groupedActionSets[dispatch<any>(resourceToMenuKind(resource.uuid))!];
+                if (!corrsepondingActionSet) return;
+                corrsepondingActionSet.forEach(action => action.execute(dispatch, [resource]));
+            })
         },
     };
 }

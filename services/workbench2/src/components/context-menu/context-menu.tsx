@@ -12,10 +12,9 @@ import { sortMenuItems, ContextMenuKind, menuDirection } from "views-components/
 import { ContextMenuState } from "store/context-menu/context-menu-reducer";
 
 export interface ContextMenuItem {
-    name?: string | React.ComponentType;
+    name: string;
     icon?: IconType;
     component?: React.ComponentType<any>;
-    adminOnly?: boolean;
     filters?: ((state: RootState, resource: ContextMenuResource) => boolean)[]
 }
 

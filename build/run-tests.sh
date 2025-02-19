@@ -80,6 +80,11 @@ GEMHOME=
 R_LIBS=
 export LANG=en_US.UTF-8
 
+# setup_ruby_environment will set this to the path of the `bundle` executable
+# it installs. This stub will cause commands to fail if they try to run before
+# that.
+BUNDLE=false
+
 short=
 only_install=
 temp=
@@ -158,6 +163,9 @@ sanity_checks() {
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
+    echo -n "jq: "
+    jq --version ||
+        fatal "No jq. Try: apt-get install jq"
     echo -n 'libcurl curl.h: '
     find /usr/include -path '*/curl/curl.h' | egrep --max-count=1 . \
         || fatal "No libcurl curl.h. Try: apt-get install libcurl4-gnutls-dev"
@@ -216,7 +224,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$("${VENV3DIR}/bin/python3" -c "import yaml; print(list(yaml.safe_load(open('$ARVADOS_CONFIG','r'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0])")
+    base="$(yq -r "(.Clusters.zzzzz.Services.$svc.InternalURLs | keys)[0]" "$ARVADOS_CONFIG")"
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -330,16 +338,15 @@ setup_ruby_environment() {
     echo "Gem search path is GEM_PATH=$GEM_PATH"
     gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
         || fatal 'install bundler'
+    BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+    if [[ ! -x "$BUNDLE" ]]; then
+        BUNDLE=false
+        fatal "could not find 'bundle' executable after installation"
+    fi
 }
 
 with_test_gemset() {
     GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
-}
-
-gem_uninstall_if_exists() {
-    if gem list "$1\$" | egrep '^\w'; then
-        gem uninstall --force --all --executables "$1"
-    fi
 }
 
 setup_virtualenv() {
@@ -369,7 +376,8 @@ setup_virtualenv() {
     # Hence we must install these dependencies this early for the rest of the
     # script to work.
     # s3cmd is used by controller and keep-web tests.
-    pip install PyYAML s3cmd || fatal "failed to install test dependencies in virtualenv"
+    # yq is used by controller tests and this script.
+    pip install PyYAML s3cmd "yq~=3.4" || fatal "failed to install test dependencies in virtualenv"
     do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 
@@ -592,6 +600,17 @@ check_arvados_config() {
         cd "$WORKSPACE"
         eval $(python3 sdk/python/tests/run_test_server.py setup_config)
     fi
+    # Set all PostgreSQL connection variables, and write a .pgpass, to connect
+    # to the test database, so test scripts can write `psql` commands with no
+    # additional configuration.
+    export PGPASSFILE="$WORKSPACE/tmp/.pgpass"
+    export PGDATABASE="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.dbname "$ARVADOS_CONFIG")"
+    export PGHOST="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.host "$ARVADOS_CONFIG")"
+    export PGPORT="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.port "$ARVADOS_CONFIG")"
+    export PGUSER="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.user "$ARVADOS_CONFIG")"
+    local pgpassword="$(yq -r .Clusters.zzzzz.PostgreSQL.Connection.password "$ARVADOS_CONFIG")"
+    echo "$PGHOST:$PGPORT:$PGDATABASE:$PGUSER:$pgpassword" >"$PGPASSFILE"
+    chmod 0600 "$PGPASSFILE"
 }
 
 do_install() {
@@ -631,11 +650,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! bundle install --local --no-deployment; then
+        if ! "$BUNDLE" install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            bundle install --no-deployment
+            "$BUNDLE" install --no-deployment
         fi
-        bundle package
+        "$BUNDLE" package
     )
 }
 
@@ -648,8 +667,7 @@ install_doc() {
 install_gem() {
     gemname=$1
     srcpath=$2
-    with_test_gemset gem_uninstall_if_exists "$gemname" \
-        && cd "$WORKSPACE/$srcpath" \
+    cd "$WORKSPACE/$srcpath" \
         && bundle_install_trylocal \
         && gem build "$gemname.gemspec" \
         && with_test_gemset gem install --no-document $(ls -t "$gemname"-*.gem|head -n1)
@@ -675,8 +693,6 @@ install_sdk/cli() {
 }
 
 install_services/login-sync() {
-    install_gem arvados-google-api-client sdk/ruby-google-api-client
-    install_gem arvados sdk/ruby
     install_gem arvados-login-sync services/login-sync
 }
 
@@ -693,9 +709,7 @@ install_services/api() {
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
-    cd "$WORKSPACE/services/api" \
-        && test_database=$("${VENV3DIR}/bin/python3" -c "import yaml; print(yaml.safe_load(open('$ARVADOS_CONFIG','r'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname'])") \
-        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+    psql -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$PGDATABASE';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
@@ -745,7 +759,7 @@ do_migrate() {
     (
         set -x
         env -C "$WORKSPACE/services/api" RAILS_ENV=test \
-            bundle exec rake $task ${@}
+            "$BUNDLE" exec rake $task ${@}
     )
     checkexit "$?" "services/api $task"
 }
@@ -753,14 +767,14 @@ do_migrate() {
 migrate_down_services/api() {
     echo "running db:migrate:down"
     env -C "$WORKSPACE/services/api" RAILS_ENV=test \
-        bundle exec rake db:migrate:down ${testargs[services/api]}
+        "$BUNDLE" exec rake db:migrate:down ${testargs[services/api]}
     checkexit "$?" "services/api db:migrate:down"
 }
 
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
-        bundle exec rake linkchecker \
+        "$BUNDLE" exec rake linkchecker \
         arvados_api_host="$arvados_api_host" \
         arvados_workbench_host="https://workbench.$arvados_api_host" \
         baseurl="file://$WORKSPACE/doc/.site/" \
@@ -794,12 +808,12 @@ test_arvados_version.py() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$BUNDLE" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/ruby-google-api-client() {
@@ -816,7 +830,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -825,7 +839,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/workbench2_units() {

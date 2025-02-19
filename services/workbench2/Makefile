@@ -103,8 +103,8 @@ integration-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run $(TI) --rm \
 		--env ARVADOS_DIRECTORY=/usr/src/arvados \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
-		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
-		-v $(ARVADOS_DIRECTORY):/usr/src/arvados \
+		--mount type=bind,src=$(WORKSPACE),dst=/usr/src/arvados/services/workbench2 \
+		--mount type=bind,src=$(ARVADOS_DIRECTORY),dst=/usr/src/arvados \
 		-w /usr/src/arvados/services/workbench2 \
 		workbench2-build \
 		make arvados-server-install integration-tests SPECFILE=$(SPECFILE)
@@ -113,8 +113,8 @@ unit-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run $(TI) --rm \
 		--env ARVADOS_DIRECTORY=/usr/src/arvados \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
-		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
-		-v $(ARVADOS_DIRECTORY):/usr/src/arvados \
+		--mount type=bind,src=$(WORKSPACE),dst=/usr/src/arvados/services/workbench2 \
+		--mount type=bind,src=$(ARVADOS_DIRECTORY),dst=/usr/src/arvados \
 		-w /usr/src/arvados/services/workbench2 \
 		workbench2-build \
 		make arvados-server-install unit-tests
@@ -124,8 +124,8 @@ tests-in-docker: workbench2-build-image check-arvados-directory
 		--env ARVADOS_DIRECTORY=/usr/src/arvados \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
 		--env ci="${ci}" \
-		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
-		-v$(ARVADOS_DIRECTORY):/usr/src/arvados \
+		--mount type=bind,src=$(WORKSPACE),dst=/usr/src/arvados/services/workbench2 \
+		--mount type=bind,src=$(ARVADOS_DIRECTORY),dst=/usr/src/arvados \
 		-w /usr/src/arvados/services/workbench2 \
 		workbench2-build \
 		make test
@@ -196,8 +196,8 @@ packages-in-docker: check-arvados-directory workbench2-build-image
 		--env DESCRIPTION="${DESCRIPTION}" \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
 		-w "/tmp/workbench2" \
-		-v ${WORKSPACE}:/tmp/workbench2 \
-		-v ${ARVADOS_DIRECTORY}:/tmp/arvados \
+		--mount type=bind,src=${WORKSPACE},dst=/tmp/workbench2 \
+		--mount type=bind,src=${ARVADOS_DIRECTORY},dst=/tmp/arvados \
 		workbench2-build:latest \
 		sh -c 'git config --global --add safe.directory /tmp/workbench2 && make packages'
 
