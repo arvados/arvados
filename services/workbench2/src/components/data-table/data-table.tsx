@@ -47,7 +47,6 @@ export interface DataTableDataProps<T> {
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
-    toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     currentRoute?: string;
     currentRouteUuid: string;

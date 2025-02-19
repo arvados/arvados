@@ -13,7 +13,6 @@ import { SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 
 export const multiselectActionConstants = {
-    TOGGLE_VISIBLITY: "TOGGLE_VISIBLITY",
     SET_CHECKEDLIST: "SET_CHECKEDLIST",
     SELECT_ONE: 'SELECT_ONE',
     DESELECT_ONE: "DESELECT_ONE",
@@ -43,12 +42,6 @@ export const isExactlyOneSelected = (checkedList: TCheckedList) => {
         }
     }
     return tally === 1 ? current : null
-};
-
-export const toggleMSToolbar = (isVisible: boolean) => {
-    return dispatch => {
-        dispatch({ type: multiselectActionConstants.TOGGLE_VISIBLITY, payload: isVisible });
-    };
 };
 
 export const setCheckedListOnStore = (checkedList: TCheckedList) => {

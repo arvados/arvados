@@ -11,7 +11,7 @@ import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { DataColumn, DataColumns, } from "components/data-table/data-column";
 import { TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters";
-import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
+import { setCheckedListOnStore } from "store/multiselect/multiselect-actions";
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -30,14 +30,12 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const working = !!progressIndicator.some(p => p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
-    const isMSToolbarVisible = multiselect.isVisible;
     const resourceItems = dataExplorerState.items.map(item => getResource<Resource>(item)(resources)).filter((resource): resource is Resource => Boolean(resource));
     return {
         ...dataExplorerState,
         resourceItems,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
-        isMSToolbarVisible,
         selectedResourceUuid,
         checkedList: multiselect.checkedList,
         working,
@@ -78,10 +76,6 @@ const mapDispatchToProps = () => {
 
         onLoadMore: (page: number) => {
             dispatch(dataExplorerActions.SET_PAGE({ id, page }));
-        },
-
-        toggleMSToolbar: (isVisible: boolean) => {
-            dispatch<any>(toggleMSToolbar(isVisible));
         },
 
         setCheckedListOnStore: (checkedList: TCheckedList) => {

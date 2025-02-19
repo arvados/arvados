@@ -178,7 +178,6 @@ interface DataExplorerDataProps<T extends Resource> {
     currentRouteUuid: string;
     selectedResourceUuid: string;
     elementPath?: string;
-    isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
     isNotFound: boolean;
     searchBarValue: string;
@@ -200,7 +199,6 @@ interface DataExplorerActionProps<T> {
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
     extractKey?: (item: T) => React.Key;
-    toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     setSelectedUuid: (uuid: string) => void;
     usesDetailsCard: (uuid: string) => boolean;
@@ -280,7 +278,6 @@ export const DataExplorer = withStyles(styles)(
                 panelName,
                 panelMaximized,
                 elementPath,
-                toggleMSToolbar,
                 setCheckedListOnStore,
                 checkedList,
                 working,
@@ -416,7 +413,6 @@ export const DataExplorer = withStyles(styles)(
                         defaultViewIcon={defaultViewIcon}
                         defaultViewMessages={defaultViewMessages}
                         currentRoute={path}
-                        toggleMSToolbar={toggleMSToolbar}
                         setCheckedListOnStore={setCheckedListOnStore}
                         checkedList={checkedList}
                         selectedResourceUuid={selectedResourceUuid}
