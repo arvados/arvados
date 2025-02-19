@@ -8,8 +8,7 @@ import { ServiceRepository, setAuthorizationHeader, removeAuthorizationHeader } 
 import { initSessions } from "store/auth/auth-action-session";
 import { User } from "models/user";
 import { RootState } from 'store/store';
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { progressIndicatorActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 import { navigateToMyAccount } from 'store/navigation/navigation-action';
 
 export const authMiddleware = (services: ServiceRepository): Middleware => store => next => action => {

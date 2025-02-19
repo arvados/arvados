@@ -8,6 +8,7 @@ import { RootState } from 'store/store';
 import { ServiceRepository, getResourceService } from 'services/services';
 import { Resource, TrashableResource, extractUuidKind } from 'models/resource';
 import { CommonResourceServiceError, getCommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { getResource } from 'store/resources/resources';
 
 type NameableResource = Resource & { name?: string };
 
@@ -17,7 +18,7 @@ type NameableResource = Resource & { name?: string };
  */
 const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource | undefined> => {
     //head resource should already be in the store
-    let headResource: Resource | undefined = getState().resources[link.headUuid];
+    let headResource = getResource<Resource>(link.headUuid)(getState().resources);
     //If resource not in store, fetch it
     if (!headResource) {
         try {

@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { ProcessStatus, renderFileSize, renderMembersCount } from './renderers';
+import { GroupMembersCount, ProcessStatus, ResourceFileSize } from './renderers';
 import { Provider } from 'react-redux';
 import configureMockStore from 'redux-mock-store'
 import { ResourceKind } from '../../models/resource';
 import { ContainerRequestState as CR } from '../../models/container-request';
 import { ContainerState as C } from '../../models/container';
 import { ProcessStatus as PS } from '../../store/processes/process';
-import { ThemeProvider, StyledEngineProvider } from '@mui/material';
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
 import { CustomTheme } from 'common/custom-theme';
 
 const middlewares = [];
@@ -89,49 +89,88 @@ describe('renderers', () => {
     });
 
     describe('ResourceFileSize', () => {
-        it('should render collection fileSizeTotal', () => {
-            const resource_1 = {
-                uuid: 'UUID_1',
-                fileSizeTotal: 100,
+        beforeEach(() => {
+            props = {
+                uuid: 'UUID',
             };
+        });
+
+        it('should render collection fileSizeTotal', () => {
+            // given
+            const store = mockStore({
+                resources: {
+                    [props.uuid]: {
+                        kind: ResourceKind.COLLECTION,
+                        fileSizeTotal: 100,
+                    }
+                }
+            });
 
             // when
-            cy.mount(<p data-cy="file-size">{renderFileSize(resource_1)}</p>);
+            cy.mount(<Provider store={store}>
+                <ResourceFileSize {...props}></ResourceFileSize>
+            </Provider>);
 
             // then
-            cy.get('[data-cy=file-size]').should('have.text', '100 B');
+            cy.get('p').should('have.text', '100 B');
         });
 
         it('should render 0 B as file size', () => {
             // given
-            const resource_2 = {
-                uuid: 'UUID_2',
-                fileSizeTotal: 0,
-            };
+            const store = mockStore({ resources: {} });
 
             // when
-            cy.mount(<p data-cy="file-size">{renderFileSize(resource_2)}</p>);
+            cy.mount(<Provider store={store}>
+                <ResourceFileSize {...props}></ResourceFileSize>
+            </Provider>);
 
             // then
-            cy.get('[data-cy=file-size]').should('have.text', '0 B');
+            cy.get('p').should('have.text', '0 B');
         });
 
-        it('should render empty string when fileSizeTotal is undefined', () => {
-            const resource_3 = {
-                uuid: 'UUID_3',
-            };
-            
+        it('should render empty string for non collection resource', () => {
+            // given
+            const store1 = mockStore({
+                resources: {
+                    [props.uuid]: {
+                        kind: ResourceKind.PROJECT,
+                        fileSizeTotal: 100,
+                    }
+                }
+            });
+            const store2 = mockStore({
+                resources: {
+                    [props.uuid]: {
+                        kind: ResourceKind.PROCESS,
+                        fileSizeTotal: 200,
+                    }
+                }
+            });
+
             // when
-            cy.mount(<p data-cy="file-size">{renderFileSize(resource_3)}</p>);
+            cy.mount(<Provider store={store1}>
+                <ResourceFileSize {...props}></ResourceFileSize>
+            </Provider>);
 
             // then
-            cy.get('[data-cy=file-size]').should('have.text', '-');
+            cy.get('p').should('have.text', '-');
+            
+            // when
+            cy.mount(<Provider store={store2}>
+                <ResourceFileSize {...props}></ResourceFileSize>
+            </Provider>);
+
+            // then
+            cy.get('p').should('have.text', '-');
         });
     });
 
     describe('GroupMembersCount', () => {
         let fakeGroup;
         beforeEach(() => {
+            props = {
+                uuid: 'zzzzz-j7d0g-000000000000000',
+            };
             fakeGroup = {
                 "canManage": true,
                 "canWrite": true,
@@ -149,7 +188,7 @@ describe('renderers', () => {
                 "ownerUuid": "zzzzz-tpzed-000000000000000",
                 "properties": {},
                 "trashAt": null,
-                "uuid": 'zzzzz-j7d0g-000000000000000',
+                "uuid": props.uuid,
                 "writableBy": [
                     "zzzzz-tpzed-000000000000000",
                 ]
@@ -157,49 +196,58 @@ describe('renderers', () => {
         });
 
         it('shows loading group count when no memberCount', () => {
-            cy.mount(
+            // Given
+            const store = mockStore({resources: {
+                [props.uuid]: fakeGroup,
+            }});
+
+            const wrapper = cy.mount(<Provider store={store}>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={CustomTheme}>
-                        <p>{renderMembersCount(fakeGroup)}</p>
+                        <GroupMembersCount {...props} />
                     </ThemeProvider>
                 </StyledEngineProvider>
-            );
+            </Provider>);
 
             cy.get('[data-testid=three-dots-svg]').should('exist');
         });
 
         it('shows group count when memberCount present', () => {
             // Given
-            fakeGroup = {
+            const store = mockStore({resources: {
+                [props.uuid]: {
                     ...fakeGroup,
                     "memberCount": 765,
                 }
+            }});
 
-            cy.mount(
+            cy.mount(<Provider store={store}>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={CustomTheme}>
-                        <p data-cy="members-count">{renderMembersCount(fakeGroup)}</p>
+                        <GroupMembersCount {...props} />
                     </ThemeProvider>
                 </StyledEngineProvider>
-            );
+            </Provider>);
 
-            cy.get('[data-cy=members-count]').should('have.text', '765');
+            cy.get('p').should('have.text', '765');
         });
 
         it('shows group count error icon when memberCount is null', () => {
             // Given
-            fakeGroup = {
+            const store = mockStore({resources: {
+                [props.uuid]: {
                     ...fakeGroup,
                     "memberCount": null,
                 }
+            }});
 
-            cy.mount(
+            cy.mount(<Provider store={store}>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={CustomTheme}>
-                        <p>{renderMembersCount(fakeGroup)}</p>
+                        <GroupMembersCount {...props} />
                     </ThemeProvider>
                 </StyledEngineProvider>
-            );
+            </Provider>);
 
             cy.get('[data-testid=ErrorRoundedIcon]').should('exist');
         });

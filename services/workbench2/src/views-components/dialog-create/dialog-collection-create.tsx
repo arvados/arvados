@@ -5,7 +5,7 @@
 import React from 'react';
 import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from 'store/dialog/with-dialog';
-import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
+import { CollectionCreateFormDialogData, COLLECTION_CREATE_FORM_NAME } from 'store/collections/collection-create-actions';
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import {
     CollectionNameField,
@@ -20,7 +20,6 @@ import { FormGroup, FormLabel } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
-import { COLLECTION_CREATE_FORM_NAME } from 'store/collections/collection-create-actions';
 
 type CssRules = 'propertiesForm';
 

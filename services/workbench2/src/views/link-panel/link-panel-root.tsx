@@ -10,8 +10,8 @@ import { ResourcesState } from 'store/resources/resources';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
 import {
-    renderUuidWithCopy, ResourceLinkHead, ResourceLinkTail,
-    renderString}
+    ResourceLinkUuid, ResourceLinkHead, ResourceLinkTail,
+    ResourceLinkClass, ResourceLinkName }
 from 'views-components/data-explorer/renderers';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
@@ -35,42 +35,42 @@ export enum LinkPanelColumnNames {
     UUID = "UUID"
 }
 
-export const linkPanelColumns: DataColumns<LinkResource> = [
+export const linkPanelColumns: DataColumns<string, LinkResource> = [
     {
         name: LinkPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => renderString(resource.name)
+        render: uuid => <ResourceLinkName uuid={uuid} />
     },
     {
         name: LinkPanelColumnNames.LINK_CLASS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderString(resource.linkClass)
+        render: uuid => <ResourceLinkClass uuid={uuid} />
     },
     {
         name: LinkPanelColumnNames.TAIL,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTail resource={resource} />
+        render: uuid => <ResourceLinkTail uuid={uuid} />
     },
     {
         name: LinkPanelColumnNames.HEAD,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkHead resource={resource} />
+        render: uuid => <ResourceLinkHead uuid={uuid} />
     },
     {
         name: LinkPanelColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderUuidWithCopy({ uuid: resource.uuid })
+        render: uuid => <ResourceLinkUuid uuid={uuid} />
     }
 ];
 
@@ -79,9 +79,9 @@ export interface LinkPanelRootDataProps {
 }
 
 export interface LinkPanelRootActionProps {
-    onItemClick: (item: LinkResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: LinkResource) => void;
-    onItemDoubleClick: (item: LinkResource) => void;
+    onItemClick: (item: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onItemDoubleClick: (item: string) => void;
 }
 
 export type LinkPanelRootProps = LinkPanelRootDataProps & LinkPanelRootActionProps & WithStyles<CssRules>;

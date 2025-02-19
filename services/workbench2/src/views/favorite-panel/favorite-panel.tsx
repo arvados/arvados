@@ -16,11 +16,11 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
 import {
     ProcessStatus,
-    renderType,
-    RenderName,
-    RenderOwnerName,
-    renderFileSize,
-    renderLastModifiedDate,
+    ResourceFileSize,
+    ResourceLastModifiedDate,
+    ResourceName,
+    ResourceOwnerWithName,
+    ResourceType
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
@@ -36,10 +36,10 @@ import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
-import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { getProperty } from 'store/properties/properties';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = "toolbar" | "button" | "root";
@@ -70,83 +70,89 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const favoritePanelColumns: DataColumns<GroupContentsResource> = [
+export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ProcessStatus uuid={resource.uuid} />
+        render: uuid => <ProcessStatus uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: uuid => <ResourceType uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileSize(resource),
+        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource),
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
 ];
 
 interface FavoritePanelDataProps {
-    currentItemId: any;
+    currentItemId: string | undefined;
     favorites: FavoritesState;
     resources: ResourcesState;
     userUuid: string;
 }
 
+interface FavoritePanelActionProps {
+    onItemClick: (item: string) => void;
+    onDialogOpen: (ownerUuid: string) => void;
+    onItemDoubleClick: (item: string) => void;
+}
 const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
     resources: state.resources,
     userUuid: state.auth.user!.uuid,
-    currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+    currentItemId: getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties),
 });
 
-type FavoritePanelProps = FavoritePanelDataProps & DispatchProp
+type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 export const FavoritePanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<FavoritePanelProps> {
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => {
-                const { resources } = this.props;
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const { resources, currentItemId } = this.props;
+                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
 
                 let readonly = false;
-                const project = getResource<GroupResource>(this.props.currentItemId)(resources);
+                const project = currentItemId ? getResource<GroupResource>(currentItemId)(resources) : undefined;
 
                 if (project && project.groupClass === GroupClass.FILTER) {
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resource.uuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
 
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
@@ -160,14 +166,14 @@ export const FavoritePanel = withStyles(styles)(
                         storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                     }));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             }
 
-            handleRowDoubleClick = ({uuid}: GroupContentsResource) => {
+            handleRowDoubleClick = (uuid: string) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 
-            handleRowClick = ({uuid}: GroupContentsResource) => {
+            handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

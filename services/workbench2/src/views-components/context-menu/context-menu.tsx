@@ -6,32 +6,28 @@ import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { contextMenuActions, ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
-import { createAnchorAt } from "components/popover/helpers";
 import { ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
 import { getMenuActionSet } from "common/menu-action-set-actions";
 
-type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
+type DataProps = Pick<ContextMenuProps, "contextMenu" | "items"> & { resource?: ContextMenuResource };
+
+const filteredItems = memoize((resource: ContextMenuResource | undefined, state: RootState) => {
+    const actionSet = getMenuActionSet(resource);
+    return actionSet.map(group => group.filter(action => {
+        if(resource && action.filters) {
+            return action.filters.every(filter => filter(state, resource))
+        } else {
+            return true;
+        }
+    }));
+});
 
 const mapStateToProps = (state: RootState): DataProps => {
-    const { open, position, resource } = state.contextMenu;
-    const filteredItems = getMenuActionSet(resource).map(group =>
-        group.filter(item => {
-            if (resource && item.filters) {
-                // Execute all filters on this item, every returns true IFF all filters return true
-                return item.filters.every(filter => filter(state, resource));
-            } else {
-                return true;
-            }
-        })
-    );
-
     return {
-        anchorEl: resource ? createAnchorAt(position) : undefined,
-        items: filteredItems,
-        open,
-        resource,
+        items: filteredItems(state.contextMenu.resource, state),
+        contextMenu: state.contextMenu,
     };
 };
 
@@ -48,17 +44,8 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     },
 });
 
-const handleItemClick = memoize(
-    (resource: DataProps["resource"], onItemClick: ActionProps["onItemClick"]): ContextMenuProps["onItemClick"] =>
-        item => {
-            onItemClick(item, { ...resource, fromContextMenu: true } as ContextMenuResource);
-        }
-);
+export const ContextMenu = connect(mapStateToProps, mapDispatchToProps)(ContextMenuComponent);
 
-const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionProps): ContextMenuProps => ({
-    ...dataProps,
-    ...actionProps,
-    onItemClick: handleItemClick(resource, actionProps.onItemClick),
-});
 
-export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenuComponent);
+
+

@@ -7,7 +7,6 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { propertiesActions } from 'store/properties/properties-actions';
-import { getProperty } from 'store/properties/properties';
 import { navigateToRunProcess, navigateTo } from 'store/navigation/navigation-action';
 import {
     goToStep,
@@ -31,7 +30,7 @@ import { projectPanelDataActions } from "store/project-panel/project-panel-actio
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
-const WORKFLOW_PANEL_DETAILS_UUID = 'workflowPanelDetailsUuid';
+export const WORKFLOW_PANEL_DETAILS_UUID = 'workflowPanelDetailsUuid';
 export const workflowPanelActions = bindDataExplorerActions(WORKFLOW_PANEL_ID);
 
 export const WORKFLOW_PROCESSES_PANEL_ID = "workflowProcessesPanel";
@@ -116,13 +115,6 @@ export const getAllUsersGroupUuid = (state: RootState) => {
 
 export const showWorkflowDetails = (uuid: string) =>
     propertiesActions.SET_PROPERTY({ key: WORKFLOW_PANEL_DETAILS_UUID, value: uuid });
-
-export const getWorkflowDetails = (state: RootState) => {
-    const uuid = getProperty<string>(WORKFLOW_PANEL_DETAILS_UUID)(state.properties);
-    const workflows = state.runProcessPanel.workflows;
-    const workflow = workflows.find(workflow => workflow.uuid === uuid);
-    return workflow || undefined;
-};
 
 export const openRemoveWorkflowDialog =
 (resource: ContextMenuResource, numOfWorkflows: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

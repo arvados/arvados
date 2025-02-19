@@ -30,7 +30,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
     }
 
     getTypeFilters(dataExplorer: DataExplorer) {
-        const columns = dataExplorer.columns as DataColumns<GroupContentsResource>;
+        const columns = dataExplorer.columns as DataColumns<string, GroupContentsResource>;
         return serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
     }
 
@@ -103,7 +103,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 }));
                 api.dispatch(couldNotFetchFavoritesContents());
             } finally {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

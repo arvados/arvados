@@ -23,6 +23,7 @@ import {
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
+import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
@@ -30,7 +31,6 @@ import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { Session } from 'models/session';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 import { GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION } from 'common/app-info';
-import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -175,7 +175,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
         dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
     }
 
-const typeFilters = (columns: DataColumns<GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));
+const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));
 
 export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
     ...dataExplorerToListParams(dataExplorer),

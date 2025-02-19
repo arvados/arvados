@@ -13,8 +13,7 @@ import { Config } from 'common/config';
 import { matchTokenRoute, matchFedTokenRoute } from 'routes/routes';
 import { createServices, setAuthorizationHeader } from "services/services";
 import { cancelLinking } from 'store/link-account-panel/link-account-panel-actions';
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { progressIndicatorActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 import { addRemoteConfig, getRemoteHostConfig } from './auth-action-session';
 import { getTokenV2 } from 'models/api-client-authorization';
 

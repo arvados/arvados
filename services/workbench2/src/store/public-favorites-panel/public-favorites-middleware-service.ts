@@ -27,7 +27,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
     }
 
     getTypeFilters(dataExplorer: DataExplorer) {
-        const columns = dataExplorer.columns as DataColumns<GroupContentsResource>;
+        const columns = dataExplorer.columns as DataColumns<string, GroupContentsResource>;
         return serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
     }
 
@@ -87,7 +87,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(responseLinks),
-                    items: orderedItems.items.map(resource => resource.uuid),
+                    items: orderedItems.items.map((resource: any) => resource.uuid),
                 }));
                 api.dispatch<any>(updatePublicFavorites(uuids));
             } catch (e) {
@@ -99,7 +99,7 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 }));
                 api.dispatch(couldNotFetchPublicFavorites());
             } finally {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

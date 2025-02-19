@@ -8,7 +8,7 @@ import { Button, Grid, Paper, Tooltip, Tabs, Tab } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { GridProps } from '@mui/material/Grid';
-import { isArray } from 'lodash';
+import { isArray, isEqual } from 'lodash';
 import { DefaultView } from 'components/default-view/default-view';
 import { InfoIcon } from 'components/icon/icon';
 import classNames from 'classnames';
@@ -141,7 +141,7 @@ export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
 type MPVPanelContentProps = { children: ReactElement } & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
-export const MPVPanelContent = ({ doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName,
+export const MPVPanelContent = React.memo(({ doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName,
     panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight, minHeight, paperClassName,
     ...props }: MPVPanelContentProps) => {
     useEffect(() => {
@@ -162,6 +162,20 @@ export const MPVPanelContent = ({ doHidePanel, doMaximizePanel, doUnMaximizePane
                 : React.cloneElement(props.children)}
         </Paper>
     </Grid>;
+}, preventRerender);
+
+// return true to prevent re-render, false to allow re-render
+function preventRerender(prevProps: MPVPanelContentProps, nextProps: MPVPanelContentProps) {
+    if (!isEqual(prevProps.children, nextProps.children)) {
+        return false;
+    }
+    if (prevProps.panelMaximized !== nextProps.panelMaximized) {
+        return false;
+    }
+    if (prevProps.panelIlluminated !== nextProps.panelIlluminated) {
+        return false;
+    }
+    return true;
 }
 
 export interface MPVPanelState {

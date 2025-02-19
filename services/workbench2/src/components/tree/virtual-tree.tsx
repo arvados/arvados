@@ -92,7 +92,7 @@ export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProp
         const { index, style, classes } = props;
         const it = itemList[index];
         const level = it.level || 0;
-        const { toggleItemActive, disableRipple, currentItemUuid, useRadioButtons } = treeProps;
+        const { toggleItemActive, currentItemUuid, useRadioButtons } = treeProps;
         const { listItem, loader, toggableIconContainer, renderContainer, virtualFileTree } = classes;
         const { levelIndentation = 20, itemRightPadding = 20 } = treeProps;
 
@@ -145,7 +145,7 @@ export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProp
                     paddingLeft: (level + 1) * levelIndentation,
                     paddingRight: itemRightPadding,
                 }}
-                disableRipple={disableRipple}
+                disableRipple={true}
                 onClick={event => toggleItemActive(event, it)}
                 selected={showSelection(it) && it.id === currentItemUuid}
                 onContextMenu={handleRowContextMenu(it)}>

@@ -87,7 +87,7 @@ export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)((props: MultiselectToolbarProps) => {
+    withStyles(styles)(React.memo((props: MultiselectToolbarProps) => {
         const { classes, checkedList, resources, pathName, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(pathName) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
@@ -163,8 +163,19 @@ export const MultiselectToolbar = connect(
                 </Toolbar>
             </React.Fragment>
         );
-    })
+    }, preventRerender))
 );
+
+// return true to skip re-render, false to force re-render
+function preventRerender(prevProps: MultiselectToolbarProps, nextProps: MultiselectToolbarProps) {
+    if (prevProps.selectedResourceUuid !== nextProps.selectedResourceUuid) {
+        return false;
+    }
+    if (prevProps.disabledButtons !== nextProps.disabledButtons) {
+        return false;
+    }
+    return true;
+}
 
 export function selectedToArray(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];

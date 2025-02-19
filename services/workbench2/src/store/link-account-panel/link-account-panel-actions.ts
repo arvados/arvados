@@ -15,8 +15,7 @@ import { UserResource } from "models/user";
 import { GroupResource } from "models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
 import { login, logout } from "store/auth/auth-action";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { progressIndicatorActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 
 export const linkAccountPanelActions = unionize({
     LINK_INIT: ofType<{

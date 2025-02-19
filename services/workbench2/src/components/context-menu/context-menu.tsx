@@ -3,10 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 import React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@mui/material";
-import { DefaultTransformOrigin } from "../popover/helpers";
+import { DefaultTransformOrigin, createAnchorAt } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 import { RootState } from "store/store";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { sortMenuItems, ContextMenuKind, menuDirection } from "views-components/context-menu/menu-item-sort";
+import { ContextMenuState } from "store/context-menu/context-menu-reducer";
 
 export interface ContextMenuItem {
     name: string;
@@ -18,16 +21,16 @@ export interface ContextMenuItem {
 export type ContextMenuItemGroup = ContextMenuItem[];
 
 export interface ContextMenuProps {
-    anchorEl?: HTMLElement;
-    items: ContextMenuItemGroup[];
-    open: boolean;
-    onItemClick: (action: ContextMenuItem) => void;
+    items: ContextMenuActionSet;
+    contextMenu: ContextMenuState;
+    onItemClick: (action: ContextMenuItem, resource: ContextMenuResource | undefined) => void;
     onClose: () => void;
 }
-
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
-        const { anchorEl, items, open, onClose, onItemClick } = this.props;
+        const { items, onClose, onItemClick } = this.props;
+        const { open, position, resource } = this.props.contextMenu;
+        const anchorEl = resource ? createAnchorAt(position) : undefined;
         return <Popover
             anchorEl={anchorEl}
             open={open}
@@ -43,12 +46,12 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                                 ? <item.component
                                     key={actionIndex}
                                     data-cy={item.name}
-                                    onClick={() => onItemClick(item)} />
+                                    onClick={() => onItemClick(item, resource)} />
                                 : <ListItem
                                     button
                                     key={actionIndex}
                                     data-cy={item.name}
-                                    onClick={() => onItemClick(item)}>
+                                    onClick={() => onItemClick(item, resource)}>
                                     {item.icon &&
                                         <ListItemIcon>
                                             <item.icon />
@@ -73,3 +76,14 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
         this.props.onClose();
     }
 }
+
+const menuActionSets = new Map<string, ContextMenuActionSet>();
+
+export const addMenuActionSet = (name: ContextMenuKind, itemSet: ContextMenuActionSet) => {
+    const sorted = itemSet.map(items => sortMenuItems(name, items, menuDirection.VERTICAL));
+    menuActionSets.set(name, sorted);
+};
+const emptyActionSet: ContextMenuActionSet = [];
+
+export const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
+    resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;

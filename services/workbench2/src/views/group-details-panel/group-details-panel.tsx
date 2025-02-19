@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-
+import { getResource } from 'store/resources/resources';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-column';
 import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
@@ -12,16 +12,16 @@ import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
-import { ResourcesState, getResource } from 'store/resources/resources';
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
-import { getUserUuid } from 'common/getuser';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
 import { PermissionResource } from 'models/permission';
+import { getUserUuid } from 'common/getuser';
 
 type CssRules = "root" | "content";
 
@@ -54,102 +54,107 @@ export enum GroupDetailsPanelPermissionsColumnNames {
 const MEMBERS_DEFAULT_MESSAGE = 'Members list is empty.';
 const PERMISSIONS_DEFAULT_MESSAGE = 'Permissions list is empty.';
 
-export const groupDetailsMembersPanelColumns: DataColumns<PermissionResource> = [
+export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionResource> = [
     {
         name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTail resource={resource} />
+        render: uuid => <ResourceLinkTail uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTailUsername resource={resource} />
+        render: uuid => <ResourceLinkTailUsername uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTailAccountStatus resource={resource} />
+        render: uuid => <ResourceLinkTailAccountStatus uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTailIsVisible resource={resource} />
+        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkTailPermissionLevel resource={resource} />
+        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkDelete resource={resource} />
+        render: uuid => <ResourceLinkDelete uuid={uuid} />
     },
 ];
 
-export const groupDetailsPermissionsPanelColumns: DataColumns<PermissionResource> = [
+export const groupDetailsPermissionsPanelColumns: DataColumns<string, PermissionResource> = [
     {
         name: GroupDetailsPanelPermissionsColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkHead resource={resource} />
+        render: uuid => <ResourceLinkHead uuid={uuid} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkHeadPermissionLevel resource={resource} />
+        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkHeadUuid resource={resource} />
+        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ResourceLinkDelete resource={resource} />,
+        render: uuid => <ResourceLinkDelete uuid={uuid} />
     },
 ];
 
 const mapStateToProps = (state: RootState) => {
     const groupUuid = getCurrentGroupDetailsPanelUuid(state.properties);
-    const group = getResource<GroupResource>(groupUuid || '')(state.resources);
+    const group = groupUuid ? getResource<GroupResource>(groupUuid)(state.resources) : undefined;
     const userUuid = getUserUuid(state);
 
     return {
-        resources: state.resources,
-        groupCanManage: userUuid && !isBuiltinGroup(group?.uuid || '')
-            ? group?.canManage
-            : false,
+        userUuid,
+        group,
     };
 };
 
 const mapDispatchToProps = {
+    onContextMenu: openContextMenu,
     onAddUser: openAddGroupMembersDialog,
 };
 
 export interface GroupDetailsPanelProps {
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
-    resources: ResourcesState;
+    userUuid: string;
+    group: GroupResource | undefined;
+}
+
+type GroupDetailsPanelState = {
+    value: number;
     groupCanManage: boolean;
 }
 
@@ -157,12 +162,29 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
     mapStateToProps, mapDispatchToProps
 )(
     class GroupDetailsPanel extends React.Component<GroupDetailsPanelProps & WithStyles<CssRules>> {
-        state = {
+        state: GroupDetailsPanelState = {
             value: 0,
+            groupCanManage: false,
         };
 
         componentDidMount() {
             this.setState({ value: 0 });
+        }
+
+        shouldComponentUpdate(nextProps: Readonly<GroupDetailsPanelProps>, nextState: Readonly<GroupDetailsPanelState>, nextContext: any): boolean {
+            return this.props.group !== nextProps.group
+                || this.state.value !== nextState.value
+                || this.state.groupCanManage !== nextState.groupCanManage;
+        }
+
+        componentDidUpdate(prevProps: Readonly<GroupDetailsPanelProps>, prevState: Readonly<{}>, snapshot?: any): void {
+            if (this.props.group && (prevProps.userUuid!== this.props.userUuid || prevProps.group !== this.props.group)) {
+                this.setState({ groupCanManage: this.groupCanManage(this.props.userUuid, this.props.group) });
+            }
+        }
+
+        groupCanManage = (userUuid: string, group: GroupResource) => {
+            return userUuid && !isBuiltinGroup(group?.uuid || '') ? group.canManage : false
         }
 
         render() {
@@ -187,7 +209,7 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
                                 hideColumnSelector
                                 hideSearchInput
                                 actions={
-                                    this.props.groupCanManage &&
+                                    this.state.groupCanManage &&
                                     <Grid container justifyContent='flex-end'>
                                         <Button
                                             data-cy="group-member-add"

@@ -91,7 +91,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                 } else {
                     api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                     api.dispatch(collectionsContentAddressActions.SET_ITEMS({
-                        items: response.items.map(resource => resource.uuid),
+                        items: response.items.map((resource: any) => resource.uuid),
                         itemsAvailable: response.itemsAvailable,
                         page: Math.floor(response.offset / response.limit),
                         rowsPerPage: response.limit
@@ -106,7 +106,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                 }));
                 api.dispatch(couldNotFetchCollections());
             } finally {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

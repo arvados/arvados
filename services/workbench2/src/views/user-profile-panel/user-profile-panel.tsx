@@ -12,13 +12,11 @@ import { UserProfilePanelRoot, UserProfilePanelRootDataProps } from 'views/user-
 import { USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
 import { matchUserProfileRoute } from 'routes/routes';
 import { openUserContextMenu } from 'store/context-menu/context-menu-actions';
-import { getResource } from 'store/resources/resources';
 
 const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
     const pathname = state.router.location ? state.router.location.pathname : '';
     const match = matchUserProfileRoute(pathname);
     const uuid = match ? match.params.id : state.auth.user?.uuid || '';
-    const user = getResource<UserResource>(uuid)(state.resources);
 
     return {
         isAdmin: state.auth.user!.isAdmin,
@@ -28,14 +26,13 @@ const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
         isInaccessible: getUserProfileIsInaccessible(state.properties) || false,
         localCluster: state.auth.localCluster,
         userUuid: uuid,
-        user,
         resources: state.resources,
         userProfileFormMessage: state.auth.config.clusterConfig.Workbench.UserProfileFormMessage,
     }
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
+    handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 
 export const UserProfilePanel = compose(

@@ -12,7 +12,6 @@ import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps }
 const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
     return {
         sshKeys: state.auth.sshKeys,
-        hasKeys: state.auth.sshKeys!.length > 0
     };
 };
 

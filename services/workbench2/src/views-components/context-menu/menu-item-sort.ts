@@ -79,7 +79,7 @@ const processOrder = [
     ContextMenuActionNames.API_DETAILS,
 ];
 
-const projectOrder = [
+export const projectOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.COPY_UUID,
@@ -106,7 +106,7 @@ const groupOrder = [
     ContextMenuActionNames.MOVE_TO_TRASH,
 ];
 
-const collectionOrder = [
+export const collectionOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.COPY_UUID,
@@ -124,7 +124,7 @@ const collectionOrder = [
     ContextMenuActionNames.API_DETAILS,
 ];
 
-const workflowOrder = [
+export const workflowOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.COPY_UUID,

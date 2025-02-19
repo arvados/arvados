@@ -16,7 +16,7 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
 import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
-import { getResource } from 'store/resources/resources';
+import { ResourcesState, getResource } from 'store/resources/resources';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
@@ -25,7 +25,6 @@ import { getPropertyChip } from 'views-components/resource-properties-form/prope
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { GroupResource } from 'models/group';
 import { UserResource } from 'models/user';
-import { getUserUuid } from 'common/getuser';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@mui/material';
 import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
@@ -129,51 +128,82 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface CollectionPanelDataProps {
-    item: CollectionResource;
-    isWritable: boolean;
-    isOldVersion: boolean;
-    isLoadingFiles: boolean;
+    currentUserUUID: string;
+    resources: ResourcesState;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp & WithStyles<CssRules>
 
+type CollectionPanelState = {
+    item: CollectionResource | null;
+    itemOwner: GroupResource | UserResource | null;
+    isWritable: boolean;
+    isOldVersion: boolean
+}
+
 export const CollectionPanel = withStyles(styles)(connect(
-    (state: RootState, props: RouteComponentProps<{ id: string }>) => {
-        const currentUserUUID = getUserUuid(state);
-        const item = getResource<CollectionResource>(props.match.params.id)(state.resources);
-        let isWritable = false;
-        const isOldVersion = item && item.currentVersionUuid !== item.uuid;
-        if (item && !isOldVersion) {
-            if (item.ownerUuid === currentUserUUID) {
-                isWritable = true;
-            } else {
-                const itemOwner = getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources);
-                if (itemOwner) {
-                    isWritable = itemOwner.canWrite;
-                }
-            }
-        }
-
-        if (item && isWritable) {
-            isWritable = !resourceIsFrozen(item, state.resources);
-        }
-
-        return { item, isWritable, isOldVersion };
+    (state: RootState) => {
+        return {
+            currentUserUUID: state.auth.user?.uuid,
+            resources: state.resources
+        };
     })(
-        class extends React.Component<CollectionPanelProps> {
-
-            componentDidMount() {
-                if (this.props.item) this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+        class extends React.Component<CollectionPanelProps & RouteComponentProps<{ id: string }>> {
+            state: CollectionPanelState = {
+                item: null,
+                itemOwner: null,
+                isWritable: false,
+                isOldVersion: false,
             }
 
-            componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
-                if (prevProps.item && prevProps.item.uuid !== this.props.item.uuid) {
-                    this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+            shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps & RouteComponentProps<{ id: string }>>, nextState: Readonly<CollectionPanelState>, nextContext: any ): boolean {
+                    return this.props.match.params.id !== nextProps.match.params.id
+                        || this.props.resources !== nextProps.resources
+                        || this.state.isWritable !== nextState.isWritable;
+            }
+
+            componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<CollectionPanelState>, snapshot?: any ): void {
+                const { currentUserUUID, resources } = this.props;
+                const collection = getResource<CollectionResource>(this.props.match.params.id)(this.props.resources);
+                const itemOwner = collection ? getResource<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources) : undefined;
+                if (!this.state.item && collection) this.setState({ item: collection });
+                if (collection) {
+                    if (prevState.item !== collection) {
+                        this.props.dispatch<any>(setSelectedResourceUuid(collection.uuid))
+                        this.setState({
+                            item: collection,
+                            itemOwner: itemOwner,
+                            isOldVersion: collection.currentVersionUuid !== collection.uuid,
+                        });
+                    }
+                    if (prevProps.resources !== resources && itemOwner) {
+                        const isWritable = this.checkIsWritable(collection, itemOwner, currentUserUUID, resourceIsFrozen(collection, resources));
+                        this.setState({ isWritable: isWritable });
+                    }
                 }
+            }
+
+            checkIsWritable = (item: CollectionResource, itemOwner: GroupResource | UserResource | null, currentUserUUID: string, isFrozen: boolean): boolean => {
+                let isWritable = false;
+
+                if (item && !this.state.isOldVersion) {
+                    if (item.ownerUuid === currentUserUUID) {
+                        isWritable = true;
+                    } else {
+                        if (itemOwner) {
+                            isWritable = itemOwner.canWrite;
+                        }
+                    }
+                }
+                if (item && isWritable) {
+                    isWritable = !isFrozen;
+                }
+                return isWritable;
             }
 
             render() {
-                const { classes, item, dispatch, isWritable, isOldVersion } = this.props;
+                const { classes, dispatch } = this.props;
+                const { isWritable, item, isOldVersion } = this.state;
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
                     { name: "Files" },
@@ -247,8 +277,9 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
+                if (!this.state.item) return;
                 const { uuid, ownerUuid, name, description,
-                    kind, storageClassesDesired, properties } = this.props.item;
+                    kind, storageClassesDesired, properties } = this.state.item;
                 const menuKind = this.props.dispatch<any>(resourceToMenuKind(uuid));
                 const resource = {
                     uuid,
@@ -273,7 +304,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                 }))
 
             openCollectionDetails = (e: React.MouseEvent<HTMLElement>) => {
-                const { item } = this.props;
+                const { item } = this.state;
                 if (item) {
                     e.stopPropagation();
                     this.props.dispatch<any>(openDetailsPanel(item.uuid));

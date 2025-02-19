@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { IconButton, Tooltip } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
@@ -13,23 +14,22 @@ import { DataTableFilterItem } from 'components/data-table-filters/data-table-fi
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, TrashableResource } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
-import { TrashIcon } from 'components/icon/icon';
+import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
 import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
-import { getProperty } from "store/properties/properties";
-import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { openContextMenu } from "store/context-menu/context-menu-actions";
-import { ResourcesState } from "store/resources/resources";
+import { getResource, ResourcesState } from "store/resources/resources";
 import {
-    renderType,
-    RenderName,
-    renderFileSize,
-    renderTrashDate,
-    renderDeleteDate,
-    RestoreFromTrash,
+    ResourceDeleteDate,
+    ResourceFileSize,
+    ResourceName,
+    ResourceTrashDate,
+    ResourceType
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { toggleTrashed } from "store/trash/trash-actions";
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { Dispatch } from "redux";
 import { createTree } from 'models/tree';
 import {
     getTrashPanelTypeFilters
@@ -64,21 +64,44 @@ export interface TrashPanelFilter extends DataTableFilterItem {
     type: ResourceKind;
 }
 
-export const trashPanelColumns: DataColumns<CollectionResource> = [
+export const ResourceRestore =
+    connect((state: RootState, props: { uuid: string, dispatch?: Dispatch<any> }) => {
+        return { uuid: props.uuid, resources: state.resources, dispatch: props.dispatch };
+    })((props: { uuid: string, resources: ResourcesState, dispatch?: Dispatch<any> }) =>{
+        const resource = getResource<TrashableResource>(props.uuid)(props.resources);
+        return <Tooltip title="Restore">
+            <IconButton
+                style={{ padding: '0' }}
+                onClick={() => {
+                    if (resource && props.dispatch) {
+                        props.dispatch(toggleTrashed(
+                            resource.kind,
+                            resource.uuid,
+                            resource.ownerUuid,
+                            resource.isTrashed
+                        ));
+                    }}}
+                size="large">
+                <RestoreFromTrashIcon />
+            </IconButton>
+        </Tooltip>
+    });
+
+export const trashPanelColumns: DataColumns<string, CollectionResource> = [
     {
         name: TrashPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: TrashPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getTrashPanelTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: uuid => <ResourceType uuid={uuid} />,
     },
     {
         name: TrashPanelColumnNames.FILE_SIZE,
@@ -86,7 +109,7 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "fileSizeTotal"},
         filters: createTree(),
-        render: (resource) => renderFileSize(resource),
+        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: TrashPanelColumnNames.TRASHED_DATE,
@@ -94,7 +117,7 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.DESC, field: "trashAt"},
         filters: createTree(),
-        render: (resource) => renderTrashDate(resource),
+        render: uuid => <ResourceTrashDate uuid={uuid} />
     },
     {
         name: TrashPanelColumnNames.TO_BE_DELETED,
@@ -102,19 +125,18 @@ export const trashPanelColumns: DataColumns<CollectionResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
-        render: (resource) => renderDeleteDate(resource),
+        render: uuid => <ResourceDeleteDate uuid={uuid} />
     },
     {
         name: '',
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource) => <RestoreFromTrash resource={resource} />
+        render: uuid => <ResourceRestore uuid={uuid} />
     }
 ];
 
 interface TrashPanelDataProps {
-    currentItemId: string;
     resources: ResourcesState;
 }
 
@@ -122,7 +144,6 @@ type TrashPanelProps = TrashPanelDataProps & DispatchProp & WithStyles<CssRules>
 
 export const TrashPanel = withStyles(styles)(
     connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources
     }))(
         class extends React.Component<TrashPanelProps> {
@@ -138,7 +159,8 @@ export const TrashPanel = withStyles(styles)(
                 </div>;
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: TrashableResource) => {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const resource = getResource<TrashableResource>(resourceUuid)(this.props.resources);
                 if (resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: '',
@@ -149,14 +171,14 @@ export const TrashPanel = withStyles(styles)(
                         menuKind: ContextMenuKind.TRASH
                     }));
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             }
 
-            handleRowDoubleClick = ({uuid}: CollectionResource) => {
+            handleRowDoubleClick = (uuid: string) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             }
 
-            handleRowClick = ({uuid}: CollectionResource) => {
+            handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

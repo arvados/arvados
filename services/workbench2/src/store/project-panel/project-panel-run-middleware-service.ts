@@ -80,7 +80,7 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
                 }
             } finally {
                 if (!background) {
-                    api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                    api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
                     api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
                 }
             }
@@ -141,7 +141,7 @@ const getCountParams = (dataExplorer: DataExplorer, projectUuid: string, isProje
 });
 
 export const getFilters = (dataExplorer: DataExplorer, projectUuid: string) => {
-    const columns = dataExplorer.columns as DataColumns<ProjectResource>;
+    const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
     const typeFilters = serializeProcessTypeGroupContentsFilters(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.STATUS);
     const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);

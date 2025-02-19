@@ -14,8 +14,12 @@ import { LoginPanel } from 'views/login-panel/login-panel';
 import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
-import { Routes } from 'routes/routes';
-import { isResourceUuid } from 'models/resource';
+import { Routes, matchLinkAccountRoute } from 'routes/routes';
+import { RouterState } from "react-router-redux";
+import parse from 'parse-duration';
+import { Config } from 'common/config';
+import { LinkAccountPanelState, LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
+import { WORKBENCH_LOADING_SCREEN } from 'store/progress-indicator/progress-indicator-actions';
 
 type CssRules = 'root';
 
@@ -29,19 +33,16 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface MainPanelRootDataProps {
     user?: User;
-    working: boolean;
-    loading: boolean;
+    progressIndicator: string[];
     buildInfo: string;
     uuidPrefix: string;
-    isNotLinking: boolean;
-    isLinkingPath: boolean;
-    siteBanner: string;
-    sessionIdleTimeout: number;
+    linkAccountPanel: LinkAccountPanelState;
+    config: Config;
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
     isDetailsPanelOpen: boolean;
     currentSideWidth: number;
-    currentRoute: string;
+    router: RouterState;
 }
 
 interface MainPanelRootDispatchProps {
@@ -52,14 +53,21 @@ interface MainPanelRootDispatchProps {
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    ({ classes, loading, working, user, buildInfo, uuidPrefix,
-        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout,
-        sidePanelIsCollapsed, isTransitioning, isDetailsPanelOpen, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
+    ({ classes, progressIndicator, user, buildInfo, uuidPrefix, config, linkAccountPanel,
+        sidePanelIsCollapsed, isTransitioning, isDetailsPanelOpen, currentSideWidth, setCurrentRouteUuid, router}: MainPanelRootProps) =>{
+
+            const working = progressIndicator.length > 0;
+            const loading = progressIndicator.includes(WORKBENCH_LOADING_SCREEN);
+            const isLinkingPath = router.location ? matchLinkAccountRoute(router.location.pathname) !== null : false;
+            const currentRoute = router.location ? router.location.pathname : '';
+            const isNotLinking = linkAccountPanel.status === LinkAccountPanelStatus.NONE || linkAccountPanel.status === LinkAccountPanelStatus.INITIAL;
+            const siteBanner = config.clusterConfig.Workbench.SiteName;
+            const sessionIdleTimeout = parse(config.clusterConfig.Workbench.IdleTimeout, 's') || 0;
 
             useEffect(() => {
                 const splitRoute = currentRoute.split('/');
                 const uuid = splitRoute[splitRoute.length - 1];
-                if(isResourceUuid(uuid) && Object.values(Routes).includes(`/${uuid}`) === false) {
+                if(Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
                 } else {
                     setCurrentRouteUuid(null);
@@ -75,7 +83,6 @@ export const MainPanelRoot = withStyles(styles)(
                 buildInfo={buildInfo}
                 uuidPrefix={uuidPrefix}
                 siteBanner={siteBanner}
-                sidePanelIsCollapsed={sidePanelIsCollapsed}
                 >
                 {working
                     ? <LinearProgress color="secondary" data-cy="linear-progress" />

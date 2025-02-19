@@ -4,12 +4,11 @@
 
 import React from "react";
 import { toggleNodeSelection, getNode, initTreeNode, getNodeChildrenIds, selectNode, deselectNodes } from 'models/tree';
-import { Tree as TreeComponent, TreeItem, TreeItemStatus } from 'components/tree/tree';
+import { TreeComponent, TreeItem, TreeItemStatus} from 'components/tree/tree';
 import { noop, map } from "lodash/fp";
 import { toggleNodeCollapse } from 'models/tree';
 import { countNodes, countChildren } from 'models/tree';
 import { DataTableFilterItem, DataTableFilters } from './data-table-filters';
-
 export interface DataTableFilterProps {
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
@@ -32,7 +31,6 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             render={this.props.mutuallyExclusive ? renderRadioItem : renderItem}
             showSelection
             useRadioButtons={this.props.mutuallyExclusive}
-            disableRipple
             onContextMenu={noop}
             toggleItemActive={
                 this.props.mutuallyExclusive

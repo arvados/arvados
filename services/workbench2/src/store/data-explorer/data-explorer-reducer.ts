@@ -21,7 +21,7 @@ import { DataTableFilters } from 'components/data-table-filters/data-table-filte
 
 export interface DataExplorer {
     fetchMode: DataTableFetchMode;
-    columns: DataColumns<any>;
+    columns: DataColumns<any, any>;
     items: any[];
     itemsAvailable: number;
     loadingItemsAvailable: boolean;
@@ -163,9 +163,9 @@ export const getDataExplorer = (state: DataExplorerState, id: string) => {
     return returnValue;
 };
 
-export const getSortColumn = <T>(dataExplorer: DataExplorer): DataColumn<T> | undefined =>
+export const getSortColumn = <R>(dataExplorer: DataExplorer): DataColumn<any, R> | undefined =>
     dataExplorer.columns.find(
-        (c: DataColumn<T>) => !!c.sort && c.sort.direction !== SortDirection.NONE
+        (c: DataColumn<any, R>) => !!c.sort && c.sort.direction !== SortDirection.NONE
     );
 
 const update = (
@@ -175,8 +175,8 @@ const update = (
 ) => ({ ...state, [id]: updateFn(getDataExplorer(state, id)) });
 
 const canUpdateColumns = (
-    prevColumns: DataColumns<any>,
-    nextColumns: DataColumns<any>
+    prevColumns: DataColumns<any, any>,
+    nextColumns: DataColumns<any, any>
 ) => {
     if (prevColumns.length !== nextColumns.length) {
         return true;
@@ -192,7 +192,7 @@ const canUpdateColumns = (
 };
 
 const setColumns =
-    (columns: DataColumns<any>) => (dataExplorer: DataExplorer) => ({
+    (columns: DataColumns<any, any>) => (dataExplorer: DataExplorer) => ({
         ...dataExplorer,
         columns: canUpdateColumns(dataExplorer.columns, columns)
             ? columns
@@ -200,23 +200,23 @@ const setColumns =
     });
 
 const mapColumns =
-    (mapFn: (column: DataColumn<any>) => DataColumn<any>) =>
+    (mapFn: (column: DataColumn<any, any>) => DataColumn<any, any>) =>
         (dataExplorer: DataExplorer) => ({
             ...dataExplorer,
             columns: dataExplorer.columns.map(mapFn),
         });
 
-const toggleSort = (columnName: string) => (column: DataColumn<any>) =>
+const toggleSort = (columnName: string) => (column: DataColumn<any, any>) =>
     column.name === columnName
         ? toggleSortDirection(column)
         : resetSortDirection(column);
 
-const toggleColumn = (columnName: string) => (column: DataColumn<any>) =>
+const toggleColumn = (columnName: string) => (column: DataColumn<any, any>) =>
     column.name === columnName
         ? { ...column, selected: !column.selected }
         : column;
 
 const setFilters =
     (columnName: string, filters: DataTableFilters) =>
-        (column: DataColumn<any>) =>
+        (column: DataColumn<any, any>) =>
             column.name === columnName ? { ...column, filters } : column;

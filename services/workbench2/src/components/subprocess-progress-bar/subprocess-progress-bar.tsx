@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Tooltip } from "@mui/material";
 import { WithStyles } from '@mui/styles';
@@ -15,7 +15,7 @@ import { Dispatch } from "redux";
 import { fetchProcessProgressBarStatus, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { ProcessStatusFilter, serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { ProjectResource } from "models/project";
-import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { getDataExplorer, DataExplorerState } from "store/data-explorer/data-explorer-reducer";
 import { RootState } from "store/store";
 import { ProcessResource } from "models/process";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
@@ -44,8 +44,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
 
 export interface ProgressBarDataProps {
     parentResource: Process | ProjectResource | undefined;
+    dataExplorer: DataExplorerState;
     dataExplorerId?: string;
-    typeFilter?: string;
 }
 
 export interface ProgressBarActionProps {
@@ -66,16 +66,8 @@ export type ProgressBarStatus = {
     shouldPollProject: boolean;
 };
 
-const mapStateToProps = (state: RootState, props: ProgressBarDataProps) => {
-    let typeFilter: string | undefined = undefined;
-
-    if (props.dataExplorerId) {
-        const dataExplorerState = getDataExplorer(state.dataExplorer, props.dataExplorerId);
-        const columns = dataExplorerState.columns as DataColumns<ProcessResource>;
-        typeFilter = serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
-    }
-
-    return { typeFilter };
+const mapStateToProps = (state: RootState) => {
+    return { dataExplorer: state.dataExplorer };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
@@ -85,11 +77,21 @@ const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
 });
 
 export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
-    ({ parentResource, typeFilter, classes, fetchProcessProgressBarStatus }: ProgressBarProps) => {
+    ({ parentResource, classes, dataExplorer, dataExplorerId, fetchProcessProgressBarStatus }: ProgressBarProps) => {
 
         const [progressCounts, setProgressData] = useState<ProgressBarCounts | undefined>(undefined);
         const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
         const shouldPollProcess = isProcess(parentResource) ? isProcessRunning(parentResource) : false;
+
+        let typeFilter = useRef('');
+
+        useEffect(() => {
+            if (dataExplorerId) {
+                const dataExplorerState = getDataExplorer(dataExplorer, dataExplorerId);
+                const columns = dataExplorerState.columns as DataColumns<string, ProcessResource>;
+                typeFilter.current = serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
+            }
+        }, [dataExplorer, dataExplorerId]);
 
         // Should polling be active based on container status
         // or result of aggregated project process contents
@@ -105,8 +107,8 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         // Either when the workflow is running (shouldPollProcess) or when the
         //   project contains steps in an active state (shouldPollProject)
         useAsyncInterval(async () => {
-            if (parentUuid) {
-                fetchProcessProgressBarStatus(parentUuid, typeFilter)
+            if (parentUuid && typeFilter.current) {
+                fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
@@ -127,7 +129,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         //     as a result of a fetch so the data is already up to date
         useEffect(() => {
             if (!shouldPollProcess && parentUuid) {
-                fetchProcessProgressBarStatus(parentUuid, typeFilter)
+                fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
@@ -135,7 +137,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
                         }
                     });
             }
-        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter]);
+        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter, dataExplorer]);
 
         let tooltip = "";
         if (progressCounts) {

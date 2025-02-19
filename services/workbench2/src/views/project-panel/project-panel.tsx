@@ -14,8 +14,7 @@ import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { getProperty } from 'store/properties/properties';
-import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
@@ -26,6 +25,7 @@ import { DetailsCardRoot } from 'views-components/details-card/details-card-root
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
+import { isEqual } from 'lodash';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
@@ -60,31 +60,29 @@ const panelsData: MPVPanelState[] = [
 ];
 
 interface ProjectPanelDataProps {
-    currentItemId: string;
+    currentItemId: string | undefined;
     resources: ResourcesState;
-    project: GroupResource;
     isAdmin: boolean;
-    userUuid: string;
-    dataExplorerItems: any;
-    working: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-const mapStateToProps = (state: RootState) => {
-    const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
-    const project = getResource<GroupResource>(currentItemId || "")(state.resources);
+const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
+    const currentItemId = getProjectPanelCurrentUuid(state);
     return {
         currentItemId,
-        project,
         resources: state.resources,
-        userUuid: state.auth.user!.uuid,
+        isAdmin: state.auth.user!.isAdmin,
     };
 }
 
 export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
+
+            shouldComponentUpdate( nextProps: Readonly<ProjectPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
+                return !isEqual(nextProps.resources, this.props.resources)
+            }
 
             render() {
                 const { classes } = this.props;
@@ -128,16 +126,17 @@ export const ProjectPanel = withStyles(styles)(
                 return resource.ownerUuid === this.props.currentItemId;
             };
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => {
-                const { resources, isAdmin } = this.props;
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const { resources, isAdmin, currentItemId } = this.props;
+                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
                 // When viewing the contents of a filter group, all contents should be treated as read only.
                 let readonly = false;
-                const project = getResource<GroupResource>(this.props.currentItemId)(resources);
+                const project = currentItemId ? getResource<GroupResource>(currentItemId)(resources) : undefined;
                 if (project && project.groupClass === GroupClass.FILTER) {
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resource.uuid, readonly));
+                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(
                         openContextMenu(event, {
@@ -155,14 +154,14 @@ export const ProjectPanel = withStyles(styles)(
                         })
                     );
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resource.uuid));
+                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
             };
 
-            handleRowDoubleClick = ({uuid}: Resource) => {
+            handleRowDoubleClick = (uuid: string) => {
                 this.props.dispatch<any>(navigateTo(uuid));
             };
 
-            handleRowClick = ({uuid}: Resource) => {
+            handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));

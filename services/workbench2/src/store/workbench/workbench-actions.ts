@@ -57,8 +57,7 @@ import { workflowPanelActions } from "store/workflow-panel/workflow-panel-action
 import { loadSshKeysPanel } from "store/auth/auth-action-ssh";
 import { loadLinkAccountPanel, linkAccountPanelActions } from "store/link-account-panel/link-account-panel-actions";
 import { loadSiteManagerPanel } from "store/auth/auth-action-session";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { getProgressIndicator } from "store/progress-indicator/progress-indicator-reducer";
+import { progressIndicatorActions, WORKBENCH_LOADING_SCREEN } from "store/progress-indicator/progress-indicator-actions";
 import { extractUuidKind, Resource, ResourceKind } from "models/resource";
 import { FilterBuilder } from "services/api/filter-builder";
 import { GroupContentsResource } from "services/groups-service/groups-service";
@@ -110,14 +109,6 @@ import { projectPanelDataColumns } from "views/project-panel/project-panel-data"
 import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
 import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
 
-
-export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
-
-export const isWorkbenchLoading = (state: RootState) => {
-    const progress = getProgressIndicator(WORKBENCH_LOADING_SCREEN)(state.progressIndicator);
-    return progress ? progress.working : false;
-};
-
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
         await dispatch(action);
@@ -128,7 +119,7 @@ export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<an
             kind: SnackbarKind.WARNING,
         })
     } finally {
-        if (isWorkbenchLoading(getState())) {
+        if (getState().progressIndicator.includes(WORKBENCH_LOADING_SCREEN)) {
             dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
         }
     }

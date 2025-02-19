@@ -10,7 +10,7 @@ import { RootState } from "store/store";
 import { getResource } from "../resources/resources";
 import { UserResource } from "models/user";
 import { isSidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
-import { ResourceKind, Resource } from "models/resource";
+import { extractUuidKind, ResourceKind, Resource } from "models/resource";
 import { RepositoryResource } from "models/repositories";
 import { SshKeyResource } from "models/ssh-key";
 import { VirtualMachinesResource } from "models/virtual-machines";
@@ -18,9 +18,9 @@ import { KeepServiceResource } from "models/keep-services";
 import { GroupContentsResource } from "services/groups-service/groups-service";
 import { LinkResource } from "models/link";
 import { ProjectResource } from "models/project";
+import { Process } from "store/processes/process";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { selectOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
-import { ApiClientAuthorization } from "models/api-client-authorization";
 import { ContainerRequestResource } from "models/container-request";
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
 
@@ -143,11 +143,11 @@ export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>,
     );
 };
 
-export const openApiClientAuthorizationContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ApiClientAuthorization) => (dispatch: Dispatch) => {
+export const openApiClientAuthorizationContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => (dispatch: Dispatch) => {
     dispatch<any>(
         openContextMenu(event, {
             name: "",
-            uuid: resource.uuid,
+            uuid: resourceUuid,
             ownerUuid: "",
             kind: ResourceKind.API_CLIENT_AUTHORIZATION,
             menuKind: ContextMenuKind.API_CLIENT_AUTHORIZATION,
@@ -156,23 +156,26 @@ export const openApiClientAuthorizationContextMenu = (event: React.MouseEvent<HT
 };
 
 export const openRootProjectContextMenu =
-    (event: React.MouseEvent<HTMLElement>, resource: UserResource) => (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch<any>(
-            openContextMenu(event, {
-                name: "",
-                uuid: resource.uuid,
-                ownerUuid: resource.uuid,
-                kind: resource.kind,
-                menuKind: ContextMenuKind.ROOT_PROJECT,
-                isTrashed: false,
-            })
-        );
+    (event: React.MouseEvent<HTMLElement>, projectUuid: string) => (dispatch: Dispatch, getState: () => RootState) => {
+        const res = getResource<UserResource>(projectUuid)(getState().resources);
+        if (res) {
+            dispatch<any>(
+                openContextMenu(event, {
+                    name: "",
+                    uuid: res.uuid,
+                    ownerUuid: res.uuid,
+                    kind: res.kind,
+                    menuKind: ContextMenuKind.ROOT_PROJECT,
+                    isTrashed: false,
+                })
+            );
+        }
     };
 
 export const openProjectContextMenu =
-    (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => (dispatch: Dispatch, getState: () => RootState) => {
-        const res = getResource<GroupContentsResource>(resource.uuid)(getState().resources);
-        const menuKind = dispatch<any>(resourceToMenuKind(resource.uuid));
+    (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => (dispatch: Dispatch, getState: () => RootState) => {
+        const res = getResource<GroupContentsResource>(resourceUuid)(getState().resources);
+        const menuKind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (res && menuKind) {
             dispatch<any>(
                 openContextMenu(event, {
@@ -191,30 +194,32 @@ export const openProjectContextMenu =
 
 export const openSidePanelContextMenu = (event: React.MouseEvent<HTMLElement>, id: string) => (dispatch: Dispatch, getState: () => RootState) => {
     if (!isSidePanelTreeCategory(id)) {
-        const res = getResource<ProjectResource | UserResource>(id)(getState().resources);
-        if (!res) return;
-        if (res.kind === ResourceKind.USER) {
-            dispatch<any>(openRootProjectContextMenu(event, res));
-        } else if (res.kind === ResourceKind.PROJECT) {
-            dispatch<any>(openProjectContextMenu(event, res));
+        const kind = extractUuidKind(id);
+        if (kind === ResourceKind.USER) {
+            dispatch<any>(openRootProjectContextMenu(event, id));
+        } else if (kind === ResourceKind.PROJECT) {
+            dispatch<any>(openProjectContextMenu(event, id));
         }
     }
 };
 
-export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, containerRequest: ContainerRequestResource) => (dispatch: Dispatch, getState: () => RootState) => {
-    const menuKind = dispatch<any>(resourceToMenuKind(containerRequest.uuid));
-    dispatch<any>(
-        openContextMenu(event, {
-            uuid: containerRequest.uuid,
-            ownerUuid: containerRequest.ownerUuid,
-            kind: menuKind,
-            name: containerRequest.name,
-            description: containerRequest.description,
-            outputUuid: containerRequest.outputUuid || "",
-            workflowUuid: containerRequest.properties.template_uuid || "",
-            menuKind
-        })
-    );
+export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, process: Process) => (dispatch: Dispatch, getState: () => RootState) => {
+    const res = getResource<ContainerRequestResource>(process.containerRequest.uuid)(getState().resources);
+    const menuKind = dispatch<any>(resourceToMenuKind(process.containerRequest.uuid));
+    if (res && menuKind) {
+        dispatch<any>(
+            openContextMenu(event, {
+                uuid: process.containerRequest.uuid,
+                ownerUuid: process.containerRequest.ownerUuid,
+                kind: menuKind,
+                name: process.containerRequest.name,
+                description: process.containerRequest.description,
+                outputUuid: process.containerRequest.outputUuid || "",
+                workflowUuid: process.containerRequest.properties.template_uuid || "",
+                menuKind
+            })
+        );
+    }
 };
 
 export const openPermissionEditContextMenu =

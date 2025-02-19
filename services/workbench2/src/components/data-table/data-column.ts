@@ -7,9 +7,11 @@ import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { createTree } from 'models/tree';
 
 /**
- * @template T Type of item to be displayed in the data table
+ *
+ * @template I Type of dataexplorer item reference
+ * @template R Type of resource to use to restrict values of column sort.field
  */
-export interface DataColumn<T> {
+export interface DataColumn<I, R> {
     key?: React.Key;
     name: string;
     selected: boolean;
@@ -20,9 +22,9 @@ export interface DataColumn<T> {
      * radio group and only one filter can be selected at a time.
      */
     mutuallyExclusiveFilters?: boolean;
-    sort?: {direction: SortDirection, field: keyof T};
+    sort?: {direction: SortDirection, field: keyof R};
     filters: DataTableFilters;
-    render: (item: T) => React.ReactElement<any>;
+    render: (item: I) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;
 }
 
@@ -32,7 +34,7 @@ export enum SortDirection {
     NONE = "none"
 }
 
-export const toggleSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
+export const toggleSortDirection = <I, R>(column: DataColumn<I, R>): DataColumn<I, R> => {
     return column.sort
         ? column.sort.direction === SortDirection.ASC
             ? { ...column, sort: {...column.sort, direction: SortDirection.DESC} }
@@ -40,11 +42,11 @@ export const toggleSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => 
         : column;
 };
 
-export const resetSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
+export const resetSortDirection = <I, R>(column: DataColumn<I, R>): DataColumn<I, R> => {
     return column.sort ? { ...column, sort: {...column.sort, direction: SortDirection.NONE} } : column;
 };
 
-export const createDataColumn = <T>(dataColumn: Partial<DataColumn<T>>): DataColumn<T> => ({
+export const createDataColumn = <I, R>(dataColumn: Partial<DataColumn<I, R>>): DataColumn<I, R> => ({
     key: '',
     name: '',
     selected: true,
@@ -54,4 +56,4 @@ export const createDataColumn = <T>(dataColumn: Partial<DataColumn<T>>): DataCol
     ...dataColumn,
 });
 
-export type DataColumns<T> = Array<DataColumn<T>>;
+export type DataColumns<I, R> = Array<DataColumn<I, R>>;

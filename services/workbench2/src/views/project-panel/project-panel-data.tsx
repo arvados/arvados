@@ -10,22 +10,21 @@ import { ProjectResource } from 'models/project';
 import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
 import {
-    RenderName,
-    renderType,
-    RenderOwnerName,
-    renderPortableDataHash,
-    renderFileSize,
-    renderFileCount,
-    renderUuidWithCopy,
-    renderModifiedByUserUuid,
-    renderVersion,
-    renderCreatedAtDate,
-    renderLastModifiedDate,
-    renderTrashDate,
-    renderDeleteDate,
+    ResourceCreatedAtDate,
+    ResourceDeleteDate,
+    ResourceFileCount,
+    ResourceFileSize,
+    ResourceLastModifiedDate,
+    ResourceModifiedByUserUuid,
+    ResourceName,
+    ResourceOwnerWithName,
+    ResourcePortableDataHash,
+    ResourceTrashDate,
+    ResourceType,
+    ResourceUUID,
+    ResourceVersion,
 } from "views-components/data-explorer/renderers";
 import { getInitialDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
-import { CollectionResource } from "models/collection";
 
 export enum ProjectPanelDataColumnNames {
     NAME = 'Name',
@@ -49,70 +48,70 @@ export enum ProjectPanelDataColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelDataColumns: DataColumns<ProjectResource | CollectionResource> = [
+export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
     {
         name: ProjectPanelDataColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
         filters: createTree(),
-        render: (resource)=> <RenderName resource={resource} />,
+        render: (uuid) => <ResourceName uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getInitialDataResourceTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: (uuid) => <ResourceType uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} />,
+        render: (uuid) => <ResourceOwnerWithName uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.PORTABLE_DATA_HASH,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderPortableDataHash(resource),
+        render: (uuid) => <ResourcePortableDataHash uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileSize(resource),
+        render: (uuid) => <ResourceFileSize uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.FILE_COUNT,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileCount(resource),
+        render: (uuid) => <ResourceFileCount uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderUuidWithCopy({uuid: resource.uuid}),
+        render: (uuid) => <ResourceUUID uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.MODIFIED_BY_USER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderModifiedByUserUuid(resource),
+        render: (uuid) => <ResourceModifiedByUserUuid uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.VERSION,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderVersion(resource),
+        render: (uuid) => <ResourceVersion uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.CREATED_AT,
@@ -120,7 +119,7 @@ export const projectPanelDataColumns: DataColumns<ProjectResource | CollectionRe
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'createdAt' },
         filters: createTree(),
-        render: (resource) => renderCreatedAtDate(resource),
+        render: (uuid) => <ResourceCreatedAtDate uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.LAST_MODIFIED,
@@ -128,7 +127,7 @@ export const projectPanelDataColumns: DataColumns<ProjectResource | CollectionRe
         configurable: true,
         sort: { direction: SortDirection.DESC, field: 'modifiedAt' },
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource),
+        render: (uuid) => <ResourceLastModifiedDate uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.TRASH_AT,
@@ -136,7 +135,7 @@ export const projectPanelDataColumns: DataColumns<ProjectResource | CollectionRe
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
         filters: createTree(),
-        render: (resource) => renderTrashDate(resource),
+        render: (uuid) => <ResourceTrashDate uuid={uuid} />,
     },
     {
         name: ProjectPanelDataColumnNames.DELETE_AT,
@@ -144,7 +143,7 @@ export const projectPanelDataColumns: DataColumns<ProjectResource | CollectionRe
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'deleteAt' },
         filters: createTree(),
-        render: (resource) => renderDeleteDate(resource),
+        render: (uuid) => <ResourceDeleteDate uuid={uuid} />,
     },
 ];
 
@@ -152,9 +151,9 @@ const DEFAULT_VIEW_MESSAGES = ['No data found'];
 
 interface ProjectPanelDataProps {
     paperClassName?: string;
-    onRowClick: (item: ProjectResource | CollectionResource) => void;
-    onRowDoubleClick: ({uuid}: ProjectResource | CollectionResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ProjectResource | CollectionResource) => void;
+    onRowClick: (uuid: string) => void;
+    onRowDoubleClick: (uuid: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
 };
 
 export const ProjectPanelData = class extends React.Component<ProjectPanelDataProps> {

@@ -11,14 +11,16 @@ import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, Proc
 import { ReactElement } from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import classnames from "classnames";
-
+import { getNodeChildrenIds, Tree, getNode, initTreeNode, createTree } from 'models/tree';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
-import { ResourceKind } from 'models/resource';
+import { Resource, ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
 import { kebabCase } from 'lodash';
-import { TreeItemWeight } from 'store/tree-picker/tree-picker';
+import { ResourcesState, getResource } from 'store/resources/resources';
+import { TreePicker } from 'store/tree-picker/tree-picker';
+import { isEqual } from 'lodash';
 
 type CssRules = 'list'
               | 'listItem'
@@ -121,9 +123,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export enum TreeItemStatus {
-    INITIAL = 'initial',
-    PENDING = 'pending',
-    LOADED = 'loaded'
+    INITIAL = 'INITIAL',
+    PENDING = 'PENDING',
+    LOADED = 'LOADED'
 }
 
 export interface TreeItem<T> {
@@ -142,7 +144,10 @@ export interface TreeItem<T> {
 }
 
 export interface TreeProps<T> {
-    disableRipple?: boolean;
+    tree?: Tree<T>;
+    pickerId?: string;
+    treePicker?: TreePicker;
+    resources?: ResourcesState;
     currentItemUuid?: string;
     items?: Array<TreeItem<T>>;
     level?: number;
@@ -164,6 +169,16 @@ export interface TreeProps<T> {
      */
     useRadioButtons?: boolean;
 }
+
+export enum TreeItemWeight {
+    NORMAL,
+    LIGHT,
+    DARK,
+};
+
+export interface TreeItemWithWeight {
+    weight?: TreeItemWeight;
+};
 
 const getActionAndId = (event: any, initAction: string | undefined = undefined) => {
     const { nativeEvent: { target } } = event;
@@ -316,11 +331,70 @@ const FlatTree = (props: FlatTreeProps) =>
         }
     </div>;
 
-export const Tree = withStyles(styles)(
-    function<T>(props: TreeProps<T> & WithStyles<CssRules>) {
+function treePickerToTreeItems<T>(tree: Tree<T>, resources: ResourcesState){
+    return function(id: string): TreeItem<any> {
+        const node = getNode(id)(tree) || initTreeNode({ id: '', value: 'InvalidNode' });
+        const items = getNodeChildrenIds(node.id)(tree)
+            .map(treePickerToTreeItems(tree, resources));
+        const resource = getResource<Resource>(node.id)(resources);
+
+        return {
+            active: node.active,
+            data: resource
+                ? {
+                    ...resource,
+                    name: typeof node.value === "string"
+                        ? node.value
+                        : typeof (node.value as any).name === "string"
+                        ? (node.value as any).name
+                        : "",
+                    weight: (node.value as any).weight
+                }
+                : node.value,
+            id: node.id,
+            items: items.length > 0 ? items : undefined,
+            open: node.expanded,
+            selected: node.selected,
+            status: TreeItemStatus[node.status],
+        };
+    };
+}
+type ItemsMap<T> = Map<string, TreeItem<T>>;
+
+function flatTree<T>(itemsMap: ItemsMap<T>, depth: number, items?: TreeItem<T>[]): TreeItem<T>[]{
+    return items ? items
+        .map((item) => addToItemsMap(item, itemsMap))
+        .reduce((acc, next) => {
+            const { items } = next;
+            acc.push({ ...next, depth });
+            acc.push(...(next.open ? flatTree(itemsMap, depth + 1, items) : []));
+            return acc;
+        }, [] as TreeItem<T>[]) : [];
+};
+
+function addToItemsMap<T>(item: TreeItem<T>, itemsMap: Map<string, TreeItem<T>>): TreeItem<T> {
+    itemsMap[item.id] = item;
+    return item;
+};
+
+export const TreeComponent = withStyles(styles)(
+    React.memo(function<T>(props: TreeProps<T> & WithStyles<CssRules>) {
         const level = props.level ? props.level : 0;
-        const { classes, render, items, toggleItemActive, toggleItemOpen, disableRipple, currentItemUuid, useRadioButtons, itemsMap } = props;
+        const { classes, render, toggleItemActive, toggleItemOpen, currentItemUuid, useRadioButtons, resources, treePicker, pickerId } = props;
+        const pickedTree = treePicker && pickerId ? treePicker[pickerId] : createTree<T>();
+        const tree = props.tree || pickedTree;
         const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
+        const itemsMap: ItemsMap<T> = new Map();
+        const fillMap = (tree: Tree<T>, resources: ResourcesState) => getNodeChildrenIds('')(tree)
+            .map(treePickerToTreeItems(tree, resources))
+            .map(item => addToItemsMap<T>(item, itemsMap))
+            .map(parentItem => ({
+                ...parentItem,
+                flatTree: true,
+                items: flatTree(itemsMap, 2, parentItem.items || []),
+            }))
+        const items = tree && resources ? fillMap(tree, resources) : props.items;
+
         const showSelection = typeof props.showSelection === 'function'
             ? props.showSelection
             : () => props.showSelection ? true : false;
@@ -361,12 +435,13 @@ export const Tree = withStyles(styles)(
 
         // Scroll to selected item whenever it changes, accepts selectedRef from props for recursive trees
         const [cachedSelectedRef, setCachedRef] = useState<HTMLDivElement | null>(null)
-        const selectedRef = props.selectedRef || useCallback((node: HTMLDivElement | null) => {
+        const scrollToNode = useCallback((node: HTMLDivElement | null) => {
             if (node && node.scrollIntoView && node !== cachedSelectedRef) {
                 node.scrollIntoView({ behavior: "smooth", block: "center" });
             }
             setCachedRef(node);
-        }, [cachedSelectedRef]);
+        }, [cachedSelectedRef])
+        const selectedRef = props.selectedRef || scrollToNode;
 
         const { levelIndentation = 20, itemRightPadding = 20 } = props;
         return <List className={list}>
@@ -381,7 +456,7 @@ export const Tree = withStyles(styles)(
                             paddingLeft: (level + 1) * levelIndentation,
                             paddingRight: itemRightPadding,
                         }}
-                        disableRipple={disableRipple}
+                        disableRipple={true}
                         onClick={event => toggleItemActive(event, it)}
                         selected={showSelection(it) && it.id === currentItemUuid}
                         onContextMenu={(event) => props.onContextMenu(event, it)}>
@@ -430,11 +505,12 @@ export const Tree = withStyles(styles)(
                                 selectedRef={selectedRef}
                             /> :
                             <Collapse in={it.open} timeout="auto" unmountOnExit>
-                                <Tree
+                                <TreeComponent
+                                    tree={props.tree}
+                                    resources={props.resources}
                                     showSelection={props.showSelection}
                                     items={it.items}
                                     render={render}
-                                    disableRipple={disableRipple}
                                     toggleItemOpen={toggleItemOpen}
                                     toggleItemActive={toggleItemActive}
                                     level={level + 1}
@@ -447,5 +523,27 @@ export const Tree = withStyles(styles)(
                 </div>;
             })}
         </List>;
-    }
+    }, preventRerender)
 );
+
+// return true to prevent re-render, false to allow re-render
+function preventRerender<T>(prevProps: TreeProps<T>, nextProps: TreeProps<T>) {
+    if(prevProps.treePicker !== nextProps.treePicker) return false;
+    if (haveResourcesUpdated(nextProps)) return false;
+    if(!!nextProps.items && !isEqual(prevProps.items, nextProps.items)) return false;
+    return true;
+}
+
+// we don't want to update on every resource update, just the resources that are already in the tree
+function haveResourcesUpdated<T>(nextProps: TreeProps<T>) {
+    const { treePicker, pickerId, resources = {} } = nextProps;
+    const nextTreeItems = treePicker && pickerId && treePicker[pickerId];
+    if (nextTreeItems) {
+        for (const id in nextTreeItems) {
+            if (resources[id] && !isEqual(resources[id], nextTreeItems[id].value)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}

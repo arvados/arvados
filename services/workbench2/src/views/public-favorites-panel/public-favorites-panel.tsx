@@ -15,11 +15,11 @@ import { ResourceKind } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
     ProcessStatus,
-    renderType,
-    RenderName,
-    RenderOwnerName,
-    renderFileSize,
-    renderLastModifiedDate,
+    ResourceFileSize,
+    ResourceLastModifiedDate,
+    ResourceType,
+    ResourceName,
+    ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -34,7 +34,7 @@ import { createTree } from 'models/tree';
 import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from 'store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
-import { ResourcesState } from 'store/resources/resources';
+import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -68,48 +68,48 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const publicFavoritePanelColumns: DataColumns<GroupContentsResource> = [
+export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResource> = [
     {
         name: PublicFavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderName resource={resource} />,
+        render: uuid => <ResourceName uuid={uuid} />
     },
     {
         name: "Status",
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <ProcessStatus uuid={resource.uuid} />
+        render: uuid => <ProcessStatus uuid={uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
         filters: getSimpleObjectTypeFilters(),
-        render: (resource) => renderType(resource),
+        render: uuid => <ResourceType uuid={uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.OWNER,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <RenderOwnerName resource={resource} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderFileSize(resource),
+        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => renderLastModifiedDate(resource),
+        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
 ];
 
@@ -119,9 +119,10 @@ interface PublicFavoritePanelDataProps {
 }
 
 interface PublicFavoritePanelActionProps {
-    onItemClick: (resource: GroupContentsResource) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resource: GroupContentsResource) => void;
-    onItemDoubleClick: (resource: GroupContentsResource) => void;
+    onItemClick: (item: string) => void;
+    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onDialogOpen: (ownerUuid: string) => void;
+    onItemDoubleClick: (item: string) => void;
 }
 const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavoritePanelDataProps => ({
     publicFavorites,
@@ -129,27 +130,29 @@ const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavor
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
-    onContextMenu: (event, resource: GroupContentsResource) => {
-        const kind = dispatch<any>(resourceToMenuKind(resource.uuid));
+    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
+        const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
+        const kind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (kind && resource) {
             dispatch<any>(openContextMenu(event, {
                 name: resource.name,
                 description: resource.description,
                 storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
-                uuid: resource.uuid,
+                uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
                 menuKind: kind
             }));
         }
-        dispatch<any>(loadDetailsPanel(resource.uuid));
+        dispatch<any>(loadDetailsPanel(resourceUuid));
     },
-    onItemClick: ({uuid}: GroupContentsResource) => {
+    onDialogOpen: (ownerUuid: string) => { return; },
+    onItemClick: (uuid: string) => {
                 dispatch<any>(toggleOne(uuid))
                 dispatch<any>(deselectAllOthers(uuid))
                 dispatch<any>(loadDetailsPanel(uuid));
     },
-    onItemDoubleClick: ({uuid}: GroupContentsResource) => {
+    onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
     }
 });
@@ -165,7 +168,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     id={PUBLIC_FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
-                    onContextMenu={this.props.onContextMenu}
+                    onContextMenu={this.props.onContextMenu(this.props.resources)}
                     contextMenuColumn={false}
                     defaultViewIcon={PublicFavoriteIcon}
                     defaultViewMessages={['Public favorites list is empty.']} />

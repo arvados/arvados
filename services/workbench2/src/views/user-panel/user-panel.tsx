@@ -11,15 +11,16 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
 import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { openUserContextMenu } from "store/context-menu/context-menu-actions";
-import { ResourcesState } from "store/resources/resources";
+import { getResource, ResourcesState } from "store/resources/resources";
 import {
+    UserResourceFullName,
+    ResourceUuid,
+    ResourceEmail,
     ResourceIsAdmin,
+    ResourceUsername,
     UserResourceAccountStatus,
-    renderUuidWithCopy,
-    RenderFullName,
-    renderEmail,
-    renderUsername,
 } from "views-components/data-explorer/renderers";
+import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
 import { UserResource } from 'models/user';
@@ -52,14 +53,14 @@ export enum UserPanelColumnNames {
     USERNAME = "Username"
 }
 
-export const userPanelColumns: DataColumns<UserResource> = [
+export const userPanelColumns: DataColumns<string, UserResource> = [
     {
         name: UserPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
-        render: (resource) => <RenderFullName resource={resource} />
+        render: uuid => <UserResourceFullName uuid={uuid} link={true} />
     },
     {
         name: UserPanelColumnNames.UUID,
@@ -67,7 +68,7 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
-        render: (resource) => renderUuidWithCopy({uuid: resource.uuid})
+        render: uuid => <ResourceUuid uuid={uuid} />
     },
     {
         name: UserPanelColumnNames.EMAIL,
@@ -75,21 +76,21 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: true,
         sort: {direction: SortDirection.NONE, field: "email"},
         filters: createTree(),
-        render: (resource) => renderEmail(resource)
+        render: uuid => <ResourceEmail uuid={uuid} />
     },
     {
         name: UserPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (resource) => <UserResourceAccountStatus uuid={resource.uuid} />
+        render: uuid => <UserResourceAccountStatus uuid={uuid} />
     },
     {
         name: UserPanelColumnNames.ADMIN,
         selected: true,
         configurable: false,
         filters: createTree(),
-        render: (resource) => <ResourceIsAdmin resource={resource} />
+        render: uuid => <ResourceIsAdmin uuid={uuid} />
     },
     {
         name: UserPanelColumnNames.USERNAME,
@@ -97,7 +98,7 @@ export const userPanelColumns: DataColumns<UserResource> = [
         configurable: false,
         sort: {direction: SortDirection.NONE, field: "username"},
         filters: createTree(),
-        render: (resource) => renderUsername(resource)
+        render: uuid => <ResourceUsername uuid={uuid} />
     }
 ];
 
@@ -107,7 +108,8 @@ interface UserPanelDataProps {
 
 interface UserPanelActionProps {
     openUserCreateDialog: () => void;
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: UserResource) => void;
+    handleRowClick: (uuid: string) => void;
+    handleContextMenu: (event, resource: UserResource) => void;
 }
 
 const mapStateToProps = (state: RootState) => {
@@ -118,7 +120,8 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
+    handleRowClick: (uuid: string) => dispatch<any>(navigateToUserProfile(uuid)),
+    handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 
 type UserPanelProps = UserPanelDataProps & UserPanelActionProps & DispatchProp & WithStyles<UserPanelRules>;
@@ -150,8 +153,9 @@ export const UserPanel = compose(
                 </Paper>;
             }
 
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resource: UserResource) => {
+            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 event.stopPropagation();
+                const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
                 if (resource) {
                     this.props.handleContextMenu(event, resource);
                 }

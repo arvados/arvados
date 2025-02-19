@@ -74,20 +74,26 @@ export class FavoriteService {
             });
     }
 
-    checkPresenceInFavorites(userUuid: string, resourceUuids: string[]): Promise<Record<string, boolean>> {
-        return this.linkService
-            .list({
-                filters: new FilterBuilder()
-                    .addIn("head_uuid", resourceUuids)
-                    .addEqual("owner_uuid", userUuid)
-                    .addEqual("link_class", LinkClass.STAR)
-                    .getFilters()
-            })
-            .then(({ items }) => resourceUuids.reduce((results, uuid) => {
-                const filteredItems = items.filter(item => !!item.headUuid && item.linkClass === LinkClass.STAR);
-                const isFavorite = filteredItems.some(item => item.headUuid === uuid);
-                return { ...results, [uuid]: isFavorite };
-            }, {}));
+    async checkPresenceInFavorites(userUuid: string, resourceUuids: string[]): Promise<Record<string, boolean>> {
+        try {
+            const result = await this.linkService
+                .list({
+                    filters: new FilterBuilder()
+                        .addIn("head_uuid", resourceUuids)
+                        .addEqual("owner_uuid", userUuid)
+                        .addEqual("link_class", LinkClass.STAR)
+                        .getFilters()
+                })
+                .then(( response ) => resourceUuids.reduce((results, uuid) => {
+                    const filteredItems = response.items.filter(item => !!item.headUuid && item.linkClass === LinkClass.STAR);
+                    const isFavorite = filteredItems.some(item => item.headUuid === uuid);
+                    return { ...results, [uuid]: isFavorite };
+                }, {}));
+            return result;
+        } catch (error) {
+                console.error("Error while checking presence in favorites", error);
+                return {};
+        }
     }
 
 }
