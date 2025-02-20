@@ -12,5 +12,7 @@
     name: "{{ ansible_distribution|lower }}"
     types: deb
     uris: "{{ distro_apt[ansible_distribution].aws_mirror if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].mirror }}"
-    suites: "{{ ansible_distribution_release }}"
+    suites:
+      - "{{ ansible_distribution_release }}"
+      - "{{ ansible_distribution_release }}-updates"
     components: "{{ distro_apt[ansible_distribution].components }}"
