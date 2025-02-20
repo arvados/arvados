@@ -13,6 +13,8 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { OrderBuilder } from 'services/api/order-builder';
 import { CollectionResource } from 'models/collection';
 import { extractUuidKind, ResourceKind } from 'models/resource';
+import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
+import { deselectAllOthers, selectOne } from 'store/multiselect/multiselect-actions';
 
 export const SLIDE_TIMEOUT = 500;
 export const CLOSE_DRAWER = 'CLOSE_DRAWER'
@@ -47,6 +49,9 @@ export const openDetailsPanel = (uuid?: string, tabNr: number = 0) =>
         startDetailsPanelTransition(dispatch)
         dispatch(detailsPanelActions.OPEN_DETAILS_PANEL(tabNr));
         if (uuid !== undefined) {
+            dispatch<any>(selectOne(uuid));
+            dispatch<any>(deselectAllOthers(uuid));
+            dispatch<any>(setSelectedResourceUuid(uuid));
             dispatch<any>(loadDetailsPanel(uuid));
         }
     };
