@@ -181,13 +181,13 @@ if [[ "$UPLOAD" != 0 ]]; then
   timer_reset
 
   if [ ${#failures[@]} -eq 0 ]; then
+    set -x
     if [[ "$RC" != 0 ]]; then
-      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET"
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET
     else
-      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET"
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET
     fi
+    set +x
   else
     echo "Skipping package upload, there were errors building and/or testing the packages"
   fi
