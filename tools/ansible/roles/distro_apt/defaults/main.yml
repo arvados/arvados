@@ -8,10 +8,14 @@ distro_apt:
       - main
       - contrib
     mirror: http://deb.debian.org/debian
+    security: http://security.debian.org/debian-security
     aws_mirror: http://cdn-aws.deb.debian.org/debian
+    aws_security: http://cdn-aws.deb.debian.org/debian-security
   Ubuntu:
     components:
       - main
       - universe
     mirror: http://archive.ubuntu.com/ubuntu
+    security: http://security.ubuntu.com/ubuntu
     aws_mirror: http://cdn-aws.archive.ubuntu.com/ubuntu
+    aws_security: http://cdn-aws.archive.ubuntu.com/ubuntu-security
