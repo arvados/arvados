@@ -20,7 +20,7 @@ import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -72,7 +72,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: any) => {
     return {
-        onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
+        onContextMenu: (ev, resource) => dispatch(openContextMenuAndSelect(ev, resource)),
         onNewGroup: () => dispatch(openCreateGroupDialog()),
         handleRowClick: (uuid: string) => {
             dispatch(toggleOne(uuid))

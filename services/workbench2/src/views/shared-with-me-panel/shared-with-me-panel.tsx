@@ -16,7 +16,7 @@ import { ResourceKind } from 'models/resource';
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { SHARED_WITH_ME_PANEL_ID } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
@@ -76,7 +76,7 @@ export const SharedWithMePanel = withStyles(styles)(
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
                 const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid));
                 if (menuKind && resource) {
-                    this.props.dispatch<any>(openContextMenu(event, {
+                    this.props.dispatch<any>(openContextMenuAndSelect(event, {
                         name: resource.name,
                         uuid: resource.uuid,
                         description: resource.description,

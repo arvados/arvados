@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from 'store/store';
 import {
-    openContextMenu,
+    openContextMenuAndSelect,
 } from 'store/context-menu/context-menu-actions';
 import {
     LinkPanelRoot,
@@ -26,7 +26,7 @@ const mapDispatchToProps = (dispatch: Dispatch): LinkPanelRootActionProps => ({
     onContextMenu: (event, resourceUuid) => {
         const kind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (kind) {
-            dispatch<any>(openContextMenu(event, {
+            dispatch<any>(openContextMenuAndSelect(event, {
                 name: '',
                 uuid: resourceUuid,
                 ownerUuid: '',

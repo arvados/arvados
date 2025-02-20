@@ -24,7 +24,7 @@ import {
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
-    openContextMenu,
+    openContextMenuAndSelect,
 } from 'store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -155,7 +155,7 @@ export const FavoritePanel = withStyles(styles)(
                 const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
 
                 if (menuKind && resource) {
-                    this.props.dispatch<any>(openContextMenu(event, {
+                    this.props.dispatch<any>(openContextMenuAndSelect(event, {
                         name: resource.name,
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
