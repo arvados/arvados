@@ -32,6 +32,9 @@ arvados_config_file: /etc/arvados/config.yml
 # AMD ROCm and associated drivers will be installed in the compute
 # node image. Set this to true if you want your Arvados cluster to
 # support containers with ROCm requirements.
+# Note this installs >30GB of packages and requires additional space
+# to compile the drivers. Make sure you allocate enough disk space for
+# this in your Packer configuration.
 #arvados_compute_amd_rocm: true
 
 # `arvados_compute_nvidia` is a flag that determines whether or not
