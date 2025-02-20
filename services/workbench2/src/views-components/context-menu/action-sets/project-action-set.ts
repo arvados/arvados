@@ -119,7 +119,7 @@ export const freezeProjectAction = {
     component: ToggleLockAction,
     name: ContextMenuActionNames.FREEZE_PROJECT,
     execute: (dispatch, resources) => {
-        if (resources[0].isFrozen) {
+        if (resources[0].frozenByUuid) {
             dispatch(unfreezeProject(resources[0].uuid));
         } else {
             dispatch(freezeProject(resources[0].uuid));
