@@ -101,7 +101,7 @@ In the @tools/compute-images@ directory of your Arvados source checkout, copy @a
 * If you already have AWS credentials configured that Packer can use to create and manage an EC2 instance, set @aws_profile@ to the name of those credentials in your configuration. Otherwise, set @aws_access_key@ and @aws_secret_key@ with information from an API token with those permissions.
 * Set @aws_region@, @vpc_id@, and @subnet_id@ with identifiers for the network where Packer should create the EC2 instance.
 * Set @aws_source_ami@ to the AMI of the base image that should be booted and used as the base for your compute node image. Set @ssh_user@ to the name of administrator account that is used on that image.
-* Set @aws_volume_gb@ to the size of of the image you want to create in GB. The default 20 should be sufficient for most installs. If you want to include AMD ROCm support, increase this to at least 50.
+* Set @aws_volume_gb@ to the size of of the image you want to create in GB. The default 20 should be sufficient for most installs. You may increase this if you're using a custom source AMI with more software pre-installed.
 * Set @arvados_cluster@ to the same five-alphanumeric identifier used under @Clusters@ in your Arvados cluster configuration.
 * If you installed Ansible to a nonstandard location, set @ansible_command@ to the absolute path of @ansible-playbook@. For example, if you installed Ansible in a virtualenv at @~/ansible@, set @ansible_command@ to {% raw %}<notextile><code class="userinput">"{{env `HOME`}}<strong>/ansible</strong>/bin/ansible-playbook"</code></notextile>{% endraw %}.
 
