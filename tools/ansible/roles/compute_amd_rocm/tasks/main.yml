@@ -24,8 +24,8 @@
   ansible.builtin.apt:
     name:
       - "linux-headers-{{ ansible_kernel }}"
-      # These Python packaging tools are listed as installation prerequisites
-      # in AMD's documentation. No idea why.
+      # These are listed as installation prerequisites in AMD's documentation:
+      # they have Python tools to build scaffolding like bash completions.
       - python3-setuptools
       - python3-wheel
 
