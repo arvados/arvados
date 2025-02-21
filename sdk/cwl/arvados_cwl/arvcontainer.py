@@ -327,7 +327,7 @@ class ArvadosContainer(JobBase):
                     "device_count": resources.get("cudaDeviceCount", 1),
                     "driver_version": cuda_req["cudaVersionMin"],
                     "hardware_target": aslist(cuda_req["cudaComputeCapability"]),
-                    "vram": cuda_req["cudaVram"]*1024*1024,
+                    "vram": cuda_req.get("cudaVram", 0)*1024*1024,
                 }
             else:
                 # Legacy API

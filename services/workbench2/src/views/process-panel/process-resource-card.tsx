@@ -99,14 +99,14 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                            <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                                <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
                                            </Tooltip>}
-                                          {doMaximizePanel && !panelMaximized &&
-                                           <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
-                                               <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
-                                           </Tooltip>}
-                                          {doHidePanel &&
-                                           <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                               <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                                           </Tooltip>}
+                                                                   {doMaximizePanel && !panelMaximized &&
+                                                                    <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
+                                                                        <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
+                                                                    </Tooltip>}
+                                                                                            {doHidePanel &&
+                                                                                             <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                                                                                 <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
+                                                                                             </Tooltip>}
                         </div>
                     } />
                 <CardContent className={classes.content}>
@@ -130,16 +130,16 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                          <DetailsAttribute label="GPU stack" value={process.container?.runtimeConstraints.gpu.stack} />
                                      </Grid>
                                 <Grid item xs={12}>
-                                    <DetailsAttribute label="GPU VRAM" value={process.container?.runtimeConstraints.gpu.vram} />
-                                </Grid>
-                                <Grid item xs={12}>
                                     <DetailsAttribute label="GPU devices" value={process.container?.runtimeConstraints.gpu.device_count} />
                                 </Grid>
                                 <Grid item xs={12}>
-                                    <DetailsAttribute label="GPU driver version" value={process.container?.runtimeConstraints.gpu.driver_version} />
+                                    <DetailsAttribute label="GPU VRAM" value={process.container?.runtimeConstraints.gpu.vram} />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <DetailsAttribute label="GPU hardware target" value={process.container?.runtimeConstraints.gpu.hardware_target} />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <DetailsAttribute label="GPU driver version" value={process.container?.runtimeConstraints.gpu.driver_version} />
                                 </Grid>
                                  </> : null}
 
@@ -201,26 +201,21 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                       </Grid>
 
                                  <Grid item xs={6}>
-                                     <DetailsAttribute label="GPU VRAM" value={nodeInfo.GPU.VRAM} />
-                                 </Grid>
-
-                                 <Grid item xs={6}>
                                      <DetailsAttribute label="GPU devices" value={nodeInfo.GPU.DeviceCount} />
                                  </Grid>
 
                                  <Grid item xs={6}>
+                                     <DetailsAttribute label="GPU VRAM" value={nodeInfo.GPU.VRAM} />
+                                 </Grid>
+
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="GPU hardware target" value={nodeInfo.GPU.HardwareTarget} />
                                  </Grid>
 
                                  <Grid item xs={6}>
                                      <DetailsAttribute label="GPU driver version" value={nodeInfo.GPU.DriverVersion} />
                                  </Grid>
 
-                                 <Grid item xs={6}>
-                                 </Grid>
-
-                                 <Grid item xs={6}>
-                                     <DetailsAttribute label="GPU hardware target" value={nodeInfo.GPU.HardwareTarget} />
-                                 </Grid>
                                   </>
                                  }
                              </Grid>}
