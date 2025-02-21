@@ -12,7 +12,7 @@ import { DataColumn, DataColumns, } from "components/data-table/data-column";
 import { TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
-import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
+import { setSelectedResourceUuid, setIsSelectedResourceInDataExplorer } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 
@@ -91,6 +91,10 @@ const mapDispatchToProps = () => {
 
         loadDetailsPanel: (uuid: string) => {
             dispatch<any>(loadDetailsPanel(uuid || ''));
+        },
+
+        setIsSelectedResourceInDataExplorer: (isIn: boolean) => {
+            dispatch<any>(setIsSelectedResourceInDataExplorer(isIn));
         },
 
         onRowClick,

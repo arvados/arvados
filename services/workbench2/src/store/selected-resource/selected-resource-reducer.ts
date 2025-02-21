@@ -5,16 +5,21 @@
 import { selectedResourceActions } from "./selected-resource-actions";
 
 type SelectedResourceState = {
-    selectedResourceUuid: string | null
+    selectedResourceUuid: string | null,
+    isSelectedResourceInDataExplorer: boolean
 };
 
 const initialState: SelectedResourceState = {
-    selectedResourceUuid: null
+    selectedResourceUuid: null,
+    isSelectedResourceInDataExplorer: false
 }
 
 export const selectedResourceReducer = (state: SelectedResourceState = initialState, action: any) => {
     if (action.type === selectedResourceActions.SET_SELECTED_RESOURCE) {
         return { ...state, selectedResourceUuid: action.payload };
+    }
+    if (action.type === selectedResourceActions.SET_IS_IN_DATA_EXPLORER) {
+        return { ...state, isSelectedResourceInDataExplorer: action.payload };
     }
     return state;
 };

@@ -203,6 +203,7 @@ interface DataExplorerActionProps<T> {
     setSelectedUuid: (uuid: string) => void;
     usesDetailsCard: (uuid: string) => boolean;
     loadDetailsPanel: (uuid: string) => void;
+    setIsSelectedResourceInDataExplorer: (isIn: boolean) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -225,8 +226,9 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
-            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard } = this.props;
+            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
+                setIsSelectedResourceInDataExplorer(this.isSelectedResourceInTable(selectedResourceUuid));
                 this.setState({
                     hideToolbar: usesDetailsCard(path || '') ? selectedResourceUuid === this.props.currentRouteUuid : false,
                 })
@@ -240,6 +242,10 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
+        }
+
+        isSelectedResourceInTable = (resourceUuid) => {
+            return this.props.items.includes(resourceUuid);
         }
 
         render() {
@@ -322,7 +328,7 @@ export const DataExplorer = withStyles(styles)(
 
                         </Grid>
                     )}
-                    {!this.state.hideToolbar && (this.multiSelectToolbarInTitle
+                    {!this.state.hideToolbar && this.isSelectedResourceInTable(selectedResourceUuid) && (this.multiSelectToolbarInTitle
                                                ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
                                                : <MultiselectToolbar
                                                      forceMultiSelectMode={forceMultiSelectMode}
