@@ -40,6 +40,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
         working,
         searchBarValue: searchBar.searchValue,
         detailsPanelResourceUuid: detailsPanel.resourceUuid,
+        isDetailsPanelOpen: detailsPanel.isOpened,
     };
 };
 

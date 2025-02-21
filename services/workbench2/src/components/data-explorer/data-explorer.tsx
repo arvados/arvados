@@ -183,6 +183,7 @@ interface DataExplorerDataProps<T> {
     paperClassName?: string;
     forceMultiSelectMode?: boolean;
     detailsPanelResourceUuid: string;
+    isDetailsPanelOpen: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -226,12 +227,15 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
-            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer } = this.props;
+            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer, setSelectedUuid } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 setIsSelectedResourceInDataExplorer(this.isSelectedResourceInTable(selectedResourceUuid));
                 this.setState({
                     hideToolbar: usesDetailsCard(path || '') ? selectedResourceUuid === this.props.currentRouteUuid : false,
                 })
+            }
+            if (this.props.isDetailsPanelOpen !== prevProps.isDetailsPanelOpen && this.props.isDetailsPanelOpen === false) {
+                setSelectedUuid(currentRouteUuid);
             }
             if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
                 this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
