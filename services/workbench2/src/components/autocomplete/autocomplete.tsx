@@ -25,6 +25,8 @@ import { noop } from 'lodash';
 import { isUserGroup } from 'models/group';
 import { sortByKey } from 'common/objects';
 import { TabbedList } from 'components/tabbedList/tabbed-list';
+import maxSize from 'popper-max-size-modifier';
+import { beforeWrite } from '@popperjs/core/lib';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -145,6 +147,11 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         const { suggestions = [] } = this.props;
         return (
             <Popper
+                disablePortal={false}
+                modifiers={[
+                    maxSize,
+                    applyMaxSize
+                ]}
                 open={this.isSuggestionBoxOpen()}
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
@@ -168,18 +175,23 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     renderTabbedSuggestions() {
         const { suggestions = [] } = this.props;
-        
+
         return (
             <Popper
+                disablePortal={false}
+                modifiers={[
+                    maxSize,
+                    applyMaxSize
+                ]}
                 open={this.state.suggestionsOpen}
                 anchorEl={this.containerRef.current || this.inputRef.current}
                 key={suggestions.length}
                 style={{ width: this.getSuggestionsWidth()}}
             >
                 <Paper onMouseDown={this.preventBlur}>
-                    <TabbedList 
-                        tabbedListContents={this.state.tabbedListContents} 
-                        renderListItem={this.renderSharingSuggestion} 
+                    <TabbedList
+                        tabbedListContents={this.state.tabbedListContents}
+                        renderListItem={this.renderSharingSuggestion}
                         selectedIndex={this.state.selectedSuggestionIndex}
                         selectedTab={this.state.selectedTab}
                         handleTabChange={this.handleTabChange}
@@ -341,6 +353,43 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         return this.containerRef.current ? this.containerRef.current.offsetWidth : 'auto';
     }
 });
+
+const popperMargin = 16; // Space to keep between autocomplete and window edge
+const popperPreferredMinHeight = 75; // Roughly 2 autocomplete suggestions
+
+const applyMaxSize = {
+    name: "applyMaxSize",
+    enabled: true,
+    phase: beforeWrite,
+    requires: ["maxSize"],
+    fn({ state }) {
+        // Set maximum usable space with margin
+        const { height } = state.modifiersData.maxSize;
+        const maxHeight = height - popperMargin;
+        state.styles.popper.maxHeight = `${maxHeight}px`;
+        state.elements.popper.firstChild.style.maxHeight = `${maxHeight}px`;
+
+        // Get input field bounds and window height
+        const referenceElementBounds = state.elements.reference.getBoundingClientRect();
+        const windowHeight = window.innerHeight
+
+        if (referenceElementBounds && windowHeight) {
+            // Get available space above / below input field
+            const spaceAbove = referenceElementBounds.y;
+            const spaceBelow = windowHeight - referenceElementBounds.bottom;
+
+            // Swap popper direction if smaller than ~2 suggestions and the alternate direction has more space
+            // Space check prevents infinite direction swapping as this gets run again when direction is swapped
+            if (maxHeight < popperPreferredMinHeight) {
+                if (state.options.placement === 'bottom' && spaceAbove > spaceBelow) {
+                    state.options.placement = 'top';
+                } else if (state.options.placement === 'top' && spaceBelow > spaceAbove) {
+                    state.options.placement = 'bottom';
+                }
+            }
+        }
+    }
+};
 
 type ChipClasses = 'root';
 
