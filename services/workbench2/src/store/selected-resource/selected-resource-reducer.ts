@@ -4,11 +4,17 @@
 
 import { selectedResourceActions } from "./selected-resource-actions";
 
-type SelectedResourceState = string | null;
+type SelectedResourceState = {
+    selectedResourceUuid: string | null
+};
 
-export const selectedResourceReducer = (state: SelectedResourceState = null, action: any) => {
+const initialState: SelectedResourceState = {
+    selectedResourceUuid: null
+}
+
+export const selectedResourceReducer = (state: SelectedResourceState = initialState, action: any) => {
     if (action.type === selectedResourceActions.SET_SELECTED_RESOURCE) {
-        return action.payload;
+        return { ...state, selectedResourceUuid: action.payload };
     }
     return state;
 };

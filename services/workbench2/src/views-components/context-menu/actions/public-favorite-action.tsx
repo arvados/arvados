@@ -16,7 +16,7 @@ import classNames from "classnames";
 
 const mapStateToProps = (state: RootState): Pick<TogglePublicFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'publicFavorites' | 'disabledButtons'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
-    selectedResourceUuid: state.selectedResourceUuid,
+    selectedResourceUuid: state.selectedResource.selectedResourceUuid,
     publicFavorites: state.publicFavorites,
     disabledButtons: new Set<string>(state.multiselect.disabledButtons),
 });

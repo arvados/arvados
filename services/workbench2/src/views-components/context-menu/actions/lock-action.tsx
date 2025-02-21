@@ -29,7 +29,7 @@ type ToggleLockActionProps = {
 
 const mapStateToProps = (state: RootState): Pick<ToggleLockActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources' | 'disabledButtons'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
-    selectedResourceUuid: state.selectedResourceUuid,
+    selectedResourceUuid: state.selectedResource.selectedResourceUuid,
     resources: state.resources,
     disabledButtons: new Set<string>(state.multiselect.disabledButtons),
 });

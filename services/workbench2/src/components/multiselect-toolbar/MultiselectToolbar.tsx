@@ -222,12 +222,12 @@ function findActionByName(name: string, actionSet: ContextMenuAction[][]) {
 
 //--------------------------------------------------//
 
-function mapStateToProps({auth, multiselect, resources, selectedResourceUuid}: RootState): MultiselectToolbarDataProps {
+function mapStateToProps({auth, multiselect, resources, selectedResource}: RootState): MultiselectToolbarDataProps {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
-        selectedResourceUuid,
+        selectedResourceUuid: selectedResource.selectedResourceUuid,
         pathName: window.location.pathname,
         resources,
     }

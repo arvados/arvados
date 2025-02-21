@@ -18,7 +18,7 @@ import { matchTrashRoute } from "routes/routes";
 
 const mapStateToProps = (state: RootState): Pick<ToggleTrashActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'resources' | 'disabledButtons' | 'pathname'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
-    selectedResourceUuid: state.selectedResourceUuid,
+    selectedResourceUuid: state.selectedResource.selectedResourceUuid,
     resources: state.resources,
     disabledButtons: new Set<string>(state.multiselect.disabledButtons),
     pathname: state.router.location?.pathname,

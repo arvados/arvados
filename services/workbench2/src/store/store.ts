@@ -201,7 +201,7 @@ const createRootReducer = (services: ServiceRepository) =>
         properties: propertiesReducer,
         resources: resourcesReducer,
         router: routerReducer,
-        selectedResourceUuid: selectedResourceReducer,
+        selectedResource: selectedResourceReducer,
         snackbar: snackbarReducer,
         treePicker: treePickerReducer,
         treePickerSearch: treePickerSearchReducer,
