@@ -221,9 +221,18 @@ def set_src_owner_uuid(resource, uuid, args):
 #     configuration directory.
 #
 def api_for_instance(instance_name, num_retries):
-    if not instance_name:
-        # Use environment
-        return arvados.api('v1')
+
+    default_api = None
+    default_instance = None
+    try:
+        default_api = arvados.api('v1')
+        default_instance = default_api.config()["ClusterID"]
+    except ValueError:
+        pass
+
+    if not instance_name or instance_name == default_instance:
+        # Use default settings
+        return default_api
 
     if '/' in instance_name:
         config_file = instance_name
