@@ -90,10 +90,10 @@ export const MultiselectToolbar = connect(
     withStyles(styles)(React.memo((props: MultiselectToolbarProps) => {
         const { classes, checkedList, resources, pathName, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
-        const selectedResourceUuid = usesDetailsCard(pathName) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
+        const selectedResourceUuid = usesDetailsCard(pathName) && selectedResourceArray.length < 2 ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
         const currentResourceKinds = singleResourceKind && !!singleResourceKind[0] ? singleResourceKind : props.getAllMenukinds(checkedList);
-        const currentPathIsTrash = matchTrashRoute(pathName || "");
+        const currentPathIsTrash = matchTrashRoute(pathName || "") || false;
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size

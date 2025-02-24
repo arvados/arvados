@@ -31,6 +31,7 @@ import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
 import { InlinePulser } from "components/loading/inline-pulser";
+import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
 
 type CssRules =
     | 'titleWrapper'
@@ -184,6 +185,7 @@ interface DataExplorerDataProps<T> {
     forceMultiSelectMode?: boolean;
     detailsPanelResourceUuid: string;
     isDetailsPanelOpen: boolean;
+    isSelectedResourceInDataExplorer: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -332,11 +334,13 @@ export const DataExplorer = withStyles(styles)(
 
                         </Grid>
                     )}
-                    {!this.state.hideToolbar && this.isSelectedResourceInTable(selectedResourceUuid) && (this.multiSelectToolbarInTitle
-                                               ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
-                                               : <MultiselectToolbar
-                                                     forceMultiSelectMode={forceMultiSelectMode}
-                                                     injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
+                    {!this.state.hideToolbar
+                        && (this.props.isSelectedResourceInDataExplorer || isMoreThanOneSelected(this.props.checkedList))
+                        && (this.multiSelectToolbarInTitle
+                            ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
+                            : <MultiselectToolbar
+                                    forceMultiSelectMode={forceMultiSelectMode}
+                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
                     }
                     {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                         <Grid
