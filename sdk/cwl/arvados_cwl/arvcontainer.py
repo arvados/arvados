@@ -327,7 +327,7 @@ class ArvadosContainer(JobBase):
                     "device_count": resources.get("cudaDeviceCount", 1),
                     "driver_version": cuda_req["cudaVersionMin"],
                     "hardware_target": aslist(cuda_req["cudaComputeCapability"]),
-                    "vram": cuda_req["cudaVram"]*1024*1024,
+                    "vram": self.builder.do_eval(cuda_req.get("cudaVram", 0))*1024*1024,
                 }
             else:
                 # Legacy API
@@ -342,10 +342,10 @@ class ArvadosContainer(JobBase):
             if self.arvrunner.api._rootDesc["revision"] >= "20250128":
                 runtime_constraints["gpu"] = {
                     "stack": "rocm",
-                    "device_count": rocm_req["rocmDeviceCountMin"],
+                    "device_count": self.builder.do_eval(rocm_req.get("rocmDeviceCountMin", None)) or self.builder.do_eval(rocm_req.get("rocmDeviceCountMax", 1)),
                     "driver_version": rocm_req["rocmDriverVersion"],
                     "hardware_target": aslist(rocm_req["rocmTarget"]),
-                    "vram": rocm_req["rocmVram"]*1024*1024,
+                    "vram": self.builder.do_eval(rocm_req["rocmVram"])*1024*1024,
                 }
             else:
                 raise WorkflowException("Arvados API server does not support ROCm (requires Arvados 3.1+)")

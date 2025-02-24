@@ -35,9 +35,9 @@ describe('<InstanceTypesPanel />', () => {
                         Preemptible: true,
                         IncludedScratch: 500,
                         RAM: 6000,
-                        CUDA: {
+                        GPU: {
                             DeviceCount: 1,
-                            HardwareCapability: '8.6',
+                            HardwareTarget: '8.6',
                             DriverVersion: '11.4',
                         },
                     },
@@ -77,10 +77,10 @@ describe('<InstanceTypesPanel />', () => {
             cy.get('@item').contains(`Cores${instanceType.VCPUs}`);
             cy.get('@item').contains(`Preemptible${instanceType.Preemptible.toString()}`);
             cy.get('@item').contains(`Max disk request${formatCWLResourceSize(instanceType.IncludedScratch)} (${formatFileSize(instanceType.IncludedScratch)})`);
-            if (instanceType.CUDA && instanceType.CUDA.DeviceCount > 0) {
-                cy.get('@item').contains(`CUDA GPUs${instanceType.CUDA.DeviceCount}`);
-                cy.get('@item').contains(`Hardware capability${instanceType.CUDA.HardwareCapability}`);
-                cy.get('@item').contains(`Driver version${instanceType.CUDA.DriverVersion}`);
+            if (instanceType.GPU && instanceType.GPU.DeviceCount > 0) {
+                cy.get('@item').contains(`GPUs${instanceType.GPU.DeviceCount}`);
+                cy.get('@item').contains(`Hardware target${instanceType.GPU.HardwareTarget}`);
+                cy.get('@item').contains(`Driver version${instanceType.GPU.DriverVersion}`);
             }
         });
     });

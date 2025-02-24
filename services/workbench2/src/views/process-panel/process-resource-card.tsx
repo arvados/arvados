@@ -88,24 +88,25 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                     avatar={<ResourceIcon className={classes.iconHeader} />}
                     title={
                         <Typography noWrap variant='h6' color='inherit'>
-                            Resources
+                                                    Resources
                         </Typography>
                     }
                     action={
                         <div>
-                            {usageReport && <Link href={usageReport} className={classes.reportButton} target="_blank"><ShowChartIcon /> Resource usage report</Link>}
-                            {doUnMaximizePanel && panelMaximized &&
-                                <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
-                                    <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
-                                </Tooltip>}
-                            {doMaximizePanel && !panelMaximized &&
-                                <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
-                                    <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
-                                </Tooltip>}
-                            {doHidePanel &&
-                                <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                    <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                                </Tooltip>}
+                              {usageReport &&
+                               <Link href={usageReport} className={classes.reportButton} target="_blank"><ShowChartIcon /> Resource usage report</Link>}
+                                          {doUnMaximizePanel && panelMaximized &&
+                                           <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
+                                               <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
+                                           </Tooltip>}
+                                                                   {doMaximizePanel && !panelMaximized &&
+                                                                    <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
+                                                                        <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
+                                                                    </Tooltip>}
+                                                                                            {doHidePanel &&
+                                                                                             <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                                                                                 <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
+                                                                                             </Tooltip>}
                         </div>
                     } />
                 <CardContent className={classes.content}>
@@ -123,31 +124,36 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                     <DetailsAttribute label="Disk" value={formatFileSize(diskRequest)} />
                                 </Grid>
 
-                                {process.container?.runtimeConstraints.cuda &&
-                                    process.container?.runtimeConstraints.cuda.device_count > 0 ?
-                                    <>
-                                        <Grid item xs={12}>
-                                            <DetailsAttribute label="CUDA devices" value={process.container?.runtimeConstraints.cuda.device_count} />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <DetailsAttribute label="CUDA driver version" value={process.container?.runtimeConstraints.cuda.driver_version} />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <DetailsAttribute label="CUDA hardware capability" value={process.container?.runtimeConstraints.cuda.hardware_capability} />
-                                        </Grid>
-                                    </> : null}
+                                {process.container?.runtimeConstraints.gpu &&
+                                 process.container?.runtimeConstraints.gpu.device_count > 0 ? <>
+                                     <Grid item xs={12}>
+                                         <DetailsAttribute label="GPU stack" value={process.container?.runtimeConstraints.gpu.stack} />
+                                     </Grid>
+                                <Grid item xs={12}>
+                                    <DetailsAttribute label="GPU devices" value={process.container?.runtimeConstraints.gpu.device_count} />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <DetailsAttribute label="GPU VRAM" value={process.container?.runtimeConstraints.gpu.vram} />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <DetailsAttribute label="GPU hardware target" value={process.container?.runtimeConstraints.gpu.hardware_target} />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <DetailsAttribute label="GPU driver version" value={process.container?.runtimeConstraints.gpu.driver_version} />
+                                </Grid>
+                                 </> : null}
 
                                 {process.container?.runtimeConstraints.keep_cache_ram &&
-                                    process.container?.runtimeConstraints.keep_cache_ram > 0 ?
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Keep cache (RAM)" value={formatFileSize(process.container?.runtimeConstraints.keep_cache_ram)} />
-                                    </Grid> : null}
+                                 process.container?.runtimeConstraints.keep_cache_ram > 0 ?
+                                                                                        <Grid item xs={12}>
+                                                                                            <DetailsAttribute label="Keep cache (RAM)" value={formatFileSize(process.container?.runtimeConstraints.keep_cache_ram)} />
+                                                                                        </Grid> : null}
 
                                 {process.container?.runtimeConstraints.keep_cache_disk &&
-                                    process.container?.runtimeConstraints.keep_cache_disk > 0 ?
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Keep cache (disk)" value={formatFileSize(process.container?.runtimeConstraints.keep_cache_disk)} />
-                                    </Grid> : null}
+                                 process.container?.runtimeConstraints.keep_cache_disk > 0 ?
+                                                                                         <Grid item xs={12}>
+                                                                                             <DetailsAttribute label="Keep cache (disk)" value={formatFileSize(process.container?.runtimeConstraints.keep_cache_disk)} />
+                                                                                         </Grid> : null}
 
                                 {process.container?.runtimeConstraints.API ? <Grid item xs={12}>
                                     <DetailsAttribute label="API access" value={process.container?.runtimeConstraints.API.toString()} />
@@ -162,54 +168,57 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                             {nodeInfo === null ? <Grid item xs={8}>
                                 No instance type recorded
                             </Grid>
-                                :
-                                <Grid container>
-                                    <Grid item xs={6}>
-                                        <DetailsAttribute label="Cores" value={nodeInfo.VCPUs} />
-                                    </Grid>
+                            :
+                             <Grid container>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="Cores" value={nodeInfo.VCPUs} />
+                                 </Grid>
 
-                                    <Grid item xs={6}>
-                                        <DetailsAttribute label="Provider type" value={nodeInfo.ProviderType} />
-                                    </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="Provider type" value={nodeInfo.ProviderType} />
+                                 </Grid>
 
-                                    <Grid item xs={6}>
-                                        <DetailsAttribute label="RAM" value={formatFileSize(nodeInfo.RAM)} />
-                                    </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="RAM" value={formatFileSize(nodeInfo.RAM)} />
+                                 </Grid>
 
-                                    <Grid item xs={6}>
-                                        <DetailsAttribute label="Price" value={"$" + nodeInfo.Price.toString()} />
-                                    </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="Price" value={"$" + nodeInfo.Price.toString()} />
+                                 </Grid>
 
-                                    <Grid item xs={6}>
-                                        <DetailsAttribute label="Disk" value={formatFileSize(nodeInfo.IncludedScratch + nodeInfo.AddedScratch)} />
-                                    </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="Disk" value={formatFileSize(nodeInfo.IncludedScratch + nodeInfo.AddedScratch)} />
+                                 </Grid>
 
-                                    <Grid item xs={6}>
-                                        <DetailsAttribute label="Preemptible" value={nodeInfo.Preemptible.toString()} />
-                                    </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="Preemptible" value={nodeInfo.Preemptible.toString()} />
+                                 </Grid>
 
-                                    {nodeInfo.CUDA && nodeInfo.CUDA.DeviceCount > 0 &&
-                                        <>
-                                            <Grid item xs={6}>
-                                                <DetailsAttribute label="CUDA devices" value={nodeInfo.CUDA.DeviceCount} />
-                                            </Grid>
+                                 {nodeInfo.GPU && nodeInfo.GPU.DeviceCount > 0 &&
+                                  <>
+                                      <Grid item xs={6}>
+                                          <DetailsAttribute label="GPU stack" value={nodeInfo.GPU.Stack} />
+                                      </Grid>
 
-                                            <Grid item xs={6}>
-                                            </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="GPU devices" value={nodeInfo.GPU.DeviceCount} />
+                                 </Grid>
 
-                                            <Grid item xs={6}>
-                                                <DetailsAttribute label="CUDA driver version" value={nodeInfo.CUDA.DriverVersion} />
-                                            </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="GPU VRAM" value={nodeInfo.GPU.VRAM} />
+                                 </Grid>
 
-                                            <Grid item xs={6}>
-                                            </Grid>
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="GPU hardware target" value={nodeInfo.GPU.HardwareTarget} />
+                                 </Grid>
 
-                                            <Grid item xs={6}>
-                                                <DetailsAttribute label="CUDA hardware capability" value={nodeInfo.CUDA.HardwareCapability} />
-                                            </Grid>
-                                        </>
-                                    }
-                                </Grid>}
+                                 <Grid item xs={6}>
+                                     <DetailsAttribute label="GPU driver version" value={nodeInfo.GPU.DriverVersion} />
+                                 </Grid>
+
+                                  </>
+                                 }
+                             </Grid>}
                         </Grid>
                     </Grid>
                     <Typography>* RAM available to the program is limited to Requested RAM, not Instance RAM</Typography>
