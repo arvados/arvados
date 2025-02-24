@@ -19,7 +19,7 @@ import { SidePanelCollapsed } from './side-panel-collapsed';
 
 const DRAWER_WIDTH = 240;
 
-type CssRules = 'root' | 'topButtonContainer';
+type CssRules = 'root' | 'sidePanelGridItem' | 'topButtonContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -28,6 +28,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%',
         overflowX: 'auto',
         width: DRAWER_WIDTH,
+    },
+    sidePanelGridItem: {
+        maxWidth: 'inherit',
+        wordBreak: 'break-word',
     },
     topButtonContainer: {
         display: 'flex',
@@ -83,8 +87,8 @@ export const SidePanel = withStyles(styles)(
         }, [props])
 
             return (
-                <Grid item xs>
-                    {props.isCollapsed ? 
+                <Grid item xs className={classes.sidePanelGridItem}>
+                    {props.isCollapsed ?
                         <div ref={splitPaneRef}>
                             <div>
                                 <SidePanelToggle />

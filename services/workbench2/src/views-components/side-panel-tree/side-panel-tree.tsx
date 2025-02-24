@@ -53,7 +53,7 @@ const mapDispatchToProps = (dispatch: Dispatch, props: SidePanelTreeProps): Side
 
 export const SidePanelTree = connect(undefined, mapDispatchToProps)(
     (props: SidePanelTreeActionProps) =>
-        <div data-cy="side-panel-tree" style={{minWidth: 240}}>
+        <div data-cy="side-panel-tree">
             <TreePicker {...props} render={renderSidePanelItem} pickerId={SIDE_PANEL_TREE} />
         </div>);
 
