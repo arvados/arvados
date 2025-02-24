@@ -4,7 +4,7 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 7.0.0'
+gem 'rails', '~> 7.2.2'
 gem 'responders'
 gem 'i18n'
 gem 'sprockets-rails'
@@ -32,7 +32,7 @@ gem 'jquery-rails'
 
 gem 'acts_as_api'
 
-gem 'passenger', '~> 6.0.0'
+gem 'passenger', '~> 6.0.26'
 
 # Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
 gem 'minitest', '5.10.3'
