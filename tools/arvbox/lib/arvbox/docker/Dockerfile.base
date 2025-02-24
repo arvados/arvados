@@ -1,9 +1,8 @@
-# syntax = docker/dockerfile:experimental
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-ARG BUILDTYPE
+ARG BUILDTYPE=dev
 
 # We're using poor man's conditionals (see
 # https://www.docker.com/blog/advanced-dockerfiles-faster-builds-and-smaller-images-using-buildkit-and-multistage-builds/)
@@ -13,14 +12,14 @@ ARG BUILDTYPE
 # tree, and use the $arvados_version commit (passed in via an argument).
 
 ###########################################################################################################
-FROM debian:11-slim as dev
-ENV DEBIAN_FRONTEND noninteractive
+FROM debian:11-slim AS dev
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     build-essential ca-certificates git libpam0g-dev wget
 
-ENV GOPATH /var/lib/gopath
+ENV GOPATH=/var/lib/gopath
 ARG go_version
 
 # Get Go
@@ -42,14 +41,14 @@ RUN --mount=type=bind,target=/usr/src/arvados \
     go install
 
 ###########################################################################################################
-FROM debian:11-slim as demo
-ENV DEBIAN_FRONTEND noninteractive
+FROM debian:11-slim AS demo
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     build-essential ca-certificates git libpam0g-dev wget
 
-ENV GOPATH /var/lib/gopath
+ENV GOPATH=/var/lib/gopath
 ARG go_version
 
 RUN cd /usr/src && \
@@ -72,11 +71,11 @@ RUN cd /usr/src && \
     go install
 
 ###########################################################################################################
-FROM ${BUILDTYPE} as base
+FROM ${BUILDTYPE} AS base
 
 ###########################################################################################################
 FROM debian:11
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 # The arvbox-specific dependencies are
 #  gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less openssh-server
@@ -85,7 +84,7 @@ RUN apt-get update && \
     gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less vim-tiny openssh-server && \
     apt-get clean
 
-ENV GOPATH /var/lib/gopath
+ENV GOPATH=/var/lib/gopath
 RUN echo buildtype is $BUILDTYPE
 
 RUN mkdir -p $GOPATH/bin/
@@ -128,9 +127,9 @@ RUN apt-key add --no-tty /tmp/8D81803C0EBFCD88.asc && \
 
 # Set UTF-8 locale
 RUN echo en_US.UTF-8 UTF-8 > /etc/locale.gen && locale-gen
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 ARG arvados_version
 RUN echo arvados_version is git commit $arvados_version
@@ -148,11 +147,11 @@ COPY $workdir/runit /etc/runit
 # arvbox mounts a docker volume at $ARVADOS_CONTAINER_PATH, make sure that that
 # doesn't overlap with the directory where `arvados-server install -type test`
 # put everything (/var/lib/arvados)
-ENV ARVADOS_CONTAINER_PATH /var/lib/arvados-arvbox
+ENV ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
 
 RUN /bin/ln -s /var/lib/arvados/bin/ruby /usr/local/bin/
 
 # Start the supervisor.
-ENV SVDIR /etc/service
+ENV SVDIR=/etc/service
 STOPSIGNAL SIGINT
 CMD ["/etc/runit/2"]
