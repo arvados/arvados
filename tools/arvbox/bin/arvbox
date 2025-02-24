@@ -375,7 +375,6 @@ stop() {
 }
 
 build() {
-    export DOCKER_BUILDKIT=1
     if ! test -f "$ARVBOX_DOCKER/Dockerfile.base" ;  then
         echo "Could not find Dockerfile (expected it at $ARVBOX_DOCKER/Dockerfile.base)"
         exit 1
