@@ -42,9 +42,8 @@ export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentIt
     const isTrashed = getResource<GroupResource>(trashResourceUuid)(resources)?.isTrashed || currentPathIsTrash;
     const isDisabled = disabledButtons.has(ContextMenuActionNames.MOVE_TO_TRASH);
 
-    return (
-        <Tooltip title={isTrashed ? "Restore" : "Move to trash"}>
-            {isInToolbar ? (
+    return isInToolbar ? (
+            <Tooltip title={isTrashed ? "Restore" : "Move to trash"}>
                 <IconButton
                     data-cy='multiselect-button'
                     className={classes.toolbarButton}
@@ -56,6 +55,7 @@ export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentIt
                             : <TrashIcon />}
                     </ListItemIcon>
                 </IconButton>
+            </Tooltip>
             ) : (
             <ListItem button
                 onClick={onClick}>
@@ -70,7 +70,5 @@ export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentIt
                         </Typography>
                     </ListItemText>
             </ListItem >
-            )}
-        </Tooltip>
-    )
+        )
 }));

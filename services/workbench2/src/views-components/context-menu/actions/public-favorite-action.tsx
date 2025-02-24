@@ -37,8 +37,8 @@ export const TogglePublicFavoriteAction = connect(mapStateToProps)(withStyles(co
     const isPublicFavorite = publicFaveUuid !== undefined && publicFavorites[publicFaveUuid] === true;
     const isDisabled = disabledButtons.has(ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES);
 
-    return <Tooltip title={isPublicFavorite ? "Remove from public favorites" : "Add to public favorites"}>
-        {isInToolbar ? (
+    return isInToolbar ? (
+        <Tooltip title={isPublicFavorite ? "Remove from public favorites" : "Add to public favorites"}>
             <IconButton
                 data-cy='multiselect-button'
                 className={classes.toolbarButton}
@@ -50,6 +50,7 @@ export const TogglePublicFavoriteAction = connect(mapStateToProps)(withStyles(co
                         : <PublicFavoriteIcon />}
                 </ListItemIcon>
             </IconButton>
+        </Tooltip>
         ) : (
             <ListItem
                 button
@@ -65,6 +66,5 @@ export const TogglePublicFavoriteAction = connect(mapStateToProps)(withStyles(co
                         : <Typography>Add to public favorites</Typography>}
                 </ListItemText>
             </ListItem>
-        )}
-    </Tooltip>
+        )
 }));

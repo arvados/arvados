@@ -42,9 +42,8 @@ export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentIte
     const isLocked = resource ? resourceIsFrozen(resource, resources) : false;
     const isDisabled = disabledButtons.has(ContextMenuActionNames.FREEZE_PROJECT);
 
-    return (
-        <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
-            {isInToolbar ? (
+    return isInToolbar ? (
+            <Tooltip title={isLocked ? "Unfreeze project" : "Freeze project"}>
                 <IconButton
                 data-cy='multiselect-button'
                 className={classes.toolbarButton}
@@ -56,6 +55,7 @@ export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentIte
                             : <FreezeIcon />}
                     </ListItemIcon>
                 </IconButton>
+            </Tooltip>
             ) : (
             <ListItem button onClick={onClick} data-cy="toggle-lock-action">
                 <ListItemIcon>
@@ -68,7 +68,6 @@ export const ToggleLockAction = connect(mapStateToProps)(withStyles(componentIte
                             ? <Typography>Unfreeze project</Typography>
                             : <Typography>Freeze project</Typography>}
                     </ListItemText>
-            </ListItem>)}
-        </Tooltip>
+            </ListItem>
     );
 })));
