@@ -8,6 +8,7 @@
     "aws_region": "",
     "aws_secret_key": "",
     "aws_source_ami": "ami-0a9d5908c7201e91d",
+    "aws_volume_gb": "20",
     "aws_associate_public_ip_address": "true",
     "aws_ena_support": "true",
     "ssh_user": "admin",
@@ -31,7 +32,7 @@
     "ami_name": "arvados-{{user `arvados_cluster`}}-compute-{{isotime \"20060102150405\"}}",
     "launch_block_device_mappings": [{
       "device_name": "/dev/xvda",
-      "volume_size": 20,
+      "volume_size": "{{user `aws_volume_gb`}}",
       "volume_type": "gp3",
       "delete_on_termination": true
     }],

@@ -28,12 +28,6 @@ arvados_config_file: /etc/arvados/config.yml
 # file with the dispatcher's public key here.
 #compute_authorized_keys: /dev/null
 
-# `arvados_compute_amd_rocm` is a flag that determines whether or not
-# AMD ROCm and associated drivers will be installed in the compute
-# node image. Set this to true if you want your Arvados cluster to
-# support containers with ROCm requirements.
-#arvados_compute_amd_rocm: true
-
 # `arvados_compute_nvidia` is a flag that determines whether or not
 # NVIDIA CUDA and associated drivers will be installed in the compute
 # node image. Set this to true if you want your Arvados cluster to
@@ -89,3 +83,11 @@ arvados_config_file: /etc/arvados/config.yml
 # this to false to build a compute image with the latest versions of those
 # dependencies.
 #arvados_compute_pin_packages: true
+
+# `arvados_compute_amd_rocm` is a flag that determines whether or not
+# AMD ROCm and associated drivers will be installed in the compute
+# node image. This support is still in development and untested.
+# Note this installs >30GB of packages and requires additional space
+# to compile the drivers. Make sure you allocate enough disk space for
+# this in your Packer configuration.
+#arvados_compute_amd_rocm: true

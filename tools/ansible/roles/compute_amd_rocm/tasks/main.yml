@@ -1,6 +1,12 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+#
+# THIS IS A PROTOTYPE - NOT FULLY TESTED.
+# This role automates the package install process in the ROCm documentation at
+# <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/detailed-install.html>.
+# As of February 2025 it runs successfully on a compatible kernel+distro,
+# but we haven't demonstrated it can run Arvados containers with ROCm yet.
 
 - name: Check for AMD ROCm distribution support
   ansible.builtin.fail:
@@ -19,6 +25,21 @@
     owner: root
     group: root
     mode: 0644
+
+- name: Install AMD ROCm build prerequisites
+  ansible.builtin.apt:
+    name:
+      - "linux-headers-{{ ansible_kernel }}"
+      # These are listed as installation prerequisites in AMD's documentation:
+      # they have Python tools to build scaffolding like bash completions.
+      - python3-setuptools
+      - python3-wheel
+
+- name: Install extra modules for AMD ROCm
+  when: "ansible_distribution == 'Ubuntu'"
+  ansible.builtin.apt:
+    name:
+      - "linux-modules-extra-{{ ansible_kernel }}"
 
 - name: Install AMD GPU+ROCm apt repositories
   ansible.builtin.deb822_repository:

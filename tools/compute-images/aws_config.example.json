@@ -7,6 +7,7 @@
   "aws_access_key": "",
   "aws_secret_key": "",
   "aws_source_ami": "ami-0a9d5908c7201e91d",
+  "aws_volume_gb": "20",
   "aws_associate_public_ip_address": "true",
   "aws_ena_support": "true",
   "ssh_user": "admin",
