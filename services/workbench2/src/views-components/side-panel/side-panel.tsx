@@ -17,18 +17,9 @@ import { RootState } from 'store/store';
 import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggle';
 import { SidePanelCollapsed } from './side-panel-collapsed';
 
-const DRAWER_WIDTH = 240;
-
-type CssRules = 'root' | 'sidePanelGridItem' | 'topButtonContainer';
+type CssRules = 'sidePanelGridItem' | 'topButtonContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-        background: theme.palette.background.paper,
-        borderRight: `1px solid ${theme.palette.divider}`,
-        height: '100%',
-        overflowX: 'auto',
-        width: DRAWER_WIDTH,
-    },
     sidePanelGridItem: {
         maxWidth: 'inherit',
         wordBreak: 'break-word',
