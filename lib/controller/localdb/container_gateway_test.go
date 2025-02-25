@@ -19,7 +19,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/router"
@@ -224,6 +226,62 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 			c.Check(gotAddr, check.Equals, expectAddr)
 		}
 	}
+}
+
+// Check that a localdb.Conn can proxy HTTP requests through a
+// crunchrun.Gateway to a stub server.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy(c *check.C) {
+	var servers []*httpserver.Server
+	for i := 0; i < 10; i++ {
+		srv := &httpserver.Server{
+			Addr: ":0",
+			Server: http.Server{
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					body := fmt.Sprintf("handled %s %s with Host %s", r.Method, r.URL.String(), r.Host)
+					c.Logf("%s", body)
+					w.Write([]byte(body))
+				}),
+			},
+		}
+		srv.Start()
+		defer srv.Close()
+		servers = append(servers, srv)
+	}
+
+	testMethods := []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"}
+
+	var wg sync.WaitGroup
+	for idx, srv := range servers {
+		idx, srv := idx, srv
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c.Logf("sending request to %s via %s", srv.Addr, s.gw.Address)
+			method := testMethods[idx%len(testMethods)]
+			_, port, err := net.SplitHostPort(srv.Addr)
+			c.Assert(err, check.IsNil)
+			vhost := s.ctrUUID + "-" + port + ".containers.example.com"
+			req, err := http.NewRequest(method, "https://"+vhost+"/via-"+s.gw.Address, nil)
+			c.Assert(err, check.IsNil)
+			portnum, err := strconv.Atoi(port)
+			c.Assert(err, check.IsNil)
+			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
+				UUID:    s.ctrUUID,
+				Port:    portnum,
+				Request: req,
+			})
+			c.Assert(err, check.IsNil)
+			rw := httptest.NewRecorder()
+			handler.ServeHTTP(rw, req)
+			resp := rw.Result()
+			c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+			body, err := io.ReadAll(resp.Body)
+			c.Assert(err, check.IsNil)
+			c.Check(string(body), check.Matches, `handled `+method+` /via-.* with Host \Q`+vhost+`\E`)
+		}()
+	}
+	wg.Wait()
 }
 
 func (s *ContainerGatewaySuite) setupLogCollection(c *check.C) {
