@@ -59,7 +59,6 @@
       become: yes
       ansible.builtin.apt:
         state: absent
-        autoremove: true
         purge: true
         name:
           - unattended-upgrades
@@ -109,3 +108,9 @@
         regexp: "^[# ]*prepend +domain-name-servers "
         line: "prepend domain-name-servers {{ dns_resolver }};"
       when: dns_resolver is defined
+
+    - name: Clean apt packages
+      become: yes
+      ansible.builtin.apt:
+        autoremove: true
+        clean: true
