@@ -44,22 +44,22 @@ const mapStateToProps = ({ router, sidePanel }: RootState): Partial<SidePanelTre
 export const SidePanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         ({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps ) => (
-                <Grid item xs className={classes.sidePanelGridItem}>
-                    {props.isCollapsed ?
-                        <div>
-                            <SidePanelToggle />
-                            <SidePanelCollapsed />
+            <Grid item xs className={classes.sidePanelGridItem}>
+                {props.isCollapsed ?
+                    <div>
+                        <SidePanelToggle />
+                        <SidePanelCollapsed />
+                    </div>
+                        :
+                    <div>
+                        <div className={classes.topButtonContainer}>
+                            <SidePanelButton key={props.currentRoute} />
+                            <SidePanelToggle/>
                         </div>
-                            :
-                        <div>
-                            <div className={classes.topButtonContainer}>
-                                <SidePanelButton key={props.currentRoute} />
-                                <SidePanelToggle/>
-                            </div>
-                            <SidePanelTree {...props} />
-                        </div>
-                    }
-                </Grid>
+                        <SidePanelTree {...props} />
+                    </div>
+                }
+            </Grid>
         )
     )
 );

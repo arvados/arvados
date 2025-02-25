@@ -15,7 +15,7 @@ export const navigateFromSidePanel = (id: string) =>
     };
 
 export const toggleSidePanel = (collapsedState: boolean) => {
-    return (dispatch) => {
+    return (dispatch: Dispatch) => {
         dispatch({type: sidePanelActions.TOGGLE_COLLAPSE, payload: !collapsedState})
     }
 }
