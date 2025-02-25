@@ -319,6 +319,8 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
         nestedSplitter.current && nestedSplitter.current.handleResize();
     };
 
+    const mainPanelSplitterMinSize = 300;
+
     const defaultSidePanelSplitterSize = 240;
     const minSidePanelSplitterSize = defaultSidePanelSplitterSize;
     const getSidePanelSplitterInitialSize = () => {
@@ -329,9 +331,10 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
     const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
 
     const defaultDetailsPanelSplitterSize = 320;
+    const minDetailsPanelSplitterSize = 250;
     const getDetailsPanelSplitterInitialSize = () => {
         const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
-        return splitterSize ? Number(splitterSize) : defaultDetailsPanelSplitterSize;
+        return splitterSize ? Math.max(Number(splitterSize), minDetailsPanelSplitterSize) : defaultDetailsPanelSplitterSize;
     };
 
     const applyCollapsedState = () => {
@@ -369,7 +372,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                     primaryIndex={1}
                     secondaryInitialSize={getSidePanelSplitterInitialSize()}
                     secondaryMinSize={minSidePanelSplitterSize}
-                    primaryMinSize={300}
+                    primaryMinSize={mainPanelSplitterMinSize}
                     // Resize event only exists for secondary
                     onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
                 >
@@ -394,9 +397,9 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                             customClassName={classNames(classes.splitter, classes.splitterDetails)}
                             percentage={false}
                             primaryIndex={0}
-                            primaryMinSize={300}
+                            primaryMinSize={mainPanelSplitterMinSize}
                             secondaryInitialSize={getDetailsPanelSplitterInitialSize()}
-                            secondaryMinSize={250}
+                            secondaryMinSize={minDetailsPanelSplitterSize}
                             onSecondaryPaneSizeChange={saveDetailsSplitterSize}
                             ref={nestedSplitter}
                         >
