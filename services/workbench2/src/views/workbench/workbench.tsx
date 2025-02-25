@@ -106,7 +106,6 @@ import { RestoreCollectionVersionDialog } from "views-components/collections-dia
 import { WebDavS3InfoDialog } from "views-components/webdav-s3-dialog/webdav-s3-dialog";
 import { pluginConfig } from "plugins";
 import { ElementListReducer } from "common/plugintypes";
-import { COLLAPSE_ICON_SIZE } from "views-components/side-panel-toggle/side-panel-toggle";
 import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 import classNames from "classnames";
@@ -182,9 +181,11 @@ interface WorkbenchDataProps {
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
 
+const SIDE_PANEL_COLLAPSED_WIDTH = 50;
+
 const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
 
-const defaultSidePanelSplitterSize = 90;
+const defaultSidePanelSplitterSize = 240;
 const getSidePanelSplitterInitialSize = () => {
     const splitterSize = localStorage.getItem("splitterSize");
     return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
@@ -330,35 +331,18 @@ routes = React.createElement(
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
 const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsPanelOpen, isUserActive, sessionIdleTimeout, currentSideWidth } = props
 
-    const applyCollapsedState = (savedWidthInPx) => {
-        const rightPanel: Element = document.getElementsByClassName("layout-pane")[1];
-        const totalWidth: number = document.getElementsByClassName("splitter-layout")[0]?.clientWidth;
-        const savedWidthInPercent = (savedWidthInPx / totalWidth) * 100
-        const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
+    const applyCollapsedState = () => {
+        const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];
 
-        if(isTransitioning && !!rightPanel) {
-            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`)
+        if (sidePanel) {
+            sidePanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `${SIDE_PANEL_COLLAPSED_WIDTH}px` : `${getSidePanelSplitterInitialSize()}px`};`);
         }
 
-        if (rightPanel) {
-            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`);
-        }
         const splitter = document.getElementsByClassName("layout-splitter")[0];
         sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
     };
 
-    const [savedWidth, setSavedWidth] = useState<number>(0)
-
-    useEffect(()=>{
-        if (isTransitioning) setSavedWidth(currentSideWidth)
-    }, [isTransitioning, currentSideWidth])
-
-    useEffect(()=>{
-        if (isTransitioning) applyCollapsedState(savedWidth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isTransitioning, savedWidth])
-
-    applyCollapsedState(savedWidth);
+    applyCollapsedState();
 
     return (
         <Grid
@@ -376,11 +360,12 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsP
             >
                 <SplitterLayout
                     customClassName={classNames(classes.splitter, classes.splitterSidePanel)}
-                    percentage={true}
-                    primaryIndex={0}
-                    primaryMinSize={10}
+                    percentage={false}
+                    primaryIndex={1}
                     secondaryInitialSize={getSidePanelSplitterInitialSize()}
-                    secondaryMinSize={40}
+                    secondaryMinSize={defaultSidePanelSplitterSize}
+                    primaryMinSize={300}
+                    // Resize event only exists for secondary
                     onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
                 >
                     {isUserActive && isNotLinking && (
