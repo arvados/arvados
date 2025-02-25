@@ -113,6 +113,7 @@ Clusters:
         # All parameters here are passed to the PG client library in a connection string;
         # see https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
         host: localhost
+        port: "5432"
         user: arvados
         password: ${database_pw}
         dbname: arvados_${database_env}
@@ -174,6 +175,7 @@ Clusters:
     PostgreSQL:
       Connection:
         host: localhost
+        port: "5432"
         user: arvados
         password: ${database_pw}
         dbname: arvados_test
