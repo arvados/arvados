@@ -28,6 +28,12 @@
     signed_by: "{{ nvidia_container_apt_url }}/gpgkey"
   register: nvidia_apt_task
 
+- name: Install NVIDIA CUDA build prerequisites
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - "linux-headers-{{ ansible_kernel }}"
+
 - name: Install NVIDIA packages
   become: yes
   ansible.builtin.apt:
