@@ -241,7 +241,8 @@ describe('Registered workflow panel tests', function() {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/projects/${activeUser.user.uuid}`);
                 cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Delete Workflow').click();
+                cy.get('[data-cy=context-menu]').should('exist', { timeout: 10000})
+                cy.get('[data-cy="Delete Workflow"]').click();
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click();
                 cy.get('[data-cy=project-panel] table tbody').should('not.contain', workflowResource.name);
             });
