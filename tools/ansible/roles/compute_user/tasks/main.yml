@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: Create compute user account
+  become: yes
   ansible.builtin.user:
     name: "{{ compute_user_account }}"
     comment: Crunch user,,,,
@@ -10,6 +11,7 @@
     password_lock: true
 
 - name: Give compute user sudo access
+  become: yes
   ansible.builtin.lineinfile:
     line: "{{ compute_user_account }} ALL=(ALL) NOPASSWD:ALL"
     path: /etc/sudoers.d/91-crunch
@@ -19,6 +21,7 @@
     mode: 0644
 
 - name: Create compute user .ssh directory
+  become: yes
   ansible.builtin.file:
     state: directory
     path: "{{ compute_user_home }}/.ssh"
@@ -26,6 +29,7 @@
     mode: 0700
 
 - name: Initialize compute user authorized keys
+  become: yes
   ansible.builtin.file:
     path: "{{ compute_user_home }}/.ssh/authorized_keys"
     state: touch
@@ -34,6 +38,7 @@
 
 - name: Install dispatch public key
   when: compute_dispatch_ssh_keygen.changed
+  become: yes
   ansible.builtin.lineinfile:
     path: "{{ compute_user_home }}/.ssh/authorized_keys"
     regexp: "^{{ item.0 | regex_escape }}\\s+{{ item.1 | regex_escape }}(\\s|$)"
@@ -42,6 +47,7 @@
 
 - name: Install public keys from Ansible configuration
   when: compute_authorized_keys is defined
+  become: yes
   ansible.builtin.lineinfile:
     path: "{{ compute_user_home }}/.ssh/authorized_keys"
     regexp: "^{{ item.0 | regex_escape }}\\s+{{ item.1 | regex_escape }}(\\s|$)"
@@ -49,6 +55,7 @@
   loop: "{{ lookup('ansible.builtin.file', compute_authorized_keys).splitlines()|select('match', '^\\w\\S*\\s+\\S')|map('split') }}"
 
 - name: Check that at least one SSH key was installed
+  become: yes
   ansible.builtin.stat:
     path: "{{ compute_user_home }}/.ssh/authorized_keys"
   register: compute_user_authorized_keys_stat

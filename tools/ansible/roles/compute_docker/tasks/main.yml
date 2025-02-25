@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: Configure Docker daemon
+  become: yes
   ansible.builtin.copy:
     content: "{{ docker_daemon|combine({'dns': [dns_resolver]} if dns_resolver is defined else {})|to_json }}"
     dest: /etc/docker/daemon.json
@@ -11,10 +12,12 @@
     mode: 0640
 
 - name: Install Docker cleaner
+  become: yes
   ansible.builtin.apt:
     name: arvados-docker-cleaner
 
 - name: Create Docker cleaner configuration directories
+  become: yes
   ansible.builtin.file:
     name: "{{ item }}"
     state: directory
@@ -26,6 +29,7 @@
     - /etc/arvados/docker-cleaner
 
 - name: Configure Docker cleaner
+  become: yes
   ansible.builtin.copy:
     content: "{{ docker_cleaner|to_json }}"
     dest: /etc/arvados/docker-cleaner/docker-cleaner.json

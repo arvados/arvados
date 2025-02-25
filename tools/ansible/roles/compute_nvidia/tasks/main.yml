@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: Install NVIDIA package pins
+  become: yes
   ansible.builtin.copy:
     src: arvados-nvidia.pref
     dest: /etc/apt/preferences.d/arvados-nvidia.pref
@@ -12,11 +13,13 @@
   when: "arvados_compute_pin_packages|bool"
 
 - name: Install NVIDIA CUDA apt repository
+  become: yes
   ansible.builtin.apt:
     deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}{{ ansible_distribution_minor_version if ansible_distribution == 'Ubuntu' else '' }}/{{ ansible_architecture }}/cuda-keyring_1.1-1_all.deb"
   register: cuda_apt_task
 
 - name: Install NVIDIA container toolkit apt repository
+  become: yes
   ansible.builtin.deb822_repository:
     name: nvidia-container-toolkit
     types: deb
@@ -26,6 +29,7 @@
   register: nvidia_apt_task
 
 - name: Install NVIDIA packages
+  become: yes
   ansible.builtin.apt:
     update_cache: "{{ cuda_apt_task.changed or nvidia_apt_task.changed }}"
     name:
@@ -40,17 +44,20 @@
 # (The AMD driver already makes itself conditional, so we don't need this
 # support there.)
 - name: Copy nvidia.conf modules to nvidia.avail
+  become: yes
   ansible.builtin.copy:
     src: /etc/modules-load.d/nvidia.conf
     dest: /etc/modules-load.d/nvidia.avail
     remote_src: true
 
 - name: Remove nvidia.conf modules from autoloading
+  become: yes
   ansible.builtin.file:
     dest: /etc/modules-load.d/nvidia.conf
     state: absent
 
 - name: Install dynamic module loading script
+  become: yes
   ansible.builtin.copy:
     src: detect-gpu.sh
     dest: /usr/local/sbin/detect-gpu.sh
@@ -59,6 +66,7 @@
     mode: 0755
 
 - name: Prepare systemd-modules-load override directory
+  become: yes
   ansible.builtin.file:
     path: /etc/systemd/system/systemd-modules-load.service.d
     state: directory
@@ -67,6 +75,7 @@
     mode: 0755
 
 - name: Install dynamic module load hook
+  become: yes
   ansible.builtin.copy:
     src: detect-gpu.conf
     dest: /etc/systemd/system/systemd-modules-load.service.d/arvados-detect-gpu.conf
@@ -77,12 +86,14 @@
 # crunch-run has its own CUDA initialization code.
 # We prefer to use that over NVIDIA's.
 - name: Query nvidia-persistenced.service
+  become: yes
   ansible.builtin.systemd_service:
     name: nvidia-persistenced.service
   register: nvidia_persistenced
 
 - name: Disable nvidia-persistenced.service
   when: "nvidia_persistenced.status.LoadState != 'not-found'"
+  become: yes
   ansible.builtin.systemd_service:
     name: nvidia-persistenced.service
     enabled: false
