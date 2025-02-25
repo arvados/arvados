@@ -253,6 +253,26 @@ describe('Favorites tests', function () {
                     });
             });
     });
+});
+
+describe('Favorites-SidePanel tests', function () {
+        let activeUser;
+        let adminUser;
+
+        before(function () {
+            // Only set up common users once. These aren't set up as aliases because
+            // aliases are cleaned up after every test. Also it doesn't make sense
+            // to set the same users on beforeEach() over and over again, so we
+            // separate a little from Cypress' 'Best Practices' here.
+            cy.getUser('admin', 'Admin', 'User', true, true)
+                .as('adminUser').then(function () {
+                    adminUser = this.adminUser;
+                });
+            cy.getUser('collectionuser1', 'Collection', 'User', false, true)
+                .as('activeUser').then(function () {
+                    activeUser = this.activeUser;
+                });
+        });
 
     it('shows the correct favorites and public favorites in the side panel', () => {
         cy.createProject({
