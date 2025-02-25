@@ -320,9 +320,10 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
     };
 
     const defaultSidePanelSplitterSize = 240;
+    const minSidePanelSplitterSize = defaultSidePanelSplitterSize;
     const getSidePanelSplitterInitialSize = () => {
         const splitterSize = localStorage.getItem("splitterSize");
-        return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
+        return splitterSize ? Math.max(Number(splitterSize), minSidePanelSplitterSize) : defaultSidePanelSplitterSize;
     };
 
     const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
@@ -367,7 +368,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                     percentage={false}
                     primaryIndex={1}
                     secondaryInitialSize={getSidePanelSplitterInitialSize()}
-                    secondaryMinSize={defaultSidePanelSplitterSize}
+                    secondaryMinSize={minSidePanelSplitterSize}
                     primaryMinSize={300}
                     // Resize event only exists for secondary
                     onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
