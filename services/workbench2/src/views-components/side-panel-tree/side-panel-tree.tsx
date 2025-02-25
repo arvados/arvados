@@ -25,7 +25,6 @@ import { FilterGroupIcon, ProjectsIcon } from 'components/icon/icon';
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
-    sidePanelProgress?: boolean;
     isCollapsed?: boolean;
     currentRoute?: string;
 }
