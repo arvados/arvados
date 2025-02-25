@@ -29,7 +29,6 @@ export interface SidePanelTreeProps {
     isCollapsed?: boolean;
     currentSideWidth?: number;
     currentRoute?: string;
-    isDetailsPanelTransitioning?: boolean;
     setCurrentSideWidth: (width: number) => void
 }
 

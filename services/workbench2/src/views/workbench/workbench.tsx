@@ -174,7 +174,6 @@ interface WorkbenchDataProps {
     isNotLinking: boolean;
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
-    isTransitioning: boolean;
     isDetailsPanelOpen: boolean;
     currentSideWidth: number;
 }
@@ -329,7 +328,7 @@ routes = React.createElement(
 );
 
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
-const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsPanelOpen, isUserActive, sessionIdleTimeout, currentSideWidth } = props
+const { classes, sidePanelIsCollapsed, isNotLinking, isDetailsPanelOpen, isUserActive, sessionIdleTimeout, currentSideWidth } = props
 
     const applyCollapsedState = () => {
         const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];

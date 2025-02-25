@@ -39,11 +39,10 @@ const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
     }
 });
 
-const mapStateToProps = ({ router, sidePanel, detailsPanel }: RootState) => ({
+const mapStateToProps = ({ router, sidePanel }: RootState) => ({
     currentRoute: router.location ? router.location.pathname : '',
     isCollapsed: sidePanel.collapsedState,
     currentSideWidth: sidePanel.currentSideWidth,
-    isDetailsPanelTransitioning: detailsPanel.isTransitioning
 });
 
 export const SidePanel = withStyles(styles)(
