@@ -169,34 +169,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-interface WorkbenchDataProps {
-    isUserActive: boolean;
-    isNotLinking: boolean;
-    sessionIdleTimeout: number;
-    sidePanelIsCollapsed: boolean;
-    isDetailsPanelOpen: boolean;
-}
-
-type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
-
-const SIDE_PANEL_COLLAPSED_WIDTH = 50;
-
-const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
-
-const defaultSidePanelSplitterSize = 240;
-const getSidePanelSplitterInitialSize = () => {
-    const splitterSize = localStorage.getItem("splitterSize");
-    return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
-};
-
-const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
-
-const defaultDetailsPanelSplitterSize = 320;
-const getDetailsPanelSplitterInitialSize = () => {
-    const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
-    return splitterSize ? Number(splitterSize) : defaultDetailsPanelSplitterSize;
-};
-
 let routes = (
     <>
         <Route
@@ -326,8 +298,36 @@ routes = React.createElement(
     pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children))
 );
 
+interface WorkbenchDataProps {
+    isUserActive: boolean;
+    isNotLinking: boolean;
+    sessionIdleTimeout: number;
+    sidePanelIsCollapsed: boolean;
+    isDetailsPanelOpen: boolean;
+}
+
+type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
+
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
-const { classes, sidePanelIsCollapsed, isNotLinking, isDetailsPanelOpen, isUserActive, sessionIdleTimeout } = props
+    const { classes, sidePanelIsCollapsed, isNotLinking, isDetailsPanelOpen, isUserActive, sessionIdleTimeout } = props;
+
+    const SIDE_PANEL_COLLAPSED_WIDTH = 50;
+
+    const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
+
+    const defaultSidePanelSplitterSize = 240;
+    const getSidePanelSplitterInitialSize = () => {
+        const splitterSize = localStorage.getItem("splitterSize");
+        return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
+    };
+
+    const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
+
+    const defaultDetailsPanelSplitterSize = 320;
+    const getDetailsPanelSplitterInitialSize = () => {
+        const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
+        return splitterSize ? Number(splitterSize) : defaultDetailsPanelSplitterSize;
+    };
 
     const applyCollapsedState = () => {
         const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];
