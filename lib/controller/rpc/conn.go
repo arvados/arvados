@@ -404,6 +404,10 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
+func (conn *Conn) ContainerHTTPProxy(ctx context.Context, options arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
+	return nil, errors.New("not implemented")
+}
+
 // ContainerSSH returns a connection to the out-of-band SSH server for
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.

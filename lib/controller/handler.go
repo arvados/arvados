@@ -25,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -40,6 +41,7 @@ type Handler struct {
 	setupOnce      sync.Once
 	federation     *federation.Conn
 	handlerStack   http.Handler
+	router         http.Handler
 	proxy          *proxy
 	secureClient   *http.Client
 	insecureClient *http.Client
@@ -63,6 +65,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		for strings.Contains(req.URL.Path, "//") {
 			req.URL.Path = strings.Replace(req.URL.Path, "//", "/", -1)
 		}
+	}
+	if len(req.Host) > 28 && arvadosclient.UUIDMatch(req.Host[:27]) && req.Host[27] == '-' {
+		// Requests to a vhost like
+		// "{ctr-uuid}-{port}.example.com" go straight to
+		// controller-specific routing, bypassing
+		// handlerStack's logic about proxying
+		// non-controller-specific paths through to RailsAPI.
+		h.router.ServeHTTP(w, req)
+		return
 	}
 	h.handlerStack.ServeHTTP(w, req)
 }
@@ -108,7 +119,7 @@ func (h *Handler) setup() {
 	}()
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.dbConnector.GetDB)
 	h.federation = federation.New(h.BackgroundContext, h.Cluster, &healthFuncs, h.dbConnector.GetDB)
-	rtr := router.New(h.federation, router.Config{
+	h.router = router.New(h.federation, router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
 		WrapCalls: api.ComposeWrappers(
 			ctrlctx.WrapCallsInTransactions(h.dbConnector.GetDB),
@@ -125,30 +136,30 @@ func (h *Handler) setup() {
 		Prefix: "/_health/",
 		Routes: healthRoutes,
 	})
-	mux.Handle("/arvados/v1/config", rtr)
-	mux.Handle("/arvados/v1/vocabulary", rtr)
-	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr) // must come before .../users/
-	mux.Handle("/arvados/v1/collections", rtr)
-	mux.Handle("/arvados/v1/collections/", rtr)
-	mux.Handle("/arvados/v1/users", rtr)
-	mux.Handle("/arvados/v1/users/", rtr)
-	mux.Handle("/arvados/v1/connect/", rtr)
-	mux.Handle("/arvados/v1/container_requests", rtr)
-	mux.Handle("/arvados/v1/container_requests/", rtr)
-	mux.Handle("/arvados/v1/groups", rtr)
-	mux.Handle("/arvados/v1/groups/", rtr)
-	mux.Handle("/arvados/v1/links", rtr)
-	mux.Handle("/arvados/v1/links/", rtr)
-	mux.Handle("/arvados/v1/authorized_keys", rtr)
-	mux.Handle("/arvados/v1/authorized_keys/", rtr)
-	mux.Handle("/login", rtr)
-	mux.Handle("/logout", rtr)
-	mux.Handle("/arvados/v1/api_client_authorizations", rtr)
-	mux.Handle("/arvados/v1/api_client_authorizations/", rtr)
+	mux.Handle("/arvados/v1/config", h.router)
+	mux.Handle("/arvados/v1/vocabulary", h.router)
+	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, h.router) // must come before .../users/
+	mux.Handle("/arvados/v1/collections", h.router)
+	mux.Handle("/arvados/v1/collections/", h.router)
+	mux.Handle("/arvados/v1/users", h.router)
+	mux.Handle("/arvados/v1/users/", h.router)
+	mux.Handle("/arvados/v1/connect/", h.router)
+	mux.Handle("/arvados/v1/container_requests", h.router)
+	mux.Handle("/arvados/v1/container_requests/", h.router)
+	mux.Handle("/arvados/v1/groups", h.router)
+	mux.Handle("/arvados/v1/groups/", h.router)
+	mux.Handle("/arvados/v1/links", h.router)
+	mux.Handle("/arvados/v1/links/", h.router)
+	mux.Handle("/arvados/v1/authorized_keys", h.router)
+	mux.Handle("/arvados/v1/authorized_keys/", h.router)
+	mux.Handle("/login", h.router)
+	mux.Handle("/logout", h.router)
+	mux.Handle("/arvados/v1/api_client_authorizations", h.router)
+	mux.Handle("/arvados/v1/api_client_authorizations/", h.router)
 
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
-	hs = prepend(hs, h.routeContainerEndpoints(rtr))
+	hs = prepend(hs, h.routeContainerEndpoints(h.router))
 	hs = h.setupProxyRemoteCluster(hs)
 	hs = prepend(hs, oidcAuthorizer.Middleware)
 	mux.Handle("/", hs)

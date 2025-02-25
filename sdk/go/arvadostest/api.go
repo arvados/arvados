@@ -152,6 +152,10 @@ func (as *APIStub) ContainerGatewayTunnel(ctx context.Context, options arvados.C
 	as.appendCall(ctx, as.ContainerGatewayTunnel, options)
 	return arvados.ConnectionResponse{}, as.Error
 }
+func (as *APIStub) ContainerHTTPProxy(ctx context.Context, options arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
+	as.appendCall(ctx, as.ContainerHTTPProxy, options)
+	return nil, as.Error
+}
 func (as *APIStub) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
 	as.appendCall(ctx, as.ContainerRequestCreate, options)
 	return arvados.ContainerRequest{}, as.Error

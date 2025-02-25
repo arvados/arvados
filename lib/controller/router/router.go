@@ -13,6 +13,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -692,23 +693,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 		ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
 		req = req.WithContext(ctx)
 
-		// Extract the token UUIDs (or a placeholder for v1 tokens)
-		var tokenUUIDs []string
-		for _, t := range creds.Tokens {
-			if strings.HasPrefix(t, "v2/") {
-				tokenParts := strings.Split(t, "/")
-				if len(tokenParts) >= 3 {
-					tokenUUIDs = append(tokenUUIDs, tokenParts[1])
-				}
-			} else {
-				end := t
-				if len(t) > 5 {
-					end = t[len(t)-5:]
-				}
-				tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+end)
-			}
-		}
-		httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": tokenUUIDs})
+		httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": creds.TokenUUIDs()})
 
 		logger.WithFields(logrus.Fields{
 			"apiEndpoint": endpoint,
@@ -726,6 +711,16 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 }
 
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if len(r.Host) > 28 && arvadosclient.UUIDMatch(r.Host[:27]) && r.Host[27] == '-' {
+		var port int
+		fmt.Sscanf(r.Host[28:], "%d", &port)
+		if port < 1 {
+			rtr.sendError(w, httpError(http.StatusBadRequest, fmt.Errorf("cannot parse port number from vhost %q", r.Host)))
+			return
+		}
+		rtr.serveContainerHTTPProxy(w, r, r.Host[:27], port)
+		return
+	}
 	switch strings.SplitN(strings.TrimLeft(r.URL.Path, "/"), "/", 2)[0] {
 	case "login", "logout", "auth":
 	default:
@@ -766,4 +761,28 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rtr.mux.ServeHTTP(w, r)
+}
+
+func (rtr *router) serveContainerHTTPProxy(w http.ResponseWriter, req *http.Request, uuid string, port int) {
+	// This API bypasses the generic auth middleware in
+	// addRoute(), so we need to load tokens into ctx (and log
+	// their UUIDs) here.
+	if cookie, err := req.Cookie("arvados_api_token"); err == nil && len(cookie.Value) != 0 {
+		if token, err := auth.DecodeTokenCookie(cookie.Value); err == nil {
+			creds := auth.NewCredentials(string(token))
+			ctx := auth.NewContext(req.Context(), creds)
+			httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": creds.TokenUUIDs()})
+			req = req.WithContext(ctx)
+		}
+	}
+	handler, err := rtr.backend.ContainerHTTPProxy(req.Context(), arvados.ContainerHTTPProxyOptions{
+		UUID:    uuid,
+		Port:    port,
+		Request: req,
+	})
+	if err != nil {
+		rtr.sendError(w, err)
+		return
+	}
+	handler.ServeHTTP(w, req)
 }

@@ -277,7 +277,7 @@ var webdavMethod = map[string]bool{
 }
 
 func (gw *Gateway) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Vary", "X-Arvados-Authorization, X-Arvados-Container-Gateway-Uuid, X-Webdav-Prefix, X-Webdav-Source")
+	w.Header().Set("Vary", "X-Arvados-Authorization, X-Arvados-Container-Gateway-Uuid, X-Arvados-Container-Target-Port, X-Webdav-Prefix, X-Webdav-Source")
 	reqUUID := req.Header.Get("X-Arvados-Container-Gateway-Uuid")
 	if reqUUID == "" {
 		// older controller versions only send UUID as query param
@@ -295,13 +295,20 @@ func (gw *Gateway) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("X-Arvados-Authorization-Response", gw.respondAuth)
 	switch {
 	case req.Method == "POST" && req.Header.Get("Upgrade") == "ssh":
+		// SSH tunnel from
+		// (*lib/controller/localdb.Conn)ContainerSSH()
 		gw.handleSSH(w, req)
 	case req.Header.Get("X-Webdav-Source") == "/log":
+		// WebDAV request for container log data
 		if !webdavMethod[req.Method] {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		gw.handleLogsWebDAV(w, req)
+	case req.Header.Get("X-Arvados-Container-Target-Port") != "":
+		// HTTP forwarded through
+		// (*lib/controller/localdb.Conn)ContainerHTTPProxy()
+		gw.handleForwardedHTTP(w, req)
 	default:
 		http.Error(w, "path not found", http.StatusNotFound)
 	}
@@ -339,6 +346,52 @@ func (gw *Gateway) webdavLogger(r *http.Request, err error) {
 	}
 }
 
+func (gw *Gateway) handleForwardedHTTP(w http.ResponseWriter, reqIn *http.Request) {
+	port := reqIn.Header.Get("X-Arvados-Container-Target-Port")
+	var host string
+	var err error
+	if gw.Target != nil {
+		host, err = gw.Target.IPAddress()
+		if err != nil {
+			http.Error(w, "container has no IP address: "+err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+	}
+	if host == "" {
+		http.Error(w, "container has no IP address", http.StatusServiceUnavailable)
+		return
+	}
+	client := http.Client{
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		// Transport: &http.Transport{
+		// 	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// 		return (&net.Dialer{}).DialContext(ctx, "tcp", net.JoinHostPort(host, port))
+		// 	},
+		// },
+	}
+	url := *reqIn.URL
+	url.Scheme = "http"
+	url.Host = net.JoinHostPort(host, port)
+	req, err := http.NewRequestWithContext(reqIn.Context(), reqIn.Method, url.String(), reqIn.Body)
+	req.Host = reqIn.Host
+	req.Header = reqIn.Header
+	req.Header.Del("X-Arvados-Container-Gateway-Uuid")
+	req.Header.Del("X-Arvados-Container-Target-Port")
+	req.Header.Del("X-Arvados-Authorization")
+	req.Header.Add("Via", "HTTP/1.1 arvados-crunch-run")
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+	for k, v := range resp.Header {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
 // handleSSH connects to an SSH server that allows the caller to run
 // interactive commands as root (or any other desired user) inside the
 // container. The tunnel itself can only be created by an
@@ -349,7 +402,7 @@ func (gw *Gateway) webdavLogger(r *http.Request, err error) {
 //
 // Connection: upgrade
 // Upgrade: ssh
-// X-Arvados-Target-Uuid: uuid of container
+// X-Arvados-Container-Gateway-Uuid: uuid of container
 // X-Arvados-Authorization: must match
 // hmac(AuthSecret,certfingerprint) (this prevents other containers
 // and shell nodes from connecting directly)
