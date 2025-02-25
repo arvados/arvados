@@ -97,10 +97,17 @@ class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionC
 class TestApiForInstance:
     _token_counter = itertools.count(1)
 
+    class ApiObject:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def config(self):
+            return {"ClusterID": "zzzzz"}
+
     @staticmethod
     def api_config(version, **kwargs):
         assert version == 'v1'
-        return kwargs
+        return TestApiForInstance.ApiObject(**kwargs)
 
     @pytest.fixture
     def patch_api(self, monkeypatch):
@@ -131,23 +138,27 @@ class TestApiForInstance:
 
     def test_from_environ(self, patch_api):
         actual = arv_copy.api_for_instance('', 0)
-        assert actual == {}
+        assert actual.kwargs == {}
+
+    def test_instance_matches_environ(self, patch_api):
+        actual = arv_copy.api_for_instance('zzzzz', 0)
+        assert actual.kwargs == {}
 
     def test_relative_path(self, patch_api, config_file, monkeypatch):
         monkeypatch.chdir(config_file.parent)
         actual = arv_copy.api_for_instance(f'./{config_file.name}', 0)
-        assert actual['host'] == 'localhost'
-        assert actual['token'] == self.expected_token(config_file)
+        assert actual.kwargs['host'] == 'localhost'
+        assert actual.kwargs['token'] == self.expected_token(config_file)
 
     def test_absolute_path(self, patch_api, config_file):
         actual = arv_copy.api_for_instance(str(config_file), 0)
-        assert actual['host'] == 'localhost'
-        assert actual['token'] == self.expected_token(config_file)
+        assert actual.kwargs['host'] == 'localhost'
+        assert actual.kwargs['token'] == self.expected_token(config_file)
 
     def test_search_path(self, patch_api, patch_search, config_file):
         actual = arv_copy.api_for_instance(config_file.stem, 0)
-        assert actual['host'] == 'localhost'
-        assert actual['token'] == self.expected_token(config_file)
+        assert actual.kwargs['host'] == 'localhost'
+        assert actual.kwargs['token'] == self.expected_token(config_file)
 
     def test_search_failed(self, patch_api, patch_search):
         with pytest.raises(SystemExit) as exc_info:
