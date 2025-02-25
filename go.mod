@@ -21,7 +21,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.54.3
 	github.com/aws/smithy-go v1.20.2
 	github.com/bmatcuk/doublestar/v4 v4.6.1
-	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/creack/pty v1.1.21
@@ -93,8 +92,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-asn1-ber/asn1-ber v1.4.1 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
