@@ -40,7 +40,6 @@ export interface MainPanelRootDataProps {
     config: Config;
     sidePanelIsCollapsed: boolean;
     isDetailsPanelOpen: boolean;
-    currentSideWidth: number;
     router: RouterState;
 }
 
@@ -53,7 +52,7 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, progressIndicator, user, buildInfo, uuidPrefix, config, linkAccountPanel,
-        sidePanelIsCollapsed, isDetailsPanelOpen, currentSideWidth, setCurrentRouteUuid, router}: MainPanelRootProps) =>{
+        sidePanelIsCollapsed, isDetailsPanelOpen, setCurrentRouteUuid, router}: MainPanelRootProps) =>{
 
             const working = progressIndicator.length > 0;
             const loading = progressIndicator.includes(WORKBENCH_LOADING_SCREEN);
@@ -95,8 +94,7 @@ export const MainPanelRoot = withStyles(styles)(
                         isUserActive={user.isActive}
                         sessionIdleTimeout={sessionIdleTimeout}
                         sidePanelIsCollapsed={sidePanelIsCollapsed}
-                        isDetailsPanelOpen={isDetailsPanelOpen}
-                        currentSideWidth={currentSideWidth}/>
+                        isDetailsPanelOpen={isDetailsPanelOpen} />
                     : <InactivePanel />)
                     : <LoginPanel />}
             </Grid>
