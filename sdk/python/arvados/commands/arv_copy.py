@@ -154,6 +154,12 @@ or the fallback value 2.
     src_arv = api_for_instance(args.source_arvados, args.retries)
     dst_arv = api_for_instance(args.destination_arvados, args.retries)
 
+    if src_arv.config()["ClusterID"] == dst_arv.config()["ClusterID"]:
+        logger.info("Copying within cluster %s", src_arv.config()["ClusterID"])
+    else:
+        logger.info("Source cluster is %s", src_arv.config()["ClusterID"])
+        logger.info("Destination cluster is %s", dst_arv.config()["ClusterID"])
+
     if not args.project_uuid:
         args.project_uuid = dst_arv.users().current().execute(num_retries=args.retries)["uuid"]
 
