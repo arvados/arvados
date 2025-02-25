@@ -313,7 +313,11 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
 
     const SIDE_PANEL_COLLAPSED_WIDTH = 50;
 
-    const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
+    const saveSidePanelSplitterSize = (size: number) => {
+        localStorage.setItem("splitterSize", size.toString());
+        // Trigger resize on subSplitters
+        nestedSplitter.current && nestedSplitter.current.handleResize();
+    };
 
     const defaultSidePanelSplitterSize = 240;
     const getSidePanelSplitterInitialSize = () => {
@@ -339,6 +343,8 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
         const splitter = document.getElementsByClassName("layout-splitter")[0];
         sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
     };
+
+    const nestedSplitter = React.useRef<{ handleResize: () => void }>();
 
     applyCollapsedState();
 
@@ -391,6 +397,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                             secondaryInitialSize={getDetailsPanelSplitterInitialSize()}
                             secondaryMinSize={250}
                             onSecondaryPaneSizeChange={saveDetailsSplitterSize}
+                            ref={nestedSplitter}
                         >
                             <Grid
                                 container
