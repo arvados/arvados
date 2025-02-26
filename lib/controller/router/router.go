@@ -775,12 +775,21 @@ func (rtr *router) serveContainerHTTPProxy(w http.ResponseWriter, req *http.Requ
 			httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": creds.TokenUUIDs()})
 		}
 	}
+
 	ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
 	req = req.WithContext(ctx)
+
+	// Load the NoForward value from the X-Arvados-No-Forward
+	// header, but don't pass the header through in the proxied
+	// request.
+	noForward := req.Header.Get("X-Arvados-No-Forward") != ""
+	req.Header.Del("X-Arvados-No-Forward")
+
 	handler, err := rtr.backend.ContainerHTTPProxy(req.Context(), arvados.ContainerHTTPProxyOptions{
-		UUID:    uuid,
-		Port:    port,
-		Request: req,
+		UUID:      uuid,
+		Port:      port,
+		Request:   req,
+		NoForward: noForward,
 	})
 	if err != nil {
 		rtr.sendError(w, err)
