@@ -253,39 +253,57 @@ describe('Favorites tests', function () {
                     });
             });
     });
+});
+
+describe('Favorites-SidePanel tests', function () {
+        let activeUser;
+        let adminUser;
+
+        before(function () {
+            // Only set up common users once. These aren't set up as aliases because
+            // aliases are cleaned up after every test. Also it doesn't make sense
+            // to set the same users on beforeEach() over and over again, so we
+            // separate a little from Cypress' 'Best Practices' here.
+            cy.getUser('admin', 'Admin', 'User', true, true)
+                .as('adminUser').then(function () {
+                    adminUser = this.adminUser;
+                });
+            cy.getUser('collectionuser1', 'Collection', 'User', false, true)
+                .as('activeUser').then(function () {
+                    activeUser = this.activeUser;
+                });
+        });
 
     it('shows the correct favorites and public favorites in the side panel', () => {
         cy.createProject({
             owningUser: adminUser,
-            projectName: `myFavoriteProject1 ${Math.floor(Math.random() * 999999)}`,
-        }).as('myFavoriteProject1');
+            projectName: `myFavoriteProject1`,
+        });
         cy.createProject({
             owningUser: adminUser,
-            projectName: `myFavoriteProject2 ${Math.floor(Math.random() * 999999)}`,
-        }).as('myFavoriteProject2');
+            projectName: `myFavoriteProject2`,
+        });
         cy.createProject({
             owningUser: adminUser,
-            projectName: `myPublicFavoriteProject1 ${Math.floor(Math.random() * 999999)}`,
-        }).as('myPublicFavoriteProject1');
+            projectName: `myPublicFavoriteProject1`,
+        });
         cy.createProject({
             owningUser: adminUser,
-            projectName: `myPublicFavoriteProject2 ${Math.floor(Math.random() * 999999)}`,
-        }).as('myPublicFavoriteProject2');
+            projectName: `myPublicFavoriteProject2`,
+        });
         cy.createCollection(adminUser.token, {
             owner_uuid: adminUser.user.uuid,
             name: `Test favorite collection ${Math.floor(Math.random() * 999999)}`,
-        }).as('testfavoriteCollection');
+        }).as('testFavoriteCollection');
 
-        cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2', '@testfavoriteCollection')
-        .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2, testfavoriteCollection]) {
+        cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2')
+        .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2, ]) {
                 cy.loginAs(adminUser);
 
                 //add two projects and collection to favorites
                 cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject1.name).rightclick();
                 cy.contains('Add to favorites').click();
                 cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject2.name).rightclick();
-                cy.contains('Add to favorites').click();
-                cy.get('[data-cy=process-data]').contains(testfavoriteCollection.name).rightclick();
                 cy.contains('Add to favorites').click();
 
                 //add two projects to public favorites
@@ -343,18 +361,26 @@ describe('Favorites tests', function () {
                 // Check project restored to favorites
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
+        });
 
-                // Trash favorited collection
-                cy.get('[data-cy=data-table]').contains(testfavoriteCollection.name).rightclick();
+        cy.getAll('@testFavoriteCollection')
+            .then(function ([testFavoriteCollection]) {
+                cy.loginAs(adminUser);
+                cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
+                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
+                cy.waitForDom()
+                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
                 // Check removed from favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', testfavoriteCollection.name);
-                // Untrash favorited project
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').click()
+                cy.get('[data-cy=side-panel-tree]').should('not.contain', testFavoriteCollection.name);
+                // Untrash favorited collection
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
-                cy.get('[data-cy=data-table]').contains(testfavoriteCollection.name).rightclick();
+                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                // Check project restored to favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testfavoriteCollection.name);
+                // Check collection restored to favorites
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testFavoriteCollection.name);
         });
     });
 });
