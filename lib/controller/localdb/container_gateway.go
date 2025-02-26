@@ -476,7 +476,13 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		delete(query, "arvados_api_token")
 		redir.RawQuery = query.Encode()
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Cookie", auth.EncodeTokenCookie([]byte(token)))
+			http.SetCookie(w, &http.Cookie{
+				Name:     "arvados_api_token",
+				Value:    auth.EncodeTokenCookie([]byte(token)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 			w.Header().Set("Location", redir.String())
 			w.WriteHeader(http.StatusSeeOther)
 		}), nil
