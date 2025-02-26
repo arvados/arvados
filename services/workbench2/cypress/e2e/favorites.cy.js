@@ -118,7 +118,6 @@ describe('Favorites tests', function () {
                     cy.get('[data-cy=projects-tree-favourites-tree-picker]')
                         .find('i')
                         .then(el => el.click());
-                        console.log('>>>',myProject1);
                     cy.contains(myProject1.name);
                     cy.contains(mySharedWritableProject.name);
                     cy.get('[data-cy=projects-tree-favourites-tree-picker]')
