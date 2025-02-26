@@ -765,16 +765,18 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (rtr *router) serveContainerHTTPProxy(w http.ResponseWriter, req *http.Request, uuid string, port int) {
 	// This API bypasses the generic auth middleware in
-	// addRoute(), so we need to load tokens into ctx (and log
-	// their UUIDs) here.
+	// addRoute(), so here we need to load tokens into ctx, log
+	// their UUIDs, and propagate the incoming X-Request-Id.
+	ctx := req.Context()
 	if cookie, err := req.Cookie("arvados_api_token"); err == nil && len(cookie.Value) != 0 {
 		if token, err := auth.DecodeTokenCookie(cookie.Value); err == nil {
 			creds := auth.NewCredentials(string(token))
-			ctx := auth.NewContext(req.Context(), creds)
+			ctx = auth.NewContext(ctx, creds)
 			httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": creds.TokenUUIDs()})
-			req = req.WithContext(ctx)
 		}
 	}
+	ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
+	req = req.WithContext(ctx)
 	handler, err := rtr.backend.ContainerHTTPProxy(req.Context(), arvados.ContainerHTTPProxyOptions{
 		UUID:    uuid,
 		Port:    port,
