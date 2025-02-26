@@ -246,17 +246,16 @@ func gatewayProxy(dial gatewayDialer, responseWriter http.ResponseWriter, setReq
 	return &httputil.ReverseProxy{
 		// Our custom Transport:
 		//
-		// - Uses a custom dialer to connect to the
-		// gateway (either directly or through a
-		// tunnel set up though ContainerTunnel)
+		// - Uses a custom dialer to connect to the gateway
+		// (either directly or through a tunnel set up though
+		// ContainerTunnel)
 		//
-		// - Verifies the gateway's TLS certificate
-		// using X-Arvados-Authorization headers.
+		// - Verifies the gateway's TLS certificate using
+		// X-Arvados-Authorization headers.
 		//
-		// This involves modifying the outgoing
-		// request header in DialTLSContext.
-		// (ReverseProxy certainly doesn't expect us
-		// to do this, but it works.)
+		// This involves modifying the outgoing request header
+		// in DialTLSContext.  (ReverseProxy certainly doesn't
+		// expect us to do this, but it works.)
 		Transport: &http.Transport{
 			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				tlsconn, requestAuth, respondAuth, err := dial()
@@ -272,9 +271,9 @@ func gatewayProxy(dial gatewayDialer, responseWriter http.ResponseWriter, setReq
 			// Scheme/host of incoming r.URL are
 			// irrelevant now, and may even be
 			// missing. Host is ignored by our
-			// DialTLSContext, but we need a
-			// generic syntactically correct URL
-			// for net/http to work with.
+			// DialTLSContext, but we need a generic
+			// syntactically correct URL for net/http to
+			// work with.
 			r.URL.Scheme = "https"
 			r.URL.Host = "0.0.0.0:0"
 			for k, v := range setRequestHeader {
