@@ -469,8 +469,9 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
 	query := opts.Request.URL.Query()
 	if token := query.Get("arvados_api_token"); token != "" {
-		// Redirect-with-cookie, so the container process
-		// doesn't get to see the token.
+		// Redirect-with-cookie avoids showing the token in
+		// the browser's location bar where it could be
+		// extracted by scripts served from the container.
 		redir := *opts.Request.URL
 		delete(query, "arvados_api_token")
 		redir.RawQuery = query.Encode()
