@@ -564,7 +564,8 @@ BEGIN { OFS="\0"; ORS="\0"; }
     for exclude in tmp log coverage Capfile\* \
                        config/deploy\* \
                        config/application.yml \
-                       config/database.yml; do
+                       config/database.yml \
+                       \*.service; do
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
