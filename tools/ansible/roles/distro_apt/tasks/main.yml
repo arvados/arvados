@@ -8,6 +8,7 @@
   when: distro_apt[ansible_distribution] is undefined
 
 - name: Set up distribution apt repository
+  become: yes
   ansible.builtin.deb822_repository:
     name: "{{ ansible_distribution|lower }}"
     types: deb
@@ -18,6 +19,7 @@
     components: "{{ distro_apt[ansible_distribution].components }}"
 
 - name: Set up distribution's security apt repository
+  become: yes
   ansible.builtin.deb822_repository:
     name: "{{ ansible_distribution|lower }}-security"
     types: deb

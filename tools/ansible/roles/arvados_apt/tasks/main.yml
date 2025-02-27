@@ -4,6 +4,7 @@
 
 - name: Install Arvados package pins
   when: "arvados_pin_version != ''"
+  become: yes
   ansible.builtin.template:
     src: arvados.pref.j2
     dest: /etc/apt/preferences.d/arvados.pref
@@ -12,6 +13,7 @@
     mode: 0644
 
 - name: Install Arvados apt repository
+  become: yes
   ansible.builtin.deb822_repository:
     name: arvados
     types: deb
