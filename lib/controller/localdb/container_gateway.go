@@ -38,7 +38,19 @@ import (
 )
 
 var (
-	forceProxyForTest       = false
+	// forceProxyForTest enables test cases to exercise the "proxy
+	// to a different controller instance" code path without
+	// running a second controller instance.  If this is set, an
+	// incoming request with NoForward==false is always proxied to
+	// the configured controller instance that matches the
+	// container gateway's tunnel endpoint, without checking
+	// whether the tunnel is actually connected to the current
+	// process.
+	forceProxyForTest = false
+
+	// forceInternalURLForTest is sent to the crunch-run gateway
+	// when setting up a tunnel in a test suite where
+	// service.URLFromContext() does not return anything.
 	forceInternalURLForTest *arvados.URL
 )
 
@@ -488,16 +500,6 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		}), nil
 	}
 
-	// Remove arvados_api_token cookie to ensure the http service
-	// in the container does not see it.
-	cookies := opts.Request.Cookies()
-	opts.Request.Header.Del("Cookie")
-	for _, cookie := range cookies {
-		if cookie.Name != "arvados_api_token" {
-			opts.Request.AddCookie(cookie)
-		}
-	}
-
 	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
 	if err != nil {
 		return nil, fmt.Errorf("container lookup failed: %w", err)
@@ -510,6 +512,17 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		opts.NoForward = true
 		return arpc.ContainerHTTPProxy(ctx, opts)
 	}
+
+	// Remove arvados_api_token cookie to ensure the http service
+	// in the container does not see it.
+	cookies := opts.Request.Cookies()
+	opts.Request.Header.Del("Cookie")
+	for _, cookie := range cookies {
+		if cookie.Name != "arvados_api_token" {
+			opts.Request.AddCookie(cookie)
+		}
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		gatewayProxy(dial, w, http.Header{
 			"X-Arvados-Container-Gateway-Uuid": {opts.UUID},

@@ -89,6 +89,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	// is how we advertise our internal URL and enable
 	// proxy-to-other-controller mode,
 	forceInternalURLForTest = &arvados.URL{Scheme: "https", Host: s.srv.Listener.Addr().String()}
+	s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
 	ac := &arvados.Client{
 		APIHost:   s.srv.Listener.Addr().String(),
 		AuthToken: arvadostest.SystemRootToken,
@@ -124,6 +125,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 }
 
 func (s *ContainerGatewaySuite) TearDownTest(c *check.C) {
+	forceProxyForTest = false
 	s.srv.Close()
 	s.localdbSuite.TearDownTest(c)
 }
@@ -229,11 +231,21 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 }
 
+// Connect to crunch-run container gateway directly.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct(c *check.C) {
 	s.testContainerHTTPProxy(c)
 }
 
+// Connect through a tunnel terminated at this controller process.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxy(c)
+}
+
+// Connect through a tunnel terminated at a different controller
+// process.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ProxyTunnel(c *check.C) {
+	forceProxyForTest = true
 	s.gw = s.setupGatewayWithTunnel(c)
 	s.testContainerHTTPProxy(c)
 }
@@ -272,6 +284,17 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 			vhost := s.ctrUUID + "-" + port + ".containers.example.com"
 			req, err := http.NewRequest(method, "https://"+vhost+"/via-"+s.gw.Address, nil)
 			c.Assert(err, check.IsNil)
+			// Token is already passed to
+			// ContainerHTTPProxy() call in s.userctx, but
+			// we also need to add an auth cookie to the
+			// http request: if the request gets passed
+			// through http (see forceProxyForTest), the
+			// target router will start with a fresh
+			// context and load tokens from the request.
+			req.AddCookie(&http.Cookie{
+				Name:  "arvados_api_token",
+				Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
+			})
 			portnum, err := strconv.Atoi(port)
 			c.Assert(err, check.IsNil)
 			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
@@ -320,13 +343,22 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, token st
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_CookieAuth(c *check.C) {
-	body := s.testContainerHTTPProxyUsingCurl(c, arvadostest.ActiveTokenV2, "GET", "/foobar")
-	c.Check(body, check.Matches, `handled GET /foobar with Host `+s.ctrUUID+`.*`)
+	s.testContainerHTTPProxyUsingCurl(c, arvadostest.ActiveTokenV2, "GET", "/foobar")
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth(c *check.C) {
-	body := s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
-	c.Check(body, check.Matches, `handled GET /foobar with Host `+s.ctrUUID+`.*`)
+	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_Tunnel(c *check.C) {
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_ProxyTunnel(c *check.C) {
+	forceProxyForTest = true
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
 }
 
 // Check other query parameters are preserved in the
@@ -395,6 +427,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, cook
 	c.Check(err, check.Equals, nil)
 	err = cmd.Wait()
 	c.Check(err, check.Equals, nil)
+	c.Check(buf.String(), check.Matches, `handled `+method+` /.*`)
 	return buf.String()
 }
 
@@ -457,8 +490,6 @@ func (s *ContainerGatewaySuite) saveLogAndCloseGateway(c *check.C) {
 
 func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 	forceProxyForTest = true
-	defer func() { forceProxyForTest = false }()
-
 	s.gw = s.setupGatewayWithTunnel(c)
 	s.setupLogCollection(c)
 
@@ -467,9 +498,6 @@ func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 
 		if broken {
 			delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
-		} else {
-			s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
-			defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 		}
 
 		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID+"/stderr.txt", nil)
@@ -768,17 +796,12 @@ func (s *ContainerGatewaySuite) TestCreateTunnel(c *check.C) {
 
 func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyOK(c *check.C) {
 	forceProxyForTest = true
-	defer func() { forceProxyForTest = false }()
-	s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
-	defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 	s.testConnectThroughTunnel(c, "")
 }
 
 func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyError(c *check.C) {
 	forceProxyForTest = true
-	defer func() { forceProxyForTest = false }()
-	// forceInternalURLForTest will not be usable because it isn't
-	// listed in s.cluster.Services.Controller.InternalURLs
+	delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 	s.testConnectThroughTunnel(c, `.*tunnel endpoint is invalid.*`)
 }
 
