@@ -109,10 +109,10 @@ GEM
     docile (1.4.1)
     erubi (1.13.1)
     extlib (0.9.16)
-    factory_bot (6.2.1)
+    factory_bot (6.4.5)
       activesupport (>= 5.0.0)
-    factory_bot_rails (6.2.0)
-      factory_bot (~> 6.2.0)
+    factory_bot_rails (6.4.3)
+      factory_bot (~> 6.4)
       railties (>= 5.0.0)
     faraday (2.8.1)
       base64
@@ -173,7 +173,7 @@ GEM
       ruby2_keywords (>= 0.0.5)
     multi_json (1.15.0)
     multipart-post (2.4.1)
-    net-imap (0.3.7)
+    net-imap (0.3.8)
       date
       net-protocol
     net-pop (0.1.2)
@@ -294,6 +294,7 @@ DEPENDENCIES
   andand
   arvados (~> 3.0.0.rc1)
   byebug
+  factory_bot (= 6.4.5)
   factory_bot_rails
   httpclient
   i18n
@@ -305,6 +306,7 @@ DEPENDENCIES
   minitest (= 5.10.3)
   mocha
   multi_json
+  net-imap (~> 0.3.8)
   oj
   optimist
   passenger (~> 6.0.0)
@@ -314,7 +316,7 @@ DEPENDENCIES
   rails-observers
   rails-perftest
   responders
-  ruby-prof
+  ruby-prof (~> 1.6.3)
   simplecov
   simplecov-rcov
   sprockets-rails

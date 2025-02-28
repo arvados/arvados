@@ -11,7 +11,11 @@ gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
-  gem 'ruby-prof'
+  # Enforce Ruby 2.7 compatibility for an indirect dependency.
+  # Can't use ~> because 6.4.6 changes the minimum Ruby (!).
+  gem 'factory_bot', '6.4.5'
+  # This version pin enforces Ruby 2.7 compatibility for a direct dependency.
+  gem 'ruby-prof', '~> 1.6.3'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -55,6 +59,9 @@ gem 'rails-controller-testing'
 gem 'webrick'
 
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
+
+# Enforce Ruby 2.7 compatibility for an indirect dependency.
+gem 'net-imap', '~> 0.3.8'
 
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
