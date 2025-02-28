@@ -93,7 +93,7 @@ export const MultiselectToolbar = connect(
         const selectedResourceUuid = usesDetailsCard(pathName) && selectedResourceArray.length < 2 ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null
         const currentResourceKinds = singleResourceKind && !!singleResourceKind[0] ? singleResourceKind : props.getAllMenukinds(checkedList);
-        const currentPathIsTrash = matchTrashRoute(pathName || "") || false;
+        const currentPathIsTrash = !!matchTrashRoute(pathName || "");
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
