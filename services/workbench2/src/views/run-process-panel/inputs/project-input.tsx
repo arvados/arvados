@@ -29,21 +29,23 @@ const isUndefined: any = (value?: ProjectResource) => (value === undefined);
 export interface ProjectInputProps {
     required: boolean;
     input: ProjectCommandInputParameter;
+    isRunProcessForm?: boolean;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
 type DialogContentCssRules = 'root' | 'pickerWrapper';
 
-export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
+export const ProjectInput = ({ required, input, options, isRunProcessForm }: ProjectInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
         validate={required ? isUndefined : undefined}
+        isRunProcessForm={isRunProcessForm}
         {...{
             options,
-            required
+            required,
         }} />;
 
 const format = (value?: ProjectResource) => value ? value.name : '';
@@ -51,6 +53,7 @@ const format = (value?: ProjectResource) => value ? value.name : '';
 interface ProjectInputComponentState {
     open: boolean;
     project?: ProjectResource;
+    hasProjectBeenSet: boolean;
 }
 
 interface HasUserUuid {
@@ -61,16 +64,24 @@ const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) })
 
 export const ProjectInputComponent = connect(mapStateToProps)(
     class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
+        isRunProcessForm?: boolean;
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
         required?: boolean;
     }, ProjectInputComponentState> {
         state: ProjectInputComponentState = {
             open: false,
+            hasProjectBeenSet: false,
         };
 
         componentDidMount() {
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
+        }
+
+        componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
+            if (!!prevState.project === false && !!this.state.project && this.state.hasProjectBeenSet === false) {
+                this.setState({ hasProjectBeenSet: true });
+            }
         }
 
         render() {
@@ -86,7 +97,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         closeDialog = () => {
-            this.setState({ open: false });
+            this.setState({ open: false, hasProjectBeenSet: true });
         }
 
         submit = () => {
@@ -105,12 +116,15 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         invalid = () => (!this.state.project || !this.state.project.canWrite);
 
         renderInput() {
+            const { open, project, hasProjectBeenSet } = this.state;
+            const { isRunProcessForm } = this.props;
+            if (isRunProcessForm && open === false && !project && !hasProjectBeenSet) this.openDialog();
             return <GenericInput
                 component={props =>
                     <Input
                         readOnly
                         fullWidth
-                        value={props.input.value}
+                        value={props.input.value || (isRunProcessForm && "Home Project")}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}

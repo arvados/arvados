@@ -94,6 +94,7 @@ export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcess
                                 label: 'Project where the workflow will run',
                             } as ProjectCommandInputParameter
                         }
+                        isRunProcessForm={true}
                         options={{ showOnlyOwned: false, showOnlyWritable: true }}
                     />
                 </Grid>
