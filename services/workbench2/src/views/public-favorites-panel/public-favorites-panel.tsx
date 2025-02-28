@@ -24,7 +24,7 @@ import {
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
 import {
-    openContextMenu,
+    openContextMenuAndSelect,
 } from 'store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -134,7 +134,7 @@ const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps 
         const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
         const kind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (kind && resource) {
-            dispatch<any>(openContextMenu(event, {
+            dispatch<any>(openContextMenuAndSelect(event, {
                 name: resource.name,
                 description: resource.description,
                 storageClassesDesired: (resource as CollectionResource).storageClassesDesired,

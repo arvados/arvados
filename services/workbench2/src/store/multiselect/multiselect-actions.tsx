@@ -45,6 +45,16 @@ export const isExactlyOneSelected = (checkedList: TCheckedList) => {
     return tally === 1 ? current : null
 };
 
+export const isMoreThanOneSelected = (checkedList: TCheckedList) => {
+    let tally = 0;
+    for (const uuid in checkedList) {
+        if (checkedList[uuid] === true) {
+            tally++;
+        }
+    }
+    return tally > 1 ? true : false
+};
+
 export const toggleMSToolbar = (isVisible: boolean) => {
     return dispatch => {
         dispatch({ type: multiselectActionConstants.TOGGLE_VISIBLITY, payload: isVisible });

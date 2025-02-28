@@ -15,7 +15,7 @@ import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from 'store/collections-content-
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { Dispatch } from 'redux';
 import {
-    openContextMenu
+    openContextMenuAndSelect
 } from 'store/context-menu/context-menu-actions';
 import { ResourceKind } from 'models/resource';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
@@ -117,7 +117,7 @@ const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelAc
         const resource = getResource<CollectionResource>(resourceUuid)(resources);
         const menuKind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (menuKind) {
-            dispatch<any>(openContextMenu(event, {
+            dispatch<any>(openContextMenuAndSelect(event, {
                 name: resource ? resource.name : '',
                 description: resource ? resource.description : '',
                 storageClassesDesired: resource ? resource.storageClassesDesired : [],

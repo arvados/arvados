@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 import React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DefaultTransformOrigin, createAnchorAt } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 import { RootState } from "store/store";
@@ -10,6 +12,8 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { sortMenuItems, ContextMenuKind, menuDirection } from "views-components/context-menu/menu-item-sort";
 import { ContextMenuState } from "store/context-menu/context-menu-reducer";
+import { ArvadosTheme } from "common/custom-theme";
+import { CustomStyleRulesCallback } from "common/custom-theme";
 
 export interface ContextMenuItem {
     name: string;
@@ -26,11 +30,29 @@ export interface ContextMenuProps {
     onItemClick: (action: ContextMenuItem, resource: ContextMenuResource | undefined) => void;
     onClose: () => void;
 }
+
+type CssRules = "nameRoot"
+
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    nameRoot: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        color: theme.palette.primary.main,
+    },
+});
+
+const NameComponent = withStyles(styles)(({name, classes}: {name: string} & WithStyles<CssRules>) =>
+        <ListItem className={classes.nameRoot}>
+            {name.length > 30 ? name.slice(0, 28) + '...' : name}
+        </ListItem>)
+
 export class ContextMenu extends React.PureComponent<ContextMenuProps> {
     render() {
         const { items, onClose, onItemClick } = this.props;
         const { open, position, resource } = this.props.contextMenu;
         const anchorEl = resource ? createAnchorAt(position) : undefined;
+        const name = resource?.name;
         return <Popover
             anchorEl={anchorEl}
             open={open}
@@ -39,6 +61,7 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
             anchorOrigin={DefaultTransformOrigin}
             onContextMenu={this.handleContextMenu}>
             <List data-cy='context-menu' dense>
+                {name && <NameComponent name={name} />}
                 {items.map((group, groupIndex) =>
                     <React.Fragment key={groupIndex}>
                         {group.map((item, actionIndex) =>

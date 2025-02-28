@@ -4,11 +4,22 @@
 
 import { selectedResourceActions } from "./selected-resource-actions";
 
-type SelectedResourceState = string | null;
+type SelectedResourceState = {
+    selectedResourceUuid: string | null,
+    isSelectedResourceInDataExplorer: boolean
+};
 
-export const selectedResourceReducer = (state: SelectedResourceState = null, action: any) => {
+const initialState: SelectedResourceState = {
+    selectedResourceUuid: null,
+    isSelectedResourceInDataExplorer: false
+}
+
+export const selectedResourceReducer = (state: SelectedResourceState = initialState, action: any) => {
     if (action.type === selectedResourceActions.SET_SELECTED_RESOURCE) {
-        return action.payload;
+        return { ...state, selectedResourceUuid: action.payload };
+    }
+    if (action.type === selectedResourceActions.SET_IS_IN_DATA_EXPLORER) {
+        return { ...state, isSelectedResourceInDataExplorer: action.payload };
     }
     return state;
 };

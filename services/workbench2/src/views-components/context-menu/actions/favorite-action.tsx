@@ -25,7 +25,7 @@ type ToggleFavoriteActionProps = {
 
 const mapStateToProps = (state: RootState): Pick<ToggleFavoriteActionProps, 'selectedResourceUuid' | 'contextMenuResourceUuid' | 'favorites' | 'disabledButtons'> => ({
     contextMenuResourceUuid: state.contextMenu.resource?.uuid || '',
-    selectedResourceUuid: state.selectedResourceUuid,
+    selectedResourceUuid: state.selectedResource.selectedResourceUuid,
     favorites: state.favorites,
     disabledButtons: new Set<string>(state.multiselect.disabledButtons),
 });
@@ -37,8 +37,8 @@ export const ToggleFavoriteAction = connect(mapStateToProps)(withStyles(componen
     const isFavorite = faveResourceUuid !== undefined && favorites[faveResourceUuid] === true;
     const isDisabled = disabledButtons.has(ContextMenuActionNames.ADD_TO_FAVORITES);
 
-    return <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-        {props.isInToolbar ? (
+    return props.isInToolbar ? (
+        <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
             <IconButton
                 data-cy='multiselect-button'
                 className={classes.toolbarButton}
@@ -50,6 +50,7 @@ export const ToggleFavoriteAction = connect(mapStateToProps)(withStyles(componen
                         : <AddFavoriteIcon />}
                 </ListItemIcon>
             </IconButton>
+        </Tooltip>
         ) : (
             <ListItem
                 button
@@ -65,6 +66,5 @@ export const ToggleFavoriteAction = connect(mapStateToProps)(withStyles(componen
                         : <Typography>Add to favorites</Typography>}
                 </ListItemText>
         </ListItem>
-        )}
-    </Tooltip>
+        )
 }));

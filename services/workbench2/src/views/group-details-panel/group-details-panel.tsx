@@ -12,7 +12,7 @@ import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
 import { WithStyles } from '@mui/styles';
@@ -142,7 +142,7 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = {
-    onContextMenu: openContextMenu,
+    onContextMenu: openContextMenuAndSelect,
     onAddUser: openAddGroupMembersDialog,
 };
 

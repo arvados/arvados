@@ -16,7 +16,7 @@ import { WorkflowResource } from 'models/workflow';
 import { ProcessOutputCollectionFiles } from 'views/process-panel/process-output-collection-files';
 import { WorkflowDetailsAttributes, RegisteredWorkflowPanelDataProps, getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
 import { getResource } from 'store/resources/resources';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io-card';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
@@ -225,7 +225,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                 };
                 // Avoid expanding/collapsing the panel
                 event.stopPropagation();
-                this.props.dispatch<any>(openContextMenu(event, resource));
+                this.props.dispatch<any>(openContextMenuAndSelect(event, resource));
             }
         }
     )
