@@ -298,6 +298,12 @@ routes = React.createElement(
     pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children))
 );
 
+type SplitterPanelSettings = {
+    storageKey: string;
+    minSize: number;
+    defaultSize: number;
+}
+
 interface WorkbenchDataProps {
     isUserActive: boolean;
     isNotLinking: boolean;
@@ -312,29 +318,32 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
     const { classes, sidePanelIsCollapsed, isNotLinking, isDetailsPanelOpen, isUserActive, sessionIdleTimeout } = props;
 
     const SIDE_PANEL_COLLAPSED_WIDTH = 50;
+    const MAIN_PANEL_MIN_SIZE = 300;
 
-    const saveSidePanelSplitterSize = (size: number) => {
-        localStorage.setItem("splitterSize", size.toString());
-        // Trigger resize on subSplitters
-        nestedSplitter.current && nestedSplitter.current.handleResize();
+    const splitterSettings: Record<string, SplitterPanelSettings> = {
+        LEFT: {
+            storageKey: "splitterSize",
+            minSize: 210,
+            defaultSize: 240,
+        },
+        RIGHT: {
+            storageKey: "detailsPanelSplitterSize",
+            minSize: 250,
+            defaultSize: 320,
+        },
     };
 
-    const mainPanelSplitterMinSize = 300;
-
-    const defaultSidePanelSplitterSize = 240;
-    const minSidePanelSplitterSize = 210;
-    const getSidePanelSplitterInitialSize = () => {
-        const splitterSize = localStorage.getItem("splitterSize");
-        return splitterSize ? Math.max(Number(splitterSize), minSidePanelSplitterSize) : defaultSidePanelSplitterSize;
+    const saveSplitterSize = (panel: SplitterPanelSettings) => (size: number) => {
+        localStorage.setItem(panel.storageKey, size.toString());
+        if (panel.storageKey === splitterSettings.LEFT.storageKey) {
+            // Trigger resize on subSplitters when LEFT panel resized
+            nestedSplitter.current && nestedSplitter.current.handleResize();
+        }
     };
 
-    const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
-
-    const defaultDetailsPanelSplitterSize = 320;
-    const minDetailsPanelSplitterSize = 250;
-    const getDetailsPanelSplitterInitialSize = () => {
-        const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
-        return splitterSize ? Math.max(Number(splitterSize), minDetailsPanelSplitterSize) : defaultDetailsPanelSplitterSize;
+    const getSplitterInitialSize = (panel: SplitterPanelSettings) => {
+        const storedSize = localStorage.getItem(panel.storageKey);
+        return storedSize ? Math.max(Number(storedSize), panel.minSize) : panel.defaultSize;
     };
 
     // Updates left panel collapsed state
@@ -342,7 +351,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
         const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];
 
         if (sidePanel) {
-            sidePanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `${SIDE_PANEL_COLLAPSED_WIDTH}px` : `${getSidePanelSplitterInitialSize()}px`};`);
+            sidePanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `${SIDE_PANEL_COLLAPSED_WIDTH}px` : `${getSplitterInitialSize(splitterSettings.LEFT)}px`};`);
         }
 
         const splitter = document.getElementsByClassName("layout-splitter")[0];
@@ -374,11 +383,11 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                     customClassName={classNames(classes.splitter, classes.splitterSidePanel)}
                     percentage={false}
                     primaryIndex={1}
-                    secondaryInitialSize={getSidePanelSplitterInitialSize()}
-                    secondaryMinSize={minSidePanelSplitterSize}
-                    primaryMinSize={mainPanelSplitterMinSize}
+                    secondaryInitialSize={getSplitterInitialSize(splitterSettings.LEFT)}
+                    secondaryMinSize={splitterSettings.LEFT.minSize}
+                    primaryMinSize={MAIN_PANEL_MIN_SIZE}
                     // Resize event only exists for secondary
-                    onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
+                    onSecondaryPaneSizeChange={saveSplitterSize(splitterSettings.LEFT)}
                 >
                     {isUserActive && isNotLinking && (
                         <Grid
@@ -401,10 +410,10 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                             customClassName={classNames(classes.splitter, classes.splitterDetails)}
                             percentage={false}
                             primaryIndex={0}
-                            primaryMinSize={mainPanelSplitterMinSize}
-                            secondaryInitialSize={getDetailsPanelSplitterInitialSize()}
-                            secondaryMinSize={minDetailsPanelSplitterSize}
-                            onSecondaryPaneSizeChange={saveDetailsSplitterSize}
+                            primaryMinSize={MAIN_PANEL_MIN_SIZE}
+                            secondaryInitialSize={getSplitterInitialSize(splitterSettings.RIGHT)}
+                            secondaryMinSize={splitterSettings.RIGHT.minSize}
+                            onSecondaryPaneSizeChange={saveSplitterSize(splitterSettings.RIGHT)}
                             ref={nestedSplitter}
                         >
                             <Grid
