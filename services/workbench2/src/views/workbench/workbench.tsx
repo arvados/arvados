@@ -124,7 +124,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& > .layout-splitter": {
             width: "3px",
         },
-        "& > .layout-splitter-disabled": {
+        "& > .layout-splitter[disabled]": {
             pointerEvents: "none",
             cursor: "pointer",
         },
@@ -358,7 +358,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
         }
 
         const splitter = document.getElementsByClassName("layout-splitter")[0];
-        sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
+        sidePanelIsCollapsed ? splitter?.setAttribute("disabled", "") : splitter?.removeAttribute("disabled");
 
         // Trigger resize on subSplitters
         nestedSplitter.current && nestedSplitter.current.handleResize();
