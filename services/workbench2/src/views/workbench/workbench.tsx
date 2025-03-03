@@ -322,7 +322,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
     const mainPanelSplitterMinSize = 300;
 
     const defaultSidePanelSplitterSize = 240;
-    const minSidePanelSplitterSize = defaultSidePanelSplitterSize;
+    const minSidePanelSplitterSize = 210;
     const getSidePanelSplitterInitialSize = () => {
         const splitterSize = localStorage.getItem("splitterSize");
         return splitterSize ? Math.max(Number(splitterSize), minSidePanelSplitterSize) : defaultSidePanelSplitterSize;
@@ -337,6 +337,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
         return splitterSize ? Math.max(Number(splitterSize), minDetailsPanelSplitterSize) : defaultDetailsPanelSplitterSize;
     };
 
+    // Updates left panel collapsed state
     const applyCollapsedState = () => {
         const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];
 
@@ -346,6 +347,9 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
 
         const splitter = document.getElementsByClassName("layout-splitter")[0];
         sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
+
+        // Trigger resize on subSplitters
+        nestedSplitter.current && nestedSplitter.current.handleResize();
     };
 
     const nestedSplitter = React.useRef<{ handleResize: () => void }>();
