@@ -128,6 +128,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             pointerEvents: "none",
             cursor: "pointer",
         },
+        "& > .layout-pane": {
+            overflow: "hidden auto",
+        },
     },
     splitterSidePanel: {
         "& > .layout-splitter::after": {
