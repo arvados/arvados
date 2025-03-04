@@ -113,8 +113,8 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         setProject = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
-            if ('kind' in data && data.kind === ResourceKind.PROJECT) {
-                this.setState({ project: data });
+            if ('kind' in data && (data.kind === ResourceKind.PROJECT || data.kind === ResourceKind.USER)) {
+                this.setState({ project: data as ProjectResource });
             } else {
                 this.setState({ project: undefined });
             }
@@ -140,7 +140,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                     <Input
                         readOnly
                         fullWidth
-                        value={props.input.value || (defaultOwner && this.getDisplayName(defaultOwner))}
+                        value={(defaultOwner && this.getDisplayName(defaultOwner)) || props.input.value}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}

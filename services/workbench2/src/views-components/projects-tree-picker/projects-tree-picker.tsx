@@ -35,7 +35,7 @@ import { getResource } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { Typography } from '@mui/material';
 import { UserResource } from 'models/user';
-
+import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 export interface ToplevelPickerProps {
     currentUuids?: string[];
     pickerId: string;
@@ -206,10 +206,13 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: publicFavorites }));
             }
 
-            setSelection(event: React.MouseEvent<HTMLElement>,
-                         item: TreeItem<ProjectsTreePickerItem>,
-                         pickerId: string) {
+            setSelection(event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) {
                 this.setState({activeItem: item.data});
+                if ('kind' in item.data) {
+                    if (item.data.kind === ResourceKind.PROJECT || item.data.kind === ResourceKind.USER) {
+                        this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(item.data.uuid));
+                    }
+                }
             }
 
             render() {
