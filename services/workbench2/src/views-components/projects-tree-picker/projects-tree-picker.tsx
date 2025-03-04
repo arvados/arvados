@@ -33,6 +33,8 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { formatFileSize } from 'common/formatters';
 import { getResource } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { Typography } from '@mui/material';
+import { UserResource } from 'models/user';
 
 export interface ToplevelPickerProps {
     currentUuids?: string[];
@@ -130,19 +132,28 @@ type ProjectsTreePickerCombinedProps = ToplevelPickerProps & ProjectsTreePickerS
 
 interface SelectionComponentState {
     activeItem?: ProjectsTreePickerItem;
-    activeItemDisplay: string;
 }
+
+const DetailsWithName = (resource: GroupContentsResource | UserResource, detailsComponent: JSX.Element) => {
+    const displayName = resource.kind === ResourceKind.GROUP ? resource.name
+                            : resource.kind === ResourceKind.USER ? `${resource.firstName} ${resource.lastName}`
+                                : "Home Projects";
+    return <div>
+        <Typography variant="h6" gutterBottom>{displayName}</Typography>
+        {detailsComponent}
+    </div>;
+};
 
 const Details = (props: { res?: ProjectsTreePickerItem }) => {
     if (props.res) {
         if ('kind' in props.res) {
             switch (props.res.kind) {
                 case ResourceKind.PROJECT:
-                    return <ProjectDetailsComponent project={props.res} hideEdit={true} />
+                    return DetailsWithName(props.res, <ProjectDetailsComponent project={props.res} hideEdit={true} />);
                 case ResourceKind.COLLECTION:
-                    return <CollectionDetailsAttributes item={props.res} />;
+                    return DetailsWithName(props.res, <CollectionDetailsAttributes item={props.res} />);
                 case ResourceKind.USER:
-                    return <RootProjectDetailsComponent rootProject={props.res} />;
+                    return DetailsWithName(props.res, <RootProjectDetailsComponent rootProject={props.res} />);
                     // case ResourceKind.PROCESS:
                     //                         return new ProcessDetails(res);
                     // case ResourceKind.WORKFLOW:
@@ -167,7 +178,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
         class FileInputComponent extends React.Component<ProjectsTreePickerCombinedProps> {
             state: SelectionComponentState = {
-                activeItemDisplay: '',
             };
 
             componentDidMount() {
@@ -184,21 +194,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
                 this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
                 this.setState({ activeItem: this.props.defaultOwner });
-                if  (this.props.defaultOwner) {
-                    this.setState({ activeItemDisplay: this.getDisplayName(this.props.defaultOwner) })
-                }
-            }
-
-            componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<SelectionComponentState>, snapshot?: any ): void {
-                if (prevState.activeItem !== this.state.activeItem && this.state.activeItem) {
-                    this.setState({ activeItemDisplay: this.getDisplayName(this.state.activeItem) })
-                }
-                if (prevProps.processOwnerUuid !== this.props.processOwnerUuid) {
-                    this.setState({ activeItem: this.props.defaultOwner });
-                    if  (this.props.defaultOwner) {
-                        this.setState({ activeItemDisplay: this.getDisplayName(this.props.defaultOwner) })
-                    }
-                }
             }
 
             componentWillUnmount() {
@@ -215,17 +210,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                          item: TreeItem<ProjectsTreePickerItem>,
                          pickerId: string) {
                 this.setState({activeItem: item.data});
-            }
-
-            getDisplayName(item: ProjectsTreePickerItem): string {
-                if ('kind' in item && item.kind === ResourceKind.USER) {
-                    return 'Home Project';
-                }
-                if ('name' in item) {
-                    return item.name;
-                } else {
-                    return '';
-                }
             }
 
             render() {
@@ -259,7 +243,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
 
                 return <>
                     <div className={this.props.classes.searchFlex}>
-                        <span data-cy="picker-dialog-project-search"><SearchInput value={this.state.activeItemDisplay} label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  /></span>
+                        <span data-cy="picker-dialog-project-search"><SearchInput value="" label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  /></span>
                 {this.props.includeCollections &&
                  <span data-cy="picker-dialog-collection-search" ><SearchInput value="" label="Collection search" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" /></span>}
                 </div>

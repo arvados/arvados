@@ -21,6 +21,7 @@ import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { RootState } from 'store/store';
 import { getUserUuid } from 'common/getuser';
+import { getResource } from 'store/resources/resources';
 
 export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
@@ -50,24 +51,30 @@ export const ProjectInput = ({ required, input, options, isRunProcessForm }: Pro
 
 const format = (value?: ProjectResource) => value ? value.name : '';
 
+type ProjectInputComponentProps = {
+    isRunProcessForm?: boolean;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+    required?: boolean;
+    defaultOwner: ProjectResource;
+}
+
 interface ProjectInputComponentState {
     open: boolean;
     project?: ProjectResource;
     hasProjectBeenSet: boolean;
+    defaultOwner?: ProjectResource;
 }
 
 interface HasUserUuid {
     userUuid: string;
 }
 
-const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
+const mapStateToProps = (state: RootState) => ({
+    userUuid: getUserUuid(state),
+    defaultOwner: getResource(state.runProcessPanel.processOwnerUuid)(state.resources) });
 
 export const ProjectInputComponent = connect(mapStateToProps)(
-    class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
-        isRunProcessForm?: boolean;
-        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
-        required?: boolean;
-    }, ProjectInputComponentState> {
+    class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & ProjectInputComponentProps, ProjectInputComponentState> {
         state: ProjectInputComponentState = {
             open: false,
             hasProjectBeenSet: false,
@@ -113,18 +120,27 @@ export const ProjectInputComponent = connect(mapStateToProps)(
             }
         }
 
-        invalid = () => (!this.state.project || !this.state.project.canWrite);
+        getDisplayName(item: ProjectsTreePickerItem): string {
+            if ('kind' in item && item.kind === ResourceKind.USER) {
+                return `${item.firstName} ${item.lastName} (root project)`;
+            }
+            if ('name' in item) {
+                return item.name;
+            } else {
+                return '';
+            }
+        }
 
         renderInput() {
             const { open, project, hasProjectBeenSet } = this.state;
-            const { isRunProcessForm } = this.props;
+            const { isRunProcessForm, defaultOwner } = this.props;
             if (isRunProcessForm && open === false && !project && !hasProjectBeenSet) this.openDialog();
             return <GenericInput
                 component={props =>
                     <Input
                         readOnly
                         fullWidth
-                        value={props.input.value || (isRunProcessForm && "Home Project")}
+                        value={props.input.value || (defaultOwner && this.getDisplayName(defaultOwner))}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
@@ -166,7 +182,6 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Cancel</Button>
                         <Button
-                            disabled={this.invalid()}
                             variant='contained'
                             color='primary'
                             onClick={this.submit}>Ok</Button>
