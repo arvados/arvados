@@ -25,12 +25,8 @@ import { FilterGroupIcon, ProjectsIcon } from 'components/icon/icon';
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
-    sidePanelProgress?: boolean;
     isCollapsed?: boolean;
-    currentSideWidth?: number;
     currentRoute?: string;
-    isDetailsPanelTransitioning?: boolean;
-    setCurrentSideWidth: (width: number) => void
 }
 
 type SidePanelTreeActionProps = Pick<TreePickerProps<ProjectResource | string>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
@@ -53,7 +49,7 @@ const mapDispatchToProps = (dispatch: Dispatch, props: SidePanelTreeProps): Side
 
 export const SidePanelTree = connect(undefined, mapDispatchToProps)(
     (props: SidePanelTreeActionProps) =>
-        <div data-cy="side-panel-tree" style={{minWidth: 240}}>
+        <div data-cy="side-panel-tree">
             <TreePicker {...props} render={renderSidePanelItem} pickerId={SIDE_PANEL_TREE} />
         </div>);
 

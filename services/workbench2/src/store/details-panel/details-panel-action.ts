@@ -23,8 +23,6 @@ export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
     OPEN_DETAILS_PANEL: ofType<number>(),
     LOAD_DETAILS_PANEL: ofType<string>(),
-    START_TRANSITION: ofType<{}>(),
-    END_TRANSITION: ofType<{}>(),
 });
 
 export type DetailsPanelAction = UnionOf<typeof detailsPanelActions>;
@@ -46,7 +44,6 @@ export const loadDetailsPanel = (uuid: string) =>
 
 export const openDetailsPanel = (uuid?: string, tabNr: number = 0) =>
     (dispatch: Dispatch) => {
-        startDetailsPanelTransition(dispatch)
         dispatch(detailsPanelActions.OPEN_DETAILS_PANEL(tabNr));
         if (uuid !== undefined) {
             dispatch<any>(selectOne(uuid));
@@ -83,17 +80,9 @@ export const toggleDetailsPanel = (uuid: string) => (dispatch: Dispatch, getStat
         setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
         }, SLIDE_TIMEOUT);
-        startDetailsPanelTransition(dispatch)
         dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         if (getState().detailsPanel.isOpened) {
             dispatch<any>(loadDetailsPanel(isTargetUuidNew ? uuid : detailsPanel.resourceUuid));
         }
     }
     };
-    
-    const startDetailsPanelTransition = (dispatch) => {
-        dispatch(detailsPanelActions.START_TRANSITION())
-    setTimeout(() => {
-        dispatch(detailsPanelActions.END_TRANSITION())
-    }, SLIDE_TIMEOUT);
-}

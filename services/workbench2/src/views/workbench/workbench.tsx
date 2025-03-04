@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -106,7 +106,6 @@ import { RestoreCollectionVersionDialog } from "views-components/collections-dia
 import { WebDavS3InfoDialog } from "views-components/webdav-s3-dialog/webdav-s3-dialog";
 import { pluginConfig } from "plugins";
 import { ElementListReducer } from "common/plugintypes";
-import { COLLAPSE_ICON_SIZE } from "views-components/side-panel-toggle/side-panel-toggle";
 import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 import classNames from "classnames";
@@ -125,9 +124,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& > .layout-splitter": {
             width: "3px",
         },
-        "& > .layout-splitter-disabled": {
+        "& > .layout-splitter[disabled]": {
             pointerEvents: "none",
             cursor: "pointer",
+        },
+        "& > .layout-pane": {
+            overflow: "hidden auto",
         },
     },
     splitterSidePanel: {
@@ -169,34 +171,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
     },
 });
-
-interface WorkbenchDataProps {
-    isUserActive: boolean;
-    isNotLinking: boolean;
-    sessionIdleTimeout: number;
-    sidePanelIsCollapsed: boolean;
-    isTransitioning: boolean;
-    isDetailsPanelOpen: boolean;
-    currentSideWidth: number;
-}
-
-type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
-
-const saveSidePanelSplitterSize = (size: number) => localStorage.setItem("splitterSize", size.toString());
-
-const defaultSidePanelSplitterSize = 90;
-const getSidePanelSplitterInitialSize = () => {
-    const splitterSize = localStorage.getItem("splitterSize");
-    return splitterSize ? Number(splitterSize) : defaultSidePanelSplitterSize;
-};
-
-const saveDetailsSplitterSize = (size: number) => localStorage.setItem("detailsPanelSplitterSize", size.toString());
-
-const defaultDetailsPanelSplitterSize = 320;
-const getDetailsPanelSplitterInitialSize = () => {
-    const splitterSize = localStorage.getItem("detailsPanelSplitterSize");
-    return splitterSize ? Number(splitterSize) : defaultDetailsPanelSplitterSize;
-};
 
 let routes = (
     <>
@@ -327,38 +301,72 @@ routes = React.createElement(
     pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children))
 );
 
+type SplitterPanelSettings = {
+    storageKey: string;
+    minSize: number;
+    defaultSize: number;
+}
+
+interface WorkbenchDataProps {
+    isUserActive: boolean;
+    isNotLinking: boolean;
+    sessionIdleTimeout: number;
+    sidePanelIsCollapsed: boolean;
+    isDetailsPanelOpen: boolean;
+}
+
+type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
+
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
-const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsPanelOpen, isUserActive, sessionIdleTimeout, currentSideWidth } = props
+    const { classes, sidePanelIsCollapsed, isNotLinking, isDetailsPanelOpen, isUserActive, sessionIdleTimeout } = props;
 
-    const applyCollapsedState = (savedWidthInPx) => {
-        const rightPanel: Element = document.getElementsByClassName("layout-pane")[1];
-        const totalWidth: number = document.getElementsByClassName("splitter-layout")[0]?.clientWidth;
-        const savedWidthInPercent = (savedWidthInPx / totalWidth) * 100
-        const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
+    const SIDE_PANEL_COLLAPSED_WIDTH = 50;
+    const MAIN_PANEL_MIN_SIZE = 300;
 
-        if(isTransitioning && !!rightPanel) {
-            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`)
-        }
-
-        if (rightPanel) {
-            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSidePanelSplitterInitialSize()}%`};`);
-        }
-        const splitter = document.getElementsByClassName("layout-splitter")[0];
-        sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
+    const splitterSettings: Record<string, SplitterPanelSettings> = {
+        LEFT: {
+            storageKey: "splitterSize",
+            minSize: 210,
+            defaultSize: 240,
+        },
+        RIGHT: {
+            storageKey: "detailsPanelSplitterSize",
+            minSize: 250,
+            defaultSize: 320,
+        },
     };
 
-    const [savedWidth, setSavedWidth] = useState<number>(0)
+    const saveSplitterSize = (panel: SplitterPanelSettings) => (size: number) => {
+        localStorage.setItem(panel.storageKey, size.toString());
+        if (panel.storageKey === splitterSettings.LEFT.storageKey) {
+            // Trigger resize on subSplitters when LEFT panel resized
+            nestedSplitter.current && nestedSplitter.current.handleResize();
+        }
+    };
 
-    useEffect(()=>{
-        if (isTransitioning) setSavedWidth(currentSideWidth)
-    }, [isTransitioning, currentSideWidth])
+    const getSplitterInitialSize = (panel: SplitterPanelSettings) => {
+        const storedSize = localStorage.getItem(panel.storageKey);
+        return storedSize ? Math.max(Number(storedSize), panel.minSize) : panel.defaultSize;
+    };
 
-    useEffect(()=>{
-        if (isTransitioning) applyCollapsedState(savedWidth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isTransitioning, savedWidth])
+    // Updates left panel collapsed state
+    const applyCollapsedState = () => {
+        const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];
 
-    applyCollapsedState(savedWidth);
+        if (sidePanel) {
+            sidePanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `${SIDE_PANEL_COLLAPSED_WIDTH}px` : `${getSplitterInitialSize(splitterSettings.LEFT)}px`};`);
+        }
+
+        const splitter = document.getElementsByClassName("layout-splitter")[0];
+        sidePanelIsCollapsed ? splitter?.setAttribute("disabled", "") : splitter?.removeAttribute("disabled");
+
+        // Trigger resize on subSplitters
+        nestedSplitter.current && nestedSplitter.current.handleResize();
+    };
+
+    const nestedSplitter = React.useRef<{ handleResize: () => void }>();
+
+    applyCollapsedState();
 
     return (
         <Grid
@@ -376,12 +384,13 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsP
             >
                 <SplitterLayout
                     customClassName={classNames(classes.splitter, classes.splitterSidePanel)}
-                    percentage={true}
-                    primaryIndex={0}
-                    primaryMinSize={10}
-                    secondaryInitialSize={getSidePanelSplitterInitialSize()}
-                    secondaryMinSize={40}
-                    onSecondaryPaneSizeChange={saveSidePanelSplitterSize}
+                    percentage={false}
+                    primaryIndex={1}
+                    secondaryInitialSize={getSplitterInitialSize(splitterSettings.LEFT)}
+                    secondaryMinSize={splitterSettings.LEFT.minSize}
+                    primaryMinSize={MAIN_PANEL_MIN_SIZE}
+                    // Resize event only exists for secondary
+                    onSecondaryPaneSizeChange={saveSplitterSize(splitterSettings.LEFT)}
                 >
                     {isUserActive && isNotLinking && (
                         <Grid
@@ -404,10 +413,11 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isDetailsP
                             customClassName={classNames(classes.splitter, classes.splitterDetails)}
                             percentage={false}
                             primaryIndex={0}
-                            primaryMinSize={300}
-                            secondaryInitialSize={getDetailsPanelSplitterInitialSize()}
-                            secondaryMinSize={250}
-                            onSecondaryPaneSizeChange={saveDetailsSplitterSize}
+                            primaryMinSize={MAIN_PANEL_MIN_SIZE}
+                            secondaryInitialSize={getSplitterInitialSize(splitterSettings.RIGHT)}
+                            secondaryMinSize={splitterSettings.RIGHT.minSize}
+                            onSecondaryPaneSizeChange={saveSplitterSize(splitterSettings.RIGHT)}
+                            ref={nestedSplitter}
                         >
                             <Grid
                                 container
