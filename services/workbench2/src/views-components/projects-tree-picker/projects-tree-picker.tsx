@@ -36,6 +36,8 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { Typography } from '@mui/material';
 import { UserResource } from 'models/user';
 import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
+import { loadResource } from 'store/resources/resources-actions';
+import { getUserUuid } from 'common/getuser';
 export interface ToplevelPickerProps {
     currentUuids?: string[];
     pickerId: string;
@@ -53,6 +55,8 @@ interface ProjectsTreePickerSearchProps {
     projectSearch: string;
     collectionFilter: string;
     defaultOwner: ProjectsTreePickerItem | undefined;
+    userUuid: string | undefined;
+    userRootProject: GroupContentsResource | undefined;
     processOwnerUuid: string;
 }
 
@@ -64,11 +68,15 @@ interface ProjectsTreePickerActionProps {
 const mapStateToProps = (state: RootState, props: ToplevelPickerProps): ProjectsTreePickerSearchProps => {
     const { search } = getProjectsTreePickerIds(props.pickerId);
     const defaultOwner = getResource<GroupContentsResource>(state.runProcessPanel.processOwnerUuid)(state.resources);
+    const userUuid = getUserUuid(state);
+    const userRootProject = getResource<GroupContentsResource>(userUuid)(state.resources);
     return {
         ...props,
         projectSearch: state.treePickerSearch.projectSearchValues[search] || state.treePickerSearch.collectionFilterValues[search],
         collectionFilter: state.treePickerSearch.collectionFilterValues[search],
         defaultOwner,
+        userUuid,
+        userRootProject,
         processOwnerUuid: state.runProcessPanel.processOwnerUuid,
     };
 };
@@ -194,6 +202,9 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
                 this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
                 this.setState({ activeItem: this.props.defaultOwner });
+                if (!this.props.userRootProject && this.props.userUuid) {
+                    this.props.dispatch<any>(loadResource(this.props.userUuid));
+                }
             }
 
             componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
