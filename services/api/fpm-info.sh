@@ -24,6 +24,7 @@ case "$TARGET" in
             automake
             gcc-c++
             libcurl-devel
+            libyaml-devel
             postgresql
             postgresql-devel
             "ruby-devel >= 2.7.0"
@@ -39,6 +40,7 @@ case "$TARGET" in
             g++
             libcurl-ssl-dev
             libpq-dev
+            libyaml-dev
             postgresql-client
             "ruby-dev >= 2.7.0"
             zlib1g-dev
@@ -54,6 +56,7 @@ case "$TARGET" in
             g++
             libcurl-ssl-dev
             libpq-dev
+            libyaml-dev
             postgresql-client
             "ruby-dev >= 2.7.0"
             zlib1g-dev

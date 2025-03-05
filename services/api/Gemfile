@@ -4,7 +4,8 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 7.0.0'
+# Rails 7.1 is the last version to support Ruby 2.7.
+gem 'rails', '~> 7.1.0'
 gem 'responders'
 gem 'i18n'
 gem 'sprockets-rails'
@@ -60,8 +61,9 @@ gem 'webrick'
 
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
-# Enforce Ruby 2.7 compatibility for an indirect dependency.
+# Enforce Ruby 2.7 compatibility for indirect dependencies.
 gem 'net-imap', '~> 0.3.8'
+gem 'securerandom', '~> 0.3.2'
 
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
