@@ -22,6 +22,7 @@ import { ResourceKind } from 'models/resource';
 import { RootState } from 'store/store';
 import { getUserUuid } from 'common/getuser';
 import { getResource } from 'store/resources/resources';
+import { loadProject } from 'store/workbench/workbench-actions';
 
 export type RunWfProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
@@ -70,7 +71,7 @@ interface HasUserUuid {
 const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'userRootProject' | 'defaultProject'> => {
     const userUuid = getUserUuid(state)
     const userRootProject = getResource<ProjectResource>(userUuid)(state.resources);
-    const defaultProject = state.runProcessPanel.processOwnerUuid ? getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources) : userRootProject;
+    const defaultProject = getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources) || userRootProject;
     return {
         userUuid,
         userRootProject,
@@ -91,6 +92,15 @@ const ProjectInputComponent = connect(mapStateToProps)(
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
             if (!this.state.project && this.props.defaultProject) {
+                this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
+            }
+            if (this.props.userUuid && !this.state.project) {
+                this.props.dispatch<any>(loadProject(this.props.userUuid));
+            }
+        }
+
+        componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
+            if (!this.state.project && this.props.defaultProject && prevState.project !== this.props.defaultProject) {
                 this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
             }
         }
