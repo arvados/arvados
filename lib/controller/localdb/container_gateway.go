@@ -369,22 +369,13 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	if err != nil {
 		return sshconn, err
 	}
-	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 	if !user.IsAdmin || !conn.cluster.Containers.ShellAccess.Admin {
 		if !conn.cluster.Containers.ShellAccess.User {
 			return sshconn, httpserver.ErrorWithStatus(errors.New("shell access is disabled in config"), http.StatusServiceUnavailable)
 		}
-		crs, err := conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})
+		err = conn.checkContainerLoginPermission(ctx, user.UUID, opts.UUID)
 		if err != nil {
 			return sshconn, err
-		}
-		for _, cr := range crs.Items {
-			if cr.ModifiedByUserUUID != user.UUID {
-				return sshconn, httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
-			}
-		}
-		if crs.ItemsAvailable != len(crs.Items) {
-			return sshconn, httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
 		}
 	}
 
@@ -456,6 +447,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	}
 
 	if !ctr.InteractiveSessionStarted {
+		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 		_, err = conn.railsProxy.ContainerUpdate(ctxRoot, arvados.UpdateOptions{
 			UUID: opts.UUID,
 			Attrs: map[string]interface{}{
@@ -473,6 +465,25 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	sshconn.Logger = ctxlog.FromContext(ctx)
 	sshconn.Header = http.Header{"Upgrade": {"ssh"}}
 	return sshconn, nil
+}
+
+// Check that userUUID is permitted to start an interactive login
+// session in ctrUUID.  Any returned error has an HTTPStatus().
+func (conn *Conn) checkContainerLoginPermission(ctx context.Context, userUUID, ctrUUID string) error {
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+	crs, err := conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", ctrUUID}}})
+	if err != nil {
+		return err
+	}
+	for _, cr := range crs.Items {
+		if cr.ModifiedByUserUUID != userUUID {
+			return httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
+		}
+	}
+	if crs.ItemsAvailable != len(crs.Items) {
+		return httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
+	}
+	return nil
 }
 
 // ContainerHTTPProxy proxies an incoming request through to the
@@ -500,9 +511,21 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		}), nil
 	}
 
+	user, err := conn.railsProxy.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
 	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
 	if err != nil {
 		return nil, fmt.Errorf("container lookup failed: %w", err)
+	}
+	// Future versions will have more options for access control.
+	// For now, access is only granted to the user who submitted
+	// all of the container requests that reference this
+	// container.
+	err = conn.checkContainerLoginPermission(ctx, user.UUID, ctr.UUID)
+	if err != nil {
+		return nil, err
 	}
 	dial, arpc, err := conn.findGateway(ctx, ctr, opts.NoForward)
 	if err != nil {

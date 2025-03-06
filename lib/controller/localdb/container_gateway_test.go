@@ -44,16 +44,17 @@ var _ = check.Suite(&ContainerGatewaySuite{})
 
 type ContainerGatewaySuite struct {
 	localdbSuite
-	reqUUID string
-	ctrUUID string
-	srv     *httptest.Server
-	gw      *crunchrun.Gateway
+	reqCreateOptions arvados.CreateOptions
+	reqUUID          string
+	ctrUUID          string
+	srv              *httptest.Server
+	gw               *crunchrun.Gateway
 }
 
 func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.localdbSuite.SetUpTest(c)
 
-	cr, err := s.localdb.ContainerRequestCreate(s.userctx, arvados.CreateOptions{
+	s.reqCreateOptions = arvados.CreateOptions{
 		Attrs: map[string]interface{}{
 			"command":             []string{"echo", time.Now().Format(time.RFC3339Nano)},
 			"container_count_max": 1,
@@ -72,7 +73,8 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 			"runtime_constraints": map[string]interface{}{
 				"vcpus": 1,
 				"ram":   2,
-			}}})
+			}}}
+	cr, err := s.localdb.ContainerRequestCreate(s.userctx, s.reqCreateOptions)
 	c.Assert(err, check.IsNil)
 	s.reqUUID = cr.UUID
 	s.ctrUUID = cr.ContainerUUID
@@ -321,6 +323,18 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_NoToken(c *check.C) {
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_InvalidToken(c *check.C) {
 	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2+"bogus", http.StatusUnauthorized)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_AnonymousToken(c *check.C) {
+	s.testContainerHTTPProxyError(c, arvadostest.AnonymousToken, http.StatusNotFound)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyFail_CRsDifferentUsers(c *check.C) {
+	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
+	cr, err := s.localdb.ContainerRequestCreate(rootctx, s.reqCreateOptions)
+	c.Assert(err, check.IsNil)
+	c.Assert(cr.ContainerUUID, check.Equals, s.ctrUUID)
+	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2, http.StatusForbidden)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ContainerNotReadable(c *check.C) {
@@ -757,15 +771,15 @@ func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
 }
 
-func (s *ContainerGatewaySuite) TestConnectFail(c *check.C) {
-	c.Log("trying with no token")
+func (s *ContainerGatewaySuite) TestConnectFail_NoToken(c *check.C) {
 	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, "")
 	_, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Check(err, check.ErrorMatches, `.* 401 .*`)
+}
 
-	c.Log("trying with anonymous token")
-	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AnonymousToken)
-	_, err = s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+func (s *ContainerGatewaySuite) TestConnectFail_AnonymousToken(c *check.C) {
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AnonymousToken)
+	_, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Check(err, check.ErrorMatches, `.* 404 .*`)
 }
 
