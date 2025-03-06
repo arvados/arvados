@@ -25,10 +25,12 @@ export interface ClusterConfigJSON {
     InstanceTypes?: {
         [key: string]: {
             AddedScratch: number;
-            CUDA?: {
-                DeviceCount: number;
-                DriverVersion: string;
-                HardwareCapability: string;
+            GPU?: {
+                Stack:          string;
+                DriverVersion:  string;
+                HardwareTarget: string;
+                DeviceCount:    number;
+                VRAM:           number;
             };
             IncludedScratch: number;
             Preemptible: boolean;

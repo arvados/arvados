@@ -29,13 +29,13 @@
         stdin: "{{ arvados_cluster.Containers.DispatchPrivateKey if key_url.scheme != 'file' else '' }}"
       register: compute_dispatch_ssh_keygen
 
-- name: Build compute node
+- name: Set up compute node base distribution
   # `default` is the name that the Packer Ansible plugin assigns to the
   # instance used to create the image.
   hosts: default
-  become: true
   tasks:
     - name: Bootstrap packages required for Ansible
+      become: yes
       ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
       loop:
         - update
@@ -44,18 +44,53 @@
         name: distro_apt
     - include_role:
         name: arvados_apt
+    - name: List linux-image packages pre-upgrade
+      ansible.builtin.shell:
+        cmd: |
+          dpkg-query --list "linux-image-[1-9]*-$(dpkg --print-architecture)" |
+          awk '($1 ~ /^[irp][HUFWti]$/) { print $2; }'
+      register: linux_image_preupgrade
     - name: Upgrade packages
+      become: yes
       ansible.builtin.apt:
         update_cache: true
         upgrade: true
     - name: Remove unwanted packages
+      become: yes
       ansible.builtin.apt:
         state: absent
-        autoremove: true
         purge: true
         name:
           - unattended-upgrades
+    - name: List linux-image packages post-upgrade
+      ansible.builtin.shell:
+        cmd: |
+          dpkg-query --list "linux-image-[1-9]*-$(dpkg --print-architecture)" |
+          awk '($1 ~ /^[irp][HUFWti]$/) { print $2; }'
+      register: linux_image_postupgrade
+    # Rebooting now accomplishes a few things: it means we can remove the old
+    # linux-image afterward, and the `ansible_kernel` fact will reflect what
+    # the image will boot into when used.
+    - name: Reboot into new kernel
+      when: "linux_image_preupgrade.stdout != linux_image_postupgrade.stdout"
+      become: yes
+      ansible.builtin.reboot: {}
+    - name: Remove old kernel(s)
+      when: "linux_image_preupgrade.stdout != linux_image_postupgrade.stdout"
+      become: yes
+      ansible.builtin.apt:
+        state: absent
+        purge: true
+        name: "{{ linux_image_preupgrade.stdout_lines }}"
+  handlers:
+    - name: apt update
+      ansible.builtin.debug:
+        msg: Skipping apt update handler before an apt upgrade
+        verbosity: 1
 
+- name: Install compute node software
+  hosts: default
+  tasks:
     - ansible.builtin.include_role:
         name: compute_encrypt_tmp
     - ansible.builtin.include_role:
@@ -67,14 +102,15 @@
         name: compute_user
 
     - name: Configure DNS
+      become: yes
       ansible.builtin.lineinfile:
         path: /etc/dhcp/dhclient.conf
         regexp: "^[# ]*prepend +domain-name-servers "
         line: "prepend domain-name-servers {{ dns_resolver }};"
       when: dns_resolver is defined
 
-  handlers:
-    - name: apt update
-      ansible.builtin.debug:
-        msg: Skipping apt update handler before an apt upgrade
-        verbosity: 1
+    - name: Clean apt packages
+      become: yes
+      ansible.builtin.apt:
+        autoremove: true
+        clean: true

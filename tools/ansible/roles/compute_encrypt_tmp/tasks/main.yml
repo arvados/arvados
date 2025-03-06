@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: Install encrypted partition dependencies
+  become: yes
   ansible.builtin.apt:
     name:
       - btrfs-progs
@@ -12,6 +13,7 @@
       - xfsprogs
 
 - name: Install encrypted partition script
+  become: yes
   ansible.builtin.copy:
     src: ensure-encrypted-partitions.sh
     dest: /usr/local/sbin/ensure-encrypted-partitions.sh
@@ -20,6 +22,7 @@
     mode: 0755
 
 - name: Define encrypted partition service
+  become: yes
   ansible.builtin.copy:
     src: arvados-ensure-encrypted-partitions.service
     dest: /etc/systemd/system/arvados-ensure-encrypted-partitions.service
@@ -28,6 +31,7 @@
     mode: 0644
 
 - name: Prepare encrypted partition service override directory
+  become: yes
   ansible.builtin.file:
     path: /etc/systemd/system/arvados-ensure-encrypted-partitions.service.d
     state: directory
@@ -41,6 +45,7 @@
   when: "arvados_compute_encrypted_tmp|lower == 'aws_ebs'"
 
 - name: Enable encrypted partition service
+  become: yes
   ansible.builtin.systemd_service:
     name: arvados-ensure-encrypted-partitions.service
     enabled: true

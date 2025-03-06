@@ -165,7 +165,10 @@ describe('Sharing tests', function () {
             .then(function ([]) {
                 cy.loginAs(adminUser);
                 cy.get('[data-cy=project-panel]').contains(collName).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Share').click({ waitForAnimations: false });
+                cy.get('[data-cy=context-menu]').within(() => {
+                    cy.get('[data-cy=Share]').click();
+            });
+
                 cy.get('button').get('[data-cy=add-invited-people]').should('be.disabled');
                 cy.get('[data-cy=invite-people-field] input').type('Anonymous');
                 cy.get('[data-cy=loading-spinner]').should('not.exist');

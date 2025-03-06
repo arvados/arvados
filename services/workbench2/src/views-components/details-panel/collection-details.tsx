@@ -18,7 +18,7 @@ import { formatDate, formatFileSize } from 'common/formatters';
 import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
@@ -159,7 +159,7 @@ const vbMapDispatchToProps = () =>
         handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource) => {
             const menuKind = dispatch<any>(resourceToMenuKind(collection.uuid));
             if (collection && menuKind) {
-                dispatch<any>(openContextMenu(event, {
+                dispatch<any>(openContextMenuAndSelect(event, {
                     name: collection.name,
                     uuid: collection.uuid,
                     description: collection.description,

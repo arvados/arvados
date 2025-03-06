@@ -12,7 +12,7 @@ import { RootState } from 'store/store';
 import { Resource } from 'models/resource';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { ArvadosTheme } from 'common/custom-theme';
@@ -139,7 +139,7 @@ export const ProjectPanel = withStyles(styles)(
                 const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(
-                        openContextMenu(event, {
+                        openContextMenuAndSelect(event, {
                             name: resource.name,
                             uuid: resource.uuid,
                             ownerUuid: resource.ownerUuid,

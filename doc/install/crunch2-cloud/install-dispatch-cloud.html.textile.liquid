@@ -126,7 +126,7 @@ To specify instance types with AMD GPUs, the compute image must be built with RO
 
 @DriverVersion@ is the version of the ROCm toolkit installed in your compute image (in "X.Y" format, do not include the patchlevel).
 
-@HardwareTarget@ (e.g. gfx1100) corresponds to the GPU architecture of the device.  Use @rocminfo@ to determine your hardware target.  See also https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name").
+@HardwareTarget@ (e.g. gfx1100) corresponds to the GPU architecture of the device.  Use @rocminfo@ to determine your hardware target.  See also "Accelerator and GPU hardware specifications":https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name") and "LLVM AMDGPU backend documentation":https://llvm.org/docs/AMDGPUUsage.html .
 
 @DeviceCount@ is the number of GPU cores available for this instance type.
 

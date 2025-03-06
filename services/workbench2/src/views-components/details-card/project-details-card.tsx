@@ -124,11 +124,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = ({ auth, selectedResourceUuid, resources, properties }: RootState) => {
+const mapStateToProps = ({ auth, selectedResource, resources, properties }: RootState) => {
     const currentResource = getResource(properties.currentRouteUuid)(resources);
     const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(resources);
     const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
-    const isSelected = selectedResourceUuid === properties.currentRouteUuid;
+    const isSelected = selectedResource.selectedResourceUuid === properties.currentRouteUuid;
 
     return {
         isAdmin: auth.user?.isAdmin,

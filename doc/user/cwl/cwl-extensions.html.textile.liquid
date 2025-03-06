@@ -238,7 +238,7 @@ Request support for AMD ROCm GPU acceleration in the container.  Assumes that th
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |rocmDriverVersion|string|Required.  The ROCm SDK version corresponding to the minimum driver version supported by the container (generally, the SDK version 'X.Y' the application was compiled against).|
-|rocmTarget|array of string|Required.  A list of one or more hardware targets (e.g. gfx1100) corresponding to the GPU architectures supported by the container.  Use @rocminfo@ to determine what hardware targets you have.  See also https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name").|
+|rocmTarget|array of string|Required.  A list of one or more hardware targets (e.g. gfx1100) corresponding to the GPU architectures supported by the container.  Use @rocminfo@ to determine what hardware targets you have.  See also "Accelerator and GPU hardware specifications":https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html (use the column "LLVM target name") and "LLVM AMDGPU backend documentation":https://llvm.org/docs/AMDGPUUsage.html .|
 |rocmDeviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
 |rocmDeviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @rocmDeviceCountMin@.|
 |rocmVram|integer|Requested amount of VRAM per device, in mebibytes (2**20)|

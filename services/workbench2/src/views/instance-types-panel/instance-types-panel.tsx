@@ -68,67 +68,72 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                 </Card>
             </Grid>
             {Object.keys(instances).length > 0 ?
-                Object.keys(instances)
-                    .sort((a, b) => {
-                        const typeA = instances[a];
-                        const typeB = instances[b];
+                                             Object.keys(instances)
+                                                   .sort((a, b) => {
+                                                       const typeA = instances[a];
+                                                       const typeB = instances[b];
 
-                        if (typeA.Price !== typeB.Price) {
-                            return typeA.Price - typeB.Price;
-                        } else {
-                            return typeA.ProviderType.localeCompare(typeB.ProviderType);
-                        }
-                    }).map((instanceKey) => {
-                        const instanceType = instances[instanceKey];
-                        const maxDiskRequest = instanceType.IncludedScratch;
-                        const keepBufferOverhead = calculateKeepBufferOverhead(instanceType.VCPUs);
-                        const maxRamRequest = discountRamByPercent(instanceType.RAM - config.Containers.ReserveExtraRAM - keepBufferOverhead);
+                                                       if (typeA.Price !== typeB.Price) {
+                                                           return typeA.Price - typeB.Price;
+                                                       } else {
+                                                           return typeA.ProviderType.localeCompare(typeB.ProviderType);
+                                                       }
+                                                   }).map((instanceKey) => {
+                                                       const instanceType = instances[instanceKey];
+                                                       const maxDiskRequest = instanceType.IncludedScratch;
+                                                       const keepBufferOverhead = calculateKeepBufferOverhead(instanceType.VCPUs);
+                                                       const maxRamRequest = discountRamByPercent(instanceType.RAM - config.Containers.ReserveExtraRAM - keepBufferOverhead);
 
-                        return <Grid data-cy={instanceKey} className={classes.instanceType} item sm={6} xs={12} key={instanceKey}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6">
-                                        {instanceKey}
-                                    </Typography>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Provider type" value={instanceType.ProviderType} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Price" value={formatCost(instanceType.Price)} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Cores" value={instanceType.VCPUs} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Max RAM request" value={`${formatCWLResourceSize(maxRamRequest)} (${formatFileSize(maxRamRequest)})`} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Max disk request" value={`${formatCWLResourceSize(maxDiskRequest)} (${formatFileSize(maxDiskRequest)})`} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="Preemptible" value={instanceType.Preemptible.toString()} />
-                                    </Grid>
-                                    {instanceType.CUDA && instanceType.CUDA.DeviceCount > 0 ?
-                                        <>
-                                            <Grid item xs={12}>
-                                                <DetailsAttribute label="CUDA GPUs" value={instanceType.CUDA.DeviceCount} />
-                                            </Grid>
-                                            <Grid item xs={12}>
-                                                <DetailsAttribute label="Hardware capability" value={instanceType.CUDA.HardwareCapability} />
-                                            </Grid>
-                                            <Grid item xs={12}>
-                                                <DetailsAttribute label="Driver version" value={instanceType.CUDA.DriverVersion} />
-                                            </Grid>
-                                        </> : <></>
-                                    }
-                                </CardContent>
-                            </Card>
-                        </Grid>;
-                    }) :
-                <NotFoundView
-                    icon={ResourceIcon}
-                    messages={["No instances found"]}
-                />
+                                                       return <Grid data-cy={instanceKey} className={classes.instanceType} item sm={6} xs={12} key={instanceKey}>
+                                                           <Card>
+                                                               <CardContent>
+                                                                   <Typography variant="h6">
+                                                                       {instanceKey}
+                                                                   </Typography>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Provider type" value={instanceType.ProviderType} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Price" value={formatCost(instanceType.Price)} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Cores" value={instanceType.VCPUs} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Max RAM request" value={`${formatCWLResourceSize(maxRamRequest)} (${formatFileSize(maxRamRequest)})`} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Max disk request" value={`${formatCWLResourceSize(maxDiskRequest)} (${formatFileSize(maxDiskRequest)})`} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Preemptible" value={instanceType.Preemptible.toString()} />
+                                                                   </Grid>
+                                                                   {instanceType.GPU && instanceType.GPU.DeviceCount > 0 ? <>
+                                                                       <Grid item xs={12}>
+                                                                           <DetailsAttribute label="Stack" value={instanceType.GPU.Stack} />
+                                                                       </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="VRAM" value={instanceType.GPU.VRAM} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="GPUs" value={instanceType.GPU.DeviceCount} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Hardware target" value={instanceType.GPU.HardwareTarget} />
+                                                                   </Grid>
+                                                                   <Grid item xs={12}>
+                                                                       <DetailsAttribute label="Driver version" value={instanceType.GPU.DriverVersion} />
+                                                                   </Grid>
+                                                                   </> : <></>
+                                                                   }
+                                                               </CardContent>
+                                                           </Card>
+                                                       </Grid>;
+                                                   }) :
+                                             <NotFoundView
+                                                 icon={ResourceIcon}
+                                                 messages={["No instances found"]}
+                                             />
             }
         </Grid>;
     }

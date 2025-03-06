@@ -15,10 +15,13 @@ export type OutputDetails = {
     failedToLoadOutputCollection?: boolean;
 }
 
-export interface CUDAFeatures {
-    DriverVersion: string;
-    HardwareCapability: string;
-    DeviceCount: number;
+export interface GPUFeatures {
+    // as of this writing, stack is "cuda" or "rocm"
+    Stack:          string;
+    DriverVersion:  string;
+    HardwareTarget: string;
+    DeviceCount:    number;
+    VRAM:           number;
 }
 
 export interface NodeInstanceType {
@@ -31,7 +34,7 @@ export interface NodeInstanceType {
     AddedScratch: number;
     Price: number;
     Preemptible: boolean;
-    CUDA: CUDAFeatures;
+    GPU: GPUFeatures;
 };
 
 export interface NodeInfo {

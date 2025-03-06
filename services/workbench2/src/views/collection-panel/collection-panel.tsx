@@ -17,7 +17,7 @@ import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
 import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
 import { ResourcesState, getResource } from 'store/resources/resources';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
@@ -293,7 +293,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                 };
                 // Avoid expanding/collapsing the panel
                 event.stopPropagation();
-                this.props.dispatch<any>(openContextMenu(event, resource));
+                this.props.dispatch<any>(openContextMenuAndSelect(event, resource));
             }
 
             onCopy = (message: string) =>

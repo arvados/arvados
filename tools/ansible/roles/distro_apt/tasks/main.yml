@@ -8,9 +8,22 @@
   when: distro_apt[ansible_distribution] is undefined
 
 - name: Set up distribution apt repository
+  become: yes
   ansible.builtin.deb822_repository:
     name: "{{ ansible_distribution|lower }}"
     types: deb
     uris: "{{ distro_apt[ansible_distribution].aws_mirror if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].mirror }}"
-    suites: "{{ ansible_distribution_release }}"
+    suites:
+      - "{{ ansible_distribution_release }}"
+      - "{{ ansible_distribution_release }}-updates"
+    components: "{{ distro_apt[ansible_distribution].components }}"
+
+- name: Set up distribution's security apt repository
+  become: yes
+  ansible.builtin.deb822_repository:
+    name: "{{ ansible_distribution|lower }}-security"
+    types: deb
+    uris: "{{ distro_apt[ansible_distribution].aws_security if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].security }}"
+    suites:
+      - "{{ ansible_distribution_release }}-security"
     components: "{{ distro_apt[ansible_distribution].components }}"

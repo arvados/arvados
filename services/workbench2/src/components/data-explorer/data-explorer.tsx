@@ -31,6 +31,7 @@ import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
 import { InlinePulser } from "components/loading/inline-pulser";
+import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
 
 type CssRules =
     | 'titleWrapper'
@@ -183,6 +184,8 @@ interface DataExplorerDataProps<T> {
     paperClassName?: string;
     forceMultiSelectMode?: boolean;
     detailsPanelResourceUuid: string;
+    isDetailsPanelOpen: boolean;
+    isSelectedResourceInDataExplorer: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -203,6 +206,7 @@ interface DataExplorerActionProps<T> {
     setSelectedUuid: (uuid: string) => void;
     usesDetailsCard: (uuid: string) => boolean;
     loadDetailsPanel: (uuid: string) => void;
+    setIsSelectedResourceInDataExplorer: (isIn: boolean) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -225,11 +229,15 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
-            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard } = this.props;
+            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer, setSelectedUuid } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
+                setIsSelectedResourceInDataExplorer(this.isSelectedResourceInTable(selectedResourceUuid));
                 this.setState({
                     hideToolbar: usesDetailsCard(path || '') ? selectedResourceUuid === this.props.currentRouteUuid : false,
                 })
+            }
+            if (this.props.isDetailsPanelOpen !== prevProps.isDetailsPanelOpen && this.props.isDetailsPanelOpen === false) {
+                setSelectedUuid(currentRouteUuid);
             }
             if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
                 this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
@@ -240,6 +248,10 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
+        }
+
+        isSelectedResourceInTable = (resourceUuid) => {
+            return this.props.items.includes(resourceUuid);
         }
 
         render() {
@@ -322,11 +334,13 @@ export const DataExplorer = withStyles(styles)(
 
                         </Grid>
                     )}
-                    {!this.state.hideToolbar && (this.multiSelectToolbarInTitle
-                                               ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
-                                               : <MultiselectToolbar
-                                                     forceMultiSelectMode={forceMultiSelectMode}
-                                                     injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
+                    {!this.state.hideToolbar
+                        && (this.props.isSelectedResourceInDataExplorer || isMoreThanOneSelected(this.props.checkedList))
+                        && (this.multiSelectToolbarInTitle
+                            ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
+                            : <MultiselectToolbar
+                                    forceMultiSelectMode={forceMultiSelectMode}
+                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
                     }
                     {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                         <Grid

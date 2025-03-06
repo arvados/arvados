@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export interface CUDAParameters {
-    device_count: number;
+export interface GPUParameters {
+    stack: string;
     driver_version: string;
-    hardware_capability: string;
+    hardware_target: string[];
+    device_count: number;
+    vram: number;
 }
 
 export interface RuntimeConstraints {
@@ -14,5 +16,5 @@ export interface RuntimeConstraints {
     keep_cache_ram?: number;
     keep_cache_disk?: number;
     API: boolean;
-    cuda?: CUDAParameters;
+    gpu?: GPUParameters;
 }

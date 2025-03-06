@@ -52,10 +52,24 @@ export type ContextMenuResource = {
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;
 
-export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => (dispatch: Dispatch) => {
+export const openContextMenuAndSelect = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => (dispatch: Dispatch) => {
     event.preventDefault();
     dispatch<any>(selectOne(resource.uuid));
     dispatch<any>(deselectAllOthers(resource.uuid));
+    const { left, top } = event.currentTarget.getBoundingClientRect();
+    dispatch(
+        contextMenuActions.OPEN_CONTEXT_MENU({
+            position: {
+                x: event.clientX || left,
+                y: event.clientY || top,
+            },
+            resource,
+        })
+    );
+};
+
+const openContextMenuOnly = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => (dispatch: Dispatch) => {
+    event.preventDefault();
     const { left, top } = event.currentTarget.getBoundingClientRect();
     dispatch(
         contextMenuActions.OPEN_CONTEXT_MENU({
@@ -73,7 +87,7 @@ export const openCollectionFilesContextMenu =
         const selectedCount = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).length;
         const multiple = selectedCount > 1;
         dispatch<any>(
-            openContextMenu(event, {
+            openContextMenuAndSelect(event, {
                 name: "",
                 uuid: "",
                 ownerUuid: "",
@@ -96,7 +110,7 @@ export const openCollectionFilesContextMenu =
 export const openRepositoryContextMenu =
     (event: React.MouseEvent<HTMLElement>, repository: RepositoryResource) => (dispatch: Dispatch, getState: () => RootState) => {
         dispatch<any>(
-            openContextMenu(event, {
+            openContextMenuAndSelect(event, {
                 name: "",
                 uuid: repository.uuid,
                 ownerUuid: repository.ownerUuid,
@@ -109,7 +123,7 @@ export const openRepositoryContextMenu =
 export const openVirtualMachinesContextMenu =
     (event: React.MouseEvent<HTMLElement>, repository: VirtualMachinesResource) => (dispatch: Dispatch, getState: () => RootState) => {
         dispatch<any>(
-            openContextMenu(event, {
+            openContextMenuAndSelect(event, {
                 name: "",
                 uuid: repository.uuid,
                 ownerUuid: repository.ownerUuid,
@@ -121,7 +135,7 @@ export const openVirtualMachinesContextMenu =
 
 export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, sshKey: SshKeyResource) => (dispatch: Dispatch) => {
     dispatch<any>(
-        openContextMenu(event, {
+        openContextMenuAndSelect(event, {
             name: "",
             uuid: sshKey.uuid,
             ownerUuid: sshKey.ownerUuid,
@@ -133,7 +147,7 @@ export const openSshKeyContextMenu = (event: React.MouseEvent<HTMLElement>, sshK
 
 export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>, keepService: KeepServiceResource) => (dispatch: Dispatch) => {
     dispatch<any>(
-        openContextMenu(event, {
+        openContextMenuAndSelect(event, {
             name: "",
             uuid: keepService.uuid,
             ownerUuid: keepService.ownerUuid,
@@ -145,7 +159,7 @@ export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>,
 
 export const openApiClientAuthorizationContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => (dispatch: Dispatch) => {
     dispatch<any>(
-        openContextMenu(event, {
+        openContextMenuAndSelect(event, {
             name: "",
             uuid: resourceUuid,
             ownerUuid: "",
@@ -160,7 +174,7 @@ export const openRootProjectContextMenu =
         const res = getResource<UserResource>(projectUuid)(getState().resources);
         if (res) {
             dispatch<any>(
-                openContextMenu(event, {
+                openContextMenuOnly(event, {
                     name: "",
                     uuid: res.uuid,
                     ownerUuid: res.uuid,
@@ -178,7 +192,7 @@ export const openProjectContextMenu =
         const menuKind = dispatch<any>(resourceToMenuKind(resourceUuid));
         if (res && menuKind) {
             dispatch<any>(
-                openContextMenu(event, {
+                openContextMenuOnly(event, {
                     name: res.name,
                     uuid: res.uuid,
                     kind: res.kind,
@@ -208,7 +222,7 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
     const menuKind = dispatch<any>(resourceToMenuKind(process.containerRequest.uuid));
     if (res && menuKind) {
         dispatch<any>(
-            openContextMenu(event, {
+            openContextMenuAndSelect(event, {
                 uuid: process.containerRequest.uuid,
                 ownerUuid: process.containerRequest.ownerUuid,
                 kind: menuKind,
@@ -226,7 +240,7 @@ export const openPermissionEditContextMenu =
     (event: React.MouseEvent<HTMLElement>, link: LinkResource) => (dispatch: Dispatch, getState: () => RootState) => {
         if (link) {
             dispatch<any>(
-                openContextMenu(event, {
+                openContextMenuAndSelect(event, {
                     name: link.name,
                     uuid: link.uuid,
                     kind: link.kind,
@@ -239,7 +253,7 @@ export const openPermissionEditContextMenu =
 
 export const openUserContextMenu = (event: React.MouseEvent<HTMLElement>, user: UserResource) => (dispatch: Dispatch, getState: () => RootState) => {
     dispatch<any>(
-        openContextMenu(event, {
+        openContextMenuAndSelect(event, {
             name: "",
             uuid: user.uuid,
             ownerUuid: user.ownerUuid,
@@ -254,7 +268,7 @@ export const openSearchResultsContextMenu =
         const res = getResource<Resource>(uuid)(getState().resources);
         if (res) {
             dispatch<any>(
-                openContextMenu(event, {
+                openContextMenuAndSelect(event, {
                     name: "",
                     uuid: res.uuid,
                     ownerUuid: "",

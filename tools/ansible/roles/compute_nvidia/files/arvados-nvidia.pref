@@ -3,14 +3,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# Pin NVIDIA dependencies to tested and known-good versions
+# Pin NVIDIA dependencies to tested and known-good versions.
+# These are the last versions published for Debian 11, so we want to stay on
+# these until we drop support for that distro.
 
 Package: cuda
-Pin: version 12.5.*
+Pin: version 12.6.*
 Pin-Priority: 995
 
 Package: src:libnvidia-container src:nvidia-container-toolkit
-Pin: version 1.16.*
+Pin: version 1.17.*
 Pin-Priority: 995
 
 Package: cuda-drivers src:nvidia-graphics-drivers

@@ -10,7 +10,7 @@ If you are developing the Ansible playbook, note that you can test it by [runnin
 
 For testing, you'll need a Debian or Ubuntu system where you don't mind messing with the system configuration. It can be a virtual machine. You must set up the following before you run Ansible (this is stuff that's typically preconfigured in the cloud):
 
-* Install `locales`, `openssh-server`, `python3`, and `sudo`
+* Install `openssh-server`, `python3`, and `sudo`
 * Set up a user account for yourself that is allowed to SSH in and use `sudo`
 
 ### Configuration Requirements

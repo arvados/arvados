@@ -12,7 +12,7 @@ import { DataColumn, DataColumns, } from "components/data-table/data-column";
 import { TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
-import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
+import { setSelectedResourceUuid, setIsSelectedResourceInDataExplorer } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 
@@ -25,7 +25,7 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResource, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
     const working = progressIndicator.includes(id);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
@@ -35,11 +35,13 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
-        selectedResourceUuid,
+        selectedResourceUuid: selectedResource.selectedResourceUuid,
+        isSelectedResourceInDataExplorer: selectedResource.isSelectedResourceInDataExplorer,
         checkedList: multiselect.checkedList,
         working,
         searchBarValue: searchBar.searchValue,
         detailsPanelResourceUuid: detailsPanel.resourceUuid,
+        isDetailsPanelOpen: detailsPanel.isOpened,
     };
 };
 
@@ -91,6 +93,10 @@ const mapDispatchToProps = () => {
 
         loadDetailsPanel: (uuid: string) => {
             dispatch<any>(loadDetailsPanel(uuid || ''));
+        },
+
+        setIsSelectedResourceInDataExplorer: (isIn: boolean) => {
+            dispatch<any>(setIsSelectedResourceInDataExplorer(isIn));
         },
 
         onRowClick,

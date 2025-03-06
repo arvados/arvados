@@ -16,7 +16,7 @@ import { ResourceKind, TrashableResource } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
 import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
-import { openContextMenu } from "store/context-menu/context-menu-actions";
+import { openContextMenuAndSelect } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceDeleteDate,
@@ -162,7 +162,7 @@ export const TrashPanel = withStyles(styles)(
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const resource = getResource<TrashableResource>(resourceUuid)(this.props.resources);
                 if (resource) {
-                    this.props.dispatch<any>(openContextMenu(event, {
+                    this.props.dispatch<any>(openContextMenuAndSelect(event, {
                         name: '',
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,

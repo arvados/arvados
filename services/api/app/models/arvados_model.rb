@@ -805,7 +805,7 @@ class ArvadosModel < ApplicationRecord
     coder = Serializer[type]
     @serialized_attributes ||= {}
     @serialized_attributes[colname.to_s] = coder
-    super(colname, coder)
+    super(colname, coder: coder)
   end
 
   def self.serialized_attributes

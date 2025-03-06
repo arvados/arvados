@@ -10,7 +10,7 @@ import {
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
-import { openContextMenu, openCollectionFilesContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect, openCollectionFilesContextMenu } from 'store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from 'store/collections/collection-upload-actions';
 import { ResourceKind } from "models/resource";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
@@ -27,7 +27,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
     },
     onItemMenuOpen: (event, item, isWritable) => {
         const isDirectory = item.data.type === 'directory';
-        dispatch<any>(openContextMenu(
+        dispatch<any>(openContextMenuAndSelect(
             event,
             {
                 menuKind: isWritable

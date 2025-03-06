@@ -109,8 +109,8 @@ const getItem = (res: DetailsResource, pathName: string): DetailsData => {
     }
 };
 
-const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, selectedResourceUuid, properties, router }: RootState) => {
-    const resource = getResource(selectedResourceUuid ?? properties.currentRouteUuid)(resources) as DetailsResource | undefined;
+const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, selectedResource, properties, router }: RootState) => {
+    const resource = getResource(selectedResource.selectedResourceUuid ?? properties.currentRouteUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
