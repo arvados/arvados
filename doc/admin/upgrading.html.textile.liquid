@@ -40,6 +40,14 @@ The Arvados Rails API server now runs from a standalone Passenger server to simp
 <pre><code># <span class="userinput">systemctl enable --now arvados-railsapi.service</span>
 </code></pre></notextile>
 
+h3. Rails API server needs PowerTools on Red Hat, AlmaLinux, and Rocky Linux
+
+The Arvados Rails API server now needs to be able to link against @libyaml@ development headers. On Red Hat, AlmaLinux, and Rocky Linux, these are provided by the @libyaml-devel@ package in the PowerTools repository. Before you upgrade, make sure you have this repository enabled on the host where you run the Rails API server by running:
+
+<notextile>
+<pre><code># <span class="userinput">dnf config-manager --set-enabled powertools</span>
+</code></pre></notextile>
+
 h3. Generalized configuration for GPU compute nodes
 
 As part of adding support for AMD GPUs in Arvados 3.1, the @CUDA@ section of @InstanceType@ definitions is now deprecated in favor of a new @GPU@ section that is generalized for both CUDA and ROCm.
