@@ -21,6 +21,7 @@ import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { RootState } from 'store/store';
 import { getUserUuid } from 'common/getuser';
+import { getResource } from 'store/resources/resources';
 
 export type RunWfProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
@@ -53,24 +54,41 @@ interface ProjectInputComponentState {
     project?: ProjectResource;
 }
 
+type ProjectInputComponentProps = {
+    userUuid: string | undefined;
+    defaultProject: ProjectResource | undefined;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+    required?: boolean;
+}
+
 interface HasUserUuid {
     userUuid: string;
 }
 
-const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
+const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'defaultProject'> => {
+    const userUuid = getUserUuid(state)
+    const userRootProject = getResource<ProjectResource>(userUuid)(state.resources);
+    const defaultProject = state.runProcessPanel.processOwnerUuid ? getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources) : userRootProject;
+    return {
+        userUuid,
+        defaultProject,
+    }
+};
 
 const ProjectInputComponent = connect(mapStateToProps)(
-    class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
-        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
-        required?: boolean;
-    }, ProjectInputComponentState> {
+    class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & ProjectInputComponentProps, ProjectInputComponentState> {
+
         state: ProjectInputComponentState = {
             open: false,
+            project: undefined,
         };
 
         componentDidMount() {
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
+            if (!this.state.project && this.props.defaultProject) {
+                this.setState({ project: this.props.defaultProject });
+            }
         }
 
         render() {
@@ -102,6 +120,21 @@ const ProjectInputComponent = connect(mapStateToProps)(
             }
         }
 
+        getDisplayName(item: ProjectsTreePickerItem | undefined): string {
+            if (item === undefined) {
+                return '';
+            }
+            if ('kind' in item && item.kind === ResourceKind.USER) {
+                return `${item.firstName} ${item.lastName} (root project)`;
+            }
+            if ('name' in item) {
+                return item.name;
+            } else {
+                return '';
+            }
+        }
+
+
         invalid = () => (!this.state.project || !this.state.project.canWrite);
 
         renderInput() {
@@ -110,7 +143,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <Input
                         readOnly
                         fullWidth
-                        value={props.input.value}
+                        value={props.input.value || this.getDisplayName(this.state.project)}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
@@ -146,6 +179,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                                 pickerId={this.props.commandInput.id}
                                 cascadeSelection={false}
                                 options={this.props.options}
+                                project={this.state.project}
                                 toggleItemActive={this.setProject} />
                         </div>
                     </DialogContent>
