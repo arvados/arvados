@@ -52,6 +52,7 @@ const format = (value?: ProjectResource) => value ? value.name : '';
 interface ProjectInputComponentState {
     open: boolean;
     project?: ProjectResource;
+    originalProject?: ProjectResource;
 }
 
 type ProjectInputComponentProps = {
@@ -83,13 +84,14 @@ const ProjectInputComponent = connect(mapStateToProps)(
         state: ProjectInputComponentState = {
             open: false,
             project: undefined,
+            originalProject: undefined,
         };
 
         componentDidMount() {
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
             if (!this.state.project && this.props.defaultProject) {
-                this.setState({ project: this.props.defaultProject });
+                this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
             }
         }
 
@@ -111,7 +113,9 @@ const ProjectInputComponent = connect(mapStateToProps)(
 
         submit = () => {
             this.closeDialog();
-            this.props.input.onChange(this.state.project);
+            if (this.state.project && this.state.originalProject && this.state.project.uuid !== this.state.originalProject.uuid) {
+                this.props.input.onChange(this.state.project);
+            }
         }
 
         setProject = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
