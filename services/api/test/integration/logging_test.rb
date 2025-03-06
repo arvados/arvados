@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'stringio'
+require 'test_helper'
 
 class LoggingTest < ActionDispatch::IntegrationTest
   fixtures :collections
@@ -12,17 +13,14 @@ class LoggingTest < ActionDispatch::IntegrationTest
     logcopy = ActiveSupport::Logger.new(buf)
     logcopy.level = :info
     begin
-      Rails.logger.extend(ActiveSupport::Logger.broadcast(logcopy))
+      Rails.logger.broadcast_to(logcopy)
       get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
           params: {:format => :json},
           headers: auth(:active).merge({ 'X-Request-Id' => 'req-aaaaaaaaaaaaaaaaaaaa' })
       assert_response :success
       assert_match /^{.*"request_id":"req-aaaaaaaaaaaaaaaaaaaa"/, buf.string
     ensure
-      # We don't seem to have an "unbroadcast" option, so this is how
-      # we avoid filling buf with unlimited logs from subsequent
-      # tests.
-      logcopy.level = :fatal
+      Rails.logger.broadcasts.delete(logcopy)
     end
   end
 end

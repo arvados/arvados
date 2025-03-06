@@ -586,12 +586,23 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal(users(:active).uuid, json_response['uuid'])
   end
 
-  test 'container request with runtime_token' do
-    [["valid local", "v2/#{api_client_authorizations(:active).uuid}/#{api_client_authorizations(:active).api_token}"],
-     ["valid remote", "v2/zbbbb-gj3su-000000000000000/abc"],
-     ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"],
-     ["invalid remote", "v2/zbork-gj3su-000000000000000/abc"],
-    ].each do |label, runtime_token|
+  [["valid local", :active, nil],
+   ["valid remote", "zbbbb-gj3su-000000000000000", nil],
+   ["invalid local", :active, "fakeactivetoken"],
+   ["invalid remote", "zbork-gj3su-000000000000000", nil],
+  ].each do |label, auth_uuid, auth_token|
+    test "container request with #{label} runtime_token" do
+      case auth_uuid
+      when Symbol
+        aca = api_client_authorizations(auth_uuid)
+        auth_uuid = aca.uuid
+        auth_token ||= aca.api_token
+      when String
+        auth_token ||= "fakeremotetoken"
+      else
+        flunk "test case uses an unsupported auth identifier: #{auth_uuid}"
+      end
+      runtime_token = "v2/#{auth_uuid}/#{auth_token}"
       post '/arvados/v1/container_requests',
         params: {
           "container_request" => {
@@ -603,7 +614,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           }
         },
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
-      if label.include? "invalid"
+      if label.start_with? "invalid"
         assert_response 422
       else
         assert_response :success

@@ -4,14 +4,19 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 7.0.0'
+# Rails 7.1 is the last version to support Ruby 2.7.
+gem 'rails', '~> 7.1.0'
 gem 'responders'
 gem 'i18n'
 gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
-  gem 'ruby-prof'
+  # Enforce Ruby 2.7 compatibility for an indirect dependency.
+  # Can't use ~> because 6.4.6 changes the minimum Ruby (!).
+  gem 'factory_bot', '6.4.5'
+  # This version pin enforces Ruby 2.7 compatibility for a direct dependency.
+  gem 'ruby-prof', '~> 1.6.3'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -32,7 +37,7 @@ gem 'jquery-rails'
 
 gem 'acts_as_api'
 
-gem 'passenger', '~> 6.0.0'
+gem 'passenger', '~> 6.0.26'
 
 # Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
 gem 'minitest', '5.10.3'
@@ -55,6 +60,10 @@ gem 'rails-controller-testing'
 gem 'webrick'
 
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
+
+# Enforce Ruby 2.7 compatibility for indirect dependencies.
+gem 'net-imap', '~> 0.3.8'
+gem 'securerandom', '~> 0.3.2'
 
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|

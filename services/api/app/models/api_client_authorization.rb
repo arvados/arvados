@@ -381,13 +381,26 @@ class ApiClientAuthorization < ArvadosModel
       exp = [db_current_time + Rails.configuration.Login.RemoteTokenRefresh,
              remote_token.andand['expires_at']].compact.min
       scopes = remote_token.andand['scopes'] || ['all']
+      retries = 0
       begin
-        retries ||= 0
-        auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
-          auth.user = user
-          auth.api_token = stored_secret
-          auth.scopes = scopes
-          auth.expires_at = exp
+        # In older versions of Rails, `find_or_create_by` did not try to
+        # address race conditions, and the rescue logic below expects that
+        # behavior.  This block reimplements the old method so we can handle
+        # races ourselves.
+        if auth = ApiClientAuthorization.find_by(uuid: token_uuid)
+          auth.update!(
+            user: user,
+            api_token: stored_secret,
+            scopes: scopes,
+            expires_at: exp,
+          )
+        else
+          auth = ApiClientAuthorization.create(uuid: token_uuid) do |auth|
+            auth.user = user
+            auth.api_token = stored_secret
+            auth.scopes = scopes
+            auth.expires_at = exp
+          end
         end
       rescue ActiveRecord::RecordNotUnique
         Rails.logger.debug("cached remote token #{token_uuid} already exists, retrying...")
@@ -408,10 +421,6 @@ class ApiClientAuthorization < ArvadosModel
           return nil
         end
       end
-      auth.update!(user: user,
-                   api_token: stored_secret,
-                   scopes: scopes,
-                   expires_at: exp)
       Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} and scopes #{scopes} in local db"
       auth.api_token = secret
       return auth
