@@ -354,7 +354,12 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
         const sidePanel: Element = document.getElementsByClassName("layout-pane")[0];
 
         if (sidePanel) {
-            sidePanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `${SIDE_PANEL_COLLAPSED_WIDTH}px` : `${getSplitterInitialSize(splitterSettings.LEFT)}px`};`);
+            if (sidePanelIsCollapsed) {
+                // Using max-width overrides any resize calculations when left panel is collapsed
+                sidePanel.setAttribute("style", `max-width: ${SIDE_PANEL_COLLAPSED_WIDTH}px`);
+            } else {
+                sidePanel.setAttribute("style", `width: ${getSplitterInitialSize(splitterSettings.LEFT)}px`);
+            }
         }
 
         const splitter = document.getElementsByClassName("layout-splitter")[0];
