@@ -56,6 +56,7 @@ interface ProjectInputComponentState {
 
 type ProjectInputComponentProps = {
     userUuid: string | undefined;
+    userRootProject: ProjectResource | undefined;
     defaultProject: ProjectResource | undefined;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     required?: boolean;
@@ -65,12 +66,13 @@ interface HasUserUuid {
     userUuid: string;
 }
 
-const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'defaultProject'> => {
+const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'userRootProject' | 'defaultProject'> => {
     const userUuid = getUserUuid(state)
     const userRootProject = getResource<ProjectResource>(userUuid)(state.resources);
     const defaultProject = state.runProcessPanel.processOwnerUuid ? getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources) : userRootProject;
     return {
         userUuid,
+        userRootProject,
         defaultProject,
     }
 };
@@ -113,8 +115,12 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         setProject = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
-            if ('kind' in data && data.kind === ResourceKind.PROJECT) {
-                this.setState({ project: data });
+            if ('kind' in data){
+                if (data.kind === ResourceKind.PROJECT) {
+                    this.setState({ project: data });
+                } else if (data.kind === ResourceKind.USER) {
+                    this.setState({ project: this.props.userRootProject });
+                }
             } else {
                 this.setState({ project: undefined });
             }
