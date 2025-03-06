@@ -519,13 +519,15 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	if err != nil {
 		return nil, fmt.Errorf("container lookup failed: %w", err)
 	}
-	// Future versions will have more options for access control.
-	// For now, access is only granted to the user who submitted
-	// all of the container requests that reference this
-	// container.
-	err = conn.checkContainerLoginPermission(ctx, user.UUID, ctr.UUID)
-	if err != nil {
-		return nil, err
+	if !user.IsAdmin {
+		// Future versions will have more options for access
+		// control.  For now, access is only granted to admin,
+		// and the user who submitted all of the container
+		// requests that reference this container.
+		err = conn.checkContainerLoginPermission(ctx, user.UUID, ctr.UUID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	dial, arpc, err := conn.findGateway(ctx, ctr, opts.NoForward)
 	if err != nil {

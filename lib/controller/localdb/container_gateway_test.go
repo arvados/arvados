@@ -317,19 +317,19 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 	wg.Wait()
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxy_NoToken(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken(c *check.C) {
 	s.testContainerHTTPProxyError(c, "", http.StatusUnauthorized)
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxy_InvalidToken(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_InvalidToken(c *check.C) {
 	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2+"bogus", http.StatusUnauthorized)
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxy_AnonymousToken(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken(c *check.C) {
 	s.testContainerHTTPProxyError(c, arvadostest.AnonymousToken, http.StatusNotFound)
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxyFail_CRsDifferentUsers(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_CRsDifferentUsers(c *check.C) {
 	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
 	cr, err := s.localdb.ContainerRequestCreate(rootctx, s.reqCreateOptions)
 	c.Assert(err, check.IsNil)
@@ -337,7 +337,7 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxyFail_CRsDifferentUsers(c *
 	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2, http.StatusForbidden)
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ContainerNotReadable(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_ContainerNotReadable(c *check.C) {
 	s.testContainerHTTPProxyError(c, arvadostest.SpectatorToken, http.StatusNotFound)
 }
 
