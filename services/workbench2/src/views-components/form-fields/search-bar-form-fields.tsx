@@ -13,7 +13,7 @@ import { PropertyKeyField, } from 'views-components/resource-properties-form/pro
 import { PropertyValueField } from 'views-components/resource-properties-form/property-value-field';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
+import { SearchProjectInput, SearchProjectCommandInputParameter } from 'views/run-process-panel/inputs/search-project-input';
 
 export const SearchBarTypeField = () =>
     <Field
@@ -47,10 +47,10 @@ export const SearchBarClusterField = connect(
     );
 
 export const SearchBarProjectField = () =>
-    <ProjectInput required={false} input={{
+    <SearchProjectInput required={false} input={{
         id: "projectObject",
         label: "Limit search to Project"
-    } as ProjectCommandInputParameter}
+    } as SearchProjectCommandInputParameter}
         options={{ showOnlyOwned: false, showOnlyWritable: false }} />
 
 export const SearchBarTrashField = () =>

@@ -22,19 +22,19 @@ import { ResourceKind } from 'models/resource';
 import { RootState } from 'store/store';
 import { getUserUuid } from 'common/getuser';
 
-export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
+export type RunWfProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
 const isUndefined: any = (value?: ProjectResource) => (value === undefined);
 
-export interface ProjectInputProps {
+interface ProjectInputProps {
     required: boolean;
-    input: ProjectCommandInputParameter;
+    input: RunWfProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
 type DialogContentCssRules = 'root' | 'pickerWrapper';
 
-export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
+export const RunWfProjectInput = ({ required, input, options }: ProjectInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
@@ -59,7 +59,7 @@ interface HasUserUuid {
 
 const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
 
-export const ProjectInputComponent = connect(mapStateToProps)(
+const ProjectInputComponent = connect(mapStateToProps)(
     class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
         required?: boolean;
