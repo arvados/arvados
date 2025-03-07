@@ -330,7 +330,7 @@ func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
 
 func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	maxBlockSize = 8
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
 	c.Assert(err, check.IsNil)
@@ -543,7 +543,7 @@ func (s *CollectionFSSuite) TestMarshalCopiesRemoteBlocks(c *check.C) {
 
 func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
 	maxBlockSize = 8
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
@@ -664,7 +664,7 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 
 func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	maxBlockSize = 40
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
@@ -894,7 +894,7 @@ func (s *CollectionFSSuite) TestRename(c *check.C) {
 
 func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	maxBlockSize = 1024
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
