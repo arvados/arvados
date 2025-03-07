@@ -278,10 +278,9 @@ type ContainerLogOptions struct {
 }
 
 type RepackOptions struct {
-	Underutilized bool
-	CachedOnly    bool
-	Full          bool
-	DryRun        bool
+	CachedOnly bool
+	Full       bool
+	DryRun     bool
 }
 
 type API interface {
