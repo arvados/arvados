@@ -34,7 +34,6 @@ import { formatFileSize } from 'common/formatters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { Typography } from '@mui/material';
 import { UserResource } from 'models/user';
-import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 import { ProjectResource } from 'models/project';
 export interface ToplevelPickerProps {
     currentUuids?: string[];
@@ -206,11 +205,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
 
             setSelection(event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) {
                 this.setState({activeItem: item.data});
-                if ('kind' in item.data) {
-                    if (item.data.kind === ResourceKind.PROJECT || item.data.kind === ResourceKind.USER) {
-                        this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(item.data.uuid));
-                    }
-                }
             }
 
             render() {

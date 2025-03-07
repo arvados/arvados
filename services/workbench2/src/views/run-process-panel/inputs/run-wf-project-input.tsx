@@ -23,6 +23,7 @@ import { RootState } from 'store/store';
 import { getUserUuid } from 'common/getuser';
 import { getResource } from 'store/resources/resources';
 import { loadProject } from 'store/workbench/workbench-actions';
+import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 
 export type RunWfProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
@@ -100,9 +101,10 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
-            if (!this.state.project && this.props.defaultProject && prevState.project !== this.props.defaultProject) {
+            if(!prevState.open && this.state.open) {
                 this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
             }
+
         }
 
         render() {
@@ -123,8 +125,13 @@ const ProjectInputComponent = connect(mapStateToProps)(
 
         submit = () => {
             this.closeDialog();
-            if (this.state.project && this.state.originalProject && this.state.project.uuid !== this.state.originalProject.uuid) {
-                this.props.input.onChange(this.state.project);
+            if (this.state.project) {
+                if (this.state.project.kind === ResourceKind.PROJECT || this.state.project.kind === ResourceKind.USER) {
+                    this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.project.uuid));
+                }
+                if (this.state.originalProject && this.state.project.uuid !== this.state.originalProject.uuid) {
+                    this.props.input.onChange(this.state.project);
+                }
             }
         }
 
