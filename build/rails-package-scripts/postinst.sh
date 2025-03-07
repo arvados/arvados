@@ -193,12 +193,12 @@ run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundl
 
 # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
 # which are already installed system-wide, which causes bundle activation to
-# fail later. Prevent this by trying to pre-install gems all manually.
+# fail later. Prevent this by trying to pre-install all gems manually.
 # `gem install` can fail if there are conflicts between gems installed by
 # previous versions and gems installed by the current version. Ignore those
 # errors; all that matters is that we get `bundle install` to succeed, and
-# we check that next.
-echo "Preinstalling bundle gems..."
+# we check that next. <https://dev.arvados.org/issues/22647>
+echo "Preinstalling bundle gems -- conflict errors are OK..."
 find vendor/cache -maxdepth 1 -name '*.gem' -print0 |
     xargs -0r gem install --conservative --ignore-dependencies \
           --local --no-document --quiet \
