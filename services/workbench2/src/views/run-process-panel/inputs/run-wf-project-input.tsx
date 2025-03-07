@@ -104,7 +104,9 @@ const ProjectInputComponent = connect(mapStateToProps)(
             if(!prevState.open && this.state.open) {
                 this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
             }
-
+            if (!this.state.project && this.props.defaultProject) {
+                this.setState({ project: this.props.defaultProject });
+            }
         }
 
         render() {
@@ -170,7 +172,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <Input
                         readOnly
                         fullWidth
-                        value={props.input.value || this.getDisplayName(this.state.project)}
+                        value={props.input.value || this.getDisplayName(this.props.defaultProject)}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
