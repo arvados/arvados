@@ -167,6 +167,16 @@ server {
 </code></pre>
 </notextile>
 
+h2. Enable the PowerTools repository
+
+Skip to the next section if you are installing on Debian or Ubuntu.
+
+On Red Hat, AlmaLinux, and Rocky Linux, the API server package depends on development headers available from the PowerTools repository. Make sure this repository is enabled by running:
+
+<notextile>
+<pre><code># <span class="userinput">dnf config-manager --set-enabled powertools</span>
+</code></pre></notextile>
+
 {% assign arvados_component = 'arvados-api-server arvados-controller' %}
 
 {% include 'install_packages' %}
