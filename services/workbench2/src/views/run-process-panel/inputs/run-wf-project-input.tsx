@@ -209,7 +209,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                                       fullWidth
                                       data-cy="choose-a-project-dialog"
                                       maxWidth='md'>
-                    <DialogTitle>Choose a project</DialogTitle>
+                    <DialogTitle>Choose the project where the workflow will run</DialogTitle>
                     <DialogContent className={classes.root}>
                         <div className={classes.pickerWrapper}>
                             <ProjectsTreePicker
