@@ -55,6 +55,7 @@ interface ProjectInputComponentState {
     open: boolean;
     project?: ProjectResource;
     originalProject?: ProjectResource;
+    hasBeenOpened: boolean;
 }
 
 type ProjectInputComponentProps = {
@@ -87,6 +88,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
             open: false,
             project: undefined,
             originalProject: undefined,
+            hasBeenOpened: false,
         };
 
         componentDidMount() {
@@ -97,6 +99,9 @@ const ProjectInputComponent = connect(mapStateToProps)(
             }
             if (this.props.userUuid && !this.state.project) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
+            }
+            if (this.state.hasBeenOpened === false) {
+                this.setState({ open: true, hasBeenOpened: true });
             }
         }
 
