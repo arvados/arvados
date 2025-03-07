@@ -193,12 +193,18 @@ run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundl
 
 # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
 # which are already installed system-wide, which causes bundle activation to
-# fail later. Work around this by installing all gems manually.
-find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
-    | run_and_report "Installing bundle gems" xargs -0r \
-                     gem install --conservative --ignore-dependencies \
-                     --local --no-document --quiet \
-                     --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
+# fail later. Prevent this by trying to pre-install all gems manually.
+# `gem install` can fail if there are conflicts between gems installed by
+# previous versions and gems installed by the current version. Ignore those
+# errors; all that matters is that we get `bundle install` to succeed, and
+# we check that next. <https://dev.arvados.org/issues/22647>
+echo "Preinstalling bundle gems -- conflict errors are OK..."
+find vendor/cache -maxdepth 1 -name '*.gem' -print0 |
+    xargs -0r gem install --conservative --ignore-dependencies \
+          --local --no-document --quiet \
+          --install-dir="$bundle_path/ruby/$ruby_minor_ver.0" ||
+    true
+echo " done."
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
