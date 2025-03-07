@@ -1617,6 +1617,23 @@ func (s *CollectionFSSuite) TestPlanRepack_2x32M(c *check.C) {
 		})
 }
 
+func (s *CollectionFSSuite) TestPlanRepack_2x32Mi(c *check.C) {
+	s.testPlanRepack(c,
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554432 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554432 0:67108864:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32MiMinus1(c *check.C) {
+	s.testPlanRepack(c,
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554431 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554431 0:67108862:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554431", size: 33554431, length: 33554431, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554431", size: 33554431, length: 33554431, offset: 0},
+			},
+		})
+}
+
 func (s *CollectionFSSuite) TestPlanRepack_3x32M(c *check.C) {
 	s.testPlanRepack(c,
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 cccccccccccccccccccccccccccccccc+32000000 0:96000000:file\n",
