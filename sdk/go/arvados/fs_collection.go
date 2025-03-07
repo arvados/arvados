@@ -46,6 +46,12 @@ type CollectionFileSystem interface {
 	// substitutions were made.
 	ReplaceSegments(map[BlockSegment]BlockSegment) (bool, error)
 
+	// If needed, combine small stored blocks into larger blocks
+	// and update the in-memory representation to reference the
+	// larger blocks. Returns the number of (small) blocks that
+	// were replaced.
+	Repack(context.Context, RepackOptions) (int, error)
+
 	// Total data bytes in all files.
 	Size() int64
 }
