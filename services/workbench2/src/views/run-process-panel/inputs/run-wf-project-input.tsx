@@ -106,6 +106,9 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
+            if (prevProps.defaultProject !== this.props.defaultProject) {
+                this.setState({ project: this.props.defaultProject });
+            }
             if(!prevState.open && this.state.open) {
                 this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
             }
