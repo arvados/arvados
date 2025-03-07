@@ -1914,7 +1914,7 @@ func dataToWrite_ConstantSizeFilesInDirs(c *check.C, ndirs, nfiles, filesize, ch
 				}
 			}
 			data := make([]byte, datasize)
-			copy(data, []byte(fmt.Sprintf("%d", i)))
+			copy(data, []byte(fmt.Sprintf("%d chunk %d", i, chunk)))
 			writes = append(writes, dataToWrite{
 				path: fmt.Sprintf("dir%d/file%d", i*ndirs/nfiles, i),
 				data: func() []byte { return data },
