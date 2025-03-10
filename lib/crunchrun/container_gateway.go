@@ -363,11 +363,6 @@ func (gw *Gateway) handleForwardedHTTP(w http.ResponseWriter, reqIn *http.Reques
 	}
 	client := http.Client{
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-		// Transport: &http.Transport{
-		// 	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-		// 		return (&net.Dialer{}).DialContext(ctx, "tcp", net.JoinHostPort(host, port))
-		// 	},
-		// },
 	}
 	url := *reqIn.URL
 	url.Scheme = "http"
