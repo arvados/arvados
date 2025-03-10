@@ -150,6 +150,9 @@ or the fallback value 2.
     if not args.source_arvados and arvados.util.uuid_pattern.match(args.object_uuid):
         args.source_arvados = args.object_uuid[:5]
 
+    if not args.destination_arvados and args.project_uuid:
+        args.destination_arvados = args.project_uuid[:5]
+
     # Create API clients for the source and destination instances
     src_arv = api_for_instance(args.source_arvados, args.retries)
     dst_arv = api_for_instance(args.destination_arvados, args.retries)
@@ -227,6 +230,40 @@ def set_src_owner_uuid(resource, uuid, args):
 #     configuration directory.
 #
 def api_for_instance(instance_name, num_retries):
+    msg = ""
+    if instance_name:
+        if '/' in instance_name:
+            config_file = instance_name
+        else:
+            dirs = basedirs.BaseDirectories('CONFIG')
+            config_file = next(dirs.search(f'{instance_name}.conf'), '')
+
+        try:
+            cfg = arvados.config.load(config_file)
+
+            if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
+                api_is_insecure = (
+                    cfg.get('ARVADOS_API_HOST_INSECURE', '').lower() in set(
+                        ['1', 't', 'true', 'y', 'yes']))
+                return arvados.api('v1',
+                                     host=cfg['ARVADOS_API_HOST'],
+                                     token=cfg['ARVADOS_API_TOKEN'],
+                                     insecure=api_is_insecure,
+                                     num_retries=num_retries,
+                                     )
+            else:
+                abort('missing ARVADOS_API_HOST or ARVADOS_API_TOKEN for {} in config file {}'.format(instance_name, config_file))
+        except OSError as e:
+            if config_file:
+                verb = 'open'
+            else:
+                verb = 'find'
+                config_file = f'{instance_name}.conf'
+            msg = ("Could not {} config file {}: {}\n" +
+                   "You must make sure that your configuration tokens\n" +
+                   "for Arvados instance {} are in {} and that this\n" +
+                   "file is readable.").format(
+                       verb, config_file, e.strerror, instance_name, config_file)
 
     default_api = None
     default_instance = None
@@ -236,43 +273,17 @@ def api_for_instance(instance_name, num_retries):
     except ValueError:
         pass
 
-    if not instance_name or instance_name == default_instance:
+    if default_api is not None and (not instance_name or instance_name == default_instance):
         # Use default settings
         return default_api
 
-    if '/' in instance_name:
-        config_file = instance_name
-    else:
-        dirs = basedirs.BaseDirectories('CONFIG')
-        config_file = next(dirs.search(f'{instance_name}.conf'), '')
+    if instance_name:
+        if msg:
+            abort(msg)
+        elif instance_name != default_instance:
+            abort("Have credentials for {} but need to connect to {}".format(default_instance, instance_name))
 
-    try:
-        cfg = arvados.config.load(config_file)
-    except OSError as e:
-        if config_file:
-            verb = 'open'
-        else:
-            verb = 'find'
-            config_file = f'{instance_name}.conf'
-        abort(("Could not {} config file {}: {}\n" +
-               "You must make sure that your configuration tokens\n" +
-               "for Arvados instance {} are in {} and that this\n" +
-               "file is readable.").format(
-                   verb, config_file, e.strerror, instance_name, config_file))
-
-    if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
-        api_is_insecure = (
-            cfg.get('ARVADOS_API_HOST_INSECURE', '').lower() in set(
-                ['1', 't', 'true', 'y', 'yes']))
-        client = arvados.api('v1',
-                             host=cfg['ARVADOS_API_HOST'],
-                             token=cfg['ARVADOS_API_TOKEN'],
-                             insecure=api_is_insecure,
-                             num_retries=num_retries,
-                             )
-    else:
-        abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
-    return client
+    abort('missing ARVADOS_API_HOST and ARVADOS_API_TOKEN')
 
 # Check if git is available
 def check_git_availability():
