@@ -119,3 +119,24 @@ func (a *Credentials) LoadTokensFromHTTPRequestBody(r *http.Request) error {
 	}
 	return nil
 }
+
+// TokenUUIDs returns a list of token UUIDs (or a placeholder for v1
+// tokens) suitable for logging.
+func (creds *Credentials) TokenUUIDs() []string {
+	var tokenUUIDs []string
+	for _, t := range creds.Tokens {
+		if strings.HasPrefix(t, "v2/") {
+			tokenParts := strings.Split(t, "/")
+			if len(tokenParts) >= 3 {
+				tokenUUIDs = append(tokenUUIDs, tokenParts[1])
+			}
+		} else {
+			end := t
+			if len(t) > 5 {
+				end = t[len(t)-5:]
+			}
+			tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+end)
+		}
+	}
+	return tokenUUIDs
+}

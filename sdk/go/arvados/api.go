@@ -106,6 +106,13 @@ var (
 	EndpointAPIClientAuthorizationGet       = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
 )
 
+type ContainerHTTPProxyOptions struct {
+	UUID      string        `json:"uuid"`
+	Port      int           `json:"port"`
+	NoForward bool          `json:"no_forward"`
+	Request   *http.Request `json:"-"`
+}
+
 type ContainerSSHOptions struct {
 	UUID          string `json:"uuid"`
 	DetachKeys    string `json:"detach_keys"`
@@ -307,6 +314,7 @@ type API interface {
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
 	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
+	ContainerHTTPProxy(ctx context.Context, options ContainerHTTPProxyOptions) (http.Handler, error)
 	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)
 	ContainerRequestUpdate(ctx context.Context, options UpdateOptions) (ContainerRequest, error)
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)
