@@ -69,6 +69,7 @@ describe('Create workflow tests', function () {
             cy.get('[data-cy=run-process-next-button]').click();
 
             cy.get('[data-cy=new-process-panel]').contains('Run workflow').should('be.disabled');
+            cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
 
             cy.get('[data-cy=new-process-panel]')
                 .within(() => {
@@ -346,6 +347,7 @@ describe('Create workflow tests', function () {
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
 
                         cy.get('label').contains('foo').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
@@ -436,6 +438,7 @@ describe('Create workflow tests', function () {
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
 
                         cy.get('label').contains('directoryInputName').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
@@ -507,6 +510,7 @@ describe('Create workflow tests', function () {
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
 
                         var foo = cy.get('label').contains('foo').parent('div').find('input');
                         foo.type("secret_value_xyz");

@@ -223,6 +223,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Cancel</Button>
                         <Button
+                            data-cy='run-wf-project-picker-ok-button'
                             disabled={this.invalid()}
                             variant='contained'
                             color='primary'
