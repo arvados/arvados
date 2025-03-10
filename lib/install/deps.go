@@ -424,12 +424,11 @@ rm ${zip}
 		} else if dev || test {
 			err = inst.runBash(`
 S=`+inst.SingularityVersion+`
-tmp=/var/lib/arvados/tmp/singularity
-trap "rm -r ${tmp}" ERR EXIT
-cd /var/lib/arvados/tmp
-git clone --recurse-submodules https://github.com/sylabs/singularity
-cd singularity
-git checkout v${S}
+tmp="$(mktemp --directory /var/lib/arvados/tmp/singularity-build.XXXXXX)"
+trap 'cd; rm -r "$tmp"' ERR EXIT
+cd "$tmp"
+curl -fL "https://github.com/sylabs/singularity/releases/download/v$S/singularity-ce-$S.tar.gz" |
+  tar -xz --strip-components=1
 ./mconfig --prefix=/var/lib/arvados
 make -C ./builddir
 make -C ./builddir install
