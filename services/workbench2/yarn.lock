@@ -6372,7 +6372,7 @@ __metadata:
     "@types/shell-escape": ^0.2.0
     "@types/sinon": 7.5
     "@types/uuid": 3.4.4
-    axios: ^0.28.1
+    axios: ^1.8.2
     axios-mock-adapter: 1.17.0
     babel-loader: ^8.2.3
     babel-plugin-named-asset-import: ^0.3.8
@@ -6637,17 +6637,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^0.28.1":
-  version: 0.28.1
-  resolution: "axios@npm:0.28.1"
-  dependencies:
-    follow-redirects: ^1.15.0
-    form-data: ^4.0.0
-    proxy-from-env: ^1.1.0
-  checksum: 5115a38d79064d07437c5a28f15841e3607634040e3120ec06a2c4367a7d07cf213b16496eab53b6f58ebc5fb377a440ba9ed4782529b14449a1e285734bfb54
-  languageName: node
-  linkType: hard
-
 "axios@npm:^1.7.7":
   version: 1.7.7
   resolution: "axios@npm:1.7.7"
@@ -6656,6 +6645,17 @@ __metadata:
     form-data: ^4.0.0
     proxy-from-env: ^1.1.0
   checksum: 882d4fe0ec694a07c7f5c1f68205eb6dc5a62aecdb632cc7a4a3d0985188ce3030e0b277e1a8260ac3f194d314ae342117660a151fabffdc5081ca0b5a8b47fe
+  languageName: node
+  linkType: hard
+
+"axios@npm:^1.8.2":
+  version: 1.8.2
+  resolution: "axios@npm:1.8.2"
+  dependencies:
+    follow-redirects: ^1.15.6
+    form-data: ^4.0.0
+    proxy-from-env: ^1.1.0
+  checksum: c47a43b79a058aa9e53a65bec9ade35c9f6e76a3999c795a79a2d205fb5f803fd4245497a0209a9727cbbe4f558791dd852ad2c168c5fc030259c11598ed8fd7
   languageName: node
   linkType: hard
 
@@ -9913,7 +9913,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.15.0":
+"follow-redirects@npm:^1.0.0":
   version: 1.15.6
   resolution: "follow-redirects@npm:1.15.6"
   peerDependenciesMeta:
