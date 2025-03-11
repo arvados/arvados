@@ -24,6 +24,7 @@ type keepBackend struct {
 
 type keepClient interface {
 	ReadAt(locator string, p []byte, off int) (int, error)
+	BlockRead(context.Context, BlockReadOptions) (int, error)
 	BlockWrite(context.Context, BlockWriteOptions) (BlockWriteResponse, error)
 	LocalLocator(locator string) (string, error)
 }
@@ -36,8 +37,9 @@ var errStubClient = errors.New("stub client")
 
 type StubClient struct{}
 
-func (*StubClient) ReadAt(string, []byte, int) (int, error) { return 0, errStubClient }
-func (*StubClient) LocalLocator(loc string) (string, error) { return loc, nil }
+func (*StubClient) ReadAt(string, []byte, int) (int, error)                  { return 0, errStubClient }
+func (*StubClient) LocalLocator(loc string) (string, error)                  { return loc, nil }
+func (*StubClient) BlockRead(context.Context, BlockReadOptions) (int, error) { return 0, errStubClient }
 func (*StubClient) BlockWrite(context.Context, BlockWriteOptions) (BlockWriteResponse, error) {
 	return BlockWriteResponse{}, errStubClient
 }

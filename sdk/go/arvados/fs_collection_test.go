@@ -61,6 +61,23 @@ func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error
 	return copy(p, buf[off:]), nil
 }
 
+func (kcs *keepClientStub) BlockRead(_ context.Context, opts BlockReadOptions) (int, error) {
+	kcs.Lock()
+	kcs.reads = append(kcs.reads, opts.Locator)
+	kcs.Unlock()
+	kcs.RLock()
+	defer kcs.RUnlock()
+	if err := VerifySignature(opts.Locator, kcs.authToken, kcs.sigttl, []byte(kcs.sigkey)); err != nil {
+		return 0, err
+	}
+	buf := kcs.blocks[opts.Locator[:32]]
+	if buf == nil {
+		return 0, errStub404
+	}
+	n, err := io.Copy(opts.WriteTo, bytes.NewReader(buf))
+	return int(n), err
+}
+
 func (kcs *keepClientStub) BlockWrite(_ context.Context, opts BlockWriteOptions) (BlockWriteResponse, error) {
 	var buf []byte
 	if opts.Data == nil {

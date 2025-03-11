@@ -349,6 +349,15 @@ func (client *KeepTestClient) BlockWrite(_ context.Context, opts arvados.BlockWr
 	}, nil
 }
 
+func (client *KeepTestClient) BlockRead(_ context.Context, opts arvados.BlockReadOptions) (int, error) {
+	loaded, ok := client.blocks.Load(opts.Locator)
+	if !ok {
+		return 0, os.ErrNotExist
+	}
+	n, err := io.Copy(opts.WriteTo, bytes.NewReader(loaded.([]byte)))
+	return int(n), err
+}
+
 func (client *KeepTestClient) ReadAt(locator string, dst []byte, offset int) (int, error) {
 	loaded, ok := client.blocks.Load(locator)
 	if !ok {

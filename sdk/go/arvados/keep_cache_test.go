@@ -74,6 +74,9 @@ func (k *keepGatewayMemoryBacked) ReadAt(locator string, dst []byte, offset int)
 	return n, nil
 }
 func (k *keepGatewayMemoryBacked) BlockRead(ctx context.Context, opts BlockReadOptions) (int, error) {
+	if opts.CheckCacheOnly {
+		return 0, ErrNotCached
+	}
 	k.mtx.RLock()
 	data := k.data[opts.Locator]
 	k.mtx.RUnlock()
@@ -273,6 +276,68 @@ func (s *keepCacheSuite) testConcurrentReaders(c *check.C, cannotRefresh, mangle
 				failed = true
 			}
 			c.Assert(n, check.Equals, len(buf))
+		}()
+	}
+	wg.Wait()
+}
+
+func (s *keepCacheSuite) TestBlockRead_CheckCacheOnly(c *check.C) {
+	blkCached := make([]byte, 12_000_000)
+	blkUncached := make([]byte, 13_000_000)
+	backend := &keepGatewayMemoryBacked{}
+	cache := DiskCache{
+		KeepGateway: backend,
+		MaxSize:     ByteSizeOrPercent(len(blkUncached) + len(blkCached)),
+		Dir:         c.MkDir(),
+		Logger:      ctxlog.TestLogger(c),
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resp, err := cache.BlockWrite(ctx, BlockWriteOptions{
+		Data: blkUncached,
+	})
+	c.Check(err, check.IsNil)
+	locUncached := resp.Locator
+
+	resp, err = cache.BlockWrite(ctx, BlockWriteOptions{
+		Data: blkCached,
+	})
+	c.Check(err, check.IsNil)
+	locCached := resp.Locator
+
+	os.RemoveAll(filepath.Join(cache.Dir, locUncached[:3]))
+	cache.deleteHeldopen(cache.cacheFile(locUncached), nil)
+	backend.data = make(map[string][]byte)
+
+	// Do multiple concurrent reads so we have a chance of catching
+	// race/locking bugs.
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var buf bytes.Buffer
+			n, err := cache.BlockRead(ctx, BlockReadOptions{
+				Locator:        locUncached,
+				WriteTo:        &buf,
+				CheckCacheOnly: true})
+			c.Check(n, check.Equals, 0)
+			c.Check(err, check.Equals, ErrNotCached)
+			c.Check(buf.Len(), check.Equals, 0)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var buf bytes.Buffer
+			n, err := cache.BlockRead(ctx, BlockReadOptions{
+				Locator:        locCached,
+				WriteTo:        &buf,
+				CheckCacheOnly: true})
+			c.Check(n, check.Equals, 0)
+			c.Check(err, check.IsNil)
+			c.Check(buf.Len(), check.Equals, 0)
 		}()
 	}
 	wg.Wait()

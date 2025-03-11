@@ -716,16 +716,21 @@ func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptio
 	} else {
 		thresholds = repackBucketThresholds
 	}
-	if opts.CachedOnly {
-		// TODO: use diskCacheProber
-		return nil, errors.New("CacheOnly not yet implemented")
-	}
 	// TODO: depending on opts, plan as if large but underutilized
 	// blocks are short blocks.
 	blockSize := make(map[string]int)
 	bucketBlocks := make([][]string, len(thresholds))
 	root.walkSegments(func(seg segment) segment {
 		if ss, ok := seg.(storedSegment); ok {
+			if opts.CachedOnly {
+				if _, err := ss.kc.BlockRead(ctx, BlockReadOptions{
+					Locator:        ss.locator,
+					CheckCacheOnly: true,
+					WriteTo:        io.Discard,
+				}); err != nil {
+					return seg
+				}
+			}
 			hash := stripAllHints(ss.locator)
 			if blockSize[hash] == 0 {
 				blockSize[hash] = ss.size
