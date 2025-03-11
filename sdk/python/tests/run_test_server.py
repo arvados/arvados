@@ -193,11 +193,14 @@ def find_available_port():
             _already_used_port[port] = True
             return port
 
-def _wait_until_port_listens(port, timeout=10, warn=True):
+def _wait_until_port_listens(port, timeout=10, warn=True, pid=None):
     """Wait for a process to start listening on the given port.
 
     If nothing listens on the port within the specified timeout (given
     in seconds), print a warning on stderr before returning.
+
+    If the `pid` argument is given, wait for that specific process to
+    listen on the port.
     """
     try:
         subprocess.check_output(['which', 'netstat'])
@@ -207,15 +210,20 @@ def _wait_until_port_listens(port, timeout=10, warn=True):
               file=sys.stderr)
         time.sleep(0.5)
         return
+    if pid:
+        matchpid = str(pid)
+    else:
+        matchpid = r'\d+'
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if re.search(r'\ntcp.*:'+str(port)+' .* LISTEN *\n', subprocess.check_output(['netstat', '-Wln']).decode()):
+        if re.search(r'\ntcp.*:'+str(port)+' .* LISTEN +'+matchpid+'/',
+                     subprocess.check_output(['netstat', '-Wlnp'], stderr=subprocess.DEVNULL).decode()):
             return True
         time.sleep(0.1)
     if warn:
         print(
-            "WARNING: Nothing is listening on port {} (waited {} seconds).".
-            format(port, timeout),
+            "WARNING: Process {} is not listening on port {} (waited {} seconds).".
+            format(pid or '', port, timeout),
             file=sys.stderr)
     return False
 
@@ -459,7 +467,7 @@ def run_controller():
     _detachedSubprocesses.append(controller)
     with open(_pidfile('controller'), 'w') as f:
         f.write(str(controller.pid))
-    _wait_until_port_listens(port)
+    _wait_until_port_listens(port, pid=controller.pid)
     return port
 
 def stop_controller():
@@ -483,7 +491,7 @@ def run_ws():
     _detachedSubprocesses.append(ws)
     with open(_pidfile('ws'), 'w') as f:
         f.write(str(ws.pid))
-    _wait_until_port_listens(port)
+    _wait_until_port_listens(port, pid=ws.pid)
     return port
 
 def stop_ws():
@@ -498,33 +506,35 @@ def _start_keep(n, blob_signing=False):
     os.mkdir(datadir)
     port = internal_port_from_config("Keepstore", idx=n)
 
-    # Currently, if there are multiple InternalURLs for a single host,
-    # the only way to tell a keepstore process which one it's supposed
-    # to listen on is to supply a redacted version of the config, with
-    # the other InternalURLs removed.
+    # Make a copy of the config file with BlobSigning set to the
+    # requested value.
     conf = os.path.join(TEST_TMPDIR, "keep%d.yaml"%n)
     confdata = get_config()
-    confdata['Clusters']['zzzzz']['Services']['Keepstore']['InternalURLs'] = {"http://127.0.0.1:%d"%port: {}}
     confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
     with open(conf, 'w') as f:
         yaml.safe_dump(confdata, f)
     keep_cmd = ["arvados-server", "keepstore", "-config", conf]
 
+    # Tell keepstore which of the InternalURLs it's supposed to listen
+    # on.
+    env = _service_environ()
+    env['ARVADOS_SERVICE_INTERNAL_URL'] = "http://127.0.0.1:%d"%port
+
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
         child = subprocess.Popen(
             keep_cmd,
-            env=_service_environ(),
+            env=env,
             stdin=subprocess.DEVNULL,
             stdout=logf,
             stderr=logf,
             close_fds=True)
         _detachedSubprocesses.append(child)
 
-    print('child.pid is %d'%child.pid, file=sys.stderr)
+    print('keep{}.pid is {}'.format(n, child.pid), file=sys.stderr)
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
         f.write(str(child.pid))
 
-    _wait_until_port_listens(port)
+    _wait_until_port_listens(port, pid=child.pid)
 
     return port
 
@@ -589,7 +599,7 @@ def run_keep_proxy():
 
     with open(_pidfile('keepproxy'), 'w') as f:
         f.write(str(kp.pid))
-    _wait_until_port_listens(port)
+    _wait_until_port_listens(port, pid=kp.pid)
 
     print("Using API %s token %s" % (os.environ['ARVADOS_API_HOST'], auth_token('admin')), file=sys.stdout)
     api = arvados.api(
@@ -607,7 +617,6 @@ def run_keep_proxy():
         'service_ssl_flag': False,
     }}).execute()
     os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(port)
-    _wait_until_port_listens(port)
 
 def stop_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -630,7 +639,7 @@ def run_keep_web():
     _detachedSubprocesses.append(keepweb)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
-    _wait_until_port_listens(keepwebport)
+    _wait_until_port_listens(keepwebport, pid=keepweb.pid)
 
 def stop_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -685,7 +694,7 @@ def run_nginx():
         stdin=subprocess.DEVNULL,
         stdout=sys.stderr)
     _detachedSubprocesses.append(nginx)
-    _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'])
+    _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'], pid=nginx.pid)
 
 def setup_config():
     rails_api_port = find_available_port()
