@@ -3194,13 +3194,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime-corejs2@npm:^7.0.0":
-  version: 7.24.4
-  resolution: "@babel/runtime-corejs2@npm:7.24.4"
+"@babel/runtime-corejs2@npm:^7.26.10":
+  version: 7.26.10
+  resolution: "@babel/runtime-corejs2@npm:7.26.10"
   dependencies:
     core-js: ^2.6.12
     regenerator-runtime: ^0.14.0
-  checksum: f164006b7b63093ff407bc84988427bf56f01b1764a1eca2478139dcff131411e7c2ea10657e116ae47ccc0e96b165c8329a96336d2d421a05bb34d0292d3521
+  checksum: 0d63d43b1f65998db25da87cdf57193b3827fa8978b41c531996279ecec794f9dab94210cd36dfdf7f1d7f17b7e721d5d7d865244a545f04767b7a5d5f7dc607
   languageName: node
   linkType: hard
 
@@ -6329,7 +6329,7 @@ __metadata:
   resolution: "arvados-workbench-2@workspace:."
   dependencies:
     "@babel/core": ^7.16.0
-    "@babel/runtime-corejs2": ^7.0.0
+    "@babel/runtime-corejs2": ^7.26.10
     "@coreui/coreui": ^4.3.2
     "@coreui/react": ^4.11.0
     "@date-io/date-fns": 1

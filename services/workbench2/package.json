@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@babel/core": "^7.16.0",
-    "@babel/runtime-corejs2": "^7.0.0",
+    "@babel/runtime-corejs2": "^7.26.10",
     "@coreui/coreui": "^4.3.2",
     "@coreui/react": "^4.11.0",
     "@date-io/date-fns": "1",
