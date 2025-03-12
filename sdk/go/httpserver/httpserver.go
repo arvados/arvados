@@ -5,8 +5,11 @@
 package httpserver
 
 import (
+	"log"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -33,7 +36,7 @@ func (srv *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	srv.listener, err = net.ListenTCP("tcp", addr)
+	srv.listener, err = listenTCP("tcp", addr)
 	if err != nil {
 		return err
 	}
@@ -93,4 +96,27 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 	tc.SetKeepAlive(true)
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
+}
+
+// net.ListenTCP, but retry after "address already in use" for up to 5
+// minutes if running inside the arvados test suite.
+func listenTCP(network string, addr *net.TCPAddr) (*net.TCPListener, error) {
+	if os.Getenv("ARVADOS_TEST_API_HOST") == "" {
+		return net.ListenTCP("tcp", addr)
+	}
+	timeout := 5 * time.Minute
+	deadline := time.Now().Add(timeout)
+	logged := false
+	for {
+		ln, err := net.ListenTCP("tcp", addr)
+		if err != nil && strings.Contains(err.Error(), "address already in use") && time.Now().Before(deadline) {
+			if !logged {
+				log.Printf("listenTCP: retrying up to %v after error: %s", timeout, err)
+				logged = true
+			}
+			time.Sleep(time.Second)
+			continue
+		}
+		return ln, err
+	}
 }
