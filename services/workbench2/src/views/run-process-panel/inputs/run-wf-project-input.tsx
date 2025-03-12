@@ -112,7 +112,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
             if (prevProps.defaultProject !== this.props.defaultProject) {
                 this.setState({ project: this.props.defaultProject });
             }
-            if(!prevState.open && this.state.open) {
+            if (!prevState.open && this.state.open) {
                 this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
             }
             if (!this.state.project && this.props.defaultProject) {
@@ -223,6 +223,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                                 cascadeSelection={false}
                                 options={this.props.options}
                                 project={this.state.project}
+                                currentUuids={[this.state.project?.uuid || '']}
                                 toggleItemActive={this.setProject} />
                         </div>
                     </DialogContent>
