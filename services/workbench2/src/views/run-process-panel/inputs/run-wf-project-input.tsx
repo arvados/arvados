@@ -61,6 +61,7 @@ interface ProjectInputComponentState {
 type ProjectInputComponentProps = {
     userUuid: string | undefined;
     userRootProject: ProjectResource | undefined;
+    targetProject: ProjectResource | undefined;
     defaultProject: ProjectResource | undefined;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     required?: boolean;
@@ -70,13 +71,15 @@ interface HasUserUuid {
     userUuid: string;
 }
 
-const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'userRootProject' | 'defaultProject'> => {
+const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'userRootProject' | 'targetProject' | 'defaultProject'> => {
     const userUuid = getUserUuid(state)
     const userRootProject = getResource<ProjectResource>(userUuid)(state.resources);
-    const defaultProject = getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources) || userRootProject;
+    const targetProject = getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources)
+    const defaultProject = targetProject || userRootProject;
     return {
         userUuid,
         userRootProject,
+        targetProject,
         defaultProject,
     }
 };
@@ -114,6 +117,9 @@ const ProjectInputComponent = connect(mapStateToProps)(
             }
             if (!this.state.project && this.props.defaultProject) {
                 this.setState({ project: this.props.defaultProject });
+            }
+            if (!this.props.targetProject && this.state.project) {
+                this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.project.uuid));
             }
         }
 
