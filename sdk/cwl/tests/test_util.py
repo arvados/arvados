@@ -10,7 +10,7 @@ from unittest import mock
 
 from arvados_cwl.util import *
 from arvados.errors import ApiError
-from arvados_cwl.util import common_prefix
+from arvados_cwl.util import common_prefix, sanitize_url
 
 class MockDateTime(datetime.datetime):
     @classmethod
@@ -69,3 +69,7 @@ class TestUtil(unittest.TestCase):
         # just confirm the logic doesn't have a fencepost error
         prefix = "file:///"
         self.assertEqual("file:///foo/bar"[len(prefix):], "foo/bar")
+
+    def test_sanitize_url(self):
+        self.assertEqual(sanitize_url("https://x-access-token:blahblahblah@github.com/foo/bar.git"), "https://github.com/foo/bar.git")
+        self.assertEqual(sanitize_url("https://github.com/foo/bar.git"), "https://github.com/foo/bar.git")

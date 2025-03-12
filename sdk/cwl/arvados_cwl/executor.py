@@ -584,6 +584,8 @@ The 'jobs' API is no longer supported.
             git_toplevel = git_output(["git", "rev-parse", "--show-toplevel"])
             git_path = filepath[len(git_toplevel):]
 
+            git_origin = arvados_cwl.util.sanitize_url(git_origin)
+
             gitproperties = {
                 "http://arvados.org/cwl#gitCommit": git_commit,
                 "http://arvados.org/cwl#gitDate": git_date,

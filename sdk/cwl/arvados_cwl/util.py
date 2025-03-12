@@ -3,24 +3,28 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import datetime
+import urllib.parse
+
 from arvados.errors import ApiError
 
 collectionUUID =  "http://arvados.org/cwl#collectionUUID"
 
-def get_intermediate_collection_info(workflow_step_name, current_container, intermediate_output_ttl):
-        if workflow_step_name:
-            name = "Intermediate collection for step %s" % (workflow_step_name)
-        else:
-            name = "Intermediate collection"
-        trash_time = None
-        if intermediate_output_ttl > 0:
-            trash_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=intermediate_output_ttl)
-        container_uuid = None
-        props = {"type": "intermediate"}
-        if current_container:
-            props["container_uuid"] = current_container['uuid']
 
-        return {"name" : name, "trash_at" : trash_time, "properties" : props}
+def get_intermediate_collection_info(workflow_step_name, current_container, intermediate_output_ttl):
+    if workflow_step_name:
+        name = "Intermediate collection for step %s" % (workflow_step_name)
+    else:
+        name = "Intermediate collection"
+    trash_time = None
+    if intermediate_output_ttl > 0:
+        trash_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=intermediate_output_ttl)
+    container_uuid = None
+    props = {"type": "intermediate"}
+    if current_container:
+        props["container_uuid"] = current_container['uuid']
+
+    return {"name" : name, "trash_at" : trash_time, "properties" : props}
+
 
 def get_current_container(api, num_retries=0, logger=None):
     current_container = None
@@ -49,3 +53,23 @@ def common_prefix(firstfile, all_files):
         if not any(common_parts):
             break
     return '/'.join(common_parts)
+
+
+def sanitize_url(url):
+    """Remove username/password from http URL."""
+
+    if url.startswith("http:") or url.startswith("https:"):
+        # If the URL has a username or password in it, we want to
+        # filter it out, for example github tokens like
+        # https://x-access-token:blahblahblah@github.com/foo/bar.git
+
+        url_split = urllib.parse.urlsplit(url)
+        netloc = url_split.netloc
+        if '@' in netloc:
+            netloc = netloc.split("@")[1]
+            return urllib.parse.urlunsplit((url_split.scheme,
+                                               netloc,
+                                               url_split.path,
+                                               url_split.query,
+                                               url_split.fragment))
+    return url
