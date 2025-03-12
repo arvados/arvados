@@ -106,8 +106,10 @@ func bgRun(cmd *exec.Cmd) {
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("%+v: %s", cmd.Args, err)
 	}
-	if _, err := cmd.Process.Wait(); err != nil {
+	if pstate, err := cmd.Process.Wait(); err != nil {
 		log.Fatalf("%+v: %s", cmd.Args, err)
+	} else if pstate.ExitCode() != 0 {
+		log.Fatalf("%+v: exited %d", cmd.Args, pstate.ExitCode())
 	}
 }
 
