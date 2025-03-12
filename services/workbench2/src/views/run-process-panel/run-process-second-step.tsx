@@ -15,9 +15,10 @@ import { RunProcessInputsForm } from 'views/run-process-panel/run-process-inputs
 import { CommandInputParameter, WorkflowResource } from 'models/workflow';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
-import { isValid } from 'redux-form';
+import { isValid, getFormSyncErrors } from 'redux-form';
 import { createStructuredSelector } from 'reselect';
 import { selectPreset } from 'store/run-process-panel/run-process-panel-actions';
+import { getResource } from 'store/resources/resources';
 
 export interface RunProcessSecondStepFormDataProps {
     inputs: CommandInputParameter[];
@@ -45,8 +46,19 @@ const selectedPresetSelector = (state: RootState) =>
 const inputsSelector = (state: RootState) =>
     state.runProcessPanel.inputs;
 
-const validSelector = (state: RootState) =>
-    isValid(RUN_PROCESS_BASIC_FORM)(state) && isValid(RUN_PROCESS_INPUTS_FORM)(state) && isValid(RUN_PROCESS_ADVANCED_FORM)(state);
+const validSelector = (state: RootState) => {
+    let isBasicFormValid = isValid(RUN_PROCESS_BASIC_FORM)(state);
+    if (isBasicFormValid === false) {
+        const syncErrors = getFormSyncErrors(RUN_PROCESS_BASIC_FORM)(state) as any;
+        if (syncErrors && 'owner' in syncErrors && syncErrors.owner === true) {
+            const defaultOwner = getResource<any>(state.runProcessPanel.processOwnerUuid)(state.resources);
+            if (defaultOwner && defaultOwner.canWrite) {
+                isBasicFormValid = true;
+            }
+        }
+    }
+    return isBasicFormValid && isValid(RUN_PROCESS_INPUTS_FORM)(state) && isValid(RUN_PROCESS_ADVANCED_FORM)(state);
+}
 
 const mapStateToProps = createStructuredSelector({
     inputs: inputsSelector,
