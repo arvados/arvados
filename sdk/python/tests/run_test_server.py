@@ -193,14 +193,20 @@ def find_available_port():
             _already_used_port[port] = True
             return port
 
-def _wait_until_port_listens(port, timeout=10, warn=True, pid=None):
+def _wait_until_port_listens(port, timeout=300, warn=True, pid=None,
+                             listener_must_be_pid=True):
     """Wait for a process to start listening on the given port.
 
     If nothing listens on the port within the specified timeout (given
-    in seconds), print a warning on stderr before returning.
+    in seconds), raise an exception.
 
-    If the `pid` argument is given, wait for that specific process to
-    listen on the port.
+    If the `pid` argument is given and `listener_must_be_pid` is True,
+    wait for that specific process to listen on the port, not just any
+    process.
+
+    If the `pid` argument is given, give up early if that process
+    exits; also, terminate that process if timing out.
+
     """
     try:
         subprocess.check_output(['which', 'netstat'])
@@ -210,22 +216,34 @@ def _wait_until_port_listens(port, timeout=10, warn=True, pid=None):
               file=sys.stderr)
         time.sleep(0.5)
         return
-    if pid:
+    if pid and listener_must_be_pid:
         matchpid = str(pid)
     else:
         matchpid = r'\d+'
     deadline = time.time() + timeout
+    logged = False
+    slept = 0
     while time.time() < deadline:
         if re.search(r'\ntcp.*:'+str(port)+' .* LISTEN +'+matchpid+'/',
-                     subprocess.check_output(['netstat', '-Wlnp'], stderr=subprocess.DEVNULL).decode()):
+                     subprocess.check_output(
+                         ['netstat', '-Wlnp'],
+                         stderr=subprocess.DEVNULL,
+                     ).decode()):
             return True
+        if pid and not os.path.exists('/proc/{}/stat'.format(pid)):
+            raise "process {} does not exist -- giving up on port {}".format(
+                pid or '', port)
+        if slept > 5 and not logged:
+            print("waiting for port {}...".format(port), file=sys.stderr)
+            logged = True
         time.sleep(0.1)
-    if warn:
-        print(
-            "WARNING: Process {} is not listening on port {} (waited {} seconds).".
-            format(pid or '', port, timeout),
-            file=sys.stderr)
-    return False
+        slept += 1
+    if pid:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    raise "process {} never listened on port {}".format(pid or '', port)
 
 def _logfilename(label):
     """Set up a labelled log file, and return a path to write logs to.
@@ -390,9 +408,9 @@ def run(leave_running_atexit=False):
     my_api_host = "127.0.0.1:"+str(port)
     os.environ['ARVADOS_API_HOST'] = my_api_host
 
-    # Make sure the server has written its pid file and started
-    # listening on its TCP port
-    _wait_until_port_listens(port)
+    # Make sure the server is listening on its TCP port.
+    _wait_until_port_listens(port, pid=railsapi.pid, listener_must_be_pid=False)
+    # Make sure the server has written its pid file.
     find_server_pid(pid_file)
 
     reset()
