@@ -133,10 +133,7 @@ class BaseDirectories:
 
     def search(self, name: str) -> Iterator[Path]:
         any_found = False
-        for search_path in itertools.chain(
-                self._spec.iter_systemd(self._env),
-                self._spec.iter_xdg(self._env, self._xdg_subdir),
-        ):
+        for search_path in self.search_paths():
             path = search_path / name
             if path.exists():
                 yield path

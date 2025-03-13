@@ -249,7 +249,6 @@ def set_src_owner_uuid(resource, uuid, args):
 #
 def api_for_instance(instance_name, num_retries):
     msg = []
-    dirs = []
     if instance_name:
         if '/' in instance_name:
             config_file = instance_name
