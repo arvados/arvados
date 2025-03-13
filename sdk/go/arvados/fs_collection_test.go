@@ -1889,7 +1889,7 @@ type dataToWrite struct {
 	data func() []byte
 }
 
-func dataToWrite_SourceTree(c *check.C) (writes []dataToWrite) {
+func dataToWrite_SourceTree(c *check.C, maxfiles int) (writes []dataToWrite) {
 	gitdir, err := filepath.Abs("../../..")
 	c.Assert(err, check.IsNil)
 	infs := os.DirFS(gitdir)
@@ -1916,6 +1916,9 @@ func dataToWrite_SourceTree(c *check.C) (writes []dataToWrite) {
 				return data
 			},
 		})
+		if len(writes) >= maxfiles {
+			break
+		}
 	}
 	return
 }
@@ -1941,27 +1944,45 @@ func dataToWrite_ConstantSizeFilesInDirs(c *check.C, ndirs, nfiles, filesize, ch
 	return
 }
 
+var enableRepackCharts = os.Getenv("ARVADOS_TEST_REPACK_CHARTS") != ""
+
+func (s *CollectionFSSuite) skipMostRepackCostTests(c *check.C) {
+	if !enableRepackCharts {
+		c.Skip("Set ARVADOS_TEST_REPACK_CHARTS to run more cost tests and generate data for charts like https://dev.arvados.org/issues/22320#note-14")
+	}
+}
+
+func (s *CollectionFSSuite) TestRepackCost_SourceTree_Part(c *check.C) {
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 500))
+}
+
 func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
-	s.testRepackCost(c, dataToWrite_SourceTree(c))
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 99999))
 }
 
 func (s *CollectionFSSuite) TestRepackCost_1000x_1M_Files(c *check.C) {
+	s.skipMostRepackCostTests(c)
 	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 1000, 1000000, 0))
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files(c *check.C) {
+	s.skipMostRepackCostTests(c)
 	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 0))
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files_1M_Chunks(c *check.C) {
+	s.skipMostRepackCostTests(c)
 	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 1000000))
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files_1M_Chunks(c *check.C) {
+	s.skipMostRepackCostTests(c)
 	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 1000000))
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files(c *check.C) {
+	s.skipMostRepackCostTests(c)
 	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 0))
 }
 
@@ -2024,8 +2045,8 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite) {
 		if n == 0 {
 			tRepackNoop += tRepack
 			nRepackNoop++
-		} else if bytesWritten()/16 > bytesContent {
-			// Rewriting data >16x on average means
+		} else if bytesWritten()/4 > bytesContent {
+			// Rewriting data >4x on average means
 			// something is terribly wrong -- give up now
 			// instead of going OOM.
 			c.Logf("something is terribly wrong -- bytesWritten %d >> bytesContent %d", bytesWritten(), bytesContent)
@@ -2039,13 +2060,15 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite) {
 	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
 	c.Logf("spent %v on %d Repack calls that had no effect, average %v per call", tRepackNoop, nRepackNoop, tRepackNoop/time.Duration(nRepackNoop))
 
-	// write stats to tmp/{testname}_stats.tsv
-	err = os.Mkdir("tmp", 0777)
-	if !os.IsExist(err) {
+	if enableRepackCharts {
+		// write stats to tmp/{testname}_stats.tsv
+		err = os.Mkdir("tmp", 0777)
+		if !os.IsExist(err) {
+			c.Check(err, check.IsNil)
+		}
+		err = os.WriteFile("tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0666)
 		c.Check(err, check.IsNil)
 	}
-	err = os.WriteFile("tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0666)
-	c.Check(err, check.IsNil)
 }
 
 func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
