@@ -124,7 +124,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     else
       tokens = ApiClientAuthorization.where("uuid like ?", "#{src}-%")
     end
-    tokens.update_all(expires_at: "1995-05-15T01:02:03Z")
+    tokens.update_all(refreshes_at: "1995-05-15T01:02:03Z")
   end
 
   test 'authenticate with remote token that has limited scope' do
@@ -252,10 +252,11 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
 
-    # Expire the cached token.
+    # Update refreshes_at to a time in the past, to induce a re-fetch
+    # from the stub cluster.
     @cached_token_uuid = json_response['uuid']
     act_as_system_user do
-      ApiClientAuthorization.where(uuid: @cached_token_uuid).update_all(expires_at: db_current_time() - 1.day)
+      ApiClientAuthorization.where(uuid: @cached_token_uuid).update_all(refreshes_at: db_current_time() - 1.day)
     end
 
     # Now use the same bare token, but set up the remote cluster to
