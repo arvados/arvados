@@ -173,7 +173,7 @@ select aca.uuid, aca.expires_at, aca.api_token, aca.scopes, users.uuid, users.is
  from api_client_authorizations aca
  left join users on aca.user_id = users.id
  where `+cond+`
- and (expires_at is null or expires_at > current_timestamp at time zone 'UTC')`, args...).Scan(
+ and (least(expires_at, refreshes_at) is null or least(expires_at, refreshes_at) > current_timestamp at time zone 'UTC')`, args...).Scan(
 		&aca.UUID, &expiresAt, &aca.APIToken, &scopesYAML,
 		&user.UUID, &user.IsActive, &user.IsAdmin)
 	if err == sql.ErrNoRows {

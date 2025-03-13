@@ -156,7 +156,14 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 	}
 	user.Authorization.APIToken = token
 	var scopes string
-	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC') LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
+	err = db.QueryRowContext(req.Context(), `
+		SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid
+		FROM api_client_authorizations
+		JOIN users on api_client_authorizations.user_id=users.id
+		WHERE api_token=$1
+			AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC')
+			AND (refreshes_at IS NULL OR refreshes_at > current_timestamp AT TIME ZONE 'UTC')
+		LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
 	if err == sql.ErrNoRows {
 		ctxlog.FromContext(req.Context()).Debugf("validateAPItoken(%s): not found in database", token)
 		return nil, false, nil

@@ -263,6 +263,8 @@ class(es) in `storage_classes_confirmed`.",
     "The last time this token was used to authorize a request.",
     "ApiClientAuthorization.last_used_by_ip_address" =>
     "The IP address of the client that last used this token.",
+    "ApiClientAuthorization.refreshes_at" =>
+    "The time at which the token will be revalidated if it is a cached token issued by a remote cluster, otherise null.",
     "ApiClientAuthorization.scopes" =>
     "An array of strings identifying HTTP methods and API paths this token is
 authorized to use. Refer to the [scopes reference][] for details.

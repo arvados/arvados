@@ -311,7 +311,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 
 	checkTokenInDB := func() time.Time {
 		var exp time.Time
-		err := db.QueryRow(`select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp)
+		err := db.QueryRow(`select greatest(expires_at, refreshes_at) at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp)
 		c.Check(err, check.IsNil)
 		c.Check(exp.Sub(time.Now()) > -time.Second, check.Equals, true)
 		c.Check(exp.Sub(time.Now()) < time.Second, check.Equals, true)
@@ -359,8 +359,9 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 		_, err = call(ctx, nil)
 		c.Check(err, check.IsNil)
 		ent, ok := oidcAuthorizer.cache.Get(accessToken)
-		c.Check(ok, check.Equals, true)
-		c.Check(ent, check.FitsTypeOf, time.Time{})
+		if c.Check(ok, check.Equals, true) {
+			c.Check(ent.(tokenCacheEnt).valid, check.Equals, false)
+		}
 
 		// UserInfo succeeds now, but we still have a cached
 		// negative result.
@@ -368,8 +369,9 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 		_, err = call(ctx, nil)
 		c.Check(err, check.IsNil)
 		ent, ok = oidcAuthorizer.cache.Get(accessToken)
-		c.Check(ok, check.Equals, true)
-		c.Check(ent, check.FitsTypeOf, time.Time{})
+		if c.Check(ok, check.Equals, true) {
+			c.Check(ent.(tokenCacheEnt).valid, check.Equals, false)
+		}
 
 		tokenCacheNegativeTTL = time.Millisecond
 		cleanup()
@@ -416,7 +418,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 
 	// If the token is used again after the in-memory cache
 	// expires, oidcAuthorizer must re-check the token and update
-	// the expires_at value in the database.
+	// the refreshes_at value in the database.
 	time.Sleep(3 * time.Millisecond)
 	oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
 		exp := checkTokenInDB()

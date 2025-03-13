@@ -69,7 +69,12 @@ func expireAPIClientAuthorization(ctx context.Context) error {
 	}
 
 	var retrievedUuid string
-	err = tx.QueryRowContext(ctx, `SELECT uuid FROM api_client_authorizations WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC') LIMIT 1`, tokenSecret).Scan(&retrievedUuid)
+	err = tx.QueryRowContext(ctx, `
+		SELECT uuid
+		FROM api_client_authorizations
+		WHERE api_token=$1
+			AND (LEAST(expires_at, refreshes_at) IS NULL OR LEAST(expires_at, refreshes_at) > current_timestamp AT TIME ZONE 'UTC')
+		LIMIT 1`, tokenSecret).Scan(&retrievedUuid)
 	if err == sql.ErrNoRows {
 		ctxlog.FromContext(ctx).Debugf("expireAPIClientAuthorization(%s): not found in database", token)
 		return nil

@@ -49,6 +49,11 @@ var (
 	pqCodeUniqueViolation = pq.ErrorCode("23505")
 )
 
+type tokenCacheEnt struct {
+	valid   bool
+	refresh time.Time
+}
+
 type oidcLoginController struct {
 	Cluster                *arvados.Cluster
 	Parent                 *Conn
@@ -470,26 +475,19 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	if tok == ta.ctrl.Cluster.SystemRootToken || strings.HasPrefix(tok, "v2/") {
 		return nil
 	}
-	if cached, hit := ta.cache.Get(tok); !hit {
+	if ent, hit := ta.cache.Get(tok); !hit {
 		// Fall through to database and OIDC provider checks
 		// below
-	} else if exp, ok := cached.(time.Time); ok {
-		// cached negative result (value is expiry time)
-		if time.Now().Before(exp) {
+	} else if ent := ent.(tokenCacheEnt); !ent.valid {
+		// cached negative result
+		if time.Now().Before(ent.refresh) {
 			return nil
 		}
 		ta.cache.Remove(tok)
-	} else {
-		// cached positive result
-		aca := cached.(arvados.APIClientAuthorization)
-		var expiring bool
-		if !aca.ExpiresAt.IsZero() {
-			t := aca.ExpiresAt
-			expiring = t.Before(time.Now().Add(time.Minute))
-		}
-		if !expiring {
-			return nil
-		}
+	} else if ent.refresh.IsZero() || ent.refresh.After(time.Now().Add(time.Minute)) {
+		// cached positive result, and we're not at/near
+		// refresh time
+		return nil
 	}
 
 	db, err := ta.getdb(ctx)
@@ -510,17 +508,23 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	io.WriteString(mac, tok)
 	hmac := fmt.Sprintf("%x", mac.Sum(nil))
 
-	var expiring bool
-	err = tx.QueryRowContext(ctx, `select (expires_at is not null and expires_at - interval '1 minute' <= current_timestamp at time zone 'UTC') from api_client_authorizations where api_token=$1`, hmac).Scan(&expiring)
+	var needRefresh bool
+	err = tx.QueryRowContext(ctx, `
+		select (least(expires_at, refreshes_at) is not null
+			and least(expires_at, refreshes_at) - interval '1 minute' <= current_timestamp at time zone 'UTC')
+		from api_client_authorizations
+		where api_token=$1`, hmac).Scan(&needRefresh)
 	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("database error while checking token: %w", err)
-	} else if err == nil && !expiring {
+	} else if err == nil && !needRefresh {
 		// Token is already in the database as an Arvados
 		// token, and isn't about to expire, so we can pass it
 		// through to RailsAPI etc. regardless of whether it's
 		// an OIDC access token.
 		return nil
 	}
+	// err is either nil (meaning we need to update an existing
+	// row) or sql.ErrNoRows (meaning we need to insert a new row)
 	updating := err == nil
 
 	// Check whether the token is a valid OIDC access token. If
@@ -533,7 +537,10 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	}
 	if ok, err := ta.checkAccessTokenScope(ctx, tok); err != nil || !ok {
 		// Note checkAccessTokenScope logs any interesting errors
-		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
+		ta.cache.Add(tok, tokenCacheEnt{
+			valid:   false,
+			refresh: time.Now().Add(tokenCacheNegativeTTL),
+		})
 		return err
 	}
 	oauth2Token := &oauth2.Token{
@@ -556,7 +563,10 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 			return err
 		}
 		ctxlog.FromContext(ctx).WithError(err).WithField("HMAC", hmac).Debug("UserInfo failed (not an OIDC token?), caching negative result")
-		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
+		ta.cache.Add(tok, tokenCacheEnt{
+			valid:   false,
+			refresh: time.Now().Add(tokenCacheNegativeTTL),
+		})
 		return nil
 	}
 	ctxlog.FromContext(ctx).WithField("userinfo", userinfo).Debug("(*oidcTokenAuthorizer)registerToken: got userinfo")
@@ -565,15 +575,15 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		return err
 	}
 
-	// Expiry time for our token is one minute longer than our
+	// Refresh time for our token is one minute longer than our
 	// cache TTL, so we don't pass it through to RailsAPI just as
-	// it's expiring.
-	exp := time.Now().UTC().Add(tokenCacheTTL + tokenCacheRaceWindow)
+	// the refresh time is arriving.
+	refresh := time.Now().UTC().Add(tokenCacheTTL + tokenCacheRaceWindow)
 
 	if updating {
-		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=$1 where api_token=$2`, exp, hmac)
+		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=null, refreshes_at=$1 where api_token=$2`, refresh, hmac)
 		if err != nil {
-			return fmt.Errorf("error updating token expiry time: %w", err)
+			return fmt.Errorf("error updating token refresh time: %w", err)
 		}
 		ctxlog.FromContext(ctx).WithField("HMAC", hmac).Debug("(*oidcTokenAuthorizer)registerToken: updated api_client_authorizations row")
 	} else {
@@ -585,7 +595,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		if err != nil {
 			return err
 		}
-		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1, expires_at=$2 where uuid=$3`, hmac, exp, aca.UUID)
+		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1, expires_at=null, refreshes_at=$2 where uuid=$3`, hmac, refresh, aca.UUID)
 		if e, ok := err.(*pq.Error); ok && e.Code == pqCodeUniqueViolation {
 			// unique_violation, given that the above
 			// query did not find a row with matching
@@ -614,7 +624,10 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	if err != nil {
 		return err
 	}
-	ta.cache.Add(tok, arvados.APIClientAuthorization{ExpiresAt: exp})
+	ta.cache.Add(tok, tokenCacheEnt{
+		valid:   true,
+		refresh: refresh,
+	})
 	return nil
 }
 
