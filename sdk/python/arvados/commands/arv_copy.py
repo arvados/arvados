@@ -44,6 +44,7 @@ import arvados.keep
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
+from arvados.logging import log_handler
 
 from arvados._internal import basedirs, http_to_keep
 from arvados._version import __version__
@@ -162,13 +163,13 @@ or the fallback value 2.
 
     # Make sure errors trying to connect to clusters get logged.
     googleapi_logger.setLevel(logging.WARN)
-    googleapi_logger.addHandler(logging.StreamHandler())
+    googleapi_logger.addHandler(log_handler)
 
     # Create API clients for the source and destination instances
     src_arv = api_for_instance(args.source_arvados, args.retries)
     dst_arv = api_for_instance(args.destination_arvados, args.retries)
 
-    # Once we're successfully contacted the clusters, we probably
+    # Once we've successfully contacted the clusters, we probably
     # don't want to see logging about retries (unless the user asked
     # for verbose output).
     if not args.verbose:
@@ -247,7 +248,8 @@ def set_src_owner_uuid(resource, uuid, args):
 #     configuration directory.
 #
 def api_for_instance(instance_name, num_retries):
-    msg = ""
+    msg = []
+    dirs = []
     if instance_name:
         if '/' in instance_name:
             config_file = instance_name
@@ -269,7 +271,7 @@ def api_for_instance(instance_name, num_retries):
                                      num_retries=num_retries,
                                      )
             else:
-                abort('missing ARVADOS_API_HOST or ARVADOS_API_TOKEN for {} in config file {}'.format(instance_name, config_file))
+                msg.append('missing ARVADOS_API_HOST or ARVADOS_API_TOKEN for {} in config file {}'.format(instance_name, config_file))
         except OSError as e:
             if e.errno in (errno.EHOSTUNREACH, errno.ECONNREFUSED, errno.ECONNRESET, errno.ENETUNREACH):
                 verb = 'connect to instance from'
@@ -277,14 +279,12 @@ def api_for_instance(instance_name, num_retries):
                 verb = 'open'
             else:
                 verb = 'find'
-                config_file = f'{instance_name}.conf'
-            msg = ("Could not {} config file {}: {}\n" +
-                   "Please check that ARVADOS_API_HOST and ARVADOS_API_TOKEN " +
-                   "for Arvados instance {} are correctly defined in {} and that this " +
-                   "file is readable.").format(
-                       verb, config_file, e.strerror, instance_name, config_file)
+                searchlist = ":".join(str(p) for p in dirs.search_paths())
+                config_file = f'{instance_name}.conf in path {searchlist}'
+            msg.append(("Could not {} config file {}: {}").format(
+                       verb, config_file, e.strerror))
         except (httplib2.error.HttpLib2Error, googleapiclient.errors.Error) as e:
-            msg = "Failed to connect to instance {} at {}, error was {}".format(instance_name, cfg['ARVADOS_API_HOST'], e)
+            msg.append("Failed to connect to instance {} at {}, error was {}".format(instance_name, cfg['ARVADOS_API_HOST'], e))
 
     default_api = None
     default_instance = None
@@ -294,19 +294,19 @@ def api_for_instance(instance_name, num_retries):
     except ValueError:
         pass
     except (httplib2.error.HttpLib2Error, googleapiclient.errors.Error, OSError) as e:
-        msg = "Failed to connect to default instance, error was {}".format(e)
+        msg.append("Failed to connect to default instance, error was {}".format(e))
 
     if default_api is not None and (not instance_name or instance_name == default_instance):
         # Use default settings
         return default_api
 
-    if instance_name:
-        if msg:
-            abort(msg)
-        elif default_instance and instance_name != default_instance:
-            abort("Have credentials for {} but need to connect to {}".format(default_instance, instance_name))
+    if instance_name and default_instance and instance_name != default_instance:
+        msg.append("Default credentials are for {} but need to connect to {}".format(default_instance, instance_name))
 
-    abort('missing ARVADOS_API_HOST and ARVADOS_API_TOKEN')
+    for m in msg:
+        logger.error(m)
+
+    abort('Unable to find usable ARVADOS_API_HOST and ARVADOS_API_TOKEN')
 
 # Check if git is available
 def check_git_availability():

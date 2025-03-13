@@ -126,6 +126,11 @@ class BaseDirectories:
         self._env = env
         self._xdg_subdir = PurePath(xdg_subdir)
 
+    def search_paths(self) -> Iterator[Path]:
+        return itertools.chain(
+                self._spec.iter_systemd(self._env),
+                self._spec.iter_xdg(self._env, self._xdg_subdir))
+
     def search(self, name: str) -> Iterator[Path]:
         any_found = False
         for search_path in itertools.chain(
