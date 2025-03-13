@@ -73,3 +73,4 @@ class TestUtil(unittest.TestCase):
     def test_sanitize_url(self):
         self.assertEqual(sanitize_url("https://x-access-token:blahblahblah@github.com/foo/bar.git"), "https://github.com/foo/bar.git")
         self.assertEqual(sanitize_url("https://github.com/foo/bar.git"), "https://github.com/foo/bar.git")
+        self.assertEqual(sanitize_url("git@github.com:foo/bar.git"), "git@github.com:foo/bar.git")

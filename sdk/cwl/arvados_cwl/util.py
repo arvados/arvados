@@ -58,18 +58,9 @@ def common_prefix(firstfile, all_files):
 def sanitize_url(url):
     """Remove username/password from http URL."""
 
-    if url.startswith("http:") or url.startswith("https:"):
-        # If the URL has a username or password in it, we want to
-        # filter it out, for example github tokens like
-        # https://x-access-token:blahblahblah@github.com/foo/bar.git
-
-        url_split = urllib.parse.urlsplit(url)
-        netloc = url_split.netloc
-        if '@' in netloc:
-            netloc = netloc.split("@")[1]
-            return urllib.parse.urlunsplit((url_split.scheme,
-                                               netloc,
-                                               url_split.path,
-                                               url_split.query,
-                                               url_split.fragment))
-    return url
+    parts = urllib.parse.urlparse(url)
+    if parts.port is None:
+        netloc = parts.hostname
+    else:
+        netloc = f'{parts.hostname}:{parts.port}'
+    return urllib.parse.urlunparse(parts._replace(netloc=netloc))
