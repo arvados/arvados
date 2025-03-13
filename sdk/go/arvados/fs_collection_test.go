@@ -1953,40 +1953,40 @@ func (s *CollectionFSSuite) skipMostRepackCostTests(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestRepackCost_SourceTree_Part(c *check.C) {
-	s.testRepackCost(c, dataToWrite_SourceTree(c, 500))
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 500), 40)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_SourceTree(c, 99999))
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 99999), 50)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_1000x_1M_Files(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 1000, 1000000, 0))
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 1000, 1000000, 0), 80)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 0))
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 0), 20)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files_1M_Chunks(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 1000000))
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 1000000), 50)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files_1M_Chunks(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 1000000))
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 1000000), 80)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 0))
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 0), 100)
 }
 
-func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite) {
+func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite, maxBlocks int) {
 	s.kc.blocks = make(map[string][]byte)
 	testfs, err := (&Collection{}).FileSystem(nil, s.kc)
 	c.Assert(err, check.IsNil)
@@ -2055,6 +2055,7 @@ func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite) {
 		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.06f\n", writeIndex+1, len(filesWritten), bytesContent, blocksInManifest(), bytesWritten(), nRepackTotal-nRepackNoop, nRepackNoop, tRepackTotal.Seconds())
 	}
 	c.Check(err, check.IsNil)
+	c.Check(blocksInManifest() <= maxBlocks, check.Equals, true, check.Commentf("expect %d <= %d", blocksInManifest(), maxBlocks))
 
 	c.Logf("writes %d files %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", len(writes), len(filesWritten), bytesContent, bytesWritten(), bytesWritten()-bytesContent, blocksInManifest())
 	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
