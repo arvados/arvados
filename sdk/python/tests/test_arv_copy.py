@@ -138,11 +138,11 @@ class TestApiForInstance:
 
     def test_from_environ(self, patch_api):
         actual = arv_copy.api_for_instance('', 0)
-        assert actual.kwargs == {}
+        assert actual.kwargs == {"num_retries": 0}
 
     def test_instance_matches_environ(self, patch_api):
         actual = arv_copy.api_for_instance('zzzzz', 0)
-        assert actual.kwargs == {}
+        assert actual.kwargs == {"num_retries": 0}
 
     def test_relative_path(self, patch_api, config_file, monkeypatch):
         monkeypatch.chdir(config_file.parent)
