@@ -77,6 +77,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           body = {
             uuid: @stub_token_uuid || api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
             owner_uuid: "#{clusterid}-tpzed-00000000000000z",
+            expires_at: '2067-07-01T00:00:00.000000000Z',
             scopes: @stub_token_scopes,
           }
           if @stub_content.is_a?(Hash) and owner_uuid = @stub_content[:uuid]
@@ -155,6 +156,19 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         params: {format: "json"},
         headers: auth(remote: "zbbbb")
     assert_response :success
+  end
+
+  test 'expires_at is from remote cluster, refreshes_at reflects RemoteTokenRefresh' do
+    2.times do
+      get '/arvados/v1/api_client_authorizations/current',
+          params: {format: 'json'},
+          headers: auth(remote: 'zbbbb')
+      assert_response :success
+      assert_equal '2067-07-01T00:00:00.000000000Z', json_response['expires_at']
+      got_refresh = ApiClientAuthorization.find_by_uuid(json_response['uuid']).refreshes_at
+      expect_refresh = (db_current_time + Rails.configuration.Login.RemoteTokenRefresh).to_datetime
+      assert_operator (got_refresh - expect_refresh).to_f.abs, :<, 1.second.to_f
+    end
   end
 
   test 'authenticate with remote token' do
