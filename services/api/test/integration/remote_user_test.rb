@@ -136,14 +136,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
     @stub_token_scopes = ["GET /arvados/v1/users/current"]
 
-    # re-authorize before cache expires
+    # re-authorize before cache refresh time arrives
     get '/arvados/v1/collections',
         params: {format: 'json'},
         headers: auth(remote: 'zbbbb')
     assert_response :success
 
     uncache_token('zbbbb')
-    # re-authorize after cache expires
+    # re-authorize after cache refresh time arrives
     get '/arvados/v1/collections',
         params: {format: 'json'},
         headers: auth(remote: 'zbbbb')
@@ -185,14 +185,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     # revoke original token
     @stub_token_status = 401
 
-    # re-authorize before cache expires
+    # re-authorize before cache refresh time arrives
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
 
     uncache_token('zbbbb')
-    # re-authorize after cache expires
+    # re-authorize after cache refresh time arrives
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
@@ -230,7 +230,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_content[:is_invited] = false
 
     uncache_token('zbbbb')
-    # re-authorize after cache expires
+    # re-authorize after cache refresh time arrives
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
