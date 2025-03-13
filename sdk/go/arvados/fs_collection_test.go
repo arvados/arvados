@@ -1696,7 +1696,7 @@ func (s *CollectionFSSuite) TestPlanRepack_2x22M_DuplicateBlock_TooShort(c *chec
 }
 
 func (s *CollectionFSSuite) TestPlanRepack_SiblingsTogether(c *check.C) {
-	// Pack sibling files' ("a" and "b") segments together before
+	// Pack sibling files' ("a" and "c") segments together before
 	// other subdirs ("b/b"), even though subdir "b" sorts between
 	// "a" and "c".
 	s.testPlanRepack(c,
