@@ -284,6 +284,12 @@ type ContainerLogOptions struct {
 	WebDAVOptions
 }
 
+type RepackOptions struct {
+	CachedOnly bool
+	Full       bool
+	DryRun     bool
+}
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	VocabularyGet(ctx context.Context) (Vocabulary, error)
