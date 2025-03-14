@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -41,30 +42,20 @@ func ResetEnv() {
 	}
 }
 
-var pythonTestDir string
-
-func chdirToPythonTests() {
-	if pythonTestDir != "" {
-		if err := os.Chdir(pythonTestDir); err != nil {
-			log.Fatalf("chdir %s: %s", pythonTestDir, err)
-		}
-		return
-	}
-	for {
-		if err := os.Chdir("sdk/python/tests"); err == nil {
-			pythonTestDir, err = os.Getwd()
+func pythonTestDir() string {
+	reldir := "sdk/python/tests/"
+	for i := 0; i < 10; i++ {
+		if _, err := os.Stat(reldir); err == nil {
+			dir, err := filepath.Abs(reldir)
 			if err != nil {
 				log.Fatal(err)
 			}
-			return
+			return dir
 		}
-		if parent, err := os.Getwd(); err != nil || parent == "/" {
-			log.Fatalf("sdk/python/tests/ not found in any ancestor")
-		}
-		if err := os.Chdir(".."); err != nil {
-			log.Fatal(err)
-		}
+		reldir = "../" + reldir
 	}
+	log.Fatalf("sdk/python/tests/ not found in any ancestor")
+	return ""
 }
 
 func ResetDB(c *check.C) {
@@ -84,27 +75,21 @@ func ResetDB(c *check.C) {
 // optionally with --keep-blob-signing enabled.
 // Use numKeepServers = 2 and blobSigning = false under all normal circumstances.
 func StartKeep(numKeepServers int, blobSigning bool) {
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-	chdirToPythonTests()
-
 	cmdArgs := []string{"run_test_server.py", "start_keep", "--num-keep-servers", strconv.Itoa(numKeepServers)}
 	if blobSigning {
 		cmdArgs = append(cmdArgs, "--keep-blob-signing")
 	}
-
-	bgRun(exec.Command("python", cmdArgs...))
+	cmd := exec.Command("python", cmdArgs...)
+	cmd.Dir = pythonTestDir()
+	bgRun(cmd)
 }
 
 // StopKeep stops keep servers that were started with StartKeep.
 // numkeepServers should be the same value that was passed to StartKeep,
 // which is 2 under all normal circumstances.
 func StopKeep(numKeepServers int) {
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-	chdirToPythonTests()
-
 	cmd := exec.Command("python", "run_test_server.py", "stop_keep", "--num-keep-servers", strconv.Itoa(numKeepServers))
+	cmd.Dir = pythonTestDir()
 	bgRun(cmd)
 	// Without Wait, "go test" in go1.10.1 tends to hang. https://github.com/golang/go/issues/24050
 	cmd.Wait()
@@ -121,8 +106,10 @@ func bgRun(cmd *exec.Cmd) {
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("%+v: %s", cmd.Args, err)
 	}
-	if _, err := cmd.Process.Wait(); err != nil {
+	if pstate, err := cmd.Process.Wait(); err != nil {
 		log.Fatalf("%+v: %s", cmd.Args, err)
+	} else if pstate.ExitCode() != 0 {
+		log.Fatalf("%+v: exited %d", cmd.Args, pstate.ExitCode())
 	}
 }
 

@@ -43,6 +43,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestMakeArvadosClientSecure(c *C) {
+	defer os.Setenv("ARVADOS_API_HOST_INSECURE", os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
 	ac, err := MakeArvadosClient()
 	c.Assert(err, Equals, nil)
@@ -52,6 +53,7 @@ func (s *ServerRequiredSuite) TestMakeArvadosClientSecure(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestMakeArvadosClientInsecure(c *C) {
+	defer os.Setenv("ARVADOS_API_HOST_INSECURE", os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 	ac, err := MakeArvadosClient()
 	c.Assert(err, Equals, nil)
