@@ -193,7 +193,7 @@ def find_available_port():
             _already_used_port[port] = True
             return port
 
-def _wait_until_port_listens(port, timeout=300, warn=True, pid=None,
+def _wait_until_port_listens(port, *, timeout=300, pid=None,
                              listener_must_be_pid=True):
     """Wait for a process to start listening on the given port.
 
