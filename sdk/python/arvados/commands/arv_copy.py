@@ -33,6 +33,10 @@ import io
 import json
 import queue
 import threading
+import errno
+
+import httplib2.error
+import googleapiclient
 
 import arvados
 import arvados.config
@@ -40,6 +44,7 @@ import arvados.keep
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
+from arvados.logging import log_handler
 
 from arvados._internal import basedirs, http_to_keep
 from arvados._version import __version__
@@ -47,6 +52,9 @@ from arvados._version import __version__
 COMMIT_HASH_RE = re.compile(r'^[0-9a-f]{1,40}$')
 
 logger = logging.getLogger('arvados.arv-copy')
+
+# Set this up so connection errors get logged.
+googleapi_logger = logging.getLogger('googleapiclient.http')
 
 # local_repo_dir records which git repositories from the Arvados source
 # instance have been checked out locally during this run, and to which
@@ -150,9 +158,28 @@ or the fallback value 2.
     if not args.source_arvados and arvados.util.uuid_pattern.match(args.object_uuid):
         args.source_arvados = args.object_uuid[:5]
 
+    if not args.destination_arvados and args.project_uuid:
+        args.destination_arvados = args.project_uuid[:5]
+
+    # Make sure errors trying to connect to clusters get logged.
+    googleapi_logger.setLevel(logging.WARN)
+    googleapi_logger.addHandler(log_handler)
+
     # Create API clients for the source and destination instances
     src_arv = api_for_instance(args.source_arvados, args.retries)
     dst_arv = api_for_instance(args.destination_arvados, args.retries)
+
+    # Once we've successfully contacted the clusters, we probably
+    # don't want to see logging about retries (unless the user asked
+    # for verbose output).
+    if not args.verbose:
+        googleapi_logger.setLevel(logging.ERROR)
+
+    if src_arv.config()["ClusterID"] == dst_arv.config()["ClusterID"]:
+        logger.info("Copying within cluster %s", src_arv.config()["ClusterID"])
+    else:
+        logger.info("Source cluster is %s", src_arv.config()["ClusterID"])
+        logger.info("Destination cluster is %s", dst_arv.config()["ClusterID"])
 
     if not args.project_uuid:
         args.project_uuid = dst_arv.users().current().execute(num_retries=args.retries)["uuid"]
@@ -221,43 +248,64 @@ def set_src_owner_uuid(resource, uuid, args):
 #     configuration directory.
 #
 def api_for_instance(instance_name, num_retries):
-    if not instance_name:
-        # Use environment
-        return arvados.api('v1')
-
-    if '/' in instance_name:
-        config_file = instance_name
-    else:
-        dirs = basedirs.BaseDirectories('CONFIG')
-        config_file = next(dirs.search(f'{instance_name}.conf'), '')
-
-    try:
-        cfg = arvados.config.load(config_file)
-    except OSError as e:
-        if config_file:
-            verb = 'open'
+    msg = []
+    if instance_name:
+        if '/' in instance_name:
+            config_file = instance_name
         else:
-            verb = 'find'
-            config_file = f'{instance_name}.conf'
-        abort(("Could not {} config file {}: {}\n" +
-               "You must make sure that your configuration tokens\n" +
-               "for Arvados instance {} are in {} and that this\n" +
-               "file is readable.").format(
-                   verb, config_file, e.strerror, instance_name, config_file))
+            dirs = basedirs.BaseDirectories('CONFIG')
+            config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
-    if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
-        api_is_insecure = (
-            cfg.get('ARVADOS_API_HOST_INSECURE', '').lower() in set(
-                ['1', 't', 'true', 'y', 'yes']))
-        client = arvados.api('v1',
-                             host=cfg['ARVADOS_API_HOST'],
-                             token=cfg['ARVADOS_API_TOKEN'],
-                             insecure=api_is_insecure,
-                             num_retries=num_retries,
-                             )
-    else:
-        abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
-    return client
+        try:
+            cfg = arvados.config.load(config_file)
+
+            if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
+                api_is_insecure = (
+                    cfg.get('ARVADOS_API_HOST_INSECURE', '').lower() in set(
+                        ['1', 't', 'true', 'y', 'yes']))
+                return arvados.api('v1',
+                                     host=cfg['ARVADOS_API_HOST'],
+                                     token=cfg['ARVADOS_API_TOKEN'],
+                                     insecure=api_is_insecure,
+                                     num_retries=num_retries,
+                                     )
+            else:
+                msg.append('missing ARVADOS_API_HOST or ARVADOS_API_TOKEN for {} in config file {}'.format(instance_name, config_file))
+        except OSError as e:
+            if e.errno in (errno.EHOSTUNREACH, errno.ECONNREFUSED, errno.ECONNRESET, errno.ENETUNREACH):
+                verb = 'connect to instance from'
+            elif config_file:
+                verb = 'open'
+            else:
+                verb = 'find'
+                searchlist = ":".join(str(p) for p in dirs.search_paths())
+                config_file = f'{instance_name}.conf in path {searchlist}'
+            msg.append(("Could not {} config file {}: {}").format(
+                       verb, config_file, e.strerror))
+        except (httplib2.error.HttpLib2Error, googleapiclient.errors.Error) as e:
+            msg.append("Failed to connect to instance {} at {}, error was {}".format(instance_name, cfg['ARVADOS_API_HOST'], e))
+
+    default_api = None
+    default_instance = None
+    try:
+        default_api = arvados.api('v1', num_retries=num_retries)
+        default_instance = default_api.config()["ClusterID"]
+    except ValueError:
+        pass
+    except (httplib2.error.HttpLib2Error, googleapiclient.errors.Error, OSError) as e:
+        msg.append("Failed to connect to default instance, error was {}".format(e))
+
+    if default_api is not None and (not instance_name or instance_name == default_instance):
+        # Use default settings
+        return default_api
+
+    if instance_name and default_instance and instance_name != default_instance:
+        msg.append("Default credentials are for {} but need to connect to {}".format(default_instance, instance_name))
+
+    for m in msg:
+        logger.error(m)
+
+    abort('Unable to find usable ARVADOS_API_HOST and ARVADOS_API_TOKEN')
 
 # Check if git is available
 def check_git_availability():

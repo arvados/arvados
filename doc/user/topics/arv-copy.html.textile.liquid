@@ -46,17 +46,17 @@ ARVADOS_API_TOKEN=v2/jutro-gj3su-12345abcde67890/abcdefghijklmnopqrstuvwxyz12345
 
 h3. How to copy a collection
 
-First, determine the UUID or portable data hash of the collection you want to copy from the source cluster. The UUID can be found in the collection display page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
+First, determine the UUID or portable data hash of the collection you want to copy from the source cluster. The UUID can be copied with the "Copy UUID" toolbar button, found on the collection details panel, or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from *pirca* to *dstcl*. We will use the UUID @jutro-4zz18-tv416l321i4r01e@ as an example. You can find this collection on <a href="https://playground.arvados.org/collections/jutro-4zz18-tv416l321i4r01e">playground.arvados.org</a>.
+Now copy the collection from *pirca* to *dstcl*. We will use the UUID @pirca-4zz18-xa0i7qjide8td5d@ as an example. You can find this collection on <a href="https://playground.arvados.org/collections/pirca-4zz18-xa0i7qjide8td5d">playground.arvados.org</a>.  Because the UUID starts with @pirca@, it will infer that the source cluster is @pirca@.
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl jutro-4zz18-tv416l321i4r01e</span>
-jutro-4zz18-tv416l321i4r01e: 6.1M / 6.1M 100.0%
+<pre><code>~$ <span class="userinput">arv-copy --dst dstcl pirca-4zz18-xa0i7qjide8td5d</span>
+pirca-4zz18-xa0i7qjide8td5d: 6.1M / 6.1M 100.0%
 arvados.arv-copy[1234] INFO: Success: created copy with uuid dstcl-4zz18-xxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
-You can also copy by content address:
+You can also copy by content address.  In this case, the content address does not include a specific cluster id, and you need to include the source cluster with @--src@.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl 2463fa9efeb75e099685528b3b9071e0+438</span>
@@ -67,9 +67,9 @@ arvados.arv-copy[1234] INFO: Success: created copy with uuid dstcl-4zz18-xxxxxxx
 
 The output of arv-copy displays the UUID of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in an existing project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project UUID.
 
-For example, this will copy the collection to project @dstcl-j7d0g-a894213ukjhal12@ in the destination cluster.
+For example, this will copy the collection to project @dstcl-j7d0g-a894213ukjhal12@ in the destination cluster.  It will infer the destination cluster from the project UUID.  Since it starts with @dstcl@, it will infer that the destination cluster is @dstcl@.
 
-<notextile> <pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl --project-uuid dstcl-j7d0g-a894213ukjhal12 jutro-4zz18-tv416l321i4r01e
+<notextile> <pre><code>~$ <span class="userinput">arv-copy --project-uuid dstcl-j7d0g-a894213ukjhal12 pirca-4zz18-xa0i7qjide8td5d</span>
 </code></pre>
 </notextile>
 
