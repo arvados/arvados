@@ -231,8 +231,9 @@ def _wait_until_port_listens(port, *, timeout=300, pid=None,
                      ).decode()):
             return True
         if pid and not os.path.exists('/proc/{}/stat'.format(pid)):
-            raise "process {} does not exist -- giving up on port {}".format(
-                pid or '', port)
+            raise Exception("process {} does not exist"
+                            " -- giving up on port {}".format(
+                                pid or '', port))
         if slept > 5 and not logged:
             print("waiting for port {}...".format(port), file=sys.stderr)
             logged = True
@@ -243,7 +244,8 @@ def _wait_until_port_listens(port, *, timeout=300, pid=None,
             os.kill(pid, signal.SIGTERM)
         except ProcessLookupError:
             pass
-    raise "process {} never listened on port {}".format(pid or '', port)
+    raise Exception("process {} never listened on port {}".format(
+        pid or '', port))
 
 def _logfilename(label):
     """Set up a labelled log file, and return a path to write logs to.
@@ -370,7 +372,7 @@ def run(leave_running_atexit=False):
         template = f.read()
     newtemplate = re.sub(r'http \{', 'http {\n        passenger_stat_throttle_rate 0;', template)
     if newtemplate == template:
-        raise "template edit failed"
+        raise Exception("template edit failed")
     with open('tmp/passenger-nginx.conf.erb', 'w') as f:
         f.write(newtemplate)
 
