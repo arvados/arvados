@@ -421,7 +421,8 @@ class ApplicationController < ActionController::Base
       @read_auths += ApiClientAuthorization
         .includes(:user)
         .where('api_token IN (?) AND
-                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
+                (least(expires_at, refreshes_at) IS NULL
+                 OR least(expires_at, refreshes_at) > CURRENT_TIMESTAMP)',
                secrets)
         .to_a
     end
