@@ -1828,4 +1828,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 3+7+9, cr.cumulative_cost
   end
 
+  test "Service cannot use existing container" do
+    set_user_from_auth :active
+    cr = create_minimal_req!
+    cr.service = true
+    cr.use_existing = true
+    cr.state = "Committed"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+  end
+
 end

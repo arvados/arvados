@@ -28,6 +28,7 @@ class ContainerRequest < ArvadosModel
   attribute :secret_mounts, :jsonbHash, default: {}
   attribute :output_storage_classes, :jsonbArray, default: lambda { Rails.configuration.DefaultStorageClasses }
   attribute :output_properties, :jsonbHash, default: {}
+  attribute :published_ports, :jsonbHash, default: {}
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -51,6 +52,7 @@ class ContainerRequest < ArvadosModel
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
   validate :validate_runtime_token
+  validate :validate_service
   after_validation :scrub_secrets
   after_validation :set_preemptible
   after_validation :set_container
@@ -88,6 +90,8 @@ class ContainerRequest < ArvadosModel
     t.add :output_storage_classes
     t.add :output_properties
     t.add :cumulative_cost
+    t.add :service
+    t.add :published_ports
   end
 
   # Supported states for a container request
@@ -306,7 +310,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes", "output_glob"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes", "output_glob", "service", "published_ports"]
   end
 
   def set_priority_zero
@@ -623,6 +627,34 @@ class ContainerRequest < ArvadosModel
       end
       if ApiClientAuthorization.validate(token: runtime_token).nil?
         errors.add :runtime_token, "failed validation"
+      end
+    end
+  end
+
+  def validate_service
+    if self.service
+      if self.use_existing
+        errors.add :use_existing, "cannot be true if 'service' is true"
+      end
+      self.published_ports.each do |k,v|
+        i = k.to_i
+        if i < 1 || i > 65535
+          errors.add :published_ports, "key '#{k}' must be an integer in the range 1-65535"
+        end
+        if v.is_a?(Hash)
+          if v["access"] != "private" && v["access"] != "public"
+            errors.add :published_ports, "value #{k}.access must be one of 'public' or 'private' but was '#{v["access"].inspect}'"
+          end
+          if !v["label"].is_a?(String)
+            errors.add :published_ports, "value #{k}.label must be a string but was '#{v["label"].inspect}'"
+          end
+        else
+          errors.add :published_ports, "value '#{v}' must be an dict"
+        end
+      end
+    else
+      if !self.published_ports.empty?
+        errors.add :published_ports, "can only be set when 'service' is true"
       end
     end
   end
