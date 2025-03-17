@@ -279,6 +279,10 @@ func (fw funcwriter) Write(p []byte) (int, error) {
 // cache. The remainder of the block may continue to be copied into
 // the cache in the background.
 func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, error) {
+	return cache.readAt(locator, dst, offset, false)
+}
+
+func (cache *DiskCache) readAt(locator string, dst []byte, offset int, checkCacheOnly bool) (int, error) {
 	cache.setupOnce.Do(cache.setup)
 	cachefilename := cache.cacheFile(locator)
 	if n, err := cache.quickReadAt(cachefilename, dst, offset); err == nil {
@@ -288,6 +292,10 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 	cache.writingLock.Lock()
 	progress := cache.writing[cachefilename]
 	if progress == nil {
+		if checkCacheOnly {
+			cache.writingLock.Unlock()
+			return 0, ErrNotCached
+		}
 		// Nobody else is fetching from backend, so we'll add
 		// a new entry to cache.writing, fetch in a separate
 		// goroutine.
@@ -558,6 +566,9 @@ func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (i
 	blocksize, err := strconv.ParseInt(sizestr, 10, 32)
 	if err != nil || blocksize < 0 {
 		return 0, errors.New("invalid block locator: invalid size hint")
+	}
+	if opts.CheckCacheOnly {
+		return cache.readAt(opts.Locator, nil, 0, true)
 	}
 
 	offset := 0

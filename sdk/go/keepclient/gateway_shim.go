@@ -42,6 +42,9 @@ func (kvh *keepViaHTTP) ReadAt(locator string, dst []byte, offset int) (int, err
 }
 
 func (kvh *keepViaHTTP) BlockRead(ctx context.Context, opts arvados.BlockReadOptions) (int, error) {
+	if opts.CheckCacheOnly {
+		return 0, arvados.ErrNotCached
+	}
 	rdr, _, _, _, err := kvh.getOrHead("GET", opts.Locator, nil)
 	if err != nil {
 		return 0, err

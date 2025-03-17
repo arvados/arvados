@@ -35,6 +35,7 @@ var _ = check.Suite(&CollectionFSSuite{})
 type keepClientStub struct {
 	blocks      map[string][]byte
 	refreshable map[string]bool
+	cached      map[string]bool
 	reads       []string                   // locators from ReadAt() calls
 	onWrite     func(bufcopy []byte) error // called from WriteBlock, before acquiring lock
 	authToken   string                     // client's auth token (used for signing locators)
@@ -59,6 +60,30 @@ func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error
 		return 0, errStub404
 	}
 	return copy(p, buf[off:]), nil
+}
+
+func (kcs *keepClientStub) BlockRead(_ context.Context, opts BlockReadOptions) (int, error) {
+	kcs.Lock()
+	kcs.reads = append(kcs.reads, opts.Locator)
+	kcs.Unlock()
+	kcs.RLock()
+	defer kcs.RUnlock()
+	if opts.CheckCacheOnly {
+		if kcs.cached[opts.Locator[:32]] {
+			return 0, nil
+		} else {
+			return 0, ErrNotCached
+		}
+	}
+	if err := VerifySignature(opts.Locator, kcs.authToken, kcs.sigttl, []byte(kcs.sigkey)); err != nil {
+		return 0, err
+	}
+	buf := kcs.blocks[opts.Locator[:32]]
+	if buf == nil {
+		return 0, errStub404
+	}
+	n, err := io.Copy(opts.WriteTo, bytes.NewReader(buf))
+	return int(n), err
 }
 
 func (kcs *keepClientStub) BlockWrite(_ context.Context, opts BlockWriteOptions) (BlockWriteResponse, error) {
@@ -1589,11 +1614,11 @@ func (s *CollectionFSSuite) TestReplaceSegments_SkipIncompleteSegment(c *check.C
 	c.Check(mtxt, check.Equals, origtxt)
 }
 
-func (s *CollectionFSSuite) testPlanRepack(c *check.C, manifest string, expectPlan [][]storedSegment) {
-	fs, err := (&Collection{ManifestText: manifest}).FileSystem(nil, &keepClientStub{})
+func (s *CollectionFSSuite) testPlanRepack(c *check.C, opts RepackOptions, manifest string, expectPlan [][]storedSegment) {
+	fs, err := (&Collection{ManifestText: manifest}).FileSystem(nil, s.kc)
 	c.Assert(err, check.IsNil)
 	cfs := fs.(*collectionFileSystem)
-	repl, err := cfs.planRepack(context.Background(), RepackOptions{Full: true}, cfs.root.(*dirnode))
+	repl, err := cfs.planRepack(context.Background(), opts, cfs.root.(*dirnode))
 	c.Assert(err, check.IsNil)
 
 	// we always expect kc==cfs, so we fill this in instead of
@@ -1608,6 +1633,7 @@ func (s *CollectionFSSuite) testPlanRepack(c *check.C, manifest string, expectPl
 
 func (s *CollectionFSSuite) TestPlanRepack_2x32M(c *check.C) {
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 0:64000000:file\n",
 		[][]storedSegment{
 			{
@@ -1617,14 +1643,58 @@ func (s *CollectionFSSuite) TestPlanRepack_2x32M(c *check.C) {
 		})
 }
 
+func (s *CollectionFSSuite) TestPlanRepack_2x32M_Cached(c *check.C) {
+	s.kc.cached = map[string]bool{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
+		"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": true,
+	}
+	s.testPlanRepack(c,
+		RepackOptions{Full: true, CachedOnly: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 0:64000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000", size: 32000000, length: 32000000, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000", size: 32000000, length: 32000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32M_OneCached(c *check.C) {
+	s.kc.cached = map[string]bool{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
+	}
+	s.testPlanRepack(c,
+		RepackOptions{Full: true, CachedOnly: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 0:64000000:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_3x32M_TwoCached(c *check.C) {
+	s.kc.cached = map[string]bool{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
+		"cccccccccccccccccccccccccccccccc": true,
+	}
+	s.testPlanRepack(c,
+		RepackOptions{Full: true, CachedOnly: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 cccccccccccccccccccccccccccccccc+32000000 0:96000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000", size: 32000000, length: 32000000, offset: 0},
+				{locator: "cccccccccccccccccccccccccccccccc+32000000", size: 32000000, length: 32000000, offset: 0},
+			},
+		})
+}
+
 func (s *CollectionFSSuite) TestPlanRepack_2x32Mi(c *check.C) {
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554432 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554432 0:67108864:file\n",
 		nil)
 }
 
 func (s *CollectionFSSuite) TestPlanRepack_2x32MiMinus1(c *check.C) {
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554431 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554431 0:67108862:file\n",
 		[][]storedSegment{
 			{
@@ -1636,6 +1706,7 @@ func (s *CollectionFSSuite) TestPlanRepack_2x32MiMinus1(c *check.C) {
 
 func (s *CollectionFSSuite) TestPlanRepack_3x32M(c *check.C) {
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 cccccccccccccccccccccccccccccccc+32000000 0:96000000:file\n",
 		[][]storedSegment{
 			{
@@ -1648,6 +1719,7 @@ func (s *CollectionFSSuite) TestPlanRepack_3x32M(c *check.C) {
 func (s *CollectionFSSuite) TestPlanRepack_3x42M(c *check.C) {
 	// Each block is more than half full, so do nothing.
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+42000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+42000000 cccccccccccccccccccccccccccccccc+42000000 0:126000000:file\n",
 		nil)
 }
@@ -1656,6 +1728,7 @@ func (s *CollectionFSSuite) TestPlanRepack_Premature(c *check.C) {
 	// Repacking would reduce to one block, but it would still be
 	// too short to be worthwhile, so do nothing.
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+123 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+123 cccccccccccccccccccccccccccccccc+123 0:369:file\n",
 		nil)
 }
@@ -1664,6 +1737,7 @@ func (s *CollectionFSSuite) TestPlanRepack_4x22M_NonAdjacent(c *check.C) {
 	// Repack the first three 22M blocks into one 66M block.
 	// Don't touch the 44M blocks or the final 22M block.
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+44000000 cccccccccccccccccccccccccccccccc+22000000 dddddddddddddddddddddddddddddddd+44000000 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee+22000000 ffffffffffffffffffffffffffffffff+44000000 00000000000000000000000000000000+22000000 0:220000000:file\n",
 		[][]storedSegment{
 			{
@@ -1677,6 +1751,7 @@ func (s *CollectionFSSuite) TestPlanRepack_4x22M_NonAdjacent(c *check.C) {
 func (s *CollectionFSSuite) TestPlanRepack_2x22M_DuplicateBlock(c *check.C) {
 	// Repack a+b+c, not a+b+a.
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+22000000 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 0:66000000:file\n"+
 			"./dir cccccccccccccccccccccccccccccccc+22000000 0:22000000:file\n",
 		[][]storedSegment{
@@ -1691,6 +1766,7 @@ func (s *CollectionFSSuite) TestPlanRepack_2x22M_DuplicateBlock(c *check.C) {
 func (s *CollectionFSSuite) TestPlanRepack_2x22M_DuplicateBlock_TooShort(c *check.C) {
 	// Repacking a+b would not meet the 32MiB threshold.
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 0:44000001:file\n",
 		nil)
 }
@@ -1700,6 +1776,7 @@ func (s *CollectionFSSuite) TestPlanRepack_SiblingsTogether(c *check.C) {
 	// other subdirs ("b/b"), even though subdir "b" sorts between
 	// "a" and "c".
 	s.testPlanRepack(c,
+		RepackOptions{Full: true},
 		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+15000000 cccccccccccccccccccccccccccccccc+15000000 0:15000000:a 15000000:15000000:c\n"+
 			"./b bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15000000 0:15000000:b\n",
 		[][]storedSegment{

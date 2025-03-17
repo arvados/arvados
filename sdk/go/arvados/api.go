@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -253,7 +254,14 @@ type BlockReadOptions struct {
 	Locator      string
 	WriteTo      io.Writer
 	LocalLocator func(string)
+	// If true, do not read the block data, just check whether the
+	// block is available in a local filesystem or memory cache.
+	// If not, return ErrNotCached.
+	CheckCacheOnly bool
 }
+
+// See CheckCacheOnly field of BlockReadOptions.
+var ErrNotCached = errors.New("block is not in cache")
 
 type BlockWriteOptions struct {
 	Hash           string

@@ -227,6 +227,9 @@ func (ks *keepstore) BlockRead(ctx context.Context, opts arvados.BlockReadOption
 	if err != nil {
 		return 0, err
 	}
+	if opts.CheckCacheOnly {
+		return 0, arvados.ErrNotCached
+	}
 	out := opts.WriteTo
 	if rw, ok := out.(http.ResponseWriter); ok && li.size > 0 {
 		out = &setSizeOnWrite{ResponseWriter: rw, size: li.size}
