@@ -123,6 +123,10 @@ const ProjectInputComponent = connect(mapStateToProps)(
             }
         }
 
+        componentWillUnmount(): void {
+            this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(''));
+        }
+
         render() {
             return <>
                 {this.renderInput()}

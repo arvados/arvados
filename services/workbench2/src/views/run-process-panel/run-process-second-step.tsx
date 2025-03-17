@@ -96,8 +96,10 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
 export const RunProcessSecondStepForm = connect(mapStateToProps, mapDispatchToProps)(
     ({ userUuid, inputs, workflow, workflowOwner, defaultTargetProject, selectedPreset, presets, onPresetChange, valid, goBack, runProcess, setProcessOwner }: RunProcessSecondStepFormProps) => {
-        if (workflow && workflowOwner && !workflowOwner.canWrite && defaultTargetProject && !defaultTargetProject.canWrite) {
-            setProcessOwner(userUuid);
+        if (workflow && workflowOwner && !workflowOwner.canWrite) {
+            if (defaultTargetProject) {
+                defaultTargetProject.canWrite ? setProcessOwner(defaultTargetProject.uuid) : setProcessOwner(userUuid);
+            }
         }
         return <Grid container spacing={2} data-cy="new-process-panel">
                 <Grid item xs={12}>
