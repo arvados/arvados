@@ -218,13 +218,13 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <DialogTitle>Choose the project where the workflow will run</DialogTitle>
                     <DialogContent className={classes.root}>
                         <div className={classes.pickerWrapper}>
-                            <ProjectsTreePicker
+                            {this.state.project && <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
                                 cascadeSelection={false}
                                 options={this.props.options}
                                 project={this.state.project}
-                                currentUuids={[this.state.project?.uuid || '']}
-                                toggleItemActive={this.setProject} />
+                                currentUuids={[this.state.project?.uuid]}
+                                toggleItemActive={this.setProject} />}
                         </div>
                     </DialogContent>
                     <DialogActions>
