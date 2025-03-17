@@ -29,6 +29,7 @@ export interface RunProcessSecondStepFormDataProps {
     inputs: CommandInputParameter[];
     workflow?: WorkflowResource;
     workflowOwner?: ProjectResource;
+    defaultTargetProject?: ProjectResource;
     presets?: WorkflowResource[];
     selectedPreset?: WorkflowResource;
     valid: boolean;
@@ -70,6 +71,9 @@ const validSelector = (state: RootState) => {
 const workflowOwnerSelector = (state: RootState) =>
     getResource<ProjectResource>(state.runProcessPanel.selectedWorkflow?.ownerUuid)(state.resources);
 
+const defaultTargetProjectSelector = (state: RootState) =>
+    getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources);
+
 const userUuidSelector = (state: RootState) =>
     getUserUuid(state);
 
@@ -79,6 +83,7 @@ const mapStateToProps = createStructuredSelector({
     valid: validSelector,
     workflow: selectedWorkflowSelector,
     workflowOwner: workflowOwnerSelector,
+    defaultTargetProject: defaultTargetProjectSelector,
     presets: presetsSelector,
     selectedPreset: selectedPresetSelector,
 });
@@ -90,8 +95,8 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
 export const RunProcessSecondStepForm = connect(mapStateToProps, mapDispatchToProps)(
-    ({ userUuid, inputs, workflow, workflowOwner, selectedPreset, presets, onPresetChange, valid, goBack, runProcess, setProcessOwner }: RunProcessSecondStepFormProps) => {
-        if (workflow && workflowOwner && !workflowOwner.canWrite) {
+    ({ userUuid, inputs, workflow, workflowOwner, defaultTargetProject, selectedPreset, presets, onPresetChange, valid, goBack, runProcess, setProcessOwner }: RunProcessSecondStepFormProps) => {
+        if (workflow && workflowOwner && !workflowOwner.canWrite && defaultTargetProject && !defaultTargetProject.canWrite) {
             setProcessOwner(userUuid);
         }
         return <Grid container spacing={2} data-cy="new-process-panel">
