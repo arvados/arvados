@@ -128,9 +128,16 @@ interface SelectionComponentState {
     activeItem?: ProjectsTreePickerItem;
 }
 
+const displayUserName = (user: UserResource) => {
+    if (!user.firstName || !user.lastName) {
+        return '';
+    }
+    return `${user.firstName} ${user.lastName} (root project)`;
+};
+
 const DetailsWithName = (resource: GroupContentsResource | UserResource, detailsComponent: JSX.Element) => {
     const displayName = resource.kind === ResourceKind.GROUP ? resource.name
-                            : resource.kind === ResourceKind.USER ? `${resource.firstName} ${resource.lastName}`
+                            : resource.kind === ResourceKind.USER ? displayUserName(resource)
                                 : "Home Projects";
     return <div>
         <Typography variant="h6" gutterBottom>{displayName}</Typography>

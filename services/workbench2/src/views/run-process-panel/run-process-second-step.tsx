@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { Dispatch } from 'redux';
 import { Grid, Button } from '@mui/material';
 import {
          RUN_PROCESS_BASIC_FORM,
@@ -19,10 +20,15 @@ import { isValid, getFormSyncErrors } from 'redux-form';
 import { createStructuredSelector } from 'reselect';
 import { selectPreset } from 'store/run-process-panel/run-process-panel-actions';
 import { getResource } from 'store/resources/resources';
+import { ProjectResource } from 'models/project';
+import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
+import { getUserUuid } from 'common/getuser';
 
 export interface RunProcessSecondStepFormDataProps {
+    userUuid: string;
     inputs: CommandInputParameter[];
     workflow?: WorkflowResource;
+    workflowOwner?: ProjectResource;
     presets?: WorkflowResource[];
     selectedPreset?: WorkflowResource;
     valid: boolean;
@@ -32,6 +38,7 @@ export interface RunProcessSecondStepFormActionProps {
     goBack: () => void;
     runProcess: () => void;
     onPresetChange: (preset: WorkflowResource) => void;
+    setProcessOwner: (ownerUuid: string) => void;
 }
 
 const selectedWorkflowSelector = (state: RootState) =>
@@ -60,29 +67,47 @@ const validSelector = (state: RootState) => {
     return isBasicFormValid && isValid(RUN_PROCESS_INPUTS_FORM)(state) && isValid(RUN_PROCESS_ADVANCED_FORM)(state);
 }
 
+const workflowOwnerSelector = (state: RootState) =>
+    getResource<ProjectResource>(state.runProcessPanel.selectedWorkflow?.ownerUuid)(state.resources);
+
+const userUuidSelector = (state: RootState) =>
+    getUserUuid(state);
+
 const mapStateToProps = createStructuredSelector({
+    userUuid: userUuidSelector,
     inputs: inputsSelector,
     valid: validSelector,
     workflow: selectedWorkflowSelector,
+    workflowOwner: workflowOwnerSelector,
     presets: presetsSelector,
     selectedPreset: selectedPresetSelector,
 });
 
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    setProcessOwner: (ownerUuid: string) => dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(ownerUuid)),
+    onPresetChange: selectPreset,
+});
+
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
-export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChange: selectPreset })(
-    ({ inputs, workflow, selectedPreset, presets, onPresetChange, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
-        <Grid container spacing={2} data-cy="new-process-panel">
-            <Grid item xs={12}>
-                <RunProcessBasicForm workflow={workflow} />
-                <RunProcessInputsForm inputs={inputs} />
-                <RunProcessAdvancedForm />
+export const RunProcessSecondStepForm = connect(mapStateToProps, mapDispatchToProps)(
+    ({ userUuid, inputs, workflow, workflowOwner, selectedPreset, presets, onPresetChange, valid, goBack, runProcess, setProcessOwner }: RunProcessSecondStepFormProps) => {
+        if (workflow && workflowOwner && !workflowOwner.canWrite) {
+            setProcessOwner(userUuid);
+        }
+        return <Grid container spacing={2} data-cy="new-process-panel">
+                <Grid item xs={12}>
+                    <RunProcessBasicForm workflow={workflow} />
+                    <RunProcessInputsForm inputs={inputs} />
+                    <RunProcessAdvancedForm />
+                </Grid>
+                <Grid item xs={12}>
+                    <Button color="primary" onClick={goBack}>
+                        Back
+                    </Button>
+                    <Button disabled={!valid} variant="contained" color="primary" onClick={runProcess}>
+                        Run workflow
+                    </Button>
+                </Grid>
             </Grid>
-            <Grid item xs={12}>
-                <Button color="primary" onClick={goBack}>
-                    Back
-                </Button>
-                <Button disabled={!valid} variant="contained" color="primary" onClick={runProcess}>
-                    Run workflow
-                </Button>
-            </Grid>
-        </Grid>);
+        }
+    );
