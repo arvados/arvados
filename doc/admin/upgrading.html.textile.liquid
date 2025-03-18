@@ -48,6 +48,14 @@ The Arvados Rails API server now needs to be able to link against @libyaml@ deve
 <pre><code># <span class="userinput">dnf config-manager --set-enabled powertools</span>
 </code></pre></notextile>
 
+h3. "cuda" runtime constraint is deprecated in favor of "gpu"
+
+Arvados 3.1.0 adds support for containers that use AMD ROCm alongside our existing support for NVIDIA CUDA. As part of this, the @cuda@ runtime constraint has been deprecated and replaced with a more general @gpu@ constraint. The requested type of GPU is named in the @stack@ field of this object. Other fields have been carried over from @cuda@ and work the same way. Refer to the "runtime constraints reference":{{ site.baseurl }}/api/methods/container_requests.html#runtime_constraints for details.
+
+If client software creates or updates a container request with a @cuda@ runtime constraint, the Arvados API server will automatically translate that to a @gpu@ constraint. This client software should still be updated to specify a @gpu@ runtime constraint, but you can safely upgrade to Arvados 3.1.0 and do these updates opportunistically.
+
+Client software that reads and reports runtime constraints (like Workbench does) must be updated to read the new @gpu@ constraint. The @cuda@ constraint will no longer appear in API responses.
+
 h3. Generalized configuration for GPU compute nodes
 
 As part of adding support for AMD GPUs in Arvados 3.1, the @CUDA@ section of @InstanceType@ definitions is now deprecated in favor of a new @GPU@ section that is generalized for both CUDA and ROCm.
