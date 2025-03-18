@@ -185,13 +185,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             componentDidMount() {
                 const { search } = getProjectsTreePickerIds(this.props.pickerId);
 
-                const preloadParams = this.props.currentUuids ? {
-                    selectedItemUuids: this.props.currentUuids,
-                    includeDirectories: !!this.props.includeDirectories,
-                    includeFiles: !!this.props.includeFiles,
-                    multi: !!this.props.showSelection,
-                } : undefined;
-                this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, preloadParams));
+                this.setInitialActiveItem();
 
                 this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
                 this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
@@ -203,6 +197,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
                 if (prevProps.project !== this.props.project) {
                     this.setState({ activeItem: this.props.project });
+                    this.setInitialActiveItem();
                 }
             }
 
@@ -214,6 +209,16 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: shared }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: favorites }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: publicFavorites }));
+            }
+
+            setInitialActiveItem() {
+                const preloadParams = this.props.currentUuids ? {
+                    selectedItemUuids: this.props.currentUuids,
+                    includeDirectories: !!this.props.includeDirectories,
+                    includeFiles: !!this.props.includeFiles,
+                    multi: !!this.props.showSelection,
+                } : undefined;
+                this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, preloadParams));
             }
 
             setSelection(event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) {

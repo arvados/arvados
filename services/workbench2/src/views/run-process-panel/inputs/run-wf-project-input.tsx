@@ -227,7 +227,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                                 cascadeSelection={false}
                                 options={this.props.options}
                                 project={this.state.project}
-                                currentUuids={[this.state.project?.uuid]}
+                                currentUuids={[this.state.project.uuid]}
                                 toggleItemActive={this.setProject} />}
                         </div>
                     </DialogContent>
