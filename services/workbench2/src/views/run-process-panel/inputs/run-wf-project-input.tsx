@@ -55,6 +55,7 @@ interface ProjectInputComponentState {
     open: boolean;
     project?: ProjectResource;
     originalProject?: ProjectResource;
+    selectedProject?: ProjectResource;
     hasBeenOpened: boolean;
 }
 
@@ -91,6 +92,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
             open: false,
             project: undefined,
             originalProject: undefined,
+            selectedProject: undefined,
             hasBeenOpened: false,
         };
 
@@ -98,7 +100,11 @@ const ProjectInputComponent = connect(mapStateToProps)(
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
             if (!this.state.project && this.props.defaultProject) {
-                this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
+                this.setState({
+                    project: this.props.defaultProject,
+                    originalProject: this.props.defaultProject,
+                    selectedProject: this.props.defaultProject
+                });
             }
             if (this.props.userUuid && !this.state.project) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
@@ -145,12 +151,12 @@ const ProjectInputComponent = connect(mapStateToProps)(
 
         submit = () => {
             this.closeDialog();
-            if (this.state.project) {
-                if (this.state.project.kind === ResourceKind.PROJECT || this.state.project.kind === ResourceKind.USER) {
-                    this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.project.uuid));
+            if (this.state.selectedProject) {
+                if (this.state.selectedProject.kind === ResourceKind.PROJECT || this.state.selectedProject.kind === ResourceKind.USER) {
+                    this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.selectedProject.uuid));
                 }
-                if (this.state.originalProject && this.state.project.uuid !== this.state.originalProject.uuid) {
-                    this.props.input.onChange(this.state.project);
+                if (this.state.originalProject && this.state.selectedProject.uuid !== this.state.originalProject.uuid) {
+                    this.props.input.onChange(this.state.selectedProject);
                 }
             }
         }
@@ -158,12 +164,12 @@ const ProjectInputComponent = connect(mapStateToProps)(
         setProject = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
             if ('kind' in data){
                 if (data.kind === ResourceKind.PROJECT) {
-                    this.setState({ project: data });
+                    this.setState({ selectedProject: data });
                 } else if (data.kind === ResourceKind.USER) {
-                    this.setState({ project: this.props.userRootProject });
+                    this.setState({ selectedProject: this.props.userRootProject });
                 }
             } else {
-                this.setState({ project: undefined });
+                this.setState({ selectedProject: undefined });
             }
         }
 
@@ -182,7 +188,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
 
-        invalid = () => (!this.state.project || !this.state.project.canWrite);
+        invalid = () => (!this.state.selectedProject || !this.state.selectedProject.canWrite);
 
         renderInput() {
             return <GenericInput
