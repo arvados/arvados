@@ -46,7 +46,7 @@ gem 'andand'
 
 gem 'optimist'
 
-gem 'arvados', '~> 3.0.0.rc1'
+gem 'arvados', '~> 3.1.0'
 gem 'httpclient'
 
 gem 'lograge'
