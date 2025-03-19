@@ -76,7 +76,9 @@ const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'us
     const userUuid = getUserUuid(state)
     const userRootProject = getResource<ProjectResource>(userUuid)(state.resources);
     const targetProject = getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources)
-    const defaultProject = targetProject || userRootProject;
+    const isTargetUser = (targetProject as any)?.kind === ResourceKind.USER;
+    const isTargetThisUser = isTargetUser && targetProject?.uuid === userUuid;
+    const defaultProject = !isTargetUser ? targetProject || userRootProject : isTargetThisUser ? targetProject : userRootProject;
     return {
         userUuid,
         userRootProject,
@@ -106,7 +108,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     selectedProject: this.props.defaultProject
                 });
             }
-            if (this.props.userUuid && !this.state.project) {
+            if (this.props.userUuid && !this.state.selectedProject) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
             }
             if (this.state.hasBeenOpened === false) {
@@ -116,16 +118,19 @@ const ProjectInputComponent = connect(mapStateToProps)(
 
         componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
             if (prevProps.defaultProject !== this.props.defaultProject) {
-                this.setState({ project: this.props.defaultProject });
+                this.setState({ project: this.props.defaultProject, selectedProject: this.props.defaultProject });
             }
             if (!prevState.open && this.state.open) {
-                this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject });
+                this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject, selectedProject: this.props.defaultProject });
             }
             if (!this.state.project && this.props.defaultProject) {
                 this.setState({ project: this.props.defaultProject });
             }
             if (!this.props.targetProject && this.state.project) {
                 this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.project.uuid));
+            }
+            if (!this.state.selectedProject && this.state.project) {
+                this.setState({ selectedProject: this.state.project });
             }
         }
 
@@ -162,6 +167,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         setProject = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
+            // console.log('>>>',(data as any).name);
             if ('kind' in data){
                 if (data.kind === ResourceKind.PROJECT) {
                     this.setState({ selectedProject: data });
@@ -196,7 +202,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <Input
                         readOnly
                         fullWidth
-                        value={props.input.value || this.getDisplayName(this.props.defaultProject)}
+                        value={this.getDisplayName(this.props.defaultProject)}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
@@ -228,12 +234,12 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <DialogTitle>Choose the project where the workflow will run</DialogTitle>
                     <DialogContent className={classes.root}>
                         <div className={classes.pickerWrapper}>
-                            {this.state.project && <ProjectsTreePicker
+                            {this.state.selectedProject && <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
                                 cascadeSelection={false}
                                 options={this.props.options}
-                                project={this.state.project}
-                                currentUuids={[this.state.project.uuid]}
+                                project={this.state.selectedProject}
+                                currentUuids={[this.state.selectedProject.uuid]}
                                 toggleItemActive={this.setProject} />}
                         </div>
                     </DialogContent>

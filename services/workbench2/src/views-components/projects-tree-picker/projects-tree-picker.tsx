@@ -194,12 +194,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 }
             }
 
-            componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
-                if (prevProps.project !== this.props.project) {
-                    this.setState({ activeItem: this.props.project });
-                }
-            }
-
             componentWillUnmount() {
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
                 // Release all the state, we don't need it to hang around forever.
