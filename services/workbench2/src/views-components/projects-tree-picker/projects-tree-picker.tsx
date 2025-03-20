@@ -139,7 +139,7 @@ const DetailsWithName = (resource: GroupContentsResource | UserResource, details
     const displayName = resource.kind === ResourceKind.GROUP ? resource.name
                             : resource.kind === ResourceKind.USER ? displayUserName(resource)
                                 : "Home Projects";
-    return <div>
+    return <div data-cy="project-picker-details">
         <Typography variant="h6" gutterBottom>{displayName}</Typography>
         {detailsComponent}
     </div>;

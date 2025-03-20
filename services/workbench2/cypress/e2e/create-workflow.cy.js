@@ -300,6 +300,34 @@ describe('Create workflow tests', function () {
         });
     });
 
+    // it.only('can pick a project from the project picker', function () {
+    //     this.createNestedHelper = createNestedHelper;
+    //     this.createNestedHelper(() => {
+    //         cy.getAll('@project1', '@project2').then(([project1, project2]) => {
+    //             //close the file input dialog
+    //             cy.get('[data-cy=file-input-cancel-button]').click();
+    //             //check that the default owner project is correct
+    //             cy.get(`input[value="Admin User (root project)"]`).should('exist');
+    //             cy.get('[data-cy=run-wf-project-input]').click();
+    //             cy.get('[data-cy=project-picker-details]').contains("Admin User (root project)")
+    //             //selecting a prpject should update the details element
+    //             cy.get('[data-cy=projects-tree-home-tree-picker]').contains(project1.name).click();
+    //             cy.get('[data-cy=project-picker-details]').contains(project1.name)
+    //             //canceling should reset the details element
+    //             cy.get('[data-cy=run-wf-project-picker-cancel-button]').click();
+    //             cy.get(`input[value="Admin User (root project)"]`).should('exist');
+    //             //we should be able to change the selection with the 'OK' button
+    //             cy.get('[data-cy=run-wf-project-input]').click();
+    //             cy.get('[data-cy=projects-tree-home-tree-picker]').contains(project1.name).click();
+    //             cy.get('[data-cy=project-picker-details]').contains(project1.name)
+    //             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
+    //             cy.get(`input[value="${project1.name}"]`).should('exist');
+
+    //         });
+    //             cy.pause()
+    //     });
+    // });
+
     ['workflow_with_array_fields.yaml', 'workflow_with_default_array_fields.yaml'].forEach((yamlfile) =>
     it('can select multi files when creating workflow '+yamlfile, () => {
         cy.createProject({

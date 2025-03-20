@@ -202,6 +202,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <Input
                         readOnly
                         fullWidth
+                        data-cy='run-wf-project-input'
                         value={this.getDisplayName(this.props.defaultProject)}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
@@ -244,7 +245,9 @@ const ProjectInputComponent = connect(mapStateToProps)(
                         </div>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button onClick={this.closeDialog} data-cy='run-wf-project-picker-cancel-button'>
+                            Cancel
+                        </Button>
                         <Button
                             data-cy='run-wf-project-picker-ok-button'
                             disabled={this.invalid()}
