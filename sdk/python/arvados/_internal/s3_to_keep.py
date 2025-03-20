@@ -14,7 +14,7 @@ import arvados.collection
 import boto3
 
 from .downloaderbase import DownloaderBase
-from .to_keep_util import (Response, url_to_keep, check_cached_url as generic_check_cached_url)
+from .to_keep_util import (Response, url_to_keep, generic_check_cached_url)
 
 logger = logging.getLogger('arvados.s3_import')
 
@@ -94,22 +94,22 @@ class _Downloader(DownloaderBase):
             logger.info("%d downloaded, %6.2f MiB/s", self.count, (bps / (1024.0*1024.0)))
         self.checkpoint = loopnow
 
-def check_cached_url(api, project_uuid, url, etags,
+def check_cached_url(api, botosession, project_uuid, url, etags,
                      utcnow=datetime.datetime.utcnow,
                      prefer_cached_downloads=False):
 
-    session = boto3.session.Session()
+    # session = boto3.session.Session()
     # creds = session.get_credentials()
-    # aws_access_key_id=creds.access_key, aws_secret_access_key=creds.secret_key
-    botoclient = session.client('s3')
+    # aws_access_key_id = creds.access_key
+    # aws_secret_access_key = creds.secret_key
 
-    return generic_check_cached_url(api, _Downloader(api, botoclient),
+    return generic_check_cached_url(api, _Downloader(api, botosession.client('s3')),
                             project_uuid, url, etags,
                             utcnow=utcnow,
                             prefer_cached_downloads=prefer_cached_downloads)
 
 
-def s3_to_keep(api, project_uuid, url,
+def s3_to_keep(api, botosession, project_uuid, url,
                utcnow=datetime.datetime.utcnow,
                prefer_cached_downloads=False):
     """Download a file over S3 and upload it to keep, with HTTP headers as metadata.
@@ -118,9 +118,7 @@ def s3_to_keep(api, project_uuid, url,
     reuse most of the HTTP downloading infrastucture.
     """
 
-    botoclient = boto3.client('s3')
-
-    return url_to_keep(api, _Downloader(api, botoclient),
+    return url_to_keep(api, _Downloader(api, botosession.client('s3')),
                        project_uuid, url,
                        utcnow=utcnow,
                        prefer_cached_downloads=prefer_cached_downloads)

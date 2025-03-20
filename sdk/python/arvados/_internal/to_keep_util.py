@@ -100,7 +100,7 @@ def _changed(url, clean_url, properties, now, downloader):
     return True
 
 
-def check_cached_url(api, downloader, project_uuid, url, etags,
+def generic_check_cached_url(api, downloader, project_uuid, url, etags,
                      utcnow=datetime.datetime.utcnow,
                      varying_url_params="",
                      prefer_cached_downloads=False):
@@ -179,7 +179,7 @@ def url_to_keep(api, downloader, project_uuid, url,
     """
 
     etags = {}
-    cache_result = check_cached_url(api, downloader,
+    cache_result = generic_check_cached_url(api, downloader,
                                     project_uuid, url, etags,
                                     utcnow, varying_url_params,
                                     prefer_cached_downloads)

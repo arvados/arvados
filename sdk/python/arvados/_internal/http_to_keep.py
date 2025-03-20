@@ -16,7 +16,7 @@ import arvados._internal
 
 from .downloaderbase import DownloaderBase
 from .pycurl import PyCurlHelper
-from .to_keep_util import (Response, url_to_keep, check_cached_url as generic_check_cached_url)
+from .to_keep_util import (Response, url_to_keep, generic_check_cached_url)
 
 logger = logging.getLogger('arvados.http_import')
 
