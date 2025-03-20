@@ -950,7 +950,7 @@ def copy_from_url(url, src, dst, args):
                                                varying_url_params=args.varying_url_params,
                                                prefer_cached_downloads=prefer_cached_downloads)
     elif url.startswith("s3:"):
-        import boto3
+        import boto3.session
         botosession = boto3.session.Session()
         cached = s3_to_keep.check_cached_url(src, botosession, project_uuid, url, {},
                                              prefer_cached_downloads=prefer_cached_downloads)

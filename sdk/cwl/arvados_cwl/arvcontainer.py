@@ -829,6 +829,18 @@ class RunnerContainer(Runner):
                 }
                 self.job_order[param] = {"$include": mnt}
 
+        if self.arvrunner.botosession is not None and self.arvrunner.defer_downloads:
+            # There are deferred downloads from S3.  Save our credentials to secret
+            # storage
+            creds = self.arvrunner.botosession.get_credentials()
+            secret_mounts["/var/spool/cwl/.aws/credentials"] = {
+                    "kind": "text",
+                    "content": """[default]
+aws_access_key_id = {}
+aws_secret_access_key = {}
+""".format(creds.access_key, creds.secret_key)
+                }
+
         container_image = arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext)
 
         workflow_runner_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")

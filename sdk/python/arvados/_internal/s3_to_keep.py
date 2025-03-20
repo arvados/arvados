@@ -98,11 +98,6 @@ def check_cached_url(api, botosession, project_uuid, url, etags,
                      utcnow=datetime.datetime.utcnow,
                      prefer_cached_downloads=False):
 
-    # session = boto3.session.Session()
-    # creds = session.get_credentials()
-    # aws_access_key_id = creds.access_key
-    # aws_secret_access_key = creds.secret_key
-
     return generic_check_cached_url(api, _Downloader(api, botosession.client('s3')),
                             project_uuid, url, etags,
                             utcnow=utcnow,

@@ -824,6 +824,7 @@ class Runner(Process):
 
         super(Runner, self).__init__(tool.tool, loadingContext)
 
+        # This is called "arvrunner" but it's actually ArvCwlExecutor
         self.arvrunner = runner
         self.embedded_tool = tool
         self.job_order = None

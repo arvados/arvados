@@ -14,6 +14,7 @@ import arvados.collection
 
 from arvados.errors import ApiError
 from arvados._internal.http_to_keep import http_to_keep
+from arvados._internal.s3_to_keep import s3_to_keep
 from cwltool.pathmapper import PathMapper, MapperEnt
 from cwltool.utils import adjustFileObjs, adjustDirObjs
 from cwltool.stdfsaccess import abspath
@@ -104,6 +105,25 @@ class ArvPathMapper(PathMapper):
                         results = http_to_keep(self.arvrunner.api, self.arvrunner.project_uuid, src,
                                                               varying_url_params=self.arvrunner.toplevel_runtimeContext.varying_url_params,
                                                               prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
+                        keepref = "keep:%s/%s" % (results[0], results[1])
+                        logger.info("%s is %s", src, keepref)
+                        self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
+                except Exception as e:
+                    logger.warning("Download error: %s", e)
+            elif src.startswith("s3:"):
+                try:
+                    if self.arvrunner.botosession is None:
+                        import boto3.session
+                        self.arvrunner.botosession = boto3.session.Session()
+                    if self.arvrunner.defer_downloads:
+                        # passthrough, we'll download it later.
+                        self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
+                    else:
+                        results = s3_to_keep(self.arvrunner.api,
+                                             self.arvrunner.botosession,
+                                             self.arvrunner.project_uuid,
+                                             src,
+                                             prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
                         keepref = "keep:%s/%s" % (results[0], results[1])
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
