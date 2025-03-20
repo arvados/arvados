@@ -33,7 +33,7 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { formatFileSize } from 'common/formatters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { Typography } from '@mui/material';
-import { UserResource } from 'models/user';
+import { UserResource, isUserResource } from 'models/user';
 import { ProjectResource } from 'models/project';
 export interface ToplevelPickerProps {
     currentUuids?: string[];
@@ -136,9 +136,10 @@ const displayUserName = (user: UserResource) => {
 };
 
 const DetailsWithName = (resource: GroupContentsResource | UserResource, detailsComponent: JSX.Element) => {
-    const displayName = resource.kind === ResourceKind.GROUP ? resource.name
+    const displayName = resource.kind === ResourceKind.GROUP || resource.kind === ResourceKind.COLLECTION ? resource.name
                             : resource.kind === ResourceKind.USER ? displayUserName(resource)
-                                : "Home Projects";
+                                : '';
+
     return <div data-cy="project-picker-details">
         <Typography variant="h6" gutterBottom>{displayName}</Typography>
         {detailsComponent}
@@ -191,6 +192,14 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
                 if (this.props.project) {
                     this.setState({ activeItem: this.props.project });
+                }
+            }
+
+            componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
+                if (this.props.project && this.state.activeItem !== this.props.project) {
+                    if (isUserResource(this.state.activeItem) && isUserResource(this.props.project) && !this.state.activeItem.firstName) {
+                        this.setState({ activeItem: this.props.project });
+                    }
                 }
             }
 

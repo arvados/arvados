@@ -64,3 +64,7 @@ export const getUserClusterID = (user: User): string | undefined => {
 export interface UserResource extends Resource, User {
     kind: ResourceKind.USER;
 }
+
+export const isUserResource = (resource: any): resource is UserResource => {
+    return resource && resource.kind === ResourceKind.USER;
+};
