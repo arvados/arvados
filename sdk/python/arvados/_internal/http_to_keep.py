@@ -13,24 +13,26 @@ import pycurl
 import arvados
 import arvados.collection
 import arvados._internal
+
+from .downloaderbase import DownloaderBase
 from .pycurl import PyCurlHelper
 from .to_keep_util import (Response, url_to_keep, check_cached_url as generic_check_cached_url)
 
 logger = logging.getLogger('arvados.http_import')
 
-class _Downloader(PyCurlHelper):
+class _Downloader(DownloaderBase, PyCurlHelper):
     # Wait up to 60 seconds for connection
     # How long it can be in "low bandwidth" state before it gives up
     # Low bandwidth threshold is 32 KiB/s
     DOWNLOADER_TIMEOUT = (60, 300, 32768)
 
     def __init__(self, apiclient):
-        super(_Downloader, self).__init__(title_case_headers=True)
+        DownloaderBase.__init__(self)
+        PyCurlHelper.__init__(self, title_case_headers=True)
         self.curl = pycurl.Curl()
         self.curl.setopt(pycurl.NOSIGNAL, 1)
         self.curl.setopt(pycurl.OPENSOCKETFUNCTION,
                     lambda *args, **kwargs: self._socket_open(*args, **kwargs))
-        self.target = None
         self.apiclient = apiclient
 
     def head(self, url):

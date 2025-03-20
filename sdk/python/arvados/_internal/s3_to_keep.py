@@ -10,21 +10,18 @@ import urllib.parse
 import arvados
 import arvados.collection
 
+
 import boto3
 
+from .downloaderbase import DownloaderBase
 from .to_keep_util import (Response, url_to_keep, check_cached_url as generic_check_cached_url)
 
 logger = logging.getLogger('arvados.s3_import')
 
 
-class _Downloader:
-    # Wait up to 60 seconds for connection
-    # How long it can be in "low bandwidth" state before it gives up
-    # Low bandwidth threshold is 32 KiB/s
-    DOWNLOADER_TIMEOUT = (60, 300, 32768)
-
+class _Downloader(DownloaderBase):
     def __init__(self, apiclient, botoclient):
-        self.target = None
+        super().__init__()
         self.apiclient = apiclient
         self.botoclient = botoclient
         self.headresult = None
