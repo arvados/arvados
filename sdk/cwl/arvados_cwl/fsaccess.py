@@ -290,7 +290,7 @@ class CollectionFetcher(DefaultFetcher):
 
         return super(CollectionFetcher, self).urljoin(base_url, url)
 
-    schemes = [u"file", u"http", u"https", u"mailto", u"keep", u"arvwf"]
+    schemes = ["file", "http", "https", "mailto", "keep", "arvwf", "s3"]
 
     def supported_schemes(self):  # type: () -> List[Text]
         return self.schemes

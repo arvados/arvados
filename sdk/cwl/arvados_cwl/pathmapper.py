@@ -75,6 +75,10 @@ class ArvPathMapper(PathMapper):
                 with SourceLine(srcobj, "location", WorkflowException, debug):
                     raise WorkflowException("Invalid keep reference '%s'" % src)
 
+        # Note: fsaccess->CollectionFetcher and
+        # runner->upload_dependencies->collect_uploads have lists of
+        # supported URL schemes that has to be updated when new
+        # schemes are added.
         if src not in self._pathmap:
             if src.startswith("file:"):
                 # Local FS ref, may need to be uploaded or may be on keep
@@ -175,7 +179,7 @@ class ArvPathMapper(PathMapper):
         if loc.startswith("_:"):
             return True
 
-        if self.arvrunner.defer_downloads and (loc.startswith("http:") or loc.startswith("https:")):
+        if self.arvrunner.defer_downloads and (loc.startswith("http:") or loc.startswith("https:") or loc.startswith("s3:")):
             return False
 
         i = loc.rfind("/")
