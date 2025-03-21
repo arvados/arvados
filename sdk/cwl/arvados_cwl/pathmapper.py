@@ -119,6 +119,7 @@ class ArvPathMapper(PathMapper):
                     if self.arvrunner.botosession is None:
                         import boto3.session
                         self.arvrunner.botosession = boto3.session.Session()
+                        logger.info("S3 downloads will use access key id %s", self.arvrunner.botosession.get_credentials().access_key)
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
