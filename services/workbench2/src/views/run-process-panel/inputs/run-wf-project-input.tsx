@@ -167,7 +167,6 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         setProject = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
-            // console.log('>>>',(data as any).name);
             if ('kind' in data){
                 if (data.kind === ResourceKind.PROJECT) {
                     this.setState({ selectedProject: data });
