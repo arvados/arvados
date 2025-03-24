@@ -116,7 +116,11 @@ class ArvPathMapper(PathMapper):
                     logger.warning("Download error: %s", e)
             elif src.startswith("s3:"):
                 try:
-                    if self.arvrunner.botosession is None:
+                    if self.arvrunner.botosession is None and (self.arvrunner.defer_downloads is False or self.arvrunner.toplevel_runtimeContext.aws_credential_capture):
+                        # Create a boto session, which we will either
+                        # use to download from S3 now, or to get the
+                        # credentials that will be passed to the
+                        # workflow runner container later.
                         import boto3.session
                         self.arvrunner.botosession = boto3.session.Session()
                         logger.info("S3 downloads will use access key id %s", self.arvrunner.botosession.get_credentials().access_key)

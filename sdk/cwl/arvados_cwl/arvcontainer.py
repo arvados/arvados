@@ -831,7 +831,7 @@ class RunnerContainer(Runner):
 
         environment = {}
 
-        if self.arvrunner.botosession is not None and self.arvrunner.defer_downloads:
+        if self.arvrunner.botosession is not None and runtimeContext.defer_downloads and runtimeContext.aws_credential_capture:
             # There are deferred downloads from S3.  Save our credentials to secret
             # storage
             creds = self.arvrunner.botosession.get_credentials()
