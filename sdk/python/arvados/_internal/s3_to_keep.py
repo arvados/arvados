@@ -10,8 +10,8 @@ import urllib.parse
 import arvados
 import arvados.collection
 
-
 import boto3
+import boto3.s3.transfer
 
 from .downloaderbase import DownloaderBase
 from .to_keep_util import (Response, url_to_keep, generic_check_cached_url)

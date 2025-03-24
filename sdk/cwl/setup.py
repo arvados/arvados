@@ -35,7 +35,6 @@ setup(name='arvados-cwl-runner',
           'schema-salad==8.5.20240503091721',
           'ciso8601 >= 2.0.0',
           'setuptools>=40.3.0',
-          'boto3',
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
