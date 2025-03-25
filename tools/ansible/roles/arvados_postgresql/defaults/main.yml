@@ -3,6 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 arvados_postgresql_package: postgresql
+# The role will write these settings to a dedicated file under the PostgreSQL
+# conf.d directory. These defaults are suitable for most production
+# installations. You can set this to an empty hash to skip configuration.
+# Note that you MUST quote string values as appropriate for PostgreSQL config.
+arvados_postgresql_config:
+  listen_addresses: "'*'"
+# The path where arvados_postgresql_config will be written.
+# If not set, the role will write the file to `conf.d/arvados-ansible.conf`
+# in the same directory as the HBA file.
+arvados_postgreqsl_config_path: ""
 # If not specified, the role tasks will query the path from the server.
 arvados_postgresql_hba_file: ""
 arvados_postgresql_hba_contype: host

@@ -1,0 +1,9 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+{% for key, val in arvados_postgresql_config.items() %}
+{{ key }} = {{ val }}
+{% endfor %}
