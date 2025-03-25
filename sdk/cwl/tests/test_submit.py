@@ -1592,7 +1592,7 @@ class TestSubmit(unittest.TestCase):
     @stubs()
     def test_submit_defer_s3_download(self, stubs, botosession):
 
-        sessionmock = mock.MagicMock()
+        sessionmock = mock.MagicMock(region_name='us-east-2')
         botosession.return_value = sessionmock
 
         CredsTuple = collections.namedtuple('CredsTuple', ['access_key', 'secret_key'])
@@ -1609,9 +1609,14 @@ class TestSubmit(unittest.TestCase):
         expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['location'] = 's3://examplebucket/blorp.txt'
         del expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['size']
         expect_container['environment']['AWS_SHARED_CREDENTIALS_FILE'] = '/var/lib/cwl/.aws/credentials'
+        expect_container['environment']['AWS_CONFIG_FILE'] = '/var/lib/cwl/.aws/config'
         expect_container['secret_mounts'] = {
             "/var/lib/cwl/.aws/credentials": {
                 "content": "[default]\naws_access_key_id = 123key\naws_secret_access_key = 789secret\n",
+                "kind": "text"
+            },
+            "/var/lib/cwl/.aws/config": {
+                "content": "[default]\nregion = us-east-2\n",
                 "kind": "text"
             }
         }
