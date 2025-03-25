@@ -144,8 +144,6 @@
     - ansible.builtin.include_role:
         name: arvados_postgresql
       vars:
-        arvados_postgresql_hba_users: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
-        arvados_postgresql_hba_databases: "{{ arvados_cluster.PostgreSQL.Connection.dbname }}"
         arvados_postgresql_hba_sources:
           - "127.0.0.1/24"
           - "::1/128"
