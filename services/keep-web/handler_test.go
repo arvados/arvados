@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -2391,6 +2392,128 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 			c.Assert(resp.Code, check.Equals, http.StatusMultiStatus)
 		}
 	}
+}
+
+func (s *IntegrationSuite) TestRepack(c *check.C) {
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveTokenV2
+	var handler http.Handler = s.handler
+	// handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.handler)) // ...to enable request logging in test output
+
+	// Each file we upload will consist of some unique content
+	// followed by 1 MiB of filler content.
+	filler := "."
+	for i := 0; i < 20; i++ {
+		filler += filler
+	}
+
+	var coll arvados.Collection
+	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
+	c.Assert(err, check.IsNil)
+	defer client.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+
+	countblocks := func() int {
+		var current arvados.Collection
+		err = client.RequestAndDecode(&current, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
+		c.Assert(err, check.IsNil)
+		block := map[string]bool{}
+		for _, hash := range regexp.MustCompile(` [0-9a-f]{32}`).FindAllString(current.ManifestText, -1) {
+			block[hash] = true
+		}
+		return len(block)
+	}
+
+	throttle := make(chan bool, 8) // len(throttle) is max upload concurrency
+	n := 5                         // nested loop below will write n^2 + 1 files
+	var nfiles atomic.Int64
+	var totalsize atomic.Int64
+	var wg sync.WaitGroup
+	for i := 0; i < n && !c.Failed(); i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
+			resp := httptest.NewRecorder()
+			req, err := http.NewRequest("MKCOL", u.String(), nil)
+			c.Assert(err, check.IsNil)
+			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+			throttle <- true
+			handler.ServeHTTP(resp, req)
+			<-throttle
+			c.Assert(resp.Code, check.Equals, http.StatusCreated)
+
+			for j := 0; j < n && !c.Failed(); j++ {
+				j := j
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					content := fmt.Sprintf("i=%d/j=%d", i, j)
+					u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
+
+					resp := httptest.NewRecorder()
+					req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content+filler))
+					c.Assert(err, check.IsNil)
+					req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+					throttle <- true
+					handler.ServeHTTP(resp, req)
+					<-throttle
+					c.Check(resp.Code, check.Equals, http.StatusCreated, check.Commentf("%s", content))
+					totalsize.Add(int64(len(content) + len(filler)))
+					c.Logf("after writing %d files, manifest has %d blocks", nfiles.Add(1), countblocks())
+				}()
+			}
+		}()
+	}
+	wg.Wait()
+
+	content := "lastfile"
+	u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
+	resp := httptest.NewRecorder()
+	req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content+filler))
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+	handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusCreated, check.Commentf("%s", content))
+	nfiles.Add(1)
+
+	// Check that all files can still be retrieved
+	for i := 0; i < n && !c.Failed(); i++ {
+		i := i
+		for j := 0; j < n && !c.Failed(); j++ {
+			j := j
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				path := fmt.Sprintf("i=%d/j=%d", i, j)
+				u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + path)
+
+				rec := httptest.NewRecorder()
+				req, err := http.NewRequest("GET", u.String(), nil)
+				c.Assert(err, check.IsNil)
+				req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+				handler.ServeHTTP(rec, req)
+				resp := rec.Result()
+				c.Check(resp.StatusCode, check.Equals, http.StatusOK, check.Commentf("%s", path))
+				size, _ := io.Copy(io.Discard, resp.Body)
+				c.Check(int(size), check.Not(check.Equals), 0)
+			}()
+		}
+	}
+	wg.Wait()
+
+	// Check that the final manifest has been repacked so average
+	// block size is at least double the "small file" size
+	nblocks := countblocks()
+	c.Logf("nblocks == %d", nblocks)
+	c.Logf("nfiles == %d", nfiles.Load())
+	c.Check(nblocks < int(nfiles.Load()), check.Equals, true)
+	c.Logf("totalsize == %d", totalsize.Load())
+	meanblocksize := int(totalsize.Load()) / nblocks
+	c.Logf("meanblocksize == %d", meanblocksize)
+	minblocksize := 2 * int(totalsize.Load()) / int(nfiles.Load())
+	c.Logf("expecting minblocksize %d", minblocksize)
+	c.Check(meanblocksize >= minblocksize, check.Equals, true)
 }
 
 func (s *IntegrationSuite) TestDepthHeader(c *check.C) {
