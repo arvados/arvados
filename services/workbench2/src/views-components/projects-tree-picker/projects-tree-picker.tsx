@@ -205,6 +205,13 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: publicFavorites }));
             }
 
+            componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
+                // update active item if project updates while being displayed
+                if (prevProps.project !== this.props.project && prevProps.project?.uuid === this.props.project?.uuid) {
+                    this.setState({ activeItem: this.props.project });
+                }
+            }
+
             setInitialActiveItem() {
                 const preloadParams = this.props.currentUuids ? {
                     selectedItemUuids: this.props.currentUuids,

@@ -91,7 +91,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
             open: false,
             hasBeenOpened: false,
             defaultProject: undefined, // defaultProject: defined in redux as the current project where the workflow will run
-            originalProject: undefined, // originalProject: active project when the dialog was opened
+            originalProject: undefined, // originalProject: selected project when the dialog was opened
             selectedProject: undefined, // selectedProject: current project selected in the dialog
             targetProject: undefined, // targetProject: set on submit when dialog closes
         };
@@ -114,20 +114,20 @@ const ProjectInputComponent = connect(mapStateToProps)(
             }
         }
 
-        componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
+        componentDidUpdate(prevProps: ProjectInputComponentProps, prevState: ProjectInputComponentState) {
             if (!this.state.targetProject) {
                 const project = this.getDefaultProject();
                 if (project) {
                     this.setState({ targetProject: project });
                 }
             }
-            // corrects situation where user resource doesn't have a name fields
-            if (this.state.selectedProject
-                && (this.state.selectedProject as any).kind === ResourceKind.USER
-                && !isUserResource(this.state.selectedProject)
-                && isUserResource(this.props.userRootProject)
-            ) {
-                this.setState({ selectedProject: this.props.userRootProject });
+            if (this.props.userRootProject && prevProps.userRootProject !== this.props.userRootProject) {
+                const project = this.getDefaultProject();
+                this.setState({
+                    defaultProject: project,
+                    selectedProject: project,
+                    targetProject: project,
+                });
             }
         }
 
