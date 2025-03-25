@@ -11,9 +11,9 @@ import json
 import logging
 import sys
 import unittest
-import cwltool.process
 import re
 import os
+import collections
 
 from io import BytesIO, StringIO
 from unittest import mock
@@ -24,6 +24,8 @@ import arvados_cwl
 import arvados_cwl.executor
 import arvados_cwl.runner
 import arvados.keep
+
+import cwltool.process
 
 from .matcher import JsonDiffMatcher, StripYAMLComments
 from .mock_discovery import get_rootDesc
@@ -262,7 +264,8 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                 },
                 'properties': stubs.git_props,
                 'use_existing': False,
-                'secret_mounts': {}
+                'secret_mounts': {},
+                'environment': {},
             }
 
             stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -784,7 +787,8 @@ class TestSubmit(unittest.TestCase):
             },
             'use_existing': False,
             'properties': {},
-            'secret_mounts': {}
+            'secret_mounts': {},
+            'environment': {},
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -884,7 +888,8 @@ class TestSubmit(unittest.TestCase):
             'properties': {
                 "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
             },
-            'secret_mounts': {}
+            'secret_mounts': {},
+            'environment': {},
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -1266,7 +1271,8 @@ class TestSubmit(unittest.TestCase):
                 }
             },
             "state": "Committed",
-            "use_existing": False
+            "use_existing": False,
+            "environment": {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
@@ -1576,6 +1582,39 @@ class TestSubmit(unittest.TestCase):
                                        '--debug', "--on-error=continue", "--varying-url-params=KeyId,Signature",
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+    @mock.patch("boto3.session.Session")
+    @stubs()
+    def test_submit_defer_s3_download(self, stubs, botosession):
+
+        sessionmock = mock.MagicMock()
+        botosession.return_value = sessionmock
+
+        CredsTuple = collections.namedtuple('CredsTuple', ['access_key', 'secret_key'])
+
+        sessionmock.get_credentials.return_value = CredsTuple('123key', '789secret')
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--defer-download",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job_s3.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+
+        expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['location'] = 's3://examplebucket/blorp.txt'
+        del expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['size']
+        expect_container['environment']['AWS_SHARED_CREDENTIALS_FILE'] = '/var/lib/cwl/.aws/credentials'
+        expect_container['secret_mounts'] = {
+            "/var/lib/cwl/.aws/credentials": {
+                "content": "[default]\naws_access_key_id = 123key\naws_secret_access_key = 789secret\n",
+                "kind": "text"
+            }
+        }
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(stubs.capture_stdout.getvalue(),
