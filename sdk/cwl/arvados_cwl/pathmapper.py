@@ -123,7 +123,7 @@ class ArvPathMapper(PathMapper):
                         # workflow runner container later.
                         import boto3.session
                         self.arvrunner.botosession = boto3.session.Session()
-                        logger.info("S3 downloads will use access key id %s", self.arvrunner.botosession.get_credentials().access_key)
+                        logger.info("S3 downloads will use access key id %s in region %s", self.arvrunner.botosession.get_credentials().access_key, self.arvrunner.botosession.region_name)
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
