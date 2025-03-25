@@ -66,5 +66,5 @@ export interface UserResource extends Resource, User {
 }
 
 export const isUserResource = (resource: any): resource is UserResource => {
-    return resource && resource.kind === ResourceKind.USER;
+    return resource && resource.kind === ResourceKind.USER && 'email' in resource;
 };

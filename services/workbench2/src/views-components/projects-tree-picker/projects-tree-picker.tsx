@@ -33,7 +33,7 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { formatFileSize } from 'common/formatters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { Typography } from '@mui/material';
-import { UserResource, isUserResource } from 'models/user';
+import { UserResource } from 'models/user';
 import { ProjectResource } from 'models/project';
 export interface ToplevelPickerProps {
     currentUuids?: string[];
@@ -192,14 +192,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
                 if (this.props.project) {
                     this.setState({ activeItem: this.props.project });
-                }
-            }
-
-            componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
-                if (this.props.project && this.state.activeItem !== this.props.project) {
-                    if (isUserResource(this.state.activeItem) && isUserResource(this.props.project) && !this.state.activeItem.firstName) {
-                        this.setState({ activeItem: this.props.project });
-                    }
                 }
             }
 

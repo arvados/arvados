@@ -24,6 +24,7 @@ import { getUserUuid } from 'common/getuser';
 import { getResource } from 'store/resources/resources';
 import { loadProject } from 'store/workbench/workbench-actions';
 import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
+import { isUserResource } from 'models/user';
 
 export type RunWfProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
@@ -53,17 +54,17 @@ const format = (value?: ProjectResource) => value ? value.name : '';
 
 interface ProjectInputComponentState {
     open: boolean;
-    project?: ProjectResource;
+    hasBeenOpened: boolean;
+    defaultProject?: ProjectResource;
     originalProject?: ProjectResource;
     selectedProject?: ProjectResource;
-    hasBeenOpened: boolean;
+    targetProject?: ProjectResource;
 }
 
 type ProjectInputComponentProps = {
     userUuid: string | undefined;
     userRootProject: ProjectResource | undefined;
-    targetProject: ProjectResource | undefined;
-    defaultProject: ProjectResource | undefined;
+    defaultTargetProject: ProjectResource | undefined;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     required?: boolean;
 }
@@ -72,18 +73,14 @@ interface HasUserUuid {
     userUuid: string;
 }
 
-const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'userRootProject' | 'targetProject' | 'defaultProject'> => {
+const mapStateToProps = (state: RootState): Pick<ProjectInputComponentProps, 'userUuid' | 'userRootProject' | 'defaultTargetProject' > => {
     const userUuid = getUserUuid(state)
     const userRootProject = getResource<ProjectResource>(userUuid)(state.resources);
-    const targetProject = getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources)
-    const isTargetUser = (targetProject as any)?.kind === ResourceKind.USER;
-    const isTargetThisUser = isTargetUser && targetProject?.uuid === userUuid;
-    const defaultProject = !isTargetUser ? targetProject || userRootProject : isTargetThisUser ? targetProject : userRootProject;
+    const defaultTargetProject = getResource<ProjectResource>(state.runProcessPanel.processOwnerUuid)(state.resources)
     return {
         userUuid,
         userRootProject,
-        targetProject,
-        defaultProject,
+        defaultTargetProject,
     }
 };
 
@@ -92,23 +89,24 @@ const ProjectInputComponent = connect(mapStateToProps)(
 
         state: ProjectInputComponentState = {
             open: false,
-            project: undefined,
-            originalProject: undefined,
-            selectedProject: undefined,
             hasBeenOpened: false,
+            defaultProject: undefined, // defaultProject: defined in redux as the current project where the workflow will run
+            originalProject: undefined, // originalProject: active project when the dialog was opened
+            selectedProject: undefined, // selectedProject: current project selected in the dialog
+            targetProject: undefined, // targetProject: set on submit when dialog closes
         };
 
         componentDidMount() {
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
-            if (!this.state.project && this.props.defaultProject) {
+            const project = this.getDefaultProject();
+            if (!this.state.selectedProject && project) {
                 this.setState({
-                    project: this.props.defaultProject,
-                    originalProject: this.props.defaultProject,
-                    selectedProject: this.props.defaultProject
+                    defaultProject: project,
+                    selectedProject: project
                 });
             }
-            if (this.props.userUuid && !this.state.selectedProject) {
+            if (this.props.userUuid && (!this.props.userRootProject || !isUserResource(this.props.userRootProject))) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
             }
             if (this.state.hasBeenOpened === false) {
@@ -117,25 +115,41 @@ const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         componentDidUpdate(prevProps: any, prevState: ProjectInputComponentState) {
-            if (prevProps.defaultProject !== this.props.defaultProject) {
-                this.setState({ project: this.props.defaultProject, selectedProject: this.props.defaultProject });
+            if (!this.state.targetProject) {
+                const project = this.getDefaultProject();
+                if (project) {
+                    this.setState({ targetProject: project });
+                }
             }
-            if (!prevState.open && this.state.open) {
-                this.setState({ project: this.props.defaultProject, originalProject: this.props.defaultProject, selectedProject: this.props.defaultProject });
-            }
-            if (!this.state.project && this.props.defaultProject) {
-                this.setState({ project: this.props.defaultProject });
-            }
-            if (!this.props.targetProject && this.state.project) {
-                this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.project.uuid));
-            }
-            if (!this.state.selectedProject && this.state.project) {
-                this.setState({ selectedProject: this.state.project });
+            // corrects situation where user resource doesn't have a name fields
+            if (this.state.selectedProject
+                && (this.state.selectedProject as any).kind === ResourceKind.USER
+                && !isUserResource(this.state.selectedProject)
+                && isUserResource(this.props.userRootProject)
+            ) {
+                this.setState({ selectedProject: this.props.userRootProject });
             }
         }
 
         componentWillUnmount(): void {
             this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(''));
+            this.setState({ targetProject: undefined });
+        }
+
+        getDefaultProject = () => {
+            const { userUuid, userRootProject, defaultTargetProject } = this.props;
+            if (defaultTargetProject?.canWrite) {
+                return defaultTargetProject;
+            }
+            const isTargetUser = (defaultTargetProject as any)?.kind === ResourceKind.USER;
+            const isTargetUserThisUser = isTargetUser && defaultTargetProject?.uuid === userUuid;
+            if (isTargetUserThisUser) {
+                if (defaultTargetProject) {
+                    return defaultTargetProject;
+                }
+                return userRootProject;
+            }
+            return defaultTargetProject || userRootProject
         }
 
         render() {
@@ -159,6 +173,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
             if (this.state.selectedProject) {
                 if (this.state.selectedProject.kind === ResourceKind.PROJECT || this.state.selectedProject.kind === ResourceKind.USER) {
                     this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.selectedProject.uuid));
+                    this.setState({ targetProject: this.state.selectedProject });
                 }
                 if (this.state.originalProject && this.state.selectedProject.uuid !== this.state.originalProject.uuid) {
                     this.props.input.onChange(this.state.selectedProject);
@@ -202,7 +217,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                         readOnly
                         fullWidth
                         data-cy='run-wf-project-input'
-                        value={this.getDisplayName(this.props.defaultProject)}
+                        value={this.getDisplayName(this.state.targetProject)}
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
@@ -234,13 +249,13 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     <DialogTitle>Choose the project where the workflow will run</DialogTitle>
                     <DialogContent className={classes.root}>
                         <div className={classes.pickerWrapper}>
-                            {this.state.selectedProject && <ProjectsTreePicker
+                            <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
                                 cascadeSelection={false}
                                 options={this.props.options}
-                                project={this.state.selectedProject}
-                                currentUuids={[this.state.selectedProject.uuid]}
-                                toggleItemActive={this.setProject} />}
+                                project={this.state.targetProject}
+                                currentUuids={this.state.targetProject ? [this.state.targetProject.uuid] : []}
+                                toggleItemActive={this.setProject} />
                         </div>
                     </DialogContent>
                     <DialogActions>
