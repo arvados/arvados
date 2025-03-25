@@ -235,7 +235,7 @@ steps:
         tmpdirMin: 90000
 {% endcodeblock %}
 
-h3. Importing data into Keep
+h3. Importing data into Keep from HTTP
 
 You can use HTTP URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
 
@@ -257,7 +257,7 @@ The default behavior is to transfer the files on the client, prior to submitting
 * @--varying-url-params@ will ignore the listed URL query parameters from any HTTP URLs when checking if a URL has already been downloaded to Keep.
 * @--prefer-cached-downloads@ will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
 
-One use of this is to import files from "AWS S3 signed URLs":https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html
+One use of this is to import files from "AWS S3 signed URLs":https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html (but note that you can also import from S3 natively, see below).
 
 Here is an example usage.  The use of @--varying-url-params=AWSAccessKeyId,Signature,Expires@ is especially relevant, this removes these parameters from the cached URL, which means that if a new signed URL for the same object is generated later, it can be found in the cache.
 
@@ -267,3 +267,22 @@ arvados-cwl-runner --defer-download \
 		   --prefer-cached-downloads \
 		   workflow.cwl params.yml
 {% endcodeblock %}
+
+h3. Importing data into Keep from S3
+
+You can use S3 URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
+
+{% codeblock as yaml %}
+fastq1:
+  class: File
+  location: s3://examplebucket/genomes/sampleA_1.fastq
+fastq2:
+  class: File
+  location: s3://examplebucket/genomes/sampleA_2.fastq
+{% endcodeblock %}
+
+Files are downloaded and stored in Keep collections.  If the bucket is versioned, it will make note of the object version and last modified time.  If a file was previously downloaded, @arvados-cwl-runner@ will use the object version and/or last modified time to decide if a file should be re-downloaded or not.  The @--prefer-cached-downloads@ option will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
+
+The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, if data transfer is time consuming and you are submitting multiple workflow runs in a row, or the node submitting the workflow has limited bandwidth, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.
+
+Arvado uses the @boto3@ library to access S3, which "has a list of locations where it will search for credentials.":https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html When using the @--defer-download@ option, by default @arvados-cwl-runner@ will capture the active AWS credentials from your environment and pass them to the workflow runner container as a secret file; this enables the workflow runner to download files from S3 on your behalf.  If you do not want AWS credentials passed from the client environment, or want to skip the credential search entirely, use @--disable-aws-credential-capture@.  In this case, AWS credentials must be provided to the workflow runner container some other way.
