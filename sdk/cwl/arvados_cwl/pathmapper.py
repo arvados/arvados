@@ -14,7 +14,6 @@ import arvados.collection
 
 from arvados.errors import ApiError
 from arvados._internal.http_to_keep import http_to_keep
-from arvados._internal.s3_to_keep import s3_to_keep
 from cwltool.pathmapper import PathMapper, MapperEnt
 from cwltool.utils import adjustFileObjs, adjustDirObjs
 from cwltool.stdfsaccess import abspath
@@ -116,6 +115,11 @@ class ArvPathMapper(PathMapper):
                     logger.warning("Download error: %s", e)
             elif src.startswith("s3:"):
                 try:
+                    # Using inline imports here instead of at the top
+                    # of the file to defer importing boto3 until we
+                    # actually need it, because if the user isn't
+                    # using s3 import there's zero reason to have the
+                    # module loaded at all.
                     if self.arvrunner.botosession is None and (self.arvrunner.defer_downloads is False or self.arvrunner.toplevel_runtimeContext.aws_credential_capture):
                         # Create a boto session, which we will either
                         # use to download from S3 now, or to get the
@@ -128,6 +132,7 @@ class ArvPathMapper(PathMapper):
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
                     else:
+                        from arvados._internal.s3_to_keep import s3_to_keep
                         results = s3_to_keep(self.arvrunner.api,
                                              self.arvrunner.botosession,
                                              self.arvrunner.project_uuid,
