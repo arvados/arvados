@@ -12,13 +12,14 @@ import { projectPanelDataActions } from "store/project-panel/project-panel-actio
 import { sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
 import { ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
-import { matchCollectionRoute, matchFavoritesRoute, matchProjectRoute, matchSharedWithMeRoute } from "routes/routes";
+import { matchFavoritesRoute, matchProjectRoute, matchSharedWithMeRoute, matchTrashRoute } from "routes/routes";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton } from "store/multiselect/multiselect-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { GroupResource } from "models/group";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { CollectionResource } from "models/collection";
+import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 
 export const toggleProjectTrashed =
     (uuid: string, ownerUuid: string, isTrashed: boolean, isMulti: boolean) =>
@@ -26,7 +27,7 @@ export const toggleProjectTrashed =
             let errorMessage = "";
             let successMessage = "";
             let toggledResource: GroupResource | undefined = undefined;
-            dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
+            dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH));
             try {
                 if (isTrashed) {
                     errorMessage = "Could not restore project from trash";
@@ -88,73 +89,91 @@ export const toggleProjectTrashed =
             }
         };
 
+/**
+ * Toggles the trash status of an array of UUIDS based on the current isTrashed status
+ * @param uuids list of uuids to trash/untrash
+ * @param isTrashed Current trashed status to be toggled
+ * @returns Dispatchable action that yields a void promise
+ */
 export const toggleCollectionTrashed =
-    (uuid: string, isTrashed: boolean) =>
+    (uuids: string[], isTrashed: boolean) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-            let errorMessage = "";
-            let successMessage = "";
-            let toggledResource: CollectionResource | undefined = undefined;
-            dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
-            try {
-                if (isTrashed) {
-                    const { location } = getState().router;
-                    errorMessage = "Could not restore collection from trash";
-                    successMessage = "Restored from trash";
-                    toggledResource = await services.collectionService.untrash(uuid);
-                    if (toggledResource) {
-                        await dispatch<any>(updateResources([toggledResource]));
+            const { location } = getState().router;
+            dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH));
+
+            await Promise.allSettled(uuids.map((uuid) => isTrashed ? services.collectionService.untrash(uuid) : services.collectionService.trash(uuid)))
+                .then(async res => {
+                    const failed = res.filter((promiseResult): promiseResult is PromiseRejectedResult => promiseResult.status === 'rejected');
+                    const succeeded = res.filter((promiseResult): promiseResult is PromiseFulfilledResult<CollectionResource> => promiseResult.status === 'fulfilled');
+                    const verb = isTrashed ? "Untrash" : "Trash";
+
+                    // Get error kinds
+                    const accessDeniedError = failed.filter((promiseResult) => {
+                        return getCommonResourceServiceError(promiseResult.reason) === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
+                    });
+                    const uniqueNameError = failed.filter((promiseResult) => {
+                        return getCommonResourceServiceError(promiseResult.reason) === CommonResourceServiceError.UNIQUE_NAME_VIOLATION;
+                    });
+                    const genericError = failed.filter((promiseResult) => {
+                        return getCommonResourceServiceError(promiseResult.reason) !== CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN &&
+                            getCommonResourceServiceError(promiseResult.reason) !== CommonResourceServiceError.UNIQUE_NAME_VIOLATION;
+                    });
+
+                    // Show grouped errors for access or generic error
+                    if (accessDeniedError.length) {
+                        if (accessDeniedError.length > 1) {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied: ${accessDeniedError.length} items`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                        } else {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                        }
                     }
-                    if (matchCollectionRoute(location ? location.pathname : "")) {
-                        dispatch(navigateToTrash);
+                    if (uniqueNameError.length) {
+                        if (uniqueNameError.length > 1) {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} error: Duplicate name ${accessDeniedError.length} items`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                        } else {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} error: Duplicate name`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                        }
                     }
-                    dispatch(trashPanelActions.REQUEST_ITEMS());
-                    dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
-                } else {
-                    errorMessage = "Could not move collection to trash";
-                    successMessage = "Added to trash";
-                    toggledResource = await services.collectionService.trash(uuid);
-                    if (toggledResource) {
-                        await dispatch<any>(updateResources([toggledResource]));
+                    if (genericError.length) {
+                        if (genericError.length > 1) {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} operation failed: ${genericError.length} items`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                        } else {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} operation failed`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                        }
                     }
 
-                    const { location } = getState().router;
-                    if (matchFavoritesRoute(location ? location.pathname : "")) {
-                        dispatch(favoritePanelActions.REQUEST_ITEMS());
-                    } else if (matchProjectRoute(location ? location.pathname : "")) {
-                        dispatch(projectPanelDataActions.REQUEST_ITEMS());
+                    if (succeeded.length) {
+                        if (succeeded.length > 1) {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb}ed: ${succeeded.length} items`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                        } else {
+                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb}ed item`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                        }
+
+                        // Update store
+                        await dispatch<any>(updateResources(succeeded.map(success => success.value)));
+                        if (isTrashed) {
+                            // Refresh trash panel after untrash
+                            if (matchTrashRoute(location ? location.pathname : "")) {
+                                dispatch(trashPanelActions.REQUEST_ITEMS());
+                            }
+                        } else {
+                            // Refresh favorites / project view after trashed
+                            if (matchFavoritesRoute(location ? location.pathname : "")) {
+                                dispatch(favoritePanelActions.REQUEST_ITEMS());
+                            } else if (matchProjectRoute(location ? location.pathname : "")) {
+                                dispatch(projectPanelDataActions.REQUEST_ITEMS());
+                            }
+                        }
+                        // Reload favorites
+                        dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
                     }
-                    dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
-                }
-                dispatch(
-                    snackbarActions.OPEN_SNACKBAR({
-                        message: successMessage,
-                        hideDuration: 2000,
-                        kind: SnackbarKind.SUCCESS,
-                    })
-                );
-            } catch (e) {
-                if (e.status === 422) {
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: "Could not restore collection from trash: Duplicate name at destination",
-                            kind: SnackbarKind.ERROR,
-                        })
-                    );
-                } else {
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: errorMessage,
-                            kind: SnackbarKind.ERROR,
-                        })
-                    );
-                }
-            }
+                });
         };
 
 export const toggleTrashed = (kind: ResourceKind, uuid: string, ownerUuid: string, isTrashed: boolean) => (dispatch: Dispatch) => {
     if (kind === ResourceKind.PROJECT) {
         dispatch<any>(toggleProjectTrashed(uuid, ownerUuid, isTrashed!!, false));
     } else if (kind === ResourceKind.COLLECTION) {
-        dispatch<any>(toggleCollectionTrashed(uuid, isTrashed!!));
+        dispatch<any>(toggleCollectionTrashed([uuid], isTrashed!!));
     }
 };

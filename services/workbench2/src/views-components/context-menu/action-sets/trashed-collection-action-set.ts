@@ -35,7 +35,7 @@ export const trashedCollectionActionSet: ContextMenuActionSet = [
             icon: RestoreFromTrashIcon,
             name: ContextMenuActionNames.RESTORE,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(toggleCollectionTrashed(resource.uuid, true)));
+                dispatch<any>(toggleCollectionTrashed(resources.map(res => res.uuid), true));
             },
         },
     ],

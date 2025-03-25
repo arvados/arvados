@@ -137,9 +137,7 @@ export const collectionActionSet: ContextMenuActionSet = [
             name: ContextMenuActionNames.MOVE_TO_TRASH,
             isForMulti: true,
             execute: (dispatch, resources: ContextMenuResource[]) => {
-                for (const resource of [...resources]) {
-                    dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
-                }
+                dispatch<any>(toggleCollectionTrashed(resources.map(res => res.uuid), false));
             },
         },
     ],
