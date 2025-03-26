@@ -90,10 +90,10 @@ const ProjectInputComponent = connect(mapStateToProps)(
         state: ProjectInputComponentState = {
             open: false,
             hasBeenOpened: false,
-            defaultProject: undefined, // defaultProject: defined in redux as the current project where the workflow will run
-            originalProject: undefined, // originalProject: selected project when the dialog was opened
-            selectedProject: undefined, // selectedProject: current project selected in the dialog
-            targetProject: undefined, // targetProject: set on submit when dialog closes
+            defaultProject: undefined, // defined in redux as the current project where the workflow will run
+            originalProject: undefined, // selected project when the dialog was opened
+            selectedProject: undefined, // current project selected in the dialog
+            targetProject: undefined, // set on submit when dialog closes
         };
 
         componentDidMount() {
@@ -103,7 +103,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
             if (!this.state.selectedProject && project) {
                 this.setState({
                     defaultProject: project,
-                    selectedProject: project
+                    selectedProject: project,
                 });
             }
             if (this.props.userUuid && (!this.props.userRootProject || !isUserResource(this.props.userRootProject))) {
@@ -128,6 +128,10 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     selectedProject: project,
                     targetProject: project,
                 });
+            }
+            if (prevProps.defaultTargetProject !== this.props.defaultTargetProject) {
+                const project = this.getDefaultProject();
+                this.setState({ selectedProject: project, targetProject: project });
             }
         }
 
@@ -155,7 +159,16 @@ const ProjectInputComponent = connect(mapStateToProps)(
         render() {
             return <>
                 {this.renderInput()}
-                <this.dialog />
+                    <DialogComponent
+                    targetProject={this.state.targetProject}
+                    open={this.state.open}
+                    closeDialog={this.closeDialog}
+                    setProject={this.setProject}
+                    submit={this.submit}
+                    invalid={this.invalid}
+                    commandInput={this.props.commandInput}
+                    options={this.props.options}
+                />
             </>;
         }
 
@@ -224,52 +237,61 @@ const ProjectInputComponent = connect(mapStateToProps)(
                         onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined} />}
                 {...this.props} />;
         }
+    });
 
-        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
-            root: {
-                display: 'flex',
-                flexDirection: 'column',
-                height: "80vh",
-            },
-            pickerWrapper: {
-                display: 'flex',
-                flexDirection: 'column',
-                height: "100%",
-            },
-        });
+const dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+    root: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: "80vh",
+    },
+    pickerWrapper: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: "100%",
+    },
+});
 
-        dialog = withStyles(this.dialogContentStyles)(
-            ({ classes }: WithStyles<DialogContentCssRules>) =>
-                this.state.open ? <Dialog
-                                      open={this.state.open}
-                                      onClose={this.closeDialog}
-                                      fullWidth
-                                      data-cy="choose-a-project-dialog"
-                                      maxWidth='md'>
+const DialogComponent = withStyles(dialogContentStyles)(
+    ( props: WithStyles<DialogContentCssRules> & {
+        targetProject: ProjectResource | undefined,
+        open: boolean,
+        closeDialog: () => void,
+        setProject: (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => void,
+        submit: () => void,
+        invalid: () => boolean,
+        commandInput: GenericCommandInputParameter<ProjectResource, ProjectResource>,
+        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean },
+    }) =>
+        props.open ?
+            <Dialog
+                open={props.open}
+                onClose={props.closeDialog}
+                fullWidth
+                data-cy="choose-a-project-dialog"
+                maxWidth='md'>
                     <DialogTitle>Choose the project where the workflow will run</DialogTitle>
-                    <DialogContent className={classes.root}>
-                        <div className={classes.pickerWrapper}>
-                            <ProjectsTreePicker
-                                pickerId={this.props.commandInput.id}
+                    <DialogContent className={props.classes.root}>
+                        <div className={props.classes.pickerWrapper}>
+                            {props.targetProject && <ProjectsTreePicker
+                                pickerId={props.commandInput.id}
                                 cascadeSelection={false}
-                                options={this.props.options}
-                                project={this.state.targetProject}
-                                currentUuids={this.state.targetProject ? [this.state.targetProject.uuid] : []}
-                                toggleItemActive={this.setProject} />
+                                options={props.options}
+                                project={props.targetProject}
+                                currentUuids={[props.targetProject.uuid]}
+                                toggleItemActive={props.setProject} />}
                         </div>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={this.closeDialog} data-cy='run-wf-project-picker-cancel-button'>
+                        <Button onClick={props.closeDialog} data-cy='run-wf-project-picker-cancel-button'>
                             Cancel
                         </Button>
                         <Button
                             data-cy='run-wf-project-picker-ok-button'
-                            disabled={this.invalid()}
+                            disabled={props.invalid()}
                             variant='contained'
                             color='primary'
-                            onClick={this.submit}>Ok</Button>
+                            onClick={props.submit}>Ok</Button>
                     </DialogActions>
-                </Dialog> : null
+            </Dialog> : null
         );
-
-    });
