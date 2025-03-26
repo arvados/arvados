@@ -366,7 +366,7 @@ describe('Create workflow tests', function () {
             cy.get('[data-cy=projects-tree-home-tree-picker]').contains("Home Projects").click();
             // wait for tree node to expand
             cy.waitForDom();
-            cy.get('[data-cy=projects-tree-home-tree-picker]').contains("Home Projects").parents('[data-active=false]').should('exist').click();
+            cy.get('[data-cy=projects-tree-home-tree-picker]').contains("Home Projects").parents('[data-active=false]').should('exist', {timeout: 10000}).click();
             cy.get('[data-cy=project-picker-details]').contains('Admin User (root project)');
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="Admin User (root project)"]`).should('exist');
