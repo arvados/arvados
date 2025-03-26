@@ -15,11 +15,11 @@ import { navigateTo, navigateToTrash } from "store/navigation/navigation-action"
 import { matchFavoritesRoute, matchProjectRoute, matchSharedWithMeRoute, matchTrashRoute } from "routes/routes";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton } from "store/multiselect/multiselect-actions";
-import { updateResources } from "store/resources/resources-actions";
+import { showGroupedCommonResourceResultToasts, updateResources } from "store/resources/resources-actions";
 import { GroupResource } from "models/group";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
-import { CollectionResource } from "models/collection";
-import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
+import { CommonResourceServiceError } from "services/common-service/common-resource-service";
+import _ from "lodash";
 
 export const toggleProjectTrashed =
     (uuid: string, ownerUuid: string, isTrashed: boolean, isMulti: boolean) =>
@@ -98,59 +98,24 @@ export const toggleProjectTrashed =
 export const toggleCollectionTrashed =
     (uuids: string[], isTrashed: boolean) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-            const { location } = getState().router;
             dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH));
 
+            const verb = isTrashed ? "untrash" : "trash";
+            const messageFuncMap = {
+                [CommonResourceServiceError.NONE]: (count: number) => count > 1 ? `${_.startCase(verb)}ed ${count} items` : `Item ${verb}ed`,
+                [CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN]: (count: number) => count > 1 ? `${_.startCase(verb)} ${count} items failed: Access Denied` : `${_.startCase(verb)} failed: Access Denied`,
+                [CommonResourceServiceError.UNIQUE_NAME_VIOLATION]: (count: number) => count > 1 ? `${_.startCase(verb)} ${count} items failed: Duplicate Name` : `${_.startCase(verb)} failed: Duplicate Name`,
+                [CommonResourceServiceError.UNKNOWN]: (count: number) => count > 1 ? `${_.startCase(verb)} ${count} items failed` : `${_.startCase(verb)} failed`,
+            };
+
             await Promise.allSettled(uuids.map((uuid) => isTrashed ? services.collectionService.untrash(uuid) : services.collectionService.trash(uuid)))
-                .then(async res => {
-                    const failed = res.filter((promiseResult): promiseResult is PromiseRejectedResult => promiseResult.status === 'rejected');
-                    const succeeded = res.filter((promiseResult): promiseResult is PromiseFulfilledResult<CollectionResource> => promiseResult.status === 'fulfilled');
-                    const verb = isTrashed ? "Untrash" : "Trash";
+                .then(async settledPromises => {
+                    const { success } = showGroupedCommonResourceResultToasts(dispatch, settledPromises, messageFuncMap);
 
-                    // Get error kinds
-                    const accessDeniedError = failed.filter((promiseResult) => {
-                        return getCommonResourceServiceError(promiseResult.reason) === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
-                    });
-                    const uniqueNameError = failed.filter((promiseResult) => {
-                        return getCommonResourceServiceError(promiseResult.reason) === CommonResourceServiceError.UNIQUE_NAME_VIOLATION;
-                    });
-                    const genericError = failed.filter((promiseResult) => {
-                        return getCommonResourceServiceError(promiseResult.reason) !== CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN &&
-                            getCommonResourceServiceError(promiseResult.reason) !== CommonResourceServiceError.UNIQUE_NAME_VIOLATION;
-                    });
-
-                    // Show grouped errors for access or generic error
-                    if (accessDeniedError.length) {
-                        if (accessDeniedError.length > 1) {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied: ${accessDeniedError.length} items`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
-                        } else {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
-                        }
-                    }
-                    if (uniqueNameError.length) {
-                        if (uniqueNameError.length > 1) {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} error: Duplicate name ${accessDeniedError.length} items`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
-                        } else {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} error: Duplicate name`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
-                        }
-                    }
-                    if (genericError.length) {
-                        if (genericError.length > 1) {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} operation failed: ${genericError.length} items`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
-                        } else {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb} operation failed`, hideDuration: 4000, kind: SnackbarKind.ERROR }));
-                        }
-                    }
-
-                    if (succeeded.length) {
-                        if (succeeded.length > 1) {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb}ed: ${succeeded.length} items`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-                        } else {
-                            dispatch(snackbarActions.OPEN_SNACKBAR({ message: `${verb}ed item`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-                        }
-
+                    if (success.length) {
+                        const { location } = getState().router;
                         // Update store
-                        await dispatch<any>(updateResources(succeeded.map(success => success.value)));
+                        await dispatch<any>(updateResources(success.map(success => success.value)));
                         if (isTrashed) {
                             // Refresh trash panel after untrash
                             if (matchTrashRoute(location ? location.pathname : "")) {
