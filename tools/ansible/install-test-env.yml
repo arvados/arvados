@@ -40,7 +40,7 @@
       ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
       loop:
         - update
-        - install acl gnupg python3-apt python3-debian python3-psycopg2 xz-utils
+        - install acl gnupg python3-apt python3-debian xz-utils
     - name: Install all required development packages
       become: yes
       ansible.builtin.apt:

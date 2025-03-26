@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Install PostgreSQL server package
+- name: Install PostgreSQL server package and psycopg2
   become: yes
   ansible.builtin.apt:
-    name: "{{ arvados_postgresql_package }}"
+    name:
+      - "{{ arvados_postgresql_package }}"
+      - python3-psycopg2
 
 - name: Find pg_hba.conf file
   when: arvados_postgresql_hba_file is falsy
