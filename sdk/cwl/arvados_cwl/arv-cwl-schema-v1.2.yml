@@ -532,11 +532,13 @@ $graph:
       type: string
       doc: The property key
     - name: serviceAccess
-      type: enum
-      symbols:
-        - public
-        - private
+      type:
+        type: enum
+        symbols:
+          - public
+          - private
     - name: label
+      jsonldPredicate: "rdfs:label"
       type: string
 
 - name: PublishPorts
