@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -574,10 +575,11 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 
 		// Check that the change is immediately visible via
 		// (non-S3) webdav request.
-		_, resp := s.do("GET", "http://"+collUUID+".keep-web.example/"+trial.path, arvadostest.ActiveTokenV2, nil)
-		c.Check(resp.Code, check.Equals, http.StatusOK)
+		_, resp := s.do("GET", "http://"+collUUID+".keep-web.example/"+trial.path, arvadostest.ActiveTokenV2, nil, nil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 		if !strings.HasSuffix(trial.path, "/") {
-			c.Check(resp.Body.Len(), check.Equals, trial.size)
+			buf, _ := io.ReadAll(resp.Body)
+			c.Check(len(buf), check.Equals, trial.size)
 		}
 	}
 }
