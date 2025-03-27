@@ -34,7 +34,7 @@
 - name: Start and enable arvados-railsapi.service
   become: yes
   vars:
-    arvados_api_server_changed: "{{ arvados_api_server_apt.changed or arvados_api_server_override.changed }}"
+    arvados_api_server_changed: "{{ arvados_api_server_apt.changed or arvados_api_server_override.changed or arvados_config_copy.changed }}"
   ansible.builtin.systemd_service:
     name: arvados-railsapi.service
     daemon_reload: "{{ arvados_api_server_changed }}"

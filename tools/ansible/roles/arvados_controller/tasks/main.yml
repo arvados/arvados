@@ -12,5 +12,5 @@
   become: yes
   ansible.builtin.systemd_service:
     name: arvados-controller.service
-    state: started
+    state: "{{ 'restarted' if arvados_config_copy.changed else 'started' }}"
     enabled: true
