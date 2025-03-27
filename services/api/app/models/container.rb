@@ -575,7 +575,8 @@ class Container < ArvadosModel
                      :priority, :runtime_constraints,
                      :scheduling_parameters, :secret_mounts,
                      :runtime_token, :runtime_user_uuid,
-                     :runtime_auth_scopes, :output_storage_classes)
+                     :runtime_auth_scopes, :output_storage_classes,
+                     :service, :published_ports)
     end
 
     case self.state
