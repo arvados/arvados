@@ -226,10 +226,10 @@ func (s *keepstoreSuite) TestBlockRead_OrderedByStorageClassPriority(c *C) {
 // Ensure BlockRead(..., {CheckCacheOnly: true}) always returns
 // ErrNotCached.
 //
-// There is currently no way for an incoming http request to set that
-// field anyway, because nothing accesses a cache via http.  But
-// if/when it does, keepstore's BlockRead is expected to behave
-// correctly.
+// There is currently (Arvados 3.1 / March 2025) no way for an
+// incoming http request to set that field anyway, because nothing
+// accesses a cache via http.  But if/when it does, keepstore's
+// BlockRead is expected to behave correctly.
 func (s *keepstoreSuite) TestBlockRead_CheckCacheOnly(c *C) {
 	ks, cancel := testKeepstore(c, s.cluster, nil)
 	defer cancel()
