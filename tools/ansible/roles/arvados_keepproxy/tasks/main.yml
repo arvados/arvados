@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Arvados keepproxy
+  become: yes
+  ansible.builtin.apt:
+    update_cache: "{{ arvados_apt_repository.changed }}"
+    name:
+      - keepproxy
+
+- name: Start and enable keepproxy.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: keepproxy.service
+    state: "{{ 'restarted' if arvados_config_copy.changed else 'started' }}"
+    enabled: true

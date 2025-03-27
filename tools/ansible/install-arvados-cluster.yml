@@ -63,3 +63,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_keepstore
+
+- name: Set up keepproxy(ies)
+  hosts: arvados_keepproxy
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keepproxy
