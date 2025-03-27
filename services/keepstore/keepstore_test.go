@@ -223,6 +223,53 @@ func (s *keepstoreSuite) TestBlockRead_OrderedByStorageClassPriority(c *C) {
 	}
 }
 
+// Ensure BlockRead(..., {CheckCacheOnly: true}) always returns
+// ErrNotCached.
+//
+// There is currently (Arvados 3.1 / March 2025) no way for an
+// incoming http request to set that field anyway, because nothing
+// accesses a cache via http.  But if/when it does, keepstore's
+// BlockRead is expected to behave correctly.
+func (s *keepstoreSuite) TestBlockRead_CheckCacheOnly(c *C) {
+	ks, cancel := testKeepstore(c, s.cluster, nil)
+	defer cancel()
+
+	ctx := authContext(arvadostest.ActiveTokenV2)
+
+	data := []byte("foo")
+	hash := fmt.Sprintf("%x", md5.Sum(data))
+	resp, err := ks.BlockWrite(ctx, arvados.BlockWriteOptions{
+		Hash: hash,
+		Data: data,
+	})
+	c.Assert(err, IsNil)
+
+	n, err := ks.BlockRead(ctx, arvados.BlockReadOptions{
+		Locator: resp.Locator,
+		WriteTo: io.Discard,
+	})
+	c.Assert(n, Equals, 3)
+	c.Assert(err, IsNil)
+
+	// Block exists -> ErrNotCached
+	n, err = ks.BlockRead(ctx, arvados.BlockReadOptions{
+		Locator:        resp.Locator,
+		WriteTo:        io.Discard,
+		CheckCacheOnly: true,
+	})
+	c.Check(n, Equals, 0)
+	c.Check(err, Equals, arvados.ErrNotCached)
+
+	// Block does not exist -> ErrNotCached
+	n, err = ks.BlockRead(ctx, arvados.BlockReadOptions{
+		Locator:        ks.signLocator(arvadostest.ActiveTokenV2, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+3"),
+		WriteTo:        io.Discard,
+		CheckCacheOnly: true,
+	})
+	c.Check(n, Equals, 0)
+	c.Check(err, Equals, arvados.ErrNotCached)
+}
+
 func (s *keepstoreSuite) TestBlockWrite_NoWritableVolumes(c *C) {
 	for uuid, v := range s.cluster.Volumes {
 		v.ReadOnly = true
