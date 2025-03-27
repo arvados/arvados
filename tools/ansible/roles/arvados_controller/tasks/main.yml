@@ -5,6 +5,7 @@
 - name: Install arvados-controller
   become: yes
   ansible.builtin.apt:
+    update_cache: "{{ arvados_apt_repository.changed }}"
     name:
       - arvados-controller
 

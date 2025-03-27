@@ -110,11 +110,6 @@
         state: absent
         purge: true
         name: "{{ linux_image_preupgrade.stdout_lines }}"
-  handlers:
-    - name: apt update
-      ansible.builtin.debug:
-        msg: Skipping apt update handler before an apt upgrade
-        verbosity: 1
 
 - name: Install compute node software
   hosts: default

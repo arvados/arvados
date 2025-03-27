@@ -8,6 +8,7 @@
 - name: Install arvados-api-server
   become: yes
   ansible.builtin.apt:
+    update_cache: "{{ arvados_apt_repository.changed }}"
     name:
       - arvados-api-server
   register: arvados_api_server_apt
