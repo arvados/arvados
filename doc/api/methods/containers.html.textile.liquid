@@ -64,6 +64,8 @@ Generally this will contain additional keys that are not present in any correspo
 |output_properties|hash|User metadata properties to set on the output collection.|
 |cost|number|Estimated cost of the cloud VM used to run the container.|0 if not available.|
 |subrequests_cost|number|Total estimated cumulative cost of container requests submitted by this container.|0 if not available.|
+|service|boolean|Indicates that this container is a long-lived service rather than a once-through batch job.  Incompatible with @use_existing@||
+|published_ports|hash|If @service@ is true, web service ports that are published by this container.  See "published ports":#published_ports below.||
 
 h2(#container_states). Container states
 
@@ -99,6 +101,8 @@ table(table table-bordered table-condensed).
 h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
 h2(#glob_patterns). {% include 'container_glob_patterns' %}
+
+h2(#published_ports). {% include 'container_published_ports' %}
 
 h2. Methods
 

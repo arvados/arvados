@@ -53,7 +53,7 @@ table(table table-bordered table-condensed).
 See "Glob patterns":#glob_patterns for more details.|
 |output_name|string|Desired name for the output collection. If null or empty, a name will be assigned automatically.||
 |output_ttl|integer|Desired lifetime for the output collection, in seconds. If zero, the output collection will not be deleted automatically.||
-|priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "below for more details":#priority .|
+|priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "priority below for more details.":#priority |
 |expires_at|datetime|After this time, priority is considered to be zero.|Not yet implemented.|
 |use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true|
 |log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.
@@ -66,6 +66,8 @@ To retrieve logs in real time while the container is running, use the log API (s
 |output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|default is ["default"]|
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 |cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
+|service|boolean|Indicates that this container is a long-lived service rather than a once-through batch job.  Incompatible with @use_existing@||
+|published_ports|hash|If @service@ is true, web service ports that are published by this container.  See "published ports":#published_ports below.||
 
 h2(#lifecycle). Container request lifecycle
 
@@ -141,6 +143,8 @@ h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
 h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
 h2(#glob_patterns). {% include 'container_glob_patterns' %}
+
+h2(#published_ports). {% include 'container_published_ports' %}
 
 h2(#container_reuse). Container reuse
 
