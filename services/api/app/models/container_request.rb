@@ -114,7 +114,7 @@ class ContainerRequest < ArvadosModel
   :output_path, :output_glob, :priority, :runtime_token,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl,
-  :output_storage_classes, :output_properties]
+  :output_storage_classes, :output_properties, :service, :published_ports]
 
   def self.any_preemptible_instances?
     Rails.configuration.InstanceTypes.any? do |k, v|

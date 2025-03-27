@@ -1839,4 +1839,80 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  test "published_ports validation" do
+    set_user_from_auth :active
+    cr = create_minimal_req!
+    cr.use_existing = false
+
+    # Not a service
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "stuff"
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # Bad port number
+    cr.service = true
+    cr.published_ports = {
+      "9000000" => {
+        "access" => "public",
+        "label" => "stuff"
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # Not a hash
+    cr.published_ports = {
+      "9000" => ""
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # empty hash
+    cr.published_ports = {
+      "9000" => {
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # invalid access
+    cr.published_ports = {
+      "9000" => {
+        "access" => "peanuts",
+        "label" => "stuff"
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # missing label
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public"
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # All good!
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "stuff"
+      }
+    }
+    cr.save!
+  end
+
 end
