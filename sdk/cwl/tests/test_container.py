@@ -1211,7 +1211,7 @@ class TestContainer(unittest.TestCase):
                     'properties': {'cwl_input': {}},
                     'secret_mounts': {},
                     'output_storage_classes': ["default"],
-                    'publish_ports': {
+                    'published_ports': {
                         "80": {
                             "access": "private",
                             "label": "Jupyter notebook",

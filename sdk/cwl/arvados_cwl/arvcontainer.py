@@ -349,20 +349,6 @@ class ArvadosContainer(JobBase):
             else:
                 raise WorkflowException("Arvados API server does not support ROCm (requires Arvados 3.1+)")
 
-        publish_port_req, _ = self.get_requirement("http://arvados.org/cwl#PublishPorts")
-        if publish_port_req:
-            if self.arvrunner.api._rootDesc["revision"] >= "20250327":
-                pp = {}
-                for p in publish_port_req["publishPorts"]:
-                    pp[p["servicePort"]] = {
-                        "access": p["serviceAccess"],
-                        "label": p["label"],
-                    }
-                container_request["publish_ports"] = pp
-                container_request["service"] = True
-            else:
-                raise WorkflowException("Arvados API server does not support publish_ports (requires Arvados 3.2+)")
-
         if runtimeContext.enable_preemptible is False:
             scheduling_parameters["preemptible"] = False
         else:
@@ -417,6 +403,21 @@ class ArvadosContainer(JobBase):
             else:
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
+
+        publish_port_req, _ = self.get_requirement("http://arvados.org/cwl#PublishPorts")
+        if publish_port_req:
+            if self.arvrunner.api._rootDesc["revision"] >= "20250327":
+                pp = {}
+                for p in publish_port_req["publishPorts"]:
+                    pp[p["servicePort"]] = {
+                        "access": p["serviceAccess"],
+                        "label": p["label"],
+                    }
+                container_request["published_ports"] = pp
+                container_request["service"] = True
+                container_request["use_existing"] = False
+            else:
+                raise WorkflowException("Arvados API server does not support publish_ports (requires Arvados 3.2+)")
 
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
