@@ -56,3 +56,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_controller
+
+- name: Set up keepstore(s)
+  hosts: arvados_keepstore
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keepstore

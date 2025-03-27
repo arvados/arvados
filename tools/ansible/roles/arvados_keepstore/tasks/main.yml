@@ -1,0 +1,27 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Ensure Keepstore Directory roots exist
+  become: yes
+  ansible.builtin.file:
+    state: directory
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: 0750
+  loop: "{{ arvados_cluster.Volumes.values()|selectattr('Driver', '==', 'Directory')|map(attribute='DriverParameters.Root')|unique }}"
+
+- name: Install Arvados keepstore
+  become: yes
+  ansible.builtin.apt:
+    update_cache: "{{ arvados_apt_repository.changed }}"
+    name:
+      - keepstore
+
+- name: Start and enable keepstore.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: keepstore.service
+    state: "{{ 'restarted' if arvados_config_copy.changed else 'started' }}"
+    enabled: true
