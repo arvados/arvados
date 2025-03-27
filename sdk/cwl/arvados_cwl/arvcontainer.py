@@ -349,6 +349,19 @@ class ArvadosContainer(JobBase):
             else:
                 raise WorkflowException("Arvados API server does not support ROCm (requires Arvados 3.1+)")
 
+        publish_port_req, _ = self.get_requirement("http://arvados.org/cwl#PublishPorts")
+        if publish_port_req:
+            if self.arvrunner.api._rootDesc["revision"] >= "20250327":
+                pp = {}
+                for p in publish_port_req["publishPorts"]:
+                    pp[p["servicePort"]] = {
+                        "access": p["serviceAccess"],
+                        "label": p["label"],
+                    }
+                runtime_constraints["publish_ports"] = pp
+            else:
+                raise WorkflowException("Arvados API server does not support publish_ports (requires Arvados 3.2+)")
+
         if runtimeContext.enable_preemptible is False:
             scheduling_parameters["preemptible"] = False
         else:
