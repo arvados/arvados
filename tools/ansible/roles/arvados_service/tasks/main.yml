@@ -1,0 +1,39 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Set up /etc/arvados
+  become: yes
+  ansible.builtin.file:
+    state: directory
+    path: /etc/arvados
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Write Arvados config.yml
+  # If we already ran this task, don't run it again.
+  # This way later tasks have the most accurate value for
+  # `arvados_config_copy.changed`.
+  # Ansible would let this task run with different values in
+  # `arvados_config_file`, but doing so would make a nonsense result for
+  # Arvados, so it's not supported.
+  when: arvados_config_copy is undefined
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_config_file }}"
+    dest: /etc/arvados/config.yml
+    owner: root
+    group: "{{ arvados_config_group }}"
+    mode: 0640
+  register: arvados_config_copy
+
+- name: Write Arvados certificates
+  when: arvados_certificates_file is truthy
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_certificates_file }}"
+    dest: /etc/arvados/ca-certificates.crt
+    owner: root
+    group: root
+    mode: 0644

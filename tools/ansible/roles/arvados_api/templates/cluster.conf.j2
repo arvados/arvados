@@ -1,0 +1,11 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+# This override sets Passenger to listen on an address matching
+# the cluster InternalURLs configuration.
+{% set listen_address = arvados_cluster.Services.RailsAPI | listen_addr %}
+[Service]
+Environment=PASSENGER_ADDRESS={{ listen_address.address }}
+Environment=PASSENGER_PORT={{ listen_address.port }}

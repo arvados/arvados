@@ -1,0 +1,8 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_config_group: www-data
+# This file gets uploaded to `/etc/arvados/ca-certificates.crt`.
+# Included certificates are trusted by all Arvados TLS clients.
+arvados_certificates_file: ""

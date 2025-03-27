@@ -1,0 +1,50 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# install-arvados-cluster.yml - Ansible playbook to set up an Arvados cluster
+
+- name: Load Arvados configuration
+  hosts: all
+  tasks:
+    - name: Load Arvados configuration file
+      delegate_to: localhost
+      ansible.builtin.include_vars:
+        name: arvados_config
+        file: "{{ arvados_config_file }}"
+    - name: Load Arvados cluster configuration
+      ansible.builtin.set_fact:
+        arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+      failed_when: arvados_cluster is undefined
+
+- name: Prepare base system
+  hosts: all
+  tasks:
+    - name: Bootstrap packages required for Ansible
+      become: yes
+      ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
+      loop:
+        - update
+        - install acl python3-apt python3-debian
+    - name: Set up distro repositories
+      ansible.builtin.include_role:
+        name: distro_apt
+
+- name: Install PostgreSQL
+  hosts: arvados_postgresql
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_postgresql
+
+- name: Set up Arvados database
+  hosts: arvados_postgresql,arvados_api
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_database
+      run_once: true
+
+- name: Set up RailsAPI service(s)
+  hosts: arvados_api
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_api
