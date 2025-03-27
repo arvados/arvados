@@ -358,7 +358,8 @@ class ArvadosContainer(JobBase):
                         "access": p["serviceAccess"],
                         "label": p["label"],
                     }
-                runtime_constraints["publish_ports"] = pp
+                container_request["publish_ports"] = pp
+                container_request["service"] = True
             else:
                 raise WorkflowException("Arvados API server does not support publish_ports (requires Arvados 3.2+)")
 
