@@ -1,0 +1,35 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+{% set upstream_name = "arvados-" + arvados_nginx_service_key|lower %}
+{% set upstream_svc = arvados_cluster.Services[arvados_nginx_service_key] %}
+upstream {{ upstream_name }} {
+{% for addr in upstream_svc | internal_addrs %}
+  server  {{ addr }}  fail_timeout=10s;
+{% endfor %}
+}
+
+server {
+{% set ext_addr = upstream_svc | external_addr %}
+  listen       {{ ext_addr.port }} ssl;
+  server_name  {{ ext_addr.address }};
+
+  ssl_certificate      /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.cert;
+  ssl_certificate_key  /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.key;
+
+  client_max_body_size  {{ arvados_nginx_client_max_body_size }};
+
+  location / {
+    proxy_pass  http://{{ upstream_name }};
+{% for key, val in arvados_nginx_proxy_config.items() %}
+    proxy_{{ key }}  {{ val }};
+{% endfor %}
+
+{% for key, val in arvados_nginx_proxy_headers.items() %}
+    proxy_set_header  {{ key }}  {{ val }};
+{% endfor %}
+  }
+}
