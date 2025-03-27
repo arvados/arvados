@@ -531,7 +531,7 @@ cluster, and automatically passes most permissions checks.",
       # format is YYYYMMDD, must be fixed width (needs to be lexically
       # sortable), updated manually, may be used by clients to
       # determine availability of API server features.
-      revision: "20250128",
+      revision: "20250327",
       source_version: AppVersion.hash,
       sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
       packageVersion: AppVersion.package_version,
