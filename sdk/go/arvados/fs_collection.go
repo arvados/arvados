@@ -50,6 +50,12 @@ type CollectionFileSystem interface {
 	// and update the in-memory representation to reference the
 	// larger blocks. Returns the number of (small) blocks that
 	// were replaced.
+	//
+	// After repacking, Sync() will persist the repacking results
+	// and load the server's latest version of the collection,
+	// reverting any other local changes.  To repack without
+	// abandoning local changes, call Sync, then Repack, then Sync
+	// again.
 	Repack(context.Context, RepackOptions) (int, error)
 
 	// Total data bytes in all files.
@@ -459,6 +465,20 @@ func (fs *collectionFileSystem) refreshSignature(locator string) string {
 }
 
 func (fs *collectionFileSystem) Sync() error {
+	fs.repackedMtx.Lock()
+	if len(fs.repacked) > 0 {
+		err := fs.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+fs.uuid, nil, map[string]interface{}{
+			"select":           []string{"portable_data_hash"},
+			"replace_segments": fs.repacked,
+		})
+		if err != nil {
+			fs.repackedMtx.Unlock()
+			return fmt.Errorf("sync failed: replace_segments %s: %w", fs.uuid, err)
+		}
+		fs.repacked = nil
+	}
+	fs.repackedMtx.Unlock()
+
 	refreshed, err := fs.checkChangesOnServer(true)
 	if err != nil {
 		return err

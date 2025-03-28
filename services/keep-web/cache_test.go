@@ -78,11 +78,11 @@ func (s *IntegrationSuite) TestCache(c *check.C) {
 	for i := 0; i < 7; i++ {
 		resp := httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
-		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
 
 		resp2 := httptest.NewRecorder()
 		s.handler.ServeHTTP(resp2, req2)
-		c.Check(resp2.Code, check.Equals, http.StatusOK)
+		c.Check(resp2.Result().StatusCode, check.Equals, http.StatusOK)
 	}
 	s.checkCacheMetrics(c,
 		"hits 20",
@@ -97,8 +97,8 @@ func (s *IntegrationSuite) TestForceReloadPDH(c *check.C) {
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveToken
 
-	_, resp := s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/"+filename, arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	_, resp := s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/"+filename, arvadostest.ActiveToken, nil, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 
 	var coll arvados.Collection
 	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
@@ -113,14 +113,14 @@ func (s *IntegrationSuite) TestForceReloadPDH(c *check.C) {
 	_, resp = s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/"+filename, "", http.Header{
 		"Authorization": {"Bearer " + arvadostest.ActiveToken},
 		"Cache-Control": {"must-revalidate"},
-	})
-	c.Check(resp.Code, check.Equals, http.StatusOK)
+	}, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 
 	_, resp = s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/missingfile", "", http.Header{
 		"Authorization": {"Bearer " + arvadostest.ActiveToken},
 		"Cache-Control": {"must-revalidate"},
-	})
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	}, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
 
 func (s *IntegrationSuite) TestForceReloadUUID(c *check.C) {
@@ -135,12 +135,12 @@ func (s *IntegrationSuite) TestForceReloadUUID(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
 
-	_, resp := s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	_, resp := s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", arvadostest.ActiveToken, nil, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 	err = client.RequestAndDecode(&coll, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 		"collection": map[string]string{
 			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:different_empty_file\n",
@@ -152,8 +152,8 @@ func (s *IntegrationSuite) TestForceReloadUUID(c *check.C) {
 	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", "", http.Header{
 		"Authorization": {"Bearer " + arvadostest.ActiveToken},
 		"Cache-Control": {"must-revalidate"},
-	})
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
+	}, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil, nil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 }

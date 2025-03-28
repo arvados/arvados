@@ -52,6 +52,8 @@ type handler struct {
 
 	dbConnector    *ctrlctx.DBConnector
 	dbConnectorMtx sync.Mutex
+
+	repacking sync.Map
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -766,7 +768,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				} else if len(replace) == 0 {
 					return nil
 				}
-				err = client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+collectionID, nil, map[string]interface{}{
+				var updated arvados.Collection
+				err = client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+collectionID, nil, map[string]interface{}{
 					"replace_files": replace,
 					"collection":    map[string]interface{}{"manifest_text": manifest}})
 				var te arvados.TransactionError
@@ -775,6 +778,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				}
 				if err != nil {
 					return err
+				}
+				if r.Method == "PUT" {
+					h.repack(r.Context(), session, logger, &updated)
 				}
 				return nil
 			}}
@@ -819,6 +825,37 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				f.Close()
 			}
 			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %v", fi.Size(), wrote, n, err)
+		}
+	}
+}
+
+// Repack the given collection after uploading a file.
+func (h *handler) repack(ctx context.Context, session *cachedSession, logger logrus.FieldLogger, updated *arvados.Collection) {
+	if _, busy := h.repacking.LoadOrStore(updated.UUID, true); busy {
+		// Another goroutine is already repacking the same
+		// collection.
+		return
+	}
+	defer h.repacking.Delete(updated.UUID)
+
+	// Repacking is best-effort, so we disable retries, and don't
+	// fail on errors.
+	client := *session.client
+	client.Timeout = 0
+	repackfs, err := updated.FileSystem(&client, session.keepclient)
+	if err != nil {
+		logger.Warnf("setting up repackfs: %s", err)
+		return
+	}
+	repacked, err := repackfs.Repack(ctx, arvados.RepackOptions{CachedOnly: true})
+	if err != nil {
+		logger.Warnf("repack: %s", err)
+		return
+	}
+	if repacked > 0 {
+		err := repackfs.Sync()
+		if err != nil {
+			logger.Infof("sync repack: %s", err)
 		}
 	}
 }

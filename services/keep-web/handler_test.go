@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -814,7 +815,9 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 		}
 		failCode := authz(req, tok)
 		req, resp := s.doReq(req)
-		code, body := resp.Code, resp.Body.String()
+		code := resp.StatusCode
+		buf, _ := io.ReadAll(resp.Body)
+		body := string(buf)
 
 		// If the initial request had a (non-empty) token
 		// showing in the query string, we should have been
@@ -858,18 +861,21 @@ func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
 				Header:     http.Header{"Authorization": []string{"Bearer " + arvadostest.ActiveToken}},
 			}
 			req, resp := s.doReq(req)
-			code, _ := resp.Code, resp.Body.String()
-
 			if port == "8000" {
-				c.Check(code, check.Equals, 401)
+				c.Check(resp.StatusCode, check.Equals, 401)
 			} else {
-				c.Check(code, check.Equals, 200)
+				c.Check(resp.StatusCode, check.Equals, 200)
 			}
 		}
 	}
 }
 
-func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr http.Header) (*http.Request, *httptest.ResponseRecorder) {
+func (s *IntegrationSuite) collectionURL(uuid, path string) string {
+	return "http://" + uuid + ".collections.example.com/" + path
+}
+
+// Create a request and process it using s.handler.
+func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr http.Header, body []byte) (*http.Request, *http.Response) {
 	u := mustParseURL(urlstring)
 	if hdr == nil && token != "" {
 		hdr = http.Header{"Authorization": {"Bearer " + token}}
@@ -884,14 +890,19 @@ func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr
 		URL:        u,
 		RequestURI: u.RequestURI(),
 		Header:     hdr,
+		Body:       io.NopCloser(bytes.NewReader(body)),
 	})
 }
 
-func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
+// Process req using s.handler, and follow redirects if any.
+func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *http.Response) {
 	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
+	var handler http.Handler = s.handler
+	// // Uncomment to enable request logging in test output:
+	// handler = httpserver.AddRequestIDs(httpserver.LogRequests(handler))
+	handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
-		return req, resp
+		return req, resp.Result()
 	}
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 	u, _ := req.URL.Parse(resp.Header().Get("Location"))
@@ -2319,8 +2330,6 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveTokenV2
-	var handler http.Handler = s.handler
-	// handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.handler)) // ...to enable request logging in test output
 
 	// Each file we upload will consist of some unique content
 	// followed by 2 MiB of filler content.
@@ -2346,51 +2355,131 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
-				resp := httptest.NewRecorder()
-				req, err := http.NewRequest("MKCOL", u.String(), nil)
-				c.Assert(err, check.IsNil)
-				req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-				handler.ServeHTTP(resp, req)
-				c.Assert(resp.Code, check.Equals, http.StatusCreated)
+				_, resp := s.do("MKCOL", s.collectionURL(coll.UUID, fmt.Sprintf("i=%d", i)), client.AuthToken, nil, nil)
+				c.Assert(resp.StatusCode, check.Equals, http.StatusCreated)
 				for j := 0; j < n && !c.Failed(); j++ {
 					j := j
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
 						content := fmt.Sprintf("i=%d/j=%d", i, j)
-						u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
-
-						resp := httptest.NewRecorder()
-						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content+filler))
-						c.Assert(err, check.IsNil)
-						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-						handler.ServeHTTP(resp, req)
-						c.Check(resp.Code, check.Equals, http.StatusCreated, check.Commentf("%s", content))
+						_, resp := s.do("PUT", s.collectionURL(coll.UUID, content), client.AuthToken, nil, []byte(content+filler))
+						c.Check(resp.StatusCode, check.Equals, http.StatusCreated, check.Commentf("%s", content))
 
 						time.Sleep(time.Second)
-						resp = httptest.NewRecorder()
-						req, err = http.NewRequest("GET", u.String(), nil)
-						c.Assert(err, check.IsNil)
-						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-						handler.ServeHTTP(resp, req)
-						c.Check(resp.Code, check.Equals, http.StatusOK, check.Commentf("%s", content))
-						c.Check(strings.TrimSuffix(resp.Body.String(), filler), check.Equals, content)
+
+						_, resp = s.do("GET", s.collectionURL(coll.UUID, content), client.AuthToken, nil, nil)
+						c.Check(resp.StatusCode, check.Equals, http.StatusOK, check.Commentf("%s", content))
+						body, _ := io.ReadAll(resp.Body)
+						c.Check(strings.TrimSuffix(string(body), filler), check.Equals, content)
 					}()
 				}
 			}()
 		}
 		wg.Wait()
 		for i := 0; i < n; i++ {
-			u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
-			resp := httptest.NewRecorder()
-			req, err := http.NewRequest("PROPFIND", u.String(), &bytes.Buffer{})
-			c.Assert(err, check.IsNil)
-			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-			s.handler.ServeHTTP(resp, req)
-			c.Assert(resp.Code, check.Equals, http.StatusMultiStatus)
+			_, resp := s.do("PROPFIND", s.collectionURL(coll.UUID, fmt.Sprintf("i=%d", i)), client.AuthToken, nil, nil)
+			c.Assert(resp.StatusCode, check.Equals, http.StatusMultiStatus)
 		}
 	}
+}
+
+func (s *IntegrationSuite) TestRepack(c *check.C) {
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveTokenV2
+
+	// Each file we upload will consist of some unique content
+	// followed by 1 MiB of filler content.
+	filler := "."
+	for i := 0; i < 20; i++ {
+		filler += filler
+	}
+
+	var coll arvados.Collection
+	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
+	c.Assert(err, check.IsNil)
+	defer client.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+
+	countblocks := func() int {
+		var current arvados.Collection
+		err = client.RequestAndDecode(&current, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
+		c.Assert(err, check.IsNil)
+		block := map[string]bool{}
+		for _, hash := range regexp.MustCompile(` [0-9a-f]{32}`).FindAllString(current.ManifestText, -1) {
+			block[hash] = true
+		}
+		return len(block)
+	}
+
+	throttle := make(chan bool, 8) // len(throttle) is max upload concurrency
+	n := 5                         // nested loop below will write n^2 + 1 files
+	var nfiles atomic.Int64
+	var totalsize atomic.Int64
+	var wg sync.WaitGroup
+	for i := 0; i < n && !c.Failed(); i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			throttle <- true
+			_, resp := s.do("MKCOL", s.collectionURL(coll.UUID, fmt.Sprintf("i=%d", i)), client.AuthToken, nil, nil)
+			<-throttle
+			c.Assert(resp.StatusCode, check.Equals, http.StatusCreated)
+
+			for j := 0; j < n && !c.Failed(); j++ {
+				j := j
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					content := fmt.Sprintf("i=%d/j=%d", i, j)
+					throttle <- true
+					_, resp := s.do("PUT", s.collectionURL(coll.UUID, content), client.AuthToken, nil, []byte(content+filler))
+					<-throttle
+					c.Check(resp.StatusCode, check.Equals, http.StatusCreated, check.Commentf("%s", content))
+					totalsize.Add(int64(len(content) + len(filler)))
+					c.Logf("after writing %d files, manifest has %d blocks", nfiles.Add(1), countblocks())
+				}()
+			}
+		}()
+	}
+	wg.Wait()
+
+	content := "lastfile"
+	_, resp := s.do("PUT", s.collectionURL(coll.UUID, content), client.AuthToken, nil, []byte(content+filler))
+	c.Check(resp.StatusCode, check.Equals, http.StatusCreated, check.Commentf("%s", content))
+	nfiles.Add(1)
+
+	// Check that all files can still be retrieved
+	for i := 0; i < n && !c.Failed(); i++ {
+		i := i
+		for j := 0; j < n && !c.Failed(); j++ {
+			j := j
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				path := fmt.Sprintf("i=%d/j=%d", i, j)
+
+				_, resp := s.do("GET", s.collectionURL(coll.UUID, path), client.AuthToken, nil, nil)
+				c.Check(resp.StatusCode, check.Equals, http.StatusOK, check.Commentf("%s", content))
+				size, _ := io.Copy(io.Discard, resp.Body)
+				c.Check(int(size), check.Equals, len(path)+len(filler))
+			}()
+		}
+	}
+	wg.Wait()
+
+	// Check that the final manifest has been repacked so average
+	// block size is at least double the "small file" size
+	nblocks := countblocks()
+	c.Logf("nblocks == %d", nblocks)
+	c.Logf("nfiles == %d", nfiles.Load())
+	c.Check(nblocks < int(nfiles.Load()), check.Equals, true)
+	c.Logf("totalsize == %d", totalsize.Load())
+	meanblocksize := int(totalsize.Load()) / nblocks
+	c.Logf("meanblocksize == %d", meanblocksize)
+	minblocksize := 2 * int(totalsize.Load()) / int(nfiles.Load())
+	c.Logf("expecting minblocksize %d", minblocksize)
+	c.Check(meanblocksize >= minblocksize, check.Equals, true)
 }
 
 func (s *IntegrationSuite) TestDepthHeader(c *check.C) {
