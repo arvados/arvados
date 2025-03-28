@@ -59,7 +59,7 @@ export const ToggleTrashAction = connect(mapStateToProps)(withStyles(componentIt
             ) : (
             <ListItem button
                 onClick={onClick}>
-                <ListItemIcon>
+                <ListItemIcon data-cy='context-move-to-trash'>
                     {isTrashed
                         ? <RestoreFromTrashIcon/>
                         : <TrashIcon/>}
