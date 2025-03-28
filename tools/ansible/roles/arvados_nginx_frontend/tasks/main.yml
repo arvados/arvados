@@ -24,7 +24,8 @@
     owner: root
     group: root
     mode: 0644
-  notify: restart nginx
+  notify:
+    - restart nginx
   register: arvados_nginx_site
 
 - name: "Enable nginx {{ arvados_nginx_service_key }} site"
@@ -33,4 +34,5 @@
     state: link
     src: "{{ arvados_nginx_site.dest }}"
     dest: "{{ arvados_nginx_site.dest|replace('/sites-available/', '/sites-enabled/') }}"
-  notify: restart nginx
+  notify:
+    - restart nginx
