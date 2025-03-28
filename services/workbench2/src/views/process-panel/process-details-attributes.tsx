@@ -63,8 +63,8 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource, co
     return {
         requestUuid: props.request.uuid,
         resources: state.resources,
-        containerServiceUrl: state.auth.config,
-        token: state.auth.apiToken,
+        containerServiceUrl: state.auth.config.clusterConfig.Services.ContainerWebServices.ExternalURL,
+        apiToken: state.auth.apiToken,
     };
 };
 
@@ -87,7 +87,7 @@ type ProcessDetailsDataProps = {
     requestUuid: string;
     resources: ResourcesState;
     containerServiceUrl: string;
-    token: string;
+    apiToken: string;
 }
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
@@ -141,7 +141,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
 
             <Grid item xs={12}>
                 {container?.service && Object.keys(container?.publishedPorts).map(port =>
-                    <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, token)}>{container?.publishedPorts[port].label}</a>
+                    <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, props.apiToken)}>{container?.publishedPorts[port].label}</a>
                 )}
             </Grid>
 
