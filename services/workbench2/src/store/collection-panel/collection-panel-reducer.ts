@@ -20,4 +20,8 @@ export const collectionPanelReducer = (state: CollectionPanelState = initialStat
              ...state,
              item,
         }),
+        RESET_COLLECTION_PANEL: () => ({
+            ...state,
+            item: null,
+        }),
     });

@@ -16,6 +16,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
+    RESET_COLLECTION_PANEL: ofType<{}>(),
 });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;

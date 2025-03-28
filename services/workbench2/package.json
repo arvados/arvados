@@ -184,7 +184,10 @@
   "eslintConfig": {
     "extends": [
       "react-app"
-    ]
+    ],
+    "ignorePatterns": [
+      "**/*.cy.js"
+      ]
   },
   "babel": {
     "presets": [
