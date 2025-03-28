@@ -6,6 +6,7 @@ import { Resource, ResourceKind, ResourceWithProperties } from './resource';
 import { MountType } from 'models/mount-types';
 import { RuntimeConstraints } from './runtime-constraints';
 import { SchedulingParameters } from './scheduling-parameters';
+import { PublishedPorts } from "./published-port";
 
 export enum ContainerRequestState {
     UNCOMMITTED = 'Uncommitted',
@@ -43,6 +44,7 @@ extends Resource, ResourceWithProperties {
     schedulingParameters: SchedulingParameters;
     state: ContainerRequestState;
     useExisting: boolean;
+    publishedPorts: PublishedPorts;
 }
 
 // Until the api supports unselecting fields, we need a list of all other fields to omit mounts

@@ -46,10 +46,25 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
+export const getContainerServiceUrl = (inlineUrl: string, containerUuid: string,
+                                       containerPort: string, token: string): string => {
+    // Inline URLs as 'https://*.containers.example.com' or
+    // 'https://*--containers.example.com' should get the uuid on their hostnames
+    if (inlineUrl.indexOf('*.') > -1) {
+        inlineUrl = inlineUrl.replace('*.', `${containerUuid}-${containerPort}.`);
+    } else if (inlineUrl.indexOf('*--') > -1) {
+        inlineUrl = inlineUrl.replace('*--', `${containerUuid}-${containerPort}--`);
+    }
+    inlineUrl = `${inlineUrl}?arvados_api_token=${token}`
+    return inlineUrl;
+};
+
 const mapStateToProps = (state: RootState, props: { request: ProcessResource, container?: ContainerResource }) => {
     return {
         requestUuid: props.request.uuid,
         resources: state.resources,
+        containerServiceUrl: state.auth.config,
+        token: state.auth.apiToken,
     };
 };
 
@@ -71,6 +86,8 @@ type ProcessDetailsDataProps = {
     classes: Record<CssRules, string>
     requestUuid: string;
     resources: ResourcesState;
+    containerServiceUrl: string;
+    token: string;
 }
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
@@ -121,6 +138,13 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             if (!containerRequest) return <></>;
 
             return <Grid container>
+
+            <Grid item xs={12}>
+                {container?.service && Object.keys(container?.publishedPorts).map(port =>
+                    <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, token)}>{container?.publishedPorts[port].label}</a>
+                )}
+            </Grid>
+
             <Grid item xs={12}>
                 <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
             </Grid>
