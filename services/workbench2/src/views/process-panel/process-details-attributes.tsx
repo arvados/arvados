@@ -16,7 +16,7 @@ import { getProcess, getProcessStatus, ProcessProperties } from "store/processes
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
-import { ContainerResource } from "models/container";
+import { ContainerResource, ContainerState } from "models/container";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
@@ -140,9 +140,17 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             return <Grid container>
 
             <Grid item xs={12}>
-                {container?.service && Object.keys(container?.publishedPorts).map(port =>
-                    <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, props.apiToken)}>{container?.publishedPorts[port].label}</a>
-                )}
+                {container?.service && container?.state === ContainerState.RUNNING && (Object.keys(container?.publishedPorts).length > 0) &&
+                 <p>
+                     <h3>Connect to container service</h3>
+                     {Object.keys(container?.publishedPorts).map(port =>
+                         <p>
+                             <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, props.apiToken)}>
+                                 {container?.publishedPorts[port].label}
+                             </a>
+                         </p>
+                     )}
+                 </p>}
             </Grid>
 
             <Grid item xs={12}>
