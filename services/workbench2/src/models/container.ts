@@ -7,7 +7,7 @@ import { MountType } from 'models/mount-types';
 import { RuntimeConstraints } from "models/runtime-constraints";
 import { SchedulingParameters } from './scheduling-parameters';
 import { RuntimeStatus } from "./runtime-status";
-import { PublishedPorts } from "./published-port";
+import { PublishedPorts } from "./published-ports";
 
 export enum ContainerState {
     QUEUED = 'Queued',
@@ -40,5 +40,6 @@ export interface ContainerResource extends Resource {
     exitCode: number | null;
     authUuid: string | null;
     lockedByUuid: string | null;
+    service: boolean;
     publishedPorts: PublishedPorts;
 }

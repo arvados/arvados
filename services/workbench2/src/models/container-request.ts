@@ -6,7 +6,7 @@ import { Resource, ResourceKind, ResourceWithProperties } from './resource';
 import { MountType } from 'models/mount-types';
 import { RuntimeConstraints } from './runtime-constraints';
 import { SchedulingParameters } from './scheduling-parameters';
-import { PublishedPorts } from "./published-port";
+import { PublishedPorts } from "./published-ports";
 
 export enum ContainerRequestState {
     UNCOMMITTED = 'Uncommitted',
@@ -44,6 +44,7 @@ extends Resource, ResourceWithProperties {
     schedulingParameters: SchedulingParameters;
     state: ContainerRequestState;
     useExisting: boolean;
+    service: boolean;
     publishedPorts: PublishedPorts;
 }
 
@@ -77,9 +78,11 @@ export const containerRequestFieldsNoMounts = [
     "owner_uuid",
     "priority",
     "properties",
+    "published_ports",
     "requesting_container_uuid",
     "runtime_constraints",
     "scheduling_parameters",
+    "service",
     "state",
     "use_existing",
     "uuid",
