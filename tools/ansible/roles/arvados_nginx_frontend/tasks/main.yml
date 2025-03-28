@@ -9,12 +9,15 @@
   ansible.builtin.copy:
     src: "{{ tls_source[item] }}"
     dest: "/etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.{{ item }}"
+    remote_src: "{{ tls_source.remote|default(false)|bool }}"
     owner: root
     group: www-data
     mode: 0640
   loop:
     - cert
     - key
+  notify:
+    - restart nginx
 
 - name: "Set up nginx {{ arvados_nginx_service_key }} site"
   become: yes
