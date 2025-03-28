@@ -397,7 +397,7 @@ const stringifyObject = (item: any) =>
 const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
         containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, containerCount,
-        useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl, outputGlob } = apiResponse;
+        useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl, outputGlob, service, publishedPorts } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
@@ -428,7 +428,10 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX
 "log_uuid": ${stringify(logUuid)},
 "output_name": ${stringify(outputName)},
 "output_ttl": ${stringify(outputTtl)},
-"output_glob": ${stringifyObject(outputGlob)}`;
+"output_glob": ${stringifyObject(outputGlob)},
+"service": ${stringifyObject(service)},
+"publishedPorts": ${stringifyObject(publishedPorts)}
+    `;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
