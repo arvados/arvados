@@ -5,7 +5,7 @@
 import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
-import { updateResources } from "store/resources/resources-actions";
+import { showGroupedCommonResourceResultToasts, updateResources } from "store/resources/resources-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
@@ -20,15 +20,16 @@ import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutpu
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { ContainerRequestState } from "models/container-request";
 import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
+import { CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { getProcessPanelCurrentUuid } from "store/process-panel/process-panel";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { loadSidePanelTreeProjects, SidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
+import { matchProcessRoute, matchProjectRoute } from "routes/routes";
 
 export const loadContainers =
     (containerUuids: string[], loadMounts: boolean = true) =>
@@ -298,56 +299,39 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
         .map(uuid => getResource(uuid)(getState().resources) as Resource)
         .filter(resource => resource.kind === ResourceKind.PROCESS);
 
+    const messageFuncMap = {
+        [CommonResourceServiceError.NONE]: (count: number) => count > 1 ? `Removed ${count} items` : `Item removed`,
+        [CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN]: (count: number) => count > 1 ? `Remove ${count} items failed: Access Denied` : `Remove failed: Access Denied`,
+        // Since processes are permanently removed only, skip duplicate name error since it's only for untrash
+        [CommonResourceServiceError.UNKNOWN]: (count: number) => count > 1 ? `Remove ${count} items failed` : `Remove failed`,
+    };
+
     await Promise.allSettled(processesToRemove.map(process => services.containerRequestService.delete(process.uuid, false)))
-        .then(res => {
-            const failed = res.filter((promiseResult): promiseResult is PromiseRejectedResult => promiseResult.status === 'rejected');
-            const succeeded = res.filter((promiseResult): promiseResult is PromiseFulfilledResult<ContainerRequestResource> => promiseResult.status === 'fulfilled');
+        .then(settledPromises => {
+            const { success } = showGroupedCommonResourceResultToasts(dispatch, settledPromises, messageFuncMap);
 
-            // Get error kinds
-            const accessDeniedError = failed.filter((promiseResult) => {
-                return getCommonResourceServiceError(promiseResult.reason) === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
-            });
-            const genericError = failed.filter((promiseResult) => {
-                return getCommonResourceServiceError(promiseResult.reason) !== CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
-            });
-
-            // Show grouped errors for access or generic error
-            if (accessDeniedError.length) {
-                if (accessDeniedError.length > 1) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied: ${accessDeniedError.length} items`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-                } else {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-                }
-            }
-            if (genericError.length) {
-                if (genericError.length > 1) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed: ${genericError.length} items`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-                } else {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-                }
-            }
-            if (succeeded.length) {
-                if (succeeded.length > 1) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Removed ${succeeded.length} items`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-                } else {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-                }
-
+            if (success.length) {
+                const { location } = getState().router;
                 // Processes are deleted immediately, refresh favorites to remove any deleted favorites
                 dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
-            }
 
-            // If currently viewing any of the deleted runs, navigate to home
-            if (currentProcessPanelUuid) {
-                const currentProcessDeleted = succeeded.find((promiseResult) => promiseResult.value.uuid === currentProcessPanelUuid);
-                if (currentProcessDeleted) {
-                    dispatch<any>(navigateTo(currentProcessDeleted.value.ownerUuid));
+                if (
+                    // If currently viewing any of the deleted runs, navigate to parent project
+                    matchProcessRoute(location ? location.pathname : "") &&
+                    currentProcessPanelUuid
+                ) {
+                    const currentProcessDeleted = success.find((promiseResult) => promiseResult.value.uuid === currentProcessPanelUuid);
+                    if (currentProcessDeleted) {
+                        dispatch<any>(navigateTo(currentProcessDeleted.value.ownerUuid));
+                    }
+                } else if (
+                    // If currently viewing the parent project of any of the deleted runs, refresh project runs tab
+                    matchProjectRoute(location ? location.pathname : "") &&
+                    currentProjectUuid &&
+                    success.find((promiseResult) => promiseResult.value.ownerUuid === currentProjectUuid)
+                ) {
+                    dispatch(projectPanelRunActions.REQUEST_ITEMS());
                 }
-            }
-
-            // If currently viewing the parent project of any of the deleted runs, refresh project runs tab
-            if (currentProjectUuid && succeeded.find((promiseResult) => promiseResult.value.ownerUuid === currentProjectUuid)) {
-                dispatch(projectPanelRunActions.REQUEST_ITEMS());
             }
         });
 };
