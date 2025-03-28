@@ -30,7 +30,7 @@ import { getResourceUrl } from "routes/routes";
 import WarningIcon from '@mui/icons-material/Warning';
 import { ResourcesState } from "store/resources/resources";
 
-type CssRules = 'link' | 'propertyTag';
+type CssRules = 'link' | 'propertyTag' | 'serviceNote' | 'serviceLink';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
@@ -44,6 +44,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginRight: theme.spacing(0.5),
         marginBottom: theme.spacing(0.5)
     },
+    serviceNote: {
+        fontSize: '1.5rem',
+    },
+    serviceLink: {
+        marginLeft: theme.spacing(1)
+    }
 });
 
 export const getContainerServiceUrl = (inlineUrl: string, containerUuid: string,
@@ -141,14 +147,12 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
 
             <Grid item xs={12}>
                 {container?.service && container?.state === ContainerState.RUNNING && (Object.keys(container?.publishedPorts).length > 0) &&
-                 <p>
-                     <h3>Connect to container service</h3>
+                 <p className={classes.serviceNote}>
+                     Connect to
                      {Object.keys(container?.publishedPorts).map(port =>
-                         <p>
-                             <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, props.apiToken)}>
-                                 {container?.publishedPorts[port].label}
-                             </a>
-                         </p>
+                         <a href={getContainerServiceUrl(props.containerServiceUrl, container?.uuid, port, props.apiToken)} className={classes.serviceLink}>
+                             {container?.publishedPorts[port].label}
+                         </a>
                      )}
                  </p>}
             </Grid>
