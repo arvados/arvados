@@ -5,7 +5,7 @@
 import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
-import { showGroupedCommonResourceResultToasts, updateResources } from "store/resources/resources-actions";
+import { showGroupedCommonResourceResultSnackbars, updateResources } from "store/resources/resources-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
@@ -308,7 +308,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
 
     await Promise.allSettled(processesToRemove.map(process => services.containerRequestService.delete(process.uuid, false)))
         .then(settledPromises => {
-            const { success } = showGroupedCommonResourceResultToasts(dispatch, settledPromises, messageFuncMap);
+            const { success } = showGroupedCommonResourceResultSnackbars(dispatch, settledPromises, messageFuncMap);
 
             if (success.length) {
                 const { location } = getState().router;

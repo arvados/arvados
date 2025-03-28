@@ -171,7 +171,7 @@ export type SettledPromiseSet<T> = {
  * @param showError Func called to show an error toast with message
  * @returns The separated success / error Promise results for further use
  */
-export const showGroupedCommonResourceResultToasts = <T>(
+export const showGroupedCommonResourceResultSnackbars = <T>(
     dispatch: Dispatch,
     promiseResults: PromiseSettledResult<T>[],
     messageFuncMap: CommonResourceErrorMessageFuncMap,

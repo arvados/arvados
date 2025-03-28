@@ -15,7 +15,7 @@ import { navigateTo, navigateToTrash } from "store/navigation/navigation-action"
 import { matchFavoritesRoute, matchProjectRoute, matchSharedWithMeRoute, matchTrashRoute } from "routes/routes";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton } from "store/multiselect/multiselect-actions";
-import { showGroupedCommonResourceResultToasts, updateResources } from "store/resources/resources-actions";
+import { showGroupedCommonResourceResultSnackbars, updateResources } from "store/resources/resources-actions";
 import { GroupResource } from "models/group";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { CommonResourceServiceError } from "services/common-service/common-resource-service";
@@ -110,7 +110,7 @@ export const toggleCollectionTrashed =
 
             await Promise.allSettled(uuids.map((uuid) => isTrashed ? services.collectionService.untrash(uuid) : services.collectionService.trash(uuid)))
                 .then(async settledPromises => {
-                    const { success } = showGroupedCommonResourceResultToasts(dispatch, settledPromises, messageFuncMap);
+                    const { success } = showGroupedCommonResourceResultSnackbars(dispatch, settledPromises, messageFuncMap);
 
                     if (success.length) {
                         const { location } = getState().router;
