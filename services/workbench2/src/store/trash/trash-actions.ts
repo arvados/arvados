@@ -97,7 +97,7 @@ export const toggleProjectTrashed =
  *
  * This only handles trashable resources aka Collection / Group
  */
-export const toggleCollectionTrashed =
+export const toggleResourceTrashed =
     (uuids: string[], isTrashed: boolean) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
             dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH));
@@ -177,11 +177,3 @@ export const toggleCollectionTrashed =
                     }
                 });
         };
-
-export const toggleTrashed = (kind: ResourceKind, uuid: string, ownerUuid: string, isTrashed: boolean) => (dispatch: Dispatch) => {
-    if (kind === ResourceKind.PROJECT) {
-        dispatch<any>(toggleProjectTrashed(uuid, ownerUuid, isTrashed!!, false));
-    } else if (kind === ResourceKind.COLLECTION) {
-        dispatch<any>(toggleCollectionTrashed([uuid], isTrashed!!));
-    }
-};
