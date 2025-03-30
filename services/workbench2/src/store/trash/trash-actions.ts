@@ -10,7 +10,7 @@ import { trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects, SidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
-import { ResourceKind } from "models/resource";
+import { extractUuidKind, ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
 import { matchFavoritesRoute, matchProjectRoute, matchSharedWithMeRoute, matchTrashRoute } from "routes/routes";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
@@ -94,6 +94,8 @@ export const toggleProjectTrashed =
  * @param uuids list of uuids to trash/untrash
  * @param isTrashed Current trashed status to be toggled
  * @returns Dispatchable action that yields a void promise
+ *
+ * This only handles trashable resources aka Collection / Group
  */
 export const toggleCollectionTrashed =
     (uuids: string[], isTrashed: boolean) =>
@@ -108,7 +110,18 @@ export const toggleCollectionTrashed =
                 [CommonResourceServiceError.UNKNOWN]: (count: number) => count > 1 ? `${_.startCase(verb)} ${count} items failed` : `${_.startCase(verb)} failed`,
             };
 
-            await Promise.allSettled(uuids.map((uuid) => isTrashed ? services.collectionService.untrash(uuid) : services.collectionService.trash(uuid)))
+            const trashFunc = async (uuid: string) => {
+                const kind = extractUuidKind(uuid);
+                if (kind === ResourceKind.COLLECTION) {
+                    return isTrashed ? services.collectionService.untrash(uuid) : services.collectionService.trash(uuid);
+                } else if (kind === ResourceKind.GROUP) {
+                    return isTrashed ? services.groupsService.untrash(uuid) : services.groupsService.trash(uuid);
+                }
+                console.error("Trash operation failed: resource type not trashable " + uuid);
+                return Promise.reject();
+            };
+
+            await Promise.allSettled(uuids.map((uuid) => trashFunc(uuid)))
                 .then(async settledPromises => {
                     const { success } = showGroupedCommonResourceResultSnackbars(dispatch, settledPromises, messageFuncMap);
 
