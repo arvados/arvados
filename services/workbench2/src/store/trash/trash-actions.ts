@@ -134,20 +134,46 @@ export const toggleCollectionTrashed =
                             if (matchTrashRoute(location ? location.pathname : "")) {
                                 dispatch(trashPanelActions.REQUEST_ITEMS());
                             }
+                            // Navigate to untrashed project when only item
+                            if (uuids.length === 1 && success.length === 1) {
+                                const uuid = success[0].value.uuid;
+                                if (extractUuidKind(uuid) === ResourceKind.GROUP) {
+                                    dispatch<any>(navigateTo(uuid));
+                                    dispatch<any>(activateSidePanelTreeItem(uuid));
+                                }
+                            }
+                            // Reload favorites
+                            dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
                         } else {
                             // Refresh favorites / project view after trashed
                             if (matchFavoritesRoute(location ? location.pathname : "")) {
                                 dispatch(favoritePanelActions.REQUEST_ITEMS());
                             } else if (matchProjectRoute(location ? location.pathname : "")) {
                                 dispatch(projectPanelDataActions.REQUEST_ITEMS());
+                            } else if (matchSharedWithMeRoute(location ? location.pathname : "")) {
+                                dispatch(sharedWithMePanelActions.REQUEST_ITEMS());
+                            }
 
                             // If 1 item trashed, navigate to parent
                             if (uuids.length === 1 && success.length === 1) {
                                 dispatch<any>(navigateTo(success[0].value.ownerUuid));
                             }
+
+                            // Reload favorites
+                            dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES))
+                                // Using then to ensure loadSidePanelTreeProjects finished
+                                .then(() => {
+                                    // Refresh each project's parent in the side panel tree
+                                    // Get every successfully untrashed reasource
+                                    success.map(result => result.value)
+                                        // Filter to only GROUP (project)
+                                        .filter(resource => resource.kind === ResourceKind.GROUP)
+                                        // Load side panel for each
+                                        .map(resource => {
+                                            dispatch<any>(loadSidePanelTreeProjects(resource.ownerUuid));
+                                        });
+                                });
                         }
-                        // Reload favorites
-                        dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));
                     }
                 });
         };
