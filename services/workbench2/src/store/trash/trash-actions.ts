@@ -140,6 +140,10 @@ export const toggleCollectionTrashed =
                                 dispatch(favoritePanelActions.REQUEST_ITEMS());
                             } else if (matchProjectRoute(location ? location.pathname : "")) {
                                 dispatch(projectPanelDataActions.REQUEST_ITEMS());
+
+                            // If 1 item trashed, navigate to parent
+                            if (uuids.length === 1 && success.length === 1) {
+                                dispatch<any>(navigateTo(success[0].value.ownerUuid));
                             }
                         }
                         // Reload favorites
