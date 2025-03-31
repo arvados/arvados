@@ -1338,5 +1338,31 @@ describe("Collection panel tests", function () {
                 });
             });
         });
+
+        it('displays the correct breadcrumbs after moving a collection to trash', () => {
+            const breadcrumbTestCollectionName = `Breadcrumb Test Collection ${Math.floor(Math.random() * 999999)}`;
+            cy.loginAs(activeUser);
+
+            cy.get("[data-cy=side-panel-button]").click();
+            cy.get("[data-cy=side-panel-new-collection]").click();
+            cy.get("[data-cy=form-dialog]")
+                .should("contain", "New collection")
+                .within(() => {
+                    cy.get("[data-cy=name-field]").within(() => {
+                        cy.get("input").type(breadcrumbTestCollectionName);
+                    });
+                    cy.get("[data-cy=form-submit-btn]").click();
+                });
+            cy.get("[data-cy=form-dialog]").should("not.exist");
+
+            cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
+            cy.waitForDom()
+            cy.get('[data-cy=data-table-row]').contains(breadcrumbTestCollectionName).should('exist').rightclick();
+            cy.get('[data-cy=context-menu]').should('exist');
+            cy.get('[data-cy=context-move-to-trash]').click();
+
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-first]").should("contain", "Home Projects");
+        });
     });
 });

@@ -33,6 +33,7 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
+import { collectionPanelActions } from 'store/collection-panel/collection-panel-action';
 
 type CssRules =
     'root'
@@ -181,6 +182,10 @@ export const CollectionPanel = withStyles(styles)(connect(
                         this.setState({ isWritable: isWritable });
                     }
                 }
+            }
+
+            componentWillUnmount(): void {
+                this.props.dispatch<any>(collectionPanelActions.RESET_COLLECTION_PANEL());
             }
 
             checkIsWritable = (item: CollectionResource, itemOwner: GroupResource | UserResource | null, currentUserUUID: string, isFrozen: boolean): boolean => {
