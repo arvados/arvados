@@ -99,9 +99,9 @@ export const toggleResourceTrashed =
                                         // Filter to only GROUP (project)
                                         .filter(resource => resource.kind === ResourceKind.GROUP)
                                         // Load side panel for each
-                                        .map(resource => {
-                                            dispatch<any>(loadSidePanelTreeProjects(resource.ownerUuid));
-                                        });
+                                        .map(resource =>
+                                            dispatch<any>(loadSidePanelTreeProjects(resource.ownerUuid))
+                                        );
                                 });
                         }
                     }
