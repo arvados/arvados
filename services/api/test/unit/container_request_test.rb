@@ -1905,11 +1905,23 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.save!
     end
 
+    # Missing initial_path
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "stuff",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
     # All good!
     cr.published_ports = {
       "9000" => {
         "access" => "public",
-        "label" => "stuff"
+        "label" => "stuff",
+        "initial_path" => "",
       }
     }
     cr.save!
