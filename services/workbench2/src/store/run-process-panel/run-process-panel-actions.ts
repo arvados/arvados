@@ -170,14 +170,16 @@ export const goToStep = (step: number) =>
         dispatch(runProcessPanelActions.SET_CURRENT_STEP(step));
     };
 
-const getInputTypes = (state: RootState): Record<string, CWLType[]> => {
+const getInputTypes = (state: RootState): Record<string, CWLType[]> | undefined => {
+    if (!state.runProcessPanel.inputs) return;
     return state.runProcessPanel.inputs.reduce((acc, val) => {
         acc[val.id] = val.type;
         return acc;
     }, {});
 };
 
-const nullifyEmptyStrings = (inputsForm: WorkflowInputsData, inputTypes: Record<string, CWLType[]>): WorkflowInputsData => {
+const nullifyEmptyStrings = (inputsForm: WorkflowInputsData, inputTypes: Record<string, CWLType[]> | undefined): WorkflowInputsData => {
+    if (!inputTypes) return inputsForm;
     return Object.keys(inputsForm).reduce((acc, key) => {
         const value = inputsForm[key];
         if (value === '' && inputTypes[key].includes(CWLType.NULL)) {
