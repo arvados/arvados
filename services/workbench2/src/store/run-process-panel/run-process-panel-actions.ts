@@ -18,6 +18,7 @@ import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
 import { getResource } from 'store/resources/resources';
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
+import { CWLType } from 'models/workflow';
 
 export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
 export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
@@ -169,17 +170,39 @@ export const goToStep = (step: number) =>
         dispatch(runProcessPanelActions.SET_CURRENT_STEP(step));
     };
 
+const getInputTypes = (state: RootState): Record<string, CWLType[]> => {
+    return state.runProcessPanel.inputs.reduce((acc, val) => {
+        acc[val.id] = val.type;
+        return acc;
+    }, {});
+};
+
+const nullifyEmptyStrings = (inputsForm: WorkflowInputsData, inputTypes: Record<string, CWLType[]>): WorkflowInputsData => {
+    return Object.keys(inputsForm).reduce((acc, key) => {
+        const value = inputsForm[key];
+        if (value === '' && inputTypes[key].includes(CWLType.NULL)) {
+            acc[key] = null;
+        } else {
+            acc[key] = value;
+        }
+        return acc;
+    }, {});
+};
+
 export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     const state = getState();
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
+    const inputTypes = getInputTypes(state);
+    const nullifiedInputsForm = nullifyEmptyStrings(inputsForm, inputTypes);
+    console.log(inputsForm, inputTypes, nullifiedInputsForm );
     const userUuid = getUserUuid(getState());
     if (!userUuid) { return; }
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     const ownerUUid = basicForm.owner ? basicForm.owner.uuid : (processOwnerUuid ? processOwnerUuid : userUuid);
     if (selectedWorkflow) {
         const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || getWorkflowRunnerSettings(selectedWorkflow);
-        const inputObject = normalizeInputKeys(inputsForm);
+        const inputObject = normalizeInputKeys(nullifiedInputsForm);
         const secret_mounts = createWorkflowSecretMounts(selectedWorkflow, inputObject);
         const newProcessData = {
             ownerUuid: ownerUUid,
