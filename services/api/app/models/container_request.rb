@@ -648,6 +648,9 @@ class ContainerRequest < ArvadosModel
           if !v["label"].is_a?(String)
             errors.add :published_ports, "value #{k}.label must be a string but was '#{v["label"].inspect}'"
           end
+          if !v["initial_path"].is_a?(String)
+            errors.add :published_ports, "value #{k}.initial_path must be a string but was '#{v["initial_path"].inspect}'"
+          end
         else
           errors.add :published_ports, "value '#{v}' must be an dict"
         end

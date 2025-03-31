@@ -14,12 +14,13 @@ Where the @uuid@ is the container uuid and @port@ is the port on the container t
 
 The @published_ports@ field of the container record advertises which ports on the container are available to receive requests.
 
-The value @published_ports@ is a hash.  Each key in the hash is a string with the integer value of a port that the container is listening on.  Each entry in the hash has two keys described here:
+The value @published_ports@ is a hash.  Each key in the hash is a string with the integer value of a port that the container is listening on.  Each entry in the hash has three keys described here:
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|
 |access|string|One of "public" or "private".  If "private", the client connecting to the container should provide an Arvados API token as a query parameter @?arvados_api_token=...@.  Arvados will consume the query parameter and convert it into a cookie used to authenticate subsequent requests.  If "public", no authentication is required.|
 |label|string|A string that will be displayed to the user on Workbench describing the service.|
+|initial_path|string|The relative path that should be included when constructing the URL that will be presented to the user in Workbench.  May include any or none of path, fragment and query parameter parts of the URL, or be blank.|
 
 For example:
 
@@ -28,7 +29,8 @@ For example:
   "published_ports": {
     "80": {
       "access": "private",
-      "label": "Jupyter notebook instance"
+      "label": "Jupyter notebook instance",
+      "initial_path": "",
     }
   }
 }

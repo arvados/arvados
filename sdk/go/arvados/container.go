@@ -170,6 +170,7 @@ type ContainerStatus struct {
 }
 
 type PublishedPort struct {
-	Access string `json:"access"`
-	Label  string `json:"label"`
+	Access      string `json:"access"`
+	Label       string `json:"label"`
+	InitialPath string `json:"initial_path"`
 }
