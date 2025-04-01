@@ -15,7 +15,7 @@
 - name: Install NVIDIA CUDA apt repository
   become: yes
   ansible.builtin.apt:
-    deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}{{ ansible_distribution_minor_version if ansible_distribution == 'Ubuntu' else '' }}/{{ ansible_architecture }}/cuda-keyring_1.1-1_all.deb"
+    deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ ansible_distribution|lower }}{{ ansible_distribution_version|replace('.', '') if ansible_distribution == 'Ubuntu' else ansible_distribution_major_version }}/{{ ansible_architecture }}/cuda-keyring_1.1-1_all.deb"
   register: cuda_apt_task
 
 - name: Install NVIDIA container toolkit apt repository
