@@ -197,7 +197,6 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const inputTypes = getInputTypes(state);
     const nullifiedInputsForm = nullifyEmptyStrings(inputsForm, inputTypes);
-    console.log(inputsForm, inputTypes, nullifiedInputsForm );
     const userUuid = getUserUuid(getState());
     if (!userUuid) { return; }
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
