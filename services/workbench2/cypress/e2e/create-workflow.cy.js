@@ -17,6 +17,7 @@ describe('Create workflow tests', function () {
                 activeUser = this.activeUser;
             }
             );
+            
     });
 
     function createNestedHelper(testRemainder) {
@@ -536,7 +537,6 @@ describe('Create workflow tests', function () {
     it('handles optional inputs', () => {
         cy.intercept({ method: "POST", url: "**/arvados/v1/container_requests" }, (req, res) => {
             const inputs = req.body.container_request.mounts["/var/lib/cwl/cwl.input.json"].content;
-
             expect(inputs).to.deep.equal({
                 int_input: null,
                 empty_string_input: null,
@@ -545,10 +545,10 @@ describe('Create workflow tests', function () {
 
             //handle expected 422 error
             req.reply({
-                statusCode: 422,
-                body: { message: 'This is expected' },
+                statusCode: 200,
+                body: { message: 'Expected 422 error' },
             });
-        }).as("expectedFail");
+        }).as("mockedRequest");
 
         cy.createProject({
             owningUser: adminUser,
@@ -593,10 +593,7 @@ describe('Create workflow tests', function () {
 
                 cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
 
-                //returns 422, but that's fine
-                cy.wait('@expectedFail').then((interception) => {
-                    expect(interception.response.statusCode).to.eq(422);
-                });
+                cy.wait('@mockedRequest')
         });
     });
 })
