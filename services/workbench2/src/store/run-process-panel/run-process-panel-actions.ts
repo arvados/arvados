@@ -171,7 +171,7 @@ export const goToStep = (step: number) =>
     };
 
 const getInputTypes = (state: RootState): Record<string, CWLType[]> | undefined => {
-    if (!state.runProcessPanel.inputs) return;
+    if (!state.runProcessPanel?.inputs) return;
     return state.runProcessPanel.inputs.reduce((acc, val) => {
         acc[val.id] = val.type;
         return acc;
