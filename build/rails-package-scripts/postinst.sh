@@ -62,7 +62,7 @@ run_and_report() {
 report_not_ready() {
     local exitcode="$1"; shift
     local reason="$1"; shift
-    local doc_url="${1:-}"; shift
+    local doc_url="${1:-}"
     case "$doc_url" in
         http://* | https://* ) ;;
         /*) doc_url="https://doc.arvados.org${doc_url}" ;;
