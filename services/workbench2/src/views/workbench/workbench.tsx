@@ -432,10 +432,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                                 direction="column"
                                 className={classes.contentWrapper}
                             >
-                                <Grid
-                                    item
-                                    xs
-                                >
+                                <Grid xs>
                                     {isNotLinking && <MainContentBar />}
                                 </Grid>
                                 <Grid
