@@ -44,6 +44,7 @@ Gem::Specification.new do |s|
   # that supports all our Rubies.
   s.add_runtime_dependency 'google-cloud-env', '~> 2.1.0'
   s.add_runtime_dependency 'public_suffix', '~> 5.0'
+  s.add_runtime_dependency 'securerandom', '~> 0.3.2'
 
   s.add_development_dependency 'rake', '~> 10.0'
   s.add_development_dependency 'yard', '~> 0.8'
