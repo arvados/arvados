@@ -4,7 +4,7 @@
 
 import React from "react";
 import { Field, Validator } from "redux-form";
-import { TextField } from "components/text-field/text-field";
+import { TextField, RichEditorTextField } from "components/text-field/text-field";
 import {
     COLLECTION_NAME_VALIDATION, COLLECTION_NAME_VALIDATION_ALLOW_SLASH,
     COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION
@@ -41,7 +41,7 @@ export const CollectionNameField = connect(
 export const CollectionDescriptionField = () =>
     <Field
         name='description'
-        component={TextField as any}
+        component={RichEditorTextField as any}
         validate={COLLECTION_DESCRIPTION_VALIDATION}
         label="Description" />;
 

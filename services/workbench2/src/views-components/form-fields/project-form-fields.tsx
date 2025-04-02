@@ -5,7 +5,7 @@
 import React from "react";
 import { Field, FieldArray, Validator, WrappedFieldArrayProps } from "redux-form";
 import { TextField, RichEditorTextField } from "components/text-field/text-field";
-import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "validators/validators";
+import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH, PROJECT_DESCRIPTION_VALIDATION } from "validators/validators";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { Participant, ParticipantSelect } from "views-components/sharing-dialog/participant-select";
@@ -42,6 +42,7 @@ export const ProjectDescriptionField = () =>
     <Field
         name='description'
         component={RichEditorTextField as any}
+        validate={PROJECT_DESCRIPTION_VALIDATION}
         label="Description" />;
 
 export const UsersField = () =>
