@@ -100,27 +100,32 @@ const ProjectInputComponent = connect(mapStateToProps)(
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
             const project = this.getDefaultProject();
+            // set initial selected project
             if (!this.state.selectedProject && project) {
                 this.setState({
                     defaultProject: project,
                     selectedProject: project,
                 });
             }
+            // load user root project if not already loaded
             if (this.props.userUuid && (!this.props.userRootProject || !isUserResource(this.props.userRootProject))) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
             }
+            // open dialog automatically when input mounts
             if (this.state.hasBeenOpened === false) {
                 this.setState({ open: true, hasBeenOpened: true });
             }
         }
 
         componentDidUpdate(prevProps: ProjectInputComponentProps, prevState: ProjectInputComponentState) {
+            // set target project if not already set
             if (!this.state.targetProject) {
                 const project = this.getDefaultProject();
                 if (project) {
                     this.setState({ targetProject: project });
                 }
             }
+            // set default project if user root project changes (e.g. when user root project loads)
             if (this.props.userRootProject && prevProps.userRootProject !== this.props.userRootProject) {
                 const project = this.getDefaultProject();
                 this.setState({
@@ -129,6 +134,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                     targetProject: project,
                 });
             }
+            // ensures that the target & selected project are set if page reloads
             if (prevProps.defaultTargetProject !== this.props.defaultTargetProject) {
                 const project = this.getDefaultProject();
                 this.setState({ selectedProject: project, targetProject: project });
