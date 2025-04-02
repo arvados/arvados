@@ -67,6 +67,12 @@ module RecordFilters
           attr_model_class = Container
           attr_table_name = "containers"
           subproperty = subproperty[1].split(".", 2)
+        elsif subproperty.length == 2 && subproperty[0] == 'collection' && model_table_name == "workflows"
+          # attr is "tablename.colname" -- e.g., ["collection.properties.category", "=", "WGS"]
+          joins = ["JOIN collections ON workflows.collection_uuid = collections.uuid"]
+          attr_model_class = Collection
+          attr_table_name = "collections"
+          subproperty = subproperty[1].split(".", 2)
         else
           attr_model_class = model_class
           attr_table_name = model_table_name

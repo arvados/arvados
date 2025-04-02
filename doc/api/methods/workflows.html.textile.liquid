@@ -27,6 +27,26 @@ table(table table-bordered table-condensed).
 |name|string|If not specified, will be set to any "name" from the "definition" attribute.||
 |description|string|If not specified, will be set to any "description" from the "definition" attribute.||
 |definition|string|A "Common Workflow Language" document.|Visit "Common Workflow Language":http://www.commonwl.org/ for details.|
+|collection_uuid|string|If non-null, a linked workflow definition stored in a Collection.  See below.|
+
+h2. Workflows linked to Collections
+
+If @collection_uuid@ is set, this significantly changes the behavior of the workflow record.
+
+The linked Collection must have the following properties.  These are extracted from and must be synchronized with the workflow in @arv:workflowMain@. They are copied into the workflow collection's @properties@ for ease of processing by client tools such as Workbench.
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|type|string|Value must be 'workflow'|
+|arv:workflowMain|string|The file path within the collection that is the top-level workflow that will be launched.|
+|arv:cwl_inputs|array of object|Array of "workflow input parameters":https://www.commonwl.org/v1.2/Workflow.html#WorkflowInputParameter in "fully expanded form":https://www.commonwl.org/v1.2/SchemaSalad.html#Document_preprocessing |
+|arv:cwl_outputs|array of object|Array of "workflow output parameters":https://www.commonwl.org/v1.2/Workflow.html#WorkflowOutputParameter in "fully expanded form":https://www.commonwl.org/v1.2/SchemaSalad.html#Document_preprocessing |
+|arv:cwl_requirements|array of object|Array of "workflow process requirements":https://www.commonwl.org/v1.2/Workflow.html#Workflow in "fully expanded form":https://www.commonwl.org/v1.2/SchemaSalad.html#Document_preprocessing (in particular, this must list requirements that affect initial launching of the workflow such as "WorkflowRunnerResources":{{site.baseurl}}/user/cwl/cwl-extensions.html ).|
+|arv:cwl_hints|array of object|Array of "workflow process hints":https://www.commonwl.org/v1.2/Workflow.html#Workflow in "fully expanded form":https://www.commonwl.org/v1.2/SchemaSalad.html#Document_preprocessing (in particular, this must list hints that affect initial launching of the workflow such as "WorkflowRunnerResources":{{site.baseurl}}/user/cwl/cwl-extensions.html ).|
+
+When @collection_uuid@ is set, the workflow record @name@, @description@, @definition@ and @owner_uuid@ are all set from the linked collection.  The workflow record can no longer be updated directly, but changes to the linked collection will be reflected in the workflow record.  Trashing the linked collection will cause the workflow record to become trashed and eventually deleted as well.  The workflow record cannot be un-linked from a collection, only deleted and re-created.
+
+When a workflow is linked to a collection, the collection can be queried and fetched together with the workflow.  The @filters@ argument can filter on attributes of the collection referenced by @collection_uuid@. For example, @[["collection.properties.category", "=", "WGS"]]@ will match workflow definitions linked to collections that have a "category" property with the value "WGS".  When using the "group contents":groups.html#contents API to fetch workflow records, in addition the previously-described filters, you can use @include=["collection_uuid"]@ to include the collection records corresponding to the @collection_uuid@ of the workflow records in the response.
 
 h2. Methods
 
@@ -71,6 +91,8 @@ h3. list
 List workflows.
 
 See "common resource list method.":{{site.baseurl}}/api/methods.html#index
+
+The @filters@ argument can filter on attributes of the collection referenced by @collection_uuid@. For example, @[["collection.properties.category", "=", "WGS"]]@ will match workflow definitions linked to collections that have a "category" property with the value "WGS".
 
 h3. update
 

@@ -306,7 +306,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes", "output_glob"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes", "output_glob", "published_ports"]
   end
 
   def set_priority_zero
