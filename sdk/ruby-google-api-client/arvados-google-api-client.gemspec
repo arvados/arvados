@@ -38,7 +38,10 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'extlib', '~> 0.9'
   s.add_runtime_dependency 'launchy', '~> 2.4'
   s.add_runtime_dependency 'retriable', '~> 1.4'
-  s.add_runtime_dependency 'activesupport', '>= 3.2', '< 8.0'
+  # Rails 7.1.3.x is the last version to support Ruby 2.7.0 in Ubuntu 20.04.
+  # Later 7.1.x releases require Ruby >= 2.7.3:
+  #   <https://github.com/rails/rails/issues/54276>
+  s.add_runtime_dependency 'activesupport', '~> 7.1.3.4'
 
   # These are indirect dependencies of the above where we force a resolution
   # that supports all our Rubies.
