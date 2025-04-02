@@ -51,7 +51,10 @@ Gem::Specification.new do |s|
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../ruby-google-api-client/
   s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
-  s.add_runtime_dependency 'activesupport', '>= 3.2.13', '< 8.0'
+  # Rails 7.1.3.x is the last version to support Ruby 2.7.0 in Ubuntu 20.04.
+  # Later 7.1.x releases require Ruby >= 2.7.3:
+  #   <https://github.com/rails/rails/issues/54276>
+  s.add_runtime_dependency 'activesupport', '~> 7.1.3.4'
   s.add_runtime_dependency 'json', '>= 1.7.7', '<3'
   s.add_runtime_dependency 'optimist', '~> 3.0'
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
