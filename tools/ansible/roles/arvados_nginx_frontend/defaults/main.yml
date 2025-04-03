@@ -21,3 +21,8 @@ arvados_nginx_proxy_headers:
   X-Forwarded-For: "$proxy_add_x_forwarded_for"
   X-Forwarded-Proto: "https"
   X-Real-IP: "$remote_addr"
+
+# This mapping provides additional names for specific services like keep-web.
+# Each key is the name of a service in the Arvados cluster configuration, like
+# WebDAV. The value is a list of strings with additional server names.
+arvados_nginx_server_names: {}
