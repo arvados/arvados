@@ -70,3 +70,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_keepproxy
+
+- name: Set up keep-web(s)
+  hosts: arvados_keep_web
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keep_web

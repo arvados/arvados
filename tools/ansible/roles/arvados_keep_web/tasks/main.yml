@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Arvados keep-web
+  become: yes
+  ansible.builtin.apt:
+    update_cache: "{{ arvados_apt_repository.changed }}"
+    name:
+      - keep-web
+
+- name: Start and enable keep-web.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: keep-web.service
+    state: "{{ 'restarted' if arvados_config_copy.changed else 'started' }}"
+    enabled: true
