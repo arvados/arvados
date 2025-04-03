@@ -19,3 +19,17 @@ distro_apt:
     security: http://security.ubuntu.com/ubuntu
     aws_mirror: http://cdn-aws.archive.ubuntu.com/ubuntu
     aws_security: http://cdn-aws.archive.ubuntu.com/ubuntu
+
+# This dictionary is used to generate an apt configuration file of
+# APT::Periodic settings. null values will fall back to the value of
+# `arvados_apt_periodic_default` below. Other values are used verbatim.
+# Most of these settings are integers representing a number of days, where
+# 0 disables the task. Set `arvados_apt_periodic_default` to 0 to disable all
+# periodic tasks. See /usr/lib/apt/apt.systemd.daily for details.
+arvados_apt_periodic:
+  Enable: null
+  Update-Package-Lists: null
+  Download-Upgradeable-Packages: null
+  Download-Upgradeable-Packages-Debdelta: null
+  Unattended-Upgrade: null
+arvados_apt_periodic_default: 1
