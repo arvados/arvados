@@ -1626,6 +1626,29 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
+    @mock.patch("boto3.session.Session")
+    @stubs()
+    def test_submit_defer_s3_download_no_credential_capture(self, stubs, botosession):
+
+        sessionmock = mock.MagicMock(region_name='us-east-2')
+        botosession.return_value = sessionmock
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--defer-download", "--disable-aws-credential-capture",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job_s3.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+
+        expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['location'] = 's3://examplebucket/blorp.txt'
+        del expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['size']
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+        sessionmock.get_credentials.assert_not_called()
 
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
