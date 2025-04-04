@@ -75,6 +75,7 @@ type MultiselectToolbarRecievedProps = {
 
 const detailsCardPaths = [
     '/projects',
+    '/collections',
 ]
 
 export const usesDetailsCard = (location: string): boolean => {

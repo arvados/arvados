@@ -10,6 +10,7 @@ import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
 import { UserCard } from './user-details-card';
 import { ProjectCard } from './project-details-card';
+import { CollectionDetailsCard } from './collection-details-card';
 import { getResource } from 'store/resources/resources';
 
 const mapStateToProps = ({ resources, properties }: RootState) => {
@@ -32,6 +33,8 @@ export const DetailsCardRoot = connect(mapStateToProps)(({ currentResource }: De
             return <UserCard />;
         case ResourceKind.PROJECT:
             return <ProjectCard />;
+        case ResourceKind.COLLECTION:
+            return <CollectionDetailsCard />;
         default:
             return null;
     }

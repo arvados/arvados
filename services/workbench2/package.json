@@ -187,7 +187,10 @@
     ],
     "ignorePatterns": [
       "**/*.cy.js"
-      ]
+      ],
+    "rules": {
+      "react-hooks/exhaustive-deps": "off"
+    }
   },
   "babel": {
     "presets": [

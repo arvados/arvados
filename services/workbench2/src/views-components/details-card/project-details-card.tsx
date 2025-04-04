@@ -191,12 +191,12 @@ export const ProjectCard = connect(
                                         variant='h6'
                                         style={{ marginRight: '1rem' }}
                                     >
-                                                 {name}
-                                                 {expandable && <span className={classes.descriptionToggle}
-                                                                      onClick={toggleDescription}
-                                                                      data-cy="toggle-description">
-                                                     <ExpandChevronRight expanded={showDescription} />
-                                                 </span>}
+                                        {name}
+                                        {expandable && <span className={classes.descriptionToggle}
+                                                            onClick={toggleDescription}
+                                                            data-cy="toggle-description">
+                                            <ExpandChevronRight expanded={showDescription} />
+                                        </span>}
                                     </Typography>
 
                                     <FavoriteStar
@@ -207,23 +207,23 @@ export const ProjectCard = connect(
                                         className={classes.faveIcon}
                                         resourceUuid={currentResource.uuid}
                                     />
-                                                  {!!frozenByFullName && (
-                                                      <Tooltip
-                                                          className={classes.frozenIcon}
-                                                          disableFocusListener
-                                                          title={<span>Project was frozen by {frozenByFullName}</span>}
-                                                      >
-                                                          <span><FreezeIcon style={{ fontSize: '1.25rem' }} /></span>
-                                                      </Tooltip>
-                                                  )}
-                                                                            {!hasDescription && (
-                                                                                <Typography
-                                                                                    data-cy='no-description'
-                                                                                    className={classes.noDescription}
-                                                                                >
-                                                                                             no description available
-                                                                                </Typography>
-                                                                            )}
+                                    {!!frozenByFullName && (
+                                        <Tooltip
+                                            className={classes.frozenIcon}
+                                            disableFocusListener
+                                            title={<span>Project was frozen by {frozenByFullName}</span>}
+                                        >
+                                            <span><FreezeIcon style={{ fontSize: '1.25rem' }} /></span>
+                                        </Tooltip>
+                                    )}
+                                    {!hasDescription && (
+                                        <Typography
+                                            data-cy='no-description'
+                                            className={classes.noDescription}
+                                        >
+                                                        no description available
+                                        </Typography>
+                                    )}
 
                                 </section>
                             </section>
@@ -233,24 +233,24 @@ export const ProjectCard = connect(
                 </Grid>
 
                 {expandable && <Collapse
-                                   in={showDescription}
-                                   timeout='auto'
-                                   collapsedSize='0rem'
-                               >
+                                    in={showDescription}
+                                    timeout='auto'
+                                    collapsedSize='0rem'
+                                >
                     <CardContent className={classes.cardContent}>
                         {hasProperties &&
-                         <section data-cy='project-properties'>
-                             <Typography
-                                 component='div'
-                                 className={classes.chipSection}
-                             >
-                                 {Object.keys(currentResource.properties).map((k) =>
-                                     Array.isArray(currentResource.properties[k])
-                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                     : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                                 )}
-                             </Typography>
-                         </section>}
+                            <section data-cy='project-properties'>
+                                <Typography
+                                    component='div'
+                                    className={classes.chipSection}
+                                >
+                                    {Object.keys(currentResource.properties).map((k) =>
+                                        Array.isArray(currentResource.properties[k])
+                                        ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                        : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                    )}
+                                </Typography>
+                            </section>}
 
                         {hasDescription && (
                             <section data-cy='project-description'>
