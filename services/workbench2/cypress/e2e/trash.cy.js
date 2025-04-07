@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('trash tests', function () {
+describe('Trash tests', function () {
     let adminUser;
 
     before(function () {
@@ -50,7 +50,7 @@ describe('trash tests', function () {
                 cy.doToolbarAction("Move to trash");
 
                 // Verify trashed and breadcrumbs correct
-                cy.get('[data-cy=data-table]').contains(testProject.name).should('not.exist');
+                cy.assertDataExplorerContains(testProject.name, false);
                 cy.assertBreadcrumbs(["Home Projects"]);
 
                 // Restore with toolbar
@@ -65,7 +65,7 @@ describe('trash tests', function () {
                 // Verify present in home project
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
                 cy.assertBreadcrumbs(["Home Projects"]);
-                cy.get('[data-cy=data-table]').contains(testProject.name).should('exist');
+                cy.assertDataExplorerContains(testProject.name, true);
             });
     });
 
@@ -86,7 +86,7 @@ describe('trash tests', function () {
                 cy.doDataExplorerContextAction(testCollection.name, 'Move to trash');
 
                 // Verify trashed and breadcrumbs correct
-                cy.get('[data-cy=data-table]').contains(testCollection.name).should('not.exist');
+                cy.assertDataExplorerContains(testCollection.name, false);
                 cy.assertBreadcrumbs(["Home Projects"]);
 
                 // Restore with context menu
@@ -95,18 +95,18 @@ describe('trash tests', function () {
                 cy.doDataExplorerContextAction(testCollection.name, 'Restore');
 
                 // Verify not in trash and in home project
-                cy.get('[data-cy=data-table]').contains(testCollection.name).should('not.exist');
+                cy.assertDataExplorerContains(testCollection.name, false);
                 cy.assertBreadcrumbs(["Trash"]);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
                 cy.assertBreadcrumbs(["Home Projects"]);
-                cy.get('[data-cy=data-table]').contains(testCollection.name).should('exist');
+                cy.assertDataExplorerContains(testCollection.name, true);
 
                 // Test delete from toolbar
                 cy.doDataExplorerSelect(testCollection.name);
                 cy.doToolbarAction("Move to trash");
 
                 // Verify trashed and breadcrumbs correct
-                cy.get('[data-cy=data-table]').contains(testCollection.name).should('not.exist');
+                cy.assertDataExplorerContains(testCollection.name, false);
                 cy.assertBreadcrumbs(["Home Projects"]);
 
                 // Restore with toolbar
@@ -116,11 +116,11 @@ describe('trash tests', function () {
                 cy.doToolbarAction("Restore");
 
                 // Verify not in trash and in home project
-                cy.get('[data-cy=data-table]').contains(testCollection.name).should('not.exist');
+                cy.assertDataExplorerContains(testCollection.name, false);
                 cy.assertBreadcrumbs(["Trash"]);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
                 cy.assertBreadcrumbs(["Home Projects"]);
-                cy.get('[data-cy=data-table]').contains(testCollection.name).should('exist');
+                cy.assertDataExplorerContains(testCollection.name, true);
             });
     });
 });

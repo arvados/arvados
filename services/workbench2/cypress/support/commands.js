@@ -666,6 +666,7 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
  * @returns the path for further use if needed
  */
 Cypress.Commands.add("assertUrlPathname", (path) => {
+    cy.waitForDom();
     return cy.waitUntil(() => cy.location()
         .then((url) => url.pathname.endsWith(path) ? url.pathname : false)
     , {
@@ -680,6 +681,7 @@ Cypress.Commands.add("assertUrlPathname", (path) => {
  * @returns the current breadcrumbs as a string array
  */
 Cypress.Commands.add("assertBreadcrumbs", (names) => {
+    cy.waitForDom();
     // waitUntil allows retrying with a non-assert test
     // This allows doing non-wrapped comparisons and improves retryability
     return cy.waitUntil(() => cy.get('[data-cy=breadcrumbs] button')
@@ -699,6 +701,7 @@ Cypress.Commands.add("assertBreadcrumbs", (names) => {
  * Asserts whether the DE contains a certain item, default to true
  */
 Cypress.Commands.add("assertDataExplorerContains", (name, contains = true) => {
+    cy.waitForDom();
     contains
         ? cy.get('[data-cy=data-table]').contains(name).should('exist')
         : cy.get('[data-cy=data-table]').contains(name).should('not.exist');
@@ -718,7 +721,7 @@ Cypress.Commands.add("doToolbarAction", (name) => {
  */
 Cypress.Commands.add("doDataExplorerContextAction", (name, action) => {
     cy.waitForDom();
-    cy.get('[data-cy=data-table]', { timeout: 10000 }).contains(name).rightclick();
+    cy.get('[data-cy=data-table]', { timeout: 10000 }).contains(name, { timeout: 10000 }).rightclick();
     cy.get('[data-cy=context-menu]', { timeout: 5000 }).contains(action).click();
 });
 
@@ -726,6 +729,7 @@ Cypress.Commands.add("doDataExplorerContextAction", (name, action) => {
  * Selects data explorer row checkbox by name
  */
 Cypress.Commands.add("doDataExplorerSelect", (name) => {
+    cy.waitForDom();
     cy.get('[data-cy=data-table]', { timeout: 10000 })
         .contains(name)
         .parents('[data-cy=data-table-row]')
