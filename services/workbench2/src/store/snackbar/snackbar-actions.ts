@@ -24,4 +24,10 @@ export const snackbarActions = unionize({
     SHIFT_MESSAGES: ofType<{}>()
 });
 
+export const showSuccessSnackbar = (message: string) =>
+    snackbarActions.OPEN_SNACKBAR({ message, hideDuration: 2000, kind: SnackbarKind.SUCCESS });
+
+export const showErrorSnackbar = (message: string) =>
+    snackbarActions.OPEN_SNACKBAR({ message, hideDuration: 4000, kind: SnackbarKind.ERROR });
+
 export type SnackbarAction = UnionOf<typeof snackbarActions>;

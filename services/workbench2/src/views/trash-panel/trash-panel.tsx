@@ -27,7 +27,7 @@ import {
 } from "views-components/data-explorer/renderers";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
-import { toggleTrashed } from "store/trash/trash-actions";
+import { toggleResourceTrashed } from "store/trash/trash-actions";
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { Dispatch } from "redux";
 import { createTree } from 'models/tree';
@@ -74,10 +74,8 @@ export const ResourceRestore =
                 style={{ padding: '0' }}
                 onClick={() => {
                     if (resource && props.dispatch) {
-                        props.dispatch(toggleTrashed(
-                            resource.kind,
-                            resource.uuid,
-                            resource.ownerUuid,
+                        props.dispatch(toggleResourceTrashed(
+                            [resource.uuid],
                             resource.isTrashed
                         ));
                     }}}
