@@ -49,6 +49,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.git_info = {}
         self.enable_usage_report = None
         self.usage_report_notes = []
+        self.aws_credential_capture = True
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

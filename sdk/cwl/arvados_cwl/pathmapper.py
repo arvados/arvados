@@ -74,6 +74,10 @@ class ArvPathMapper(PathMapper):
                 with SourceLine(srcobj, "location", WorkflowException, debug):
                     raise WorkflowException("Invalid keep reference '%s'" % src)
 
+        # Note: fsaccess->CollectionFetcher and
+        # runner->upload_dependencies->collect_uploads have lists of
+        # supported URL schemes that has to be updated when new
+        # schemes are added.
         if src not in self._pathmap:
             if src.startswith("file:"):
                 # Local FS ref, may need to be uploaded or may be on keep
@@ -104,6 +108,36 @@ class ArvPathMapper(PathMapper):
                         results = http_to_keep(self.arvrunner.api, self.arvrunner.project_uuid, src,
                                                               varying_url_params=self.arvrunner.toplevel_runtimeContext.varying_url_params,
                                                               prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
+                        keepref = "keep:%s/%s" % (results[0], results[1])
+                        logger.info("%s is %s", src, keepref)
+                        self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
+                except Exception as e:
+                    logger.warning("Download error: %s", e)
+            elif src.startswith("s3:"):
+                try:
+                    # Using inline imports here instead of at the top
+                    # of the file to defer importing boto3 until we
+                    # actually need it, because if the user isn't
+                    # using s3 import there's zero reason to have the
+                    # module loaded at all.
+                    if self.arvrunner.botosession is None and (self.arvrunner.defer_downloads is False or self.arvrunner.toplevel_runtimeContext.aws_credential_capture):
+                        # Create a boto session, which we will either
+                        # use to download from S3 now, or to get the
+                        # credentials that will be passed to the
+                        # workflow runner container later.
+                        import boto3.session
+                        self.arvrunner.botosession = boto3.session.Session()
+                        logger.info("S3 downloads will use access key id %s in region %s", self.arvrunner.botosession.get_credentials().access_key, self.arvrunner.botosession.region_name)
+                    if self.arvrunner.defer_downloads:
+                        # passthrough, we'll download it later.
+                        self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
+                    else:
+                        from arvados._internal.s3_to_keep import s3_to_keep
+                        results = s3_to_keep(self.arvrunner.api,
+                                             self.arvrunner.botosession,
+                                             self.arvrunner.project_uuid,
+                                             src,
+                                             prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
                         keepref = "keep:%s/%s" % (results[0], results[1])
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
@@ -155,7 +189,7 @@ class ArvPathMapper(PathMapper):
         if loc.startswith("_:"):
             return True
 
-        if self.arvrunner.defer_downloads and (loc.startswith("http:") or loc.startswith("https:")):
+        if self.arvrunner.defer_downloads and (loc.startswith("http:") or loc.startswith("https:") or loc.startswith("s3:")):
             return False
 
         i = loc.rfind("/")

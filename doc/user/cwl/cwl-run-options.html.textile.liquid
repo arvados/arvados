@@ -64,7 +64,9 @@ table(table table-bordered table-condensed).
 |==--priority== PRIORITY|Workflow priority (range 1..1000, higher has precedence over lower)|
 |==--thread-count== THREAD_COUNT|Number of threads to use for job submit and output collection.|
 |==--http-timeout== HTTP_TIMEOUT|API request timeout in seconds. Default is 300 seconds (5 minutes).|
-|==--defer-downloads==|When submitting a workflow, defer downloading HTTP URLs to workflow launch instead of downloading to Keep before submit.|
+|==--defer-downloads==|When submitting a workflow, defer downloading HTTP or S3 URLs to launch of the workflow runner container instead of downloading to Keep before submit.|
+|==--enable-aws-credential-capture==|When submitting a workflow that requires AWS credentials, capture them from the local environment for use by the workflow runner container (default true).|
+|==--disable-aws-credential-capture==|Do not capture AWS credentials from the local environment, credentials must be provided to the submitted workflow runner container some other way.|
 |==--varying-url-params== VARYING_URL_PARAMS|A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.|
 |==--prefer-cached-downloads==|If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).|
 |==--enable-preemptible==|Use preemptible instances. Control individual steps with arv:UsePreemptible hint.|

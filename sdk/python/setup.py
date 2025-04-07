@@ -114,6 +114,7 @@ setup(name='arvados-python-client',
           'pycurl >=7.19.5.1',
           'setuptools >=40.3.0',
           'websockets >=11.0',
+          'boto3',
       ],
       python_requires="~=3.8",
       classifiers=[
