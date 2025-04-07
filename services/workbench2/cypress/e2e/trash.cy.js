@@ -12,19 +12,15 @@ describe('trash tests', function () {
             });
     });
 
-    it('trashes and untrashes trashable resources (project / collection)', function() {
-        // Create test resources
+    it('trashes and untrashes projects', function() {
+        // Create test project
         cy.createProject({
             owningUser: adminUser,
             projectName: `trashTestProject`,
         }).as('testProject');
-        cy.createCollection(adminUser.token, {
-            owner_uuid: adminUser.user.uuid,
-            name: `trashTestCollection ${Math.floor(Math.random() * 999999)}`,
-        }).as('testCollection');
 
-        cy.getAll('@testProject', '@testCollection')
-            .then(function ([testProject, testCollection]) {
+        cy.getAll('@testProject')
+            .then(function ([testProject]) {
                 cy.loginAs(adminUser);
 
                 // Project Trash Tests
@@ -70,6 +66,19 @@ describe('trash tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
                 cy.assertBreadcrumbs(["Home Projects"]);
                 cy.get('[data-cy=data-table]').contains(testProject.name).should('exist');
+            });
+    });
+
+    it("trashes and untrashes collections", function() {
+        // Create test collection
+        cy.createCollection(adminUser.token, {
+            owner_uuid: adminUser.user.uuid,
+            name: `trashTestCollection ${Math.floor(Math.random() * 999999)}`,
+        }).as('testCollection');
+
+        cy.getAll('@testCollection')
+            .then(function ([testCollection]) {
+                cy.loginAs(adminUser);
 
                 // Collection Trash Tests
 
