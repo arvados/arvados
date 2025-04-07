@@ -13,10 +13,11 @@ export const TAG_VALUE_VALIDATION = [maxLength(255)];
 
 export const PROJECT_NAME_VALIDATION = [fieldRequire, validName, maxLength(255)];
 export const PROJECT_NAME_VALIDATION_ALLOW_SLASH = [fieldRequire, validNameAllowSlash, maxLength(255)];
+export const PROJECT_DESCRIPTION_VALIDATION = [maxLength(524_288)];
 
 export const COLLECTION_NAME_VALIDATION = [fieldRequire, validName, maxLength(255)];
 export const COLLECTION_NAME_VALIDATION_ALLOW_SLASH = [fieldRequire, validNameAllowSlash, maxLength(255)];
-export const COLLECTION_DESCRIPTION_VALIDATION = [maxLength(255)];
+export const COLLECTION_DESCRIPTION_VALIDATION = [maxLength(524_288)];
 export const COLLECTION_PROJECT_VALIDATION = [fieldRequire];
 
 export const COPY_NAME_VALIDATION = [fieldRequire, maxLength(255)];

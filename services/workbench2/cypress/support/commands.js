@@ -359,7 +359,7 @@ Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName
         .click();
     cy.get("[data-cy=form-dialog]").within(() => {
         cy.get("input[name=name]").clear().type(newName);
-        cy.get(isProject ? "div[contenteditable=true]" : "input[name=description]")
+        cy.get("div[contenteditable=true]")
             .clear()
             .type(newDescription);
         cy.get("[data-cy=form-submit-btn]").click();
@@ -371,13 +371,7 @@ Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName
         .click();
     cy.get("[data-cy=form-dialog]").within(() => {
         cy.get("input[name=name]").should("have.value", newName);
-
-        if (isProject) {
-            cy.get("span[data-text=true]").contains(newDescription);
-        } else {
-            cy.get("input[name=description]").should("have.value", newDescription);
-        }
-
+        cy.get("span[data-text=true]").contains(newDescription);
         cy.get("[data-cy=form-cancel-btn]").click();
     });
 });
