@@ -247,9 +247,9 @@ export const CollectionPanel = withStyles(styles)(connect(
                                     }
                                 />
                                 <CardContent className={classes.content}>
-                                    <Typography variant="caption">
-                                        {item.description}
-                                    </Typography>
+                                    <Typography variant="caption"
+                                        dangerouslySetInnerHTML={{ __html: item.description }}
+                                    />
                                     <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
                                     {(item.properties.container_request || item.properties.containerRequest) &&
                                         <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
