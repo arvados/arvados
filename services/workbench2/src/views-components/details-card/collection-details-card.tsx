@@ -24,25 +24,39 @@ import { setSelectedResourceUuid } from 'store/selected-resource/selected-resour
 import { getCollectionUrl } from 'models/collection';
 import { UserResource } from 'models/user';
 import { GroupResource } from 'models/group';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
-type CssRules = 'root' | 'mainGrid';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'readOnlyIcon';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
-    },
-    mainGrid: {
         display: 'flex',
         flexDirection: 'column',
-        marginTop: '.5rem',
-        paddingTop: '0px',
-        paddingBottom: '0px',
-        paddingLeft: '.5rem',
-        paddingRight: '.5rem',
+        marginBottom: '1rem',
+        flex: '0 0 auto',
+        padding: 0,
+        minHeight: '3rem',
+    },
+    cardHeaderContainer: {
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    cardHeader: {
+        minWidth: '30rem',
+        padding: '0.2rem',
+    },
+    readOnlyIcon: {
+        marginLeft: theme.spacing(1),
+        fontSize: 'small',
     },
 });
 
 type CollectionDetailsCardDataProps = {
+    collectionItem: CollectionResource | null;
     currentRouteUuid: string | undefined;
     currentUserUUID: string | undefined;
     selectedResourceUuid: string | undefined;
@@ -59,6 +73,7 @@ type CollectionDetailsCardProps = CollectionDetailsCardDataProps & CollectionDet
 
 const mapStateToProps = (state: RootState): CollectionDetailsCardDataProps => {
     return {
+        collectionItem: state.collectionPanel.item,
         currentRouteUuid: state.properties.currentRouteUuid,
         currentUserUUID: state.auth.user?.uuid,
         selectedResourceUuid: state.selectedResource.selectedResourceUuid,
@@ -80,6 +95,7 @@ export const CollectionDetailsCard = connect(
 )(
     withStyles(styles)(
         ({
+            collectionItem,
             currentRouteUuid,
             currentUserUUID,
             resources,
@@ -88,18 +104,27 @@ export const CollectionDetailsCard = connect(
             setSelectedResourceUuid,
             openDetailsPanel,
         }: CollectionDetailsCardProps & WithStyles<CssRules>) => {
-            const [collection, setCollection] = useState<CollectionResource | null>(null);
+            const [collection, setCollection] = useState<CollectionResource | null>(collectionItem);
             const [showDescription, setShowDescription] = useState(false);
             const [showDetails, setShowDetails] = useState(false);
             const [isCurrentVersion, setIsCurrentVersion] = useState(false);
             const [isWritable, setIsWritable] = useState(false);
             const [isSelected, setIsSelected] = useState(false);
 
-            const hasDescription = !!(collection?.description && collection?.description.length > 0);
+            useEffect(() => {
+                if (collectionItem) {
+                    setCollection(collectionItem);
+                    setSelectedResourceUuid(collectionItem.uuid);
+                    setIsSelected(currentRouteUuid === selectedResourceUuid);
+                }
+            }, [collectionItem]);
 
             useEffect(() => {
-                if (currentRouteUuid) setAndSelectCollection();
-            }, [currentRouteUuid]);
+                if (collection) {
+                    setIsSelected(currentRouteUuid === selectedResourceUuid);
+                    setIsWritable(checkIsWritable(collection, currentUserUUID));
+                }
+            }, [collection, isCurrentVersion]);
 
             useEffect(() => {
                 if (collection) {
@@ -107,18 +132,7 @@ export const CollectionDetailsCard = connect(
                 }
             }, [collection]);
 
-            useEffect(() => {
-                setIsSelected(currentRouteUuid === selectedResourceUuid);
-                setIsWritable(checkIsWritable(collection, currentUserUUID));
-            }, [currentRouteUuid, selectedResourceUuid]);
-
-            const setAndSelectCollection = () => {
-                const fetchedCollection = getResource<CollectionResource>(currentRouteUuid)(resources);
-                if (fetchedCollection) {
-                    setCollection(fetchedCollection);
-                    setSelectedResourceUuid(fetchedCollection.uuid);
-                }
-            };
+            const hasDescription = !!(collection?.description && collection?.description.length > 0);
 
             const checkIsWritable = (item: CollectionResource | null, currentUserUUID: string | undefined): boolean => {
                 const itemOwner = collection ? getResource<GroupResource | UserResource>(collection.ownerUuid)(resources) : undefined;
@@ -140,79 +154,82 @@ export const CollectionDetailsCard = connect(
                     <Grid
                         container
                         wrap='nowrap'
-                        className={classes.mainGrid}
+                        className={classes.cardHeaderContainer}
                     >
                         <CardHeader
-                            avatar={
-                                <IconButton
-                                    onClick={() => openDetailsPanel(collection.uuid)}
-                                    size='large'
-                                >
-                                    {isCurrentVersion ? <CollectionIcon /> : <CollectionOldVersionIcon />}
-                                </IconButton>
-                            }
+                            className={classes.cardHeader}
                             title={
-                                <span>
+                                <section>
+                                    <IconButton
+                                        onClick={() => openDetailsPanel(collection.uuid)}
+                                        size='large'
+                                    >
+                                        {isCurrentVersion ? <CollectionIcon /> : <CollectionOldVersionIcon />}
+                                    </IconButton>
                                     <IllegalNamingWarning name={collection.name} />
                                     {collection.name}
-                                    {!isWritable || (
+                                    {!isWritable && (
                                         <Tooltip title='Read-only'>
                                             <span>
-                                                <ReadOnlyIcon data-cy='read-only-icon' />
+                                                <ReadOnlyIcon
+                                                    data-cy='read-only-icon'
+                                                    className={classes.readOnlyIcon}
+                                                />
                                             </span>
                                         </Tooltip>
                                     )}
                                     {hasDescription && (
-                                        <Collapse
-                                            in={showDescription}
-                                            collapsedSize={'1rem'}
+                                        <span
+                                            onClick={() => setShowDescription(!showDescription)}
+                                            data-cy='toggle-description'
                                         >
-                                            <section
-                                                data-cy='collection-description'
-                                                onClick={() => setShowDescription(!showDescription)}
-                                            >
-                                                <Typography
-                                                    component='div'
-                                                    //dangerouslySetInnerHTML is ok here only if description is sanitized,
-                                                    //which it is before it is loaded into the redux store
-                                                    dangerouslySetInnerHTML={{ __html: collection.description }}
-                                                />
-                                            </section>
-                                        </Collapse>
-                                    )}
-                                </span>
-                            }
-                        />
-                        {isSelected && <MultiselectToolbar />}
-                        <CardContent>
-                            <Collapse
-                                in={showDetails}
-                                collapsedSize={'1rem'}
-                            >
-                                <section
-                                    data-cy='collection-details'
-                                    onClick={() => setShowDetails(!showDetails)}
-                                >
-                                    <CollectionDetailsAttributes
-                                        item={collection}
-                                        twoCol={true}
-                                        showVersionBrowser={() => openDetailsPanel(collection.uuid)}
-                                    />
-                                    {(collection.properties.container_request || collection.properties.containerRequest) && (
-                                        <span onClick={() => navigateToProcess(collection.properties.container_request || collection.properties.containerRequest)}>
-                                            <DetailsAttribute label='Link to process' />
+                                            <ExpandChevronRight expanded={showDescription} />
                                         </span>
                                     )}
                                 </section>
-                            </Collapse>
-                            {!isCurrentVersion && (
-                                <Typography variant='caption'>
-                                    This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(collection.currentVersionUuid)}>head version</Link>{' '}
-                                    for sharing options.
-                                </Typography>
-                            )}
-                        </CardContent>
+                            }
+                        />
+                        {isSelected && <MultiselectToolbar />}
                     </Grid>
+                    <Collapse
+                        in={showDescription}
+                        collapsedSize={'0'}
+                    >
+                        <section
+                            data-cy='collection-description'
+                            onClick={() => setShowDescription(!showDescription)}
+                        >
+                            <Typography
+                                component='div'
+                                //dangerouslySetInnerHTML is ok here only if description is sanitized,
+                                //which it is before it is loaded into the redux store
+                                dangerouslySetInnerHTML={{ __html: collection.description }}
+                            />
+                        </section>
+                    </Collapse>
+                    <CardContent>
+                        <section
+                            data-cy='collection-details'
+                            onClick={() => setShowDetails(!showDetails)}
+                        >
+                            <CollectionDetailsAttributes
+                                item={collection}
+                                twoCol={true}
+                                showVersionBrowser={() => openDetailsPanel(collection.uuid)}
+                            />
+                            {(collection.properties.container_request || collection.properties.containerRequest) && (
+                                <span onClick={() => navigateToProcess(collection.properties.container_request || collection.properties.containerRequest)}>
+                                    <DetailsAttribute label='Link to process' />
+                                </span>
+                            )}
+                        </section>
+                        {!isCurrentVersion && (
+                            <Typography variant='caption'>
+                                This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(collection.currentVersionUuid)}>head version</Link> for
+                                sharing options.
+                            </Typography>
+                        )}
+                    </CardContent>
                 </Card>
             ) : (
                 <div>No collection</div>
