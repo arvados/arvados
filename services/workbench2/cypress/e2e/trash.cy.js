@@ -35,6 +35,7 @@ describe('Trash tests', function () {
                 // Restore with context menu
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.assertBreadcrumbs(["Trash"]);
+                cy.doDataExplorerSearch(testProject.name);
                 cy.doDataExplorerContextAction(testProject.name, 'Restore');
 
                 // Verify navigated to project
@@ -56,6 +57,7 @@ describe('Trash tests', function () {
                 // Restore with toolbar
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.assertBreadcrumbs(["Trash"]);
+                cy.doDataExplorerSearch(testProject.name);
                 cy.doDataExplorerSelect(testProject.name);
                 cy.doToolbarAction("Restore");
 
@@ -92,6 +94,7 @@ describe('Trash tests', function () {
                 // Restore with context menu
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.assertBreadcrumbs(["Trash"]);
+                cy.doDataExplorerSearch(testCollection.name);
                 cy.doDataExplorerContextAction(testCollection.name, 'Restore');
 
                 // Verify not in trash and in home project
@@ -112,6 +115,7 @@ describe('Trash tests', function () {
                 // Restore with toolbar
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.assertBreadcrumbs(["Trash"]);
+                cy.doDataExplorerSearch(testCollection.name);
                 cy.doDataExplorerSelect(testCollection.name);
                 cy.doToolbarAction("Restore");
 
