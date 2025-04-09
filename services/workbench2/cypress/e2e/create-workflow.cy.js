@@ -495,11 +495,38 @@ describe('Create workflow tests', function () {
             });
         });
 
-        cy.getAll('@parentWritableWF', '@parentReadonlyWF', '@mySharedWritableProject', '@mySharedReadonlyProject')
-        .then(([parentWritableWF, parentReadonlyWF, mySharedWritableProject, mySharedReadonlyProject]) => {
-            cy.loginAs(activeUser);
+        cy.loginAs(activeUser);
+        cy.createGroup(activeUser.token, {
+            name: `non-admin-readonly-project ${Math.floor(Math.random() * 999999)}`,
+            group_class: 'project',
+        }).as('nonAdminReadonlyProject').then(function (nonAdminReadonlyProject) {
+            cy.createWorkflow(activeUser.token, {
+                name: `(non-admin, readonly) TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
+                definition:
+                    '{\n    "$graph": [\n        {\n            "class": "Workflow",\n            "doc": "Reverse the lines in a document, then sort those lines.",\n            "hints": [\n                {\n                    "acrContainerImage": "99b0201f4cade456b4c9d343769a3b70+261",\n                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"\n                }\n            ],\n            "id": "#main",\n            "inputs": [\n                {\n                    "default": null,\n                    "doc": "The input file to be processed.",\n                    "id": "#main/input",\n                    "type": "File"\n                },\n                {\n                    "default": true,\n                    "doc": "If true, reverse (decending) sort",\n                    "id": "#main/reverse_sort",\n                    "type": "boolean"\n                }\n            ],\n            "outputs": [\n                {\n                    "doc": "The output with the lines reversed and sorted.",\n                    "id": "#main/output",\n                    "outputSource": "#main/sorted/output",\n                    "type": "File"\n                }\n            ],\n            "steps": [\n                {\n                    "id": "#main/rev",\n                    "in": [\n                        {\n                            "id": "#main/rev/input",\n                            "source": "#main/input"\n                        }\n                    ],\n                    "out": [\n                        "#main/rev/output"\n                    ],\n                    "run": "#revtool.cwl"\n                },\n                {\n                    "id": "#main/sorted",\n                    "in": [\n                        {\n                            "id": "#main/sorted/input",\n                            "source": "#main/rev/output"\n                        },\n                        {\n                            "id": "#main/sorted/reverse",\n                            "source": "#main/reverse_sort"\n                        }\n                    ],\n                    "out": [\n                        "#main/sorted/output"\n                    ],\n                    "run": "#sorttool.cwl"\n                }\n            ]\n        },\n        {\n            "baseCommand": "rev",\n            "class": "CommandLineTool",\n            "doc": "Reverse each line using the `rev` command",\n            "hints": [\n                {\n                    "class": "ResourceRequirement",\n                    "ramMin": 8\n                }\n            ],\n            "id": "#revtool.cwl",\n            "inputs": [\n                {\n                    "id": "#revtool.cwl/input",\n                    "inputBinding": {},\n                    "type": "File"\n                }\n            ],\n            "outputs": [\n                {\n                    "id": "#revtool.cwl/output",\n                    "outputBinding": {\n                        "glob": "output.txt"\n                    },\n                    "type": "File"\n                }\n            ],\n            "stdout": "output.txt"\n        },\n        {\n            "baseCommand": "sort",\n            "class": "CommandLineTool",\n            "doc": "Sort lines using the `sort` command",\n            "hints": [\n                {\n                    "class": "ResourceRequirement",\n                    "ramMin": 8\n                }\n            ],\n            "id": "#sorttool.cwl",\n            "inputs": [\n                {\n                    "id": "#sorttool.cwl/reverse",\n                    "inputBinding": {\n                        "position": 1,\n                        "prefix": "-r"\n                    },\n                    "type": "boolean"\n                },\n                {\n                    "id": "#sorttool.cwl/input",\n                    "inputBinding": {\n                        "position": 2\n                    },\n                    "type": "File"\n                }\n            ],\n            "outputs": [\n                {\n                    "id": "#sorttool.cwl/output",\n                    "outputBinding": {\n                        "glob": "output.txt"\n                    },\n                    "type": "File"\n                }\n            ],\n            "stdout": "output.txt"\n        }\n    ],\n    "cwlVersion": "v1.0"\n}',
+                owner_uuid: nonAdminReadonlyProject.uuid,
+                }).as('nonAdminReadonlyWF');
+            cy.contains('Refresh').click();
+            cy.get('main').contains(nonAdminReadonlyProject.name).rightclick();
+            cy.get('[data-cy=context-menu]').within(() => {
+                cy.contains('Share').click({ waitForAnimations: false });
+            });
+            cy.get('.sharing-dialog').as('sharingDialog');
+            cy.get('[data-cy=invite-people-field]').find('input').type(adminUser.user.email);
+            cy.get('[data-cy="loading-spinner"]').should('not.exist');
+            cy.get('[data-cy="users-tab-label"]').click();
+            cy.get('[data-cy=sharing-suggestion]').click();
+            cy.get('@sharingDialog').within(() => {
+                cy.get('[data-cy=add-invited-people]').click();
+                cy.contains('Close').click({ waitForAnimations: false });
+            });
+        });
 
-            //ensure that a non-admin can run a wf in a writable project
+        cy.getAll('@parentWritableWF', '@parentReadonlyWF', '@mySharedWritableProject', '@mySharedReadonlyProject', '@nonAdminReadonlyProject', '@nonAdminReadonlyWF')
+        .then(([parentWritableWF, parentReadonlyWF, mySharedWritableProject, mySharedReadonlyProject, nonAdminReadonlyProject, nonAdminReadonlyWF]) => {
+            // already logged in as activeUser from previous step
+
+            // a non-admin can run a wf in a writable project
             cy.contains('Shared with me').click();
             cy.contains(mySharedWritableProject.name).click();
             cy.contains(parentWritableWF.name).click();
@@ -508,7 +535,7 @@ describe('Create workflow tests', function () {
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="${mySharedWritableProject.name}"]`).should('exist');
 
-            //ensure that a non-admin cannot run a wf in a non-writable project, it defaults to the user's root project instead
+            // a non-admin cannot run a wf in a non-writable project, it defaults to the user's root project instead
             cy.contains('Shared with me').click();
             cy.contains(mySharedReadonlyProject.name).click();
             cy.contains(parentReadonlyWF.name).click();
@@ -517,7 +544,18 @@ describe('Create workflow tests', function () {
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="Active User (root project)"]`).should('exist');
 
-            //using +NEW button should default to user's root project
+            // admin should be able to launch wf in shared readonly project
+            cy.loginAs(adminUser);
+            cy.contains('Shared with me').click();
+            cy.contains(nonAdminReadonlyProject.name).click();
+            cy.get('[data-cy=side-panel-button]').click();
+            cy.get('[data-cy=side-panel-run-process]').click();
+            cy.contains(nonAdminReadonlyWF.name).click();
+            cy.get('[data-cy=run-process-next-button]').click();
+            cy.get('[data-cy=project-picker-details]').contains(nonAdminReadonlyProject.name);
+            cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
+
+            //using +NEW button in Home Projects should default to user's root project
             cy.contains('Home Projects').click();
             cy.get('[data-cy=side-panel-button]').click();
             cy.get('[data-cy=side-panel-run-process]').click();
