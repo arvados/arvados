@@ -40,10 +40,12 @@ devsuffix="~dev"
 # main) or on a release branch.  We do this by looking at the point
 # where the current commit history branched from main.
 #
-# If a new major version appeared on a branch (not directly in the
-# history of main), the merge-base between main and the release should
-# be tagged as "development-X.Y.Z" so that version-at-commit can
-# figure out what to do.
+# If the tag for a new X+1 version appears on a release branch and not
+# directly in the history of main, the merge-base between main and the
+# release should be tagged as "development-X.Y.Z" so that
+# version-at-commit understands what version to assign to subsequent
+# commits on main.  It is also helpful to assign development-X.Y.Z
+# tags to make git-describe provide better version strings.
 
 # 1. get the nearest tag with 'git describe'
 # 2. get the merge base between this commit and main
@@ -65,18 +67,15 @@ if git merge-base --is-ancestor "$nearest_tag" "$merge_base" ; then
     # x.(y+1).0~devTIMESTAMP, where x.y.z is the newest version that does not contain $commit
     # grep reads the list of tags (-f) that contain $commit and filters them out (-v)
     # this prevents a newer tag from retroactively changing the versions of everything before it
-    v=$(git tag | grep -vFf <(git tag --contains "$merge_base") | sort -Vr | head -n1 | perl -pe 's/(\d+)\.(\d+)\.\d+.*/"$1.".($2+1).".0"/e')
+    v=$(git tag | grep -vFf <(git tag --contains "$merge_base") | perl -pe 's/^development-//' | sort -Vr | head -n1 | perl -pe 's/(\d+)\.(\d+)\.\d+.*/"$1.".($2+1).".0"/e')
 else
     # the nearest tag comes after the merge base with main (the branch
     # point).  Assume this means this is a point release branch,
     # following a major release.
     #
     # x.y.(z+1)~devTIMESTAMP, where x.y.z is the latest released ancestor of $commit
-    v=$(echo $nearest_tag | perl -pe 's/(\d+)$/$1+1/e')
+    v=$(echo $nearest_tag | perl -pe 's/^development-//' | perl -pe 's/(\d+)$/$1+1/e')
 fi
-
-# strip the "development-" prefix
-v=$(echo $v | perl -pe 's/^development-//')
 
 isodate=$(TZ=UTC git log -n1 --format=%cd --date=iso "$commit")
 ts=$(TZ=UTC date --date="$isodate" "+%Y%m%d%H%M%S")
