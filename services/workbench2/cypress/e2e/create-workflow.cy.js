@@ -438,21 +438,6 @@ describe('Create workflow tests', function () {
     });
 
     it('respects write permissions in the project picker', function () {
-        cy.createGroup(adminUser.token, {
-            group_class: 'project',
-            name: `Test project (${Math.floor(Math.random() * 999999)})`,
-        }).as('project1');
-
-        cy.createGroup(adminUser.token, {
-            group_class: 'project',
-            name: `Test project (${Math.floor(Math.random() * 999999)})`,
-        }).as('project2');
-
-        cy.createGroup(activeUser.token, {
-            group_class: 'project',
-            name: `Test project (${Math.floor(Math.random() * 999999)})`,
-        }).as('userProject');
-
         cy.loginAs(adminUser);
 
         cy.createGroup(adminUser.token, {
@@ -464,7 +449,7 @@ describe('Create workflow tests', function () {
                 definition:
                     '{\n    "$graph": [\n        {\n            "class": "Workflow",\n            "doc": "Reverse the lines in a document, then sort those lines.",\n            "hints": [\n                {\n                    "acrContainerImage": "99b0201f4cade456b4c9d343769a3b70+261",\n                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"\n                }\n            ],\n            "id": "#main",\n            "inputs": [\n                {\n                    "default": null,\n                    "doc": "The input file to be processed.",\n                    "id": "#main/input",\n                    "type": "File"\n                },\n                {\n                    "default": true,\n                    "doc": "If true, reverse (decending) sort",\n                    "id": "#main/reverse_sort",\n                    "type": "boolean"\n                }\n            ],\n            "outputs": [\n                {\n                    "doc": "The output with the lines reversed and sorted.",\n                    "id": "#main/output",\n                    "outputSource": "#main/sorted/output",\n                    "type": "File"\n                }\n            ],\n            "steps": [\n                {\n                    "id": "#main/rev",\n                    "in": [\n                        {\n                            "id": "#main/rev/input",\n                            "source": "#main/input"\n                        }\n                    ],\n                    "out": [\n                        "#main/rev/output"\n                    ],\n                    "run": "#revtool.cwl"\n                },\n                {\n                    "id": "#main/sorted",\n                    "in": [\n                        {\n                            "id": "#main/sorted/input",\n                            "source": "#main/rev/output"\n                        },\n                        {\n                            "id": "#main/sorted/reverse",\n                            "source": "#main/reverse_sort"\n                        }\n                    ],\n                    "out": [\n                        "#main/sorted/output"\n                    ],\n                    "run": "#sorttool.cwl"\n                }\n            ]\n        },\n        {\n            "baseCommand": "rev",\n            "class": "CommandLineTool",\n            "doc": "Reverse each line using the `rev` command",\n            "hints": [\n                {\n                    "class": "ResourceRequirement",\n                    "ramMin": 8\n                }\n            ],\n            "id": "#revtool.cwl",\n            "inputs": [\n                {\n                    "id": "#revtool.cwl/input",\n                    "inputBinding": {},\n                    "type": "File"\n                }\n            ],\n            "outputs": [\n                {\n                    "id": "#revtool.cwl/output",\n                    "outputBinding": {\n                        "glob": "output.txt"\n                    },\n                    "type": "File"\n                }\n            ],\n            "stdout": "output.txt"\n        },\n        {\n            "baseCommand": "sort",\n            "class": "CommandLineTool",\n            "doc": "Sort lines using the `sort` command",\n            "hints": [\n                {\n                    "class": "ResourceRequirement",\n                    "ramMin": 8\n                }\n            ],\n            "id": "#sorttool.cwl",\n            "inputs": [\n                {\n                    "id": "#sorttool.cwl/reverse",\n                    "inputBinding": {\n                        "position": 1,\n                        "prefix": "-r"\n                    },\n                    "type": "boolean"\n                },\n                {\n                    "id": "#sorttool.cwl/input",\n                    "inputBinding": {\n                        "position": 2\n                    },\n                    "type": "File"\n                }\n            ],\n            "outputs": [\n                {\n                    "id": "#sorttool.cwl/output",\n                    "outputBinding": {\n                        "glob": "output.txt"\n                    },\n                    "type": "File"\n                }\n            ],\n            "stdout": "output.txt"\n        }\n    ],\n    "cwlVersion": "v1.0"\n}',
                 owner_uuid: mySharedWritableProject.uuid,
-                }).as('testWorkflow1');
+                }).as('parentWritableWF');
             cy.contains('Refresh').click();
             cy.get('main').contains(mySharedWritableProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
@@ -493,7 +478,7 @@ describe('Create workflow tests', function () {
                 definition:
                     '{\n    "$graph": [\n        {\n            "class": "Workflow",\n            "doc": "Reverse the lines in a document, then sort those lines.",\n            "hints": [\n                {\n                    "acrContainerImage": "99b0201f4cade456b4c9d343769a3b70+261",\n                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"\n                }\n            ],\n            "id": "#main",\n            "inputs": [\n                {\n                    "default": null,\n                    "doc": "The input file to be processed.",\n                    "id": "#main/input",\n                    "type": "File"\n                },\n                {\n                    "default": true,\n                    "doc": "If true, reverse (decending) sort",\n                    "id": "#main/reverse_sort",\n                    "type": "boolean"\n                }\n            ],\n            "outputs": [\n                {\n                    "doc": "The output with the lines reversed and sorted.",\n                    "id": "#main/output",\n                    "outputSource": "#main/sorted/output",\n                    "type": "File"\n                }\n            ],\n            "steps": [\n                {\n                    "id": "#main/rev",\n                    "in": [\n                        {\n                            "id": "#main/rev/input",\n                            "source": "#main/input"\n                        }\n                    ],\n                    "out": [\n                        "#main/rev/output"\n                    ],\n                    "run": "#revtool.cwl"\n                },\n                {\n                    "id": "#main/sorted",\n                    "in": [\n                        {\n                            "id": "#main/sorted/input",\n                            "source": "#main/rev/output"\n                        },\n                        {\n                            "id": "#main/sorted/reverse",\n                            "source": "#main/reverse_sort"\n                        }\n                    ],\n                    "out": [\n                        "#main/sorted/output"\n                    ],\n                    "run": "#sorttool.cwl"\n                }\n            ]\n        },\n        {\n            "baseCommand": "rev",\n            "class": "CommandLineTool",\n            "doc": "Reverse each line using the `rev` command",\n            "hints": [\n                {\n                    "class": "ResourceRequirement",\n                    "ramMin": 8\n                }\n            ],\n            "id": "#revtool.cwl",\n            "inputs": [\n                {\n                    "id": "#revtool.cwl/input",\n                    "inputBinding": {},\n                    "type": "File"\n                }\n            ],\n            "outputs": [\n                {\n                    "id": "#revtool.cwl/output",\n                    "outputBinding": {\n                        "glob": "output.txt"\n                    },\n                    "type": "File"\n                }\n            ],\n            "stdout": "output.txt"\n        },\n        {\n            "baseCommand": "sort",\n            "class": "CommandLineTool",\n            "doc": "Sort lines using the `sort` command",\n            "hints": [\n                {\n                    "class": "ResourceRequirement",\n                    "ramMin": 8\n                }\n            ],\n            "id": "#sorttool.cwl",\n            "inputs": [\n                {\n                    "id": "#sorttool.cwl/reverse",\n                    "inputBinding": {\n                        "position": 1,\n                        "prefix": "-r"\n                    },\n                    "type": "boolean"\n                },\n                {\n                    "id": "#sorttool.cwl/input",\n                    "inputBinding": {\n                        "position": 2\n                    },\n                    "type": "File"\n                }\n            ],\n            "outputs": [\n                {\n                    "id": "#sorttool.cwl/output",\n                    "outputBinding": {\n                        "glob": "output.txt"\n                    },\n                    "type": "File"\n                }\n            ],\n            "stdout": "output.txt"\n        }\n    ],\n    "cwlVersion": "v1.0"\n}',
                 owner_uuid: mySharedReadonlyProject.uuid,
-                }).as('testWorkflow2');
+                }).as('parentReadonlyWF');
             cy.contains('Refresh').click();
             cy.get('main').contains(mySharedReadonlyProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
@@ -510,29 +495,46 @@ describe('Create workflow tests', function () {
             });
         });
 
-        cy.getAll('@project1', '@project2', '@userProject', '@testWorkflow1', '@testWorkflow2', '@mySharedWritableProject', '@mySharedReadonlyProject')
-        .then(([project1, project2, userProject, testWorkflow1, testWorkflow2, mySharedWritableProject, mySharedReadonlyProject]) => {
+        cy.getAll('@parentWritableWF', '@parentReadonlyWF', '@mySharedWritableProject', '@mySharedReadonlyProject')
+        .then(([parentWritableWF, parentReadonlyWF, mySharedWritableProject, mySharedReadonlyProject]) => {
             cy.loginAs(activeUser);
-            cy.contains('Shared with me').click();
 
             //ensure that a non-admin can run a wf in a writable project
+            cy.contains('Shared with me').click();
             cy.contains(mySharedWritableProject.name).click();
-            cy.contains(testWorkflow1.name).click();
+            cy.contains(parentWritableWF.name).click();
             cy.get('[data-cy=workflow-details-panel-run-btn]').click();
             cy.get('[data-cy=project-picker-details]').contains(mySharedWritableProject.name);
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="${mySharedWritableProject.name}"]`).should('exist');
 
+            //ensure that a non-admin cannot run a wf in a non-writable project, it defaults to the user's root project instead
             cy.contains('Shared with me').click();
-
-            //ensure that a non-admin cannot run a wf in a non-writable project, it defaults to the root project instead
             cy.contains(mySharedReadonlyProject.name).click();
-            cy.waitForDom();
-            cy.contains(testWorkflow2.name).click();
+            cy.contains(parentReadonlyWF.name).click();
             cy.get('[data-cy=workflow-details-panel-run-btn]').click();
             cy.get('[data-cy=project-picker-details]').contains("Active User (root project)");
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="Active User (root project)"]`).should('exist');
+
+            //using +NEW button should default to user's root project
+            cy.contains('Home Projects').click();
+            cy.get('[data-cy=side-panel-button]').click();
+            cy.get('[data-cy=side-panel-run-process]').click();
+            cy.contains(parentWritableWF.name).click();
+            cy.get('[data-cy=run-process-next-button]').click();
+            cy.get('[data-cy=project-picker-details]').contains("Active User (root project)");
+            cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
+
+            //using +NEW button to run a wf in a writable project should default to that writable project
+            cy.contains('Shared with me').click();
+            cy.contains(mySharedWritableProject.name).click();
+            cy.get('[data-cy=side-panel-button]').click();
+            cy.get('[data-cy=side-panel-run-process]').click();
+            cy.contains(parentWritableWF.name).click();
+            cy.get('[data-cy=run-process-next-button]').click();
+            cy.get('[data-cy=project-picker-details]').contains(mySharedWritableProject.name);
+            cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
         });
     });
 

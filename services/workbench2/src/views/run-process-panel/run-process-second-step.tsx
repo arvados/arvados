@@ -96,7 +96,6 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
 export const RunProcessSecondStepForm = connect(mapStateToProps, mapDispatchToProps)(
     ({ userUuid, inputs, workflow, workflowOwner, defaultTargetProject, selectedPreset, presets, onPresetChange, valid, goBack, runProcess, setProcessOwner }: RunProcessSecondStepFormProps) => {
-        
         return <Grid container spacing={2} data-cy="new-process-panel">
                 <Grid item xs={12}>
                     <RunProcessBasicForm workflow={workflow} />
