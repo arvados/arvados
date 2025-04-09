@@ -544,17 +544,6 @@ describe('Create workflow tests', function () {
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="Active User (root project)"]`).should('exist');
 
-            // admin should be able to launch wf in shared readonly project
-            cy.loginAs(adminUser);
-            cy.contains('Shared with me').click();
-            cy.contains(nonAdminReadonlyProject.name).click();
-            cy.get('[data-cy=side-panel-button]').click();
-            cy.get('[data-cy=side-panel-run-process]').click();
-            cy.contains(nonAdminReadonlyWF.name).click();
-            cy.get('[data-cy=run-process-next-button]').click();
-            cy.get('[data-cy=project-picker-details]').contains(nonAdminReadonlyProject.name);
-            cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
-
             //using +NEW button in Home Projects should default to user's root project
             cy.contains('Home Projects').click();
             cy.get('[data-cy=side-panel-button]').click();
@@ -572,6 +561,17 @@ describe('Create workflow tests', function () {
             cy.contains(parentWritableWF.name).click();
             cy.get('[data-cy=run-process-next-button]').click();
             cy.get('[data-cy=project-picker-details]').contains(mySharedWritableProject.name);
+            cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
+
+            // admin should be able to launch wf in shared readonly project
+            cy.loginAs(adminUser);
+            cy.contains('Shared with me').click();
+            cy.contains(nonAdminReadonlyProject.name).click();
+            cy.get('[data-cy=side-panel-button]').click();
+            cy.get('[data-cy=side-panel-run-process]').click();
+            cy.contains(nonAdminReadonlyWF.name).click();
+            cy.get('[data-cy=run-process-next-button]').click();
+            cy.get('[data-cy=project-picker-details]').contains(nonAdminReadonlyProject.name);
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
         });
     });
