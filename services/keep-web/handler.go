@@ -612,6 +612,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if r.Header.Get("Accept") == "application/zip" {
+		releaseSession()
+		h.serveZip(w, r, session.client, sessionFS, fstarget)
+		return
+	}
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		if fi, err := sessionFS.Stat(fstarget); err == nil && fi.IsDir() {
 			releaseSession() // because we won't be writing anything

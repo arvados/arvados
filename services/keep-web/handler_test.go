@@ -877,12 +877,14 @@ func (s *IntegrationSuite) collectionURL(uuid, path string) string {
 // Create a request and process it using s.handler.
 func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr http.Header, body []byte) (*http.Request, *http.Response) {
 	u := mustParseURL(urlstring)
-	if hdr == nil && token != "" {
-		hdr = http.Header{"Authorization": {"Bearer " + token}}
-	} else if hdr == nil {
+	if _, ok := hdr["Authorization"]; ok && token != "" {
+		panic("must not pass token if Authorization is already in hdr")
+	}
+	if hdr == nil {
 		hdr = http.Header{}
-	} else if token != "" {
-		panic("must not pass both token and hdr")
+	}
+	if token != "" {
+		hdr["Authorization"] = []string{"Bearer " + token}
 	}
 	return s.doReq(&http.Request{
 		Method:     method,
