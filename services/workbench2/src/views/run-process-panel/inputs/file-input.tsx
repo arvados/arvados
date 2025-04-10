@@ -155,7 +155,7 @@ const FileInputComponent = connect()(
                         </div>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button onClick={this.closeDialog} data-cy='file-input-cancel-button'>Cancel</Button>
                         <Button
                             disabled={!this.state.file}
                             variant='contained'

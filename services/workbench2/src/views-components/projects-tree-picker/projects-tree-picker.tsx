@@ -31,7 +31,11 @@ import { CollectionDetailsAttributes } from 'views/collection-panel/collection-p
 import { RootProjectDetailsComponent } from 'views-components/details-panel/root-project-details';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { formatFileSize } from 'common/formatters';
-
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { Typography } from '@mui/material';
+import { UserResource } from 'models/user';
+import { ProjectResource } from 'models/project';
+import { isEqual } from 'lodash';
 export interface ToplevelPickerProps {
     currentUuids?: string[];
     pickerId: string;
@@ -40,6 +44,7 @@ export interface ToplevelPickerProps {
     includeDirectories?: boolean;
     includeFiles?: boolean;
     showSelection?: boolean;
+    project?: ProjectResource;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     toggleItemActive?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
@@ -58,7 +63,6 @@ interface ProjectsTreePickerActionProps {
 const mapStateToProps = (state: RootState, props: ToplevelPickerProps): ProjectsTreePickerSearchProps => {
     const { search } = getProjectsTreePickerIds(props.pickerId);
     return {
-        ...props,
         projectSearch: state.treePickerSearch.projectSearchValues[search] || state.treePickerSearch.collectionFilterValues[search],
         collectionFilter: state.treePickerSearch.collectionFilterValues[search],
     };
@@ -97,6 +101,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         justifyContent: "space-around",
         height: "64px",
+        marginTop: "8px",
     },
     scrolledBox: {
         overflow: "scroll",
@@ -124,16 +129,34 @@ interface SelectionComponentState {
     activeItem?: ProjectsTreePickerItem;
 }
 
+const displayUserName = (user: UserResource) => {
+    if (!user.firstName || !user.lastName) {
+        return '';
+    }
+    return `${user.firstName} ${user.lastName} (root project)`;
+};
+
+const DetailsWithName = (resource: GroupContentsResource | UserResource, detailsComponent: JSX.Element) => {
+    const displayName = resource.kind === ResourceKind.GROUP || resource.kind === ResourceKind.COLLECTION ? resource.name
+                            : resource.kind === ResourceKind.USER ? displayUserName(resource)
+                                : '';
+
+    return <div data-cy="project-picker-details">
+        <Typography variant="h6" gutterBottom>{displayName}</Typography>
+        {detailsComponent}
+    </div>;
+};
+
 const Details = (props: { res?: ProjectsTreePickerItem }) => {
     if (props.res) {
         if ('kind' in props.res) {
             switch (props.res.kind) {
                 case ResourceKind.PROJECT:
-                    return <ProjectDetailsComponent project={props.res} hideEdit={true} />
+                    return DetailsWithName(props.res, <ProjectDetailsComponent project={props.res} hideEdit={true} />);
                 case ResourceKind.COLLECTION:
-                    return <CollectionDetailsAttributes item={props.res} />;
+                    return DetailsWithName(props.res, <CollectionDetailsAttributes item={props.res} />);
                 case ResourceKind.USER:
-                    return <RootProjectDetailsComponent rootProject={props.res} />;
+                    return DetailsWithName(props.res, <RootProjectDetailsComponent rootProject={props.res} />);
                     // case ResourceKind.PROCESS:
                     //                         return new ProcessDetails(res);
                     // case ResourceKind.WORKFLOW:
@@ -158,11 +181,45 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
         class FileInputComponent extends React.Component<ProjectsTreePickerCombinedProps> {
             state: SelectionComponentState = {
+                activeItem: undefined,
             };
 
             componentDidMount() {
                 const { search } = getProjectsTreePickerIds(this.props.pickerId);
 
+                this.setInitialActiveItem();
+
+                this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
+                this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
+                if (this.props.project) {
+                    this.setState({ activeItem: this.props.project });
+                }
+            }
+
+            componentWillUnmount() {
+                // Release all the state, we don't need it to hang around forever.
+                this.resetAllPickers();
+            }
+
+            componentDidUpdate( prevProps: Readonly<ProjectsTreePickerCombinedProps>, prevState: Readonly<{}>, snapshot?: any ): void {
+                // update active item if project updates while being displayed
+                if (prevProps.project !== this.props.project && prevProps.project?.uuid === this.props.project?.uuid) {
+                    this.setState({ activeItem: this.props.project });
+                }
+                if (!this.state.activeItem && this.props.project) {
+                    this.setState({ activeItem: this.props.project });
+                }
+                if (prevProps.project !== this.props.project) {
+                    this.setState({ activeItem: this.props.project });
+                }
+                if (!isEqual(prevProps.currentUuids, this.props.currentUuids)) {
+                    this.setInitialActiveItem();
+                }
+            }
+
+            async setInitialActiveItem() {
+                // must be awaited because React batches state updates
+                await this.resetAllPickers();
                 const preloadParams = this.props.currentUuids ? {
                     selectedItemUuids: this.props.currentUuids,
                     includeDirectories: !!this.props.includeDirectories,
@@ -170,25 +227,19 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                     multi: !!this.props.showSelection,
                 } : undefined;
                 this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, preloadParams));
-
-                this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
-                this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
             }
 
-            componentWillUnmount() {
+            setSelection(event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) {
+                this.setState({activeItem: item.data});
+            }
+
+            resetAllPickers() {
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
-                // Release all the state, we don't need it to hang around forever.
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: search }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: home }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: shared }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: favorites }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: publicFavorites }));
-            }
-
-            setSelection(event: React.MouseEvent<HTMLElement>,
-                         item: TreeItem<ProjectsTreePickerItem>,
-                         pickerId: string) {
-                this.setState({activeItem: item.data});
             }
 
             render() {
@@ -199,21 +250,19 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
                 const relatedTreePickers = getRelatedTreePickers(pickerId);
                 const _this = this;
-                const p = {
+                const pickerProps = {
                     cascadeSelection: this.props.cascadeSelection,
                     includeCollections: this.props.includeCollections,
                     includeDirectories: this.props.includeDirectories,
                     includeFiles: this.props.includeFiles,
                     showSelection: this.props.showSelection,
                     options: this.props.options,
-                    toggleItemActive: (event: React.MouseEvent<HTMLElement>,
-                                       item: TreeItem<ProjectsTreePickerItem>,
-                                       pickerId: string): void => {
-                                           _this.setSelection(event, item, pickerId);
-                                           if (_this.props.toggleItemActive) {
-                                               _this.props.toggleItemActive(event, item, pickerId);
-                                           }
-                                       },
+                    toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string): void => {
+                                        _this.setSelection(event, item, pickerId);
+                                        if (_this.props.toggleItemActive) {
+                                            _this.props.toggleItemActive(event, item, pickerId);
+                                        }
+                                    },
                     toggleItemSelection: this.props.toggleItemSelection,
                     relatedTreePickers,
                     disableActivation,
@@ -224,30 +273,30 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                     <div className={this.props.classes.searchFlex}>
                         <span data-cy="picker-dialog-project-search"><SearchInput value="" label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  /></span>
                 {this.props.includeCollections &&
-                 <span data-cy="picker-dialog-collection-search" ><SearchInput value="" label="Collection search" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" /></span>}
+                    <span data-cy="picker-dialog-collection-search" ><SearchInput value="" label="Collection search" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" /></span>}
                 </div>
 
                 <div className={this.props.classes.twoCol}>
                     <div className={this.props.classes.scrolledBox}>
                         {this.props.projectSearch ?
-                         <div data-cy="projects-tree-search-picker">
-                             <SearchProjectsPicker {...p} pickerId={search} />
-                         </div>
+                        <div data-cy="projects-tree-search-picker">
+                            <SearchProjectsPicker {...pickerProps} pickerId={search} />
+                        </div>
                         :
-                         <>
-                             <div data-cy="projects-tree-home-tree-picker">
-                                 <HomeTreePicker {...p} pickerId={home} />
-                             </div>
-                        <div data-cy="projects-tree-shared-tree-picker">
-                            <SharedTreePicker {...p} pickerId={shared} />
-                        </div>
-                        <div data-cy="projects-tree-public-favourites-tree-picker">
-                            <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
-                        </div>
-                        <div data-cy="projects-tree-favourites-tree-picker">
-                            <FavoritesTreePicker {...p} pickerId={favorites} />
-                        </div>
-                         </>}
+                        <>
+                            <div data-cy="projects-tree-home-tree-picker">
+                                <HomeTreePicker {...pickerProps} pickerId={home} />
+                            </div>
+                            <div data-cy="projects-tree-shared-tree-picker">
+                                <SharedTreePicker {...pickerProps} pickerId={shared} />
+                            </div>
+                            <div data-cy="projects-tree-public-favourites-tree-picker">
+                                <PublicFavoritesTreePicker {...pickerProps} pickerId={publicFavorites} />
+                            </div>
+                            <div data-cy="projects-tree-favourites-tree-picker">
+                                <FavoritesTreePicker {...pickerProps} pickerId={favorites} />
+                            </div>
+                        </>}
                     </div>
 
                     <div className={this.props.classes.detailsBox} data-cy="picker-dialog-details">
@@ -255,7 +304,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                     </div>
                 </div>
                 </>;
-            }
+        }
 }));
 
 const getRelatedTreePickers = pipe(getProjectsTreePickerIds, values);

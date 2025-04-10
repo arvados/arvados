@@ -698,11 +698,13 @@ export const loadInitialValue = (pickerItemIds: string[], pickerId: string, incl
                 item.kind === ResourceKind.COLLECTION
             ) as (GroupResource | CollectionResource)[];
 
-            if (ancestors.length === 0) {
+            const isOnlyHomeProject = pickerItemIds.length === 1 && pickerItemIds[0] === homeUuid;
+
+            if (ancestors.length === 0 && !isOnlyHomeProject) {
                 return Promise.reject({item: itemId});
             }
 
-            const isHomeProjectItem = !!(homeUuid && ancestors.some(item => item.ownerUuid === homeUuid));
+            const isHomeProjectItem = !!((homeUuid && ancestors.some(item => item.ownerUuid === homeUuid)) || isOnlyHomeProject);
 
             return {
                 itemId,

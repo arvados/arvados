@@ -8,7 +8,7 @@ import { Grid, Typography } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { TextField } from 'components/text-field/text-field';
-import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
+import { RunWfProjectInput, RunWfProjectCommandInputParameter } from 'views/run-process-panel/inputs/run-wf-project-input';
 import { PROCESS_NAME_VALIDATION } from 'validators/validators';
 import { WorkflowResource } from 'models/workflow';
 import { ArvadosTheme, CustomStyleRulesCallback } from 'common/custom-theme';
@@ -86,13 +86,13 @@ export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcess
                     xs={12}
                     md={6}
                 >
-                    <ProjectInput
+                    <RunWfProjectInput
                         required
                         input={
                             {
                                 id: 'owner',
                                 label: 'Project where the workflow will run',
-                            } as ProjectCommandInputParameter
+                            } as RunWfProjectCommandInputParameter
                         }
                         options={{ showOnlyOwned: false, showOnlyWritable: true }}
                     />
