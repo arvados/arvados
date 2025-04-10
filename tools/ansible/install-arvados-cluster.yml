@@ -77,3 +77,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_keep_web
+
+- name: Set up Workbench(es)
+  hosts: arvados_workbench
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_workbench

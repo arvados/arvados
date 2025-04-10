@@ -21,8 +21,11 @@
 
 - name: "Set up nginx {{ arvados_nginx_service_key }} site"
   become: yes
+  vars:
+    arvados_nginx_site_map:
+      Workbench2: workbench
   ansible.builtin.template:
-    src: arvados-nginx-site.conf.j2
+    src: "arvados-nginx-{{ arvados_nginx_site_map.get(arvados_nginx_service_key, 'site') }}.conf.j2"
     dest: "/etc/nginx/sites-available/arvados-{{ arvados_nginx_service_key|lower }}"
     owner: root
     group: root

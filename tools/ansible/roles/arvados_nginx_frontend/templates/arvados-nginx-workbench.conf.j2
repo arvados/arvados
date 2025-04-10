@@ -1,0 +1,37 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+server {
+{% set ext_addr = arvados_cluster.Services.Workbench2 | external_addr %}
+  listen       {{ ext_addr.port }} ssl;
+  server_name  {{ ext_addr.address }}
+{% for server_name in arvados_nginx_server_names.get(arvados_nginx_service_key, []) %}
+    {{ server_name }}
+{% endfor %}
+    ;
+
+  ssl_certificate      /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.cert;
+  ssl_certificate_key  /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.key;
+
+  client_max_body_size  {{ arvados_nginx_client_max_body_size }};
+
+  index  index.html;
+
+  # Workbench2 uses a call to /config.json to bootstrap itself
+  # and find out where to contact the API server.
+  location /config.json {
+    return 200 '{"API_HOST":"{{ (arvados_cluster.Services.Controller|external_addr).address }}"}';
+  }
+
+  location / {
+    root      /var/www/arvados-workbench2/workbench2;
+    index     index.html;
+    try_files $uri $uri/ /index.html;
+    if (-f $document_root/maintenance.html) {
+      return 503;
+    }
+  }
+}
