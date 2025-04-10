@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,7 +20,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/router"
@@ -41,16 +44,17 @@ var _ = check.Suite(&ContainerGatewaySuite{})
 
 type ContainerGatewaySuite struct {
 	localdbSuite
-	reqUUID string
-	ctrUUID string
-	srv     *httptest.Server
-	gw      *crunchrun.Gateway
+	reqCreateOptions arvados.CreateOptions
+	reqUUID          string
+	ctrUUID          string
+	srv              *httptest.Server
+	gw               *crunchrun.Gateway
 }
 
 func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.localdbSuite.SetUpTest(c)
 
-	cr, err := s.localdb.ContainerRequestCreate(s.userctx, arvados.CreateOptions{
+	s.reqCreateOptions = arvados.CreateOptions{
 		Attrs: map[string]interface{}{
 			"command":             []string{"echo", time.Now().Format(time.RFC3339Nano)},
 			"container_count_max": 1,
@@ -69,7 +73,8 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 			"runtime_constraints": map[string]interface{}{
 				"vcpus": 1,
 				"ram":   2,
-			}}})
+			}}}
+	cr, err := s.localdb.ContainerRequestCreate(s.userctx, s.reqCreateOptions)
 	c.Assert(err, check.IsNil)
 	s.reqUUID = cr.UUID
 	s.ctrUUID = cr.ContainerUUID
@@ -86,6 +91,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	// is how we advertise our internal URL and enable
 	// proxy-to-other-controller mode,
 	forceInternalURLForTest = &arvados.URL{Scheme: "https", Host: s.srv.Listener.Addr().String()}
+	s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
 	ac := &arvados.Client{
 		APIHost:   s.srv.Listener.Addr().String(),
 		AuthToken: arvadostest.SystemRootToken,
@@ -121,6 +127,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 }
 
 func (s *ContainerGatewaySuite) TearDownTest(c *check.C) {
+	forceProxyForTest = false
 	s.srv.Close()
 	s.localdbSuite.TearDownTest(c)
 }
@@ -226,6 +233,218 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 }
 
+// Connect to crunch-run container gateway directly.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct(c *check.C) {
+	s.testContainerHTTPProxy(c)
+}
+
+// Connect through a tunnel terminated at this controller process.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxy(c)
+}
+
+// Connect through a tunnel terminated at a different controller
+// process.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ProxyTunnel(c *check.C) {
+	forceProxyForTest = true
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxy(c)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
+	var servers []*httpserver.Server
+	for i := 0; i < 10; i++ {
+		srv := &httpserver.Server{
+			Addr: ":0",
+			Server: http.Server{
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					body := fmt.Sprintf("handled %s %s with Host %s", r.Method, r.URL.String(), r.Host)
+					c.Logf("%s", body)
+					w.Write([]byte(body))
+				}),
+			},
+		}
+		srv.Start()
+		defer srv.Close()
+		servers = append(servers, srv)
+	}
+
+	testMethods := []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"}
+
+	var wg sync.WaitGroup
+	for idx, srv := range servers {
+		idx, srv := idx, srv
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c.Logf("sending request to %s via %s", srv.Addr, s.gw.Address)
+			method := testMethods[idx%len(testMethods)]
+			_, port, err := net.SplitHostPort(srv.Addr)
+			c.Assert(err, check.IsNil)
+			vhost := s.ctrUUID + "-" + port + ".containers.example.com"
+			req, err := http.NewRequest(method, "https://"+vhost+"/via-"+s.gw.Address, nil)
+			c.Assert(err, check.IsNil)
+			// Token is already passed to
+			// ContainerHTTPProxy() call in s.userctx, but
+			// we also need to add an auth cookie to the
+			// http request: if the request gets passed
+			// through http (see forceProxyForTest), the
+			// target router will start with a fresh
+			// context and load tokens from the request.
+			req.AddCookie(&http.Cookie{
+				Name:  "arvados_api_token",
+				Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
+			})
+			portnum, err := strconv.Atoi(port)
+			c.Assert(err, check.IsNil)
+			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
+				UUID:    s.ctrUUID,
+				Port:    portnum,
+				Request: req,
+			})
+			c.Assert(err, check.IsNil)
+			rw := httptest.NewRecorder()
+			handler.ServeHTTP(rw, req)
+			resp := rw.Result()
+			c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+			body, err := io.ReadAll(resp.Body)
+			c.Assert(err, check.IsNil)
+			c.Check(string(body), check.Matches, `handled `+method+` /via-.* with Host \Q`+vhost+`\E`)
+		}()
+	}
+	wg.Wait()
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken(c *check.C) {
+	s.testContainerHTTPProxyError(c, "", http.StatusUnauthorized)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_InvalidToken(c *check.C) {
+	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2+"bogus", http.StatusUnauthorized)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken(c *check.C) {
+	s.testContainerHTTPProxyError(c, arvadostest.AnonymousToken, http.StatusNotFound)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_CRsDifferentUsers(c *check.C) {
+	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
+	cr, err := s.localdb.ContainerRequestCreate(rootctx, s.reqCreateOptions)
+	c.Assert(err, check.IsNil)
+	c.Assert(cr.ContainerUUID, check.Equals, s.ctrUUID)
+	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2, http.StatusForbidden)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_ContainerNotReadable(c *check.C) {
+	s.testContainerHTTPProxyError(c, arvadostest.SpectatorToken, http.StatusNotFound)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, token string, expectCode int) {
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
+	vhost := s.ctrUUID + "-12345.containers.example.com"
+	req, err := http.NewRequest("GET", "https://"+vhost+"/via-"+s.gw.Address, nil)
+	c.Assert(err, check.IsNil)
+	_, err = s.localdb.ContainerHTTPProxy(ctx, arvados.ContainerHTTPProxyOptions{
+		UUID:    s.ctrUUID,
+		Port:    12345,
+		Request: req,
+	})
+	se := httpserver.HTTPStatusError(nil)
+	c.Assert(errors.As(err, &se), check.Equals, true)
+	c.Check(se.HTTPStatus(), check.Equals, expectCode)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_CookieAuth(c *check.C) {
+	s.testContainerHTTPProxyUsingCurl(c, arvadostest.ActiveTokenV2, "GET", "/foobar")
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth(c *check.C) {
+	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_Tunnel(c *check.C) {
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_ProxyTunnel(c *check.C) {
+	forceProxyForTest = true
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+}
+
+// Check other query parameters are preserved in the
+// redirect-with-cookie.
+//
+// Note the original request has "?baz&baz&..." and this changes to
+// "?baz=&baz=&..." in the redirect location.  We trust the target
+// service won't be sensitive to this difference.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_PreserveQuery(c *check.C) {
+	body := s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?baz&baz&arvados_api_token="+arvadostest.ActiveTokenV2+"&waz=quux")
+	c.Check(body, check.Matches, `handled GET /foobar\?baz=&baz=&waz=quux with Host `+s.ctrUUID+`.*`)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_Patch(c *check.C) {
+	body := s.testContainerHTTPProxyUsingCurl(c, arvadostest.ActiveTokenV2, "PATCH", "/foobar")
+	c.Check(body, check.Matches, `handled PATCH /foobar with Host `+s.ctrUUID+`.*`)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, cookietoken, method, path string) string {
+	srv := &httpserver.Server{
+		Addr: ":0",
+		Server: http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				body := fmt.Sprintf("handled %s %s with Host %s", r.Method, r.URL.String(), r.Host)
+				c.Logf("%s", body)
+				w.Write([]byte(body))
+			}),
+		},
+	}
+	srv.Start()
+	defer srv.Close()
+	_, srvPort, err := net.SplitHostPort(srv.Addr)
+	c.Assert(err, check.IsNil)
+
+	vhost, err := url.Parse(s.srv.URL)
+	c.Assert(err, check.IsNil)
+	controllerHost := vhost.Host
+	vhost.Host = s.ctrUUID + "-" + srvPort + ".containers.example.com"
+	target, err := vhost.Parse(path)
+	c.Assert(err, check.IsNil)
+
+	tempdir, err := ioutil.TempDir("", "localdb-test-")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tempdir)
+
+	cmd := exec.Command("curl")
+	if cookietoken != "" {
+		cmd.Args = append(cmd.Args, "--cookie", "arvados_api_token="+string(auth.EncodeTokenCookie([]byte(cookietoken))))
+	} else {
+		cmd.Args = append(cmd.Args, "--cookie-jar", filepath.Join(tempdir, "cookie.jar"))
+	}
+	if method != "GET" {
+		cmd.Args = append(cmd.Args, "--request", method)
+	}
+	cmd.Args = append(cmd.Args, "--silent", "--insecure", "--location", "--connect-to", vhost.Hostname()+":443:"+controllerHost, target.String())
+	cmd.Dir = tempdir
+	stdout, err := cmd.StdoutPipe()
+	c.Assert(err, check.Equals, nil)
+	cmd.Stderr = cmd.Stdout
+	c.Logf("cmd: %v", cmd.Args)
+	go cmd.Start()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, stdout)
+	c.Check(err, check.Equals, nil)
+	err = cmd.Wait()
+	c.Check(err, check.Equals, nil)
+	c.Check(buf.String(), check.Matches, `handled `+method+` /.*`)
+	return buf.String()
+}
+
 func (s *ContainerGatewaySuite) setupLogCollection(c *check.C) {
 	files := map[string]string{
 		"stderr.txt":   "hello world\n",
@@ -285,8 +504,6 @@ func (s *ContainerGatewaySuite) saveLogAndCloseGateway(c *check.C) {
 
 func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 	forceProxyForTest = true
-	defer func() { forceProxyForTest = false }()
-
 	s.gw = s.setupGatewayWithTunnel(c)
 	s.setupLogCollection(c)
 
@@ -295,9 +512,6 @@ func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 
 		if broken {
 			delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
-		} else {
-			s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
-			defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 		}
 
 		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID+"/stderr.txt", nil)
@@ -557,15 +771,15 @@ func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
 }
 
-func (s *ContainerGatewaySuite) TestConnectFail(c *check.C) {
-	c.Log("trying with no token")
+func (s *ContainerGatewaySuite) TestConnectFail_NoToken(c *check.C) {
 	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, "")
 	_, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Check(err, check.ErrorMatches, `.* 401 .*`)
+}
 
-	c.Log("trying with anonymous token")
-	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AnonymousToken)
-	_, err = s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+func (s *ContainerGatewaySuite) TestConnectFail_AnonymousToken(c *check.C) {
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AnonymousToken)
+	_, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Check(err, check.ErrorMatches, `.* 404 .*`)
 }
 
@@ -596,17 +810,12 @@ func (s *ContainerGatewaySuite) TestCreateTunnel(c *check.C) {
 
 func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyOK(c *check.C) {
 	forceProxyForTest = true
-	defer func() { forceProxyForTest = false }()
-	s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
-	defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 	s.testConnectThroughTunnel(c, "")
 }
 
 func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyError(c *check.C) {
 	forceProxyForTest = true
-	defer func() { forceProxyForTest = false }()
-	// forceInternalURLForTest will not be usable because it isn't
-	// listed in s.cluster.Services.Controller.InternalURLs
+	delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 	s.testConnectThroughTunnel(c, `.*tunnel endpoint is invalid.*`)
 }
 

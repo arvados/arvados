@@ -22,6 +22,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
@@ -37,7 +38,19 @@ import (
 )
 
 var (
-	forceProxyForTest       = false
+	// forceProxyForTest enables test cases to exercise the "proxy
+	// to a different controller instance" code path without
+	// running a second controller instance.  If this is set, an
+	// incoming request with NoForward==false is always proxied to
+	// the configured controller instance that matches the
+	// container gateway's tunnel endpoint, without checking
+	// whether the tunnel is actually connected to the current
+	// process.
+	forceProxyForTest = false
+
+	// forceInternalURLForTest is sent to the crunch-run gateway
+	// when setting up a tunnel in a test suite where
+	// service.URLFromContext() does not return anything.
 	forceInternalURLForTest *arvados.URL
 )
 
@@ -135,63 +148,12 @@ func (conn *Conn) ContainerRequestLog(ctx context.Context, opts arvados.Containe
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(ctx)
-		var proxyReq *http.Request
 		var proxyErr error
-		var expectRespondAuth string
-		proxy := &httputil.ReverseProxy{
-			// Our custom Transport:
-			//
-			// - Uses a custom dialer to connect to the
-			// gateway (either directly or through a
-			// tunnel set up though ContainerTunnel)
-			//
-			// - Verifies the gateway's TLS certificate
-			// using X-Arvados-Authorization headers.
-			//
-			// This involves modifying the outgoing
-			// request header in DialTLSContext.
-			// (ReverseProxy certainly doesn't expect us
-			// to do this, but it works.)
-			Transport: &http.Transport{
-				DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-					tlsconn, requestAuth, respondAuth, err := dial()
-					if err != nil {
-						return nil, err
-					}
-					proxyReq.Header.Set("X-Arvados-Authorization", requestAuth)
-					expectRespondAuth = respondAuth
-					return tlsconn, nil
-				},
-			},
-			Director: func(r *http.Request) {
-				// Scheme/host of incoming r.URL are
-				// irrelevant now, and may even be
-				// missing. Host is ignored by our
-				// DialTLSContext, but we need a
-				// generic syntactically correct URL
-				// for net/http to work with.
-				r.URL.Scheme = "https"
-				r.URL.Host = "0.0.0.0:0"
-				r.Header.Set("X-Arvados-Container-Gateway-Uuid", ctr.UUID)
-				r.Header.Set("X-Webdav-Prefix", "/arvados/v1/container_requests/"+cr.UUID+"/log/"+ctr.UUID)
-				r.Header.Set("X-Webdav-Source", "/log")
-				proxyReq = r
-			},
-			ModifyResponse: func(resp *http.Response) error {
-				if resp.Header.Get("X-Arvados-Authorization-Response") != expectRespondAuth {
-					// Note this is how we detect
-					// an attacker-in-the-middle.
-					return httpserver.ErrorWithStatus(errors.New("bad X-Arvados-Authorization-Response header"), http.StatusBadGateway)
-				}
-				resp.Header.Del("X-Arvados-Authorization-Response")
-				preemptivelyDeduplicateHeaders(w.Header(), resp.Header)
-				return nil
-			},
-			ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
-				proxyErr = err
-			},
-		}
-		proxy.ServeHTTP(w, r)
+		gatewayProxy(dial, w, http.Header{
+			"X-Arvados-Container-Gateway-Uuid": {ctr.UUID},
+			"X-Webdav-Prefix":                  {"/arvados/v1/container_requests/" + cr.UUID + "/log/" + ctr.UUID},
+			"X-Webdav-Source":                  {"/log"},
+		}, &proxyErr).ServeHTTP(w, r)
 		if proxyErr == nil {
 			// proxy succeeded
 			return
@@ -290,6 +252,65 @@ func (conn *Conn) serveContainerRequestLogViaKeepWeb(opts arvados.ContainerLogOp
 	proxy.ServeHTTP(w, r)
 }
 
+func gatewayProxy(dial gatewayDialer, responseWriter http.ResponseWriter, setRequestHeader http.Header, proxyErr *error) *httputil.ReverseProxy {
+	var proxyReq *http.Request
+	var expectRespondAuth string
+	return &httputil.ReverseProxy{
+		// Our custom Transport:
+		//
+		// - Uses a custom dialer to connect to the gateway
+		// (either directly or through a tunnel set up though
+		// ContainerTunnel)
+		//
+		// - Verifies the gateway's TLS certificate using
+		// X-Arvados-Authorization headers.
+		//
+		// This involves modifying the outgoing request header
+		// in DialTLSContext.  (ReverseProxy certainly doesn't
+		// expect us to do this, but it works.)
+		Transport: &http.Transport{
+			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				tlsconn, requestAuth, respondAuth, err := dial()
+				if err != nil {
+					return nil, err
+				}
+				proxyReq.Header.Set("X-Arvados-Authorization", requestAuth)
+				expectRespondAuth = respondAuth
+				return tlsconn, nil
+			},
+		},
+		Director: func(r *http.Request) {
+			// Scheme/host of incoming r.URL are
+			// irrelevant now, and may even be
+			// missing. Host is ignored by our
+			// DialTLSContext, but we need a generic
+			// syntactically correct URL for net/http to
+			// work with.
+			r.URL.Scheme = "https"
+			r.URL.Host = "0.0.0.0:0"
+			for k, v := range setRequestHeader {
+				r.Header[k] = v
+			}
+			proxyReq = r
+		},
+		ModifyResponse: func(resp *http.Response) error {
+			if resp.Header.Get("X-Arvados-Authorization-Response") != expectRespondAuth {
+				// Note this is how we detect
+				// an attacker-in-the-middle.
+				return httpserver.ErrorWithStatus(errors.New("bad X-Arvados-Authorization-Response header"), http.StatusBadGateway)
+			}
+			resp.Header.Del("X-Arvados-Authorization-Response")
+			preemptivelyDeduplicateHeaders(responseWriter.Header(), resp.Header)
+			return nil
+		},
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			if proxyErr != nil {
+				*proxyErr = err
+			}
+		},
+	}
+}
+
 // httputil.ReverseProxy uses (http.Header)Add() to copy headers from
 // the upstream Response to the downstream ResponseWriter. If headers
 // have already been set on the downstream ResponseWriter, Add() will
@@ -348,22 +369,13 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	if err != nil {
 		return sshconn, err
 	}
-	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 	if !user.IsAdmin || !conn.cluster.Containers.ShellAccess.Admin {
 		if !conn.cluster.Containers.ShellAccess.User {
 			return sshconn, httpserver.ErrorWithStatus(errors.New("shell access is disabled in config"), http.StatusServiceUnavailable)
 		}
-		crs, err := conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})
+		err = conn.checkContainerLoginPermission(ctx, user.UUID, opts.UUID)
 		if err != nil {
 			return sshconn, err
-		}
-		for _, cr := range crs.Items {
-			if cr.ModifiedByUserUUID != user.UUID {
-				return sshconn, httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
-			}
-		}
-		if crs.ItemsAvailable != len(crs.Items) {
-			return sshconn, httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
 		}
 	}
 
@@ -435,6 +447,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	}
 
 	if !ctr.InteractiveSessionStarted {
+		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 		_, err = conn.railsProxy.ContainerUpdate(ctxRoot, arvados.UpdateOptions{
 			UUID: opts.UUID,
 			Attrs: map[string]interface{}{
@@ -452,6 +465,95 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	sshconn.Logger = ctxlog.FromContext(ctx)
 	sshconn.Header = http.Header{"Upgrade": {"ssh"}}
 	return sshconn, nil
+}
+
+// Check that userUUID is permitted to start an interactive login
+// session in ctrUUID.  Any returned error has an HTTPStatus().
+func (conn *Conn) checkContainerLoginPermission(ctx context.Context, userUUID, ctrUUID string) error {
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+	crs, err := conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", ctrUUID}}})
+	if err != nil {
+		return err
+	}
+	for _, cr := range crs.Items {
+		if cr.ModifiedByUserUUID != userUUID {
+			return httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
+		}
+	}
+	if crs.ItemsAvailable != len(crs.Items) {
+		return httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
+	}
+	return nil
+}
+
+// ContainerHTTPProxy proxies an incoming request through to the
+// specified port on a running container, via crunch-run's container
+// gateway.
+func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
+	query := opts.Request.URL.Query()
+	if token := query.Get("arvados_api_token"); token != "" {
+		// Redirect-with-cookie avoids showing the token in
+		// the browser's location bar where it could be
+		// extracted by scripts served from the container.
+		redir := *opts.Request.URL
+		delete(query, "arvados_api_token")
+		redir.RawQuery = query.Encode()
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.SetCookie(w, &http.Cookie{
+				Name:     "arvados_api_token",
+				Value:    auth.EncodeTokenCookie([]byte(token)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+			w.Header().Set("Location", redir.String())
+			w.WriteHeader(http.StatusSeeOther)
+		}), nil
+	}
+
+	user, err := conn.railsProxy.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
+	if err != nil {
+		return nil, fmt.Errorf("container lookup failed: %w", err)
+	}
+	if !user.IsAdmin {
+		// Future versions will have more options for access
+		// control.  For now, access is only granted to admin,
+		// and the user who submitted all of the container
+		// requests that reference this container.
+		err = conn.checkContainerLoginPermission(ctx, user.UUID, ctr.UUID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	dial, arpc, err := conn.findGateway(ctx, ctr, opts.NoForward)
+	if err != nil {
+		return nil, fmt.Errorf("cannot find gateway: %w", err)
+	}
+	if arpc != nil {
+		opts.NoForward = true
+		return arpc.ContainerHTTPProxy(ctx, opts)
+	}
+
+	// Remove arvados_api_token cookie to ensure the http service
+	// in the container does not see it.
+	cookies := opts.Request.Cookies()
+	opts.Request.Header.Del("Cookie")
+	for _, cookie := range cookies {
+		if cookie.Name != "arvados_api_token" {
+			opts.Request.AddCookie(cookie)
+		}
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		gatewayProxy(dial, w, http.Header{
+			"X-Arvados-Container-Gateway-Uuid": {opts.UUID},
+			"X-Arvados-Container-Target-Port":  {strconv.Itoa(opts.Port)},
+		}, nil).ServeHTTP(w, opts.Request)
+	}), nil
 }
 
 // ContainerGatewayTunnel sets up a tunnel enabling us (controller) to

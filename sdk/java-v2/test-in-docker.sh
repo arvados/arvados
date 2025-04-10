@@ -22,4 +22,4 @@ build_version() {
     $WORKSPACE/build/version-at-commit.sh $(commit_at_dir)
 }
 
-exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle:5.3.1 /bin/sh -c 'gradle clean && gradle test && gradle jar install '"-Pversion=$(build_version) $gradle_upload"
+exec docker run --rm --user $UID -v $PWD:$PWD -w $PWD gradle:5.3.1-jdk11 /bin/sh -c 'gradle clean && gradle test && gradle jar install '"-Pversion=$(build_version) $gradle_upload"

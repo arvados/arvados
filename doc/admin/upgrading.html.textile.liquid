@@ -30,6 +30,10 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
+"previous: Upgrading to 3.1.0":#v3_1_0
+
+h2(#v3_1_0). v3.1.0 (2025-03-20)
+
 "previous: Upgrading to 3.0.0":#v3_0_0
 
 h3. Rails API server now runs standalone
@@ -39,6 +43,22 @@ The Arvados Rails API server now runs from a standalone Passenger server to simp
 <notextile>
 <pre><code># <span class="userinput">systemctl enable --now arvados-railsapi.service</span>
 </code></pre></notextile>
+
+h3. Rails API server needs PowerTools on Red Hat, AlmaLinux, and Rocky Linux
+
+The Arvados Rails API server now needs to be able to link against @libyaml@ development headers. On Red Hat, AlmaLinux, and Rocky Linux, these are provided by the @libyaml-devel@ package in the PowerTools repository. Before you upgrade, make sure you have this repository enabled on the host where you run the Rails API server by running:
+
+<notextile>
+<pre><code># <span class="userinput">dnf config-manager --set-enabled powertools</span>
+</code></pre></notextile>
+
+h3. "cuda" runtime constraint is deprecated in favor of "gpu"
+
+Arvados 3.1.0 adds support for containers that use AMD ROCm alongside our existing support for NVIDIA CUDA. As part of this, the @cuda@ runtime constraint has been deprecated and replaced with a more general @gpu@ constraint. The requested type of GPU is named in the @stack@ field of this object. Other fields have been carried over from @cuda@ and work the same way. Refer to the "runtime constraints reference":{{ site.baseurl }}/api/methods/container_requests.html#runtime_constraints for details.
+
+If client software creates or updates a container request with a @cuda@ runtime constraint, the Arvados API server will automatically translate that to a @gpu@ constraint. This client software should still be updated to specify a @gpu@ runtime constraint, but you can safely upgrade to Arvados 3.1.0 and do these updates opportunistically.
+
+Client software that reads and reports runtime constraints (like Workbench does) must be updated to read the new @gpu@ constraint. The @cuda@ constraint will no longer appear in API responses.
 
 h3. Generalized configuration for GPU compute nodes
 

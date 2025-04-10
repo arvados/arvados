@@ -18,4 +18,4 @@ distro_apt:
     mirror: http://archive.ubuntu.com/ubuntu
     security: http://security.ubuntu.com/ubuntu
     aws_mirror: http://cdn-aws.archive.ubuntu.com/ubuntu
-    aws_security: http://cdn-aws.archive.ubuntu.com/ubuntu-security
+    aws_security: http://cdn-aws.archive.ubuntu.com/ubuntu

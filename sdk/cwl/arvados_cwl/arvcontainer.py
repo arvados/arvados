@@ -829,6 +829,29 @@ class RunnerContainer(Runner):
                 }
                 self.job_order[param] = {"$include": mnt}
 
+        environment = {}
+
+        if self.arvrunner.botosession is not None and runtimeContext.defer_downloads and runtimeContext.aws_credential_capture:
+            # There are deferred downloads from S3.  Save our credentials to secret
+            # storage
+            secret_mounts["/var/lib/cwl/.aws/config"] = {
+                    "kind": "text",
+                    "content": """[default]
+region = {}
+""".format(self.arvrunner.botosession.region_name)
+            }
+            environment["AWS_CONFIG_FILE"] = "/var/lib/cwl/.aws/config"
+
+            creds = self.arvrunner.botosession.get_credentials()
+            secret_mounts["/var/lib/cwl/.aws/credentials"] = {
+                    "kind": "text",
+                    "content": """[default]
+aws_access_key_id = {}
+aws_secret_access_key = {}
+""".format(creds.access_key, creds.secret_key)
+            }
+            environment["AWS_SHARED_CREDENTIALS_FILE"] = "/var/lib/cwl/.aws/credentials"
+
         container_image = arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext)
 
         workflow_runner_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
@@ -863,7 +886,8 @@ class RunnerContainer(Runner):
                 "API": True
             },
             "use_existing": self.reuse_runner,
-            "properties": {}
+            "properties": {},
+            "environment": environment
         }
 
         if self.embedded_tool.tool.get("id", "").startswith("keep:"):

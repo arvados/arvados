@@ -6,7 +6,8 @@ FROM rockylinux:8.8-minimal
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
-RUN microdnf --assumeyes module enable httpd:2.4 postgresql:10 python39:3.9 ruby:3.1 \
+RUN sed -ri 's/^enabled=[01]$/enabled=1/' /etc/yum.repos.d/Rocky-PowerTools.repo \
+ && microdnf --assumeyes module enable httpd:2.4 postgresql:10 python39:3.9 ruby:3.1 \
  && microdnf --assumeyes --enablerepo=devel install \
     autoconf \
     automake \

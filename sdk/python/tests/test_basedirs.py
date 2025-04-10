@@ -62,6 +62,14 @@ class TestBaseDirectories:
         actual = list(dirs.search(self.SELF_PATH.name))
         assert actual == [self.SELF_PATH, self.SELF_PATH, self.SELF_PATH]
 
+    def test_search_paths(self, dir_spec, env, tmp_path):
+        env['TEST_DIRECTORY'] = f'{tmp_path}:{self.SELF_PATH.parent}'
+        env['XDG_TEST_HOME'] = str(self.SELF_PATH.parent.parent)
+        env['XDG_TEST_DIRS'] = f'{tmp_path}:{self.SELF_PATH.parent.parent}'
+        dirs = basedirs.BaseDirectories(dir_spec, env, 'tests')
+        actual = list(dirs.search_paths())
+        assert actual == [tmp_path, self.SELF_PATH.parent, self.SELF_PATH.parent, tmp_path / 'tests', self.SELF_PATH.parent.parent / 'tests']
+
     def test_search_default_home(self, dir_spec, env, tmp_path):
         expected = tmp_path / dir_spec.xdg_home_default / 'default_home'
         expected.parent.mkdir()

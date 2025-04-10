@@ -282,17 +282,12 @@ GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
 RELEASE="development"
 VERSION="latest"
 
-# These are arvados-formula-related parameters
-# An arvados-formula tag. For a stable release, this should be a
-# branch name (e.g. X.Y-dev) or tag for the release.
-# ARVADOS_TAG="2.2.0"
-# BRANCH="main"
-
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
 SALT_VERSION="3006"
 
 # Other formula versions we depend on
+ARVADOS_TAG="06485dcbf74d98ca3e9a5b1638d39cc3ab633655"
 POSTGRES_TAG="a809e03bad115bbdf24ad347e2dc9a52e144c31f"
 POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
 NGINX_TAG="v2.8.1"
@@ -487,14 +482,9 @@ test -d logrotate && ( cd logrotate && git fetch ) \
 ( cd logrotate && git checkout --quiet tags/"${LOGROTATE_TAG}" )
 
 echo "...arvados"
-test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
-
-# If we want to try a specific branch of the formula
-if [[ ! -z "${BRANCH:-}" && "x${BRANCH}" != "xmain" ]]; then
-  ( cd ${F_DIR}/arvados && git fetch && git checkout --quiet "${BRANCH}" || git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
-elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
-  ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
-fi
+test -d arvados && ( cd arvados && git fetch ) \
+  || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
+( cd arvados && git checkout --quiet "${ARVADOS_TAG}" )
 
 if [ "x${VAGRANT:-}" = "xyes" ]; then
   EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"

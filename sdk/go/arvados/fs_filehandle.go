@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"context"
 	"io"
 	"io/fs"
 	"os"
@@ -72,6 +73,16 @@ func (f *filehandle) Write(p []byte) (n int, err error) {
 	}
 	n, f.ptr, err = f.inode.Write(p, f.ptr)
 	return
+}
+
+func (f *filehandle) Repack(ctx context.Context, opts RepackOptions) (int, error) {
+	dn, ok := f.inode.(*dirnode)
+	if !ok {
+		return 0, ErrNotADirectory
+	}
+	dn.Lock()
+	defer dn.Unlock()
+	return dn.fs.repackTree(ctx, opts, dn)
 }
 
 // dirEntry implements fs.DirEntry, see (*filehandle)ReadDir().

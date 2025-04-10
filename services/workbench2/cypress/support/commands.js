@@ -30,6 +30,7 @@
 
 import 'cypress-wait-until';
 import { extractFilesData } from "services/collection-service/collection-service-files-response";
+import _ from 'lodash';
 
 const controllerURL = Cypress.env("controller_url");
 const systemToken = Cypress.env("system_token");
@@ -359,7 +360,7 @@ Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName
         .click();
     cy.get("[data-cy=form-dialog]").within(() => {
         cy.get("input[name=name]").clear().type(newName);
-        cy.get(isProject ? "div[contenteditable=true]" : "input[name=description]")
+        cy.get("div[contenteditable=true]")
             .clear()
             .type(newDescription);
         cy.get("[data-cy=form-submit-btn]").click();
@@ -371,13 +372,7 @@ Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName
         .click();
     cy.get("[data-cy=form-dialog]").within(() => {
         cy.get("input[name=name]").should("have.value", newName);
-
-        if (isProject) {
-            cy.get("span[data-text=true]").contains(newDescription);
-        } else {
-            cy.get("input[name=description]").should("have.value", newDescription);
-        }
-
+        cy.get("span[data-text=true]").contains(newDescription);
         cy.get("[data-cy=form-cancel-btn]").click();
     });
 });
@@ -559,16 +554,16 @@ Cypress.Commands.add("waitForDom", () => {
 Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
     const timeout = options.timeout || 10000;
     const interval = options.interval || 100;
-  
+
     cy.log(`Waiting for localStorage key: ${key}`)
-  
+
     const checkLocalStorage = () => {
       return new Cypress.Promise((resolve, reject) => {
         const startTime = Date.now();
-  
+
         const check = () => {
           const value = localStorage.getItem(key);
-  
+
           if (value !== null) {
             resolve(value);
           } else if (Date.now() - startTime > timeout) {
@@ -577,19 +572,19 @@ Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
             setTimeout(check, interval);
           }
         };
-  
+
         check();
       });
     };
-  
+
     return cy.wrap(checkLocalStorage());
   });
-  
+
   //pauses test execution until the localStorage key changes
   Cypress.Commands.add('waitForLocalStorageUpdate', (key, timeout = 10000) => {
     const checkInterval = 200; // Interval to check the localStorage value
     let previousValue = localStorage.getItem(key);
-  
+
     return new Cypress.Promise((resolve, reject) => {
       const checkValue = () => {
         const currentValue = localStorage.getItem(key);
@@ -601,12 +596,12 @@ Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
           setTimeout(checkValue, checkInterval);
         }
       };
-  
+
       const startTime = Date.now();
       checkValue();
     });
   });
-  
+
 Cypress.Commands.add("setupDockerImage", (image_name) => {
     // Create a collection that will be used as a docker image for the tests.
     let activeUser;
@@ -657,4 +652,92 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
     return cy.getAll("@dockerImage", "@dockerImageRepoTag", "@dockerImageHash", "@dockerImagePermission").then(function ([dockerImage]) {
         return dockerImage;
     });
+});
+
+/**
+ * Asserts the url path exactly matches (ignores host and hash)
+ *
+ * @returns the path for further use if needed
+ */
+Cypress.Commands.add("assertUrlPathname", (path) => {
+    cy.waitForDom();
+    return cy.waitUntil(() => cy.location()
+        .then((url) => url.pathname.endsWith(path) ? url.pathname : false)
+    , {
+        errorMsg: "Timed out waiting for URL path to match: " + path,
+        timeout: 10000,
+    });
+});
+
+/**
+ * Assert exact breadcrumb contents
+ *
+ * @returns the current breadcrumbs as a string array
+ */
+Cypress.Commands.add("assertBreadcrumbs", (names) => {
+    cy.waitForDom();
+    // waitUntil allows retrying with a non-assert test
+    // This allows doing non-wrapped comparisons and improves retryability
+    return cy.waitUntil(() => cy.get('[data-cy=breadcrumbs] button')
+        .then(crumbs => {
+            // Everything within must not be a chai/cypress assertion
+            // otherwise it will fail and not retry
+            const crumbNames = crumbs.toArray().map(crumb => crumb.innerText);
+            return _.isEqual(crumbNames, names) ? crumbNames : false;
+        })
+    , {
+        errorMsg: `Timed out waiting for breadcrumbs to match: [ ${names.map(str => `"${str}"`).join(", ")} ]`,
+        timeout: 10000,
+    });
+});
+
+/**
+ * Asserts whether the DE contains a certain item, default to true
+ */
+Cypress.Commands.add("assertDataExplorerContains", (name, contains = true) => {
+    cy.waitForDom();
+    contains
+        ? cy.get('[data-cy=data-table]').contains(name).should('exist')
+        : cy.get('[data-cy=data-table]').contains(name).should('not.exist');
+});
+
+/**
+ * Finds the toolbar buttons and clicks the one exactly matching name
+ *
+ * Does not currently handle specifying which toolbar (DE or details card) or handling collapsed toolbar
+ */
+Cypress.Commands.add("doToolbarAction", (name) => {
+    cy.get(`[data-cy=multiselect-toolbar] [data-cy=multiselect-button][aria-label="${name}"]`, { timeout: 5000 }).click();
+});
+
+/**
+ * Perform a context menu action on an item in the data explorer
+ */
+Cypress.Commands.add("doDataExplorerContextAction", (name, action) => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table]', { timeout: 10000 }).contains(name, { timeout: 10000 }).rightclick();
+    cy.get('[data-cy=context-menu]', { timeout: 5000 }).contains(action).click();
+});
+
+/**
+ * Selects data explorer row checkbox by name
+ */
+Cypress.Commands.add("doDataExplorerSelect", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table]', { timeout: 10000 })
+        .contains(name)
+        .parents('[data-cy=data-table-row]')
+        .find('input[type=checkbox]')
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
+ * Inputs value into data explorer search
+ *
+ * Useful for when there are too many items in a data explorer for the item of interest to be on the first page
+ */
+Cypress.Commands.add("doDataExplorerSearch", (value) => {
+    cy.waitForDom();
+    cy.get('[data-cy=search-input]').clear().type(value);
 });

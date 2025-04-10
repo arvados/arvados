@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -157,7 +159,7 @@ func (s *shellSuite) testShellGateway(c *check.C, useSettingsConf bool) {
 	c.Check(stdout.String(), check.Equals, "ok\n")
 }
 
-func (s *shellSuite) TestShellGatewayPortForwarding(c *check.C) {
+func stubHTTPTarget(c *check.C) *httpserver.Server {
 	c.Log("setting up an http server")
 	// Set up an http server, and try using "arvados-client shell"
 	// to forward traffic to it.
@@ -172,6 +174,11 @@ func (s *shellSuite) TestShellGatewayPortForwarding(c *check.C) {
 	})
 	err := httpTarget.Start()
 	c.Assert(err, check.IsNil)
+	return httpTarget
+}
+
+func (s *shellSuite) TestShellGatewayPortForwarding(c *check.C) {
+	httpTarget := stubHTTPTarget(c)
 
 	ln, err := net.Listen("tcp", ":0")
 	c.Assert(err, check.IsNil)
@@ -238,6 +245,36 @@ func (s *shellSuite) TestShellGatewayPortForwarding(c *check.C) {
 		}()
 	}
 	wg.Wait()
+}
+
+// This test is arguably misplaced: arvados-client does not (yet?)
+// have a "do http request against container X port Y" feature, so
+// we're not really testing arvados-client here.  However, (a) it
+// might have one someday, and (b) testing the same http server setup
+// via both access mechanisms might help troubleshoot if one of them
+// fails.
+func (s *shellSuite) TestGatewayHTTPProxy(c *check.C) {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+	defer cancel()
+	httpTarget := stubHTTPTarget(c)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	_, port, _ := net.SplitHostPort(httpTarget.Addr)
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://"+os.Getenv("ARVADOS_API_HOST")+"/foo", nil)
+	c.Assert(err, check.IsNil)
+	req.AddCookie(&http.Cookie{Name: "arvados_api_token", Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2))})
+	req.Host = s.runningUUID + "-" + port + ".example.com"
+	resp, err := client.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	body, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+	c.Check(string(body), check.Equals, "bar baz\n")
 }
 
 var _ = check.Suite(&logsSuite{})

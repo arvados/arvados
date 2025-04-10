@@ -11,10 +11,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"runtime/pprof"
@@ -32,11 +35,12 @@ var _ = check.Suite(&CollectionFSSuite{})
 type keepClientStub struct {
 	blocks      map[string][]byte
 	refreshable map[string]bool
-	reads       []string             // locators from ReadAt() calls
-	onWrite     func(bufcopy []byte) // called from WriteBlock, before acquiring lock
-	authToken   string               // client's auth token (used for signing locators)
-	sigkey      string               // blob signing key
-	sigttl      time.Duration        // blob signing ttl
+	cached      map[string]bool
+	reads       []string                   // locators from ReadAt() calls
+	onWrite     func(bufcopy []byte) error // called from WriteBlock, before acquiring lock
+	authToken   string                     // client's auth token (used for signing locators)
+	sigkey      string                     // blob signing key
+	sigttl      time.Duration              // blob signing ttl
 	sync.RWMutex
 }
 
@@ -58,15 +62,47 @@ func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error
 	return copy(p, buf[off:]), nil
 }
 
-func (kcs *keepClientStub) BlockWrite(_ context.Context, opts BlockWriteOptions) (BlockWriteResponse, error) {
-	if opts.Data == nil {
-		panic("oops, stub is not made for this")
+func (kcs *keepClientStub) BlockRead(_ context.Context, opts BlockReadOptions) (int, error) {
+	kcs.Lock()
+	kcs.reads = append(kcs.reads, opts.Locator)
+	kcs.Unlock()
+	kcs.RLock()
+	defer kcs.RUnlock()
+	if opts.CheckCacheOnly {
+		if kcs.cached[opts.Locator[:32]] {
+			return 0, nil
+		} else {
+			return 0, ErrNotCached
+		}
 	}
-	locator := SignLocator(fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)), kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
-	buf := make([]byte, len(opts.Data))
-	copy(buf, opts.Data)
+	if err := VerifySignature(opts.Locator, kcs.authToken, kcs.sigttl, []byte(kcs.sigkey)); err != nil {
+		return 0, err
+	}
+	buf := kcs.blocks[opts.Locator[:32]]
+	if buf == nil {
+		return 0, errStub404
+	}
+	n, err := io.Copy(opts.WriteTo, bytes.NewReader(buf))
+	return int(n), err
+}
+
+func (kcs *keepClientStub) BlockWrite(_ context.Context, opts BlockWriteOptions) (BlockWriteResponse, error) {
+	var buf []byte
+	if opts.Data == nil {
+		buf = make([]byte, opts.DataSize)
+		_, err := io.ReadFull(opts.Reader, buf)
+		if err != nil {
+			return BlockWriteResponse{}, err
+		}
+	} else {
+		buf = append([]byte(nil), opts.Data...)
+	}
+	locator := SignLocator(fmt.Sprintf("%x+%d", md5.Sum(buf), len(buf)), kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
 	if kcs.onWrite != nil {
-		kcs.onWrite(buf)
+		err := kcs.onWrite(buf)
+		if err != nil {
+			return BlockWriteResponse{}, err
+		}
 	}
 	for _, sc := range opts.StorageClasses {
 		if sc != "default" {
@@ -319,7 +355,7 @@ func (s *CollectionFSSuite) TestCreateFile(c *check.C) {
 
 func (s *CollectionFSSuite) TestReadWriteFile(c *check.C) {
 	maxBlockSize = 8
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	f, err := s.fs.OpenFile("/dir1/foo", os.O_RDWR, 0)
 	c.Assert(err, check.IsNil)
@@ -532,7 +568,7 @@ func (s *CollectionFSSuite) TestMarshalCopiesRemoteBlocks(c *check.C) {
 
 func (s *CollectionFSSuite) TestMarshalSmallBlocks(c *check.C) {
 	maxBlockSize = 8
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
@@ -653,7 +689,7 @@ func (s *CollectionFSSuite) TestConcurrentWriters(c *check.C) {
 
 func (s *CollectionFSSuite) TestRandomWrites(c *check.C) {
 	maxBlockSize = 40
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
@@ -883,7 +919,7 @@ func (s *CollectionFSSuite) TestRename(c *check.C) {
 
 func (s *CollectionFSSuite) TestPersist(c *check.C) {
 	maxBlockSize = 1024
-	defer func() { maxBlockSize = 2 << 26 }()
+	defer func() { maxBlockSize = 1 << 26 }()
 
 	var err error
 	s.fs, err = (&Collection{}).FileSystem(s.client, s.kc)
@@ -1126,7 +1162,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocksWritingLongFile(c *check.C) {
 	proceed := make(chan struct{})
 	var started, concurrent int32
 	blk2done := false
-	s.kc.onWrite = func([]byte) {
+	s.kc.onWrite = func([]byte) error {
 		atomic.AddInt32(&concurrent, 1)
 		switch atomic.AddInt32(&started, 1) {
 		case 1:
@@ -1146,6 +1182,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocksWritingLongFile(c *check.C) {
 			time.Sleep(time.Millisecond)
 		}
 		c.Check(atomic.AddInt32(&concurrent, -1) < int32(concurrentWriters), check.Equals, true)
+		return nil
 	}
 
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
@@ -1192,13 +1229,14 @@ func (s *CollectionFSSuite) TestFlushAll(c *check.C) {
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
 
-	s.kc.onWrite = func([]byte) {
+	s.kc.onWrite = func([]byte) error {
 		// discard flushed data -- otherwise the stub will use
 		// unlimited memory
 		time.Sleep(time.Millisecond)
 		s.kc.Lock()
 		defer s.kc.Unlock()
 		s.kc.blocks = map[string][]byte{}
+		return nil
 	}
 	for i := 0; i < 256; i++ {
 		buf := bytes.NewBuffer(make([]byte, 524288))
@@ -1236,8 +1274,9 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	var flushed int64
-	s.kc.onWrite = func(p []byte) {
+	s.kc.onWrite = func(p []byte) error {
 		atomic.AddInt64(&flushed, int64(len(p)))
+		return nil
 	}
 
 	nDirs := int64(8)
@@ -1308,7 +1347,7 @@ func (s *CollectionFSSuite) TestMaxUnflushed(c *check.C) {
 	time.AfterFunc(10*time.Second, func() { close(timeout) })
 	var putCount, concurrency int64
 	var unflushed int64
-	s.kc.onWrite = func(p []byte) {
+	s.kc.onWrite = func(p []byte) error {
 		defer atomic.AddInt64(&unflushed, -int64(len(p)))
 		cur := atomic.AddInt64(&concurrency, 1)
 		defer atomic.AddInt64(&concurrency, -1)
@@ -1328,6 +1367,7 @@ func (s *CollectionFSSuite) TestMaxUnflushed(c *check.C) {
 		}
 		c.Assert(cur <= int64(concurrentWriters), check.Equals, true)
 		c.Assert(atomic.LoadInt64(&unflushed) <= maxUnflushed, check.Equals, true)
+		return nil
 	}
 
 	var owg sync.WaitGroup
@@ -1371,13 +1411,14 @@ func (s *CollectionFSSuite) TestFlushStress(c *check.C) {
 	})
 
 	wrote := 0
-	s.kc.onWrite = func(p []byte) {
+	s.kc.onWrite = func(p []byte) error {
 		s.kc.Lock()
 		s.kc.blocks = map[string][]byte{}
 		wrote++
 		defer c.Logf("wrote block %d, %d bytes", wrote, len(p))
 		s.kc.Unlock()
 		time.Sleep(20 * time.Millisecond)
+		return nil
 	}
 
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
@@ -1402,10 +1443,11 @@ func (s *CollectionFSSuite) TestFlushStress(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestFlushShort(c *check.C) {
-	s.kc.onWrite = func([]byte) {
+	s.kc.onWrite = func([]byte) error {
 		s.kc.Lock()
 		s.kc.blocks = map[string][]byte{}
 		s.kc.Unlock()
+		return nil
 	}
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
@@ -1570,6 +1612,541 @@ func (s *CollectionFSSuite) TestReplaceSegments_SkipIncompleteSegment(c *check.C
 	mtxt, err := fs.MarshalManifest(".")
 	c.Check(err, check.IsNil)
 	c.Check(mtxt, check.Equals, origtxt)
+}
+
+func (s *CollectionFSSuite) testPlanRepack(c *check.C, opts RepackOptions, manifest string, expectPlan [][]storedSegment) {
+	fs, err := (&Collection{ManifestText: manifest}).FileSystem(nil, s.kc)
+	c.Assert(err, check.IsNil)
+	cfs := fs.(*collectionFileSystem)
+	repl, err := cfs.planRepack(context.Background(), opts, cfs.root.(*dirnode))
+	c.Assert(err, check.IsNil)
+
+	// we always expect kc==cfs, so we fill this in instead of
+	// requiring each test case to repeat it
+	for _, pp := range expectPlan {
+		for i := range pp {
+			pp[i].kc = cfs
+		}
+	}
+	c.Check(repl, check.DeepEquals, expectPlan)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32M(c *check.C) {
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 0:64000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000", size: 32000000, length: 32000000, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000", size: 32000000, length: 32000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32M_Cached(c *check.C) {
+	s.kc.cached = map[string]bool{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
+		"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": true,
+	}
+	s.testPlanRepack(c,
+		RepackOptions{Full: true, CachedOnly: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 0:64000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000", size: 32000000, length: 32000000, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000", size: 32000000, length: 32000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32M_OneCached(c *check.C) {
+	s.kc.cached = map[string]bool{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
+	}
+	s.testPlanRepack(c,
+		RepackOptions{Full: true, CachedOnly: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 0:64000000:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_3x32M_TwoCached(c *check.C) {
+	s.kc.cached = map[string]bool{
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
+		"cccccccccccccccccccccccccccccccc": true,
+	}
+	s.testPlanRepack(c,
+		RepackOptions{Full: true, CachedOnly: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 cccccccccccccccccccccccccccccccc+32000000 0:96000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000", size: 32000000, length: 32000000, offset: 0},
+				{locator: "cccccccccccccccccccccccccccccccc+32000000", size: 32000000, length: 32000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32Mi(c *check.C) {
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554432 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554432 0:67108864:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x32MiMinus1(c *check.C) {
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554431 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554431 0:67108862:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+33554431", size: 33554431, length: 33554431, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+33554431", size: 33554431, length: 33554431, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_3x32M(c *check.C) {
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000 cccccccccccccccccccccccccccccccc+32000000 0:96000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+32000000", size: 32000000, length: 32000000, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+32000000", size: 32000000, length: 32000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_3x42M(c *check.C) {
+	// Each block is more than half full, so do nothing.
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+42000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+42000000 cccccccccccccccccccccccccccccccc+42000000 0:126000000:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_Premature(c *check.C) {
+	// Repacking would reduce to one block, but it would still be
+	// too short to be worthwhile, so do nothing.
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+123 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+123 cccccccccccccccccccccccccccccccc+123 0:369:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_4x22M_NonAdjacent(c *check.C) {
+	// Repack the first three 22M blocks into one 66M block.
+	// Don't touch the 44M blocks or the final 22M block.
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+44000000 cccccccccccccccccccccccccccccccc+22000000 dddddddddddddddddddddddddddddddd+44000000 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee+22000000 ffffffffffffffffffffffffffffffff+44000000 00000000000000000000000000000000+22000000 0:220000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000", size: 22000000, length: 22000000, offset: 0},
+				{locator: "cccccccccccccccccccccccccccccccc+22000000", size: 22000000, length: 22000000, offset: 0},
+				{locator: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee+22000000", size: 22000000, length: 22000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x22M_DuplicateBlock(c *check.C) {
+	// Repack a+b+c, not a+b+a.
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+22000000 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 0:66000000:file\n"+
+			"./dir cccccccccccccccccccccccccccccccc+22000000 0:22000000:file\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000", size: 22000000, length: 22000000, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+22000000", size: 22000000, length: 22000000, offset: 0},
+				{locator: "cccccccccccccccccccccccccccccccc+22000000", size: 22000000, length: 22000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_2x22M_DuplicateBlock_TooShort(c *check.C) {
+	// Repacking a+b would not meet the 32MiB threshold.
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+22000000 0:44000001:file\n",
+		nil)
+}
+
+func (s *CollectionFSSuite) TestPlanRepack_SiblingsTogether(c *check.C) {
+	// Pack sibling files' ("a" and "c") segments together before
+	// other subdirs ("b/b"), even though subdir "b" sorts between
+	// "a" and "c".
+	s.testPlanRepack(c,
+		RepackOptions{Full: true},
+		". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+15000000 cccccccccccccccccccccccccccccccc+15000000 0:15000000:a 15000000:15000000:c\n"+
+			"./b bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15000000 0:15000000:b\n",
+		[][]storedSegment{
+			{
+				{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+15000000", size: 15000000, length: 15000000, offset: 0},
+				{locator: "cccccccccccccccccccccccccccccccc+15000000", size: 15000000, length: 15000000, offset: 0},
+				{locator: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15000000", size: 15000000, length: 15000000, offset: 0},
+			},
+		})
+}
+
+func (s *CollectionFSSuite) TestRepackData(c *check.C) {
+	fs, err := (&Collection{}).FileSystem(nil, s.kc)
+	c.Assert(err, check.IsNil)
+	cfs := fs.(*collectionFileSystem)
+
+	testBlockWritten := make(map[int]string)
+	// testSegment(N) returns an N-byte segment of a block
+	// containing repeated byte N%256.  The segment's offset
+	// within the block is N/1000000 (*).  The block also has
+	// N/1000000 null bytes following the segment(*).
+	//
+	// If N=404, the block is not readable.
+	//
+	// (*) ...unless that would result in an oversize block.
+	testSegment := func(testSegmentNum int) storedSegment {
+		length := testSegmentNum
+		offset := testSegmentNum / 1000000
+		if offset+length > maxBlockSize {
+			offset = 0
+		}
+		size := testSegmentNum + offset
+		if size+offset <= maxBlockSize {
+			size += offset
+		}
+		if _, stored := testBlockWritten[testSegmentNum]; !stored {
+			data := make([]byte, size)
+			for b := range data[offset : offset+length] {
+				data[b] = byte(testSegmentNum & 0xff)
+			}
+			resp, err := s.kc.BlockWrite(context.Background(), BlockWriteOptions{Data: data})
+			c.Assert(err, check.IsNil)
+			testBlockWritten[testSegmentNum] = resp.Locator
+			if testSegmentNum == 404 {
+				delete(s.kc.blocks, resp.Locator[:32])
+			}
+		}
+		return storedSegment{
+			kc:      cfs,
+			locator: testBlockWritten[testSegmentNum],
+			size:    size,
+			length:  length,
+			offset:  offset,
+		}
+	}
+	for trialIndex, trial := range []struct {
+		label string
+		// "input" here has the same shape as repackData's
+		// [][]storedSegment argument, but uses int N has
+		// shorthand for testSegment(N).
+		input              [][]int
+		onWrite            func([]byte) error
+		expectRepackedLen  int
+		expectErrorMatches string
+	}{
+		{
+			label:             "one {3 blocks to 1} merge",
+			input:             [][]int{{1, 2, 3}},
+			expectRepackedLen: 3,
+		},
+		{
+			label:             "two {3 blocks to 1} merges",
+			input:             [][]int{{1, 2, 3}, {4, 5, 6}},
+			expectRepackedLen: 6,
+		},
+		{
+			label:             "merge two {3 blocks to 1} merges",
+			input:             [][]int{{1, 2, 3}, {4, 5, 6}},
+			expectRepackedLen: 6,
+		},
+		{
+			label:             "no-op",
+			input:             nil,
+			expectRepackedLen: 0,
+		},
+		{
+			label:             "merge 3 blocks plus a zero-length segment -- not expected to be used, but should work",
+			input:             [][]int{{1, 2, 0, 3}},
+			expectRepackedLen: 4,
+		},
+		{
+			label:             "merge a single segment -- not expected to be used, but should work",
+			input:             [][]int{{12345}},
+			expectRepackedLen: 1,
+		},
+		{
+			label:             "merge a single empty segment -- not expected to be used, but should work",
+			input:             [][]int{{0}},
+			expectRepackedLen: 1,
+		},
+		{
+			label:             "merge zero segments -- not expected to be used, but should work",
+			input:             [][]int{{}},
+			expectRepackedLen: 0,
+		},
+		{
+			label:             "merge same orig segment into two different replacements -- not expected to be used, but should work",
+			input:             [][]int{{1, 22, 3}, {4, 22, 6}},
+			expectRepackedLen: 5,
+		},
+		{
+			label:             "identical merges -- not expected to be used, but should work",
+			input:             [][]int{{11, 22, 33}, {11, 22, 33}},
+			expectRepackedLen: 3,
+		},
+		{
+			label:              "read error on first segment",
+			input:              [][]int{{404, 2, 3}},
+			expectRepackedLen:  0,
+			expectErrorMatches: "404 block not found",
+		},
+		{
+			label:              "read error on second segment",
+			input:              [][]int{{1, 404, 3}},
+			expectErrorMatches: "404 block not found",
+		},
+		{
+			label:              "read error on last segment",
+			input:              [][]int{{1, 2, 404}},
+			expectErrorMatches: "404 block not found",
+		},
+		{
+			label:              "merge does not fit in one block",
+			input:              [][]int{{50000000, 20000000}},
+			expectErrorMatches: "combined length 70000000 would exceed maximum block size 67108864",
+		},
+		{
+			label:              "write error",
+			input:              [][]int{{1, 2, 3}},
+			onWrite:            func(p []byte) error { return errors.New("stub write error") },
+			expectErrorMatches: "stub write error",
+		},
+	} {
+		c.Logf("trial %d: %s", trialIndex, trial.label)
+		var input [][]storedSegment
+		for _, seglist := range trial.input {
+			var segments []storedSegment
+			for _, segnum := range seglist {
+				segments = append(segments, testSegment(segnum))
+			}
+			input = append(input, segments)
+		}
+		s.kc.onWrite = trial.onWrite
+		repacked, err := cfs.repackData(context.Background(), input)
+		if trial.expectErrorMatches != "" {
+			c.Check(err, check.ErrorMatches, trial.expectErrorMatches)
+			continue
+		}
+		c.Assert(err, check.IsNil)
+		c.Check(repacked, check.HasLen, trial.expectRepackedLen)
+		for _, origSegments := range input {
+			replLocator := ""
+			for _, origSegment := range origSegments {
+				origBlock := BlockSegment{
+					Locator: stripAllHints(origSegment.locator),
+					Length:  origSegment.length,
+					Offset:  origSegment.offset,
+				}
+				buf := make([]byte, origSegment.size)
+				n, err := cfs.ReadAt(repacked[origBlock].Locator, buf, repacked[origBlock].Offset)
+				c.Assert(err, check.IsNil)
+				c.Check(n, check.Equals, len(buf))
+				expectContent := byte(origSegment.length & 0xff)
+				for segoffset, b := range buf {
+					if b != expectContent {
+						c.Errorf("content mismatch: origSegment.locator %s -> replLocator %s offset %d: byte %d is %d, expected %d", origSegment.locator, replLocator, repacked[origBlock].Offset, segoffset, b, expectContent)
+						break
+					}
+				}
+			}
+		}
+	}
+}
+
+type dataToWrite struct {
+	path string
+	data func() []byte
+}
+
+func dataToWrite_SourceTree(c *check.C, maxfiles int) (writes []dataToWrite) {
+	gitdir, err := filepath.Abs("../../..")
+	c.Assert(err, check.IsNil)
+	infs := os.DirFS(gitdir)
+	buf, err := exec.Command("git", "-C", gitdir, "ls-files").CombinedOutput()
+	c.Assert(err, check.IsNil, check.Commentf("%s", buf))
+	for _, path := range bytes.Split(buf, []byte("\n")) {
+		path := string(path)
+		if path == "" ||
+			strings.HasPrefix(path, "tools/arvbox/lib/arvbox/docker/service") &&
+				strings.HasSuffix(path, "/run") {
+			// dangling symlink
+			continue
+		}
+		fi, err := fs.Stat(infs, path)
+		c.Assert(err, check.IsNil)
+		if fi.IsDir() || fi.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		writes = append(writes, dataToWrite{
+			path: path,
+			data: func() []byte {
+				data, err := fs.ReadFile(infs, path)
+				c.Assert(err, check.IsNil)
+				return data
+			},
+		})
+		if len(writes) >= maxfiles {
+			break
+		}
+	}
+	return
+}
+
+func dataToWrite_ConstantSizeFilesInDirs(c *check.C, ndirs, nfiles, filesize, chunksize int) (writes []dataToWrite) {
+	for chunk := 0; chunk == 0 || (chunksize > 0 && chunk < (filesize+chunksize-1)/chunksize); chunk++ {
+		for i := 0; i < nfiles; i++ {
+			datasize := filesize
+			if chunksize > 0 {
+				datasize = chunksize
+				if remain := filesize - chunk*chunksize; remain < chunksize {
+					datasize = remain
+				}
+			}
+			data := make([]byte, datasize)
+			copy(data, []byte(fmt.Sprintf("%d chunk %d", i, chunk)))
+			writes = append(writes, dataToWrite{
+				path: fmt.Sprintf("dir%d/file%d", i*ndirs/nfiles, i),
+				data: func() []byte { return data },
+			})
+		}
+	}
+	return
+}
+
+var enableRepackCharts = os.Getenv("ARVADOS_TEST_REPACK_CHARTS") != ""
+
+func (s *CollectionFSSuite) skipMostRepackCostTests(c *check.C) {
+	if !enableRepackCharts {
+		c.Skip("Set ARVADOS_TEST_REPACK_CHARTS to run more cost tests and generate data for charts like https://dev.arvados.org/issues/22320#note-14")
+	}
+}
+
+func (s *CollectionFSSuite) TestRepackCost_SourceTree_Part(c *check.C) {
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 500), 40)
+}
+
+func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 99999), 50)
+}
+
+func (s *CollectionFSSuite) TestRepackCost_1000x_1M_Files(c *check.C) {
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 1000, 1000000, 0), 80)
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files(c *check.C) {
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 0), 20)
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_8M_Files_1M_Chunks(c *check.C) {
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 8000000, 1000000), 50)
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files_1M_Chunks(c *check.C) {
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 1000000), 80)
+}
+
+func (s *CollectionFSSuite) TestRepackCost_100x_10M_Files(c *check.C) {
+	s.skipMostRepackCostTests(c)
+	s.testRepackCost(c, dataToWrite_ConstantSizeFilesInDirs(c, 10, 100, 10000000, 0), 100)
+}
+
+func (s *CollectionFSSuite) testRepackCost(c *check.C, writes []dataToWrite, maxBlocks int) {
+	s.kc.blocks = make(map[string][]byte)
+	testfs, err := (&Collection{}).FileSystem(nil, s.kc)
+	c.Assert(err, check.IsNil)
+	cfs := testfs.(*collectionFileSystem)
+	dirsCreated := make(map[string]bool)
+	bytesContent := 0
+	bytesWritten := func() (n int) {
+		s.kc.Lock()
+		defer s.kc.Unlock()
+		for _, data := range s.kc.blocks {
+			n += len(data)
+		}
+		return
+	}
+	blocksInManifest := func() int {
+		blocks := make(map[string]bool)
+		cfs.fileSystem.root.(*dirnode).walkSegments(func(s segment) segment {
+			blocks[s.(storedSegment).blockSegment().StripAllHints().Locator] = true
+			return s
+		})
+		return len(blocks)
+	}
+	tRepackNoop := time.Duration(0)
+	nRepackNoop := 0
+	tRepackTotal := time.Duration(0)
+	nRepackTotal := 0
+	filesWritten := make(map[string]bool)
+	stats := bytes.NewBuffer(nil)
+	fmt.Fprint(stats, "writes\tfiles\tbytes_in_files\tblocks\tbytes_written_backend\tn_repacked\tn_repack_noop\tseconds_repacking\n")
+	for writeIndex, write := range writes {
+		for i, c := range write.path {
+			if c == '/' && !dirsCreated[write.path[:i]] {
+				testfs.Mkdir(write.path[:i], 0700)
+				dirsCreated[write.path[:i]] = true
+			}
+		}
+		f, err := testfs.OpenFile(write.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
+		c.Assert(err, check.IsNil)
+		filesWritten[write.path] = true
+		data := write.data()
+		_, err = f.Write(data)
+		c.Assert(err, check.IsNil)
+		err = f.Close()
+		c.Assert(err, check.IsNil)
+		bytesContent += len(data)
+
+		_, err = cfs.MarshalManifest("")
+		c.Assert(err, check.IsNil)
+		t0 := time.Now()
+		n, err := cfs.Repack(context.Background(), RepackOptions{})
+		c.Assert(err, check.IsNil)
+		tRepack := time.Since(t0)
+		tRepackTotal += tRepack
+		nRepackTotal++
+
+		if n == 0 {
+			tRepackNoop += tRepack
+			nRepackNoop++
+		} else if bytesWritten()/4 > bytesContent {
+			// Rewriting data >4x on average means
+			// something is terribly wrong -- give up now
+			// instead of going OOM.
+			c.Logf("something is terribly wrong -- bytesWritten %d >> bytesContent %d", bytesWritten(), bytesContent)
+			c.FailNow()
+		}
+		fmt.Fprintf(stats, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.06f\n", writeIndex+1, len(filesWritten), bytesContent, blocksInManifest(), bytesWritten(), nRepackTotal-nRepackNoop, nRepackNoop, tRepackTotal.Seconds())
+	}
+	c.Check(err, check.IsNil)
+	c.Check(blocksInManifest() <= maxBlocks, check.Equals, true, check.Commentf("expect %d <= %d", blocksInManifest(), maxBlocks))
+
+	c.Logf("writes %d files %d bytesContent %d bytesWritten %d bytesRewritten %d blocksInManifest %d", len(writes), len(filesWritten), bytesContent, bytesWritten(), bytesWritten()-bytesContent, blocksInManifest())
+	c.Logf("spent %v on %d Repack calls, average %v per call", tRepackTotal, nRepackTotal, tRepackTotal/time.Duration(nRepackTotal))
+	c.Logf("spent %v on %d Repack calls that had no effect, average %v per call", tRepackNoop, nRepackNoop, tRepackNoop/time.Duration(nRepackNoop))
+
+	if enableRepackCharts {
+		// write stats to tmp/{testname}_stats.tsv
+		err = os.Mkdir("tmp", 0777)
+		if !os.IsExist(err) {
+			c.Check(err, check.IsNil)
+		}
+		err = os.WriteFile("tmp/"+c.TestName()+"_stats.tsv", stats.Bytes(), 0666)
+		c.Check(err, check.IsNil)
+	}
 }
 
 func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {

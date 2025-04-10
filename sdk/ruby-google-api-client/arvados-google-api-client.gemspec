@@ -38,12 +38,16 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'extlib', '~> 0.9'
   s.add_runtime_dependency 'launchy', '~> 2.4'
   s.add_runtime_dependency 'retriable', '~> 1.4'
-  s.add_runtime_dependency 'activesupport', '>= 3.2', '< 8.0'
+  # Rails 7.1.3.x is the last version to support Ruby 2.7.0 in Ubuntu 20.04.
+  # Later 7.1.x releases require Ruby >= 2.7.3:
+  #   <https://github.com/rails/rails/issues/54276>
+  s.add_runtime_dependency 'activesupport', '~> 7.1.3.4'
 
   # These are indirect dependencies of the above where we force a resolution
   # that supports all our Rubies.
   s.add_runtime_dependency 'google-cloud-env', '~> 2.1.0'
   s.add_runtime_dependency 'public_suffix', '~> 5.0'
+  s.add_runtime_dependency 'securerandom', '~> 0.3.2'
 
   s.add_development_dependency 'rake', '~> 10.0'
   s.add_development_dependency 'yard', '~> 0.8'

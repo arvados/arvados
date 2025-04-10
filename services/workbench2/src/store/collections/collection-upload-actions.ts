@@ -48,8 +48,8 @@ export const submitCollectionFiles = (targetLocation?: string) =>
                 dispatch(stopSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: 'Data has not been uploaded. Too large file',
-                    hideDuration: 2000,
+                    message: 'Error uploading file(s). See console for details.',
+                    hideDuration: 4000,
                     kind: SnackbarKind.ERROR
                 }));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));

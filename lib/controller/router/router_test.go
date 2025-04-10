@@ -19,6 +19,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"github.com/gorilla/mux"
 	check "gopkg.in/check.v1"
 )
@@ -56,6 +57,7 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 		shouldStatus    int // zero value means 200
 		shouldCall      string
 		withOptions     interface{}
+		checkOptions    func(interface{}) // if non-nil, call instead of checking withOptions
 	}{
 		{
 			method:      "GET",
@@ -283,6 +285,38 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			shouldStatus: http.StatusNotFound,
 			shouldCall:   "",
 		},
+		{
+			comment:         "container http proxy no_forward=true",
+			unauthenticated: true,
+			method:          "POST",
+			path:            "/foo/bar",
+			header: http.Header{
+				"Cookie":               {"arvados_api_token=" + auth.EncodeTokenCookie([]byte(arvadostest.ActiveToken))},
+				"Host":                 {arvadostest.RunningContainerUUID + "-12345.example.com"},
+				"X-Arvados-No-Forward": {"1"},
+				"X-Example-Header":     {"preserved header value"},
+			},
+			shouldCall: "ContainerHTTPProxy",
+			checkOptions: func(gotOptions interface{}) {
+				opts, _ := gotOptions.(arvados.ContainerHTTPProxyOptions)
+				if !c.Check(opts, check.NotNil) {
+					return
+				}
+				c.Check(opts.Request.Method, check.Equals, "POST")
+				c.Check(opts.Request.URL.Path, check.Equals, "/foo/bar")
+				c.Check(opts.Request.Host, check.Equals, arvadostest.RunningContainerUUID+"-12345.example.com")
+				c.Check(opts.Request.Header, check.DeepEquals, http.Header{
+					"Cookie":           {"arvados_api_token=" + auth.EncodeTokenCookie([]byte(arvadostest.ActiveToken))},
+					"X-Example-Header": {"preserved header value"},
+				})
+				opts.Request = nil
+				c.Check(opts, check.DeepEquals, arvados.ContainerHTTPProxyOptions{
+					UUID:      arvadostest.RunningContainerUUID,
+					Port:      12345,
+					NoForward: true,
+				})
+			},
+		},
 	} {
 		// Reset calls captured in previous trial
 		s.stub = arvadostest.APIStub{}
@@ -299,10 +333,15 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 		calls := s.stub.Calls(nil)
 		if trial.shouldCall == "" {
 			c.Check(calls, check.HasLen, 0, comment)
-		} else if len(calls) != 1 {
+			continue
+		}
+		if len(calls) != 1 {
 			c.Check(calls, check.HasLen, 1, comment)
+		}
+		c.Check(calls[0].Method, isMethodNamed, trial.shouldCall, comment)
+		if trial.checkOptions != nil {
+			trial.checkOptions(calls[0].Options)
 		} else {
-			c.Check(calls[0].Method, isMethodNamed, trial.shouldCall, comment)
 			c.Check(calls[0].Options, check.DeepEquals, trial.withOptions, comment)
 		}
 	}
@@ -676,7 +715,11 @@ func (s *RouterIntegrationSuite) TestComputedPermissionList(c *check.C) {
 func doRequest(c *check.C, rtr http.Handler, token, method, path string, auth bool, hdrs http.Header, body io.Reader, jresp map[string]interface{}) (*http.Request, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(method, path, body)
 	for k, v := range hdrs {
-		req.Header[k] = v
+		if k == "Host" && len(v) == 1 {
+			req.Host = v[0]
+		} else {
+			req.Header[k] = v
+		}
 	}
 	if auth {
 		req.Header.Set("Authorization", "Bearer "+token)

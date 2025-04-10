@@ -343,7 +343,7 @@ def upload_dependencies(arvrunner, name, document_loader,
         sp = loc.split(":")
         if len(sp) < 1:
             return
-        if sp[0] in ("file", "http", "https"):
+        if sp[0] in ("file", "http", "https", "s3"):
             # Record local files than need to be uploaded,
             # don't include file literals, keep references, etc.
             sc.append(obj)
@@ -824,6 +824,7 @@ class Runner(Process):
 
         super(Runner, self).__init__(tool.tool, loadingContext)
 
+        # This is called "arvrunner" but it's actually ArvCwlExecutor
         self.arvrunner = runner
         self.embedded_tool = tool
         self.job_order = None

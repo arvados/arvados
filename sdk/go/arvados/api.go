@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -105,6 +106,13 @@ var (
 	EndpointAPIClientAuthorizationDelete    = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
 	EndpointAPIClientAuthorizationGet       = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
 )
+
+type ContainerHTTPProxyOptions struct {
+	UUID      string        `json:"uuid"`
+	Port      int           `json:"port"`
+	NoForward bool          `json:"no_forward"`
+	Request   *http.Request `json:"-"`
+}
 
 type ContainerSSHOptions struct {
 	UUID          string `json:"uuid"`
@@ -246,7 +254,14 @@ type BlockReadOptions struct {
 	Locator      string
 	WriteTo      io.Writer
 	LocalLocator func(string)
+	// If true, do not read the block data, just check whether the
+	// block is available in a local filesystem or memory cache.
+	// If not, return ErrNotCached.
+	CheckCacheOnly bool
 }
+
+// See CheckCacheOnly field of BlockReadOptions.
+var ErrNotCached = errors.New("block is not in cache")
 
 type BlockWriteOptions struct {
 	Hash           string
@@ -275,6 +290,12 @@ type ContainerLogOptions struct {
 	UUID      string `json:"uuid"`
 	NoForward bool   `json:"no_forward"`
 	WebDAVOptions
+}
+
+type RepackOptions struct {
+	CachedOnly bool
+	Full       bool
+	DryRun     bool
 }
 
 type API interface {
@@ -307,6 +328,7 @@ type API interface {
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
 	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
+	ContainerHTTPProxy(ctx context.Context, options ContainerHTTPProxyOptions) (http.Handler, error)
 	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)
 	ContainerRequestUpdate(ctx context.Context, options UpdateOptions) (ContainerRequest, error)
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)

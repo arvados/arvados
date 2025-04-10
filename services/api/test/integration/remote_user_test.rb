@@ -77,6 +77,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           body = {
             uuid: @stub_token_uuid || api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
             owner_uuid: "#{clusterid}-tpzed-00000000000000z",
+            expires_at: '2067-07-01T00:00:00.000000000Z',
             scopes: @stub_token_scopes,
           }
           if @stub_content.is_a?(Hash) and owner_uuid = @stub_content[:uuid]
@@ -124,7 +125,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     else
       tokens = ApiClientAuthorization.where("uuid like ?", "#{src}-%")
     end
-    tokens.update_all(expires_at: "1995-05-15T01:02:03Z")
+    tokens.update_all(refreshes_at: "1995-05-15T01:02:03Z")
   end
 
   test 'authenticate with remote token that has limited scope' do
@@ -135,14 +136,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
     @stub_token_scopes = ["GET /arvados/v1/users/current"]
 
-    # re-authorize before cache expires
+    # re-authorize before cache refresh time arrives
     get '/arvados/v1/collections',
         params: {format: 'json'},
         headers: auth(remote: 'zbbbb')
     assert_response :success
 
     uncache_token('zbbbb')
-    # re-authorize after cache expires
+    # re-authorize after cache refresh time arrives
     get '/arvados/v1/collections',
         params: {format: 'json'},
         headers: auth(remote: 'zbbbb')
@@ -155,6 +156,19 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         params: {format: "json"},
         headers: auth(remote: "zbbbb")
     assert_response :success
+  end
+
+  test 'expires_at is from remote cluster, refreshes_at reflects RemoteTokenRefresh' do
+    2.times do
+      get '/arvados/v1/api_client_authorizations/current',
+          params: {format: 'json'},
+          headers: auth(remote: 'zbbbb')
+      assert_response :success
+      assert_equal '2067-07-01T00:00:00.000000000Z', json_response['expires_at']
+      got_refresh = ApiClientAuthorization.find_by_uuid(json_response['uuid']).refreshes_at
+      expect_refresh = (db_current_time + Rails.configuration.Login.RemoteTokenRefresh).to_datetime
+      assert_operator (got_refresh - expect_refresh).to_f.abs, :<, 1.second.to_f
+    end
   end
 
   test 'authenticate with remote token' do
@@ -171,14 +185,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     # revoke original token
     @stub_token_status = 401
 
-    # re-authorize before cache expires
+    # re-authorize before cache refresh time arrives
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
 
     uncache_token('zbbbb')
-    # re-authorize after cache expires
+    # re-authorize after cache refresh time arrives
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
@@ -216,7 +230,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_content[:is_invited] = false
 
     uncache_token('zbbbb')
-    # re-authorize after cache expires
+    # re-authorize after cache refresh time arrives
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
@@ -252,10 +266,11 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
 
-    # Expire the cached token.
+    # Update refreshes_at to a time in the past, to induce a re-fetch
+    # from the stub cluster.
     @cached_token_uuid = json_response['uuid']
     act_as_system_user do
-      ApiClientAuthorization.where(uuid: @cached_token_uuid).update_all(expires_at: db_current_time() - 1.day)
+      ApiClientAuthorization.where(uuid: @cached_token_uuid).update_all(refreshes_at: db_current_time() - 1.day)
     end
 
     # Now use the same bare token, but set up the remote cluster to
@@ -586,12 +601,23 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal(users(:active).uuid, json_response['uuid'])
   end
 
-  test 'container request with runtime_token' do
-    [["valid local", "v2/#{api_client_authorizations(:active).uuid}/#{api_client_authorizations(:active).api_token}"],
-     ["valid remote", "v2/zbbbb-gj3su-000000000000000/abc"],
-     ["invalid local", "v2/#{api_client_authorizations(:active).uuid}/fakefakefake"],
-     ["invalid remote", "v2/zbork-gj3su-000000000000000/abc"],
-    ].each do |label, runtime_token|
+  [["valid local", :active, nil],
+   ["valid remote", "zbbbb-gj3su-000000000000000", nil],
+   ["invalid local", :active, "fakeactivetoken"],
+   ["invalid remote", "zbork-gj3su-000000000000000", nil],
+  ].each do |label, auth_uuid, auth_token|
+    test "container request with #{label} runtime_token" do
+      case auth_uuid
+      when Symbol
+        aca = api_client_authorizations(auth_uuid)
+        auth_uuid = aca.uuid
+        auth_token ||= aca.api_token
+      when String
+        auth_token ||= "fakeremotetoken"
+      else
+        flunk "test case uses an unsupported auth identifier: #{auth_uuid}"
+      end
+      runtime_token = "v2/#{auth_uuid}/#{auth_token}"
       post '/arvados/v1/container_requests',
         params: {
           "container_request" => {
@@ -603,7 +629,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           }
         },
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
-      if label.include? "invalid"
+      if label.start_with? "invalid"
         assert_response 422
       else
         assert_response :success

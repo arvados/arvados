@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,6 +45,18 @@ type CollectionFileSystem interface {
 	// same locator as y. The first return value is true if any
 	// substitutions were made.
 	ReplaceSegments(map[BlockSegment]BlockSegment) (bool, error)
+
+	// If needed, combine small stored blocks into larger blocks
+	// and update the in-memory representation to reference the
+	// larger blocks. Returns the number of (small) blocks that
+	// were replaced.
+	//
+	// After repacking, Sync() will persist the repacking results
+	// and load the server's latest version of the collection,
+	// reverting any other local changes.  To repack without
+	// abandoning local changes, call Sync, then Repack, then Sync
+	// again.
+	Repack(context.Context, RepackOptions) (int, error)
 
 	// Total data bytes in all files.
 	Size() int64
@@ -78,6 +91,11 @@ type collectionFileSystem struct {
 	guessSignatureTTL time.Duration
 	holdCheckChanges  time.Time
 	lockCheckChanges  sync.Mutex
+
+	// Pending updates to send via replace_segments.  See
+	// repackTree().
+	repacked    map[BlockSegment]BlockSegment
+	repackedMtx sync.Mutex
 }
 
 // FileSystem returns a CollectionFileSystem for the collection.
@@ -447,6 +465,20 @@ func (fs *collectionFileSystem) refreshSignature(locator string) string {
 }
 
 func (fs *collectionFileSystem) Sync() error {
+	fs.repackedMtx.Lock()
+	if len(fs.repacked) > 0 {
+		err := fs.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+fs.uuid, nil, map[string]interface{}{
+			"select":           []string{"portable_data_hash"},
+			"replace_segments": fs.repacked,
+		})
+		if err != nil {
+			fs.repackedMtx.Unlock()
+			return fmt.Errorf("sync failed: replace_segments %s: %w", fs.uuid, err)
+		}
+		fs.repacked = nil
+	}
+	fs.repackedMtx.Unlock()
+
 	refreshed, err := fs.checkChangesOnServer(true)
 	if err != nil {
 		return err
@@ -545,7 +577,63 @@ func (fs *collectionFileSystem) Splice(r inode) error {
 	return fs.fileSystem.root.Splice(r)
 }
 
+func (fs *collectionFileSystem) Repack(ctx context.Context, opts RepackOptions) (int, error) {
+	return fs.repackTree(ctx, opts, fs.root.(*dirnode))
+}
+
+func (fs *collectionFileSystem) repackTree(ctx context.Context, opts RepackOptions, root *dirnode) (int, error) {
+	fs.fileSystem.root.Lock()
+	plan, err := fs.planRepack(ctx, opts, fs.root.(*dirnode))
+	fs.fileSystem.root.Unlock()
+	if err != nil {
+		return 0, err
+	}
+	if opts.DryRun {
+		return len(plan), nil
+	}
+	repacked, err := fs.repackData(ctx, plan)
+	if err != nil {
+		return 0, err
+	}
+	replaced, err := fs.replaceSegments(repacked)
+	if err != nil {
+		return 0, err
+	}
+	nReplaced := len(replaced)
+
+	fs.repackedMtx.Lock()
+	if len(repacked) == 0 {
+		// nothing to save
+	} else if len(fs.repacked) == 0 {
+		fs.repacked = repacked
+	} else {
+		// Merge new repacking results with existing unsaved
+		// fs.repacked map.
+		for orig, repl := range fs.repacked {
+			// If a previous repack saved
+			// fs.repacked[A]==B, and now we have
+			// repacked[B]==C, then next time we sync to
+			// the server, we should replace A with C
+			// instead of B. So we set repacked[A]=C.
+			if newrepl, ok := repacked[repl.StripAllHints()]; ok {
+				repacked[orig] = newrepl
+			} else {
+				repacked[orig] = repl
+			}
+		}
+		fs.repacked = repacked
+	}
+	fs.repackedMtx.Unlock()
+
+	return nReplaced, nil
+}
+
 func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment) (bool, error) {
+	changed, err := fs.replaceSegments(m)
+	return len(changed) > 0, err
+}
+
+func (fs *collectionFileSystem) replaceSegments(m map[BlockSegment]BlockSegment) (map[BlockSegment]BlockSegment, error) {
 	fs.fileSystem.root.Lock()
 	defer fs.fileSystem.root.Unlock()
 	missing := make(map[BlockSegment]bool, len(m))
@@ -555,7 +643,7 @@ func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment)
 	}
 	fs.fileSystem.root.(*dirnode).walkSegments(func(seg segment) segment {
 		if seg, ok := seg.(storedSegment); ok {
-			delete(missing, BlockSegment{Locator: stripAllHints(seg.locator), Offset: seg.offset, Length: seg.length})
+			delete(missing, seg.blockSegment().StripAllHints())
 		}
 		return seg
 	})
@@ -572,17 +660,17 @@ func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment)
 		if !skip[repl.Locator] {
 			orig.Locator = stripAllHints(orig.Locator)
 			if orig.Length != repl.Length {
-				return false, fmt.Errorf("mismatched length: replacing segment length %d with segment length %d", orig.Length, repl.Length)
+				return nil, fmt.Errorf("mismatched length: replacing segment length %d with segment length %d", orig.Length, repl.Length)
 			}
 			if splitToToks([]byte(repl.Locator), '+', toks) < 2 {
-				return false, errors.New("invalid replacement locator")
+				return nil, errors.New("invalid replacement locator")
 			}
 			blksize, err := strconv.ParseInt(string(toks[1]), 10, 64)
 			if err != nil {
-				return false, fmt.Errorf("invalid size hint in replacement locator: %w", err)
+				return nil, fmt.Errorf("invalid size hint in replacement locator: %w", err)
 			}
 			if repl.Offset+repl.Length > int(blksize) {
-				return false, fmt.Errorf("invalid replacement: offset %d + length %d > block size %d", repl.Offset, repl.Length, blksize)
+				return nil, fmt.Errorf("invalid replacement: offset %d + length %d > block size %d", repl.Offset, repl.Length, blksize)
 			}
 			todo[orig] = storedSegment{
 				locator: repl.Locator,
@@ -591,13 +679,14 @@ func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment)
 			}
 		}
 	}
-	changed := false
+	changed := make(map[BlockSegment]BlockSegment, len(todo))
 	fs.fileSystem.root.(*dirnode).walkSegments(func(s segment) segment {
 		seg, ok := s.(storedSegment)
 		if !ok {
 			return s
 		}
-		repl, ok := todo[BlockSegment{Locator: stripAllHints(seg.locator), Offset: seg.offset, Length: seg.length}]
+		orig := seg.blockSegment().StripAllHints()
+		repl, ok := todo[orig]
 		if !ok {
 			return s
 		}
@@ -605,10 +694,177 @@ func (fs *collectionFileSystem) ReplaceSegments(m map[BlockSegment]BlockSegment)
 		seg.offset = repl.offset
 		seg.size = repl.size
 		// (leave seg.kc and seg.length unchanged)
-		changed = true
+		changed[orig] = seg.blockSegment()
 		return seg
 	})
 	return changed, nil
+}
+
+// See (*collectionFileSystem)planRepack.
+type repackBucketThreshold struct {
+	maxIn  int
+	minOut int
+}
+
+var fullRepackBucketThresholds = []repackBucketThreshold{
+	{maxIn: 1 << 25, minOut: 1 << 25},
+}
+
+var repackBucketThresholds = []repackBucketThreshold{
+	{maxIn: 1 << 23, minOut: 1 << 25},
+	{maxIn: 1 << 21, minOut: 1 << 24},
+	{maxIn: 1 << 19, minOut: 1 << 22},
+	{maxIn: 1 << 17, minOut: 1 << 20},
+	{maxIn: 1 << 15, minOut: 1 << 18},
+	{maxIn: 1 << 13, minOut: 1 << 16},
+	{maxIn: 1 << 11, minOut: 1 << 14},
+	{maxIn: 1 << 9, minOut: 1 << 12},
+	{maxIn: 1 << 7, minOut: 1 << 10},
+	{maxIn: 1 << 5, minOut: 1 << 8},
+	{maxIn: 1 << 3, minOut: 1 << 6},
+}
+
+// Produce a list of segment merges that would result in a more
+// efficient packing.  Each element in the returned plan is a slice of
+// 2+ segments with a combined length no greater than maxBlockSize.
+//
+// Caller must have lock on given root node.
+func (fs *collectionFileSystem) planRepack(ctx context.Context, opts RepackOptions, root *dirnode) (plan [][]storedSegment, err error) {
+	var thresholds []repackBucketThreshold
+	if opts.Full {
+		thresholds = fullRepackBucketThresholds
+	} else {
+		thresholds = repackBucketThresholds
+	}
+	// TODO: depending on opts, plan as if large but underutilized
+	// blocks are short blocks.
+	blockSize := make(map[string]int)
+	bucketBlocks := make([][]string, len(thresholds))
+	root.walkSegments(func(seg segment) segment {
+		if ss, ok := seg.(storedSegment); ok {
+			if opts.CachedOnly {
+				if _, err := ss.kc.BlockRead(ctx, BlockReadOptions{
+					Locator:        ss.locator,
+					CheckCacheOnly: true,
+					WriteTo:        io.Discard,
+				}); err != nil {
+					return seg
+				}
+			}
+			hash := stripAllHints(ss.locator)
+			if blockSize[hash] == 0 {
+				blockSize[hash] = ss.size
+				for bucket, threshold := range thresholds {
+					if ss.size >= threshold.maxIn {
+						break
+					}
+					bucketBlocks[bucket] = append(bucketBlocks[bucket], hash)
+				}
+			}
+		}
+		return seg
+	})
+	// blockPlan[oldhash] == idx means plan[idx] will merge all
+	// segments in <oldhash> into a new block.
+	blockPlan := make(map[string]int)
+	pending := []string{}
+	for bucket := range bucketBlocks {
+		pending = pending[:0]
+		pendingSize := 0
+		for _, hash := range bucketBlocks[bucket] {
+			if _, planned := blockPlan[hash]; planned || slices.Contains(pending, hash) {
+				// already planned to merge this block
+				continue
+			}
+			size := blockSize[hash]
+			if pendingSize+size > maxBlockSize {
+				for _, hash := range pending {
+					blockPlan[hash] = len(plan)
+				}
+				plan = append(plan, nil)
+				pending = pending[:0]
+				pendingSize = 0
+			}
+			pendingSize += size
+			pending = append(pending, hash)
+		}
+		if pendingSize >= thresholds[bucket].minOut {
+			for _, hash := range pending {
+				blockPlan[hash] = len(plan)
+			}
+			plan = append(plan, nil)
+		}
+	}
+	// We have decided which blocks to merge.  Now we collect all
+	// of the segments that reference those blocks, and return
+	// that as the final plan.
+	done := make(map[storedSegment]bool)
+	root.walkSegments(func(seg segment) segment {
+		ss, ok := seg.(storedSegment)
+		if !ok {
+			return seg
+		}
+		hash := stripAllHints(ss.locator)
+		if idx, planning := blockPlan[hash]; planning && !done[ss] {
+			plan[idx] = append(plan[idx], ss)
+			done[ss] = true
+		}
+		return seg
+	})
+	return plan, nil
+}
+
+// Given a plan returned by planRepack, write new blocks with the
+// merged segment data, and return a replacement mapping suitable for
+// ReplaceSegments.
+func (fs *collectionFileSystem) repackData(ctx context.Context, plan [][]storedSegment) (repl map[BlockSegment]BlockSegment, err error) {
+	if len(plan) == 0 {
+		return
+	}
+	repl = make(map[BlockSegment]BlockSegment)
+	for _, insegments := range plan {
+		// TODO: concurrency > 1
+		outsize := 0
+		for _, insegment := range insegments {
+			outsize += insegment.length
+		}
+		if outsize > maxBlockSize {
+			return nil, fmt.Errorf("combined length %d would exceed maximum block size %d", outsize, maxBlockSize)
+		}
+		piper, pipew := io.Pipe()
+		go func() {
+			for _, insegment := range insegments {
+				n, err := io.Copy(pipew, io.NewSectionReader(insegment, 0, int64(insegment.length)))
+				if err != nil {
+					pipew.CloseWithError(err)
+					return
+				}
+				if n != int64(insegment.length) {
+					pipew.CloseWithError(fmt.Errorf("internal error: copied %d bytes, expected %d", n, insegment.length))
+					return
+				}
+				if ctx.Err() != nil {
+					pipew.CloseWithError(ctx.Err())
+					return
+				}
+			}
+			pipew.Close()
+		}()
+		wrote, err := fs.BlockWrite(ctx, BlockWriteOptions{Reader: piper, DataSize: outsize})
+		if err != nil {
+			return nil, err
+		}
+		offset := 0
+		for _, insegment := range insegments {
+			repl[insegment.blockSegment().StripAllHints()] = BlockSegment{
+				Locator: wrote.Locator,
+				Offset:  offset,
+				Length:  insegment.length,
+			}
+			offset += insegment.length
+		}
+	}
+	return
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to
@@ -1797,16 +2053,24 @@ func (dn *dirnode) setTreeFS(fs *collectionFileSystem) {
 //
 // caller must have lock.
 func (dn *dirnode) walkSegments(fn func(segment) segment) {
-	for _, name := range dn.sortedNames() {
+	// Visit all segments in files, then traverse subdirectories.
+	// This way planRepack will tend to repack siblings together.
+	names := dn.sortedNames()
+	for _, name := range names {
 		child := dn.inodes[name]
 		child.Lock()
-		switch child := child.(type) {
-		case *dirnode:
-			child.walkSegments(fn)
-		case *filenode:
+		if child, ok := child.(*filenode); ok {
 			for i, seg := range child.segments {
 				child.segments[i] = fn(seg)
 			}
+		}
+		child.Unlock()
+	}
+	for _, name := range names {
+		child := dn.inodes[name]
+		child.Lock()
+		if child, ok := child.(*dirnode); ok {
+			child.walkSegments(fn)
 		}
 		child.Unlock()
 	}
@@ -1940,6 +2204,14 @@ func (se storedSegment) ReadAt(p []byte, off int64) (n int, err error) {
 
 func (se storedSegment) memorySize() int64 {
 	return 64 + int64(len(se.locator))
+}
+
+func (se storedSegment) blockSegment() BlockSegment {
+	return BlockSegment{
+		Locator: se.locator,
+		Offset:  se.offset,
+		Length:  se.length,
+	}
 }
 
 func canonicalName(name string) string {

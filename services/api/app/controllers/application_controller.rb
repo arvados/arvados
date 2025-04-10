@@ -421,7 +421,8 @@ class ApplicationController < ActionController::Base
       @read_auths += ApiClientAuthorization
         .includes(:user)
         .where('api_token IN (?) AND
-                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
+                (least(expires_at, refreshes_at) IS NULL
+                 OR least(expires_at, refreshes_at) > CURRENT_TIMESTAMP)',
                secrets)
         .to_a
     end
@@ -507,7 +508,11 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match(/\D/)
       params[:uuid] = params.delete :id
     end
-    @where = { uuid: params[:uuid] }
+    @where = {}
+    # Some APIs (at least groups/contents) take an optional uuid argument.
+    # They go through this method to handle it when present but we cannot
+    # assume it is always set.
+    @where[:uuid] = params[:uuid] if params[:uuid]
     @offset = 0
     @limit = 1
     @orders = []

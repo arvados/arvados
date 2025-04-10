@@ -288,5 +288,5 @@ Server::Application.configure do
   # We don't rely on cookies for authentication, so instead of
   # requiring a signing key in config, we assign a new random one at
   # startup.
-  secrets.secret_key_base = rand(1<<255).to_s(36)
+  credentials.secret_key_base = rand(1<<255).to_s(36)
 end

@@ -95,6 +95,7 @@
           # services/api
           - libnsl2
           - libpq-dev
+          - libyaml-dev
           - locales
           - procps
           - shared-mime-info

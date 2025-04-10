@@ -95,7 +95,10 @@ func (s *TestUserSuite) TestExpireTokenOnLogout(c *check.C) {
 
 		var tokenUUID string
 		var err error
-		qry := `SELECT uuid FROM api_client_authorizations WHERE uuid=$1 AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC') LIMIT 1`
+		qry := `SELECT uuid FROM api_client_authorizations
+			WHERE uuid=$1
+				AND (least(expires_at, refreshes_at) IS NULL OR least(expires_at, refreshes_at) > current_timestamp AT TIME ZONE 'UTC')
+			LIMIT 1`
 
 		if trial.shouldExpireToken {
 			err = s.tx.QueryRowContext(ctx, qry, trial.expiringTokenUUID).Scan(&tokenUUID)

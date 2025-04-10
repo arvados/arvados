@@ -19,6 +19,7 @@ describe('Create workflow tests', function () {
                 activeUser = this.activeUser;
             }
             );
+            
     });
 
     function createNestedHelper(testRemainder) {
@@ -807,6 +808,69 @@ describe('Create workflow tests', function () {
                 });
             });
 
+        });
+    });
+
+    it('handles optional inputs', () => {
+        cy.intercept({ method: "POST", url: "**/arvados/v1/container_requests" }, (req, res) => {
+            const inputs = req.body.container_request.mounts["/var/lib/cwl/cwl.input.json"].content;
+            expect(inputs).to.deep.equal({
+                int_input: null,
+                empty_string_input: null,
+                string_input: "foo"
+            });
+
+            //handle expected 422 error
+            req.reply({
+                statusCode: 200,
+                body: { message: 'Expected 422 error' },
+            });
+        }).as("mockedRequest");
+
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'myProject1',
+        });
+
+        cy.setupDockerImage("arvados/jobs").as("dockerImg");
+
+        cy.getAll('@myProject1').then(function ([myProject1]) {
+                cy.readFile('cypress/fixtures/workflow-with-optional-inputs.yaml').then(workflow => {
+                    cy.createWorkflow(adminUser.token, {
+                        name: `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
+                        definition: workflow,
+                        owner_uuid: myProject1.uuid,
+                    })
+                        .as('testWorkflow');
+                });
+
+                cy.loginAs(adminUser);
+
+                cy.get('main').contains(myProject1.name).click();
+
+                cy.get('[data-cy=side-panel-button]').click();
+
+                cy.get('#aside-menu-list').contains('Run a workflow').click();
+
+                cy.get('@testWorkflow')
+                    .then((testWorkflow) => {
+                        cy.get('main').contains(testWorkflow.name).click();
+                        cy.get('[data-cy=run-process-next-button]').click();
+
+                        var int_input = cy.get('label').contains('int_input').parent('div').find('input');
+                        var string_input = cy.get('label').contains('string_input').parent('div').find('input');
+                        var empty_string_input = cy.get('label').contains('empty_string_input').parent('div').find('input');
+
+                        string_input.type("foo");
+
+                        //both inputs are optional, so they should be null instead of empty strings
+                        int_input.type("123{backspace}{backspace}{backspace}")
+                        empty_string_input.type("bar{backspace}{backspace}{backspace}");
+                    });
+
+                cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
+
+                cy.wait('@mockedRequest')
         });
     });
 })
