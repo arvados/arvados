@@ -15,6 +15,6 @@ Package: src:libnvidia-container src:nvidia-container-toolkit
 Pin: version 1.17.*
 Pin-Priority: 995
 
-Package: cuda-drivers src:nvidia-graphics-drivers
+Package: cuda-drivers nvidia-modprobe nvidia-open src:nvidia-graphics-drivers src:nvidia-kmod-open src:nvidia-settings
 Pin: version 560.*
 Pin-Priority: 995
