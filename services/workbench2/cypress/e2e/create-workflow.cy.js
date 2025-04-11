@@ -856,6 +856,7 @@ describe('Create workflow tests', function () {
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
 
                         var int_input = cy.get('label').contains('int_input').parent('div').find('input');
                         var string_input = cy.get('label').contains('string_input').parent('div').find('input');
