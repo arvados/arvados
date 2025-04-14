@@ -147,11 +147,11 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvad
 		if r.Form.Get("include_collection_metadata") != "" {
 			m := map[string]interface{}{
 				"portable_data_hash": coll.PortableDataHash,
-				"properties":         coll.Properties,
 			}
 			if coll.UUID != "" {
 				m["uuid"] = coll.UUID
 				m["name"] = coll.Name
+				m["properties"] = coll.Properties
 			}
 			wrote = true
 			zipf, err := zipw.CreateHeader(&zip.FileHeader{

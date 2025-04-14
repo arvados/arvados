@@ -216,12 +216,16 @@ func (s *IntegrationSuite) TestZip_SelectFile_UsePathStyle_PDH(c *C) {
 		usePathStyle:      true,
 		usePDH:            true,
 		reqMethod:         "POST",
+		reqQuery:          "?include_collection_metadata=1",
 		reqContentType:    "application/json",
 		reqToken:          arvadostest.ActiveTokenV2,
 		reqBody:           `["dir1/file1.txt"]`,
 		expectStatus:      200,
-		expectFiles:       []string{"dir1/file1.txt"},
+		expectFiles:       []string{"collection.json", "dir1/file1.txt"},
 		expectDisposition: `attachment; filename="6acf043b102afcf04e3be2443e7ea2ba+223 - file1.txt"`,
+		expectMetadata: map[string]interface{}{
+			"portable_data_hash": "6acf043b102afcf04e3be2443e7ea2ba+223",
+		},
 	})
 }
 
