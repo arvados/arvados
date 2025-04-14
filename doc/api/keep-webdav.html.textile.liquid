@@ -41,6 +41,23 @@ It is possible for a project or a "filter group":methods/groups.html#filter to a
 * @/by_id/uuid_of_f/p@ will show the parent project's contents, including @f@.
 * @/by_id/uuid_of_f/p/f@ will appear as an empty directory.
 
+h3(#zip). Downloading ZIP archives
+
+Keep-web can produce an uncompressed ZIP archive of a collection, or a subset of a collection.
+
+To request a ZIP archive:
+* The request header must specify @Accept: application/zip@.
+* The request URI must specify the root directory of a collection, e.g., @/by_id/<uuid>/@.  See "Keep-web URLs":keep-web-urls.html for more examples.
+
+To download a subset of a collection, the request can specify one or more pathnames relative to the collection directory:
+* A @files@ parameter in the query of a @GET@ request, e.g., @https://<uuid>.collections.example.com/?files=file1&files=file2@,
+* A @files@ parameter in the body of a @POST@ request with a @Content-Type: application/x-www-form-urlencoded@ header, or
+* An array of strings in the body of a @POST@ request with a @Content-Type: application/json@ header, e.g., @["file1","file2"]@.
+
+Keep-web returns an error if one of the specified paths does not exist in the requested collection.
+
+The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=1@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's UUID, name, portable data hash, and properties. If the collection is specified by portable data hash rather than name or UUID, collection.json contains only the portable data hash.
+
 h3(#auth). Authentication mechanisms
 
 A token can be provided in an Authorization header as a @Bearer@ token:
