@@ -30,7 +30,15 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
+"previous: Upgrading to 3.1.1":#v3_1_1
+
+h2(#v3_1_1). v3.1.1 (2025-04-14)
+
 "previous: Upgrading to 3.1.0":#v3_1_0
+
+h3. Clusters using cloud dispatch should rebuild a compute node image
+
+Arvados 3.1.1 fixes a handful of bugs in installation tools, particularly for deployments on Ubuntu. If you have already successfully upgraded to 3.1.0, the only thing in this release that affects you is a bug fix in the compute node image builder for cloud deployments. If your cluster uses @arvados-dispatch-cloud@, you should "build a new compute node following our install guide":{{ site.baseurl }}/install/crunch2-cloud/install-compute-node.html and configure your cluster to use it. You do not need to upgrade any cluster services; there are no changes to them since 3.1.0.
 
 h2(#v3_1_0). v3.1.0 (2025-03-20)
 
