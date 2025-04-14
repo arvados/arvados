@@ -202,7 +202,7 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
+            const { items, currentRouteUuid, checkedList, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
             const singleSelected = isExactlyOneSelected(this.props.checkedList);
             if (prevProps.items !== items) {
@@ -210,7 +210,7 @@ export const DataTable = withStyles(styles)(
                 if (items.length) this.initializeCheckedList(items);
                 else setCheckedListOnStore({});
             }
-            if (items.length && (Object.keys(this.props.checkedList)).length === 0) { 
+            if (items.length && checkedList && (Object.keys(checkedList)).length === 0) {
                 this.initializeCheckedList(items);
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
