@@ -39,8 +39,8 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvad
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	reqpaths := r.PostForm["files"]
-	if r.Header.Get("Content-Type") == "application/json" {
+	reqpaths := r.Form["files"]
+	if reqpaths == nil && r.Header.Get("Content-Type") == "application/json" {
 		// Note reqpaths can only be nil here, because
 		// r.ParseForm() populates r.PostForm only if
 		// Content-Type is application/x-www-form-urlencoded.

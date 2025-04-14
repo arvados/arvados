@@ -167,6 +167,18 @@ func (s *IntegrationSuite) TestZip_SelectFile(c *C) {
 	})
 }
 
+func (s *IntegrationSuite) TestZip_SelectFiles_Query(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:         "POST",
+		reqQuery:          "?" + (&url.Values{"files": []string{"dir1/file1.txt", "dir2/file2.txt"}}).Encode(),
+		reqContentType:    "application/json",
+		reqToken:          arvadostest.ActiveTokenV2,
+		expectStatus:      200,
+		expectFiles:       []string{"dir1/file1.txt", "dir2/file2.txt"},
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files"`,
+	})
+}
+
 func (s *IntegrationSuite) TestZip_SelectFile_UsePathStyle(c *C) {
 	s.testZip(c, testZipOptions{
 		usePathStyle:      true,
@@ -243,6 +255,7 @@ type testZipOptions struct {
 	usePDH            bool
 	usePathStyle      bool
 	reqMethod         string
+	reqQuery          string
 	reqContentType    string
 	reqToken          string
 	reqBody           string
@@ -277,7 +290,7 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	} else {
 		url = s.collectionURL(collID, "")
 	}
-	_, resp := s.do(opts.reqMethod, url, opts.reqToken, http.Header{
+	_, resp := s.do(opts.reqMethod, url+opts.reqQuery, opts.reqToken, http.Header{
 		"Accept":       {"application/zip"},
 		"Content-Type": {opts.reqContentType},
 	}, []byte(opts.reqBody))
