@@ -147,27 +147,50 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvad
 	w.Header().Set("Content-Type", "application/zip")
 	zipw := zip.NewWriter(w)
 	wrote := false
-	for _, path := range filepaths {
-		f, err := collfs.Open(path)
-		if err != nil {
+	err = func() error {
+		if r.Form.Get("include_collection_metadata") != "" {
+			m := map[string]interface{}{
+				"portable_data_hash": coll.PortableDataHash,
+				"properties":         coll.Properties,
+			}
+			if coll.UUID != "" {
+				m["uuid"] = coll.UUID
+				m["name"] = coll.Name
+			}
+			wrote = true
+			zipf, err := zipw.CreateHeader(&zip.FileHeader{
+				Name:   "collection.json",
+				Method: zip.Store,
+			})
+			if err != nil {
+				return err
+			}
+			err = json.NewEncoder(zipf).Encode(m)
+		}
+		for _, path := range filepaths {
+			f, err := collfs.Open(path)
+			if err != nil {
+				f.Close()
+				break
+			}
+			wrote = true
+			w, err := zipw.CreateHeader(&zip.FileHeader{
+				Name:   path,
+				Method: zip.Store,
+			})
+			if err != nil {
+				f.Close()
+				break
+			}
+			_, err = io.Copy(w, f)
 			f.Close()
-			break
+			if err != nil {
+				break
+			}
 		}
 		wrote = true
-		w, err := zipw.CreateHeader(&zip.FileHeader{
-			Name:   path,
-			Method: zip.Store,
-		})
-		if err != nil {
-			f.Close()
-			break
-		}
-		_, err = io.Copy(w, f)
-		f.Close()
-		if err != nil {
-			break
-		}
-	}
+		return zipw.Close()
+	}()
 	if err != nil {
 		if wrote {
 			ctxlog.FromContext(r.Context()).Errorf("error writing zip archive after sending response header: %s", err)
@@ -176,5 +199,4 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvad
 		}
 		return
 	}
-	zipw.Close()
 }

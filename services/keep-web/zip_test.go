@@ -7,6 +7,7 @@ package keepweb
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -89,6 +90,24 @@ func (s *IntegrationSuite) TestZip_EmptyCollection(c *C) {
 	zipr, err := zip.NewReader(bytes.NewReader(zipdata), int64(len(zipdata)))
 	c.Assert(err, IsNil)
 	c.Check(zipr.File, HasLen, 0)
+}
+
+func (s *IntegrationSuite) TestZip_Metadata(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:    "GET",
+		reqQuery:     "?include_collection_metadata=1",
+		reqToken:     arvadostest.ActiveTokenV2,
+		expectStatus: 200,
+		expectFiles:  []string{"collection.json", "dir1/dir/file1.txt", "dir1/file1.txt", "dir2/file2.txt", "file0.txt"},
+		expectMetadata: map[string]interface{}{
+			"name":               "keep-web zip test collection",
+			"portable_data_hash": "6acf043b102afcf04e3be2443e7ea2ba+223",
+			"properties": map[string]interface{}{
+				"sailboat": "⛵",
+			},
+			"uuid": "{{stage.coll.UUID}}",
+		},
+	})
 }
 
 func (s *IntegrationSuite) TestZip_EntireCollection_GET(c *C) {
@@ -263,6 +282,7 @@ type testZipOptions struct {
 	expectFiles       []string
 	expectBodyMatch   string
 	expectDisposition string
+	expectMetadata    map[string]interface{}
 }
 
 func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
@@ -308,6 +328,15 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	c.Check(zipFileNames(zipr), DeepEquals, opts.expectFiles)
 	if opts.expectDisposition != "" {
 		c.Check(resp.Header.Get("Content-Disposition"), Equals, opts.expectDisposition)
+	}
+	f, err := zipr.Open("collection.json")
+	if opts.expectMetadata != nil && c.Check(err, IsNil) {
+		if opts.expectMetadata["uuid"] == "{{stage.coll.UUID}}" {
+			opts.expectMetadata["uuid"] = stage.coll.UUID
+		}
+		var gotMetadata map[string]interface{}
+		json.NewDecoder(f).Decode(&gotMetadata)
+		c.Check(gotMetadata, DeepEquals, opts.expectMetadata)
 	}
 }
 
