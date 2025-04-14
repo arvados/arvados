@@ -19,6 +19,7 @@ import {
     navigateToSshKeysUser,
     navigateToMyAccount,
     navigateToLinkAccount,
+    navigateToMyPreferences,
 } from 'store/navigation/navigation-action';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
@@ -58,6 +59,7 @@ export const AccountMenuComponent =
             <MenuItem key={'ssh-keys'} onClick={() => dispatch(navigateToSshKeysUser)}>SSH Keys</MenuItem>,
             <MenuItem key={'site-manager'} onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>,
             <MenuItem key={'my-account'} onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>,
+            <MenuItem key={'preferences'} onClick={() => dispatch(navigateToMyPreferences)}>Preferences</MenuItem>,
             <MenuItem key={'link-account'} onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>,
         ];
 

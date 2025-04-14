@@ -34,6 +34,7 @@ import {
     setVirtualMachinesBreadcrumbs,
     setVirtualMachinesAdminBreadcrumbs,
     setRepositoriesBreadcrumbs,
+    setUserPreferencesBreadcrumbs,
 } from "store/breadcrumbs/breadcrumbs-actions";
 import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
@@ -784,6 +785,11 @@ export const loadUserProfile = (userUuid?: string) =>
             dispatch(setMyAccountBreadcrumbs());
             dispatch(userProfilePanelActions.loadUserProfilePanel());
         }
+    });
+
+export const loadUserPreferences = () =>
+    handleFirstTimeLoad((dispatch: Dispatch<any>) => {
+        dispatch(setUserPreferencesBreadcrumbs());
     });
 
 export const loadLinkAccount = handleFirstTimeLoad((dispatch: Dispatch<any>) => {
