@@ -210,6 +210,9 @@ export const DataTable = withStyles(styles)(
                 if (items.length) this.initializeCheckedList(items);
                 else setCheckedListOnStore({});
             }
+            if (items.length && (Object.keys(this.props.checkedList)).length === 0) { 
+                this.initializeCheckedList(items);
+            }
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([]);
             }
