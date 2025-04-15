@@ -741,3 +741,19 @@ Cypress.Commands.add("doDataExplorerSearch", (value) => {
     cy.waitForDom();
     cy.get('[data-cy=search-input]').clear().type(value);
 });
+
+/**
+ * asserts the correct toolbar buttons are displayed
+ *
+ * by mousing over and checking for the tooltips
+ * */
+
+Cypress.Commands.add("assertToolbarButtons", (tooltips) => {
+    cy.get('[data-cy=multiselect-button]').should('have.length', tooltips.length)
+        for (let i = 0; i < tooltips.length; i++) {
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+            cy.wait(200);
+            cy.get('body').contains(tooltips[i]).should('exist')
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
+        }
+});

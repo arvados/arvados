@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Multiselect Toolbar Tests', () => {
+import { tooltips } from '../support/msToolbarTooltips';
+
+describe('Multiselect Toolbar Baseline Tests', () => {
     let activeUser;
     let adminUser;
 
@@ -33,4 +35,145 @@ describe('Multiselect Toolbar Tests', () => {
             cy.get('[data-cy=multiselect-button]').should('not.exist');
         });
     });
+
+});
+
+describe('For multiple project resources', () => {
+    let activeUser;
+    let adminUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
+
+    it('should behave correctly in the projects view', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject2',
+        }).as('testProject2');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject3',
+        }).as('testProject3');
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'TestProject4',
+        }).as('testProject4');
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'TestProject5',
+        }).as('testProject5');
+        cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testProject4', '@testProject5')
+        .then(([testProject1, testProject2, testProject3, testProject4, testProject5]) => {
+                //share with active user to test permissions
+                cy.shareWith(adminUser.token, activeUser.user.uuid, testProject1.uuid, 'can_read');
+
+                // non-admin actions
+                cy.loginAs(activeUser);
+                cy.assertDataExplorerContains(testProject4.name, true);
+                cy.assertDataExplorerContains(testProject5.name, true);
+
+                //assert toolbar buttons
+                cy.doDataExplorerSelect(testProject4.name);
+                cy.assertToolbarButtons(tooltips.nonAdminProject);
+                cy.doDataExplorerSelect(testProject5.name);
+                cy.assertToolbarButtons(tooltips.multiProject);
+
+                //assert read only project toolbar buttons
+                cy.contains('Shared with me').click();
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.assertToolbarButtons(tooltips.readOnlyProject);
+
+                // admin actions
+                cy.loginAs(adminUser);
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testProject2.name, true);
+                cy.assertDataExplorerContains(testProject3.name, true);
+
+                //assert admin project toolbar buttons
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.assertToolbarButtons(tooltips.adminProject);
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.assertToolbarButtons(tooltips.multiProject);
+
+                //check multi-project move to
+                cy.get(`[aria-label="Move to"]`, { timeout: 5000 }).click();
+                cy.get('[data-cy=picker-dialog-project-search]').find('input').type(testProject3.name);
+                cy.get('[data-cy=projects-tree-search-picker]').contains(testProject3.name).click();
+                cy.get('[data-cy=form-submit-btn]').click();
+
+                cy.assertDataExplorerContains(testProject3.name, true).click();
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testProject2.name, true);
+
+                //check multi-project trash
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.doToolbarAction('Move to trash');
+                cy.assertDataExplorerContains(testProject1.name, false);
+                cy.assertDataExplorerContains(testProject2.name, false);
+                cy.contains('Trash').click();
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testProject2.name, true);
+
+                //check multi-project unTrash
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.doToolbarAction('Restore');
+                cy.assertDataExplorerContains(testProject1.name, false);
+                cy.assertDataExplorerContains(testProject2.name, false);
+                cy.contains(testProject3.name).click();
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testProject2.name, true);
+        });
+    });
+
+    /*
+    selecting/deselecting items should:
+        select/deselect the correct items
+        display the correct toolbar items
+    select all/deselect all/invert selection in popover should:
+        select/deselect the correct items
+        display the correct toolbar items
+    For each resource type:
+        the correct toolbar is displayed when:
+            One of that resource is selected
+            Multiple of that resource are selected
+            Some of these tests already exist, project.cy.js L231 for example. These should be removed because it's better to have all of these tests in the same place.
+        Moving
+            single item
+            multiple of the same resource type
+        Trashing
+            single item
+            multiple of the same resource type
+        Untrashing
+            single item
+            multiple of the same resource type
+    For mixed resource selections:
+        for project & collections:
+            Trashing mixed selection
+            Untrashing mixed selection
+            Moving mixed selection
+        for processes & any other resource:
+            no multiselect options should exist
+    Subprocess panel should have all of the functionality of the main process view
+    Data/Workflow runs tabs should have all of the functionality of the main process view
+    */
 });

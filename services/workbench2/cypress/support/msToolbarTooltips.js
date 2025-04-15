@@ -1,0 +1,50 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+export const tooltips = {
+    multiProject: [
+        'Move to',
+        'Move to trash',
+    ],
+    adminProject: [
+        'View details',
+        'Open in new tab',
+        'Copy UUID',
+        'Share',
+        'Edit project',
+        'Move to trash',
+        'New project',
+        'Move to',
+        'Freeze project',
+        'Add to favorites',
+        'Add to public favorites',
+        'Copy link to clipboard',
+        'Open with 3rd party client',
+        'API Details',
+    ],
+    nonAdminProject: [
+        'View details',
+        'Open in new tab',
+        'Copy UUID',
+        'Share',
+        'Edit project',
+        'Move to trash',
+        'New project',
+        'Move to',
+        'Freeze project',
+        'Add to favorites',
+        'Copy link to clipboard',
+        'Open with 3rd party client',
+        'API Details',
+    ],
+    readOnlyProject: [
+        'View details',
+        'Open in new tab',
+        'Copy UUID',
+        'Add to favorites',
+        'Copy link to clipboard',
+        'Open with 3rd party client',
+        'API Details',
+    ],
+};
