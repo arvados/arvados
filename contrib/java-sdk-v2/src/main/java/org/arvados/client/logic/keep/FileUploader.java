@@ -32,7 +32,8 @@ public class FileUploader {
 
     public Collection upload(List<File> sourceFiles, String collectionName, String projectUuid) {
         Collection newCollection = CollectionFactory.builder()
-                .config(config).name(collectionName)
+                .config(config)
+                .name(collectionName)
                 .projectUuid(projectUuid)
                 .build()
                 .create();
