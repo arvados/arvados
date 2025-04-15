@@ -23,6 +23,18 @@ export const tooltips = {
         'Open with 3rd party client',
         'API Details',
     ],
+    adminFrozenProject: [
+        'View details',
+        'Open in new tab',
+        'Copy UUID',
+        'Share',
+        'Unfreeze project',
+        'Add to favorites',
+        'Add to public favorites',
+        'Copy link to clipboard',
+        'Open with 3rd party client',
+        'API Details',
+    ],
     nonAdminProject: [
         'View details',
         'Open in new tab',

@@ -28,17 +28,20 @@ describe('Multiselect Toolbar Baseline Tests', () => {
     it('exists in DOM in neutral state', () => {
         cy.loginAs(activeUser);
         //multiselect toolbar should exist in details card and not in data explorer
-        cy.get('[data-cy=user-details-card]').should('exist').within(() => {
-            cy.get('[data-cy=multiselect-toolbar]').should('exist');
-        });
-        cy.get('[data-cy=title-wrapper]').should('exist').within(() => {
-            cy.get('[data-cy=multiselect-button]').should('not.exist');
-        });
+        cy.get('[data-cy=user-details-card]')
+            .should('exist')
+            .within(() => {
+                cy.get('[data-cy=multiselect-toolbar]').should('exist');
+            });
+        cy.get('[data-cy=title-wrapper]')
+            .should('exist')
+            .within(() => {
+                cy.get('[data-cy=multiselect-button]').should('not.exist');
+            });
     });
-
 });
 
-describe('For multiple project resources', () => {
+describe('For project resources', () => {
     let activeUser;
     let adminUser;
 
@@ -59,7 +62,128 @@ describe('For multiple project resources', () => {
             });
     });
 
-    it('should behave correctly in the projects view', () => {
+    it('should behave correctly for a single project', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject',
+        }).as('testProject');
+        cy.getAll('@testProject').then(([testProject]) => {
+            cy.loginAs(adminUser);
+            cy.doDataExplorerSelect(testProject.name);
+
+            // disabled until #22787 is resolved
+            // View details
+            // cy.get('[aria-label="View details"]').click();
+            // cy.get('[data-cy=details-panel]').contains(testProject.name).should('be.visible');
+            // cy.get('[data-cy=close-details-btn]').click();
+
+            cy.window().then((win) => {
+                cy.stub(win, 'open').as('windowOpen');
+            });
+
+            // Open in new tab
+            cy.get('[aria-label="Open in new tab"]').click();
+            cy.get('@windowOpen').should('be.called');
+
+            //Share
+            cy.get('[aria-label="Share"]').click();
+            cy.get('.sharing-dialog').should('exist');
+            cy.contains('button', 'Close').click();
+
+            //edit project
+            cy.get('[aria-label="Edit project"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("Edit Project").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //new project
+            cy.get('[aria-label="New project"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("New Project").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //freeze project
+            cy.get('[aria-label="Freeze project"]').click();
+            cy.assertToolbarButtons(tooltips.adminFrozenProject);
+
+            //unfreeze project
+            cy.get('[aria-label="Unfreeze project"]').click();
+            cy.assertToolbarButtons(tooltips.adminProject);
+
+            //Add to favorites
+            cy.get('[aria-label="Add to favorites"]').click();
+            cy.get('[data-cy=favorite-star]').should('exist')
+                .parents('[data-cy=data-table-row]')
+                .contains(testProject.name)
+
+            //Add to public favorites
+            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.get('[data-cy=public-favorite-star]').should('exist')
+                .parents('[data-cy=data-table-row]')
+                .contains(testProject.name)
+
+            //Open with 3rd party client
+            cy.get('[aria-label="Open with 3rd party client"]').click()
+            cy.get('[role=dialog]').contains('Open with 3rd party client')
+            cy.contains('Close').click()
+
+            //API Details
+            cy.get('[aria-label="API Details"]').click()
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
+
+        });
+    });
+
+    // The following test is enabled on Electron only, as Chromium and Firefox
+    // require permissions to access the clipboard.
+    it("handles project Copy UUID", { browser: 'electron' }, () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'ClipboardTestProject',
+        }).as('clipboardTestProject');
+        cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
+            cy.loginAs(adminUser);
+            cy.doDataExplorerSelect(clipboardTestProject.name);
+
+            // Copy UUID
+            cy.get('[aria-label="Copy UUID"]').click()
+            cy.window({ timeout: 10000 }).then(win =>{
+                console.log('this ia a load-bearing console.log');
+                win.focus();
+                win.navigator.clipboard.readText().then(text => {
+                    expect(text).to.equal(clipboardTestProject.uuid);
+                })}
+            );
+        });
+    });
+
+    // The following test is enabled on Electron only, as Chromium and Firefox
+    // require permissions to access the clipboard.
+    it("handles project Copy link to clipboard", { browser: 'electron' }, () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'ClipboardTestProject',
+        }).as('clipboardTestProject');
+        cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
+            cy.loginAs(adminUser);
+            cy.doDataExplorerSelect(clipboardTestProject.name);
+
+            // Copy link to clipboard
+            cy.get('[aria-label="Copy link to clipboard"]').click()
+            cy.window({ timeout: 10000 }).then(win =>{
+                console.log('this ia a load-bearing console.log');
+                win.focus();
+                win.navigator.clipboard.readText().then(text => {
+                expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);
+                })}
+            );
+        });
+    });
+
+    it('should behave correctly for multiple projects', () => {
         cy.createProject({
             owningUser: adminUser,
             projectName: 'TestProject1',
@@ -80,8 +204,8 @@ describe('For multiple project resources', () => {
             owningUser: activeUser,
             projectName: 'TestProject5',
         }).as('testProject5');
-        cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testProject4', '@testProject5')
-        .then(([testProject1, testProject2, testProject3, testProject4, testProject5]) => {
+        cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testProject4', '@testProject5').then(
+            ([testProject1, testProject2, testProject3, testProject4, testProject5]) => {
                 //share with active user to test permissions
                 cy.shareWith(adminUser.token, activeUser.user.uuid, testProject1.uuid, 'can_read');
 
@@ -142,7 +266,8 @@ describe('For multiple project resources', () => {
                 cy.contains(testProject3.name).click();
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
-        });
+            }
+        );
     });
 
     /*
