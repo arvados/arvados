@@ -253,25 +253,25 @@ func (diag *diagnoser) runtests() {
 
 	// TODO: detect routing errors here, like finding wb2 at the
 	// wb1 address.
-	for i, svc := range []*arvados.Service{
-		&cluster.Services.Keepproxy,
-		&cluster.Services.WebDAV,
-		&cluster.Services.WebDAVDownload,
-		&cluster.Services.Websocket,
-		&cluster.Services.Workbench1,
-		&cluster.Services.Workbench2,
+	for i, svc := range []struct{name string; config *arvados.Service}{
+		{"Keepproxy", &cluster.Services.Keepproxy},
+		{"WebDAV", &cluster.Services.WebDAV},
+		{"WebDAVDownload", &cluster.Services.WebDAVDownload},
+		{"Websocket", &cluster.Services.Websocket},
+		{"Workbench1", &cluster.Services.Workbench1},
+		{"Workbench2", &cluster.Services.Workbench2},
 	} {
-		diag.dotest(40+i, fmt.Sprintf("connecting to service endpoint %s", svc.ExternalURL), func() error {
+		u := url.URL(svc.config.ExternalURL)
+		diag.dotest(40+i, fmt.Sprintf("connecting to %s endpoint %s", svc.name, u.String()), func() error {
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 			defer cancel()
-			u := svc.ExternalURL
 			if strings.HasPrefix(u.Scheme, "ws") {
 				// We can do a real websocket test elsewhere,
 				// but for now we'll just check the https
 				// connection.
 				u.Scheme = "http" + u.Scheme[2:]
 			}
-			if svc == &cluster.Services.WebDAV && strings.HasPrefix(u.Host, "*") {
+			if svc.config == &cluster.Services.WebDAV && strings.HasPrefix(u.Host, "*") {
 				u.Host = "d41d8cd98f00b204e9800998ecf8427e-0" + u.Host[1:]
 			}
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
