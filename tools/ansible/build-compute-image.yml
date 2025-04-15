@@ -18,16 +18,44 @@
     - name: Get Crunch dispatch public key
       when: arvados_cluster.Containers.DispatchPrivateKey is defined and arvados_cluster.Containers.DispatchPrivateKey is truthy
       delegate_to: localhost
-      vars:
+      block:
+        # `ssh-keygen` supports reading stdin for some operations with `-f -`,
+        # but `-y` is not one of those operations as of April 2025.
+        # We MUST have the dispatch private key in a file with correct
+        # permissions for `ssh-keygen -y -f` to read.
+        - name: Prepare tempfile for dispatch private key
+          ansible.builtin.tempfile:
+            suffix: ".key"
+          register: key_tempfile
+
         # Try to parse DispatchPrivateKey as a URL.
-        # If it's recognized as a file: URL, pass the path to `ssh-keygen -f`.
-        # Otherwise, expect it's private key content,
-        # and pass it through `ssh-keygen` stdin.
-        key_url: "{{ arvados_cluster.Containers.DispatchPrivateKey | urlsplit }}"
-      ansible.builtin.command:
-        argv: "{{ ['ssh-keygen', '-y'] + (['-f', key_url.path] if key_url.scheme == 'file' else []) }}"
-        stdin: "{{ arvados_cluster.Containers.DispatchPrivateKey if key_url.scheme != 'file' else '' }}"
-      register: compute_dispatch_ssh_keygen
+        # If it's recognized as a file: URL, copy that path to the tempfile.
+        # Otherwise, expect it's the private key,
+        # and write that content directly to the tempfile.
+        - name: Save dispatch private key to tempfile
+          vars:
+            key_url: "{{ arvados_cluster.Containers.DispatchPrivateKey | urlsplit }}"
+          ansible.builtin.copy:
+            src: "{{ key_url.path if key_url.scheme == 'file' else omit }}"
+            content: "{{ arvados_cluster.Containers.DispatchPrivateKey if key_url.scheme != 'file' else omit }}"
+            dest: "{{ key_tempfile.path }}"
+            mode: 0600
+
+        - name: Derive dispatch public key
+          ansible.builtin.command:
+            argv:
+              - ssh-keygen
+              - "-y"
+              - "-f"
+              - "{{ key_tempfile.path }}"
+          register: compute_dispatch_ssh_keygen
+
+      always:
+        - name: Remove dispatch private key tempfile
+          when: key_tempfile is defined
+          ansible.builtin.file:
+            path: "{{ key_tempfile.path }}"
+            state: absent
 
 - name: Set up compute node base distribution
   # `default` is the name that the Packer Ansible plugin assigns to the
