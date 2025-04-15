@@ -37,7 +37,7 @@
             key_url: "{{ arvados_cluster.Containers.DispatchPrivateKey | urlsplit }}"
           ansible.builtin.copy:
             src: "{{ key_url.path if key_url.scheme == 'file' else omit }}"
-            content: "{{ arvados_cluster.Containers.DispatchPrivateKey if key_url.scheme != 'file' else omit }}"
+            content: "{{ arvados_cluster.Containers.DispatchPrivateKey|regex_replace('\\n?$', '\\n') if key_url.scheme != 'file' else omit }}"
             dest: "{{ key_tempfile.path }}"
             mode: 0600
 
