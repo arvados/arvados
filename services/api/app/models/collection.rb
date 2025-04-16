@@ -34,6 +34,7 @@ class Collection < ArvadosModel
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
   validate :protected_managed_properties_updates, on: :update
+  validate :workflow_type_property, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
   after_save :update_linked_workflows
@@ -610,7 +611,7 @@ class Collection < ArvadosModel
 
   def update_linked_workflows(workflow_to_link=nil)
     # Only applies to collections of type "workflow"
-    return if self.properties["type"] != "workflow"
+    return "properties.type is not 'workflow'" if self.properties["type"] != "workflow"
 
     if workflow_to_link.nil?
       workflows_to_update = Workflow.where(collection_uuid: self.uuid)
@@ -618,7 +619,7 @@ class Collection < ArvadosModel
       workflows_to_update = [workflow_to_link]
     end
 
-    return if workflows_to_update.empty?
+    return "Did not find any linked workflows to update" if workflows_to_update.empty?
 
     workflowMain = self.properties["arv:workflowMain"]
     inputs = self.properties["arv:cwl_inputs"]
@@ -678,6 +679,8 @@ class Collection < ArvadosModel
       w.owner_uuid = self.owner_uuid
       w.save! if workflow_to_link.nil?
     end
+
+    true
   end
 
   protected
@@ -789,6 +792,19 @@ class Collection < ArvadosModel
     true
   end
 
+  def workflow_type_property
+    return if properties["type"] == properties_was["type"] || properties_was["type"] != "workflow"
+
+    # properties["type"] changed and the previous value of
+    # properties["type"] was "workflow"
+
+    linked_workflows = Workflow.where(collection_uuid: self.uuid)
+    if !linked_workflows.empty?
+      errors.add(:properties, "cannot change 'type' property when there are linked workflows")
+      return false
+    end
+  end
+
   def versioning_metadata_updates
     valid = true
     if !is_past_version? && current_version_uuid_changed?
@@ -814,10 +830,5 @@ class Collection < ArvadosModel
 
   def self.cwl_shortname inputid
     inputid.split("/")[-1]
-    # d = URI(inputid)
-    # if d.fragment
-    #   return d.fragment.split("/")[-1]
-    # end
-    # return d.path.split("/")[-1]
   end
 end
