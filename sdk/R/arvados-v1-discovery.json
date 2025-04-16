@@ -4231,7 +4231,7 @@
           "type": "boolean"
         },
         "published_ports": {
-          "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.",
+          "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.\n  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
           "type": "jsonb"
         }
       }
@@ -4406,7 +4406,7 @@
           "type": "boolean"
         },
         "published_ports": {
-          "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.",
+          "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.\n  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
           "type": "Hash"
         }
       }
