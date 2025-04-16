@@ -4,6 +4,33 @@
 
 import { tooltips } from '../support/msToolbarTooltips';
 
+const testWFDefinition = "{\n    \"$graph\": [\n        {\n            \"class\": \"Workflow\",\n            \"doc\": \"Reverse the lines in a document, then sort those lines.\",\n            \"hints\": [\n                {\n                    \"acrContainerImage\": \"99b0201f4cade456b4c9d343769a3b70+261\",\n                    \"class\": \"http://arvados.org/cwl#WorkflowRunnerResources\"\n                }\n            ],\n            \"id\": \"#main\",\n            \"inputs\": [\n                {\n                    \"default\": null,\n                    \"doc\": \"The input file to be processed.\",\n                    \"id\": \"#main/input\",\n                    \"type\": \"File\"\n                },\n                {\n                    \"default\": true,\n                    \"doc\": \"If true, reverse (decending) sort\",\n                    \"id\": \"#main/reverse_sort\",\n                    \"type\": \"boolean\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"doc\": \"The output with the lines reversed and sorted.\",\n                    \"id\": \"#main/output\",\n                    \"outputSource\": \"#main/sorted/output\",\n                    \"type\": \"File\"\n                }\n            ],\n            \"steps\": [\n                {\n                    \"id\": \"#main/rev\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/rev/input\",\n                            \"source\": \"#main/input\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/rev/output\"\n                    ],\n                    \"run\": \"#revtool.cwl\"\n                },\n                {\n                    \"id\": \"#main/sorted\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/sorted/input\",\n                            \"source\": \"#main/rev/output\"\n                        },\n                        {\n                            \"id\": \"#main/sorted/reverse\",\n                            \"source\": \"#main/reverse_sort\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/sorted/output\"\n                    ],\n                    \"run\": \"#sorttool.cwl\"\n                }\n            ]\n        },\n        {\n            \"baseCommand\": \"rev\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Reverse each line using the `rev` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#revtool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#revtool.cwl/input\",\n                    \"inputBinding\": {},\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#revtool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        },\n        {\n            \"baseCommand\": \"sort\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Sort lines using the `sort` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#sorttool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/reverse\",\n                    \"inputBinding\": {\n                        \"position\": 1,\n                        \"prefix\": \"-r\"\n                    },\n                    \"type\": \"boolean\"\n                },\n                {\n                    \"id\": \"#sorttool.cwl/input\",\n                    \"inputBinding\": {\n                        \"position\": 2\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        }\n    ],\n    \"cwlVersion\": \"v1.0\"\n}"
+
+function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
+    return cy.setupDockerImage(docker_image).then(function (dockerImage) {
+        return cy.createContainerRequest(user.token, {
+            name: name,
+            command: command,
+            container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
+            output_path: "stdout.txt",
+            priority: 1,
+            runtime_constraints: {
+                vcpus: 1,
+                ram: 1,
+            },
+            use_existing: reuse,
+            state: state,
+            mounts: {
+                '/var/lib/cwl/workflow.json': {
+                    kind: "tmp",
+                    path: "/tmp/foo",
+                },
+            },
+            owner_uuid: ownerUuid || undefined,
+        });
+    });
+}
+
 describe('Multiselect Toolbar Baseline Tests', () => {
     let activeUser;
     let adminUser;
@@ -38,6 +65,95 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             .within(() => {
                 cy.get('[data-cy=multiselect-button]').should('not.exist');
             });
+    });
+
+    it('uses selector popover to select the correct items', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject2',
+        }).as('testProject2');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject3',
+        }).as('testProject3');
+        createContainerRequest(
+            adminUser,
+            `test_container_request_1 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testWorkflow1');
+        createContainerRequest(
+            adminUser,
+            `test_container_request_2 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testWorkflow2');
+        createContainerRequest(
+            adminUser,
+            `test_container_request_3 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testWorkflow3');
+        cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testWorkflow1', '@testWorkflow2', '@testWorkflow3')
+            .then(([testProject1, testProject2, testProject3, testWorkflow1, testWorkflow2, testWorkflow3]) => {
+                cy.loginAs(adminUser);
+
+                // Data tab
+                cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], false);
+
+                    //check that a thing can be checked
+                    cy.doDataExplorerSelect(testProject1.name);
+                    cy.assertCheckboxes([testProject1.uuid], true);
+                    cy.assertCheckboxes([testProject2.uuid, testProject3.uuid], false);
+
+                    //check invert
+                    cy.get('[data-cy=data-table-multiselect-popover]').click();
+                    cy.get('[data-cy=multiselect-popover-Invert]').click();
+                    cy.assertCheckboxes([testProject1.uuid], false);
+                    cy.assertCheckboxes([testProject2.uuid, testProject3.uuid], true);
+                    //check all
+                    cy.get('[data-cy=data-table-multiselect-popover]').click();
+                    cy.get('[data-cy=multiselect-popover-All]').click();
+                    cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], true);
+                    //check none
+                    cy.get('[data-cy=data-table-multiselect-popover]').click();
+                    cy.get('[data-cy=multiselect-popover-None]').click();
+                    cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], false);
+
+                // Workflow Runs tab
+                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                cy.assertCheckboxes([testWorkflow1.uuid], false);
+
+                    //check that a thing can be checked
+                    cy.doDataExplorerSelect(testWorkflow1.name);
+                    cy.assertCheckboxes([testWorkflow1.uuid], true);
+                    cy.assertCheckboxes([testWorkflow2.uuid, testWorkflow3.uuid], false);
+
+                    //check invert
+                    cy.get('[data-cy=data-table-multiselect-popover]').click();
+                    cy.get('[data-cy=multiselect-popover-Invert]').click();
+                    cy.assertCheckboxes([testWorkflow1.uuid], false);
+                    cy.assertCheckboxes([testWorkflow2.uuid, testWorkflow3.uuid], true);
+                    //check all
+                    cy.get('[data-cy=data-table-multiselect-popover]').click();
+                    cy.get('[data-cy=multiselect-popover-All]').click();
+                    cy.assertCheckboxes([testWorkflow1.uuid, testWorkflow2.uuid, testWorkflow3.uuid], true);
+                    //check none
+                    cy.get('[data-cy=data-table-multiselect-popover]').click();
+                    cy.get('[data-cy=multiselect-popover-None]').click();
+                    cy.assertCheckboxes([testWorkflow1.uuid, testWorkflow2.uuid, testWorkflow3.uuid], false);
+
+        });
     });
 });
 
@@ -269,6 +385,7 @@ describe('For project resources', () => {
             }
         );
     });
+});
 
 describe('For collection resources', () => {
     let activeUser;
@@ -448,11 +565,11 @@ describe('For collection resources', () => {
     });
     /*
     selecting/deselecting items should:
-        select/deselect the correct items
-        display the correct toolbar items
+        select/deselect the correct items x
+        display the correct toolbar items x
     select all/deselect all/invert selection in popover should:
-        select/deselect the correct items
-        display the correct toolbar items
+        select/deselect the correct items x
+        display the correct toolbar items x
     For each resource type:
         the correct toolbar is displayed when:
             One of that resource is selected
@@ -475,7 +592,6 @@ describe('For collection resources', () => {
         for processes & any other resource:
             no multiselect options should exist
     Subprocess panel should have all of the functionality of the main process view
-    Data/Workflow runs tabs should have all of the functionality of the main process view
+    Data/Workflow runs tabs should have all of the functionality of the main process view x
     */
-    });
 });

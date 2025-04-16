@@ -85,7 +85,6 @@ export const DataTableMultiselectPopover = withStyles(styles)(
             const { classes, children, options, checkedList, disabled } = this.props;
             return <>
                 <Tooltip
-                    disableFocusListener
                     title="Select options"
                     data-cy="data-table-multiselect-popover"
                 >
