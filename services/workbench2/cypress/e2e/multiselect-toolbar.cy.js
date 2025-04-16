@@ -408,7 +408,7 @@ describe('For collection resources', () => {
             });
     });
 
-    it('should behave correctly for a single project', () => {
+    it('should behave correctly for a single collection', () => {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: adminUser.user.uuid,
@@ -421,7 +421,7 @@ describe('For collection resources', () => {
             // disabled until #22787 is resolved
             // View details
             // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testProject.name).should('be.visible');
+            // cy.get('[data-cy=details-panel]').contains(testCollection.name).should('be.visible');
             // cy.get('[data-cy=close-details-btn]').click();
 
             cy.window().then((win) => {
@@ -437,7 +437,7 @@ describe('For collection resources', () => {
             cy.get('.sharing-dialog').should('exist');
             cy.contains('button', 'Close').click();
 
-            //edit project
+            //edit collection
             cy.get('[aria-label="Edit collection"]').click();
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.contains("Edit Collection").should('be.visible');
@@ -475,7 +475,7 @@ describe('For collection resources', () => {
         });
     });
 
-    it('should behave correctly for multiple projects', () => {
+    it('should behave correctly for multiple collections', () => {
         cy.createProject({
             owningUser: adminUser,
             projectName: 'TestProject1',
@@ -563,6 +563,148 @@ describe('For collection resources', () => {
             }
         );
     });
+});
+
+describe('For process resources', () => {
+    let activeUser;
+    let adminUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
+
+    it('should behave correctly for a single process', () => {
+        createContainerRequest(
+            adminUser,
+            `test_container_request_1 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testWorkflow');
+        cy.getAll('@testWorkflow').then(([testWorkflow]) => {
+            cy.loginAs(adminUser);
+            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+
+            cy.doDataExplorerSelect(testWorkflow.name);
+            cy.assertToolbarButtons(tooltips.adminRunningProcess);
+
+            //Cancel process first to avoid unnecessary log polling
+            cy.get('[aria-label="Cancel"]').click();
+            cy.assertToolbarButtons(tooltips.adminOnHoldProcess);
+
+
+            // disabled until #22787 is resolved
+            // View details
+            // cy.get('[aria-label="View details"]').click();
+            // cy.get('[data-cy=details-panel]').contains(testWorkflow.name).should('be.visible');
+            // cy.get('[data-cy=close-details-btn]').click();
+
+            cy.window().then((win) => {
+                cy.stub(win, 'open').as('windowOpen');
+            });
+
+            // Open in new tab
+            cy.get('[aria-label="Open in new tab"]').click();
+            cy.get('@windowOpen').should('be.called');
+
+            //Copy and re-run process
+            cy.get('[aria-label="Copy and re-run process"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("Choose location for re-run").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //edit process
+            cy.get('[aria-label="Edit process"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("Edit Process").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //Outputs
+            cy.get('[aria-label="Outputs"]').click();
+            cy.contains('Output collection was trashed or deleted').should('exist');
+
+            //Add to favorites
+            cy.get('[aria-label="Add to favorites"]').click();
+            cy.get('[data-cy=favorite-star]').should('exist')
+                .parents('[data-cy=data-table-row]')
+                .contains(testWorkflow.name)
+
+            //Add to public favorites
+            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.get('[data-cy=public-favorite-star]').should('exist')
+                .parents('[data-cy=data-table-row]')
+                .contains(testWorkflow.name)
+
+            //API Details
+            cy.get('[aria-label="API Details"]').click()
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
+
+            //Remove
+            cy.get('[aria-label="Remove"]').click();
+            cy.get('[data-cy=confirmation-dialog]').within(() => {
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            });
+            cy.assertDataExplorerContains(testWorkflow.name, false);
+        });
+    });
+
+    it('should behave correctly for multiple processes', () => {
+        createContainerRequest(
+            adminUser,
+            `test_container_request_1 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testWorkflow1');
+        createContainerRequest(
+            adminUser,
+            `test_container_request_2 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testWorkflow2');
+        cy.getAll('@testWorkflow1', '@testWorkflow2').then(([testWorkflow1, testWorkflow2]) => {
+
+            cy.loginAs(adminUser);
+            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.assertDataExplorerContains(testWorkflow1.name, true);
+            cy.assertDataExplorerContains(testWorkflow2.name, true);
+
+            //assert toolbar buttons
+            cy.doDataExplorerSelect(testWorkflow1.name);
+            cy.assertToolbarButtons(tooltips.adminRunningProcess);
+            cy.doDataExplorerSelect(testWorkflow2.name);
+            cy.assertToolbarButtons(tooltips.multiProcess);
+
+            //multiprocess remove
+            cy.get('[aria-label="Remove"]').click();
+            cy.get('[data-cy=confirmation-dialog]').within(() => {
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            });
+            cy.assertDataExplorerContains(testWorkflow1.name, false);
+            cy.assertDataExplorerContains(testWorkflow2.name, false);
+        });
+    });
+});
     /*
     selecting/deselecting items should:
         select/deselect the correct items x
@@ -594,4 +736,3 @@ describe('For collection resources', () => {
     Subprocess panel should have all of the functionality of the main process view
     Data/Workflow runs tabs should have all of the functionality of the main process view x
     */
-});

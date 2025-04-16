@@ -51,51 +51,6 @@ describe("Process tests", function () {
         });
     }
 
-    describe('Multiselect Toolbar', () => {
-        it('shows the appropriate buttons in the toolbar', () => {
-
-            const msButtonTooltips = [
-                'View details',
-                'Open in new tab',
-                'Copy UUID',
-                'Copy and re-run process',
-                'Cancel',
-                'Edit process',
-                'Remove',
-                'Outputs',
-                'Add to favorites',
-                'Copy link to clipboard',
-                'API Details',
-            ];
-
-            createContainerRequest(
-                activeUser,
-                `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                "arvados/jobs",
-                ["echo", "hello world"],
-                false,
-                "Committed"
-            ).then(function (containerRequest) {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
-                cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
-                cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
-                cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-                cy.waitForDom();
-                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
-                cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parents('[data-cy=data-table-row]').click()
-                cy.waitForDom();
-                cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
-                for (let i = 0; i < msButtonTooltips.length; i++) {
-                    cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-                    cy.get('body').contains(msButtonTooltips[i]).should('exist')
-                    cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
-                }
-            });
-        })
-    })
-
     describe("Details panel", function () {
         it("shows process details", function () {
             createContainerRequest(
