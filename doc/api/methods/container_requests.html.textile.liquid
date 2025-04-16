@@ -67,7 +67,7 @@ To retrieve logs in real time while the container is running, use the log API (s
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 |cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
 |service|boolean|Indicates that this container is a long-lived service rather than a once-through batch job.  Incompatible with @use_existing@||
-|published_ports|hash|If @service@ is true, web service ports that are published by this container.  See "published ports":#published_ports below.||
+|published_ports|hash|Web service ports that are published by this container.  See "published ports":#published_ports below.||
 
 h2(#lifecycle). Container request lifecycle
 

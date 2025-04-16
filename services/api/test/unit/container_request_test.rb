@@ -1844,23 +1844,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!
     cr.use_existing = false
 
-    # Not a service
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "stuff"
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
     # Bad port number
     cr.service = true
     cr.published_ports = {
       "9000000" => {
         "access" => "public",
-        "label" => "stuff"
+        "label" => "stuff",
+        "initial_path" => "",
       }
     }
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -1884,11 +1874,23 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.save!
     end
 
+    # missing access
+    cr.published_ports = {
+      "9000" => {
+        "label" => "stuff",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
     # invalid access
     cr.published_ports = {
       "9000" => {
         "access" => "peanuts",
-        "label" => "stuff"
+        "label" => "stuff",
+        "initial_path" => "",
       }
     }
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -1898,7 +1900,20 @@ class ContainerRequestTest < ActiveSupport::TestCase
     # missing label
     cr.published_ports = {
       "9000" => {
-        "access" => "public"
+        "access" => "public",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # empty label
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "",
+        "initial_path" => "",
       }
     }
     assert_raises(ActiveRecord::RecordInvalid) do

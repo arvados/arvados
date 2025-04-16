@@ -52,7 +52,7 @@ class ContainerRequest < ArvadosModel
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
   validate :validate_runtime_token
-  validate :validate_service
+  validate :validate_published_ports
   after_validation :scrub_secrets
   after_validation :set_preemptible
   after_validation :set_container
@@ -631,33 +631,41 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def validate_service
-    if self.service
-      if self.use_existing
-        errors.add :use_existing, "cannot be true if 'service' is true"
+  def validate_published_ports
+    if self.service and self.use_existing
+      errors.add :use_existing, "cannot be true if 'service' is true"
+    end
+
+    self.published_ports.each do |k,v|
+      if !/^[0-9]+$/.match?(k)
+        errors.add :published_ports, "entry #{k} must be an decimal port number in the range 1-65535"
+        next
       end
-      self.published_ports.each do |k,v|
-        i = k.to_i
-        if i < 1 || i > 65535
-          errors.add :published_ports, "key '#{k}' must be an integer in the range 1-65535"
-        end
-        if v.is_a?(Hash)
-          if v["access"] != "private" && v["access"] != "public"
-            errors.add :published_ports, "value #{k}.access must be one of 'public' or 'private' but was '#{v["access"].inspect}'"
-          end
-          if !v["label"].is_a?(String)
-            errors.add :published_ports, "value #{k}.label must be a string but was '#{v["label"].inspect}'"
-          end
-          if !v["initial_path"].is_a?(String)
-            errors.add :published_ports, "value #{k}.initial_path must be a string but was '#{v["initial_path"].inspect}'"
-          end
-        else
-          errors.add :published_ports, "value '#{v}' must be an dict"
-        end
+      i = k.to_i
+      if i < 1 || i > 65535
+        errors.add :published_ports, "entry #{k} must be an decimal port number in the range 1-65535"
+        next
       end
-    else
-      if !self.published_ports.empty?
-        errors.add :published_ports, "can only be set when 'service' is true"
+
+      if v.is_a?(Hash)
+        v.each do |vkey, _|
+          if !["access", "label", "initial_path"].include? vkey
+            errors.add :published_ports, "entry #{k} has invalid key: #{vkey.inspect}"
+          end
+        end
+        if v["access"] != "private" && v["access"] != "public"
+          errors.add :published_ports, "entry #{k} 'access' must be one of 'public' or 'private' but was: #{v["access"].inspect}"
+        end
+        if !v["label"].is_a?(String)
+          errors.add :published_ports, "entry #{k} 'label' must be a string but was: #{v["label"].inspect}"
+        elsif v["label"].empty?
+          errors.add :published_ports, "entry #{k} 'label' cannot be empty"
+        end
+        if !v["initial_path"].is_a?(String)
+          errors.add :published_ports, "entry #{k} 'initial_path' must be a string but was: #{v["initial_path"].inspect}"
+        end
+      else
+        errors.add :published_ports, "entry #{k} must be an hash: #{v.inspect}"
       end
     end
   end
