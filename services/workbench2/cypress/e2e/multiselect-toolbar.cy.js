@@ -270,6 +270,182 @@ describe('For project resources', () => {
         );
     });
 
+describe('For collection resources', () => {
+    let activeUser;
+    let adminUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
+
+    it('should behave correctly for a single project', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        }).as("testCollection")
+        cy.getAll('@testCollection').then(([testCollection]) => {
+            cy.loginAs(adminUser);
+            cy.doDataExplorerSelect(testCollection.name);
+
+            // disabled until #22787 is resolved
+            // View details
+            // cy.get('[aria-label="View details"]').click();
+            // cy.get('[data-cy=details-panel]').contains(testProject.name).should('be.visible');
+            // cy.get('[data-cy=close-details-btn]').click();
+
+            cy.window().then((win) => {
+                cy.stub(win, 'open').as('windowOpen');
+            });
+
+            // Open in new tab
+            cy.get('[aria-label="Open in new tab"]').click();
+            cy.get('@windowOpen').should('be.called');
+
+            //Share
+            cy.get('[aria-label="Share"]').click();
+            cy.get('.sharing-dialog').should('exist');
+            cy.contains('button', 'Close').click();
+
+            //edit project
+            cy.get('[aria-label="Edit collection"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("Edit Collection").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //Make a copy
+            cy.get('[aria-label="Make a copy"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("Make a copy").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //Add to favorites
+            cy.get('[aria-label="Add to favorites"]').click();
+            cy.get('[data-cy=favorite-star]').should('exist')
+                .parents('[data-cy=data-table-row]')
+                .contains(testCollection.name)
+
+            //Add to public favorites
+            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.get('[data-cy=public-favorite-star]').should('exist')
+                .parents('[data-cy=data-table-row]')
+                .contains(testCollection.name)
+
+            //Open with 3rd party client
+            cy.get('[aria-label="Open with 3rd party client"]').click()
+            cy.get('[role=dialog]').contains('Open with 3rd party client')
+            cy.contains('Close').click()
+
+            //API Details
+            cy.get('[aria-label="API Details"]').click()
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
+        });
+    });
+
+    it('should behave correctly for multiple projects', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        }).as("testCollection1")
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        }).as("testCollection2")
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        }).as("testCollection3")
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        }).as("testCollection4")
+        cy.getAll('@testProject1', '@testCollection1', '@testCollection2', '@testCollection3', '@testCollection4')
+            .then(([testProject1, testCollection1, testCollection2, testCollection3, testCollection4]) => {
+
+                cy.loginAs(adminUser);
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testCollection1.name, true);
+                cy.assertDataExplorerContains(testCollection2.name, true);
+                cy.assertDataExplorerContains(testCollection3.name, true);
+                cy.assertDataExplorerContains(testCollection4.name, true);
+
+                //assert toolbar buttons
+                cy.doDataExplorerSelect(testCollection1.name);
+                cy.assertToolbarButtons(tooltips.adminCollection);
+                cy.doDataExplorerSelect(testCollection2.name);
+                cy.assertToolbarButtons(tooltips.multiCollection);
+
+                //check multi-collection move to
+                cy.get(`[aria-label="Move to"]`, { timeout: 5000 }).click();
+                cy.get('[data-cy=picker-dialog-project-search]').find('input').type(testProject1.name);
+                cy.get('[data-cy=projects-tree-search-picker]').contains(testProject1.name).click();
+                cy.get('[data-cy=form-submit-btn]').click();
+
+                cy.assertDataExplorerContains(testProject1.name, true).click();
+                cy.assertDataExplorerContains(testCollection1.name, true);
+                cy.assertDataExplorerContains(testCollection2.name, true);
+
+                //check multi-collection trash
+                cy.doDataExplorerSelect(testCollection1.name);
+                cy.doDataExplorerSelect(testCollection2.name);
+                cy.doToolbarAction('Move to trash');
+                cy.assertDataExplorerContains(testCollection1.name, false);
+                cy.assertDataExplorerContains(testCollection2.name, false);
+                cy.waitForDom()
+                cy.contains('Trash').click();
+                cy.assertDataExplorerContains(testCollection1.name, true);
+                cy.assertDataExplorerContains(testCollection2.name, true);
+
+                //check multi-collection unTrash
+                cy.doDataExplorerSelect(testCollection1.name);
+                cy.doDataExplorerSelect(testCollection2.name);
+                cy.doToolbarAction('Restore');
+                cy.assertDataExplorerContains(testCollection1.name, false);
+                cy.assertDataExplorerContains(testCollection2.name, false);
+                cy.contains(testProject1.name).click();
+                cy.assertDataExplorerContains(testCollection1.name, true);
+                cy.assertDataExplorerContains(testCollection2.name, true);
+
+                //share with active user to test readonly permissions
+                cy.shareWith(adminUser.token, activeUser.user.uuid, testProject1.uuid, 'can_read');
+
+                //check read only project toolbar buttons
+                cy.loginAs(activeUser);
+                cy.contains('Shared with me').click();
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.assertToolbarButtons(tooltips.readOnlyProject);
+                cy.get("[data-cy=data-table-row]").contains(testProject1.name).click();
+                cy.doDataExplorerSelect(testCollection1.name);
+                cy.assertToolbarButtons(tooltips.readonlyCollection);
+                cy.doDataExplorerSelect(testCollection2.name);
+                cy.assertToolbarButtons(tooltips.readonlyMultiCollection);
+            }
+        );
+    });
     /*
     selecting/deselecting items should:
         select/deselect the correct items
@@ -301,4 +477,5 @@ describe('For project resources', () => {
     Subprocess panel should have all of the functionality of the main process view
     Data/Workflow runs tabs should have all of the functionality of the main process view
     */
+    });
 });
