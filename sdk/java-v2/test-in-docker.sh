@@ -28,4 +28,4 @@ exec docker run --rm \
      --user "$(id -u)" \
      --volume "$PWD:/home/arvados-java" \
      --workdir /home/arvados-java \
-     gradle:6 ./test-inside-docker.sh "-Pversion=$(build_version)"
+     gradle:6 ./test-inside-docker.sh "-Pversion=$(build_version)" "$@"
