@@ -139,7 +139,21 @@ export const tooltips = {
         'API Details',
     ],
     //groups
+    multiGroup: [
+        'Remove',
+    ],
+    nonAdminGroup: [
+        'View details',
+        'API Details',
+        'Rename',
+        'Remove',
+    ],
     //users
+    nonAdminUser: [
+        'API Details',
+        'Attributes',
+        'Remove',
+    ],
     //multiple resource types
     projectAndCollection: [
         'Move to',

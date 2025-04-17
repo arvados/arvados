@@ -812,6 +812,98 @@ describe('For workflow resources', () => {
     });
 });
 
+describe('For groups', () => {
+    let activeUser;
+    let adminUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
+
+    it('should behave correctly for a single group', () => {
+        cy.createGroup(adminUser.token, {
+            group_class: "role",
+            name: `Test group ${Math.floor(Math.random() * 999999)}`,
+        }).as('testGroup');
+
+        cy.getAll('@testGroup').then(([testGroup]) => {
+            cy.loginAs(adminUser);
+            cy.contains('Groups').click();
+            cy.doDataExplorerSelect(testGroup.name);
+            cy.assertToolbarButtons(tooltips.nonAdminGroup);
+
+            // disabled until #22787 is resolved
+            // View details
+            // cy.get('[aria-label="View details"]').click();
+            // cy.get('[data-cy=details-panel]').contains(testGroup.name).should('be.visible');
+            // cy.get('[data-cy=close-details-btn]').click();
+
+            //API Details
+            cy.get('[aria-label="API Details"]').click()
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
+
+            //rename group
+            cy.get('[aria-label="Rename"]').click();
+            cy.get('[data-cy=form-dialog]').within(() => {
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //remove group
+            cy.get('[aria-label="Remove"]').click();
+            cy.get('[data-cy=confirmation-dialog]').within(() => {
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            });
+            cy.contains('Removed').should('be.visible');
+            cy.assertDataExplorerContains(testGroup.name, false);
+        });
+    });
+
+    it('should behave correctly for multiple groups', () => {
+        cy.createGroup(adminUser.token, {
+            group_class: "role",
+            name: `Test group ${Math.floor(Math.random() * 999999)}`,
+        }).as('testGroup1');
+        cy.createGroup(adminUser.token, {
+            group_class: "role",
+            name: `Test group ${Math.floor(Math.random() * 999999)}`,
+        }).as('testGroup2');
+        cy.getAll('@testGroup1', '@testGroup2').then(([testGroup1, testGroup2]) => {
+            cy.loginAs(adminUser);
+            cy.contains('Groups').click();
+            cy.assertDataExplorerContains(testGroup1.name, true);
+            cy.assertDataExplorerContains(testGroup2.name, true);
+
+            //assert toolbar buttons
+            cy.doDataExplorerSelect(testGroup1.name);
+            cy.assertToolbarButtons(tooltips.nonAdminGroup);
+            cy.doDataExplorerSelect(testGroup2.name);
+            cy.assertToolbarButtons(tooltips.multiGroup);
+
+            //multi-group remove
+            cy.get('[aria-label="Remove"]').click();
+            cy.get('[data-cy=confirmation-dialog]').within(() => {
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            });
+            cy.assertDataExplorerContains(testGroup1.name, false);
+            cy.assertDataExplorerContains(testGroup2.name, false);
+        });
+    });
+});
+
 describe('For multiple resource types', () => {
     let activeUser;
     let adminUser;
