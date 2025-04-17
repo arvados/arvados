@@ -87,7 +87,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             ["echo", "hello world"],
             false,
             "Committed"
-        ).as('testWorkflow1');
+        ).as('testProcess1');
         createContainerRequest(
             adminUser,
             `test_container_request_2 ${Math.floor(Math.random() * 999999)}`,
@@ -95,7 +95,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             ["echo", "hello world"],
             false,
             "Committed"
-        ).as('testWorkflow2');
+        ).as('testProcess2');
         createContainerRequest(
             adminUser,
             `test_container_request_3 ${Math.floor(Math.random() * 999999)}`,
@@ -104,8 +104,8 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             false,
             "Committed"
         ).as('testWorkflow3');
-        cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testWorkflow1', '@testWorkflow2', '@testWorkflow3')
-            .then(([testProject1, testProject2, testProject3, testWorkflow1, testWorkflow2, testWorkflow3]) => {
+        cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testProcess1', '@testProcess2', '@testWorkflow3')
+            .then(([testProject1, testProject2, testProject3, testProcess1, testProcess2, testWorkflow3]) => {
                 cy.loginAs(adminUser);
 
                 // Data tab
@@ -132,26 +132,26 @@ describe('Multiselect Toolbar Baseline Tests', () => {
 
                 // Workflow Runs tab
                 cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
-                cy.assertCheckboxes([testWorkflow1.uuid], false);
+                cy.assertCheckboxes([testProcess1.uuid], false);
 
                     //check that a thing can be checked
-                    cy.doDataExplorerSelect(testWorkflow1.name);
-                    cy.assertCheckboxes([testWorkflow1.uuid], true);
-                    cy.assertCheckboxes([testWorkflow2.uuid, testWorkflow3.uuid], false);
+                    cy.doDataExplorerSelect(testProcess1.name);
+                    cy.assertCheckboxes([testProcess1.uuid], true);
+                    cy.assertCheckboxes([testProcess2.uuid, testWorkflow3.uuid], false);
 
                     //check invert
                     cy.get('[data-cy=data-table-multiselect-popover]').click();
                     cy.get('[data-cy=multiselect-popover-Invert]').click();
-                    cy.assertCheckboxes([testWorkflow1.uuid], false);
-                    cy.assertCheckboxes([testWorkflow2.uuid, testWorkflow3.uuid], true);
+                    cy.assertCheckboxes([testProcess1.uuid], false);
+                    cy.assertCheckboxes([testProcess2.uuid, testWorkflow3.uuid], true);
                     //check all
                     cy.get('[data-cy=data-table-multiselect-popover]').click();
                     cy.get('[data-cy=multiselect-popover-All]').click();
-                    cy.assertCheckboxes([testWorkflow1.uuid, testWorkflow2.uuid, testWorkflow3.uuid], true);
+                    cy.assertCheckboxes([testProcess1.uuid, testProcess2.uuid, testWorkflow3.uuid], true);
                     //check none
                     cy.get('[data-cy=data-table-multiselect-popover]').click();
                     cy.get('[data-cy=multiselect-popover-None]').click();
-                    cy.assertCheckboxes([testWorkflow1.uuid, testWorkflow2.uuid, testWorkflow3.uuid], false);
+                    cy.assertCheckboxes([testProcess1.uuid, testProcess2.uuid, testWorkflow3.uuid], false);
 
         });
     });
@@ -673,7 +673,7 @@ describe('For process resources', () => {
             ["echo", "hello world"],
             false,
             "Committed"
-        ).as('testWorkflow1');
+        ).as('testProcess1');
         createContainerRequest(
             adminUser,
             `test_container_request_2 ${Math.floor(Math.random() * 999999)}`,
@@ -681,18 +681,18 @@ describe('For process resources', () => {
             ["echo", "hello world"],
             false,
             "Committed"
-        ).as('testWorkflow2');
-        cy.getAll('@testWorkflow1', '@testWorkflow2').then(([testWorkflow1, testWorkflow2]) => {
+        ).as('testProcess2');
+        cy.getAll('@testProcess1', '@testProcess2').then(([testProcess1, testProcess2]) => {
 
             cy.loginAs(adminUser);
             cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
-            cy.assertDataExplorerContains(testWorkflow1.name, true);
-            cy.assertDataExplorerContains(testWorkflow2.name, true);
+            cy.assertDataExplorerContains(testProcess1.name, true);
+            cy.assertDataExplorerContains(testProcess2.name, true);
 
             //assert toolbar buttons
-            cy.doDataExplorerSelect(testWorkflow1.name);
+            cy.doDataExplorerSelect(testProcess1.name);
             cy.assertToolbarButtons(tooltips.adminRunningProcess);
-            cy.doDataExplorerSelect(testWorkflow2.name);
+            cy.doDataExplorerSelect(testProcess2.name);
             cy.assertToolbarButtons(tooltips.multiProcess);
 
             //multiprocess remove
@@ -700,8 +700,88 @@ describe('For process resources', () => {
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
-            cy.assertDataExplorerContains(testWorkflow1.name, false);
-            cy.assertDataExplorerContains(testWorkflow2.name, false);
+            cy.assertDataExplorerContains(testProcess1.name, false);
+            cy.assertDataExplorerContains(testProcess2.name, false);
+        });
+    });
+});
+
+describe('For multiple resource types', () => {
+    let activeUser;
+    let adminUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
+
+    it('shows the appropriate buttons in the multiselect toolbar', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject',
+        }).as('testProject');
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        }).as("testCollection")
+        createContainerRequest(
+            adminUser,
+            `test_container_request_1 ${Math.floor(Math.random() * 999999)}`,
+            "arvados/jobs",
+            ["echo", "hello world"],
+            false,
+            "Committed"
+        ).as('testProcess');
+
+        cy.getAll('@testProject', '@testCollection', '@testProcess')
+            .then(([testProject, testCollection,  testProcess]) => {
+
+            cy.loginAs(adminUser);
+            //add resources to favorites so they are all in the same table
+            cy.doDataExplorerSelect(testProject.name);
+            cy.get('[aria-label="Add to favorites"]').click();
+            //deselect project
+            cy.doDataExplorerSelect(testProject.name);
+            cy.doDataExplorerSelect(testCollection.name);
+            cy.get('[aria-label="Add to favorites"]').click();
+            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doDataExplorerSelect(testProcess.name);
+            cy.get('[aria-label="Add to favorites"]').click();
+
+            cy.contains('My Favorites').click();
+
+            cy.assertDataExplorerContains(testProject.name, true);
+            cy.assertDataExplorerContains(testCollection.name, true);
+            cy.assertDataExplorerContains(testProcess.name, true);
+
+            cy.doDataExplorerSelect(testProject.name);
+            cy.doDataExplorerSelect(testCollection.name);
+            cy.assertToolbarButtons(tooltips.projectAndCollection);
+
+            cy.get('[data-cy=data-table-multiselect-popover]').click();
+            cy.get('[data-cy=multiselect-popover-None]').click();
+            cy.doDataExplorerSelect(testProcess.name);
+            cy.doDataExplorerSelect(testCollection.name);
+            cy.assertToolbarButtons(tooltips.processAndCollection);
+
+            cy.get('[data-cy=data-table-multiselect-popover]').click();
+            cy.get('[data-cy=multiselect-popover-None]').click();
+            cy.doDataExplorerSelect(testProcess.name);
+            cy.doDataExplorerSelect(testProject.name);
+            cy.assertToolbarButtons(tooltips.processAndProject);
         });
     });
 });

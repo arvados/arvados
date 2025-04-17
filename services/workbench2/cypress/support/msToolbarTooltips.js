@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 export const tooltips = {
+    // projects
     multiProject: [
         'Move to',
         'Move to trash',
@@ -59,6 +60,7 @@ export const tooltips = {
         'Open with 3rd party client',
         'API Details',
     ],
+    //colloections
     multiCollection: [
         'Move to',
         'Make a copy',
@@ -92,6 +94,7 @@ export const tooltips = {
     readonlyMultiCollection: [
         'Make a copy',
     ],
+    //processes
     multiProcess: [
         'Remove',
     ],
@@ -122,4 +125,14 @@ export const tooltips = {
         'Copy link to clipboard',
         'API Details',
     ],
+    //workflows
+    //groups
+    //users
+    //multiple resource types
+    projectAndCollection: [
+        'Move to',
+        'Move to trash',
+    ],
+    processAndCollection: [],
+    processAndProject: [],
 };
