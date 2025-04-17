@@ -594,12 +594,12 @@ describe('For process resources', () => {
             ["echo", "hello world"],
             false,
             "Committed"
-        ).as('testWorkflow');
-        cy.getAll('@testWorkflow').then(([testWorkflow]) => {
+        ).as('testProcess');
+        cy.getAll('@testProcess').then(([testProcess]) => {
             cy.loginAs(adminUser);
             cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
 
-            cy.doDataExplorerSelect(testWorkflow.name);
+            cy.doDataExplorerSelect(testProcess.name);
             cy.assertToolbarButtons(tooltips.adminRunningProcess);
 
             //Cancel process first to avoid unnecessary log polling
@@ -610,7 +610,7 @@ describe('For process resources', () => {
             // disabled until #22787 is resolved
             // View details
             // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testWorkflow.name).should('be.visible');
+            // cy.get('[data-cy=details-panel]').contains(testProcess.name).should('be.visible');
             // cy.get('[data-cy=close-details-btn]').click();
 
             cy.window().then((win) => {
@@ -643,13 +643,13 @@ describe('For process resources', () => {
             cy.get('[aria-label="Add to favorites"]').click();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
-                .contains(testWorkflow.name)
+                .contains(testProcess.name)
 
             //Add to public favorites
             cy.get('[aria-label="Add to public favorites"]').click()
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
-                .contains(testWorkflow.name)
+                .contains(testProcess.name)
 
             //API Details
             cy.get('[aria-label="API Details"]').click()
@@ -661,7 +661,7 @@ describe('For process resources', () => {
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
-            cy.assertDataExplorerContains(testWorkflow.name, false);
+            cy.assertDataExplorerContains(testProcess.name, false);
         });
     });
 
@@ -702,6 +702,112 @@ describe('For process resources', () => {
             });
             cy.assertDataExplorerContains(testProcess1.name, false);
             cy.assertDataExplorerContains(testProcess2.name, false);
+        });
+    });
+});
+
+describe('For workflow resources', () => {
+    let activeUser;
+    let adminUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
+
+    it('should behave correctly for a single workflow', () => {
+        cy.createWorkflow(adminUser.token, {
+            name: `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
+            definition: testWFDefinition,
+            owner_uuid: adminUser.user.uuid,
+            }).as('testWorkflow');
+        cy.getAll('@testWorkflow').then(function ([testWorkflow]) {
+            cy.loginAs(adminUser);
+            cy.assertDataExplorerContains(testWorkflow.name, true);
+
+            //assert toolbar buttons
+            cy.doDataExplorerSelect(testWorkflow.name);
+            cy.assertToolbarButtons(tooltips.adminWorkflow);
+
+            // disabled until #22787 is resolved
+            // View details
+            // cy.get('[aria-label="View details"]').click();
+            // cy.get('[data-cy=details-panel]').contains(testWorkflow.name).should('be.visible');
+            // cy.get('[data-cy=close-details-btn]').click();
+
+            cy.window().then((win) => {
+                cy.stub(win, 'open').as('windowOpen');
+            });
+
+            // Open in new tab
+            cy.get('[aria-label="Open in new tab"]').click();
+            cy.get('@windowOpen').should('be.called');
+
+            //Run workflow
+            cy.get('[aria-label="Run Workflow"]').click();
+            cy.get('[data-cy=choose-a-project-dialog]').within(() => {
+                cy.contains("Choose the project where the workflow will run").should('be.visible');
+                cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
+            });
+            cy.contains('Home Projects').click();
+            cy.doDataExplorerSelect(testWorkflow.name);
+
+            //api details
+            cy.get('[aria-label="API Details"]').click()
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
+
+            //delete workflow
+            cy.get('[aria-label="Delete Workflow"]').click();
+            cy.get('[data-cy=confirmation-dialog]').within(() => {
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            });
+            cy.contains('Removed').should('be.visible');
+            cy.assertDataExplorerContains(testWorkflow.name, false);
+        });
+    });
+
+    it('should behave correctly for multiple workflows', () => {
+        cy.createWorkflow(adminUser.token, {
+            name: `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
+            definition: testWFDefinition,
+            owner_uuid: adminUser.user.uuid,
+            }).as('testWorkflow1');
+        cy.createWorkflow(adminUser.token, {
+            name: `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
+            definition: testWFDefinition,
+            owner_uuid: adminUser.user.uuid,
+            }).as('testWorkflow2');
+        cy.getAll('@testWorkflow1', '@testWorkflow2').then(function ([testWorkflow1, testWorkflow2]) {
+            cy.loginAs(adminUser);
+            cy.assertDataExplorerContains(testWorkflow1.name, true);
+            cy.assertDataExplorerContains(testWorkflow2.name, true);
+
+            //assert toolbar buttons
+            cy.doDataExplorerSelect(testWorkflow1.name);
+            cy.assertToolbarButtons(tooltips.adminWorkflow);
+            cy.doDataExplorerSelect(testWorkflow2.name);
+            cy.assertToolbarButtons(tooltips.multiWorkflow);
+
+            //multi-workflow remove
+            cy.get('[aria-label="Delete Workflow"]').click();
+            cy.get('[data-cy=confirmation-dialog]').within(() => {
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            });
+            cy.assertDataExplorerContains(testWorkflow1.name, false);
+            cy.assertDataExplorerContains(testWorkflow2.name, false);
         });
     });
 });

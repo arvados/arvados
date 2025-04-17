@@ -126,6 +126,18 @@ export const tooltips = {
         'API Details',
     ],
     //workflows
+    multiWorkflow: [
+        'Delete Workflow',
+    ],
+    adminWorkflow: [
+        'View details',
+        'Open in new tab',
+        'Copy UUID',
+        'Run Workflow',
+        'Delete Workflow',
+        'Copy link to clipboard',
+        'API Details',
+    ],
     //groups
     //users
     //multiple resource types
