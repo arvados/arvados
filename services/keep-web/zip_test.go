@@ -129,6 +129,20 @@ func (s *IntegrationSuite) TestZip_Logging(c *C) {
 	})
 }
 
+func (s *IntegrationSuite) TestZip_Logging_OneFile(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:      "POST",
+		reqContentType: "application/json",
+		reqToken:       arvadostest.ActiveTokenV2,
+		reqBody:        `["dir1/file1.txt"]`,
+		expectStatus:   200,
+		expectFiles:    []string{"dir1/file1.txt"},
+		expectLogsMatch: []string{
+			`(?ms).*collection_file_path=dir1/file1.txt.*`,
+		},
+	})
+}
+
 func (s *IntegrationSuite) TestZip_EntireCollection_GET(c *C) {
 	s.testZip(c, testZipOptions{
 		reqMethod:    "GET",

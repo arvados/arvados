@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"mime"
 	"net/http"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -21,7 +22,7 @@ import (
 )
 
 // serveZip handles a request for a zip archive.
-func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cachedSession, sitefs arvados.CustomFileSystem, path string, tokenUser *arvados.User) {
+func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cachedSession, sitefs arvados.CustomFileSystem, ziproot string, tokenUser *arvados.User) {
 	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "POST" {
 		// This is a generic 400, not 405 (method not allowed)
 		// because this method/URL combination is allowed,
@@ -35,7 +36,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	coll, subdir := h.determineCollection(sitefs, path)
+	coll, subdir := h.determineCollection(sitefs, ziproot)
 	if coll == nil || subdir != "" {
 		http.Error(w, "zip archive can only be served from the root directory of a collection", http.StatusBadRequest)
 		return
@@ -55,7 +56,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 			return
 		}
 	}
-	collfs, err := fs.Sub(arvados.FS(sitefs), strings.TrimSuffix(path, "/"))
+	collfs, err := fs.Sub(arvados.FS(sitefs), strings.TrimSuffix(ziproot, "/"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -146,9 +147,17 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		zipfilename += fmt.Sprintf(" - %d files", len(filepaths))
 	}
 
+	logpath := ziproot
+	if len(filepaths) == 1 {
+		// If downloading a zip file with exactly one file,
+		// log that file as collection_file_path in the audit
+		// logs.  (Otherwise, leave collection_file_path
+		// empty.)
+		logpath = path.Join(logpath, filepaths[0])
+	}
 	rGET := r.Clone(r.Context())
 	rGET.Method = "GET"
-	h.logUploadOrDownload(rGET, session.arvadosclient, session.fs, path, nil, tokenUser)
+	h.logUploadOrDownload(rGET, session.arvadosclient, session.fs, logpath, nil, tokenUser)
 
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": zipfilename}))
 	w.Header().Set("Content-Type", "application/zip")
