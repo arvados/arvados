@@ -232,6 +232,10 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "collection is missing cwl_inputs" do
+    # The following is allowed, because it isn't linked.
+    # This is what legacy arvados-cwl-runner instances
+    # have been creating, so we want to make sure we can still
+    # create them, but not link them.
     post "/arvados/v1/collections",
          params: {:format => :json,
                   collection: {
@@ -239,12 +243,23 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
                     description: "the workflow that tests linking collection and workflow records",
                     properties: {
                       "type": "workflow",
-                                 "arv:workflowMain": "foo.cwl"
+                      "arv:workflowMain": "foo.cwl"
                     }
                   }
                  },
          headers: auth(:active),
          as: :json
+    assert_response :success
+    collection_response = json_response
+
+    # But it can't be linked because it doesn't have all the fields
+    post "/arvados/v1/workflows",
+         params: {:format => :json,
+                  :workflow => {
+                    collection_uuid: collection_response["uuid"]
+                  }
+                 },
+      headers: auth(:active)
     assert_response 422
     assert_match(/missing field 'arv:cwl_inputs' in collection properties/, json_response["errors"][0])
   end
@@ -276,6 +291,17 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
                  },
          headers: auth(:active),
          as: :json
+    assert_response :success
+    collection_response = json_response
+
+    # But it can't be linked because one of the fields is invalid
+    post "/arvados/v1/workflows",
+         params: {:format => :json,
+                  :workflow => {
+                    collection_uuid: collection_response["uuid"]
+                  }
+                 },
+      headers: auth(:active)
     assert_response 422
     assert_match(/expected field 'arv:cwl_inputs' in collection properties to be a Array/, json_response["errors"][0])
   end

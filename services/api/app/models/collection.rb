@@ -616,9 +616,10 @@ class Collection < ArvadosModel
     #   "workflow_type_property" validation and can't be changed or removed as
     #   long as there are linked workflows
     #
-    # - "workflows" is provided by the ActiveRecord association at
-    #   the top of the file
-    if !new_record? && properties["type"] == "workflow"
+    # - "workflows" is provided by the ActiveRecord association at the
+    #   top of the file, we only want to do this (including
+    #   enforcement of property contents) if the collection is linked.
+    if !new_record? && properties["type"] == "workflow" && workflows.any?
       update_linked_workflows(workflows, true)
     end
   end
