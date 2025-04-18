@@ -766,8 +766,7 @@ Cypress.Commands.add("assertToolbarButtons", (tooltips) => {
     cy.get('[data-cy=multiselect-button]').should('have.length', tooltips.length)
         for (let i = 0; i < tooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.wait(200);
-            cy.get('body').contains(tooltips[i]).should('exist')
+            cy.get('body').contains(tooltips[i]).should('exist', {timeout: 10000})
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
 });

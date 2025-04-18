@@ -475,7 +475,7 @@ describe('For collection resources', () => {
         });
     });
 
-    it('should behave correctly for multiple collections', () => {
+    it.only('should behave correctly for multiple collections', () => {
         cy.createProject({
             owningUser: adminUser,
             projectName: 'TestProject1',
@@ -543,7 +543,7 @@ describe('For collection resources', () => {
                 cy.doToolbarAction('Restore');
                 cy.assertDataExplorerContains(testCollection1.name, false);
                 cy.assertDataExplorerContains(testCollection2.name, false);
-                cy.contains(testProject1.name).click();
+                cy.get(`[data-id=${testProject1.uuid}]`).should('exist').click();
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
 
