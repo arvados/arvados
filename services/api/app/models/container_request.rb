@@ -638,12 +638,12 @@ class ContainerRequest < ArvadosModel
 
     self.published_ports.each do |k,v|
       if !/^[0-9]+$/.match?(k)
-        errors.add :published_ports, "entry #{k} must be an decimal port number in the range 1-65535"
+        errors.add :published_ports, "entry #{k} must be a decimal port number in the range 1-65535"
         next
       end
       i = k.to_i
       if i < 1 || i > 65535
-        errors.add :published_ports, "entry #{k} must be an decimal port number in the range 1-65535"
+        errors.add :published_ports, "entry #{k} must be a decimal port number in the range 1-65535"
         next
       end
 
