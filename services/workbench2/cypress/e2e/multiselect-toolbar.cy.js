@@ -475,7 +475,7 @@ describe('For collection resources', () => {
         });
     });
 
-    it.only('should behave correctly for multiple collections', () => {
+    it('should behave correctly for multiple collections', () => {
         cy.createProject({
             owningUser: adminUser,
             projectName: 'TestProject1',
