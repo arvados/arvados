@@ -92,6 +92,8 @@ class Container < ArvadosModel
     t.add :output_properties
     t.add :cost
     t.add :subrequests_cost
+    t.add :service
+    t.add :published_ports
   end
 
   # Supported states for a container
@@ -172,6 +174,8 @@ class Container < ArvadosModel
         runtime_user_uuid: runtime_user.uuid,
         runtime_auth_scopes: runtime_auth_scopes,
         output_storage_classes: req.output_storage_classes,
+        service: req.service,
+        published_ports: req.published_ports,
       }
     end
     act_as_system_user do
@@ -571,7 +575,8 @@ class Container < ArvadosModel
                      :priority, :runtime_constraints,
                      :scheduling_parameters, :secret_mounts,
                      :runtime_token, :runtime_user_uuid,
-                     :runtime_auth_scopes, :output_storage_classes)
+                     :runtime_auth_scopes, :output_storage_classes,
+                     :service, :published_ports)
     end
 
     case self.state

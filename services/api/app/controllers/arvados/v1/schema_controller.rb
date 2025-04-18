@@ -363,6 +363,16 @@ values are:
   * `\"Complete\"` --- A dispatcher ran this container to completion and recorded the results.
 
 ",
+    "Container.service" =>
+    "A boolean flag. If set, it informs the system that this is a long-running container
+that functions as a system service or web app, rather than a once-through batch operation.",
+    "Container.published_ports" =>
+    "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados
+will proxy HTTP requests to these ports.  Values are hashes with the following keys:
+
+  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.
+  * `\"label\"` --- A human readable label describing the service, for display in Workbench.
+  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
 
     "ContainerRequest.auth_uuid" =>
     "The UUID of the Arvados API client authorization token that a
@@ -414,6 +424,16 @@ Possible values are:
 request with an eligible container that already exists. Otherwise, Arvados will
 satisfy this container request with a newer container, which will usually result
 in the container running again.",
+    "ContainerRequest.service" =>
+    "A boolean flag. If set, it informs the system that this request is for a long-running container
+that functions as a system service or web app, rather than a once-through batch operation.",
+    "ContainerRequest.published_ports" =>
+    "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados
+will proxy HTTP requests to these ports.  Values are hashes with the following keys:
+
+  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.
+  * `\"label\"` --- A human readable label describing the service, for display in Workbench.
+  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
 
     "Group.group_class" =>
     "A string representing which type of group this is. One of:
@@ -513,7 +533,7 @@ cluster, and automatically passes most permissions checks.",
       # format is YYYYMMDD, must be fixed width (needs to be lexically
       # sortable), updated manually, may be used by clients to
       # determine availability of API server features.
-      revision: "20250128",
+      revision: "20250327",
       source_version: AppVersion.hash,
       sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
       packageVersion: AppVersion.package_version,

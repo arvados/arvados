@@ -1828,4 +1828,118 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 3+7+9, cr.cumulative_cost
   end
 
+  test "Service cannot use existing container" do
+    set_user_from_auth :active
+    cr = create_minimal_req!
+    cr.service = true
+    cr.use_existing = true
+    cr.state = "Committed"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+  end
+
+  test "published_ports validation" do
+    set_user_from_auth :active
+    cr = create_minimal_req!
+    cr.use_existing = false
+
+    # Bad port number
+    cr.service = true
+    cr.published_ports = {
+      "9000000" => {
+        "access" => "public",
+        "label" => "stuff",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # Not a hash
+    cr.published_ports = {
+      "9000" => ""
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # empty hash
+    cr.published_ports = {
+      "9000" => {
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # missing access
+    cr.published_ports = {
+      "9000" => {
+        "label" => "stuff",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # invalid access
+    cr.published_ports = {
+      "9000" => {
+        "access" => "peanuts",
+        "label" => "stuff",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # missing label
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # empty label
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "",
+        "initial_path" => "",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # Missing initial_path
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "stuff",
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
+
+    # All good!
+    cr.published_ports = {
+      "9000" => {
+        "access" => "public",
+        "label" => "stuff",
+        "initial_path" => "",
+      }
+    }
+    cr.save!
+  end
+
 end

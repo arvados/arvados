@@ -172,6 +172,18 @@ Clusters:
       Health:
         InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
+      ContainerWebServices:
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
+        # URL used to make HTTP requests that are proxied to
+        # containers (which may host web apps or APIs).  Requires
+        # wildcard DNS and TLS certificate.
+        #
+        # From a subdomain:
+        #   https://*.containers.uuid_prefix.arvadosapi.com
+        #
+        # From the main domain:
+        #   https://*--containers.uuid_prefix.arvadosapi.com
+        ExternalURL: ""
 
     PostgreSQL:
       # max concurrent connections per arvados server daemon
