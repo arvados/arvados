@@ -8,78 +8,82 @@ import "time"
 
 // Container is an arvados#container resource.
 type Container struct {
-	UUID                      string                 `json:"uuid"`
-	Etag                      string                 `json:"etag"`
-	CreatedAt                 time.Time              `json:"created_at"`
-	ModifiedByUserUUID        string                 `json:"modified_by_user_uuid"`
-	ModifiedAt                time.Time              `json:"modified_at"`
-	Command                   []string               `json:"command"`
-	ContainerImage            string                 `json:"container_image"`
-	Cwd                       string                 `json:"cwd"`
-	Environment               map[string]string      `json:"environment"`
-	LockedByUUID              string                 `json:"locked_by_uuid"`
-	LockCount                 int                    `json:"lock_count"`
-	Mounts                    map[string]Mount       `json:"mounts"`
-	Output                    string                 `json:"output"`
-	OutputPath                string                 `json:"output_path"`
-	OutputGlob                []string               `json:"output_glob"`
-	Priority                  int64                  `json:"priority"`
-	RuntimeConstraints        RuntimeConstraints     `json:"runtime_constraints"`
-	State                     ContainerState         `json:"state"`
-	SchedulingParameters      SchedulingParameters   `json:"scheduling_parameters"`
-	ExitCode                  int                    `json:"exit_code"`
-	RuntimeStatus             map[string]interface{} `json:"runtime_status"`
-	StartedAt                 *time.Time             `json:"started_at"`  // nil if not yet started
-	FinishedAt                *time.Time             `json:"finished_at"` // nil if not yet finished
-	GatewayAddress            string                 `json:"gateway_address"`
-	InteractiveSessionStarted bool                   `json:"interactive_session_started"`
-	OutputStorageClasses      []string               `json:"output_storage_classes"`
-	RuntimeUserUUID           string                 `json:"runtime_user_uuid"`
-	RuntimeAuthScopes         []string               `json:"runtime_auth_scopes"`
-	RuntimeToken              string                 `json:"runtime_token"`
-	AuthUUID                  string                 `json:"auth_uuid"`
-	Log                       string                 `json:"log"`
-	Cost                      float64                `json:"cost"`
-	SubrequestsCost           float64                `json:"subrequests_cost"`
+	UUID                      string                   `json:"uuid"`
+	Etag                      string                   `json:"etag"`
+	CreatedAt                 time.Time                `json:"created_at"`
+	ModifiedByUserUUID        string                   `json:"modified_by_user_uuid"`
+	ModifiedAt                time.Time                `json:"modified_at"`
+	Command                   []string                 `json:"command"`
+	ContainerImage            string                   `json:"container_image"`
+	Cwd                       string                   `json:"cwd"`
+	Environment               map[string]string        `json:"environment"`
+	LockedByUUID              string                   `json:"locked_by_uuid"`
+	LockCount                 int                      `json:"lock_count"`
+	Mounts                    map[string]Mount         `json:"mounts"`
+	Output                    string                   `json:"output"`
+	OutputPath                string                   `json:"output_path"`
+	OutputGlob                []string                 `json:"output_glob"`
+	Priority                  int64                    `json:"priority"`
+	RuntimeConstraints        RuntimeConstraints       `json:"runtime_constraints"`
+	State                     ContainerState           `json:"state"`
+	SchedulingParameters      SchedulingParameters     `json:"scheduling_parameters"`
+	ExitCode                  int                      `json:"exit_code"`
+	RuntimeStatus             map[string]interface{}   `json:"runtime_status"`
+	StartedAt                 *time.Time               `json:"started_at"`  // nil if not yet started
+	FinishedAt                *time.Time               `json:"finished_at"` // nil if not yet finished
+	GatewayAddress            string                   `json:"gateway_address"`
+	InteractiveSessionStarted bool                     `json:"interactive_session_started"`
+	OutputStorageClasses      []string                 `json:"output_storage_classes"`
+	RuntimeUserUUID           string                   `json:"runtime_user_uuid"`
+	RuntimeAuthScopes         []string                 `json:"runtime_auth_scopes"`
+	RuntimeToken              string                   `json:"runtime_token"`
+	AuthUUID                  string                   `json:"auth_uuid"`
+	Log                       string                   `json:"log"`
+	Cost                      float64                  `json:"cost"`
+	SubrequestsCost           float64                  `json:"subrequests_cost"`
+	Service                   bool                     `json:"service"`
+	PublishedPorts            map[string]PublishedPort `json:"published_ports"`
 }
 
 // ContainerRequest is an arvados#container_request resource.
 type ContainerRequest struct {
-	UUID                    string                 `json:"uuid"`
-	OwnerUUID               string                 `json:"owner_uuid"`
-	CreatedAt               time.Time              `json:"created_at"`
-	ModifiedByUserUUID      string                 `json:"modified_by_user_uuid"`
-	ModifiedAt              time.Time              `json:"modified_at"`
-	Etag                    string                 `json:"etag"`
-	Name                    string                 `json:"name"`
-	Description             string                 `json:"description"`
-	Properties              map[string]interface{} `json:"properties"`
-	State                   ContainerRequestState  `json:"state"`
-	RequestingContainerUUID string                 `json:"requesting_container_uuid"`
-	ContainerUUID           string                 `json:"container_uuid"`
-	ContainerCountMax       int                    `json:"container_count_max"`
-	Mounts                  map[string]Mount       `json:"mounts"`
-	RuntimeConstraints      RuntimeConstraints     `json:"runtime_constraints"`
-	SchedulingParameters    SchedulingParameters   `json:"scheduling_parameters"`
-	ContainerImage          string                 `json:"container_image"`
-	Environment             map[string]string      `json:"environment"`
-	Cwd                     string                 `json:"cwd"`
-	Command                 []string               `json:"command"`
-	OutputPath              string                 `json:"output_path"`
-	OutputGlob              []string               `json:"output_glob"`
-	OutputName              string                 `json:"output_name"`
-	OutputTTL               int                    `json:"output_ttl"`
-	Priority                int                    `json:"priority"`
-	UseExisting             bool                   `json:"use_existing"`
-	LogUUID                 string                 `json:"log_uuid"`
-	OutputUUID              string                 `json:"output_uuid"`
-	RuntimeToken            string                 `json:"runtime_token"`
-	ExpiresAt               time.Time              `json:"expires_at"`
-	Filters                 []Filter               `json:"filters"`
-	ContainerCount          int                    `json:"container_count"`
-	OutputStorageClasses    []string               `json:"output_storage_classes"`
-	OutputProperties        map[string]interface{} `json:"output_properties"`
-	CumulativeCost          float64                `json:"cumulative_cost"`
+	UUID                    string                   `json:"uuid"`
+	OwnerUUID               string                   `json:"owner_uuid"`
+	CreatedAt               time.Time                `json:"created_at"`
+	ModifiedByUserUUID      string                   `json:"modified_by_user_uuid"`
+	ModifiedAt              time.Time                `json:"modified_at"`
+	Etag                    string                   `json:"etag"`
+	Name                    string                   `json:"name"`
+	Description             string                   `json:"description"`
+	Properties              map[string]interface{}   `json:"properties"`
+	State                   ContainerRequestState    `json:"state"`
+	RequestingContainerUUID string                   `json:"requesting_container_uuid"`
+	ContainerUUID           string                   `json:"container_uuid"`
+	ContainerCountMax       int                      `json:"container_count_max"`
+	Mounts                  map[string]Mount         `json:"mounts"`
+	RuntimeConstraints      RuntimeConstraints       `json:"runtime_constraints"`
+	SchedulingParameters    SchedulingParameters     `json:"scheduling_parameters"`
+	ContainerImage          string                   `json:"container_image"`
+	Environment             map[string]string        `json:"environment"`
+	Cwd                     string                   `json:"cwd"`
+	Command                 []string                 `json:"command"`
+	OutputPath              string                   `json:"output_path"`
+	OutputGlob              []string                 `json:"output_glob"`
+	OutputName              string                   `json:"output_name"`
+	OutputTTL               int                      `json:"output_ttl"`
+	Priority                int                      `json:"priority"`
+	UseExisting             bool                     `json:"use_existing"`
+	LogUUID                 string                   `json:"log_uuid"`
+	OutputUUID              string                   `json:"output_uuid"`
+	RuntimeToken            string                   `json:"runtime_token"`
+	ExpiresAt               time.Time                `json:"expires_at"`
+	Filters                 []Filter                 `json:"filters"`
+	ContainerCount          int                      `json:"container_count"`
+	OutputStorageClasses    []string                 `json:"output_storage_classes"`
+	OutputProperties        map[string]interface{}   `json:"output_properties"`
+	CumulativeCost          float64                  `json:"cumulative_cost"`
+	Service                 bool                     `json:"service"`
+	PublishedPorts          map[string]PublishedPort `json:"published_ports"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.
@@ -163,4 +167,10 @@ type ContainerStatus struct {
 	UUID             string         `json:"uuid"`
 	State            ContainerState `json:"container_state"`
 	SchedulingStatus string         `json:"scheduling_status"`
+}
+
+type PublishedPort struct {
+	Access      string `json:"access"`
+	Label       string `json:"label"`
+	InitialPath string `json:"initial_path"`
 }

@@ -597,7 +597,9 @@ CREATE TABLE public.container_requests (
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
     output_properties jsonb DEFAULT '{}'::jsonb,
     cumulative_cost double precision DEFAULT 0.0 NOT NULL,
-    output_glob text DEFAULT '[]'::text
+    output_glob text DEFAULT '[]'::text,
+    service boolean DEFAULT false NOT NULL,
+    published_ports jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -664,7 +666,9 @@ CREATE TABLE public.containers (
     output_properties jsonb DEFAULT '{}'::jsonb,
     cost double precision DEFAULT 0.0 NOT NULL,
     subrequests_cost double precision DEFAULT 0.0 NOT NULL,
-    output_glob text DEFAULT '[]'::text
+    output_glob text DEFAULT '[]'::text,
+    service boolean DEFAULT false NOT NULL,
+    published_ports jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -2524,6 +2528,13 @@ CREATE INDEX index_links_on_modified_at_and_uuid ON public.links USING btree (mo
 
 
 --
+-- Name: index_links_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_links_on_name ON public.links USING btree (name) WHERE ((link_class)::text = 'published_port'::text);
+
+
+--
 -- Name: index_links_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3140,6 +3151,7 @@ SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20250402131700'),
+('20250315222222'),
 ('20250312141843'),
 ('20250115145250'),
 ('20241118110000'),

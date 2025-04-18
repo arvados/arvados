@@ -131,4 +131,29 @@ class LinkTest < ActiveSupport::TestCase
     Link.find_by_uuid(link1).destroy
     assert_empty Link.where(uuid: link2)
   end
+
+  test "Cannot create two published_port links with the same name" do
+    act_as_user users(:active) do
+      Link.create(head_uuid: containers(:running).uuid,
+                  link_class: 'published_port',
+                  name: 'service1',
+                  properties: {"port" => 80})
+
+      # not ok
+      assert_raises(ActiveRecord::RecordNotUnique,
+                    "should not be able to create two published_port links with the same name") do
+        Link.create(head_uuid: containers(:running_older).uuid,
+                    link_class: 'published_port',
+                    name: 'service1',
+                    properties: {"port" => 80})
+      end
+
+      # ok
+      Link.create(head_uuid: containers(:running_older).uuid,
+                  link_class: 'published_port',
+                  name: 'service2',
+                  properties: {"port" => 80})
+
+    end
+  end
 end
