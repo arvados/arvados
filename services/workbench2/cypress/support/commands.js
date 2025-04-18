@@ -733,6 +733,19 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 });
 
 /**
+ * Selects data explorer row checkbox by name
+ */
+Cypress.Commands.add("doGroupDetailsPanelSelect", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table]', { timeout: 10000 })
+        .contains(name)
+        .parents('[data-cy=data-table-row]')
+        .find('input[type=checkbox]')
+        .then(list => list[0].click())
+        .then(() => cy.waitForDom());
+});
+
+/**
  * Inputs value into data explorer search
  *
  * Useful for when there are too many items in a data explorer for the item of interest to be on the first page

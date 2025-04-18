@@ -904,6 +904,118 @@ describe('For groups', () => {
     });
 });
 
+describe('For users', () => {
+    let activeUser;
+    let adminUser;
+    let otherUser;
+
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+        cy.getUser('otheruser', 'Other', 'User', false, true)
+            .as('otherUser').then(function() {
+                otherUser = this.otherUser;
+            });
+    });
+
+    it('should behave correctly for a single user', () => {
+        const groupName = `Test group (${Math.floor(999999 * Math.random())})`
+
+        cy.loginAs(adminUser);
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+        // Create new group
+        cy.get('[data-cy=groups-panel-new-group]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Group')
+            .within(() => {
+                cy.get('input[name=name]').type(groupName);
+                cy.get('[data-cy=users-field] input').type("active");
+                cy.wait(1000) // wait for the autocomplete to load
+                cy.get('[data-cy=users-field] input').type("{enter}");
+                cy.get('[data-cy=users-field] input').type("other");
+                cy.wait(1000) // wait for the autocomplete to load
+                cy.get('[data-cy=users-field] input').type("{enter}");
+            });
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        })
+
+        cy.assertDataExplorerContains(groupName, true).click();
+        cy.assertDataExplorerContains(adminUser.user.full_name, true);
+        cy.assertDataExplorerContains(activeUser.user.full_name, true);
+        cy.assertDataExplorerContains(otherUser.user.full_name, true);
+
+        cy.doGroupDetailsPanelSelect(otherUser.user.full_name);
+
+        // API Details
+        cy.get('[aria-label="API Details"]').click()
+        cy.get('[role=dialog]').contains('API Details')
+        cy.contains('Close').click()
+
+        //attributes
+        cy.get('[aria-label="Attributes"]').click()
+        cy.get('[role=dialog]').contains('Attributes')
+        cy.contains('Close').click()
+
+        //disabled until #22814 is resolved
+        //remove
+        // cy.get('[aria-label="Remove"]').click();
+        // cy.get('[data-cy=confirmation-dialog]').within(() => {
+        //     cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        // });
+        // cy.contains('Removed').should('be.visible');
+        // cy.assertDataExplorerContains(groupName, false);
+    });
+
+    it('should behave correctly for multiple users', () => {
+        const groupName = `Test group (${Math.floor(999999 * Math.random())})`
+
+        cy.loginAs(adminUser);
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+        // Create new group
+        cy.get('[data-cy=groups-panel-new-group]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Group')
+            .within(() => {
+                cy.get('input[name=name]').type(groupName);
+                cy.get('[data-cy=users-field] input').type("active");
+                cy.wait(1000) // wait for the autocomplete to load
+                cy.get('[data-cy=users-field] input').type("{enter}");
+                cy.get('[data-cy=users-field] input').type("other");
+                cy.wait(1000) // wait for the autocomplete to load
+                cy.get('[data-cy=users-field] input').type("{enter}");
+            });
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        })
+
+        cy.assertDataExplorerContains(groupName, true).click();
+        cy.assertDataExplorerContains(adminUser.user.full_name, true);
+        cy.assertDataExplorerContains(activeUser.user.full_name, true);
+        cy.assertDataExplorerContains(otherUser.user.full_name, true);
+
+        // assert toolbar buttons
+        cy.doGroupDetailsPanelSelect(activeUser.user.full_name);
+        cy.assertToolbarButtons(tooltips.nonAdminUser);
+        cy.doGroupDetailsPanelSelect(otherUser.user.full_name);
+        cy.assertToolbarButtons(tooltips.multiUser);
+    });
+});
+
 describe('For multiple resource types', () => {
     let activeUser;
     let adminUser;
@@ -983,34 +1095,3 @@ describe('For multiple resource types', () => {
         });
     });
 });
-    /*
-    selecting/deselecting items should:
-        select/deselect the correct items x
-        display the correct toolbar items x
-    select all/deselect all/invert selection in popover should:
-        select/deselect the correct items x
-        display the correct toolbar items x
-    For each resource type:
-        the correct toolbar is displayed when:
-            One of that resource is selected
-            Multiple of that resource are selected
-            Some of these tests already exist, project.cy.js L231 for example. These should be removed because it's better to have all of these tests in the same place.
-        Moving
-            single item
-            multiple of the same resource type
-        Trashing
-            single item
-            multiple of the same resource type
-        Untrashing
-            single item
-            multiple of the same resource type
-    For mixed resource selections:
-        for project & collections:
-            Trashing mixed selection
-            Untrashing mixed selection
-            Moving mixed selection
-        for processes & any other resource:
-            no multiselect options should exist
-    Subprocess panel should have all of the functionality of the main process view
-    Data/Workflow runs tabs should have all of the functionality of the main process view x
-    */
