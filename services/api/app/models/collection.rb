@@ -37,7 +37,7 @@ class Collection < ArvadosModel
   validate :workflow_type_property, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
-  after_save :update_linked_workflows
+  after_save :check_linked_workflows
   around_update :manage_versioning, unless: :is_past_version?
 
   has_many :workflows,
@@ -609,18 +609,21 @@ class Collection < ArvadosModel
     super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed", "current_version_uuid"]
   end
 
-  def update_linked_workflows(workflow_to_link=nil)
-    # Only applies to collections of type "workflow"
-    return "properties.type is not 'workflow'" if self.properties["type"] != "workflow"
-
-    if workflow_to_link.nil?
-      workflows_to_update = Workflow.where(collection_uuid: self.uuid)
-    else
-      workflows_to_update = [workflow_to_link]
+  def check_linked_workflows
+    # - can't be linked (yet) if it is a new record.
+    #
+    # - properties["type"]=>"workflow" is protected by the
+    #   "workflow_type_property" validation and can't be changed or removed as
+    #   long as there are linked workflows
+    #
+    # - "workflows" is provided by the ActiveRecord association at
+    #   the top of the file
+    if !new_record? && properties["type"] == "workflow"
+      update_linked_workflows(workflows, true)
     end
+  end
 
-    return "Did not find any linked workflows to update" if workflows_to_update.empty?
-
+  def update_linked_workflows(workflows_to_update, should_save)
     workflowMain = self.properties["arv:workflowMain"]
     inputs = self.properties["arv:cwl_inputs"]
     outputs = self.properties["arv:cwl_outputs"]
@@ -677,7 +680,7 @@ class Collection < ArvadosModel
       w.description = self.description
       w.definition = doc
       w.owner_uuid = self.owner_uuid
-      w.save! if workflow_to_link.nil?
+      w.save! if should_save
     end
 
     true

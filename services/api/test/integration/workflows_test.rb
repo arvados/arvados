@@ -245,17 +245,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
                  },
          headers: auth(:active),
          as: :json
-    assert_response :success
-    collection_response = json_response
-
-    post "/arvados/v1/workflows",
-         params: {:format => :json,
-                  :workflow => {
-                    collection_uuid: collection_response["uuid"]
-                  }
-                 },
-      headers: auth(:active)
     assert_response 422
+    assert_match(/missing field 'arv:cwl_inputs' in collection properties/, json_response["errors"][0])
   end
 
   test "collection cwl_inputs wrong type" do
@@ -285,9 +276,57 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
                  },
          headers: auth(:active),
          as: :json
-    assert_response :success
-    collection_response = json_response
+    assert_response 422
+    assert_match(/expected field 'arv:cwl_inputs' in collection properties to be a Array/, json_response["errors"][0])
+  end
 
+  test "cannot change collection type as long as there is a linked workflow" do
+    collection_response = create_workflow_collection_helper
+
+    # create a workflow linked to the collection.
+    post "/arvados/v1/workflows",
+         params: {:format => :json,
+                  :workflow => {
+                    collection_uuid: collection_response["uuid"]
+                  }
+                 },
+      headers: auth(:active)
+    assert_response :success
+    workflow_response = json_response
+
+    # now try to change the type property, should fail
+    properties = collection_response["properties"]
+    properties["type"] = "something else"
+
+    patch "/arvados/v1/collections/#{collection_response['uuid']}",
+         params: {:format => :json,
+                  collection: {
+                    properties: properties,
+                  }
+                 },
+         headers: auth(:active),
+         as: :json
+    assert_response 422
+    assert_match(/cannot change 'type' property when there are linked workflows/, json_response["errors"][0])
+
+    # Delete the linked workflow
+    delete "/arvados/v1/workflows/#{workflow_response['uuid']}",
+         params: {:format => :json},
+         headers: auth(:active)
+    assert_response :success
+
+    # Now we can change the type property
+    patch "/arvados/v1/collections/#{collection_response['uuid']}",
+         params: {:format => :json,
+                  collection: {
+                    properties: properties,
+                  }
+                 },
+         headers: auth(:active),
+         as: :json
+    assert_response :success
+
+    # But we can't make a new linked workflow, because the type is wrong
     post "/arvados/v1/workflows",
          params: {:format => :json,
                   :workflow => {
@@ -296,6 +335,7 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
                  },
       headers: auth(:active)
     assert_response 422
+    assert_match(/properties does not have type: workflow/, json_response["errors"][0])
   end
 
   test "destroying collection destroys linked workflow" do

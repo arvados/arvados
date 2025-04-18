@@ -36,6 +36,10 @@ class Workflow < ArvadosModel
     if !c
       errors.add :collection_uuid, "does not exist or do not have permission to read."
     end
+
+    if c.properties["type"] != "workflow"
+      errors.add :collection_uuid, "properties does not have type: workflow"
+    end
   end
 
   def set_name_and_description
@@ -64,10 +68,7 @@ class Workflow < ArvadosModel
 
   def link_with_collection
     return if collection_uuid.nil? || !collection_uuid_changed?
-    rval = Collection.find_by_uuid(collection_uuid).update_linked_workflows self
-    if rval.is_a?(String)
-      raise rval
-    end
+    Collection.find_by_uuid(collection_uuid).update_linked_workflows([self], false)
   end
 
   def self.readable_by(*users_list)
