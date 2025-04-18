@@ -7,6 +7,7 @@ package keepweb
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -16,7 +17,9 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -106,6 +109,22 @@ func (s *IntegrationSuite) TestZip_Metadata(c *C) {
 				"sailboat": "⛵",
 			},
 			"uuid": "{{stage.coll.UUID}}",
+		},
+	})
+}
+
+func (s *IntegrationSuite) TestZip_Logging(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:    "POST",
+		reqToken:     arvadostest.ActiveTokenV2,
+		expectStatus: 200,
+		expectFiles:  []string{"dir1/dir/file1.txt", "dir1/file1.txt", "dir2/file2.txt", "file0.txt"},
+		expectLogsMatch: []string{
+			`(?ms).*msg="File download".*`,
+			`(?ms).*user_uuid=` + arvadostest.ActiveUserUUID + `\s.*`,
+			`(?ms).*user_full_name="Active User".*`,
+			`(?ms).*portable_data_hash=6acf043b102afcf04e3be2443e7ea2ba\+223.*`,
+			`(?ms).*collection_file_path=\s.*`,
 		},
 	})
 }
@@ -273,6 +292,30 @@ func (s *IntegrationSuite) TestZip_JSON_Error(c *C) {
 	})
 }
 
+// Download-via-POST is still allowed if upload permission is turned
+// off.
+func (s *IntegrationSuite) TestZip_WebDAVPermission_OK(c *C) {
+	s.handler.Cluster.Collections.WebDAVPermission.User.Upload = false
+	s.testZip(c, testZipOptions{
+		reqMethod:      "POST",
+		reqContentType: "application/json",
+		reqToken:       arvadostest.ActiveTokenV2,
+		expectFiles:    []string{"dir1/dir/file1.txt", "dir1/file1.txt", "dir2/file2.txt", "file0.txt"},
+		expectStatus:   http.StatusOK,
+	})
+}
+
+func (s *IntegrationSuite) TestZip_WebDAVPermission_Forbidden(c *C) {
+	s.handler.Cluster.Collections.WebDAVPermission.User.Download = false
+	s.testZip(c, testZipOptions{
+		reqMethod:       "POST",
+		reqContentType:  "application/json",
+		reqToken:        arvadostest.ActiveTokenV2,
+		expectStatus:    http.StatusForbidden,
+		expectBodyMatch: `Not permitted\n`,
+	})
+}
+
 type testZipOptions struct {
 	filedata          map[string]string // if nil, use default set (see testZip)
 	usePDH            bool
@@ -287,9 +330,15 @@ type testZipOptions struct {
 	expectBodyMatch   string
 	expectDisposition string
 	expectMetadata    map[string]interface{}
+	expectLogsMatch   []string
 }
 
 func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
+	logbuf := new(bytes.Buffer)
+	logger := logrus.New()
+	logger.Out = io.MultiWriter(logbuf, ctxlog.LogWriter(c.Log))
+	s.ctx = ctxlog.Context(context.Background(), logger)
+
 	if opts.filedata == nil {
 		opts.filedata = map[string]string{
 			"dir1/dir/file1.txt": "file1",
@@ -341,6 +390,9 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 		var gotMetadata map[string]interface{}
 		json.NewDecoder(f).Decode(&gotMetadata)
 		c.Check(gotMetadata, DeepEquals, opts.expectMetadata)
+	}
+	for _, re := range opts.expectLogsMatch {
+		c.Check(logbuf.String(), Matches, re)
 	}
 }
 

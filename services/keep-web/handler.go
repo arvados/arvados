@@ -614,7 +614,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("Accept") == "application/zip" {
 		releaseSession()
-		h.serveZip(w, r, session.client, sessionFS, fstarget)
+		h.serveZip(w, r, session, sessionFS, fstarget, tokenUser)
 		return
 	}
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {

@@ -886,14 +886,14 @@ func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr
 	if token != "" {
 		hdr["Authorization"] = []string{"Bearer " + token}
 	}
-	return s.doReq(&http.Request{
+	return s.doReq((&http.Request{
 		Method:     method,
 		Host:       u.Host,
 		URL:        u,
 		RequestURI: u.RequestURI(),
 		Header:     hdr,
 		Body:       io.NopCloser(bytes.NewReader(body)),
-	})
+	}).WithContext(s.ctx))
 }
 
 // Process req using s.handler, and follow redirects if any.
@@ -918,7 +918,7 @@ func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *http.Respon
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
-	return s.doReq(req)
+	return s.doReq(req.WithContext(s.ctx))
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {

@@ -21,12 +21,18 @@ import (
 )
 
 // serveZip handles a request for a zip archive.
-func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvados.Client, sitefs arvados.CustomFileSystem, path string) {
+func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cachedSession, sitefs arvados.CustomFileSystem, path string, tokenUser *arvados.User) {
 	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "POST" {
 		// This is a generic 400, not 405 (method not allowed)
 		// because this method/URL combination is allowed,
 		// just not with the Accept: application/zip header.
 		http.Error(w, "zip archive can only be served via GET, HEAD, or POST", http.StatusBadRequest)
+		return
+	}
+	// Check "GET" permission regardless of r.Method, because all
+	// methods result in downloads.
+	if !h.userPermittedToUploadOrDownload("GET", tokenUser) {
+		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
 	coll, subdir := h.determineCollection(sitefs, path)
@@ -111,7 +117,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvad
 	var zipfilename string
 	// Retrieve collection name if possible
 	if coll.Name == "" && coll.UUID != "" {
-		err = client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+		err = session.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 			"select": []string{"uuid", "name", "portable_data_hash", "properties"},
 		})
 		if err != nil {
@@ -139,6 +145,11 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, client *arvad
 		// it's not an archive of the entire collection.
 		zipfilename += fmt.Sprintf(" - %d files", len(filepaths))
 	}
+
+	rGET := r.Clone(r.Context())
+	rGET.Method = "GET"
+	h.logUploadOrDownload(rGET, session.arvadosclient, session.fs, path, nil, tokenUser)
+
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": zipfilename}))
 	w.Header().Set("Content-Type", "application/zip")
 	zipw := zip.NewWriter(w)
