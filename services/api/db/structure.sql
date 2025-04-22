@@ -683,7 +683,7 @@ CREATE TABLE public.credentials (
     credential_class character varying,
     credential_id character varying,
     credential_secret text,
-    expires_at timestamp(6) without time zone
+    expires_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -2252,6 +2252,13 @@ CREATE INDEX index_containers_on_secret_mounts_md5 ON public.containers USING bt
 --
 
 CREATE UNIQUE INDEX index_containers_on_uuid ON public.containers USING btree (uuid);
+
+
+--
+-- Name: index_credentials_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_credentials_on_owner_uuid_and_name ON public.credentials USING btree (owner_uuid, name);
 
 
 --
