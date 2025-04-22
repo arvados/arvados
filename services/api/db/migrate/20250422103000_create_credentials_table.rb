@@ -17,6 +17,9 @@ class CreateCredentialsTable < ActiveRecord::Migration[7.1]
       t.text :credential_secret
       t.datetime :expires_at, :null => false
     end
+    add_index :credentials, :uuid, unique: true
+    add_index :credentials, :owner_uuid
     add_index :credentials, [:owner_uuid, :name], unique: true
+    add_index :credentials, [:uuid, :owner_uuid, :modified_by_client_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_id]
   end
 end

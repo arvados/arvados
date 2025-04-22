@@ -32,9 +32,13 @@ class Arvados::V1::CredentialsController < ApplicationController
     end
   end
 
+  def self._credential_secret_method_description
+    "Fetch the secret part of the credential (can only be invoked by running containers)."
+  end
+
   def credential_secret
     c = Container.for_current_token
-    if @object && c && current_user.can?(read: @object)
+    if @object && c && c.state == "Running" && current_user.can?(read: @object)
       if @object.expires_at && Time.now >= @object.expires_at
         send_error("Credential has expired.", status: 403)
       else

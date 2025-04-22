@@ -1961,6 +1961,13 @@ CREATE INDEX humans_search_index ON public.humans USING btree (uuid, owner_uuid,
 
 
 --
+-- Name: idx_on_uuid_owner_uuid_modified_by_client_uuid_modi_3526840733; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_uuid_owner_uuid_modified_by_client_uuid_modi_3526840733 ON public.credentials USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, credential_class, credential_id);
+
+
+--
 -- Name: index_api_client_authorizations_on_api_client_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2255,10 +2262,24 @@ CREATE UNIQUE INDEX index_containers_on_uuid ON public.containers USING btree (u
 
 
 --
+-- Name: index_credentials_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_credentials_on_owner_uuid ON public.credentials USING btree (owner_uuid);
+
+
+--
 -- Name: index_credentials_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_credentials_on_owner_uuid_and_name ON public.credentials USING btree (owner_uuid, name);
+
+
+--
+-- Name: index_credentials_on_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_credentials_on_uuid ON public.credentials USING btree (uuid);
 
 
 --
