@@ -460,15 +460,7 @@ class Container < ArvadosModel
   end
 
   def self.readable_by(*users_list)
-    # Load optional keyword arguments, if they exist.
-    if users_list.last.is_a? Hash
-      kwargs = users_list.pop
-    else
-      kwargs = {}
-    end
-    if users_list.select { |u| u.is_admin }.any?
-      return super
-    end
+    return super if users_list.select { |u| u.is_a?(User) && u.is_admin }.any?
     Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").arel.exists)
   end
 

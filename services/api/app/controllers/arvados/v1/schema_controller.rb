@@ -518,6 +518,7 @@ cluster, and automatically passes most permissions checks.",
     "The DNS hostname where users should access this %s.",
 
     "Workflow.definition" => "A string with the CWL source of this %s.",
+    "Workflow.collection_uuid" => "The collection this workflow is linked to, containing the definition of the workflow.",
   }
 
   def discovery_doc
@@ -533,7 +534,7 @@ cluster, and automatically passes most permissions checks.",
       # format is YYYYMMDD, must be fixed width (needs to be lexically
       # sortable), updated manually, may be used by clients to
       # determine availability of API server features.
-      revision: "20250327",
+      revision: "20250402",
       source_version: AppVersion.hash,
       sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
       packageVersion: AppVersion.package_version,

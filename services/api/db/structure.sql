@@ -1457,7 +1457,8 @@ CREATE TABLE public.workflows (
     name character varying(255),
     description text,
     definition text,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    collection_uuid character varying
 );
 
 
@@ -3129,10 +3130,10 @@ CREATE INDEX virtual_machines_search_index ON public.virtual_machines USING btre
 
 
 --
--- Name: workflows_search_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: workflows_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX workflows_search_idx ON public.workflows USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
+CREATE INDEX workflows_search_index ON public.workflows USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, collection_uuid);
 
 
 --
@@ -3149,6 +3150,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20250402131700'),
 ('20250315222222'),
 ('20250312141843'),
 ('20250115145250'),

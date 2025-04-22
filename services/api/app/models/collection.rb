@@ -34,9 +34,17 @@ class Collection < ArvadosModel
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
   validate :protected_managed_properties_updates, on: :update
+  validate :workflow_type_property, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
+  after_save :check_linked_workflows
   around_update :manage_versioning, unless: :is_past_version?
+
+  has_many :workflows,
+           class_name: 'Workflow',
+           foreign_key: 'collection_uuid',
+           primary_key: 'uuid',
+           dependent: :destroy
 
   api_accessible :user, extend: :common do |t|
     t.add lambda { |x| x.name || "" }, as: :name
@@ -601,6 +609,84 @@ class Collection < ArvadosModel
     super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed", "current_version_uuid"]
   end
 
+  def check_linked_workflows
+    # - can't be linked (yet) if it is a new record.
+    #
+    # - properties["type"]=>"workflow" is protected by the
+    #   "workflow_type_property" validation and can't be changed or removed as
+    #   long as there are linked workflows
+    #
+    # - "workflows" is provided by the ActiveRecord association at the
+    #   top of the file, we only want to do this (including
+    #   enforcement of property contents) if the collection is linked.
+    if !new_record? && properties["type"] == "workflow" && workflows.any?
+      update_linked_workflows(workflows, true)
+    end
+  end
+
+  def update_linked_workflows(workflows_to_update, should_save)
+    workflowMain = self.properties["arv:workflowMain"]
+    inputs = self.properties["arv:cwl_inputs"]
+    outputs = self.properties["arv:cwl_outputs"]
+    requirements = self.properties["arv:cwl_requirements"]
+    hints = self.properties["arv:cwl_hints"]
+
+    [['arv:workflowMain', workflowMain, String],
+     ['arv:cwl_inputs', inputs, Array],
+     ['arv:cwl_outputs', outputs, Array],
+     ['arv:cwl_requirements', requirements, Array],
+     ['arv:cwl_hints', hints, Array],
+    ].each do |key, val, type|
+      if val.nil?
+        raise "missing field '#{key}' in collection properties"
+      end
+      if !val.is_a?(type)
+        raise "expected field '#{key}' in collection properties to be a #{type}"
+      end
+    end
+
+    step = {
+      id: "#main/" + workflowMain,
+      in: [],
+      out: [],
+      run: "keep:#{self.portable_data_hash}/#{workflowMain}",
+      label: name
+    }
+
+    inputs.each do |i|
+      step[:in].push({id: "#main/step/#{Collection.cwl_shortname(i['id'])}",
+                      source: i['id']})
+    end
+
+    outputs.each do |i|
+      outid = "#main/step/#{Collection.cwl_shortname(i['id'])}"
+      step[:out].push({"id": outid})
+      i['outputSource'] = outid
+    end
+
+    wrapper = {
+      class: "Workflow",
+      id: "#main",
+      inputs: inputs,
+      outputs: outputs,
+      steps: [step],
+      requirements: requirements + [{"class": "SubworkflowFeatureRequirement"}],
+      hints: hints,
+    }
+
+    doc = SafeJSON.dump({cwlVersion: "v1.2", "$graph": [wrapper]})
+
+    workflows_to_update.each do |w|
+      w.name = self.name
+      w.description = self.description
+      w.definition = doc
+      w.owner_uuid = self.owner_uuid
+      w.save! if should_save
+    end
+
+    true
+  end
+
   protected
 
   # Although the defaults for these columns is already set up on the schema,
@@ -710,6 +796,19 @@ class Collection < ArvadosModel
     true
   end
 
+  def workflow_type_property
+    return if properties["type"] == properties_was["type"] || properties_was["type"] != "workflow"
+
+    # properties["type"] changed and the previous value of
+    # properties["type"] was "workflow"
+
+    linked_workflows = Workflow.where(collection_uuid: self.uuid)
+    if !linked_workflows.empty?
+      errors.add(:properties, "cannot change 'type' property when there are linked workflows")
+      return false
+    end
+  end
+
   def versioning_metadata_updates
     valid = true
     if !is_past_version? && current_version_uuid_changed?
@@ -731,5 +830,9 @@ class Collection < ArvadosModel
 
   def log_update
     super unless (saved_changes.keys - UNLOGGED_CHANGES).empty?
+  end
+
+  def self.cwl_shortname inputid
+    inputid.split("/")[-1]
   end
 end

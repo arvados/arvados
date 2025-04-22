@@ -1811,7 +1811,7 @@
             "include": {
               "type": "array",
               "required": false,
-              "description": "An array of referenced objects to include in the `included` field of the response. Supported values in the array are:\n\n  * `\"container_uuid\"`\n  * `\"owner_uuid\"`\n\n",
+              "description": "An array of referenced objects to include in the `included` field of the response. Supported values in the array are:\n\n  * `\"container_uuid\"`\n  * `\"owner_uuid\"`\n  * `\"collection_uuid\"`\n\n",
               "location": "query"
             },
             "include_old_versions": {
@@ -3740,7 +3740,7 @@
       }
     }
   },
-  "revision": "20250327",
+  "revision": "20250402",
   "schemas": {
     "ApiClientAuthorizationList": {
       "id": "ApiClientAuthorizationList",
@@ -5072,6 +5072,10 @@
         "definition": {
           "description": "A string with the CWL source of this workflow.",
           "type": "text"
+        },
+        "collection_uuid": {
+          "description": "The collection this workflow is linked to, containing the definition of the workflow.",
+          "type": "string"
         }
       }
     }
