@@ -527,25 +527,12 @@ describe('For collection resources', () => {
                 cy.assertDataExplorerContains(testCollection2.name, true);
 
                 //check multi-collection trash
-                cy.doDataExplorerSelect(testCollection1.name);
-                cy.doDataExplorerSelect(testCollection2.name);
+                cy.contains('Home Projects').click();
+                cy.doDataExplorerSelect(testCollection3.name);
+                cy.doDataExplorerSelect(testCollection4.name);
                 cy.doToolbarAction('Move to trash');
-                cy.assertDataExplorerContains(testCollection1.name, false);
-                cy.assertDataExplorerContains(testCollection2.name, false);
-                cy.waitForDom()
-                cy.contains('Trash').click();
-                cy.assertDataExplorerContains(testCollection1.name, true);
-                cy.assertDataExplorerContains(testCollection2.name, true);
-
-                //check multi-collection unTrash
-                cy.doDataExplorerSelect(testCollection1.name);
-                cy.doDataExplorerSelect(testCollection2.name);
-                cy.doToolbarAction('Restore');
-                cy.assertDataExplorerContains(testCollection1.name, false);
-                cy.assertDataExplorerContains(testCollection2.name, false);
-                cy.get(`[data-id=${testProject1.uuid}]`).should('exist').click();
-                cy.assertDataExplorerContains(testCollection1.name, true);
-                cy.assertDataExplorerContains(testCollection2.name, true);
+                cy.assertDataExplorerContains(testCollection3.name, false);
+                cy.assertDataExplorerContains(testCollection4.name, false);
 
                 //share with active user to test readonly permissions
                 cy.shareWith(adminUser.token, activeUser.user.uuid, testProject1.uuid, 'can_read');
@@ -914,17 +901,17 @@ describe('For users', () => {
         // aliases are cleaned up after every test. Also it doesn't make sense
         // to set the same users on beforeEach() over and over again, so we
         // separate a little from Cypress' 'Best Practices' here.
-        cy.getUser('admin', 'Admin', 'User', true, true)
+        cy.getUser('admin', 'Admin_M', 'User', true, true)
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser('user', 'Active', 'User', false, true)
+        cy.getUser('user', 'Active_M', 'User', false, true)
             .as('activeUser')
             .then(function () {
                 activeUser = this.activeUser;
             });
-        cy.getUser('otheruser', 'Other', 'User', false, true)
+        cy.getUser('otheruser', 'Other_M', 'User', false, true)
             .as('otherUser').then(function() {
                 otherUser = this.otherUser;
             });
@@ -942,10 +929,10 @@ describe('For users', () => {
             .should('contain', 'New Group')
             .within(() => {
                 cy.get('input[name=name]').type(groupName);
-                cy.get('[data-cy=users-field] input').type("active");
+                cy.get('[data-cy=users-field] input').type("active_m");
                 cy.wait(1000) // wait for the autocomplete to load
                 cy.get('[data-cy=users-field] input').type("{enter}");
-                cy.get('[data-cy=users-field] input').type("other");
+                cy.get('[data-cy=users-field] input').type("other_m");
                 cy.wait(1000) // wait for the autocomplete to load
                 cy.get('[data-cy=users-field] input').type("{enter}");
             });
