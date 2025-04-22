@@ -8,7 +8,6 @@ class CreateCredentialsTable < ActiveRecord::Migration[7.1]
       t.string :owner_uuid, :null => false
       t.datetime :created_at, :null => false
       t.datetime :modified_at, :null => false
-      t.string :modified_by_client_uuid
       t.string :modified_by_user_uuid
       t.string :name
       t.text :description
@@ -20,6 +19,6 @@ class CreateCredentialsTable < ActiveRecord::Migration[7.1]
     add_index :credentials, :uuid, unique: true
     add_index :credentials, :owner_uuid
     add_index :credentials, [:owner_uuid, :name], unique: true
-    add_index :credentials, [:uuid, :owner_uuid, :modified_by_client_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_id]
+    add_index :credentials, [:uuid, :owner_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_id]
   end
 end

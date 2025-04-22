@@ -676,7 +676,6 @@ CREATE TABLE public.credentials (
     owner_uuid character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     modified_at timestamp(6) without time zone NOT NULL,
-    modified_by_client_uuid character varying,
     modified_by_user_uuid character varying,
     name character varying,
     description text,
@@ -1961,10 +1960,10 @@ CREATE INDEX humans_search_index ON public.humans USING btree (uuid, owner_uuid,
 
 
 --
--- Name: idx_on_uuid_owner_uuid_modified_by_client_uuid_modi_3526840733; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_d01c757e9b; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_on_uuid_owner_uuid_modified_by_client_uuid_modi_3526840733 ON public.credentials USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, credential_class, credential_id);
+CREATE INDEX idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_d01c757e9b ON public.credentials USING btree (uuid, owner_uuid, modified_by_user_uuid, name, credential_class, credential_id);
 
 
 --
