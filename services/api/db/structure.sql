@@ -346,30 +346,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: groups; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.groups (
-    id bigint NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb,
-    frozen_by_uuid character varying
-);
-
-
---
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -692,11 +668,55 @@ ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
 
 
 --
+-- Name: credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.credentials (
+    uuid character varying NOT NULL,
+    owner_uuid character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    modified_at timestamp(6) without time zone NOT NULL,
+    modified_by_client_uuid character varying,
+    modified_by_user_uuid character varying,
+    name character varying,
+    description text,
+    credential_class character varying,
+    credential_id character varying,
+    credential_secret text,
+    expires_at timestamp(6) without time zone
+);
+
+
+--
 -- Name: frozen_groups; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.frozen_groups (
     uuid character varying
+);
+
+
+--
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.groups (
+    id bigint NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone,
+    properties jsonb DEFAULT '{}'::jsonb,
+    frozen_by_uuid character varying
 );
 
 
@@ -1696,6 +1716,14 @@ ALTER TABLE ONLY public.container_requests
 
 ALTER TABLE ONLY public.containers
     ADD CONSTRAINT containers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: credentials credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credentials
+    ADD CONSTRAINT credentials_pkey PRIMARY KEY (uuid);
 
 
 --
@@ -3150,6 +3178,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20250422103000'),
 ('20250402131700'),
 ('20250315222222'),
 ('20250312141843'),

@@ -65,6 +65,7 @@ Rails.application.routes.draw do
         get 'get_all_logins', on: :collection
       end
       resources :workflows
+      resources :credentials
       get '/computed_permissions', to: 'computed_permissions#index'
       get '/permissions/:uuid', to: 'links#get_permissions'
     end
