@@ -7,14 +7,14 @@ import { compose } from 'redux';
 import { reduxForm, isPristine, isValid } from 'redux-form';
 import { connect } from 'react-redux';
 import { UserPreferencesPanelRoot, UserPreferencesPanelRootDataProps } from 'views/user-preferences-panel/user-preferences-panel-root';
-import { USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
+import { USER_PREFERENCES_FORM, saveUserPreferences } from 'store/user-preferences/user-preferences-actions';
 
 const mapStateToProps = (state: RootState): UserPreferencesPanelRootDataProps => {
     const uuid = state.auth.user?.uuid || '';
 
     return {
-        isPristine: isPristine(USER_PROFILE_FORM)(state),
-        isValid: isValid(USER_PROFILE_FORM)(state),
+        isPristine: isPristine(USER_PREFERENCES_FORM)(state),
+        isValid: isValid(USER_PREFERENCES_FORM)(state),
         userUuid: uuid,
         resources: state.resources,
     }
@@ -23,8 +23,8 @@ const mapStateToProps = (state: RootState): UserPreferencesPanelRootDataProps =>
 export const UserPreferencesPanel = compose(
     connect(mapStateToProps),
     reduxForm({
-        form: USER_PROFILE_FORM,
+        form: USER_PREFERENCES_FORM,
         onSubmit: (data, dispatch) => {
-            // dispatch(saveEditedUser(data));
+            dispatch(saveUserPreferences(data));
         }
     }))(UserPreferencesPanelRoot);

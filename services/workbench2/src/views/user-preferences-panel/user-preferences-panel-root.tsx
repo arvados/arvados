@@ -3,22 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { InjectedFormProps } from "redux-form";
+import { Field, InjectedFormProps } from "redux-form";
 import { DispatchProp } from 'react-redux';
-import { UserResource } from 'models/user';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     CardContent,
     Typography,
     Grid,
     Paper,
+    InputLabel,
+    Button,
 } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ResourcesState } from 'store/resources/resources';
+import { ProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
+import { RadioField } from 'components/radio-field/radio-field';
 
-type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon' | 'userProfileFormMessage';
+type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'actions';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -35,7 +38,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: 20
     },
     label: {
-        fontSize: '0.675rem',
+        fontSize: '0.8rem',
         color: theme.palette.grey['600']
     },
     readOnlyValue: {
@@ -44,28 +47,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     title: {
         fontSize: '1.1rem',
     },
-    description: {
-        color: theme.palette.grey["600"]
-    },
     actions: {
         display: 'flex',
         justifyContent: 'flex-end'
-    },
-    content: {
-        // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing(7)})`,
-    },
-    copyIcon: {
-        marginLeft: theme.spacing(1),
-        color: theme.palette.grey["500"],
-        cursor: 'pointer',
-        display: 'inline',
-        '& svg': {
-            fontSize: '1rem'
-        }
-    },
-    userProfileFormMessage: {
-        fontSize: '1.1rem',
     }
 });
 

@@ -109,6 +109,7 @@ import { trashPanelColumns } from "views/trash-panel/trash-panel";
 import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
 import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
 import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
+import { loadUserPreferencesPanel } from "store/user-preferences/user-preferences-actions";
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -790,6 +791,7 @@ export const loadUserProfile = (userUuid?: string) =>
 export const loadUserPreferences = () =>
     handleFirstTimeLoad((dispatch: Dispatch<any>) => {
         dispatch(setUserPreferencesBreadcrumbs());
+        dispatch(loadUserPreferencesPanel());
     });
 
 export const loadLinkAccount = handleFirstTimeLoad((dispatch: Dispatch<any>) => {
