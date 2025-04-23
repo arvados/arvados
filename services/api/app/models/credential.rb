@@ -9,8 +9,9 @@ class Credential < ArvadosModel
 
   attribute :credential_scopes, :jsonbArray, default: []
 
+  before_save :check_expires_at
+
   after_create :add_credential_manage_link
-  after_validation :scrub_secret
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -33,6 +34,17 @@ class Credential < ArvadosModel
     super - ["credential_class", "credential_id", "credential_secret"]
   end
 
+  def scrub_secret_if_expired
+    if Time.now >= expires_at
+      if !self.credential_secret.empty?
+        self.credential_secret = ""
+        self.save!
+      end
+      return true
+    end
+    false
+  end
+
   def ensure_owner_uuid_is_permitted
     if new_record?
       @requested_manager_uuid = owner_uuid
@@ -45,6 +57,22 @@ class Credential < ArvadosModel
     end
   end
 
+  def check_expires_at
+    if expires_at.nil?
+      raise ArgumentError.new "expires_at cannot be nil"
+    end
+    if !new_record? && expires_at > expires_at_was && credential_secret == credential_secret_was
+      raise ArgumentError.new "can only set expires_at further into the future when changing credential_secret"
+    end
+    if Time.now >= expires_at && !credential_secret.empty?
+      if credential_secret == credential_secret_was
+        raise ArgumentError.new "credential has expired, this credential can only be updated if credential_secret is updated"
+      else
+        raise ArgumentError.new "when updating credential_secret, must also set expires_at to a time in the future"
+      end
+    end
+  end
+
   def add_credential_manage_link
     if @requested_manager_uuid
       act_as_system_user do
@@ -53,15 +81,6 @@ class Credential < ArvadosModel
                     link_class: "permission",
                     name: "can_manage")
       end
-    end
-  end
-
-  def scrub_secret
-    if expires_at.nil?
-      raise ArgumentError.new "expires_at cannot be nil"
-    end
-    if Time.now >= expires_at
-      self.credential_secret = ""
     end
   end
 

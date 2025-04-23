@@ -39,7 +39,7 @@ class Arvados::V1::CredentialsController < ApplicationController
   def credential_secret
     c = Container.for_current_token
     if @object && c && c.state == "Running" && current_user.can?(read: @object)
-      if @object.expires_at && Time.now >= @object.expires_at
+      if @object.scrub_secret_if_expired
         send_error("Credential has expired.", status: 403)
       else
         lg = Log.new(event_type: "credential_secret_access")
