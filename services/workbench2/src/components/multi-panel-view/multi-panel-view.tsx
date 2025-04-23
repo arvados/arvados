@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { MutableRefObject, ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
+import { connect } from 'react-redux';
+import { RouterState } from "react-router-redux";
+import { RootState } from 'store/store';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Button, Grid, Paper, Tooltip, Tabs, Tab } from "@mui/material";
 import { WithStyles } from '@mui/styles';
@@ -185,8 +188,13 @@ export interface MPVPanelState {
 interface MPVContainerDataProps {
     panelStates?: MPVPanelState[];
     mutuallyExclusive?: boolean;
+    router: RouterState;
 }
 type MPVContainerProps = MPVContainerDataProps & GridProps;
+
+const mapStateToProps = (state: RootState): Pick<MPVContainerDataProps, 'router'> => ({
+    router: state.router,
+});
 
 // Grid container compatible component that also handles panel toggling.
 const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusive, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
@@ -205,6 +213,16 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
     const currentSelectedPanel = panelVisibility.findIndex(Boolean);
     const [selectedPanel, setSelectedPanel] = useState<number>(-1);
     const panelRef = useRef<any>(null);
+
+    // Reset MPV to initial state when route changes
+    const currentRoute = props.router.location ? props.router.location.pathname : "";
+    useEffect(() => {
+        setPanelVisibility(initialVisibility);
+        setPreviousPanelVisibility(initialVisibility);
+        setHighlightedPanel(-1);
+        setSelectedPanel(-1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentRoute]); // Omit initialVisibility to avoid infinite loops
 
     let panels: JSX.Element[] = [];
     let buttons: JSX.Element[] = [];
@@ -335,4 +353,4 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
     }
 };
 
-export const MPVContainer = withStyles(styles)(MPVContainerComponent);
+export const MPVContainer = connect(mapStateToProps)(withStyles(styles)(MPVContainerComponent));
