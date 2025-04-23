@@ -7,6 +7,8 @@ class Credential < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  attribute :credential_scopes, :jsonbArray, default: []
+
   after_create :add_credential_manage_link
   after_validation :scrub_secret
 
@@ -14,6 +16,7 @@ class Credential < ArvadosModel
     t.add :name
     t.add :description
     t.add :credential_class
+    t.add :credential_scopes
     t.add :credential_id
     t.add :expires_at
   end

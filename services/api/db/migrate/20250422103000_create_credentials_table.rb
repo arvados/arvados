@@ -12,6 +12,7 @@ class CreateCredentialsTable < ActiveRecord::Migration[7.1]
       t.string :name
       t.text :description
       t.string :credential_class
+      t.jsonb :credential_scopes, :default => []
       t.string :credential_id
       t.text :credential_secret
       t.datetime :expires_at, :null => false
@@ -19,6 +20,6 @@ class CreateCredentialsTable < ActiveRecord::Migration[7.1]
     add_index :credentials, :uuid, unique: true
     add_index :credentials, :owner_uuid
     add_index :credentials, [:owner_uuid, :name], unique: true
-    add_index :credentials, [:uuid, :owner_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_id]
+    add_index :credentials, [:uuid, :owner_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_scopes, :credential_id]
   end
 end

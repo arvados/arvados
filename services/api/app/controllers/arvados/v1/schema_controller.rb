@@ -521,6 +521,7 @@ cluster, and automatically passes most permissions checks.",
     "Workflow.collection_uuid" => "The collection this workflow is linked to, containing the definition of the workflow.",
 
     "Credential.credential_class" => "The type of credential being stored.",
+    "Credential.credential_scopes" => "The resources the credential applies to or should be used with.",
     "Credential.credential_id" => "The non-secret part of the credential, e.g. a username.",
     "Credential.credential_secret" => "The secret part of the credential, e.g. a password.",
     "Credential.expires_at" => "Date after which the credential_secret field is no longer valid.",
