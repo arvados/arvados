@@ -11,7 +11,10 @@ export type UserPrefs = {
         lab?: string,
         website_url?: string,
         role?: string
-    }
+    },
+    wb?: {
+        default_project_tab?: string,
+    },
 };
 
 export interface User {

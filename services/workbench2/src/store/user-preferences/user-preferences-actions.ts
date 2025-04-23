@@ -35,7 +35,6 @@ export const saveUserPreferences = (user: UserResource) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         if (user.uuid) {
             try {
-                console.log(user);
                 const updatedUser = await services.userService.update(user.uuid, user);
                 dispatch(updateResources([updatedUser]));
                 dispatch(initialize(USER_PREFERENCES_FORM, updatedUser));
