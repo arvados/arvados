@@ -20,6 +20,6 @@ class CreateCredentialsTable < ActiveRecord::Migration[7.1]
     add_index :credentials, :uuid, unique: true
     add_index :credentials, :owner_uuid
     add_index :credentials, [:owner_uuid, :name], unique: true
-    add_index :credentials, [:uuid, :owner_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_scopes, :credential_id]
+    add_index :credentials, [:uuid, :owner_uuid, :modified_by_user_uuid, :name, :credential_class, :credential_id]
   end
 end

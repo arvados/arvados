@@ -1961,10 +1961,10 @@ CREATE INDEX humans_search_index ON public.humans USING btree (uuid, owner_uuid,
 
 
 --
--- Name: idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_ebc337e763; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_d01c757e9b; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_ebc337e763 ON public.credentials USING btree (uuid, owner_uuid, modified_by_user_uuid, name, credential_class, credential_scopes, credential_id);
+CREATE INDEX idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_d01c757e9b ON public.credentials USING btree (uuid, owner_uuid, modified_by_user_uuid, name, credential_class, credential_id);
 
 
 --

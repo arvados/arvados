@@ -4705,6 +4705,10 @@
           "description": "The type of credential being stored.",
           "type": "string"
         },
+        "credential_scopes": {
+          "description": "The resources the credential applies to or should be used with.",
+          "type": "Array"
+        },
         "credential_id": {
           "description": "The non-secret part of the credential, e.g. a username.",
           "type": "string"
