@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Typography, Tooltip, IconButton, Checkbox, Chip } from "@mui/material";
+import { Grid, Typography, Tooltip, IconButton, Checkbox } from "@mui/material";
 import withStyles from '@mui/styles/withStyles';
 import withTheme from '@mui/styles/withTheme';
 import { FavoriteStar, PublicFavoriteStar } from "../favorite-star/favorite-star";
@@ -31,7 +31,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RootState } from "store/store";
 import { getResource, filterResources } from "store/resources/resources";
 import { GroupContentsResource } from "services/groups-service/groups-service";
-import { getProcess, Process, getProcessStatus, getProcessStatusStyles, getProcessRuntime } from "store/processes/process";
+import { getProcess, Process, getProcessStatus, getProcessRuntime } from "store/processes/process";
 import { ArvadosTheme } from "common/custom-theme";
 import { compose, Dispatch } from "redux";
 import { WorkflowResource } from "models/workflow";
@@ -62,6 +62,7 @@ import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-fil
 import { CustomTheme } from "common/custom-theme";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
+import { ProcessStatusBadge } from "components/process-status-badge/process-status-badge";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -1074,16 +1075,9 @@ export const ProcessStatus = compose(
     withStyles({}, { withTheme: true })
 )((props: { process?: Process; theme: ArvadosTheme }) =>
     props.process ? (
-        <Chip
-            data-cy="process-status-chip"
-            label={getProcessStatus(props.process)}
-            style={{
-                height: props.theme.spacing(3),
-                width: props.theme.spacing(12),
-                ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
-                fontSize: "0.875rem",
-                borderRadius: props.theme.spacing(0.625),
-            }}
+        <ProcessStatusBadge
+            status={getProcessStatus(props.process)}
+            // theme={props.theme}
         />
     ) : (
         <Typography>-</Typography>
