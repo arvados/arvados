@@ -17,6 +17,7 @@ type Credential struct {
 	Name               string    `json:"name"`
 	Description        string    `json:"description"`
 	CredentialClass    string    `json:"credential_class"`
+	CredentialScopes   []string  `json:"credential_scopes"`
 	CredentialId       string    `json:"credential_id"`
 	CredentialSecret   string    `json:"credential_secret,omitempty"`
 	ExpiresAt          time.Time `json:"expires_at"`
