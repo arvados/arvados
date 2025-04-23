@@ -233,7 +233,7 @@ export const ProjectCard = connect(
                 </Grid>
 
                 {expandable && <Collapse
-                                   in={showDescription}
+                                   in={true}
                                    timeout='auto'
                                    collapsedSize='0rem'
                                >

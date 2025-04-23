@@ -55,7 +55,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const panelsData: MPVPanelState[] = [
-    { name: "Data", visible: true },
+    { name: "Details", visible: true },
+    { name: "Data", visible: false },
     { name: "Workflow Runs", visible: false },
 ];
 
@@ -87,13 +88,16 @@ export const ProjectPanel = withStyles(styles)(
             render() {
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
-                    <DetailsCardRoot />
                     <MPVContainer
                         className={classes.mpvRoot}
                         panelStates={panelsData}
                         mutuallyExclusive
                         justify-content="flex-start"
                         style={{flexWrap: 'nowrap'}}>
+                            <MPVPanelContent>
+                            <DetailsCardRoot />
+
+                            </MPVPanelContent>
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
