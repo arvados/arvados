@@ -147,8 +147,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 spacing={1}
                 panelStates={panelsData}
                 justifyContent="flex-start"
-                direction="column"
-                wrap="nowrap">
+                >
                 <MPVPanelContent
                     forwardProps
                     item
