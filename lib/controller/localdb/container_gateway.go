@@ -511,22 +511,30 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		}), nil
 	}
 
-	user, err := conn.railsProxy.UserGetCurrent(ctx, arvados.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
-	if err != nil {
-		return nil, fmt.Errorf("container lookup failed: %w", err)
-	}
-	if !user.IsAdmin {
-		// Future versions will have more options for access
-		// control.  For now, access is only granted to admin,
-		// and the user who submitted all of the container
-		// requests that reference this container.
-		err = conn.checkContainerLoginPermission(ctx, user.UUID, ctr.UUID)
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+	ctr, err := conn.railsProxy.ContainerGet(ctxRoot, arvados.GetOptions{
+		UUID:   opts.UUID,
+		Select: []string{"uuid", "state", "gateway_address", "published_ports"},
+	})
+	if err == nil && ctr.PublishedPorts[strconv.Itoa(opts.Port)].Access == arvados.PublishedPortAccessPublic {
+		// Allow all users and anonymous connections.
+	} else {
+		ctr, err = conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
+		if err != nil {
+			return nil, fmt.Errorf("container lookup failed: %w", err)
+		}
+		user, err := conn.railsProxy.UserGetCurrent(ctx, arvados.GetOptions{})
 		if err != nil {
 			return nil, err
+		}
+		if !user.IsAdmin {
+			// For non-public ports, access is only granted to
+			// admins and the user who submitted all of the
+			// container requests that reference this container.
+			err = conn.checkContainerLoginPermission(ctx, user.UUID, ctr.UUID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	dial, arpc, err := conn.findGateway(ctx, ctr, opts.NoForward)
