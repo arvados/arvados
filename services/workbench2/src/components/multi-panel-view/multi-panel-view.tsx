@@ -197,7 +197,7 @@ const mapStateToProps = (state: RootState): Pick<MPVContainerDataProps, 'router'
 });
 
 // Grid container compatible component that also handles panel toggling.
-const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusive, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
+const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusive, router, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
     if (children === undefined || children === null || Object.keys(children).length === 0) {
         children = [];
     } else if (!isArray(children)) {
@@ -215,7 +215,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
     const panelRef = useRef<any>(null);
 
     // Reset MPV to initial state when route changes
-    const currentRoute = props.router.location ? props.router.location.pathname : "";
+    const currentRoute = router.location ? router.location.pathname : "";
     useEffect(() => {
         setPanelVisibility(initialVisibility);
         setPreviousPanelVisibility(initialVisibility);
