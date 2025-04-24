@@ -67,7 +67,7 @@ export const UserPreferencesPanelRoot = withStyles(styles)(
                                         Project Settings
                                     </Typography>
                                 </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={12}>
+                                <Grid item className={this.props.classes.gridItem} sm={12} data-cy="prefs.wb.default_project_tab">
                                     <InputLabel className={this.props.classes.label} htmlFor="prefs.wb.default_project_tab">Default Project Tab</InputLabel>
                                     <Field
                                         id="prefs.wb.default_project_tab"
