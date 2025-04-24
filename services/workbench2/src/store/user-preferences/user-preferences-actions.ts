@@ -8,6 +8,7 @@ import { ServiceRepository } from "services/services";
 import { showErrorSnackbar, showSuccessSnackbar } from "store/snackbar/snackbar-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { UserResource } from "models/user";
+import { authActions } from "store/auth/auth-action";
 
 export const USER_PREFERENCES_FORM = 'userPreferencesForm';
 
@@ -37,6 +38,11 @@ export const saveUserPreferences = (user: UserResource) =>
             try {
                 const updatedUser = await services.userService.update(user.uuid, user);
                 dispatch(updateResources([updatedUser]));
+                // If edited user is current user, update auth store
+                const currentUserUuid = getState().auth.user?.uuid;
+                if (currentUserUuid && currentUserUuid === updatedUser.uuid) {
+                    dispatch(authActions.USER_DETAILS_SUCCESS(updatedUser));
+                }
                 dispatch(initialize(USER_PREFERENCES_FORM, updatedUser));
                 dispatch(showSuccessSnackbar("Preferences saved"));
             } catch (e) {
