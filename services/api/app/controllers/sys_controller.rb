@@ -43,6 +43,11 @@ class SysController < ApplicationController
 
       # Sweep unused uuid_locks entries
       ActiveRecord::Base.connection.execute("DELETE FROM uuid_locks WHERE uuid IN (SELECT uuid FROM uuid_locks FOR UPDATE SKIP LOCKED)")
+
+      # forget expired credential secrets
+      Credential.
+        where('expires_at < statement_timestamp()').
+        update_all("credential_secret = ''")
     end
     head :no_content
   end

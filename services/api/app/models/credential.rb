@@ -34,17 +34,6 @@ class Credential < ArvadosModel
     super - ["credential_class", "credential_id", "credential_secret"]
   end
 
-  def scrub_secret_if_expired
-    if Time.now >= expires_at
-      if !self.credential_secret.empty?
-        self.credential_secret = ""
-        self.save!
-      end
-      return true
-    end
-    false
-  end
-
   def ensure_owner_uuid_is_permitted
     if new_record?
       @requested_manager_uuid = owner_uuid
