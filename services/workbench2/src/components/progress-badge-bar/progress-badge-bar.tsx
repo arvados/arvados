@@ -40,23 +40,27 @@ type ProgressBarStatus = {
 };
 
 type ProgressBadgeBarDataProps = {
-    parentResource: Process | ProjectResource | undefined;
-        dataExplorer: DataExplorerState;
-        dataExplorerId?: string;
+    parentResource?: Process | ProjectResource;
+    dataExplorer: DataExplorerState;
+    dataExplorerId?: string;
+    pathName?: string;
 };
 
 type ProgressBadgeBarActionProps = {
-    onFiltersChange: (filters: DataTableFilters, columnName: string, id: string) => void;
+    onFiltersChange: (filters: DataTableFilters, columnName: string, id: string, status: string) => void;
     fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
 };
 
 type ProgressBadgeBarProps = ProgressBadgeBarDataProps & ProgressBadgeBarActionProps & WithStyles<CssRules>;
 
-const mapStateToProps = (state: RootState) => {
-    return { dataExplorer: state.dataExplorer };
+const mapStateToProps = (state: RootState): Pick<ProgressBadgeBarDataProps, 'dataExplorer' | 'pathName'> => {
+    return {
+        dataExplorer: state.dataExplorer,
+        pathName: state.router.location?.pathname,
+    };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch): ProgressBadgeBarActionProps => ({
     onFiltersChange: (filters: DataTableFilters, columnName: string, id: string, status: string) => {
         const selectedStatusFilters = selectStatus(status, filters);
         dispatch(dataExplorerActions.SET_FILTERS({ id, columnName, filters: selectedStatusFilters }));
@@ -68,11 +72,13 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 
 export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
-    ({ parentResource, classes, dataExplorer, dataExplorerId, onFiltersChange, fetchProcessProgressBarStatus }: ProgressBadgeBarProps ) => {
+    ({ parentResource, classes, dataExplorer, dataExplorerId, pathName, onFiltersChange, fetchProcessProgressBarStatus }: ProgressBadgeBarProps ) => {
 
         const [progressCounts, setProgressData] = useState<ProgressBadgeCounts | undefined>(undefined);
         const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
         const shouldPollProcess = isProcess(parentResource) ? isProcessRunning(parentResource) : false;
+        const statusColumn = getDataExplorer(dataExplorer, dataExplorerId || '').columns.find(column => column.name === 'Status');
+        const filterLabels: string[] = statusColumn ? Object.keys(statusColumn.filters) : [];
 
         let typeFilter = useRef('');
 
@@ -83,6 +89,14 @@ export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(wit
                 typeFilter.current = serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
             }
         }, [dataExplorer, dataExplorerId]);
+
+        //reset filters when path changes
+        useEffect(() => {
+            if (statusColumn && dataExplorerId) {
+                onFiltersChange(statusColumn?.filters, statusColumn?.name, dataExplorerId, ProcessStatusFilter.ALL);
+            }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [pathName]);
 
         // Should polling be active based on container status
         // or result of aggregated project process contents
@@ -148,9 +162,6 @@ export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(wit
                 tooltip += `${total} Total`;
             }
         }
-
-    const statusColumn = dataExplorer[dataExplorerId || ''].columns.find(column => column.name === 'Status');
-    const filterLabels: string[] = statusColumn ? Object.keys(statusColumn.filters) : [];
 
     return statusColumn && dataExplorerId ? (
     <div className={classes.root}>
