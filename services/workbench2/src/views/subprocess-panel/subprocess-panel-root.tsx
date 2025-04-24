@@ -22,7 +22,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
-import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';
+import { ProgressBadgeBar } from 'components/progress-badge-bar/progress-badge-bar';
 import { Process } from 'store/processes/process';
 
 type CssRules = 'iconHeader' | 'cardHeader';
@@ -130,6 +130,6 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         panelMaximized={props.panelMaximized}
         panelName={props.panelName}
         title={<SubProcessesTitle/>}
-        progressBar={<SubprocessProgressBar parentResource={props.process} />}
+        progressBar={<ProgressBadgeBar parentResource={props.process} dataExplorerId={SUBPROCESS_PANEL_ID} />}
     />;
 };

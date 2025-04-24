@@ -32,6 +32,7 @@ type ProcessStatusSortButtonDataProps = {
     filters: DataTableFilters;
     columnName: string;
     dataExplorerId: string;
+    numProcesses: number;
 };
 
 type ProcessStatusSortButtonActionProps = {
@@ -40,15 +41,15 @@ type ProcessStatusSortButtonActionProps = {
 
 type ProcessStatusSortButtonProps = ProcessStatusSortButtonDataProps & ProcessStatusSortButtonActionProps;
 
-export const ProcessStatusSortButton = ({ status, filters, columnName, dataExplorerId, onFiltersChange }: ProcessStatusSortButtonProps) => {
+export const ProcessStatusSortButton = ({ status, filters, columnName, dataExplorerId, numProcesses, onFiltersChange }: ProcessStatusSortButtonProps) => {
     const theme = useTheme<ArvadosTheme>();
+    const statusText = `${status} (${numProcesses})`;
     return (
         <Button
             data-cy='process-status-chip'
-            children={status}
+            children={statusText}
             style={{
                 height: theme.spacing(3),
-                width: theme.spacing(12),
                 fontSize: '0.875rem',
                 borderRadius: theme.spacing(0.625),
                 ...getProcessStatusStyles(status, theme),

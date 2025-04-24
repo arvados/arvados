@@ -7,7 +7,6 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
-import { ProgressBarStatus, ProgressBarCounts } from 'components/subprocess-progress-bar/subprocess-progress-bar';
 import { ProcessStatusFilter, buildProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { Process } from 'store/processes/process';
 import { ProjectResource } from 'models/project';
@@ -28,21 +27,43 @@ export const loadSubprocessPanel = () =>
  * Holds a ProgressBarData status type and process count result
  */
 type ProcessStatusCount = {
-    status: keyof ProgressBarCounts;
+    status: keyof ProgressBadgeCounts;
     count: number;
+};
+
+type ProgressBarStatus = {
+    counts: ProgressBadgeCounts;
+    shouldPollProject: boolean;
+};
+
+export type ProgressBadgeCounts = {
+    [ProcessStatusFilter.ALL]: number;
+    [ProcessStatusFilter.ONHOLD]: number;
+    [ProcessStatusFilter.QUEUED]: number;
+    [ProcessStatusFilter.RUNNING]: number;
+    [ProcessStatusFilter.COMPLETED]: number;
+    [ProcessStatusFilter.CANCELLED]: number;
+    [ProcessStatusFilter.FAILED]: number;
 };
 
 /**
  * Associates each of the limited progress bar segment types with an array of
  * ProcessStatusFilterTypes to be combined when displayed
  */
-type ProcessStatusMap = Record<keyof ProgressBarCounts, ProcessStatusFilter[]>;
+type ProcessStatusMap = Record<keyof ProgressBadgeCounts, ProcessStatusFilter[]>;
 
+/**
+ * Maps ProcessStatusFilterTypes to an array of ProcessStatusFilterTypes
+ * can be used to assign multiple statuses to a single progress badge
+ */
 const statusMap: ProcessStatusMap = {
         [ProcessStatusFilter.COMPLETED]: [ProcessStatusFilter.COMPLETED],
         [ProcessStatusFilter.RUNNING]: [ProcessStatusFilter.RUNNING],
-        [ProcessStatusFilter.FAILED]: [ProcessStatusFilter.FAILED, ProcessStatusFilter.CANCELLED],
-        [ProcessStatusFilter.QUEUED]: [ProcessStatusFilter.QUEUED, ProcessStatusFilter.ONHOLD],
+        [ProcessStatusFilter.FAILED]: [ProcessStatusFilter.FAILED],
+        [ProcessStatusFilter.QUEUED]: [ProcessStatusFilter.QUEUED],
+        [ProcessStatusFilter.ONHOLD]: [ProcessStatusFilter.ONHOLD],
+        [ProcessStatusFilter.ALL]: [ProcessStatusFilter.ALL],
+        [ProcessStatusFilter.CANCELLED]: [ProcessStatusFilter.CANCELLED],
 };
 
 /**
@@ -101,11 +122,14 @@ export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFi
 
             try {
                 // Create return object
-                let result: ProgressBarCounts = {
+                let result: ProgressBadgeCounts = {
                     [ProcessStatusFilter.COMPLETED]: 0,
                     [ProcessStatusFilter.RUNNING]: 0,
                     [ProcessStatusFilter.FAILED]: 0,
                     [ProcessStatusFilter.QUEUED]: 0,
+                    [ProcessStatusFilter.ONHOLD]: 0,
+                    [ProcessStatusFilter.ALL]: 0,
+                    [ProcessStatusFilter.CANCELLED]: 0,
                 }
 
                 // Create array of promises that returns the status associated with the item count
