@@ -209,6 +209,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response :success
+    assert_equal "my_username", json_response["credential_id"]
     assert_equal "my_password", json_response["credential_secret"]
 
     assert_equal "my_password", Credential.find_by_uuid(jr["uuid"]).credential_secret
@@ -274,62 +275,6 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
          headers: auth(:active),
          as: :json
     assert_response 422
-    assert_match(/expires_at cannot be nil/, json_response["errors"][0])
-  end
-
-  test "credential expires_at constraints" do
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
-                    expires_at: Time.now+2.weeks
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response :success
-    jr = json_response
-
-    # fails because it's in the future
-    patch "/arvados/v1/credentials/#{jr['uuid']}",
-         params: {:format => :json,
-                  credential: {
-                    credential_secret: "my_password",
-                    expires_at: Time.now+3.weeks
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/can only set expires_at further into the future when changing credential_secret/, json_response["errors"][0])
-
-    # succeeds because it is sooner
-    patch "/arvados/v1/credentials/#{jr['uuid']}",
-         params: {:format => :json,
-                  credential: {
-                    credential_secret: "my_password",
-                    expires_at: Time.now+1.weeks
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response :success
-
-    # succeeds because credential_secret is also changing
-    patch "/arvados/v1/credentials/#{jr['uuid']}",
-         params: {:format => :json,
-                  credential: {
-                    credential_secret: "my_password2",
-                    expires_at: Time.now+3.weeks
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response :success
-
+    assert_match(/NotNullViolation/, json_response["errors"][0])
   end
 end

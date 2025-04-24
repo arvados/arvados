@@ -51,7 +51,7 @@ class Arvados::V1::CredentialsController < ApplicationController
                          "credential_id": @object.credential_id,
         }
         lg.save!
-        send_json({"credential_secret" => @object.credential_secret})
+        send_json({"credential_id" => @object.credential_id, "credential_secret" => @object.credential_secret})
       end
     else
       send_error("Token is not associated with a container.", status: 403)
