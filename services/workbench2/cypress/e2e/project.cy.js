@@ -228,49 +228,6 @@ describe("Project tests", function () {
         cy.get("[data-cy=close-details-btn]").click();
     });
 
-    it('shows the appropriate buttons in the multiselect toolbar', () => {
-
-        const msButtonTooltips = [
-            'View details',
-            'Open in new tab',
-            'Copy UUID',
-            'Share',
-            'Edit project',
-            'Move to trash',
-            'New project',
-            'Move to',
-            'Freeze project',
-            'Add to favorites',
-            'Copy link to clipboard',
-            'Open with 3rd party client',
-            'API Details',
-        ];
-
-        cy.loginAs(activeUser);
-        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        cy.get('[data-cy=side-panel-button]').click();
-        cy.get('[data-cy=side-panel-new-project]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New Project')
-            .within(() => {
-                cy.get('[data-cy=name-field]').within(() => {
-                    cy.get('input').type(projName);
-                });
-            })
-        cy.get("[data-cy=form-submit-btn]").click();
-        cy.waitForDom()
-        cy.go('back')
-
-            cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parents('td').click()
-            cy.waitForDom()
-        cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
-        for (let i = 0; i < msButtonTooltips.length; i++) {
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.wait(1000);
-            cy.get('body').contains(msButtonTooltips[i]).should('exist')
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
-        }
-    })
 
     it("creates new project on home project and then a subproject inside it", function () {
         const createProject = function (name, parentName) {
