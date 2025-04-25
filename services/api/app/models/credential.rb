@@ -7,7 +7,7 @@ class Credential < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
-  attribute :credential_scopes, :jsonbArray, default: []
+  attribute :scopes, :jsonbArray, default: []
 
   after_create :add_credential_manage_link
 
@@ -15,8 +15,8 @@ class Credential < ArvadosModel
     t.add :name
     t.add :description
     t.add :credential_class
-    t.add :credential_scopes
-    t.add :credential_id
+    t.add :scopes
+    t.add :external_id
     t.add :expires_at
   end
 
@@ -25,11 +25,11 @@ class Credential < ArvadosModel
   end
 
   def logged_attributes
-    super.except('credential_secret')
+    super.except('secret')
   end
 
   def self.full_text_searchable_columns
-    super - ["credential_class", "credential_id", "credential_secret"]
+    super - ["credential_class", "external_id", "secret"]
   end
 
   def ensure_owner_uuid_is_permitted

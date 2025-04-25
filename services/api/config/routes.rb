@@ -66,7 +66,7 @@ Rails.application.routes.draw do
       end
       resources :workflows
       resources :credentials do
-        get 'credential_secret', on: :member
+        get 'secret', on: :member
       end
       get '/computed_permissions', to: 'computed_permissions#index'
       get '/permissions/:uuid', to: 'links#get_permissions'

@@ -680,9 +680,9 @@ CREATE TABLE public.credentials (
     name character varying,
     description text,
     credential_class character varying,
-    credential_scopes jsonb DEFAULT '[]'::jsonb,
-    credential_id character varying,
-    credential_secret text,
+    scopes jsonb DEFAULT '[]'::jsonb,
+    external_id character varying,
+    secret text,
     expires_at timestamp(6) without time zone NOT NULL
 );
 
@@ -1961,10 +1961,10 @@ CREATE INDEX humans_search_index ON public.humans USING btree (uuid, owner_uuid,
 
 
 --
--- Name: idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_d01c757e9b; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_8f8cf5e570; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_d01c757e9b ON public.credentials USING btree (uuid, owner_uuid, modified_by_user_uuid, name, credential_class, credential_id);
+CREATE INDEX idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_8f8cf5e570 ON public.credentials USING btree (uuid, owner_uuid, modified_by_user_uuid, name, credential_class, external_id);
 
 
 --

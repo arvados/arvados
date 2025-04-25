@@ -14,8 +14,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
+                    external_id: "my_username",
+                    secret: "my_password",
                     expires_at: Time.now+2.weeks
                   }
                  },
@@ -32,8 +32,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_equal "test credential", jr["name"]
     assert_equal "the credential for test", jr["description"]
     assert_equal "basic_auth", jr["credential_class"]
-    assert_equal "my_username", jr["credential_id"]
-    assert_nil jr["credential_secret"]
+    assert_equal "my_username", jr["external_id"]
+    assert_nil jr["secret"]
 
     # secret is not returned by the API
     get "/arvados/v1/credentials/#{jr['uuid']}", headers: auth(:active)
@@ -42,54 +42,54 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_equal "test credential", jr["name"]
     assert_equal "the credential for test", jr["description"]
     assert_equal "basic_auth", jr["credential_class"]
-    assert_equal "my_username", jr["credential_id"]
-    assert_nil jr["credential_secret"]
+    assert_equal "my_username", jr["external_id"]
+    assert_nil jr["secret"]
 
     # can get credential from the database and it has the password
-    assert_equal "my_password", Credential.find_by_uuid(jr["uuid"]).credential_secret
+    assert_equal "my_password", Credential.find_by_uuid(jr["uuid"]).secret
 
-    # credential_secret cannot appear in queries
+    # secret cannot appear in queries
     get "/arvados/v1/credentials",
         params: {:format => :json,
-                 :filters => [["credential_secret", "=", "my_password"]].to_json,
+                 :filters => [["secret", "=", "my_password"]].to_json,
                 },
         headers: auth(:active)
     assert_response 403
-    assert_match(/Cannot filter on credential_secret/, json_response["errors"][0])
+    assert_match(/Cannot filter on 'secret'/, json_response["errors"][0])
 
     get "/arvados/v1/credentials",
         params: {:format => :json,
-                 :where => {credential_secret: "my_password"}.to_json
+                 :where => {secret: "my_password"}.to_json
                 },
         headers: auth(:active)
     assert_response 403
-    assert_match(/Cannot use credential_secret in where clause/, json_response["errors"][0])
+    assert_match(/Cannot use 'secret' in where clause/, json_response["errors"][0])
 
     get "/arvados/v1/credentials",
         params: {:format => :json,
-                 :order => ["credential_secret"].to_json
+                 :order => ["secret"].to_json
                 },
         headers: auth(:active)
     assert_response 403
-    assert_match(/Cannot order by credential_secret/, json_response["errors"][0])
+    assert_match(/Cannot order by 'secret'/, json_response["errors"][0])
   end
 
   test "credential fetch by container" do
     jr = credential_create_helper
 
     # cannot fetch secret using a regular token
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret", headers: auth(:active)
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret", headers: auth(:active)
     assert_response 403
 
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response :success
-    assert_equal "my_password", json_response["credential_secret"]
+    assert_equal "my_password", json_response["secret"]
 
-    lg = Log.where(object_uuid: jr['uuid'], event_type: "credential_secret_access").first
+    lg = Log.where(object_uuid: jr['uuid'], event_type: "secret_access").first
     assert_equal jr["name"], lg["properties"]["name"]
     assert_equal jr["credential_class"], lg["properties"]["credential_class"]
-    assert_equal jr["credential_id"], lg["properties"]["credential_id"]
+    assert_equal jr["external_id"], lg["properties"]["external_id"]
   end
 
   test "credential owned by admin" do
@@ -99,8 +99,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
+                    external_id: "my_username",
+                    secret: "my_password",
                     expires_at: Time.now+2.weeks
                   }
                  },
@@ -110,7 +110,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     jr = json_response
 
     # cannot fetch secret using a regular token, even by admin
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret", headers: auth(:admin)
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret", headers: auth(:admin)
     assert_response 403
 
     # user 'active' can't see it
@@ -120,7 +120,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     # not readable by container run by 'active' user returns a 404
     # here like the previous check because the credential itself isn't
     # considered visible to the user
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response 404
   end
@@ -132,8 +132,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
+                    external_id: "my_username",
+                    secret: "my_password",
                     expires_at: Time.now+2.weeks
                   }
                  },
@@ -149,7 +149,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     # not readable by container run by 'active' user returns a 404
     # here like the previous check because the credential itself isn't
     # considered visible to the user
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response 404
 
@@ -184,7 +184,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     # now the 'active' user can read it
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response :success
   end
@@ -196,8 +196,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
+                    external_id: "my_username",
+                    secret: "my_password",
                     expires_at: Time.now+1.seconds
                   }
                  },
@@ -206,17 +206,17 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_response :success
     jr = json_response
 
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response :success
-    assert_equal "my_username", json_response["credential_id"]
-    assert_equal "my_password", json_response["credential_secret"]
+    assert_equal "my_username", json_response["external_id"]
+    assert_equal "my_password", json_response["secret"]
 
-    assert_equal "my_password", Credential.find_by_uuid(jr["uuid"]).credential_secret
+    assert_equal "my_password", Credential.find_by_uuid(jr["uuid"]).secret
 
     sleep(1)
 
-    get "/arvados/v1/credentials/#{jr['uuid']}/credential_secret",
+    get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}
     assert_response 403
     assert_match(/Credential has expired/, json_response["errors"][0])
@@ -225,7 +225,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
       headers: auth(:admin)
     assert_response :success
 
-    assert_equal "", Credential.find_by_uuid(jr["uuid"]).credential_secret
+    assert_equal "", Credential.find_by_uuid(jr["uuid"]).secret
   end
 
   test "credential names are unique" do
@@ -235,8 +235,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
+                    external_id: "my_username",
+                    secret: "my_password",
                     expires_at: Time.now+2.weeks
                   }
                  },
@@ -250,8 +250,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password",
+                    external_id: "my_username",
+                    secret: "my_password",
                     expires_at: Time.now+2.weeks
                   }
                  },
@@ -268,8 +268,8 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     name: "test credential",
                     description: "the credential for test",
                     credential_class: "basic_auth",
-                    credential_id: "my_username",
-                    credential_secret: "my_password"
+                    external_id: "my_username",
+                    secret: "my_password"
                   }
                  },
          headers: auth(:active),

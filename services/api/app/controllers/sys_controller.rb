@@ -47,7 +47,7 @@ class SysController < ApplicationController
       # forget expired credential secrets
       Credential.
         where('expires_at < statement_timestamp()').
-        update_all("credential_secret = ''")
+        update_all("secret = ''")
     end
     head :no_content
   end

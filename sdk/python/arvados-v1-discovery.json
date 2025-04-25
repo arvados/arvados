@@ -1688,9 +1688,9 @@
             "https://api.arvados.org/auth/arvados"
           ]
         },
-        "credential_secret": {
-          "id": "arvados.credentials.credential_secret",
-          "path": "credentials/{uuid}/credential_secret",
+        "secret": {
+          "id": "arvados.credentials.secret",
+          "path": "credentials/{uuid}/secret",
           "httpMethod": "GET",
           "description": "Fetch the secret part of the credential (can only be invoked by running containers).",
           "parameters": {
@@ -4705,12 +4705,12 @@
           "description": "The type of credential being stored.",
           "type": "string"
         },
-        "credential_scopes": {
+        "scopes": {
           "description": "The resources the credential applies to or should be used with.",
           "type": "Array"
         },
-        "credential_id": {
-          "description": "The non-secret part of the credential, e.g. a username.",
+        "external_id": {
+          "description": "The non-secret external identifier associated with a credential, e.g. a username.",
           "type": "string"
         },
         "expires_at": {
