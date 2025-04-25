@@ -728,20 +728,8 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
         .contains(name)
         .parents('[data-cy=data-table-row]')
         .find('input[type=checkbox]')
+        .first()
         .click()
-        .then(() => cy.waitForDom());
-});
-
-/**
- * Selects data explorer row checkbox by name
- */
-Cypress.Commands.add("doGroupDetailsPanelSelect", (name) => {
-    cy.waitForDom();
-    cy.get('[data-cy=data-table]', { timeout: 10000 })
-        .contains(name)
-        .parents('[data-cy=data-table-row]')
-        .find('input[type=checkbox]')
-        .then(list => list[0].click())
         .then(() => cy.waitForDom());
 });
 

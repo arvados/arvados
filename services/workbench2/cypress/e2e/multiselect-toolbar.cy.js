@@ -945,7 +945,7 @@ describe('For users', () => {
         cy.assertDataExplorerContains(activeUser.user.full_name, true);
         cy.assertDataExplorerContains(otherUser.user.full_name, true);
 
-        cy.doGroupDetailsPanelSelect(otherUser.user.full_name);
+        cy.doDataExplorerSelect(otherUser.user.full_name);
 
         // API Details
         cy.get('[aria-label="API Details"]').click()
@@ -996,9 +996,9 @@ describe('For users', () => {
         cy.assertDataExplorerContains(otherUser.user.full_name, true);
 
         // assert toolbar buttons
-        cy.doGroupDetailsPanelSelect(activeUser.user.full_name);
+        cy.doDataExplorerSelect(activeUser.user.full_name);
         cy.assertToolbarButtons(tooltips.nonAdminUser);
-        cy.doGroupDetailsPanelSelect(otherUser.user.full_name);
+        cy.doDataExplorerSelect(otherUser.user.full_name);
         cy.assertToolbarButtons(tooltips.multiUser);
     });
 });
