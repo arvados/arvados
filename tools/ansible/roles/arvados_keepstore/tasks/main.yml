@@ -23,5 +23,5 @@
   become: yes
   ansible.builtin.systemd_service:
     name: keepstore.service
-    state: "{{ 'restarted' if arvados_config_copy.changed else 'started' }}"
+    state: "{{ 'restarted' if arvados_config_changed else 'started' }}"
     enabled: true

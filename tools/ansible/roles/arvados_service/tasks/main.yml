@@ -12,13 +12,6 @@
     mode: 0755
 
 - name: Write Arvados config.yml
-  # If we already ran this task, don't run it again.
-  # This way later tasks have the most accurate value for
-  # `arvados_config_copy.changed`.
-  # Ansible would let this task run with different values in
-  # `arvados_config_file`, but doing so would make a nonsense result for
-  # Arvados, so it's not supported.
-  when: arvados_config_copy is undefined
   become: yes
   ansible.builtin.copy:
     src: "{{ arvados_config_file }}"
@@ -27,6 +20,12 @@
     group: "{{ arvados_config_group }}"
     mode: 0640
   register: arvados_config_copy
+
+# The `arvados_config_changed` fact is permanently set true
+# if `/etc/arvados/config.yml` is ever changed.
+- name: Record if config.yml changed
+  ansible.builtin.set_fact:
+    arvados_config_changed: "{{ arvados_config_changed|default(false) or arvados_config_copy.changed }}"
 
 - name: Write Arvados certificates
   when: arvados_certificates_file is truthy
