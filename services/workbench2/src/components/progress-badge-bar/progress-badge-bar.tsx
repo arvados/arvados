@@ -24,13 +24,16 @@ import { ProcessResource } from "models/process";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 import { useAsyncInterval } from "common/use-async-interval";
 
-type CssRules = 'root';
+type CssRules = 'root' | 'button';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: 'flex',
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
+    },
+    button: {
+        marginRight: theme.spacing(2),
     },
 });
 
@@ -166,6 +169,7 @@ export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(wit
     return statusColumn && dataExplorerId ? (
     <div className={classes.root}>
         {filterLabels.map(status =>
+            <div key={status} className={classes.button}>
             <ProcessStatusSortButton
                 status={status}
                 onFiltersChange={onFiltersChange}
@@ -174,6 +178,7 @@ export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(wit
                 dataExplorerId={dataExplorerId}
                 numProcesses={getStatusTotal(progressCounts, status)}
                 />
+                </div>
         )}
     </div>
     ) : (
