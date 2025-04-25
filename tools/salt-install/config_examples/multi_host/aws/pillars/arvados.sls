@@ -18,7 +18,6 @@
 arvados:
   ### GENERAL CONFIG
   version: '__VERSION__'
-  pin_version: true
   ## It makes little sense to disable this flag, but you can, if you want :)
   # use_upstream_repo: true
 
