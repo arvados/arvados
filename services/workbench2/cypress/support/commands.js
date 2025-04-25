@@ -728,6 +728,7 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
         .contains(name)
         .parents('[data-cy=data-table-row]')
         .find('input[type=checkbox]')
+        .first()
         .click()
         .then(() => cy.waitForDom());
 });
@@ -740,4 +741,32 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 Cypress.Commands.add("doDataExplorerSearch", (value) => {
     cy.waitForDom();
     cy.get('[data-cy=search-input]').clear().type(value);
+});
+
+/**
+ * asserts the correct toolbar buttons are displayed
+ * by mousing over and checking for the tooltips
+ *
+ * @param tooltips array of strings
+ * */
+
+Cypress.Commands.add("assertToolbarButtons", (tooltips) => {
+    cy.get('[data-cy=multiselect-button]').should('have.length', tooltips.length)
+        for (let i = 0; i < tooltips.length; i++) {
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+            cy.get('body').contains(tooltips[i]).should('exist', {timeout: 10000})
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
+        }
+});
+
+/**
+ * Checks if checkboxes associated for resources with uuids are checked or not
+ *
+ * @param uuids array of uuids
+ */
+
+Cypress.Commands.add("assertCheckboxes", (uuids, shouldBeChecked) => {
+    uuids.forEach(uuid => {
+        cy.get(`input[data-cy="multiselect-checkbox-${uuid}"]`).should(shouldBeChecked ? 'be.checked' : 'not.be.checked');
+    });
 });
