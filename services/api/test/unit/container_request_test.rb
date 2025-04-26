@@ -1942,4 +1942,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.save!
   end
 
+  test "container request in a project with trash_at in the future" do
+    set_user_from_auth :active
+
+    project = Group.create!(group_class: "project", name: "trashed_project", trash_at: Time.now+5.minutes)
+
+    cr = create_minimal_req!({state: "Committed", priority: 500, owner_uuid: project.uuid})
+
+    assert_equal 500, cr.priority
+
+    c = Container.find_by_uuid cr.container_uuid
+
+    assert_operator c.priority, :>, 0
+  end
+
 end
