@@ -129,11 +129,10 @@ def listen_addr(svc_config: Config) -> ListenAddress:
     `arvados_cluster.Services.RailsAPI`. This function finds and returns the
     most preferred address to listen on.
     """
-    addrs = sorted(listen_addrs(svc_config), key=operator.methodcaller('sort_score'))
     try:
-        return addrs[0]
-    except IndexError:
-        raise ValueError("no listen URLs defined in service configuration")
+        return min(listen_addrs(svc_config), key=operator.methodcaller('sort_score'))
+    except ValueError:
+        raise ValueError("no listen URLs defined in service configuration") from None
 
 
 @FilterModule.register
