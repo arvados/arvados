@@ -5,10 +5,12 @@
 # Install the RailsAPI server and configure it to match the cluster
 # configuration.
 
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Install arvados-api-server
   become: yes
   ansible.builtin.apt:
-    update_cache: "{{ arvados_apt_repository.changed }}"
     name:
       - arvados-api-server
   register: arvados_api_server_apt

@@ -26,9 +26,6 @@
       loop:
         - update
         - install acl python3-apt python3-debian
-    - name: Set up distro repositories
-      ansible.builtin.include_role:
-        name: distro_apt
 
 - name: Install PostgreSQL
   hosts: arvados_postgresql

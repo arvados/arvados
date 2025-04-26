@@ -12,10 +12,12 @@
     mode: 0750
   loop: "{{ arvados_cluster.Volumes.values()|selectattr('Driver', '==', 'Directory')|map(attribute='DriverParameters.Root')|unique }}"
 
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Install Arvados keepstore
   become: yes
   ansible.builtin.apt:
-    update_cache: "{{ arvados_apt_repository.changed }}"
     name:
       - keepstore
 

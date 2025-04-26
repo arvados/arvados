@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Install Arvados keep-web
   become: yes
   ansible.builtin.apt:
-    update_cache: "{{ arvados_apt_repository.changed }}"
     name:
       - keep-web
 

@@ -23,4 +23,5 @@
     suites: "{{ ansible_distribution_release if arvados_apt_suites.startswith('-') else '' }}{{ arvados_apt_suites }}"
     components: main
     signed_by: "{{ arvados_apt_url }}/pubkey.gpg"
-  register: arvados_apt_repository
+  notify:
+    - apt update
