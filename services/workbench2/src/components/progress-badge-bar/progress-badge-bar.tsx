@@ -31,9 +31,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'flex-start',
+        marginLeft: '-8px',
     },
     button: {
-        marginRight: theme.spacing(2),
+        marginRight: theme.spacing(1),
     },
 });
 

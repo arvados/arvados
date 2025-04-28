@@ -16,7 +16,7 @@ export const ProcessStatusBadge = ({ status }: { status: ProcessStatus }) => {
         <Chip
             data-cy='process-status-chip'
             label={status}
-            style={{
+            sx={{
                 height: theme.spacing(3),
                 width: theme.spacing(12),
                 fontSize: '0.875rem',
@@ -47,11 +47,14 @@ export const ProcessStatusSortButton = ({ status, filters, columnName, dataExplo
     return (
         <Button
             data-cy='process-status-chip'
+            size="small"
             children={statusText}
-            style={{
+            sx={{
                 height: theme.spacing(3),
                 fontSize: '0.875rem',
                 borderRadius: theme.spacing(0.625),
+                textTransform: 'none',
+                minWidth: `${statusText.length * 0.57}rem`,
                 ...getProcessStatusStyles(status, theme),
             }}
             onClick={()=>onFiltersChange(filters, columnName, dataExplorerId, status)}
