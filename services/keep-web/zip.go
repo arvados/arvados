@@ -13,7 +13,6 @@ import (
 	"io/fs"
 	"mime"
 	"net/http"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -147,17 +146,17 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		zipfilename += fmt.Sprintf(" - %d files", len(filepaths))
 	}
 
-	logpath := ziproot
+	logpath := ""
 	if len(filepaths) == 1 {
 		// If downloading a zip file with exactly one file,
 		// log that file as collection_file_path in the audit
 		// logs.  (Otherwise, leave collection_file_path
 		// empty.)
-		logpath = path.Join(logpath, filepaths[0])
+		logpath = filepaths[0]
 	}
 	rGET := r.Clone(r.Context())
 	rGET.Method = "GET"
-	h.logUploadOrDownload(rGET, session.arvadosclient, session.fs, logpath, nil, tokenUser)
+	h.logUploadOrDownload(rGET, session.arvadosclient, session.fs, logpath, len(filepaths), coll, tokenUser)
 
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": zipfilename}))
 	w.Header().Set("Content-Type", "application/zip")

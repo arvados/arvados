@@ -105,7 +105,7 @@ func (s *UnitSuite) TestLogEventTypes(c *check.C) {
 	} {
 		filePath := "/" + method
 		req := newRequest(method, collURL+filePath)
-		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -118,7 +118,7 @@ func (s *UnitSuite) TestUnloggedEventTypes(c *check.C) {
 	for _, method := range []string{"DELETE", "HEAD", "OPTIONS", "PATCH"} {
 		filePath := "/" + method
 		req := newRequest(method, collURL+filePath)
-		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 		c.Check(actual, check.IsNil,
 			check.Commentf("%s request made a log event", method))
 	}
@@ -129,7 +129,7 @@ func (s *UnitSuite) TestLogFilePath(c *check.C) {
 	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
 	for _, filePath := range []string{"/foo", "/Foo", "/foo/bar"} {
 		req := newRequest("GET", collURL+filePath)
-		actual := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, coll, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -144,7 +144,7 @@ func (s *UnitSuite) TestLogRemoteAddr(c *check.C) {
 
 	for _, addr := range []string{"10.20.30.55", "192.168.144.120", "192.0.2.4"} {
 		req.RemoteAddr = addr + ":57914"
-		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -153,7 +153,7 @@ func (s *UnitSuite) TestLogRemoteAddr(c *check.C) {
 
 	for _, addr := range []string{"100::20:30:40", "2001:db8::90:100", "3fff::30"} {
 		req.RemoteAddr = fmt.Sprintf("[%s]:57916", addr)
-		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -182,7 +182,7 @@ func (s *UnitSuite) TestLogXForwardedFor(c *check.C) {
 		",100::321,10.30.20.10":                "10.30.20.10",
 	} {
 		req.Header.Set("X-Forwarded-For", xff)
-		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -196,7 +196,7 @@ func (s *UnitSuite) TestLogXForwardedForMalformed(c *check.C) {
 	req := newRequest("GET", collURL+filePath)
 	for _, xff := range []string{"", ",", "10.20,30.40", "foo, bar"} {
 		req.Header.Set("X-Forwarded-For", xff)
-		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -211,7 +211,7 @@ func (s *UnitSuite) TestLogXForwardedForMultivalue(c *check.C) {
 	req.Header.Set("X-Forwarded-For", ", ")
 	req.Header.Add("X-Forwarded-For", "2001:db8::db9:dbd")
 	req.Header.Add("X-Forwarded-For", "10.20.30.90")
-	actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+	actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 	c.Assert(actual, check.NotNil)
 	c.Check(actual.clientAddr, check.Equals, "10.20.30.90")
 }
@@ -223,13 +223,13 @@ func (s *UnitSuite) TestLogClientAddressCanonicalization(c *check.C) {
 	expected := "2001:db8::12:0"
 
 	req.RemoteAddr = "[2001:db8::012:0000]:57918"
-	a := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+	a := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 	c.Assert(a, check.NotNil)
 	c.Check(a.clientAddr, check.Equals, expected)
 
 	req.RemoteAddr = "10.20.30.40:57919"
 	req.Header.Set("X-Forwarded-For", "2001:db8:0::0:12:00")
-	b := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+	b := newFileEventLog(s.handler, req, filePath, 1, nil, nil, "")
 	c.Assert(b, check.NotNil)
 	c.Check(b.clientAddr, check.Equals, expected)
 }
@@ -238,7 +238,7 @@ func (s *UnitSuite) TestLogAnonymousUser(c *check.C) {
 	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
 	filePath := "/foo"
 	req := newRequest("GET", collURL+filePath)
-	actual := newFileEventLog(s.handler, req, filePath, nil, nil, arvadostest.AnonymousToken)
+	actual := newFileEventLog(s.handler, req, filePath, 1, nil, nil, arvadostest.AnonymousToken)
 	c.Assert(actual, check.NotNil)
 	c.Check(actual.userUUID, check.Equals, s.handler.Cluster.ClusterID+"-tpzed-anonymouspublic")
 	c.Check(actual.userFullName, check.Equals, "")
@@ -257,7 +257,7 @@ func (s *UnitSuite) TestLogUser(c *check.C) {
 			UUID:     trial.uuid,
 			FullName: trial.fullName,
 		}
-		actual := newFileEventLog(s.handler, req, filePath, nil, user, trial.token)
+		actual := newFileEventLog(s.handler, req, filePath, 1, nil, user, trial.token)
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -273,7 +273,7 @@ func (s *UnitSuite) TestLogCollectionByUUID(c *check.C) {
 		filePath := "/" + collUUID
 		req := newRequest("GET", collURL+filePath)
 		coll := newCollection(collUUID)
-		actual := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, coll, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -288,7 +288,7 @@ func (s *UnitSuite) TestLogCollectionByPDH(c *check.C) {
 		filePath := "/PDHFile"
 		req := newRequest("GET", collURL+filePath)
 		coll := newCollection(collPDH)
-		actual := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+		actual := newFileEventLog(s.handler, req, filePath, 1, coll, nil, "")
 		if !c.Check(actual, check.NotNil) {
 			continue
 		}
@@ -302,7 +302,7 @@ func (s *UnitSuite) TestLogGETUUIDAsDict(c *check.C) {
 	reqPath := "/c=" + arvadostest.FooCollection + filePath
 	req := newRequest("GET", "http://keep-web.example"+reqPath)
 	coll := newCollection(arvadostest.FooCollection)
-	logEvent := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+	logEvent := newFileEventLog(s.handler, req, filePath, 1, coll, nil, "")
 	c.Assert(logEvent, check.NotNil)
 	c.Check(logEvent.asDict(), check.DeepEquals, arvadosclient.Dict{
 		"event_type":  "file_download",
@@ -311,6 +311,7 @@ func (s *UnitSuite) TestLogGETUUIDAsDict(c *check.C) {
 			"reqPath":              reqPath,
 			"collection_uuid":      arvadostest.FooCollection,
 			"collection_file_path": filePath,
+			"file_count":           1,
 			"portable_data_hash":   arvadostest.FooCollectionPDH,
 		},
 	})
@@ -325,7 +326,7 @@ func (s *UnitSuite) TestLogGETPDHAsDict(c *check.C) {
 		UUID:     arvadostest.ActiveUserUUID,
 		FullName: "Active User",
 	}
-	logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+	logEvent := newFileEventLog(s.handler, req, filePath, 1, coll, user, "")
 	c.Assert(logEvent, check.NotNil)
 	c.Check(logEvent.asDict(), check.DeepEquals, arvadosclient.Dict{
 		"event_type":  "file_download",
@@ -335,6 +336,7 @@ func (s *UnitSuite) TestLogGETPDHAsDict(c *check.C) {
 			"portable_data_hash":   arvadostest.FooCollectionPDH,
 			"collection_uuid":      "",
 			"collection_file_path": filePath,
+			"file_count":           1,
 		},
 	})
 }
@@ -349,7 +351,7 @@ func (s *UnitSuite) TestLogUploadAsDict(c *check.C) {
 		filePath := "/" + method + "File"
 		reqPath := "/c=" + arvadostest.FooCollection + filePath
 		req := newRequest(method, "http://keep-web.example"+reqPath)
-		logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+		logEvent := newFileEventLog(s.handler, req, filePath, 1, coll, user, "")
 		if !c.Check(logEvent, check.NotNil) {
 			continue
 		}
@@ -360,6 +362,7 @@ func (s *UnitSuite) TestLogUploadAsDict(c *check.C) {
 				"reqPath":              reqPath,
 				"collection_uuid":      arvadostest.FooCollection,
 				"collection_file_path": filePath,
+				"file_count":           1,
 			},
 		})
 	}
@@ -370,12 +373,13 @@ func (s *UnitSuite) TestLogGETUUIDAsFields(c *check.C) {
 	reqPath := "/c=" + arvadostest.FooCollection + filePath
 	req := newRequest("GET", "http://keep-web.example"+reqPath)
 	coll := newCollection(arvadostest.FooCollection)
-	logEvent := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+	logEvent := newFileEventLog(s.handler, req, filePath, 1, coll, nil, "")
 	c.Assert(logEvent, check.NotNil)
 	c.Check(logEvent.asFields(), check.DeepEquals, logrus.Fields{
 		"user_uuid":            s.handler.Cluster.ClusterID + "-tpzed-anonymouspublic",
 		"collection_uuid":      arvadostest.FooCollection,
 		"collection_file_path": filePath,
+		"file_count":           1,
 		"portable_data_hash":   arvadostest.FooCollectionPDH,
 	})
 }
@@ -389,13 +393,14 @@ func (s *UnitSuite) TestLogGETPDHAsFields(c *check.C) {
 		UUID:     arvadostest.ActiveUserUUID,
 		FullName: "Active User",
 	}
-	logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+	logEvent := newFileEventLog(s.handler, req, filePath, 1, coll, user, "")
 	c.Assert(logEvent, check.NotNil)
 	c.Check(logEvent.asFields(), check.DeepEquals, logrus.Fields{
 		"user_uuid":            arvadostest.ActiveUserUUID,
 		"user_full_name":       "Active User",
 		"collection_uuid":      "",
 		"collection_file_path": filePath,
+		"file_count":           1,
 		"portable_data_hash":   arvadostest.FooCollectionPDH,
 	})
 }
@@ -410,7 +415,7 @@ func (s *UnitSuite) TestLogUploadAsFields(c *check.C) {
 		filePath := "/" + method + "File"
 		reqPath := "/c=" + arvadostest.FooCollection + filePath
 		req := newRequest(method, "http://keep-web.example"+reqPath)
-		logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+		logEvent := newFileEventLog(s.handler, req, filePath, 1, coll, user, "")
 		if !c.Check(logEvent, check.NotNil) {
 			continue
 		}
@@ -419,6 +424,7 @@ func (s *UnitSuite) TestLogUploadAsFields(c *check.C) {
 			"user_full_name":       "Active User",
 			"collection_uuid":      arvadostest.FooCollection,
 			"collection_file_path": filePath,
+			"file_count":           1,
 		})
 	}
 }

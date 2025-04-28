@@ -641,7 +641,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, nil, tokenUser)
+	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, 1, nil, tokenUser)
 
 	if webdavPrefix == "" && stripParts > 0 {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
@@ -1194,6 +1194,7 @@ type fileEventLog struct {
 	collUUID     string
 	collPDH      string
 	collFilePath string
+	fileCount    int
 	clientAddr   string
 	clientToken  string
 }
@@ -1202,6 +1203,7 @@ func newFileEventLog(
 	h *handler,
 	r *http.Request,
 	filepath string,
+	fileCount int,
 	collection *arvados.Collection,
 	user *arvados.User,
 	token string,
@@ -1242,6 +1244,7 @@ func newFileEventLog(
 		eventType:   eventType,
 		clientAddr:  clientAddr,
 		clientToken: token,
+		fileCount:   fileCount,
 	}
 
 	if user != nil {
@@ -1277,6 +1280,7 @@ func (ev *fileEventLog) asDict() arvadosclient.Dict {
 		"reqPath":              ev.requestPath,
 		"collection_uuid":      ev.collUUID,
 		"collection_file_path": ev.collFilePath,
+		"file_count":           ev.fileCount,
 	}
 	if ev.shouldLogPDH() {
 		props["portable_data_hash"] = ev.collPDH
@@ -1293,6 +1297,7 @@ func (ev *fileEventLog) asFields() logrus.Fields {
 		"collection_file_path": ev.collFilePath,
 		"collection_uuid":      ev.collUUID,
 		"user_uuid":            ev.userUUID,
+		"file_count":           ev.fileCount,
 	}
 	if ev.shouldLogPDH() {
 		fields["portable_data_hash"] = ev.collPDH
@@ -1364,6 +1369,7 @@ func (h *handler) logUploadOrDownload(
 	client *arvadosclient.ArvadosClient,
 	fs arvados.CustomFileSystem,
 	filepath string,
+	fileCount int,
 	collection *arvados.Collection,
 	user *arvados.User,
 ) {
@@ -1378,7 +1384,7 @@ func (h *handler) logUploadOrDownload(
 			fileInfo, _ = fs.Stat(path.Join("by_id", collection.UUID, filepath))
 		}
 	}
-	event := newFileEventLog(h, r, filepath, collection, user, client.ApiToken)
+	event := newFileEventLog(h, r, filepath, fileCount, collection, user, client.ApiToken)
 	if !h.shouldLogEvent(event, r, fileInfo, time.Now()) {
 		return
 	}
