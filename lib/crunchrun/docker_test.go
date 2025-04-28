@@ -5,9 +5,11 @@
 package crunchrun
 
 import (
+	"io/ioutil"
 	"os/exec"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	. "gopkg.in/check.v1"
 )
@@ -29,6 +31,14 @@ func (s *dockerSuite) SetUpSuite(c *C) {
 		s.executor, err = newDockerExecutor("zzzzz-zzzzz-zzzzzzzzzzzzzzz", c.Logf, time.Second/2)
 		c.Assert(err, IsNil)
 	}
+}
+
+func (s *dockerSuite) TestLoadImageError(c *C) {
+	imagefile := c.MkDir() + "/bogus-image.tar"
+	err := ioutil.WriteFile(imagefile, []byte("this is not a docker image"), 0777)
+	c.Assert(err, IsNil)
+	err = s.executor.LoadImage("", imagefile, arvados.Container{}, "", nil)
+	c.Assert(err, ErrorMatches, "ImageLoad: unexpected EOF")
 }
 
 var _ = Suite(&dockerStubSuite{})
