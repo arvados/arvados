@@ -1714,7 +1714,7 @@ func (runner *ContainerRunner) Run() (err error) {
 			// condition, probably user error.
 			runner.finalState = "Cancelled"
 		}
-		err = fmt.Errorf("While loading container image: %v", err)
+		err = fmt.Errorf("failed to load container image: %v", err)
 		return
 	}
 
