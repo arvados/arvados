@@ -88,3 +88,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_workbench
+
+- name: Set up shell node(s)
+  hosts: arvados_shell
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_shell

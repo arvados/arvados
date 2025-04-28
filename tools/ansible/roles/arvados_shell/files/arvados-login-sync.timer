@@ -1,0 +1,16 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Sync shell node logins from Arvados
+Documentation=https://doc.arvados.org/install/install-shell-server.html
+
+[Timer]
+OnActiveSec=90sec
+OnUnitInactiveSec=90sec
+RandomizedDelaySec=60sec
+AccuracySec=10sec
+
+[Install]
+WantedBy=timers.target

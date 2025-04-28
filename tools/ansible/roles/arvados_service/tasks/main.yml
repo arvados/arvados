@@ -12,6 +12,7 @@
     mode: 0755
 
 - name: Write Arvados config.yml
+  when: arvados_config_file is truthy
   become: yes
   ansible.builtin.copy:
     src: "{{ arvados_config_file }}"

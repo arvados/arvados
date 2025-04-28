@@ -1,0 +1,32 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Sync shell node logins from Arvados
+Documentation=https://doc.arvados.org/install/install-shell-server.html
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/arvados/login-sync.env
+ExecStart=/usr/local/bin/arvados-login-sync
+
+DevicePolicy=closed
+PrivateMounts=true
+PrivateTmp=true
+ProtectControlGroups=true
+
+### Everything below this line implies NoNewPrivileges=true
+NoNewPrivileges=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+PrivateDevices=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallErrorNumber=EPERM
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete

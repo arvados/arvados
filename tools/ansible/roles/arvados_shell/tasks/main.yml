@@ -1,0 +1,34 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install shell client packages
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - arvados-client
+      - python3-arvados-python-client
+      - python3-arvados-fuse
+      - build-essential
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - ruby-dev
+      - ruby-rubygems
+      - zlib1g-dev
+
+- name: Install shell client gems
+  become: yes
+  community.general.gem:
+    name: arvados-cli
+    user_install: no
+    version: "{{ arvados_pin_version or omit }}"
+
+# TODO: We could register the node directly at this point, and store the
+# virtual machine record as a local fact. That would automate more of the
+# installation and be useful across roles like webshell.
+- name: Set up arvados-login-sync
+  when: arvados_virtual_machine_uuid is defined
+  ansible.builtin.import_tasks: login_sync.yml
