@@ -20,6 +20,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
 // serveZip handles a request for a zip archive.
 func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cachedSession, sitefs arvados.CustomFileSystem, ziproot string, tokenUser *arvados.User) {
 	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "POST" {
@@ -118,7 +120,15 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 	// Retrieve collection name if possible
 	if coll.Name == "" && coll.UUID != "" {
 		err = session.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
-			"select": []string{"uuid", "name", "portable_data_hash", "properties"},
+			"select": []string{
+				"created_at",
+				"description",
+				"modified_at",
+				"name",
+				"portable_data_hash",
+				"properties",
+				"uuid",
+			},
 		})
 		if err != nil {
 			if he := errorWithHTTPStatus(nil); errors.As(err, &he) {
@@ -171,6 +181,9 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 				m["uuid"] = coll.UUID
 				m["name"] = coll.Name
 				m["properties"] = coll.Properties
+				m["created_at"] = coll.CreatedAt.Format(rfc3339NanoFixed)
+				m["modified_at"] = coll.ModifiedAt.Format(rfc3339NanoFixed)
+				m["description"] = coll.Description
 			}
 			wrote = true
 			zipf, err := zipw.CreateHeader(&zip.FileHeader{

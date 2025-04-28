@@ -39,6 +39,7 @@ func (s *IntegrationSuite) zipsetup(c *C, filedata map[string]string) zipstage {
 		"properties": map[string]interface{}{
 			"sailboat": "⛵",
 		},
+		"description": "Description of test collection\n",
 	}})
 	c.Assert(err, IsNil)
 	ac, err := arvadosclient.New(arv)
@@ -108,7 +109,10 @@ func (s *IntegrationSuite) TestZip_Metadata(c *C) {
 			"properties": map[string]interface{}{
 				"sailboat": "⛵",
 			},
-			"uuid": "{{stage.coll.UUID}}",
+			"uuid":        "{{stage.coll.UUID}}",
+			"description": "Description of test collection\n",
+			"created_at":  "{{stage.coll.CreatedAt}}",
+			"modified_at": "{{stage.coll.ModifiedAt}}",
 		},
 	})
 }
@@ -402,6 +406,12 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	if opts.expectMetadata != nil && c.Check(err, IsNil) {
 		if opts.expectMetadata["uuid"] == "{{stage.coll.UUID}}" {
 			opts.expectMetadata["uuid"] = stage.coll.UUID
+		}
+		if opts.expectMetadata["created_at"] == "{{stage.coll.CreatedAt}}" {
+			opts.expectMetadata["created_at"] = stage.coll.CreatedAt.Format(rfc3339NanoFixed)
+		}
+		if opts.expectMetadata["modified_at"] == "{{stage.coll.ModifiedAt}}" {
+			opts.expectMetadata["modified_at"] = stage.coll.ModifiedAt.Format(rfc3339NanoFixed)
 		}
 		var gotMetadata map[string]interface{}
 		json.NewDecoder(f).Decode(&gotMetadata)
