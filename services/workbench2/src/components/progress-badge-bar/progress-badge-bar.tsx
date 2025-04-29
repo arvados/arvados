@@ -168,7 +168,7 @@ export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(wit
         }
 
     return statusColumn && dataExplorerId ? (
-    <div className={classes.root}>
+    <div className={classes.root} data-cy='progress-badge-bar'>
         {filterLabels.map(status =>
             <div key={status} className={classes.button}>
             <ProcessStatusSortButton

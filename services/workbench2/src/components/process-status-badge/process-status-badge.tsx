@@ -9,6 +9,7 @@ import { getProcessStatusStyles } from 'store/processes/process';
 import { ProcessStatus } from 'store/processes/process';
 import { ArvadosTheme } from 'common/custom-theme';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters';
+import { kebabCase } from 'lodash';
 
 export const ProcessStatusBadge = ({ status }: { status: ProcessStatus }) => {
     const theme = useTheme<ArvadosTheme>();
@@ -46,7 +47,7 @@ export const ProcessStatusSortButton = ({ status, filters, columnName, dataExplo
     const statusText = `${status} (${numProcesses})`;
     return (
         <Button
-            data-cy='process-status-sort-button'
+            data-cy={`status-badge-sort-button-${kebabCase(status)}`}
             size="small"
             children={statusText}
             sx={{
