@@ -255,7 +255,9 @@ with the current user.",
 
     # Reload the orders param, this time without prefixing unqualified
     # columns ("name" => "groups.name"). Here, unqualified orders
-    # apply to each table being searched, not "groups".
+    # apply to each table being searched, not just "groups", as
+    # fill_table_names would assume. Instead, table names are added
+    # inside the klasses loop below (see request_order).
     load_limit_offset_order_params(fill_table_names: false)
 
     # Trick apply_where_limit_order_params into applying suitable
@@ -347,9 +349,21 @@ with the current user.",
       # If the currently requested orders specifically match the
       # table_name for the current klass, apply that order.
       # Otherwise, order by recency.
-      request_order =
-        request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i || r !~ /\./ } ||
-        klass.default_orders.join(", ")
+      request_order = request_orders.andand.map do |r|
+        if r =~ /^#{klass.table_name}\./i
+          r
+        elsif r !~ /\./
+          # If the caller provided an unqualified column like
+          # "created_by desc", but we might be joining another table
+          # that also has that column, so we need to specify that we
+          # mean this table.
+          klass.table_name + '.' + r
+        else
+          # Only applies to a different table / object type.
+          nil
+        end
+      end.compact
+      request_order = optimize_orders(request_order, model_class: klass)
 
       @select = select_for_klass any_selections, klass, false
 
