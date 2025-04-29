@@ -21,15 +21,27 @@ import { ResourcesState } from 'store/resources/resources';
 import { ProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
 import { RadioField } from 'components/radio-field/radio-field';
 
-type CssRules = 'root' | 'gridItem' | 'label' | 'title';
+type CssRules = 'root' | 'fullHeight' | 'mainPane' | 'actionPane' | 'inputRow' | 'label' | 'title';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'
     },
-    gridItem: {
-        marginBottom: 20
+    fullHeight: {
+        height: '100%',
+    },
+    mainPane: {
+        flexBasis: 0,
+        flexGrow: 1,
+        flexShrink: 1,
+    },
+    actionPane: {
+        flexBasis: "initial",
+    },
+    inputRow: {
+        // Add some space below each input
+        marginBottom: 20,
     },
     label: {
         fontSize: '0.8rem',
@@ -59,25 +71,29 @@ export const UserPreferencesPanelRoot = withStyles(styles)(
         render() {
             return (
                 <Paper className={this.props.classes.root}>
-                    <form onSubmit={this.props.handleSubmit} data-cy="preferences-form">
-                        <CardContent>
-                            <Grid container spacing={3}>
-                                <Grid item>
-                                    <Typography className={this.props.classes.title}>
-                                        Project Settings
-                                    </Typography>
+                    <form className={this.props.classes.fullHeight} onSubmit={this.props.handleSubmit} data-cy="preferences-form">
+                        <CardContent className={this.props.classes.fullHeight}>
+                            <Grid container direction="column" flexWrap="nowrap" className={this.props.classes.fullHeight}>
+                                <Grid item sm={12} overflow="hidden scroll" className={this.props.classes.mainPane}>
+                                    <Grid container spacing={3} flexWrap="nowrap" direction="column">
+                                        <Grid item>
+                                            <Typography className={this.props.classes.title}>
+                                                Project Settings
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item className={this.props.classes.inputRow} data-cy="prefs.wb.default_project_tab">
+                                            <InputLabel className={this.props.classes.label} htmlFor="prefs.wb.default_project_tab">Default Project Tab</InputLabel>
+                                            <Field
+                                                id="prefs.wb.default_project_tab"
+                                                name="prefs.wb.default_project_tab"
+                                                component={RadioField as any}
+                                                items={ProjectPanelDefaultTabOptions}
+                                                flexRowDirection
+                                            />
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={12} data-cy="prefs.wb.default_project_tab">
-                                    <InputLabel className={this.props.classes.label} htmlFor="prefs.wb.default_project_tab">Default Project Tab</InputLabel>
-                                    <Field
-                                        id="prefs.wb.default_project_tab"
-                                        name="prefs.wb.default_project_tab"
-                                        component={RadioField as any}
-                                        items={ProjectPanelDefaultTabOptions}
-                                        flexRowDirection
-                                    />
-                                </Grid>
-                                <Grid item sm={12}>
+                                <Grid item sm={12} className={this.props.classes.actionPane}>
                                     <Grid container direction="row" justifyContent="flex-end">
                                         <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
                                         <Button
