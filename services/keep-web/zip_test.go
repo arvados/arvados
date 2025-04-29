@@ -113,6 +113,12 @@ func (s *IntegrationSuite) TestZip_Metadata(c *C) {
 			"description": "Description of test collection\n",
 			"created_at":  "{{stage.coll.CreatedAt}}",
 			"modified_at": "{{stage.coll.ModifiedAt}}",
+			"modified_by_user": map[string]interface{}{
+				"email":     "active-user@arvados.local",
+				"full_name": "Active User",
+				"username":  "active",
+				"uuid":      arvadostest.ActiveUserUUID,
+			},
 		},
 	})
 }

@@ -124,6 +124,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 				"created_at",
 				"description",
 				"modified_at",
+				"modified_by_user_uuid",
 				"name",
 				"portable_data_hash",
 				"properties",
@@ -142,6 +143,36 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 	} else if coll.Name == "" {
 		zipfilename = coll.PortableDataHash
 	}
+
+	var user arvados.User
+	if coll.ModifiedByUserUUID != "" {
+		err = session.client.RequestAndDecode(&user, "GET", "arvados/v1/users/"+coll.ModifiedByUserUUID, nil, map[string]interface{}{
+			"select": []string{
+				"email",
+				"full_name",
+				"username",
+				"uuid",
+				// RailsAPI <= 3.1 fails if we select
+				// full_name without also selecting
+				// first_name and last_name.
+				"first_name",
+				"last_name",
+			},
+		})
+		if he := errorWithHTTPStatus(nil); errors.As(err, &he) && he.HTTPStatus() < 500 {
+			// Cannot retrieve the user record, but this
+			// shouldn't prevent the download from
+			// working.
+			http.Error(w, err.Error(), he.HTTPStatus())
+		} else if errors.As(err, &he) {
+			http.Error(w, err.Error(), he.HTTPStatus())
+			return
+		} else if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	if len(filepaths) == 1 && len(reqpaths) == 1 && filepaths[0] == reqpaths[0] {
 		// If the client specified a single (non-directory)
 		// file, include the name of the file in the zip
@@ -184,6 +215,14 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 				m["created_at"] = coll.CreatedAt.Format(rfc3339NanoFixed)
 				m["modified_at"] = coll.ModifiedAt.Format(rfc3339NanoFixed)
 				m["description"] = coll.Description
+			}
+			if user.UUID != "" {
+				m["modified_by_user"] = map[string]interface{}{
+					"email":     user.Email,
+					"full_name": user.FullName,
+					"username":  user.Username,
+					"uuid":      user.UUID,
+				}
 			}
 			wrote = true
 			zipf, err := zipw.CreateHeader(&zip.FileHeader{
