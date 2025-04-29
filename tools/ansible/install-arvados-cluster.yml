@@ -102,3 +102,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_dispatch_local
+
+- name: Set up cloud dispatcher(s)
+  hosts: arvados_dispatch_cloud
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_dispatch_cloud
