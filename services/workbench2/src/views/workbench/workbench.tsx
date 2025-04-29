@@ -109,6 +109,7 @@ import { ElementListReducer } from "common/plugintypes";
 import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 import classNames from "classnames";
+import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferences-panel";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -265,6 +266,10 @@ let routes = (
         <Route
             path={Routes.USER_PROFILE}
             component={UserProfilePanel}
+        />
+        <Route
+            path={Routes.MY_PREFERENCES}
+            component={UserPreferencesPanel}
         />
         <Route
             path={Routes.GROUPS}

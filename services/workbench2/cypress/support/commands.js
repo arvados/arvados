@@ -670,6 +670,37 @@ Cypress.Commands.add("assertUrlPathname", (path) => {
 });
 
 /**
+ * Performs nagation to the specified account menu item
+ */
+Cypress.Commands.add("doAccountMenuAction", (name) => {
+    cy.get('[data-cy=dropdown-menu-button][aria-label="Account Management"]').click();
+    cy.get('#account-menu li[role=menuitem]').contains(name).click();
+    cy.waitForDom();
+});
+
+/**
+ * Clicks on the first side panel item exactly matching name
+ */
+Cypress.Commands.add("doSidePanelNavigation", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=tree-li]')
+        .contains(new RegExp("^" + name + "$", "g"))
+        .click();
+    cy.waitForDom();
+});
+
+/**
+ * Clicks on the first breadcrumb exactly matching the passed name
+ */
+Cypress.Commands.add("doBreadcrumbsNavigation", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=breadcrumbs] button')
+        .contains(new RegExp("^" + name + "$", "g"))
+        .click();
+    cy.waitForDom();
+});
+
+/**
  * Assert exact breadcrumb contents
  *
  * @returns the current breadcrumbs as a string array
