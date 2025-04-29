@@ -64,7 +64,7 @@ gem 'webrick'
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
 # Enforce Ruby 2.7 compatibility for indirect dependencies.
-gem 'net-imap', '~> 0.3.8'
+gem 'net-imap', '~> 0.3.9'
 gem 'securerandom', '~> 0.3.2'
 
 # Install any plugin gems
