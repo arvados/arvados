@@ -46,7 +46,7 @@ export const ProcessStatusSortButton = ({ status, filters, columnName, dataExplo
     const statusText = `${status} (${numProcesses})`;
     return (
         <Button
-            data-cy='process-status-chip'
+            data-cy='process-status-sort-button'
             size="small"
             children={statusText}
             sx={{

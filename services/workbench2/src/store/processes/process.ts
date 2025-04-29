@@ -89,65 +89,66 @@ export const getProcessRuntime = ({ container }: Process) => {
 };
 
 
-export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): React.CSSProperties => {
-    let color = theme.customs.colors.grey500;
+export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): React.CSSProperties & {'&:hover': {opacity: number, color: string}}  => {
+    let primaryColor = theme.customs.colors.grey500;
+    let secondaryColor = theme.palette.common.white;
     let altStyle = false;
     let lines = false;
     switch (status) {
         case ProcessStatus.RUNNING:
-            color = theme.customs.colors.green800;
+            primaryColor = theme.customs.colors.green800;
             altStyle = true;
             lines = true;
             break;
         case ProcessStatus.COMPLETED:
         case ProcessStatus.REUSED:
-            color = theme.customs.colors.green800;
+            primaryColor = theme.customs.colors.green800;
             break;
         case ProcessStatus.WARNING:
-            color = theme.customs.colors.green800;
+            primaryColor = theme.customs.colors.green800;
             altStyle = true;
             break;
         case ProcessStatus.RESUBMITTED:
-            color = theme.customs.colors.darkOrange;
+            primaryColor = theme.customs.colors.darkOrange;
             break;
         case ProcessStatus.FAILING:
-            color = theme.customs.colors.red900;
+            primaryColor = theme.customs.colors.red900;
             altStyle = true;
             break;
         case ProcessStatus.CANCELLING:
-            color = theme.customs.colors.red900;
+            primaryColor = theme.customs.colors.red900;
             altStyle = true;
             break;
         case ProcessStatus.CANCELLED:
-            color = theme.customs.colors.red900;
+            primaryColor = theme.customs.colors.red900;
             altStyle = true;
             break;
         case ProcessStatus.FAILED:
-            color = theme.customs.colors.red900;
+            primaryColor = theme.customs.colors.red900;
             break;
         case ProcessStatus.QUEUED:
-            color = theme.customs.colors.grey600;
+            primaryColor = theme.customs.colors.grey600;
             altStyle = true;
             lines = true;
             break;
         case ProcessStatus.ONHOLD:
-            color = theme.customs.colors.grey600;
+            primaryColor = theme.customs.colors.grey600;
             altStyle = true;
             break;
         case ProcessStatus.DRAFT:
-            color = theme.customs.colors.grey600;
+            primaryColor = theme.customs.colors.grey600;
             break;
         default:
-            color = theme.customs.colors.black;
+            primaryColor = theme.customs.colors.black;
             break;
     }
 
     // Using color and altStyle we build the text, border, and background style properties
     return {
         // Set background color when not altStyle, otherwise use white
-        backgroundColor: altStyle ? theme.palette.common.white : color,
+        backgroundColor: altStyle ? secondaryColor : primaryColor,
         // Set text color to status color when altStyle, else use white text for solid button
-        color: altStyle ? color : theme.palette.common.white,
+        color: altStyle ? primaryColor : secondaryColor,
         // Set background image to lines when lines, else omit the style entirely
         backgroundImage: lines ? `repeating-linear-gradient(
             310deg,
@@ -156,8 +157,12 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             transparent 2px,
             transparent 10px
           )` : undefined,
+        '&:hover': {
+                    opacity: 0.5,
+                    color: primaryColor,
+                },
         // Set border color when altStyle, else omit the style entirely
-        ...(altStyle ? { border: `2px solid ${color}` } : {}),
+        border: `2px solid ${primaryColor}`,
     };
 };
 
