@@ -726,6 +726,7 @@ SELECT target_uuid, perm_level
     super.merge(
                 'can_write' => ['owner_uuid', 'uuid'],
                 'can_manage' => ['owner_uuid', 'uuid'],
+                'full_name' => ['first_name', 'last_name'],
                 )
   end
 

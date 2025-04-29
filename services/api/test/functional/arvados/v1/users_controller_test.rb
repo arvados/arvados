@@ -644,6 +644,12 @@ The Arvados team.
     get(:index, params: {include_trash: '-1'})
   end
 
+  test "select only computed field full_name" do
+    authorize_with :active
+    get :show, params: {id: users(:active).uuid, select: ["uuid", "full_name"]}
+    assert_response :success
+    assert_equal("Active User", json_response["full_name"])
+  end
 
   test "non-admin user gets only safe attributes from users#show" do
     g = act_as_system_user do
