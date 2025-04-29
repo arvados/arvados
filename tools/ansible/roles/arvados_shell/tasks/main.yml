@@ -26,9 +26,43 @@
     user_install: no
     version: "{{ arvados_pin_version or omit }}"
 
-# TODO: We could register the node directly at this point, and store the
-# virtual machine record as a local fact. That would automate more of the
-# installation and be useful across roles like webshell.
+- name: Query virtual machine record
+  vars:
+    filters: [["hostname", "=", "{{ ansible_fqdn }}"]]
+    order: [["created_at", "desc"], ["uuid", "desc"]]
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/arv
+      - virtual_machine
+      - list
+      - "--filters={{ filters|to_json }}"
+      - "--order={{ order|to_json }}"
+  environment:
+    ARVADOS_API_HOST: "{{ arvados_cluster.Services.Controller | external_addr }}"
+    ARVADOS_API_TOKEN: "{{ arvados_cluster.SystemRootToken }}"
+    SSL_CERT_FILE: "{{ '/etc/arvados/ca-certificates.crt' if arvados_certificates_file is truthy else omit }}"
+  register: arvados_virtual_machine_list
+
+- name: Create virtual machine record
+  when: "(arvados_virtual_machine_list.stdout|from_json)['items'] is falsy"
+  vars:
+    virtual_machine:
+      hostname: "{{ ansible_fqdn }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/arv
+      - virtual_machine
+      - create
+      - "--virtual-machine={{ virtual_machine|to_json }}"
+  environment:
+    ARVADOS_API_HOST: "{{ arvados_cluster.Services.Controller | external_addr }}"
+    ARVADOS_API_TOKEN: "{{ arvados_cluster.SystemRootToken }}"
+    SSL_CERT_FILE: "{{ '/etc/arvados/ca-certificates.crt' if arvados_certificates_file is truthy else omit }}"
+  register: arvados_virtual_machine_create
+
+- name: Register virtual machine fact
+  ansible.builtin.set_fact:
+    arvados_virtual_machine: "{{ (arvados_virtual_machine_list.stdout|from_json)['items']|first|default(arvados_virtual_machine_create.stdout|from_json) }}"
+
 - name: Set up arvados-login-sync
-  when: arvados_virtual_machine_uuid is defined
   ansible.builtin.import_tasks: login_sync.yml
