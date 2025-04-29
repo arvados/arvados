@@ -8,6 +8,16 @@ import { loadProject } from "store/workbench/workbench-actions";
 import { projectPanelRunActions, projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { PROJECT_PANEL_CURRENT_UUID, IS_PROJECT_PANEL_TRASHED } from "./project-panel";
 
+/**
+ * Project panel tab labels
+ * This is used to associate the labels used to display tabs / determine default
+ * project tab with the values stored in user preferences which also referece these values
+ */
+export const ProjectPanelTabLabels = {
+    DATA: "Data",
+    RUNS: "Workflow Runs",
+};
+
 export const openProjectPanel = (projectUuid: string) => async (dispatch: Dispatch) => {
     await dispatch<any>(loadProject(projectUuid));
     dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));

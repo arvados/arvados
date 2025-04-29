@@ -38,6 +38,7 @@ export const Routes = {
     INSTANCE_TYPES: `/instance-types`,
     SITE_MANAGER: `/site-manager`,
     MY_ACCOUNT: '/my-account',
+    MY_PREFERENCES: '/preferences',
     LINK_ACCOUNT: '/link_account',
     KEEP_SERVICES: `/keep-services`,
     USERS: '/users',
@@ -173,6 +174,9 @@ export const matchSiteManagerRoute = (route: string) =>
 
 export const matchMyAccountRoute = (route: string) =>
     matchPath(route, { path: Routes.MY_ACCOUNT });
+
+export const matchPreferencesRoute = (route: string) =>
+    matchPath(route, { path: Routes.MY_PREFERENCES });
 
 export const matchLinkAccountRoute = (route: string) =>
     matchPath(route, { path: Routes.LINK_ACCOUNT });

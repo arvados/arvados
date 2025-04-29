@@ -302,6 +302,15 @@ export const setMyAccountBreadcrumbs = () =>
         ]));
     };
 
+export const USER_PREFERENCES_LABEL = 'Preferences';
+
+export const setUserPreferencesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: USER_PREFERENCES_LABEL, uuid: USER_PREFERENCES_LABEL },
+        ]));
+    };
+
 export const INSTANCE_TYPES_PANEL_LABEL = 'Instance Types';
 
 export const setInstanceTypesBreadcrumbs = () =>

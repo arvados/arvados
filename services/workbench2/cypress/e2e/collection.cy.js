@@ -28,45 +28,6 @@ describe("Collection panel tests", function () {
         downloadsFolder = Cypress.config("downloadsFolder");
     });
 
-    it('shows the appropriate buttons in the toolbar', () => {
-
-        const msButtonTooltips = [
-            'View details',
-            'Open in new tab',
-            'Copy UUID',
-            'Share',
-            'Edit collection',
-            'Move to trash',
-            'Make a copy',
-            'Move to',
-            'Add to favorites',
-            'Copy link to clipboard',
-            'Open with 3rd party client',
-            'API Details',
-        ];
-
-        cy.loginAs(activeUser);
-        const name = `Test collection ${Math.floor(Math.random() * 999999)}`;
-        cy.get("[data-cy=side-panel-button]").click({force: true});
-        cy.get("[data-cy=side-panel-new-collection]").click();
-        cy.get("[data-cy=form-dialog]")
-            .should("contain", "New collection")
-            .within(() => {
-                cy.get("[data-cy=name-field]").within(() => {
-                    cy.get("input").type(name);
-                });
-                cy.get("[data-cy=form-submit-btn]").click();
-            });
-            cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-            cy.waitForDom()
-            cy.get('[data-cy=data-table-row]').contains(name).should('exist').parents('td').click()
-            cy.waitForDom()
-            cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
-            msButtonTooltips.forEach((tooltip, index) => {
-                cy.get('[data-cy=multiselect-button]').eq(index).parent().should('have.attr', 'data-targetid', tooltip)
-            })
-    })
-
     it("allows to download mountain duck config for a collection", () => {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,

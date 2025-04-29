@@ -68,7 +68,6 @@ func (s *executorSuite) TestExecTrivialContainer(c *C) {
 }
 
 func (s *executorSuite) TestDiagnosticsImage(c *C) {
-	s.newExecutor(c)
 	imagefile := c.MkDir() + "/hello-world.tar"
 	err := ioutil.WriteFile(imagefile, diagnostics.HelloWorldDockerImage, 0777)
 	c.Assert(err, IsNil)

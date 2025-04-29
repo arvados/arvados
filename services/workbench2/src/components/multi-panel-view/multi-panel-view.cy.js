@@ -6,17 +6,24 @@ import React from "react";
 import { MPVContainer } from './multi-panel-view';
 import { ThemeProvider } from "@mui/material";
 import { CustomTheme } from "common/custom-theme";
+import { Provider } from "react-redux";
+import { combineReducers, createStore } from "redux";
 
 const PanelMock = ({panelName, panelMaximized, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelIlluminated, panelRef, children, ...rest}) =>
     <div {...rest}>{children}</div>;
 
 describe('<MPVContainer />', () => {
     let props;
+    let store;
 
     beforeEach(() => {
         props = {
             classes: {},
         };
+        const initialRouterState = { location: null };
+        store = createStore(combineReducers({
+            router: (state = initialRouterState, action) => state,
+        }));
     });
 
     it('should show default panel buttons for every child', () => {
@@ -25,9 +32,11 @@ describe('<MPVContainer />', () => {
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
         cy.mount(
-            <ThemeProvider theme={CustomTheme}>
-                <MPVContainer {...props}>{[...childs]}</MPVContainer>
-            </ThemeProvider>
+            <Provider store={store}>
+                <ThemeProvider theme={CustomTheme}>
+                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                </ThemeProvider>
+            </Provider>
         );
         //check if the buttons are rendered
         cy.get('button').should('have.length', 2);
@@ -47,15 +56,17 @@ describe('<MPVContainer />', () => {
         ]
 
         cy.mount(
-            <ThemeProvider theme={CustomTheme}>
-                <MPVContainer {...props}>{[...childs]}</MPVContainer>
-            </ThemeProvider>
+            <Provider store={store}>
+                <ThemeProvider theme={CustomTheme}>
+                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                </ThemeProvider>
+            </Provider>
         );
 
         // Initial state: panel not visible
         cy.contains('This is one panel').should('not.exist');
         cy.contains('All panels are hidden');
-        
+
         // Panel visible when clicking on its button
         cy.get('button').click();
         cy.contains('This is one panel');
@@ -71,9 +82,11 @@ describe('<MPVContainer />', () => {
             {name: 'First Panel'},
         ]
         cy.mount(
-            <ThemeProvider theme={CustomTheme}>
-                <MPVContainer {...props}>{[...childs]}</MPVContainer>
-            </ThemeProvider>
+            <Provider store={store}>
+                <ThemeProvider theme={CustomTheme}>
+                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                </ThemeProvider>
+            </Provider>
         );
         // First panel received the custom button naming
         cy.get('button').eq(0).should('contain', 'First Panel');
@@ -94,9 +107,11 @@ describe('<MPVContainer />', () => {
             {name: 'First Panel', visible: false},
         ]
         cy.mount(
-            <ThemeProvider theme={CustomTheme}>
-                <MPVContainer {...props}>{[...childs]}</MPVContainer>
-            </ThemeProvider>
+            <Provider store={store}>
+                <ThemeProvider theme={CustomTheme}>
+                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                </ThemeProvider>
+            </Provider>
         );
         cy.get('button').contains('First Panel');
         cy.contains('This is one panel').should('not.exist');

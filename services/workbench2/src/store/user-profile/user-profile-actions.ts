@@ -15,6 +15,7 @@ import { filterResources } from "store/resources/resources";
 import { ResourceKind } from "models/resource";
 import { LinkClass, LinkResource } from "models/link";
 import { BuiltinGroups, getBuiltinGroupUuid } from "models/group";
+import { authActions } from "store/auth/auth-action";
 
 export const USER_PROFILE_PANEL_ID = 'userProfilePanel';
 export const USER_PROFILE_FORM = 'userProfileForm';
@@ -58,9 +59,14 @@ export const loadUserProfilePanel = (userUuid?: string) =>
 export const saveEditedUser = (resource: any) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
-            const user = await services.userService.update(resource.uuid, resource);
-            dispatch(updateResources([user]));
-            dispatch(initialize(USER_PROFILE_FORM, user));
+            const updatedUser = await services.userService.update(resource.uuid, resource);
+            dispatch(updateResources([updatedUser]));
+            // If edited user is current user, update auth store
+            const currentUserUuid = getState().auth.user?.uuid;
+            if (currentUserUuid && currentUserUuid === updatedUser.uuid) {
+                dispatch(authActions.USER_DETAILS_SUCCESS(updatedUser));
+            }
+            dispatch(initialize(USER_PROFILE_FORM, updatedUser));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Profile has been updated.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({

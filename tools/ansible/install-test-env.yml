@@ -6,9 +6,7 @@
 #
 # After you run this playbook on a host, you should be able to clone the
 # Arvados git repository and run `build/run-tests.sh`.
-# As of February 2025 this has been tested to work on Debian 11 and Debian 12.
-# A few tests fail on Debian 12 because they haven't been adapted to newer
-# software yet.
+# As of April 2025 this has been tested to work on Debian 12.
 #
 # In order to use this playbook, you must write an Arvados `config.yml` with
 # PostgreSQL connection details for the `zzzzz` cluster.

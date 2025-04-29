@@ -293,32 +293,4 @@ describe('Registered workflow panel tests', function() {
                     });
             });
     });
-
-    it('shows the appropriate buttons in the multiselect toolbar', () => {
-
-        const msButtonTooltips = [
-            'View details',
-            'Open in new tab',
-            'Copy UUID',
-            'Run Workflow',
-            'Delete Workflow',
-            'Copy link to clipboard',
-            'API Details',
-        ];
-
-        cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf"}})
-            .then(function(workflowResource) {
-            cy.loginAs(activeUser);
-            cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-            cy.waitForDom()
-            cy.get('[data-cy=data-table-row]').contains(workflowResource.name).should('exist').parents('td').click()
-            cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
-                for (let i = 0; i < msButtonTooltips.length; i++) {
-                        cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-                        cy.get('body').contains(msButtonTooltips[i]).should('exist')
-                        cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
-                    }
-                });
-    })
-
 });

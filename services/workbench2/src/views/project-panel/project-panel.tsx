@@ -27,6 +27,7 @@ import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
+import { ProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -54,15 +55,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const panelsData: MPVPanelState[] = [
-    { name: "Data", visible: true },
-    { name: "Workflow Runs", visible: false },
-];
-
 interface ProjectPanelDataProps {
     currentItemId: string | undefined;
     resources: ResourcesState;
     isAdmin: boolean;
+    defaultTab?: string;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
@@ -73,6 +70,7 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
         currentItemId,
         resources: state.resources,
         isAdmin: state.auth.user!.isAdmin,
+        defaultTab: state.auth.user?.prefs.wb?.default_project_tab,
     };
 }
 
@@ -85,12 +83,20 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             render() {
+                // Default to data tab if no user preference
+                const defaultTab = this.props.defaultTab || ProjectPanelTabLabels.DATA;
+                // Apply user preference or default to initial state
+                const initialPanelState: MPVPanelState[] = Object.keys(ProjectPanelTabLabels).map(key => ({
+                        name: ProjectPanelTabLabels[key],
+                        visible: ProjectPanelTabLabels[key] === defaultTab,
+                }));
+
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
                     <DetailsCardRoot />
                     <MPVContainer
                         className={classes.mpvRoot}
-                        panelStates={panelsData}
+                        panelStates={initialPanelState}
                         mutuallyExclusive
                         justify-content="flex-start"
                         style={{flexWrap: 'nowrap'}}>

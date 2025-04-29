@@ -49,7 +49,12 @@ module LoadParam
   end
 
   # Load params[:limit], params[:offset] and params[:order]
-  # into @limit, @offset, @orders
+  # into @limit, @offset, @orders.
+  #
+  # If fill_table_names is true, @orders will be populated with fully
+  # qualified columns (table_name.column_name).  Otherwise, column
+  # names might be ambiguous and the caller should call
+  # optimize_orders(@orders) to fix them.
   def load_limit_offset_order_params(fill_table_names: true)
     if params[:limit]
       unless params[:limit].to_s.match(/^\d+$/)
@@ -115,37 +120,48 @@ module LoadParam
       end
     end
 
-    # If the client-specified orders don't amount to a full ordering
-    # (e.g., [] or ['owner_uuid desc']), fall back on the default
-    # orders to ensure repeating the same request (possibly with
-    # different limit/offset) will return records in the same order.
-    #
-    # Clean up the resulting list of orders such that no column
-    # uselessly appears twice (Postgres might not optimize this out
-    # for us) and no columns uselessly appear after a unique column
-    # (Postgres does not optimize this out for us; as of 9.2, "order
-    # by id, modified_at desc, uuid" is slow but "order by id" is
-    # fast).
-    orders_given_and_default = @orders + model_class.default_orders
+    if fill_table_names
+      @orders = optimize_orders(@orders, model_class: model_class)
+    end
+
+    @distinct = params[:distinct] && true
+  end
+
+  # If the client-specified orders don't amount to a full ordering
+  # (e.g., [] or ['owner_uuid desc']), fall back on the default
+  # orders to ensure repeating the same request (possibly with
+  # different limit/offset) will return records in the same order.
+  #
+  # Clean up the resulting list of orders such that no column
+  # uselessly appears twice (Postgres might not optimize this out
+  # for us) and no columns uselessly appear after a unique column
+  # (Postgres does not optimize this out for us; as of 9.2, "order
+  # by id, modified_at desc, uuid" is slow but "order by id" is
+  # fast).
+  def optimize_orders(orders_given, model_class:)
+    orders_given_and_default = orders_given + model_class.default_orders
     order_cols_used = {}
-    @orders = []
+    optimized = []
     orders_given_and_default.each do |order|
       otablecol = order.split(' ')[0]
 
       next if order_cols_used[otablecol]
       order_cols_used[otablecol] = true
 
-      @orders << order
+      optimized << order
 
-      otable, ocol = otablecol.split('.')
-      if otable == table_name and model_class.unique_columns.include?(ocol)
+      if otablecol.index('.')
+        otable, ocol = otablecol.split('.')
+      else
+        otable, ocol = model_class.table_name, otablecol
+      end
+      if otable == model_class.table_name && model_class.unique_columns.include?(ocol)
         # we already have a full ordering; subsequent entries would be
         # superfluous
         break
       end
     end
-
-    @distinct = params[:distinct] && true
+    return optimized
   end
 
   def load_select_param
