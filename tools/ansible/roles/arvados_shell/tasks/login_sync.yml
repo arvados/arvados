@@ -31,10 +31,10 @@
     - arvados-login-sync.timer
   register: arvados_login_sync_systemd
 
-- name: Start and enable arvados-login-sync.timer
+- name: Configure arvados-login-sync.timer
   become: yes
   ansible.builtin.systemd_service:
     name: arvados-login-sync.timer
     daemon_reload: "{{ arvados_login_sync_systemd.changed }}"
-    enabled: yes
-    state: "{{ 'restarted' if arvados_login_sync_systemd.changed else 'started' }}"
+    enabled: "{{ arvados_shell_login_sync|bool }}"
+    state: "{{ 'stopped' if not arvados_shell_login_sync|bool else 'restarted' if arvados_login_sync_systemd.changed else 'started' }}"
