@@ -5,9 +5,9 @@ package crunchrun
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"slices"
@@ -20,6 +20,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 )
 
 // Docker daemon won't let you set a limit less than ~10 MiB
@@ -94,11 +95,19 @@ func (e *dockerExecutor) LoadImage(imageID string, imageTarballPath string, cont
 	defer f.Close()
 	resp, err := e.dockerclient.ImageLoad(context.TODO(), f, true)
 	if err != nil {
-		return fmt.Errorf("While loading container image into Docker: %v", err)
+		return fmt.Errorf("ImageLoad: %w", err)
 	}
 	defer resp.Body.Close()
-	buf, _ := ioutil.ReadAll(resp.Body)
-	e.logf("loaded image: response %s", buf)
+	var message jsonmessage.JSONMessage
+	err = json.NewDecoder(resp.Body).Decode(&message)
+	if err != nil {
+		return fmt.Errorf("could not parse Docker response: %w", err)
+	}
+	if message.Error != nil {
+		return fmt.Errorf("ImageLoad: %w", message.Error)
+	}
+	// message.Stream is typically "Loaded image: hello-world:latest\n"
+	e.logf("%s", strings.TrimSuffix(message.Stream, "\n"))
 	return nil
 }
 

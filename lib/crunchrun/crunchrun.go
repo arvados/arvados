@@ -208,6 +208,7 @@ var errorBlacklist = []string{
 	"(?ms).*[Cc]annot connect to the Docker daemon.*",
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
 	"(?ms).*grpc: the connection is unavailable.*",
+	"(?ms).*no space left on device.*",
 }
 
 func (runner *ContainerRunner) runBrokenNodeHook() {
@@ -1714,7 +1715,7 @@ func (runner *ContainerRunner) Run() (err error) {
 			// condition, probably user error.
 			runner.finalState = "Cancelled"
 		}
-		err = fmt.Errorf("While loading container image: %v", err)
+		err = fmt.Errorf("failed to load container image: %v", err)
 		return
 	}
 
