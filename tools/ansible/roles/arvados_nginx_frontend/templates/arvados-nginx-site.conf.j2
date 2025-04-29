@@ -24,7 +24,10 @@ server {
   ssl_certificate      /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.cert;
   ssl_certificate_key  /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.key;
 
-  client_max_body_size  {{ arvados_nginx_client_max_body_size }};
+{% set client_max_body_size = arvados_nginx_client_max_body_size.get(arvados_nginx_service_key) %}
+{% if client_max_body_size is not none %}
+  client_max_body_size  {{ client_max_body_size }};
+{% endif %}
 
   location / {
     proxy_pass  http://{{ upstream_name }};

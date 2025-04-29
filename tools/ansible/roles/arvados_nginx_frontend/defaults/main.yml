@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-arvados_nginx_client_max_body_size: "{{ arvados_cluster.API.MaxRequestSize if arvados_nginx_service_key == 'Controller' else '64m' }}"
+arvados_nginx_client_max_body_size:
+  Controller: "{{ arvados_cluster.API.MaxRequestSize }}"
+  Keepproxy: "64m"
+  WebDAV: "0"
 
 arvados_nginx_proxy_config:
   redirect: "off"

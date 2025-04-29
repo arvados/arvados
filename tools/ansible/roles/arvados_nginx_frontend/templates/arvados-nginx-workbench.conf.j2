@@ -16,8 +16,6 @@ server {
   ssl_certificate      /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.cert;
   ssl_certificate_key  /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.key;
 
-  client_max_body_size  {{ arvados_nginx_client_max_body_size }};
-
   index  index.html;
 
   # Workbench2 uses a call to /config.json to bootstrap itself
