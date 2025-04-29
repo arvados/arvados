@@ -82,7 +82,7 @@ export const ProgressBadgeBar = connect(mapStateToProps, mapDispatchToProps)(wit
         const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
         const shouldPollProcess = isProcess(parentResource) ? isProcessRunning(parentResource) : false;
         const statusColumn = getDataExplorer(dataExplorer, dataExplorerId || '').columns.find(column => column.name === 'Status');
-        const filterLabels: string[] = statusColumn ? Object.keys(statusColumn.filters) : [];
+        const filterLabels: string[] = statusColumn ? sortBadges(Object.keys(statusColumn.filters)) : [];
 
         let typeFilter = useRef('');
 
@@ -203,3 +203,34 @@ function selectStatus(status: string, filters: DataTableFilters) {
 const getStatusTotal = (progressCounts: ProgressBadgeCounts | undefined, status: string) => {
     return progressCounts?.[status] || 0;
 }
+
+const sortBadges = (labels: string[]) => {
+    const preferredOrder = [
+        'All',
+        'Failed',
+        'Cancelled',
+        'On hold',
+        'Queued',
+        'Running',
+        'Completed',
+    ];
+
+    return labels.sort((a, b) => {
+        const aIndex = preferredOrder.indexOf(a);
+        const bIndex = preferredOrder.indexOf(b);
+
+        if (aIndex === -1 && bIndex === -1) {
+            return a.localeCompare(b);
+        }
+
+        if (aIndex === -1) {
+            return 1;
+        }
+
+        if (bIndex === -1) {
+            return -1;
+        }
+
+        return aIndex - bIndex;
+    });
+};

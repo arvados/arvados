@@ -41,6 +41,7 @@ interface Colors {
     greyL: string;
     greyD: string;
     darkblue: string;
+    black: string;
 }
 
 /**
@@ -79,6 +80,7 @@ export const themeOptions: ArvadosThemeOptions = {
             darkOrange: '#9A6E31',
             greyL: arvadosGreyLight,
             greyD: arvadosGreyDark,
+            black: '#222222',
         }
     },
     components: {

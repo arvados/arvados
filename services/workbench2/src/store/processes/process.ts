@@ -91,11 +91,13 @@ export const getProcessRuntime = ({ container }: Process) => {
 
 export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): React.CSSProperties => {
     let color = theme.customs.colors.grey500;
-    let running = false;
+    let altStyle = false;
+    let lines = false;
     switch (status) {
         case ProcessStatus.RUNNING:
             color = theme.customs.colors.green800;
-            running = true;
+            altStyle = true;
+            lines = true;
             break;
         case ProcessStatus.COMPLETED:
         case ProcessStatus.REUSED:
@@ -103,40 +105,59 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             break;
         case ProcessStatus.WARNING:
             color = theme.customs.colors.green800;
-            running = true;
+            altStyle = true;
             break;
         case ProcessStatus.RESUBMITTED:
             color = theme.customs.colors.darkOrange;
             break;
         case ProcessStatus.FAILING:
             color = theme.customs.colors.red900;
-            running = true;
+            altStyle = true;
             break;
         case ProcessStatus.CANCELLING:
             color = theme.customs.colors.red900;
-            running = true;
+            altStyle = true;
             break;
         case ProcessStatus.CANCELLED:
+            color = theme.customs.colors.red900;
+            altStyle = true;
+            break;
         case ProcessStatus.FAILED:
             color = theme.customs.colors.red900;
             break;
         case ProcessStatus.QUEUED:
             color = theme.customs.colors.grey600;
-            running = true;
+            altStyle = true;
+            lines = true;
+            break;
+        case ProcessStatus.ONHOLD:
+            color = theme.customs.colors.grey600;
+            altStyle = true;
+            break;
+        case ProcessStatus.DRAFT:
+            color = theme.customs.colors.grey600;
             break;
         default:
-            color = theme.customs.colors.grey600;
+            color = theme.customs.colors.black;
             break;
     }
 
-    // Using color and running we build the text, border, and background style properties
+    // Using color and altStyle we build the text, border, and background style properties
     return {
-        // Set background color when not running, otherwise use white
-        backgroundColor: running ? theme.palette.common.white : color,
-        // Set text color to status color when running, else use white text for solid button
-        color: running ? color : theme.palette.common.white,
-        // Set border color when running, else omit the style entirely
-        ...(running ? { border: `2px solid ${color}` } : {}),
+        // Set background color when not altStyle, otherwise use white
+        backgroundColor: altStyle ? theme.palette.common.white : color,
+        // Set text color to status color when altStyle, else use white text for solid button
+        color: altStyle ? color : theme.palette.common.white,
+        // Set background image to lines when lines, else omit the style entirely
+        backgroundImage: lines ? `repeating-linear-gradient(
+            310deg,
+            #ccc 0px,
+            #ccc 2px,
+            transparent 2px,
+            transparent 10px
+          )` : undefined,
+        // Set border color when altStyle, else omit the style entirely
+        ...(altStyle ? { border: `2px solid ${color}` } : {}),
     };
 };
 
