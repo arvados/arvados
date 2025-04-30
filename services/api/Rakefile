@@ -33,7 +33,7 @@ namespace :test do
 end
 
 namespace :db do
-  namespace :structure do
+  namespace :schema do
     task :dump do
       require 'tempfile'
       origfnm = File.expand_path('../db/structure.sql', __FILE__)

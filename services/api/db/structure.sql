@@ -3,15 +3,12 @@
 -- SPDX-License-Identifier: AGPL-3.0
 
 SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
-SET row_security = off;
 
 --
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
@@ -24,7 +21,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 -- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+-- COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
 
 --
@@ -344,30 +341,6 @@ $$;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- Name: groups; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.groups (
-    id bigint NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb,
-    frozen_by_uuid character varying
-);
-
 
 --
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
@@ -697,6 +670,30 @@ ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
 
 CREATE TABLE public.frozen_groups (
     uuid character varying
+);
+
+
+--
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.groups (
+    id bigint NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone,
+    properties jsonb DEFAULT '{}'::jsonb,
+    frozen_by_uuid character varying
 );
 
 
@@ -3377,3 +3374,4 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20130105224358'),
 ('20130105203021'),
 ('20121016005009');
+
