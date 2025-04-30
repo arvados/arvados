@@ -62,7 +62,7 @@
 
 - name: Register virtual machine fact
   ansible.builtin.set_fact:
-    arvados_virtual_machine: "{{ (arvados_virtual_machine_list.stdout|from_json)['items']|first|default(arvados_virtual_machine_create.stdout|from_json) }}"
+    arvados_virtual_machine: "{{ (arvados_virtual_machine_create.stdout|from_json) if arvados_virtual_machine_create.stdout is defined else ((arvados_virtual_machine_list.stdout|from_json)['items']|first) }}"
 
 - name: Set up arvados-login-sync
   ansible.builtin.import_tasks: login_sync.yml
