@@ -187,11 +187,11 @@ if [[ "$UPLOAD" != 0 ]]; then
     else
       /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET
     fi
+    checkexit $? "upload packages"
     set +x
   else
     echo "Skipping package upload, there were errors building and/or testing the packages"
   fi
-  checkexit $? "upload packages"
   title "End of upload packages (`timer`)"
 fi
 
