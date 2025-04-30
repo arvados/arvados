@@ -23,8 +23,16 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 --
 -- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
 --
-
-COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+-- "COMMENT ON EXTENSION" should remain commented out.  The problem is
+-- that the extension might have been separately created/installed and
+-- that's fine because "CREATE EXTENSION IF NOT EXISTS" is a no-op in
+-- that case, but then the package might not have permission to add a
+-- comment on the extension, which will cause database initialization
+-- to fail.  Since it doesnt't have any functional purpose, don't do
+-- it.  I'm leaving the line here because so that future developers
+-- will know not to uncomment it & break stuff like I just did.
+--
+-- COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
 
 --
