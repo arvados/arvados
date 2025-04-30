@@ -205,7 +205,7 @@ func (s *IntegrationSuite) TestZip_SelectDirectory_JSON(c *C) {
 		reqBody:           `["dir1"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (d59e0e64)"`,
 	})
 }
 
@@ -217,7 +217,7 @@ func (s *IntegrationSuite) TestZip_SelectDirectory_TrailingSlash(c *C) {
 		reqBody:           `["dir1/"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (d59e0e64)"`,
 	})
 }
 
@@ -241,7 +241,7 @@ func (s *IntegrationSuite) TestZip_SelectFiles_Query(c *C) {
 		reqToken:          arvadostest.ActiveTokenV2,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/file1.txt", "dir2/file2.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (608d6b48)"`,
 	})
 }
 

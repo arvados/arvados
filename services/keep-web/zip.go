@@ -6,6 +6,7 @@ package keepweb
 
 import (
 	"archive/zip"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -185,7 +186,21 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		// collection, mention the number of files that will
 		// be in the archive, to make it more obvious that
 		// it's not an archive of the entire collection.
-		zipfilename += fmt.Sprintf(" - %d files", len(filepaths))
+		//
+		// Also include a partial hash of {PDH, list of
+		// filenames} so downloading different subsets of a
+		// collection results in different names, even if the
+		// number of files happens to be the same.  (The pdh
+		// is incorporated here because otherwise the
+		// existence of a hash in the filename would be a
+		// strong misleading hint that identical filenames
+		// signify identical content.)
+		h := md5.New()
+		fmt.Fprintln(h, coll.PortableDataHash)
+		for _, path := range filepaths {
+			fmt.Fprintln(h, path)
+		}
+		zipfilename += fmt.Sprintf(" - %d files (%-4.4x)", len(filepaths), h.Sum(nil))
 	}
 
 	logpath := ""
