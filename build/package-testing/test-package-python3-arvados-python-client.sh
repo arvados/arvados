@@ -3,11 +3,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-set -e
+arv-put --version >/dev/null || exit
 
-arv-put --version >/dev/null
-
-/usr/lib/python3-arvados-python-client/bin/python <<EOF
+. /usr/lib/python3-arvados-python-client/bin/activate
+python <<EOF
 import arvados
 print("Successfully imported arvados")
 EOF

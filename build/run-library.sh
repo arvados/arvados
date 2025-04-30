@@ -724,7 +724,7 @@ fpm_build_virtualenv_worker () {
     exit 1
   fi
 
-  local venv_dir="$PYTHON_BUILDROOT/$PYTHON_PKG"
+  local venv_dir="/usr/lib/$PYTHON_PKG"
   echo "Creating virtualenv..."
   if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
     printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
@@ -758,23 +758,6 @@ fpm_build_virtualenv_worker () {
     return 0
   fi
   echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
-
-  # Replace the shebang lines in all python scripts, and handle the activate
-  # scripts too. This is a functional replacement of the 237 line
-  # virtualenv_tools.py script that doesn't work in python3 without serious
-  # patching, minus the parts we don't need (modifying pyc files, etc).
-  local sys_venv_dir="/usr/lib/$PYTHON_PKG"
-  local sys_venv_py="$sys_venv_dir/bin/python$PYTHON3_VERSION"
-  find "$venv_dir/bin" -type f | while read binfile; do
-    if file --mime "$binfile" | grep -q binary; then
-      :  # Nothing to do for binary files
-    elif [[ "$binfile" =~ /activate(.csh|.fish|)$ ]]; then
-      sed -ri "s@VIRTUAL_ENV(=| )\".*\"@VIRTUAL_ENV\\1\"$sys_venv_dir\"@" "$binfile"
-    else
-      # Replace shebang line
-      sed -ri "1 s@^#\![^[:space:]]+/bin/python[0-9.]*@#\!$sys_venv_py@" "$binfile"
-    fi
-  done
 
   # Using `env -C` sets the directory where the package is built.
   # Using `fpm --chdir` sets the root directory for source arguments.
@@ -870,7 +853,7 @@ fpm_build_virtualenv_worker () {
     COMMAND_ARR+=("bin/cwltool=/usr/bin/cwltool")
   fi
 
-  COMMAND_ARR+=(".=$sys_venv_dir")
+  COMMAND_ARR+=(".=$venv_dir")
 
   debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
