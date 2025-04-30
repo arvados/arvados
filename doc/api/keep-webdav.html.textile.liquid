@@ -56,6 +56,8 @@ To download a subset of a collection, the request can specify one or more pathna
 
 Keep-web returns an error if one of the specified paths does not exist in the requested collection.
 
+The ZIP archive comment will include a download URL with the collection UUID or portable data hash, e.g., "Downloaded from https://collections.example.com/by_id/zzzzz-4zz18-0pg114rezrbz46u/".
+
 The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=1@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's metadata (UUID, name, description, portable data hash, properties, creation time, modification time) and information about the user who last modified it (UUID, full name, username, and email). If the collection is specified by portable data hash rather than name or UUID, collection.json contains only the portable data hash.
 
 Example @collection.json@ content:

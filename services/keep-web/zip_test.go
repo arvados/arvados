@@ -245,6 +245,19 @@ func (s *IntegrationSuite) TestZip_SelectFiles_Query(c *C) {
 	})
 }
 
+func (s *IntegrationSuite) TestZip_SelectFile_UseByIDStyle(c *C) {
+	s.testZip(c, testZipOptions{
+		useByIDStyle:      true,
+		reqMethod:         "POST",
+		reqContentType:    "application/json",
+		reqToken:          arvadostest.ActiveTokenV2,
+		reqBody:           `["dir1/file1.txt"]`,
+		expectStatus:      200,
+		expectFiles:       []string{"dir1/file1.txt"},
+		expectDisposition: `attachment; filename="keep-web zip test collection - file1.txt.zip"`,
+	})
+}
+
 func (s *IntegrationSuite) TestZip_SelectFile_UsePathStyle(c *C) {
 	s.testZip(c, testZipOptions{
 		usePathStyle:      true,
@@ -349,6 +362,7 @@ type testZipOptions struct {
 	filedata          map[string]string // if nil, use default set (see testZip)
 	usePDH            bool
 	usePathStyle      bool
+	useByIDStyle      bool
 	reqMethod         string
 	reqQuery          string
 	reqContentType    string
@@ -390,6 +404,9 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	if opts.usePathStyle {
 		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Scheme = "http"
 		url = "http://collections.example.com/c=" + collID
+	} else if opts.useByIDStyle {
+		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Scheme = "http"
+		url = "http://collections.example.com/by_id/" + collID
 	} else {
 		url = s.collectionURL(collID, "")
 	}
