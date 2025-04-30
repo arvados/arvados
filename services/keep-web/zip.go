@@ -202,6 +202,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		}
 		zipfilename += fmt.Sprintf(" - %d files (%-4.4x)", len(filepaths), h.Sum(nil))
 	}
+	zipfilename += ".zip"
 
 	logpath := ""
 	if len(filepaths) == 1 {

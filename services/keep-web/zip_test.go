@@ -205,7 +205,7 @@ func (s *IntegrationSuite) TestZip_SelectDirectory_JSON(c *C) {
 		reqBody:           `["dir1"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (d59e0e64)"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (d59e0e64).zip"`,
 	})
 }
 
@@ -217,7 +217,7 @@ func (s *IntegrationSuite) TestZip_SelectDirectory_TrailingSlash(c *C) {
 		reqBody:           `["dir1/"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (d59e0e64)"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (d59e0e64).zip"`,
 	})
 }
 
@@ -229,7 +229,7 @@ func (s *IntegrationSuite) TestZip_SelectFile(c *C) {
 		reqBody:           `["dir1/file1.txt"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/file1.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - file1.txt"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - file1.txt.zip"`,
 	})
 }
 
@@ -241,7 +241,7 @@ func (s *IntegrationSuite) TestZip_SelectFiles_Query(c *C) {
 		reqToken:          arvadostest.ActiveTokenV2,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/file1.txt", "dir2/file2.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (608d6b48)"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files (608d6b48).zip"`,
 	})
 }
 
@@ -254,7 +254,7 @@ func (s *IntegrationSuite) TestZip_SelectFile_UsePathStyle(c *C) {
 		reqBody:           `["dir1/file1.txt"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/file1.txt"},
-		expectDisposition: `attachment; filename="keep-web zip test collection - file1.txt"`,
+		expectDisposition: `attachment; filename="keep-web zip test collection - file1.txt.zip"`,
 	})
 }
 
@@ -269,7 +269,7 @@ func (s *IntegrationSuite) TestZip_SelectFile_UsePathStyle_PDH(c *C) {
 		reqBody:           `["dir1/file1.txt"]`,
 		expectStatus:      200,
 		expectFiles:       []string{"collection.json", "dir1/file1.txt"},
-		expectDisposition: `attachment; filename="6acf043b102afcf04e3be2443e7ea2ba+223 - file1.txt"`,
+		expectDisposition: `attachment; filename="6acf043b102afcf04e3be2443e7ea2ba+223 - file1.txt.zip"`,
 		expectMetadata: map[string]interface{}{
 			"portable_data_hash": "6acf043b102afcf04e3be2443e7ea2ba+223",
 		},
