@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -120,6 +121,7 @@ func (s *IntegrationSuite) TestZip_Metadata(c *C) {
 				"uuid":      arvadostest.ActiveUserUUID,
 			},
 		},
+		expectZipComment: `Downloaded from https://collections.example.com/by_id/{{stage.coll.UUID}}/`,
 	})
 }
 
@@ -271,6 +273,7 @@ func (s *IntegrationSuite) TestZip_SelectFile_UsePathStyle_PDH(c *C) {
 		expectMetadata: map[string]interface{}{
 			"portable_data_hash": "6acf043b102afcf04e3be2443e7ea2ba+223",
 		},
+		expectZipComment: `Downloaded from http://collections.example.com/by_id/6acf043b102afcf04e3be2443e7ea2ba+223/`,
 	})
 }
 
@@ -356,6 +359,7 @@ type testZipOptions struct {
 	expectBodyMatch   string
 	expectDisposition string
 	expectMetadata    map[string]interface{}
+	expectZipComment  string
 	expectLogsMatch   []string
 }
 
@@ -364,6 +368,7 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	logger := logrus.New()
 	logger.Out = io.MultiWriter(logbuf, ctxlog.LogWriter(c.Log))
 	s.ctx = ctxlog.Context(context.Background(), logger)
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "collections.example.com"
 
 	if opts.filedata == nil {
 		opts.filedata = map[string]string{
@@ -383,7 +388,6 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	}
 	var url string
 	if opts.usePathStyle {
-		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "collections.example.com"
 		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Scheme = "http"
 		url = "http://collections.example.com/c=" + collID
 	} else {
@@ -407,6 +411,9 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	c.Check(zipFileNames(zipr), DeepEquals, opts.expectFiles)
 	if opts.expectDisposition != "" {
 		c.Check(resp.Header.Get("Content-Disposition"), Equals, opts.expectDisposition)
+	}
+	if opts.expectZipComment != "" {
+		c.Check(zipr.Comment, Equals, strings.Replace(opts.expectZipComment, "{{stage.coll.UUID}}", stage.coll.UUID, -1))
 	}
 	f, err := zipr.Open("collection.json")
 	if opts.expectMetadata != nil && c.Check(err, IsNil) {

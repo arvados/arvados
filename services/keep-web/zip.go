@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"mime"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -204,6 +205,16 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 	zipw := zip.NewWriter(w)
 	wrote := false
 	err = func() error {
+		u := url.URL(h.Cluster.Services.WebDAVDownload.ExternalURL)
+		if coll.UUID != "" {
+			u.Path = "/by_id/" + coll.UUID + "/"
+		} else {
+			u.Path = "/by_id/" + coll.PortableDataHash + "/"
+		}
+		err := zipw.SetComment(fmt.Sprintf("Downloaded from %s", u.String()))
+		if err != nil {
+			return err
+		}
 		if r.Form.Get("include_collection_metadata") != "" {
 			m := map[string]interface{}{
 				"portable_data_hash": coll.PortableDataHash,
