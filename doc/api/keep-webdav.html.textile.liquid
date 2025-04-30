@@ -56,7 +56,29 @@ To download a subset of a collection, the request can specify one or more pathna
 
 Keep-web returns an error if one of the specified paths does not exist in the requested collection.
 
-The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=1@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's UUID, name, portable data hash, and properties. If the collection is specified by portable data hash rather than name or UUID, collection.json contains only the portable data hash.
+The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=1@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's metadata (UUID, name, description, portable data hash, properties, creation time, modification time) and information about the user who last modified it (UUID, full name, username, and email). If the collection is specified by portable data hash rather than name or UUID, collection.json contains only the portable data hash.
+
+Example @collection.json@ content:
+
+<pre>
+{
+  "created_at":"2025-04-28T19:50:49.046969000Z",
+  "description":"Description of test collection\n",
+  "modified_at":"2025-04-28T19:50:49.093166000Z",
+  "modified_by_user":{
+    "email":"example@example.com",
+    "full_name":"Example Name",
+    "username":"example",
+    "uuid":"zzzzz-tpzed-xurymjxw79nv3jz"
+  },
+  "name":"collection name",
+  "portable_data_hash":"6acf043b102afcf04e3be2443e7ea2ba+223",
+  "properties":{
+    "key":"value"
+  },
+  "uuid":"zzzzz-4zz18-0pg114rezrbz46u"
+}
+</pre>
 
 h3(#auth). Authentication mechanisms
 
