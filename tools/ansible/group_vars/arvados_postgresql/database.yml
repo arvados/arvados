@@ -1,0 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# These variables rig up the installer playbook so hosts in the
+# `arvados_postgresql` group automatically become the `postgres` user
+# for maintenance tasks, rather than connecting over the network.
+# See also roles/arvados_database/defaults/main.yml.
+
+arvados_database_login_host: ""
