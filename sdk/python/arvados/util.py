@@ -98,6 +98,7 @@ def is_hex(s: str, *length_args: int) -> bool:
         good_len = True
     return bool(good_len and HEX_RE.match(s))
 
+
 def keyset_list_all(
         fn: Callable[..., 'arvados.api_resources.ArvadosAPIRequest'],
         order_key: str="created_at",
@@ -219,6 +220,7 @@ def keyset_list_all(
                 nextpage += [[tiebreak_key, "!=", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = False
 
+
 def iter_computed_permissions(
         fn: Callable[..., 'arvados.api_resources.ArvadosAPIRequest'],
         order_key: str='user_uuid',
@@ -259,6 +261,7 @@ def iter_computed_permissions(
         key_fields=key_fields,
         **kwargs)
 
+
 def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
     """Return the path of the best available source of CA certificates
 
@@ -297,6 +300,7 @@ def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
             return ca_certs_path
     return fallback
 
+
 def new_request_id() -> str:
     """Return a random request ID
 
@@ -314,6 +318,7 @@ def new_request_id() -> str:
             rid += chr(c+ord('a')-10)
         n = n // 36
     return rid
+
 
 def get_config_once(svc: 'arvados.api_resources.ArvadosAPIClient') -> Dict[str, Any]:
     """Return an Arvados cluster's configuration, with caching
@@ -333,6 +338,7 @@ def get_config_once(svc: 'arvados.api_resources.ArvadosAPIClient') -> Dict[str, 
     if not hasattr(svc, '_cached_config'):
         svc._cached_config = svc.configs().get().execute()
     return svc._cached_config
+
 
 def get_vocabulary_once(svc: 'arvados.api_resources.ArvadosAPIClient') -> Dict[str, Any]:
     """Return an Arvados cluster's vocabulary, with caching
@@ -357,6 +363,7 @@ def get_vocabulary_once(svc: 'arvados.api_resources.ArvadosAPIClient') -> Dict[s
         svc._cached_vocabulary = svc.vocabularies().get().execute()
     return svc._cached_vocabulary
 
+
 def trim_name(collectionname: str) -> str:
     """Limit the length of a name to fit within Arvados API limits
 
@@ -379,6 +386,7 @@ def trim_name(collectionname: str) -> str:
         collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
 
     return collectionname
+
 
 def iter_storage_classes(
         config: Dict[str, Any],
