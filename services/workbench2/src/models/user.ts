@@ -11,7 +11,10 @@ export type UserPrefs = {
         lab?: string,
         website_url?: string,
         role?: string
-    }
+    },
+    wb?: {
+        default_project_tab?: string,
+    },
 };
 
 export interface User {
@@ -64,3 +67,7 @@ export const getUserClusterID = (user: User): string | undefined => {
 export interface UserResource extends Resource, User {
     kind: ResourceKind.USER;
 }
+
+export const isUserResource = (resource: any): resource is UserResource => {
+    return resource && resource.kind === ResourceKind.USER
+};

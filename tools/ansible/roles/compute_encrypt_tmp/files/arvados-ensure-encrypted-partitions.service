@@ -5,12 +5,10 @@
 [Unit]
 Description=Ensure Arvados compute work directories are encrypted
 Before=docker.service
-Before=docker.socket
 Before=ssh.service
 
 [Install]
 WantedBy=docker.service
-WantedBy=docker.socket
 WantedBy=ssh.service
 
 [Service]

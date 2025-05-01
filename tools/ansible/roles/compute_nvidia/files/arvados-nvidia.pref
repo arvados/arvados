@@ -1,11 +1,8 @@
 ### This file is managed by Ansible ###
-# Copyright (C) The Arvados Authors. All rights reserved.
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-# Pin NVIDIA dependencies to tested and known-good versions.
-# These are the last versions published for Debian 11, so we want to stay on
-# these until we drop support for that distro.
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
 
 Package: cuda
 Pin: version 12.6.*
@@ -15,6 +12,6 @@ Package: src:libnvidia-container src:nvidia-container-toolkit
 Pin: version 1.17.*
 Pin-Priority: 995
 
-Package: cuda-drivers src:nvidia-graphics-drivers
-Pin: version 560.*
+Package: cuda-drivers nvidia-modprobe nvidia-open src:nvidia-graphics-drivers src:nvidia-kmod-open src:nvidia-settings
+Pin: version 570.*
 Pin-Priority: 995

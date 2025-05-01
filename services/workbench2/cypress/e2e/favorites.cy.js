@@ -224,6 +224,7 @@ describe('Favorites tests', function () {
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
                         cy.get('[data-cy=new-process-panel]')
                             .within(() => {
                                 cy.contains('input').next().click();
@@ -242,6 +243,7 @@ describe('Favorites tests', function () {
                         cy.get('main').contains(testWorkflow2.name).click();
                         cy.get('button').contains('Change Workflow').click();
                         cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
                         cy.get('[data-cy=new-process-panel]')
                             .within(() => {
                                 cy.contains('image_collection').next().click();

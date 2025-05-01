@@ -114,7 +114,6 @@ type filterKeepstoreErrorsOnly struct {
 }
 
 func (f *filterKeepstoreErrorsOnly) Write(p []byte) (int, error) {
-	log.Printf("filterKeepstoreErrorsOnly: write %q", p)
 	f.buf = append(f.buf, p...)
 	start := 0
 	for i := len(f.buf) - len(p); i < len(f.buf); i++ {

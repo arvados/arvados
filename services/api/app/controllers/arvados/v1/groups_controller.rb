@@ -58,6 +58,7 @@ user or group with this UUID.",
 
   * `\"container_uuid\"`
   * `\"owner_uuid\"`
+  * `\"collection_uuid\"`
 
 ",
         },
@@ -169,6 +170,13 @@ with the current user.",
       list[:items_available] = @items_available
     end
     if @extra_included
+      if @orig_select.nil?
+        @orig_select = User.selectable_attributes.concat(
+          Group.selectable_attributes,
+          Container.selectable_attributes,
+          Collection.selectable_attributes - ["unsigned_manifest_text"])
+      end
+      @orig_select = @orig_select - ["manifest_text"]
       list[:included] = @extra_included.as_api_response(nil, {select: @orig_select})
     end
     send_json(list)
@@ -215,6 +223,14 @@ with the current user.",
       @extra_included += Container.where(uuid: container_uuids).to_a
     end
 
+    if @include.include?("collection_uuid")
+      @extra_included ||= []
+      collection_uuids = @objects.map { |o|
+        o.respond_to?(:collection_uuid) ? o.collection_uuid : nil
+      }.compact.to_set.to_a
+      @extra_included += Collection.where(uuid: collection_uuids).to_a
+    end
+
     index
   end
 
@@ -255,7 +271,9 @@ with the current user.",
 
     # Reload the orders param, this time without prefixing unqualified
     # columns ("name" => "groups.name"). Here, unqualified orders
-    # apply to each table being searched, not "groups".
+    # apply to each table being searched, not just "groups", as
+    # fill_table_names would assume. Instead, table names are added
+    # inside the klasses loop below (see request_order).
     load_limit_offset_order_params(fill_table_names: false)
 
     # Trick apply_where_limit_order_params into applying suitable
@@ -284,8 +302,9 @@ with the current user.",
         filter_table = col.split('.', 2)[0]
         # singular "container" is valid as a special case for
         # filtering container requests by their associated
-        # container_uuid
-        if filter_table != "container" && !table_names.values.include?(filter_table)
+        # container_uuid, similarly singular "collection" for
+        # workflows.
+        if filter_table != "container" && filter_table != "collection" && !table_names.values.include?(filter_table)
           raise ArgumentError.new("Invalid attribute '#{col}' in filter")
         end
       end
@@ -324,6 +343,9 @@ with the current user.",
       if klasses.include?(ContainerRequest) && @include.include?("container_uuid")
         all_attributes.concat Container.selectable_attributes
       end
+      if klasses.include?(Workflow) && @include.include?("collection_uuid")
+        all_attributes.concat Collection.selectable_attributes
+      end
       @select.each do |check|
         if !all_attributes.include? check
           raise ArgumentError.new "Invalid attribute '#{check}' in select"
@@ -347,9 +369,21 @@ with the current user.",
       # If the currently requested orders specifically match the
       # table_name for the current klass, apply that order.
       # Otherwise, order by recency.
-      request_order =
-        request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i || r !~ /\./ } ||
-        klass.default_orders.join(", ")
+      request_order = request_orders.andand.map do |r|
+        if r =~ /^#{klass.table_name}\./i
+          r
+        elsif r !~ /\./
+          # If the caller provided an unqualified column like
+          # "created_by desc", but we might be joining another table
+          # that also has that column, so we need to specify that we
+          # mean this table.
+          klass.table_name + '.' + r
+        else
+          # Only applies to a different table / object type.
+          nil
+        end
+      end.compact
+      request_order = optimize_orders(request_order, model_class: klass)
 
       @select = select_for_klass any_selections, klass, false
 
@@ -372,6 +406,8 @@ with the current user.",
         elsif (colsp = col.split('.', 2))[0] == klass.table_name
           [colsp[1], op, val]
         elsif klass == ContainerRequest && colsp[0] == "container"
+          [col, op, val]
+        elsif klass == Workflow && colsp[0] == "collection"
           [col, op, val]
         else
           nil
@@ -460,6 +496,13 @@ with the current user.",
       if @include.include?("container_uuid") && klass == ContainerRequest
         containers = klass_object_list[:items].collect { |cr| cr[:container_uuid] }.to_set
         Container.where(uuid: containers.to_a).each do |c|
+          included_by_uuid[c.uuid] = c
+        end
+      end
+
+      if @include.include?("collection_uuid") && klass == Workflow
+        collections = klass_object_list[:items].collect { |wf| wf[:collection_uuid] }.to_set
+        Collection.where(uuid: collections.to_a).each do |c|
           included_by_uuid[c.uuid] = c
         end
       end

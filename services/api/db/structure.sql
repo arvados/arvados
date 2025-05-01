@@ -3,12 +3,15 @@
 -- SPDX-License-Identifier: AGPL-3.0
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
+SET row_security = off;
 
 --
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
@@ -20,7 +23,15 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 --
 -- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
 --
-
+-- "COMMENT ON EXTENSION" should remain commented out.  The problem is
+-- that the extension might have been separately created/installed and
+-- that's fine because "CREATE EXTENSION IF NOT EXISTS" is a no-op in
+-- that case, but then the package might not have permission to add a
+-- comment on the extension, which will cause database initialization
+-- to fail.  Since it doesnt't have any functional purpose, don't do
+-- it.  I'm leaving the line here because so that future developers
+-- will know not to uncomment it & break stuff like I just did.
+--
 -- COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
 
@@ -340,7 +351,31 @@ $$;
 
 SET default_tablespace = '';
 
-SET default_with_oids = false;
+SET default_table_access_method = heap;
+
+--
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.groups (
+    id bigint NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone,
+    properties jsonb DEFAULT '{}'::jsonb,
+    frozen_by_uuid character varying
+);
+
 
 --
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
@@ -570,7 +605,9 @@ CREATE TABLE public.container_requests (
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
     output_properties jsonb DEFAULT '{}'::jsonb,
     cumulative_cost double precision DEFAULT 0.0 NOT NULL,
-    output_glob text DEFAULT '[]'::text
+    output_glob text DEFAULT '[]'::text,
+    service boolean DEFAULT false NOT NULL,
+    published_ports jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -637,7 +674,9 @@ CREATE TABLE public.containers (
     output_properties jsonb DEFAULT '{}'::jsonb,
     cost double precision DEFAULT 0.0 NOT NULL,
     subrequests_cost double precision DEFAULT 0.0 NOT NULL,
-    output_glob text DEFAULT '[]'::text
+    output_glob text DEFAULT '[]'::text,
+    service boolean DEFAULT false NOT NULL,
+    published_ports jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -666,30 +705,6 @@ ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
 
 CREATE TABLE public.frozen_groups (
     uuid character varying
-);
-
-
---
--- Name: groups; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.groups (
-    id bigint NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb,
-    frozen_by_uuid character varying
 );
 
 
@@ -1450,7 +1465,8 @@ CREATE TABLE public.workflows (
     name character varying(255),
     description text,
     definition text,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    collection_uuid character varying
 );
 
 
@@ -2520,6 +2536,13 @@ CREATE INDEX index_links_on_modified_at_and_uuid ON public.links USING btree (mo
 
 
 --
+-- Name: index_links_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_links_on_name ON public.links USING btree (name) WHERE ((link_class)::text = 'published_port'::text);
+
+
+--
 -- Name: index_links_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3115,10 +3138,10 @@ CREATE INDEX virtual_machines_search_index ON public.virtual_machines USING btre
 
 
 --
--- Name: workflows_search_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: workflows_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX workflows_search_idx ON public.workflows USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
+CREATE INDEX workflows_search_index ON public.workflows USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, collection_uuid);
 
 
 --
@@ -3135,6 +3158,8 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20250402131700'),
+('20250315222222'),
 ('20250312141843'),
 ('20250115145250'),
 ('20241118110000'),
@@ -3360,4 +3385,3 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20130105224358'),
 ('20130105203021'),
 ('20121016005009');
-

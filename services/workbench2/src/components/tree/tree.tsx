@@ -482,7 +482,7 @@ export const TreeComponent = withStyles(styles)(
                                 checked={it.selected}
                                 className={classes.checkbox}
                                 color="primary" />}
-                        <div className={renderContainer} ref={!!it.active ? selectedRef : undefined}>
+                        <div className={renderContainer} data-active={it.active} ref={!!it.active ? selectedRef : undefined}>
                             {render(it, level)}
                         </div>
                     </ListItem>

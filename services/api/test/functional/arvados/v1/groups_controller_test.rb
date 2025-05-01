@@ -347,6 +347,21 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
+  test 'get objects with ambiguous column name in order param' do
+    authorize_with :active
+    get :contents, params: {
+      format: :json,
+      # bug #22785 ("ambiguous column reference") only occurred when
+      # filtering by a column in a joined table...
+      filters: [["uuid", "is_a", "arvados#containerRequest"],
+                ["container.state", "in", ["Queued","Locked"]]],
+      # ...and ordering by a column that is in both primary and joined
+      # tables.
+      order: "created_at desc",
+    }
+    assert_response :success
+  end
+
   test 'get group-owned objects with invalid field in select' do
     authorize_with :active
     get :contents, params: {

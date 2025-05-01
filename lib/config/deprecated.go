@@ -119,7 +119,7 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 		if dst, n := &cluster.Containers.LSF.BsubGPUArguments, dcluster.Containers.LSF.BsubCUDAArguments; n != nil {
 			*dst = *n
-			ldr.Logger.Warnf("using you old config key Containers.LSF.BsubCUDAArguments -- but you should rename it to Containers.LSF.BsubGPUArguments")
+			ldr.Logger.Warnf("using your old config key Containers.LSF.BsubCUDAArguments -- but you should rename it to Containers.LSF.BsubGPUArguments")
 		}
 
 		// Google* moved to Google.*
@@ -148,7 +148,7 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 					VRAM:           0,
 				}
 				cluster.InstanceTypes[name] = updInstanceType
-				ldr.Logger.Warnf("InstanceType '%v' has deprecated CUDA section, should be migrated to GPU section")
+				ldr.Logger.Warnf("InstanceType %q has deprecated CUDA section, should be migrated to GPU section", name)
 			}
 		}
 

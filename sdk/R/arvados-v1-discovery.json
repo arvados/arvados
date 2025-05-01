@@ -1811,7 +1811,7 @@
             "include": {
               "type": "array",
               "required": false,
-              "description": "An array of referenced objects to include in the `included` field of the response. Supported values in the array are:\n\n  * `\"container_uuid\"`\n  * `\"owner_uuid\"`\n\n",
+              "description": "An array of referenced objects to include in the `included` field of the response. Supported values in the array are:\n\n  * `\"container_uuid\"`\n  * `\"owner_uuid\"`\n  * `\"collection_uuid\"`\n\n",
               "location": "query"
             },
             "include_old_versions": {
@@ -3740,7 +3740,7 @@
       }
     }
   },
-  "revision": "20250128",
+  "revision": "20250402",
   "schemas": {
     "ApiClientAuthorizationList": {
       "id": "ApiClientAuthorizationList",
@@ -4225,6 +4225,14 @@
         "output_glob": {
           "description": "An array of strings of shell-style glob patterns that define which file(s)\nand subdirectory(ies) under the `output_path` directory should be recorded in\nthe container's final output. Refer to the [glob patterns reference][] for details.\n\n[glob patterns reference]: https://doc.arvados.org/api/methods/containers.html#glob_patterns\n\n",
           "type": "Array"
+        },
+        "service": {
+          "description": "A boolean flag. If set, it informs the system that this is a long-running container\nthat functions as a system service or web app, rather than a once-through batch operation.",
+          "type": "boolean"
+        },
+        "published_ports": {
+          "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.\n  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
+          "type": "jsonb"
         }
       }
     },
@@ -4392,6 +4400,14 @@
         "output_glob": {
           "description": "An array of strings of shell-style glob patterns that define which file(s)\nand subdirectory(ies) under the `output_path` directory should be recorded in\nthe container's final output. Refer to the [glob patterns reference][] for details.\n\n[glob patterns reference]: https://doc.arvados.org/api/methods/containers.html#glob_patterns\n\n",
           "type": "Array"
+        },
+        "service": {
+          "description": "A boolean flag. If set, it informs the system that this request is for a long-running container\nthat functions as a system service or web app, rather than a once-through batch operation.",
+          "type": "boolean"
+        },
+        "published_ports": {
+          "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.\n  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
+          "type": "Hash"
         }
       }
     },
@@ -5056,6 +5072,10 @@
         "definition": {
           "description": "A string with the CWL source of this workflow.",
           "type": "text"
+        },
+        "collection_uuid": {
+          "description": "The collection this workflow is linked to, containing the definition of the workflow.",
+          "type": "string"
         }
       }
     }

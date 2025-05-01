@@ -92,6 +92,8 @@ class Container < ArvadosModel
     t.add :output_properties
     t.add :cost
     t.add :subrequests_cost
+    t.add :service
+    t.add :published_ports
   end
 
   # Supported states for a container
@@ -172,6 +174,8 @@ class Container < ArvadosModel
         runtime_user_uuid: runtime_user.uuid,
         runtime_auth_scopes: runtime_auth_scopes,
         output_storage_classes: req.output_storage_classes,
+        service: req.service,
+        published_ports: req.published_ports,
       }
     end
     act_as_system_user do
@@ -456,15 +460,7 @@ class Container < ArvadosModel
   end
 
   def self.readable_by(*users_list)
-    # Load optional keyword arguments, if they exist.
-    if users_list.last.is_a? Hash
-      kwargs = users_list.pop
-    else
-      kwargs = {}
-    end
-    if users_list.select { |u| u.is_admin }.any?
-      return super
-    end
+    return super if users_list.select { |u| u.is_a?(User) && u.is_admin }.any?
     Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").arel.exists)
   end
 
@@ -571,7 +567,8 @@ class Container < ArvadosModel
                      :priority, :runtime_constraints,
                      :scheduling_parameters, :secret_mounts,
                      :runtime_token, :runtime_user_uuid,
-                     :runtime_auth_scopes, :output_storage_classes)
+                     :runtime_auth_scopes, :output_storage_classes,
+                     :service, :published_ports)
     end
 
     case self.state

@@ -82,6 +82,9 @@ export interface ClusterConfigJSON {
         WebShell: {
             ExternalURL: string;
         };
+        ContainerWebServices: {
+            ExternalURL: string;
+        };
     };
     Workbench: {
         DisableSharingURLsUI: boolean;
@@ -307,6 +310,7 @@ export const mockClusterConfigJSON = (
         WebDAV: { ExternalURL: '' },
         WebDAVDownload: { ExternalURL: '' },
         WebShell: { ExternalURL: '' },
+        ContainerWebServices: { ExternalURL: '' },
         Workbench: {
             DisableSharingURLsUI: false,
             ArvadosDocsite: "",

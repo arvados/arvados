@@ -338,22 +338,23 @@ type VolumeAccess struct {
 }
 
 type Services struct {
-	Composer       Service
-	Controller     Service
-	DispatchCloud  Service
-	DispatchLSF    Service
-	DispatchSLURM  Service
-	Health         Service
-	Keepbalance    Service
-	Keepproxy      Service
-	Keepstore      Service
-	RailsAPI       Service
-	WebDAVDownload Service
-	WebDAV         Service
-	WebShell       Service
-	Websocket      Service
-	Workbench1     Service
-	Workbench2     Service
+	Composer             Service
+	ContainerWebServices Service
+	Controller           Service
+	DispatchCloud        Service
+	DispatchLSF          Service
+	DispatchSLURM        Service
+	Health               Service
+	Keepbalance          Service
+	Keepproxy            Service
+	Keepstore            Service
+	RailsAPI             Service
+	WebDAVDownload       Service
+	WebDAV               Service
+	WebShell             Service
+	Websocket            Service
+	Workbench1           Service
+	Workbench2           Service
 }
 
 type Service struct {
