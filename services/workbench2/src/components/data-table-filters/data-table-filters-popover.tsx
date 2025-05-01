@@ -75,6 +75,7 @@ export interface DataTableFilterProps {
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
     children: React.ReactNode;
+    displayCounts: boolean;
 
     /**
      * When set to true, only one filter can be selected at a time.

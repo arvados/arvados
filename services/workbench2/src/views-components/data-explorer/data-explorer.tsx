@@ -32,6 +32,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
+        id,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,

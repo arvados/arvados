@@ -153,6 +153,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface DataExplorerDataProps<T> {
+    id: string;
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
@@ -416,6 +417,7 @@ export const DataExplorer = withStyles(styles)(
                      })}>{progressBar}</div>
                     }
                     <DataTable
+                        id={this.props.id}
                         columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                         items={items}
                         onRowClick={(_, item: T) => onRowClick(item)}

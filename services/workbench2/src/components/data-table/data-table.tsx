@@ -27,6 +27,8 @@ import { IconType, PendingIcon } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
+import { SUBPROCESS_PANEL_ID } from 'store/subprocess-panel/subprocess-panel-actions';
 
 export enum DataTableFetchMode {
     PAGINATED,
@@ -34,6 +36,7 @@ export enum DataTableFetchMode {
 }
 
 export interface DataTableDataProps<I> {
+    id: string;
     items: I[];
     columns: DataColumns<I, any>;
     onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
@@ -411,7 +414,7 @@ export const DataTable = withStyles(styles)(
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
-            const { onSortToggle, onFiltersChange, classes, checkedList } = this.props;
+            const { onSortToggle, onFiltersChange, classes, checkedList, id } = this.props;
             const { isSelected } = this.state;
             return column.name === "checkBoxColumn" ? (
                 <TableCell
@@ -441,6 +444,7 @@ export const DataTable = withStyles(styles)(
                         renderHeader()
                     ) : countNodes(filters) > 0 ? (
                         <DataTableFiltersPopover
+                            displayCounts={getDisplayCounts(id, name)}
                             name={`${name} filters`}
                             mutuallyExclusive={column.mutuallyExclusiveFilters}
                             onChange={filters => onFiltersChange && onFiltersChange(filters, column)}
@@ -523,3 +527,9 @@ export const DataTable = withStyles(styles)(
         handleRowContextMenu = (item: T) => (event: React.MouseEvent<HTMLElement>) => this.props.onContextMenu(event, item);
     }
 );
+
+function getDisplayCounts(id: string, columnName: string) {
+    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID ];
+    const goodColumnNames = [ 'Status' ];
+    return goodDataExplorers.includes(id) && goodColumnNames.includes(columnName);
+}
