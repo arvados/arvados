@@ -511,6 +511,10 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		}), nil
 	}
 
+	// First we need to fetch the container record as root, so we
+	// can check whether the requested port is marked public in
+	// published_ports.  (This needs to work even if the request
+	// did not provide a token at all.)
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 	ctr, err := conn.railsProxy.ContainerGet(ctxRoot, arvados.GetOptions{
 		UUID:   opts.UUID,
@@ -519,6 +523,10 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	if err == nil && ctr.PublishedPorts[strconv.Itoa(opts.Port)].Access == arvados.PublishedPortAccessPublic {
 		// Allow all users and anonymous connections.
 	} else {
+		// Re-fetch the container record, this time as the
+		// authenticated user instead of root.  This lets us
+		// return 404 if the container is not readable by this
+		// user, for example.
 		ctr, err = conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
 		if err != nil {
 			return nil, fmt.Errorf("container lookup failed: %w", err)
