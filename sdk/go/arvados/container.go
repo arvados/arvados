@@ -170,7 +170,14 @@ type ContainerStatus struct {
 }
 
 type PublishedPort struct {
-	Access      string `json:"access"`
-	Label       string `json:"label"`
-	InitialPath string `json:"initial_path"`
+	Access      PublishedPortAccess `json:"access"`
+	Label       string              `json:"label"`
+	InitialPath string              `json:"initial_path"`
 }
+
+type PublishedPortAccess string
+
+const (
+	PublishedPortAccessPrivate = PublishedPortAccess("private")
+	PublishedPortAccessPublic  = PublishedPortAccess("public")
+)

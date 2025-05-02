@@ -44,15 +44,55 @@ var _ = check.Suite(&ContainerGatewaySuite{})
 
 type ContainerGatewaySuite struct {
 	localdbSuite
-	reqCreateOptions arvados.CreateOptions
-	reqUUID          string
-	ctrUUID          string
-	srv              *httptest.Server
-	gw               *crunchrun.Gateway
+	containerServices []*httpserver.Server
+	reqCreateOptions  arvados.CreateOptions
+	reqUUID           string
+	ctrUUID           string
+	srv               *httptest.Server
+	gw                *crunchrun.Gateway
 }
 
-func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
-	s.localdbSuite.SetUpTest(c)
+func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
+	s.localdbSuite.SetUpSuite(c)
+
+	// Set up 10 http servers to play the role of services running
+	// inside a container. (crunchrun.GatewayTargetStub will allow
+	// our crunchrun.Gateway to connect to them directly on
+	// localhost, rather than actually running them inside a
+	// container.)
+	for i := 0; i < 10; i++ {
+		srv := &httpserver.Server{
+			Addr: ":0",
+			Server: http.Server{
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					body := fmt.Sprintf("handled %s %s with Host %s", r.Method, r.URL.String(), r.Host)
+					c.Logf("%s", body)
+					w.Write([]byte(body))
+				}),
+			},
+		}
+		srv.Start()
+		s.containerServices = append(s.containerServices, srv)
+	}
+
+	// s.containerServices[0] will be unlisted
+	// s.containerServices[1] will be listed with access=public
+	// s.containerServices[2,...] will be listed with access=private
+	publishedPorts := make(map[string]arvados.PublishedPort)
+	for i, srv := range s.containerServices {
+		access := arvados.PublishedPortAccessPrivate
+		_, port, _ := net.SplitHostPort(srv.Addr)
+		if i == 1 {
+			access = arvados.PublishedPortAccessPublic
+		}
+		if i > 0 {
+			publishedPorts[port] = arvados.PublishedPort{
+				Access: access,
+				Label:  "port " + port,
+			}
+		}
+	}
 
 	s.reqCreateOptions = arvados.CreateOptions{
 		Attrs: map[string]interface{}{
@@ -73,7 +113,21 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 			"runtime_constraints": map[string]interface{}{
 				"vcpus": 1,
 				"ram":   2,
-			}}}
+			},
+			"published_ports": publishedPorts}}
+}
+
+func (s *ContainerGatewaySuite) TearDownSuite(c *check.C) {
+	for _, srv := range s.containerServices {
+		go srv.Close()
+	}
+	s.containerServices = nil
+	s.localdbSuite.TearDownSuite(c)
+}
+
+func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
+	s.localdbSuite.SetUpTest(c)
+
 	cr, err := s.localdb.ContainerRequestCreate(s.userctx, s.reqCreateOptions)
 	c.Assert(err, check.IsNil)
 	s.reqUUID = cr.UUID
@@ -128,7 +182,14 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 
 func (s *ContainerGatewaySuite) TearDownTest(c *check.C) {
 	forceProxyForTest = false
-	s.srv.Close()
+	if s.reqUUID != "" {
+		_, err := s.localdb.ContainerRequestDelete(s.userctx, arvados.DeleteOptions{UUID: s.reqUUID})
+		c.Check(err, check.IsNil)
+	}
+	if s.srv != nil {
+		s.srv.Close()
+		s.srv = nil
+	}
 	s.localdbSuite.TearDownTest(c)
 }
 
@@ -253,28 +314,10 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ProxyTunnel(c *check.C) {
 }
 
 func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
-	var servers []*httpserver.Server
-	for i := 0; i < 10; i++ {
-		srv := &httpserver.Server{
-			Addr: ":0",
-			Server: http.Server{
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
-					body := fmt.Sprintf("handled %s %s with Host %s", r.Method, r.URL.String(), r.Host)
-					c.Logf("%s", body)
-					w.Write([]byte(body))
-				}),
-			},
-		}
-		srv.Start()
-		defer srv.Close()
-		servers = append(servers, srv)
-	}
-
 	testMethods := []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"}
 
 	var wg sync.WaitGroup
-	for idx, srv := range servers {
+	for idx, srv := range s.containerServices {
 		idx, srv := idx, srv
 		wg.Add(1)
 		go func() {
@@ -317,62 +360,88 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 	wg.Wait()
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken(c *check.C) {
-	s.testContainerHTTPProxyError(c, "", http.StatusUnauthorized)
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken_Unlisted(c *check.C) {
+	s.testContainerHTTPProxyError(c, 0, "", http.StatusUnauthorized)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken_Private(c *check.C) {
+	s.testContainerHTTPProxyError(c, 2, "", http.StatusUnauthorized)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_InvalidToken(c *check.C) {
-	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2+"bogus", http.StatusUnauthorized)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.ActiveTokenV2+"bogus", http.StatusUnauthorized)
 }
 
-func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken(c *check.C) {
-	s.testContainerHTTPProxyError(c, arvadostest.AnonymousToken, http.StatusNotFound)
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken_Unlisted(c *check.C) {
+	s.testContainerHTTPProxyError(c, 0, arvadostest.AnonymousToken, http.StatusNotFound)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken_Private(c *check.C) {
+	s.testContainerHTTPProxyError(c, 2, arvadostest.AnonymousToken, http.StatusNotFound)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_CRsDifferentUsers(c *check.C) {
 	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
 	cr, err := s.localdb.ContainerRequestCreate(rootctx, s.reqCreateOptions)
+	defer s.localdb.ContainerRequestDelete(rootctx, arvados.DeleteOptions{UUID: cr.UUID})
 	c.Assert(err, check.IsNil)
 	c.Assert(cr.ContainerUUID, check.Equals, s.ctrUUID)
-	s.testContainerHTTPProxyError(c, arvadostest.ActiveTokenV2, http.StatusForbidden)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.ActiveTokenV2, http.StatusForbidden)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_ContainerNotReadable(c *check.C) {
-	s.testContainerHTTPProxyError(c, arvadostest.SpectatorToken, http.StatusNotFound)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.SpectatorToken, http.StatusNotFound)
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, token string, expectCode int) {
+func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, svcIdx int, token string, expectCode int) {
+	_, svcPort, err := net.SplitHostPort(s.containerServices[svcIdx].Addr)
+	c.Assert(err, check.IsNil)
+	svcPortInt, err := strconv.Atoi(svcPort)
+	c.Assert(err, check.IsNil)
 	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
-	vhost := s.ctrUUID + "-12345.containers.example.com"
+	vhost := s.ctrUUID + "-" + svcPort + ".containers.example.com"
 	req, err := http.NewRequest("GET", "https://"+vhost+"/via-"+s.gw.Address, nil)
 	c.Assert(err, check.IsNil)
 	_, err = s.localdb.ContainerHTTPProxy(ctx, arvados.ContainerHTTPProxyOptions{
 		UUID:    s.ctrUUID,
-		Port:    12345,
+		Port:    svcPortInt,
 		Request: req,
 	})
+	c.Check(err, check.NotNil)
 	se := httpserver.HTTPStatusError(nil)
 	c.Assert(errors.As(err, &se), check.Equals, true)
 	c.Check(se.HTTPStatus(), check.Equals, expectCode)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_CookieAuth(c *check.C) {
-	s.testContainerHTTPProxyUsingCurl(c, arvadostest.ActiveTokenV2, "GET", "/foobar")
+	s.testContainerHTTPProxyUsingCurl(c, 0, arvadostest.ActiveTokenV2, "GET", "/foobar")
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_CookieAuth_POST(c *check.C) {
+	s.testContainerHTTPProxyUsingCurl(c, 0, arvadostest.ActiveTokenV2, "POST", "/foobar")
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth(c *check.C) {
-	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+	s.testContainerHTTPProxyUsingCurl(c, 0, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_Tunnel(c *check.C) {
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+	s.testContainerHTTPProxyUsingCurl(c, 0, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_ProxyTunnel(c *check.C) {
 	forceProxyForTest = true
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+	s.testContainerHTTPProxyUsingCurl(c, 0, "", "GET", "/foobar?arvados_api_token="+arvadostest.ActiveTokenV2)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_Anonymous(c *check.C) {
+	s.testContainerHTTPProxyUsingCurl(c, 1, "", "GET", "/foobar")
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_Anonymous_OPTIONS(c *check.C) {
+	s.testContainerHTTPProxyUsingCurl(c, 1, "", "OPTIONS", "/foobar")
 }
 
 // Check other query parameters are preserved in the
@@ -382,36 +451,23 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_ProxyTunne
 // "?baz=&baz=&..." in the redirect location.  We trust the target
 // service won't be sensitive to this difference.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_QueryAuth_PreserveQuery(c *check.C) {
-	body := s.testContainerHTTPProxyUsingCurl(c, "", "GET", "/foobar?baz&baz&arvados_api_token="+arvadostest.ActiveTokenV2+"&waz=quux")
+	body := s.testContainerHTTPProxyUsingCurl(c, 0, "", "GET", "/foobar?baz&baz&arvados_api_token="+arvadostest.ActiveTokenV2+"&waz=quux")
 	c.Check(body, check.Matches, `handled GET /foobar\?baz=&baz=&waz=quux with Host `+s.ctrUUID+`.*`)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_Patch(c *check.C) {
-	body := s.testContainerHTTPProxyUsingCurl(c, arvadostest.ActiveTokenV2, "PATCH", "/foobar")
+	body := s.testContainerHTTPProxyUsingCurl(c, 0, arvadostest.ActiveTokenV2, "PATCH", "/foobar")
 	c.Check(body, check.Matches, `handled PATCH /foobar with Host `+s.ctrUUID+`.*`)
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, cookietoken, method, path string) string {
-	srv := &httpserver.Server{
-		Addr: ":0",
-		Server: http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				body := fmt.Sprintf("handled %s %s with Host %s", r.Method, r.URL.String(), r.Host)
-				c.Logf("%s", body)
-				w.Write([]byte(body))
-			}),
-		},
-	}
-	srv.Start()
-	defer srv.Close()
-	_, srvPort, err := net.SplitHostPort(srv.Addr)
+func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcIdx int, cookietoken, method, path string) string {
+	_, svcPort, err := net.SplitHostPort(s.containerServices[svcIdx].Addr)
 	c.Assert(err, check.IsNil)
 
 	vhost, err := url.Parse(s.srv.URL)
 	c.Assert(err, check.IsNil)
 	controllerHost := vhost.Host
-	vhost.Host = s.ctrUUID + "-" + srvPort + ".containers.example.com"
+	vhost.Host = s.ctrUUID + "-" + svcPort + ".containers.example.com"
 	target, err := vhost.Parse(path)
 	c.Assert(err, check.IsNil)
 
