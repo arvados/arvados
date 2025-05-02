@@ -1828,4 +1828,41 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 3+7+9, cr.cumulative_cost
   end
 
+  test "container request in a project with trash_at in the future" do
+    # Tests edge case where a container request is created in a
+    # project which has trash_at set in the future.
+    #
+    # A user actually encountered this in the wild, they created a
+    # temporary project to run some tests and set it expire
+    # automatically as a cleanup operation.  However, because of bug
+    # #22768, the containers were assigned priority 0.
+    #
+    # This tests that the behavior now works as intended, which is the
+    # container has nonzero priority while the project remains live,
+    # and then goes to zero once trash_at has passed.
+
+    set_user_from_auth :active
+
+    project = Group.create!(group_class: "project", name: "trashed_project", trash_at: Time.now+5.minutes)
+
+    cr = create_minimal_req!({state: "Committed", priority: 500, owner_uuid: project.uuid})
+
+    assert_equal 500, cr.priority
+
+    c = Container.find_by_uuid cr.container_uuid
+
+    # Nonzero priority, which means runnable, because the project
+    # isn't trashed yet
+    assert_operator c.priority, :>, 0
+
+    project.trash_at = Time.now
+    project.save!
+
+    c.reload
+
+    # Project is now trashed, so the container has zero priority,
+    # which means it won't run and will be cancelled if it was already
+    # running.
+    assert_equal 0, c.priority
+  end
 end

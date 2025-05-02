@@ -209,7 +209,7 @@ select coalesce(max(case when containers.uuid = inherited_from then inherited
     where container_requests.container_uuid = for_container_uuid and
           container_requests.state = 'Committed' and
           container_requests.priority > 0 and
-          container_requests.owner_uuid not in (select group_uuid from trashed_groups);
+          container_requests.owner_uuid not in (select group_uuid from trashed_groups WHERE trash_at <= statement_timestamp());
 $$;
 
 
@@ -3135,6 +3135,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20250426201300'),
 ('20250312141843'),
 ('20250115145250'),
 ('20241118110000'),
@@ -3360,4 +3361,3 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20130105224358'),
 ('20130105203021'),
 ('20121016005009');
-
