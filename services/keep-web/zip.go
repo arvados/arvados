@@ -43,16 +43,19 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		http.Error(w, "zip archive can only be served from the root directory of a collection", http.StatusBadRequest)
 		return
 	}
+	params := struct {
+		Files []string
+	}{}
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	reqpaths := r.Form["files"]
-	if reqpaths == nil && r.Header.Get("Content-Type") == "application/json" {
+	params.Files = r.Form["files"]
+	if params.Files == nil && r.Header.Get("Content-Type") == "application/json" {
 		// r.Body is always non-nil, but will return EOF
 		// immediately if no body is present.
-		err := json.NewDecoder(r.Body).Decode(&reqpaths)
+		err := json.NewDecoder(r.Body).Decode(&params)
 		if err != nil && err != io.EOF {
 			http.Error(w, "error reading request body: "+err.Error(), http.StatusBadRequest)
 			return
@@ -64,7 +67,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		return
 	}
 	wanted := make(map[string]bool)
-	for _, path := range reqpaths {
+	for _, path := range params.Files {
 		wanted[path] = true
 		if path == "/" {
 			continue
@@ -77,7 +80,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 	}
 	iswanted := func(path string) bool {
 		if len(wanted) == 0 {
-			// No reqpaths provided ==> include all files
+			// No paths given ==> include all files
 			return true
 		}
 		if wanted[path] {
@@ -174,7 +177,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		}
 	}
 
-	if len(filepaths) == 1 && len(reqpaths) == 1 && filepaths[0] == reqpaths[0] {
+	if len(filepaths) == 1 && len(params.Files) == 1 && filepaths[0] == params.Files[0] {
 		// If the client specified a single (non-directory)
 		// file, include the name of the file in the zip
 		// archive name.
