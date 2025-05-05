@@ -404,6 +404,13 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
+func (conn *Conn) ContainerAuth(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointContainerAuth
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) ContainerHTTPProxy(ctx context.Context, options arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
 	return conn.reverseProxy("", http.Header{"X-Arvados-No-Forward": {"1"}}), nil
 }
@@ -566,6 +573,48 @@ func (conn *Conn) reverseProxy(setRawQuery string, setHeader http.Header) http.H
 			r.URL = &u
 		},
 	}
+}
+
+func (conn *Conn) CredentialCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Credential, error) {
+	ep := arvados.EndpointCredentialCreate
+	var resp arvados.Credential
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) CredentialUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Credential, error) {
+	ep := arvados.EndpointCredentialUpdate
+	var resp arvados.Credential
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) CredentialGet(ctx context.Context, options arvados.GetOptions) (arvados.Credential, error) {
+	ep := arvados.EndpointCredentialGet
+	var resp arvados.Credential
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) CredentialList(ctx context.Context, options arvados.ListOptions) (arvados.CredentialList, error) {
+	ep := arvados.EndpointCredentialList
+	var resp arvados.CredentialList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) CredentialSecret(ctx context.Context, options arvados.GetOptions) (arvados.Credential, error) {
+	ep := arvados.EndpointCredentialSecret
+	var resp arvados.Credential
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) CredentialDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Credential, error) {
+	ep := arvados.EndpointCredentialDelete
+	var resp arvados.Credential
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {

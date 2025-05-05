@@ -444,6 +444,10 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
+func (conn *Conn) ContainerAuth(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).ContainerAuth(ctx, options)
+}
+
 func (conn *Conn) ContainerHTTPProxy(ctx context.Context, options arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
 	return conn.chooseBackend(options.UUID).ContainerHTTPProxy(ctx, options)
 }
@@ -524,6 +528,30 @@ func (conn *Conn) ContainerRequestContainerStatus(ctx context.Context, options a
 
 func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
 	return conn.chooseBackend(options.UUID).ContainerRequestLog(ctx, options)
+}
+
+func (conn *Conn) CredentialCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Credential, error) {
+	return conn.chooseBackend(options.ClusterID).CredentialCreate(ctx, options)
+}
+
+func (conn *Conn) CredentialUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Credential, error) {
+	return conn.chooseBackend(options.UUID).CredentialUpdate(ctx, options)
+}
+
+func (conn *Conn) CredentialGet(ctx context.Context, options arvados.GetOptions) (arvados.Credential, error) {
+	return conn.chooseBackend(options.UUID).CredentialGet(ctx, options)
+}
+
+func (conn *Conn) CredentialList(ctx context.Context, options arvados.ListOptions) (arvados.CredentialList, error) {
+	return conn.generated_CredentialList(ctx, options)
+}
+
+func (conn *Conn) CredentialSecret(ctx context.Context, options arvados.GetOptions) (arvados.Credential, error) {
+	return conn.chooseBackend(options.UUID).CredentialSecret(ctx, options)
+}
+
+func (conn *Conn) CredentialDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Credential, error) {
+	return conn.chooseBackend(options.UUID).CredentialDelete(ctx, options)
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {

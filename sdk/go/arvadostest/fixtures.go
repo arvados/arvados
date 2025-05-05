@@ -49,7 +49,11 @@ const (
 
 	LockedContainerUUID = "zzzzz-dz642-lockedcontainer"
 
-	RunningContainerUUID = "zzzzz-dz642-runningcontainr"
+	RunningContainerUUID      = "zzzzz-dz642-runningcontainr"
+	RuntimeTokenContainerUUID = "zzzzz-dz642-20isqbkl8xwnsao"
+	RuntimeTokenUserUUID      = "zzzzz-tpzed-l3skomkti0c4vg4"
+	ContainerRuntimeToken     = "v2/zzzzz-gj3su-2nj68s291f50gd9/2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw"
+	Dispatch2TokenV2          = "v2/zzzzz-gj3su-jrriu629zljsnuf/pbe3v4v5oag83tjwxjh0a551j44xdu8t7ol5ljw3ixsq8oh50q"
 
 	CompletedContainerUUID         = "zzzzz-dz642-compltcontainer"
 	CompletedContainerRequestUUID  = "zzzzz-xvhdp-cr4completedctr"

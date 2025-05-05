@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -810,4 +811,78 @@ func (s *HandlerSuite) TestLogActivity(c *check.C) {
 		c.Assert(err, check.IsNil)
 		c.Check(rows, check.Equals, 1, check.Commentf("expect 1 row for user uuid %s", userUUID))
 	}
+}
+
+func (s *HandlerSuite) TestCredentialCRUD(c *check.C) {
+	testServer := newServerFromIntegrationTestEnv(c)
+	testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.handler))
+	c.Assert(testServer.Start(), check.IsNil)
+	defer testServer.Close()
+	u, _ := url.Parse("http://" + testServer.Addr)
+	client := rpc.NewConn(s.cluster.ClusterID, u, true, rpc.PassthroughTokenProvider)
+	userctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+	createOpts := arvados.CreateOptions{Attrs: map[string]interface{}{
+		"external_id": "abcd",
+		"secret":      "correct horse battery staple",
+		"scopes":      []string{"s3://bucket1", "s3://bucket2"},
+		"expires_at":  time.Now().Add(time.Hour).Format(time.RFC3339),
+	}}
+
+	created, err := client.CredentialCreate(userctx, createOpts)
+	c.Check(err, check.IsNil)
+	c.Check(created.ExternalID, check.Equals, "abcd")
+	c.Check(created.Secret, check.Equals, "")
+
+	// The user who created it can read the credential record (the
+	// "secret" field will be blank).
+	cred, err := client.CredentialGet(userctx, arvados.GetOptions{UUID: created.UUID})
+	c.Check(err, check.IsNil)
+	c.Check(cred.UUID, check.Equals, created.UUID)
+	c.Check(cred.ExternalID, check.Equals, "abcd")
+	c.Check(cred.Secret, check.Equals, "")
+	c.Check(cred.Scopes, check.DeepEquals, []string{"s3://bucket1", "s3://bucket2"})
+
+	// The user who created it cannot read back the secret part.
+	_, err = client.CredentialSecret(userctx, arvados.GetOptions{UUID: created.UUID})
+	c.Check(err, check.ErrorMatches, `.*Token is not associated with a container.*`)
+
+	// In order to read back the secret part, (1) the container
+	// runtime user needs permission to read the credential, (2)
+	// the container must be in Running state, and (3) the API
+	// call must be made using the container runtime token.
+
+	// Give "runtime token user" permission to use the credential
+	rootctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.SystemRootToken}})
+	permlink, err := client.LinkCreate(rootctx, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"link_class": "permission",
+		"name":       "can_read",
+		"tail_uuid":  arvadostest.RuntimeTokenUserUUID,
+		"head_uuid":  cred.UUID,
+	}})
+	c.Assert(err, check.IsNil)
+	defer client.LinkDelete(userctx, arvados.DeleteOptions{UUID: permlink.UUID})
+
+	// Put the container in "Running" state.  This can only be
+	// done using the token indicated by locked_by_uuid, in this
+	// case the "dispatch2" token.
+	dispatchctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.Dispatch2TokenV2}})
+	ctr, err := client.ContainerUpdate(dispatchctx, arvados.UpdateOptions{
+		UUID: arvadostest.RuntimeTokenContainerUUID,
+		Attrs: map[string]interface{}{
+			"state": arvados.ContainerStateRunning,
+		}})
+	c.Assert(err, check.IsNil)
+
+	// Get the runtime token the same way crunchrun does it.
+	aca, err := client.ContainerAuth(dispatchctx, arvados.GetOptions{
+		UUID: arvadostest.RuntimeTokenContainerUUID})
+	c.Assert(err, check.IsNil)
+	runtimeToken := fmt.Sprintf("v2/%s/%s/%s", aca.UUID, aca.APIToken, ctr.UUID)
+
+	// Now that the container in "Running" state, and we're using
+	// the runtime token, we can get the credential.
+	ctrctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{runtimeToken}})
+	cred, err = client.CredentialSecret(ctrctx, arvados.GetOptions{UUID: created.UUID})
+	c.Check(err, check.IsNil)
+	c.Check(cred.Secret, check.Equals, "correct horse battery staple")
 }

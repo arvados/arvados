@@ -253,6 +253,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerAuth,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerAuth(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
 			arvados.EndpointContainerSSH,
 			func() interface{} { return &arvados.ContainerSSHOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -338,6 +345,48 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &arvados.ContainerLogOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.ContainerRequestLog(ctx, *opts.(*arvados.ContainerLogOptions))
+			},
+		},
+		{
+			arvados.EndpointCredentialCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.CredentialCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointCredentialUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.CredentialUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointCredentialList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.CredentialList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointCredentialSecret,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.CredentialSecret(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointCredentialGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.CredentialGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointCredentialDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.CredentialDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{

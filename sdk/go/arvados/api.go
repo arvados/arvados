@@ -52,6 +52,7 @@ var (
 	EndpointContainerDelete                 = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerLock                   = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
+	EndpointContainerAuth                   = APIEndpoint{"GET", "arvados/v1/containers/{uuid}/auth", ""}
 	EndpointContainerSSH                    = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/ssh", ""}
 	EndpointContainerSSHCompat              = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""} // for compatibility with arvados <2.7
 	EndpointContainerGatewayTunnel          = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/gateway_tunnel", ""}
@@ -63,6 +64,12 @@ var (
 	EndpointContainerRequestDelete          = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
 	EndpointContainerRequestContainerStatus = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}/container_status", ""}
 	EndpointContainerRequestLog             = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}/log{path:|/.*}", ""}
+	EndpointCredentialCreate                = APIEndpoint{"POST", "arvados/v1/credentials", "credential"}
+	EndpointCredentialUpdate                = APIEndpoint{"PATCH", "arvados/v1/credentials/{uuid}", "credential"}
+	EndpointCredentialGet                   = APIEndpoint{"GET", "arvados/v1/credentials/{uuid}", ""}
+	EndpointCredentialList                  = APIEndpoint{"GET", "arvados/v1/credentials", ""}
+	EndpointCredentialSecret                = APIEndpoint{"GET", "arvados/v1/credentials/{uuid}/secret", ""}
+	EndpointCredentialDelete                = APIEndpoint{"DELETE", "arvados/v1/credentials/{uuid}", ""}
 	EndpointGroupCreate                     = APIEndpoint{"POST", "arvados/v1/groups", "group"}
 	EndpointGroupUpdate                     = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
 	EndpointGroupGet                        = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
@@ -105,11 +112,6 @@ var (
 	EndpointAPIClientAuthorizationList      = APIEndpoint{"GET", "arvados/v1/api_client_authorizations", ""}
 	EndpointAPIClientAuthorizationDelete    = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
 	EndpointAPIClientAuthorizationGet       = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
-	EndpointCredentialCreate                = APIEndpoint{"POST", "arvados/v1/credentials", "credential"}
-	EndpointCredentialUpdate                = APIEndpoint{"PATCH", "arvados/v1/credentials/{uuid}", "credential"}
-	EndpointCredentialGet                   = APIEndpoint{"GET", "arvados/v1/credentials/{uuid}", ""}
-	EndpointCredentialDelete                = APIEndpoint{"DELETE", "arvados/v1/credentials/{uuid}", ""}
-	EndpointCredentialSecret                = APIEndpoint{"GET", "arvados/v1/credentials/{uuid}/credential_secret", ""}
 )
 
 type ContainerHTTPProxyOptions struct {
@@ -331,6 +333,7 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
+	ContainerAuth(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
 	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
 	ContainerHTTPProxy(ctx context.Context, options ContainerHTTPProxyOptions) (http.Handler, error)
@@ -341,6 +344,12 @@ type API interface {
 	ContainerRequestDelete(ctx context.Context, options DeleteOptions) (ContainerRequest, error)
 	ContainerRequestContainerStatus(ctx context.Context, options GetOptions) (ContainerStatus, error)
 	ContainerRequestLog(ctx context.Context, options ContainerLogOptions) (http.Handler, error)
+	CredentialCreate(ctx context.Context, options CreateOptions) (Credential, error)
+	CredentialUpdate(ctx context.Context, options UpdateOptions) (Credential, error)
+	CredentialGet(ctx context.Context, options GetOptions) (Credential, error)
+	CredentialList(ctx context.Context, options ListOptions) (CredentialList, error)
+	CredentialSecret(ctx context.Context, options GetOptions) (Credential, error)
+	CredentialDelete(ctx context.Context, options DeleteOptions) (Credential, error)
 	GroupCreate(ctx context.Context, options CreateOptions) (Group, error)
 	GroupUpdate(ctx context.Context, options UpdateOptions) (Group, error)
 	GroupGet(ctx context.Context, options GetOptions) (Group, error)

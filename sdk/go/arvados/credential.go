@@ -8,7 +8,7 @@ import "time"
 
 // Credential is an arvados#credential record
 type Credential struct {
-	UUID               string    `json:"uuid,omitempty"`
+	UUID               string    `json:"uuid"`
 	Etag               string    `json:"etag"`
 	OwnerUUID          string    `json:"owner_uuid"`
 	CreatedAt          time.Time `json:"created_at"`
@@ -18,8 +18,8 @@ type Credential struct {
 	Description        string    `json:"description"`
 	CredentialClass    string    `json:"credential_class"`
 	Scopes             []string  `json:"scopes"`
-	ExternalId         string    `json:"external_id"`
-	Secret             string    `json:"secret,omitempty"`
+	ExternalID         string    `json:"external_id"`
+	Secret             string    `json:"secret"`
 	ExpiresAt          time.Time `json:"expires_at"`
 }
 

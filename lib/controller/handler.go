@@ -146,6 +146,8 @@ func (h *Handler) setup() {
 	mux.Handle("/arvados/v1/connect/", h.router)
 	mux.Handle("/arvados/v1/container_requests", h.router)
 	mux.Handle("/arvados/v1/container_requests/", h.router)
+	mux.Handle("/arvados/v1/credentials", h.router)
+	mux.Handle("/arvados/v1/credentials/", h.router)
 	mux.Handle("/arvados/v1/groups", h.router)
 	mux.Handle("/arvados/v1/groups/", h.router)
 	mux.Handle("/arvados/v1/links", h.router)
