@@ -18,7 +18,28 @@ fpm_depends+=(
 )
 
 case "$TARGET" in
-    centos*|rocky*)
+    rocky9)
+        fpm_depends+=(
+            # Dependencies to build gems
+            automake
+            gcc-c++
+            libcurl-devel
+            libyaml-devel
+            postgresql
+            postgresql-devel
+            redhat-rpm-config
+            "ruby-devel >= 2.7.0"
+            zlib-devel
+            # Passenger runtime dependencies
+            libnsl
+            openssl-devel
+            rubygem-rake
+            # nginx compilation dependencies
+            pcre2-devel
+            tar
+        )
+        ;;
+    rocky*)
         fpm_depends+=(
             # Dependencies to build gems
             automake
