@@ -216,6 +216,9 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 	rGET.Method = "GET"
 	h.logUploadOrDownload(rGET, session.arvadosclient, session.fs, logpath, len(filepaths), coll, tokenUser)
 
+	// Note mime.FormatMediaType() also sets the "filename*" param
+	// if zipfilename contains non-ASCII chars, as recommended by
+	// RFC 6266.
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": zipfilename}))
 	w.Header().Set("Content-Type", "application/zip")
 	zipw := zip.NewWriter(w)
