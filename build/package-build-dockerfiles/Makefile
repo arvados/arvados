@@ -19,6 +19,11 @@ rocky8/generated: common-generated-all
 	test -d rocky8/generated || mkdir rocky8/generated
 	cp -f -rlt rocky8/generated common-generated/*
 
+all: rocky9/generated
+rocky9/generated: common-generated-all
+	test -d rocky9/generated || mkdir rocky9/generated
+	cp -f -rlt rocky9/generated common-generated/*
+
 all: ubuntu2004/generated
 ubuntu2004/generated: common-generated-all
 	test -d ubuntu2004/generated || mkdir ubuntu2004/generated
