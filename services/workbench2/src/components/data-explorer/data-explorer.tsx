@@ -38,6 +38,8 @@ import { ProgressBarStatus } from "components/subprocess-progress-bar/subprocess
 import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
+import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
+import { SubprocessPanelColumnNames } from "views/subprocess-panel/subprocess-panel-root";
 
 type CssRules =
     | 'titleWrapper'
@@ -265,17 +267,21 @@ export const DataExplorer = withStyles(styles)(
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
             // parentResource is only truthy when filterCounts needs to be fetched
-            if (this.props.parentResource && !Object.keys(this.state.columnFilterCounts).length) {
-                this.getFilterCounts();
+            // i.e. when item counts need to be displayed
+            if (this.props.parentResource) {
+                if (!Object.keys(this.state.columnFilterCounts).length || prevProps.items !==this.props.items) {
+                    this.loadFilterCounts();
+                }
             }
         }
 
-        getFilterCounts = () => {
+        loadFilterCounts = () => {
             const { id, columns } = this.props;
             const filterCountColumns = getFilterCountColumns(id, columns);
             const parentUuid = getParentUuid(this.props.parentResource);
             filterCountColumns.forEach(columnName => {
-                if(columnName === 'Status') {
+                // more columns to fetch for can be added later
+                if(columnName === ProjectPanelRunColumnNames.STATUS || columnName === SubprocessPanelColumnNames.STATUS) {
                     this.props.fetchProcessStatusCounts(parentUuid).then(result=>{
                         if(result) {
                             this.setState({
