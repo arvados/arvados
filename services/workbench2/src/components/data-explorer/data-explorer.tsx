@@ -35,9 +35,9 @@ import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
 import { ProjectResource } from "models/project";
 import { Process } from "store/processes/process";
 import { ProgressBarStatus } from "components/subprocess-progress-bar/subprocess-progress-bar";
-import { SUBPROCESS_PANEL_ID } from "store/subprocess-panel/subprocess-panel-actions";
+import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
-import { isProcess } from "store/subprocess-panel/subprocess-panel-actions";
+import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
 
 type CssRules =
     | 'titleWrapper'
@@ -220,8 +220,6 @@ interface DataExplorerActionProps<T> {
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
-type ColumnFilterCounts = Record<string, Record<string, number>>;
-
 type DataExplorerState = {
     hideToolbar: boolean;
     isSearchResults: boolean;
@@ -266,7 +264,7 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
-            // parentResource is only passed when filterCounts needs to be fetched
+            // parentResource is only truthy when filterCounts needs to be fetched
             if (this.props.parentResource && !Object.keys(this.state.columnFilterCounts).length) {
                 this.getFilterCounts();
             }
@@ -476,6 +474,7 @@ export const DataExplorer = withStyles(styles)(
                         isNotFound={this.props.isNotFound}
                         detailsPanelResourceUuid={detailsPanelResourceUuid}
                         loadDetailsPanel={loadDetailsPanel}
+                        columnFilterCounts={this.state.columnFilterCounts}
                     />
                 </Grid>
                 <Grid

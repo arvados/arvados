@@ -9,6 +9,10 @@ import { noop, map } from "lodash/fp";
 import { toggleNodeCollapse } from 'models/tree';
 import { countNodes, countChildren } from 'models/tree';
 import { DataTableFilterItem, DataTableFilters } from './data-table-filters';
+
+export type ColumnFilterCount = Record<string, number>;
+export type ColumnFilterCounts = Record<string, ColumnFilterCount>;
+
 export interface DataTableFilterProps {
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
@@ -17,17 +21,18 @@ export interface DataTableFilterProps {
      * When set to true, only one filter can be selected at a time.
      */
     mutuallyExclusive?: boolean;
+    columnFilterCount: ColumnFilterCount;
 }
 
 export class DataTableFiltersTree extends React.Component<DataTableFilterProps> {
 
     render() {
-        const { filters } = this.props;
+        const { filters, columnFilterCount } = this.props;
         const hasSubfilters = countNodes(filters) !== countChildren('')(filters);
         return <TreeComponent
             levelIndentation={hasSubfilters ? 20 : 0}
             itemRightPadding={20}
-            items={filtersToTree(filters)}
+            items={filtersToTree(filters, columnFilterCount)}
             render={this.props.mutuallyExclusive ? renderRadioItem : renderItem}
             showSelection
             useRadioButtons={this.props.mutuallyExclusive}
@@ -76,16 +81,20 @@ const renderItem = (item: TreeItem<DataTableFilterItem>) =>
         </> : null}
     </span>;
 
-const renderRadioItem = (item: TreeItem<DataTableFilterItem>) =>
+const renderRadioItem = ({data: {name, count}}: TreeItem<DataTableFilterItem>) =>
     <span>
-        {item.data.name}
+        {count ? `${name} (${count})` : name}
     </span>;
 
-const filterToTreeItem = (filters: DataTableFilters) =>
+const filterToTreeItem = (filters: DataTableFilters, columnFilterCount: ColumnFilterCount) =>
     (id: string): TreeItem<any> => {
+        const filterValue = filters[id].value;
+        if (filterValue) {
+            filterValue['count'] = columnFilterCount[id]
+        }
         const node = getNode(id)(filters) || initTreeNode({ id: '', value: 'InvalidNode' });
         const items = getNodeChildrenIds(node.id)(filters)
-            .map(filterToTreeItem(filters));
+            .map(filterToTreeItem(filters, columnFilterCount));
         const isIndeterminate = !node.selected && items.some(i => i.selected || i.indeterminate);
 
         return {
@@ -101,5 +110,5 @@ const filterToTreeItem = (filters: DataTableFilters) =>
         };
     };
 
-const filtersToTree = (filters: DataTableFilters): TreeItem<DataTableFilterItem>[] =>
-    map(filterToTreeItem(filters), getNodeChildrenIds('')(filters));
+const filtersToTree = (filters: DataTableFilters, columnFilterCount: ColumnFilterCount): TreeItem<DataTableFilterItem>[] =>
+    map(filterToTreeItem(filters, columnFilterCount), getNodeChildrenIds('')(filters));

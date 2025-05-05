@@ -6,6 +6,7 @@ import { Tree } from 'models/tree';
 
 export interface DataTableFilterItem {
     name: string;
+    count?: number;
 }
 
 export type DataTableFilters = Tree<DataTableFilterItem>;

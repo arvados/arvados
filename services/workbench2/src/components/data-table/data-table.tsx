@@ -27,6 +27,7 @@ import { IconType, PendingIcon } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
 
 export enum DataTableFetchMode {
     PAGINATED,
@@ -55,6 +56,7 @@ export interface DataTableDataProps<I> {
     isNotFound?: boolean;
     detailsPanelResourceUuid?: string;
     loadDetailsPanel: (uuid: string) => void;
+    columnFilterCounts: ColumnFilterCounts;
 }
 
 type CssRules =
@@ -188,7 +190,7 @@ export const DataTable = withStyles(styles)(
         }
 
         shouldComponentUpdate( nextProps: Readonly<DataTableProps<T>>, nextState: Readonly<DataTableState>, nextContext: any ): boolean {
-            const { items, currentRouteUuid, isNotFound, checkedList, columns, working } = this.props;
+            const { items, currentRouteUuid, isNotFound, checkedList, columns, working, columnFilterCounts } = this.props;
             const { isSelected, isLoaded, hoveredIndex } = this.state;
             return items !== nextProps.items
                 || currentRouteUuid !== nextProps.currentRouteUuid
@@ -198,6 +200,7 @@ export const DataTable = withStyles(styles)(
                 || hoveredIndex !== nextState.hoveredIndex
                 || checkedList !== nextProps.checkedList
                 || columns !== nextProps.columns
+                || columnFilterCounts !== nextProps.columnFilterCounts
                 || working !== nextProps.working;
         }
 
@@ -444,6 +447,7 @@ export const DataTable = withStyles(styles)(
                             name={`${name} filters`}
                             mutuallyExclusive={column.mutuallyExclusiveFilters}
                             onChange={filters => onFiltersChange && onFiltersChange(filters, column)}
+                            columnFilterCount={this.props.columnFilterCounts[name] || {}}
                             filters={filters}>
                             {name}
                         </DataTableFiltersPopover>

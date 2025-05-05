@@ -25,6 +25,7 @@ import { DataTableFilters } from './data-table-filters';
 import { DataTableFiltersTree } from './data-table-filters-tree';
 import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
+import { ColumnFilterCount } from './data-table-filters-tree';
 
 export type CssRules = 'root' | 'icon' | 'iconButton' | 'active' | 'checkbox';
 
@@ -86,6 +87,7 @@ export interface DataTableFilterProps {
      * Use `none` when label is supposed to be grayed out when no filter is selected.
      */
     defaultSelection?: SelectionMode;
+    columnFilterCount: ColumnFilterCount;
 }
 
 interface DataTableFilterState {
@@ -134,7 +136,11 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         <CardContent>
                             <Typography variant='caption'>{name}</Typography>
                         </CardContent>
-                        <DataTableFiltersTree filters={this.state.filters} mutuallyExclusive={this.props.mutuallyExclusive} onChange={this.onChange} />
+                        <DataTableFiltersTree
+                            filters={this.state.filters}
+                            mutuallyExclusive={this.props.mutuallyExclusive}
+                            columnFilterCount={this.props.columnFilterCount}
+                            onChange={this.onChange} />
                         <>
                             {this.props.mutuallyExclusive || (
                                 <CardActions>
