@@ -38,7 +38,7 @@ class Arvados::V1::CredentialsController < ApplicationController
 
   def secret
     c = Container.for_current_token
-    if @object && c && c.state == "Running" && current_user.can?(read: @object)
+    if @object && c && c.state == Container::Running && current_user.can?(read: @object)
       if Time.now >= @object.expires_at
         send_error("Credential has expired.", status: 403)
       else
@@ -47,8 +47,8 @@ class Arvados::V1::CredentialsController < ApplicationController
         lg.object_owner_uuid = @object.owner_uuid
         lg.properties = {
           "name": @object.name,
-                         "credential_class": @object.credential_class,
-                         "external_id": @object.external_id,
+          "credential_class": @object.credential_class,
+          "external_id": @object.external_id,
         }
         lg.save!
         send_json({"external_id" => @object.external_id, "secret" => @object.secret})

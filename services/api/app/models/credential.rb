@@ -29,7 +29,11 @@ class Credential < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["credential_class", "external_id", "secret"]
+    super - ["credential_class", "external_id", "secret", "expires_at"]
+  end
+
+  def self.searchable_columns *args
+    super - ["secret", "expires_at"]
   end
 
   def ensure_owner_uuid_is_permitted
