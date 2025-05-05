@@ -32,6 +32,12 @@ import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
+import { ProjectResource } from "models/project";
+import { Process } from "store/processes/process";
+import { ProgressBarStatus } from "components/subprocess-progress-bar/subprocess-progress-bar";
+import { SUBPROCESS_PANEL_ID } from "store/subprocess-panel/subprocess-panel-actions";
+import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
+import { isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 
 type CssRules =
     | 'titleWrapper'
@@ -153,6 +159,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface DataExplorerDataProps<T> {
+    id: string;
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
@@ -186,6 +193,7 @@ interface DataExplorerDataProps<T> {
     detailsPanelResourceUuid: string;
     isDetailsPanelOpen: boolean;
     isSelectedResourceInDataExplorer: boolean;
+    parentResource?: ProjectResource | Process;
 }
 
 interface DataExplorerActionProps<T> {
@@ -207,15 +215,25 @@ interface DataExplorerActionProps<T> {
     usesDetailsCard: (uuid: string) => boolean;
     loadDetailsPanel: (uuid: string) => void;
     setIsSelectedResourceInDataExplorer: (isIn: boolean) => void;
+    fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
+type ColumnFilterCounts = Record<string, Record<string, number>>;
+
+type DataExplorerState = {
+    hideToolbar: boolean;
+    isSearchResults: boolean;
+    columnFilterCounts: ColumnFilterCounts;
+};
+
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
-        state = {
+        state: DataExplorerState = {
             hideToolbar: true,
             isSearchResults: false,
+            columnFilterCounts: {},
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -248,6 +266,27 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
+            // parentResource is only passed when filterCounts needs to be fetched
+            if (this.props.parentResource && !Object.keys(this.state.columnFilterCounts).length) {
+                this.getFilterCounts();
+            }
+        }
+
+        getFilterCounts = () => {
+            const { id, columns } = this.props;
+            const filterCountColumns = getFilterCountColumns(id, columns);
+            const parentUuid = getParentUuid(this.props.parentResource);
+            filterCountColumns.forEach(columnName => {
+                if(columnName === 'Status') {
+                    this.props.fetchProcessStatusCounts(parentUuid).then(result=>{
+                        if(result) {
+                            this.setState({
+                                columnFilterCounts: {...this.state.columnFilterCounts, [columnName]: result.counts}
+                            })
+                        }
+                    })
+                }
+            })
         }
 
         isSelectedResourceInTable = (resourceUuid) => {
@@ -554,3 +593,22 @@ const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => 
             ? { }
             : { disabled: true } // Disable next button on empty lists since that's not default behavior
 );
+
+const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any, any>) => {
+    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID ];
+    const goodColumnNames = [ 'Status' ];
+    return columns.reduce((acc: string[], curr) => {
+        if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name)) {
+            acc.push(curr.name);
+        }
+        return acc;
+    }, [])
+};
+
+const getParentUuid = (parentResource: ProjectResource | Process | undefined) => {
+    return parentResource
+    ? isProcess(parentResource)
+        ? parentResource.containerRequest.uuid
+        : parentResource.uuid
+    : "";
+};

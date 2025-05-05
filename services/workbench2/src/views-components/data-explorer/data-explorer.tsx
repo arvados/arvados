@@ -15,6 +15,7 @@ import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multis
 import { setSelectedResourceUuid, setIsSelectedResourceInDataExplorer } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { fetchProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-actions";
 
 interface Props {
     id: string;
@@ -32,6 +33,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
+        id,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
@@ -97,6 +99,10 @@ const mapDispatchToProps = () => {
 
         setIsSelectedResourceInDataExplorer: (isIn: boolean) => {
             dispatch<any>(setIsSelectedResourceInDataExplorer(isIn));
+        },
+
+        fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => {
+            return dispatch<any>(fetchProcessStatusCounts(parentResourceUuid, typeFilter));
         },
 
         onRowClick,

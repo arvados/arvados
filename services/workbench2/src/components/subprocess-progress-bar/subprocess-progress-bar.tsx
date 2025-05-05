@@ -12,7 +12,7 @@ import { useAsyncInterval } from "common/use-async-interval";
 import { Process, isProcessRunning } from "store/processes/process";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
-import { fetchProcessProgressBarStatus, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
+import { fetchProcessStatusCounts, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { ProcessStatusFilter, serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { ProjectResource } from "models/project";
 import { getDataExplorer, DataExplorerState } from "store/data-explorer/data-explorer-reducer";
@@ -49,16 +49,19 @@ export interface ProgressBarDataProps {
 }
 
 export interface ProgressBarActionProps {
-    fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
+    fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
 }
 
 type ProgressBarProps = ProgressBarDataProps & ProgressBarActionProps & WithStyles<CssRules>;
 
 export type ProgressBarCounts = {
+    [ProcessStatusFilter.ALL]: number;
     [ProcessStatusFilter.COMPLETED]: number;
     [ProcessStatusFilter.RUNNING]: number;
     [ProcessStatusFilter.FAILED]: number;
     [ProcessStatusFilter.QUEUED]: number;
+    [ProcessStatusFilter.ONHOLD]: number;
+    [ProcessStatusFilter.CANCELLED]: number;
 };
 
 export type ProgressBarStatus = {
@@ -71,13 +74,13 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
-    fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => {
-        return dispatch<any>(fetchProcessProgressBarStatus(parentResourceUuid, typeFilter));
+    fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => {
+        return dispatch<any>(fetchProcessStatusCounts(parentResourceUuid, typeFilter));
     },
 });
 
 export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
-    ({ parentResource, classes, dataExplorer, dataExplorerId, fetchProcessProgressBarStatus }: ProgressBarProps) => {
+    ({ parentResource, classes, dataExplorer, dataExplorerId, fetchProcessStatusCounts }: ProgressBarProps) => {
 
         const [progressCounts, setProgressData] = useState<ProgressBarCounts | undefined>(undefined);
         const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
@@ -108,7 +111,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         //   project contains steps in an active state (shouldPollProject)
         useAsyncInterval(async () => {
             if (parentUuid && typeFilter.current) {
-                fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
+                fetchProcessStatusCounts(parentUuid, typeFilter.current)
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
@@ -129,7 +132,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
         //     as a result of a fetch so the data is already up to date
         useEffect(() => {
             if (!shouldPollProcess && parentUuid) {
-                fetchProcessProgressBarStatus(parentUuid, typeFilter.current)
+                fetchProcessStatusCounts(parentUuid, typeFilter.current)
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
@@ -137,7 +140,7 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
                         }
                     });
             }
-        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter, dataExplorer]);
+        }, [fetchProcessStatusCounts, shouldPollProcess, parentUuid, typeFilter, dataExplorer]);
 
         let tooltip = "";
         if (progressCounts) {

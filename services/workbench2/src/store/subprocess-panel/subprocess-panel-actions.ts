@@ -39,10 +39,13 @@ type ProcessStatusCount = {
 type ProcessStatusMap = Record<keyof ProgressBarCounts, ProcessStatusFilter[]>;
 
 const statusMap: ProcessStatusMap = {
+        [ProcessStatusFilter.ALL]: [ProcessStatusFilter.ALL],
         [ProcessStatusFilter.COMPLETED]: [ProcessStatusFilter.COMPLETED],
         [ProcessStatusFilter.RUNNING]: [ProcessStatusFilter.RUNNING],
-        [ProcessStatusFilter.FAILED]: [ProcessStatusFilter.FAILED, ProcessStatusFilter.CANCELLED],
-        [ProcessStatusFilter.QUEUED]: [ProcessStatusFilter.QUEUED, ProcessStatusFilter.ONHOLD],
+        [ProcessStatusFilter.FAILED]: [ProcessStatusFilter.FAILED],
+        [ProcessStatusFilter.CANCELLED]: [ProcessStatusFilter.CANCELLED],
+        [ProcessStatusFilter.QUEUED]: [ProcessStatusFilter.QUEUED],
+        [ProcessStatusFilter.ONHOLD]: [ProcessStatusFilter.ONHOLD],
 };
 
 /**
@@ -71,7 +74,7 @@ const isContainerRequest = <T extends Resource>(resource: T | ContainerRequestRe
     return !!resource && 'containerUuid' in resource;
 };
 
-export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFilter?: string) =>
+export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProgressBarStatus | undefined> => {
         const resources = getState().resources;
         const parentResource = getResource<ProjectResource | ContainerRequestResource>(parentResourceUuid)(resources);
@@ -102,10 +105,13 @@ export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFi
             try {
                 // Create return object
                 let result: ProgressBarCounts = {
+                    [ProcessStatusFilter.ALL]: 0,
                     [ProcessStatusFilter.COMPLETED]: 0,
                     [ProcessStatusFilter.RUNNING]: 0,
                     [ProcessStatusFilter.FAILED]: 0,
                     [ProcessStatusFilter.QUEUED]: 0,
+                    [ProcessStatusFilter.ONHOLD]: 0,
+                    [ProcessStatusFilter.CANCELLED]: 0,
                 }
 
                 // Create array of promises that returns the status associated with the item count
