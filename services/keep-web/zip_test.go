@@ -301,6 +301,18 @@ func (s *IntegrationSuite) TestZip_SelectRedundantFile(c *C) {
 	})
 }
 
+func (s *IntegrationSuite) TestZip_AcceptMediaTypeWithDirective(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:      "POST",
+		reqContentType: "application/json",
+		reqToken:       arvadostest.ActiveTokenV2,
+		reqBody:        `{"files":["dir1/dir/file1.txt"]}`,
+		reqAccept:      `application/zip; q=0.9`,
+		expectStatus:   200,
+		expectFiles:    []string{"dir1/dir/file1.txt"},
+	})
+}
+
 func (s *IntegrationSuite) TestZip_SelectNonexistentFile(c *C) {
 	s.testZip(c, testZipOptions{
 		reqMethod:       "POST",
@@ -365,6 +377,7 @@ type testZipOptions struct {
 	useByIDStyle      bool
 	reqMethod         string
 	reqQuery          string
+	reqAccept         string
 	reqContentType    string
 	reqToken          string
 	reqBody           string
@@ -410,8 +423,14 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 	} else {
 		url = s.collectionURL(collID, "")
 	}
+	var accept []string
+	if opts.reqAccept != "" {
+		accept = []string{opts.reqAccept}
+	} else {
+		accept = []string{"application/zip"}
+	}
 	_, resp := s.do(opts.reqMethod, url+opts.reqQuery, opts.reqToken, http.Header{
-		"Accept":       {"application/zip"},
+		"Accept":       accept,
 		"Content-Type": {opts.reqContentType},
 	}, []byte(opts.reqBody))
 	if !c.Check(resp.StatusCode, Equals, opts.expectStatus) || opts.expectStatus != 200 {

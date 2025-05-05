@@ -12,6 +12,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -612,10 +613,13 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if r.Header.Get("Accept") == "application/zip" {
-		releaseSession()
-		h.serveZip(w, r, session, sessionFS, fstarget, tokenUser)
-		return
+	if accept := strings.Split(r.Header.Get("Accept"), ","); len(accept) == 1 {
+		mediatype, _, err := mime.ParseMediaType(accept[0])
+		if err == nil && mediatype == "application/zip" {
+			releaseSession()
+			h.serveZip(w, r, session, sessionFS, fstarget, tokenUser)
+			return
+		}
 	}
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		if fi, err := sessionFS.Stat(fstarget); err == nil && fi.IsDir() {
