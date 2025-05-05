@@ -271,7 +271,7 @@ class ApplicationController < ActionController::Base
               value.length == 2 and
               value[0] == 'contains' then
             ilikes = []
-            model_class.searchable_columns('ilike').each do |column|
+            model_class.any_searchable_columns('ilike').each do |column|
               # Including owner_uuid in an "any column" search will
               # probably just return a lot of false positives.
               next if column == 'owner_uuid'
@@ -283,7 +283,7 @@ class ApplicationController < ActionController::Base
             end
           else
             equals = []
-            model_class.searchable_columns('=').each do |column|
+            model_class.any_searchable_columns('=').each do |column|
               equals << "#{ar_table_name}.#{column} = ?"
               conditions << value
             end
