@@ -281,6 +281,13 @@ class ApplicationController < ActionController::Base
             if ilikes.any?
               conditions[0] << ' and (' + ilikes.join(' or ') + ')'
             end
+          else
+            equals = []
+            model_class.searchable_columns('=').each do |column|
+              equals << "#{ar_table_name}.#{column} = ?"
+              conditions << value
+            end
+            conditions[0] << ' and (' + equals.join(' or ') + ')'
           end
         elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr.to_s)

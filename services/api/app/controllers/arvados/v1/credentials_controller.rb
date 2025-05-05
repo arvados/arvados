@@ -38,23 +38,25 @@ class Arvados::V1::CredentialsController < ApplicationController
 
   def secret
     c = Container.for_current_token
-    if @object && c && c.state == Container::Running && current_user.can?(read: @object)
-      if Time.now >= @object.expires_at
-        send_error("Credential has expired.", status: 403)
-      else
-        lg = Log.new(event_type: "secret_access")
-        lg.object_uuid = @object.uuid
-        lg.object_owner_uuid = @object.owner_uuid
-        lg.properties = {
-          "name": @object.name,
-          "credential_class": @object.credential_class,
-          "external_id": @object.external_id,
-        }
-        lg.save!
-        send_json({"external_id" => @object.external_id, "secret" => @object.secret})
-      end
-    else
+    if !@object || !c || c.state != Container::Running || !current_user.can?(read: @object)
       send_error("Token is not associated with a container.", status: 403)
+      return
     end
+
+    if Time.now >= @object.expires_at
+      send_error("Credential has expired.", status: 403)
+      return
+    end
+
+    lg = Log.new(event_type: "secret_access")
+    lg.object_uuid = @object.uuid
+    lg.object_owner_uuid = @object.owner_uuid
+    lg.properties = {
+      "name": @object.name,
+                     "credential_class": @object.credential_class,
+                     "external_id": @object.external_id,
+    }
+    lg.save!
+    send_json({"external_id" => @object.external_id, "secret" => @object.secret})
   end
 end

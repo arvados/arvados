@@ -72,6 +72,31 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
         headers: auth(:active)
     assert_response 403
     assert_match(/Cannot order by 'secret'/, json_response["errors"][0])
+
+    get "/arvados/v1/credentials",
+        params: {:format => :json,
+                 :where => {any: "my_password"}.to_json
+                },
+        headers: auth(:active)
+    assert_response 200
+    assert_equal [], json_response["items"]
+
+    get "/arvados/v1/credentials",
+        params: {:format => :json,
+                 :filters => [["any", "=", "my_password"]].to_json
+                },
+        headers: auth(:active)
+    assert_response 200
+    assert_equal [], json_response["items"]
+
+    get "/arvados/v1/credentials",
+        params: {:format => :json,
+                 :filters => [["any", "ilike", "my_pass%"]].to_json
+                },
+        headers: auth(:active)
+    assert_response 200
+    assert_equal [], json_response["items"]
+
   end
 
   test "credential fetch by container" do
@@ -198,7 +223,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
                     credential_class: "basic_auth",
                     external_id: "my_username",
                     secret: "my_password",
-                    expires_at: Time.now+1.seconds
+                    expires_at: Time.now+5.seconds
                   }
                  },
          headers: auth(:active),
@@ -214,7 +239,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
 
     assert_equal "my_password", Credential.find_by_uuid(jr["uuid"]).secret
 
-    sleep(1)
+    Credential.where(uuid: jr["uuid"]).update_all(expires_at: Time.now)
 
     get "/arvados/v1/credentials/#{jr['uuid']}/secret",
         headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:running_container_auth).token}/#{containers(:running).uuid}"}

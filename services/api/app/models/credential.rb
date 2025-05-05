@@ -33,7 +33,7 @@ class Credential < ArvadosModel
   end
 
   def self.searchable_columns *args
-    super - ["secret", "expires_at"]
+    super - ["secret"]
   end
 
   def ensure_owner_uuid_is_permitted
