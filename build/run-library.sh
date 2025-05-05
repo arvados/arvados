@@ -543,6 +543,9 @@ BEGIN { OFS="\0"; ORS="\0"; }
 ' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 gem fetch
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
+        # Tip: If this command removes "stale" gems downloaded in the previous
+        # step, that might mean those gems declare that the version of Ruby
+        # you're running is too new.
         bundle cache
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
