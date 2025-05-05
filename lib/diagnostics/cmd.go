@@ -253,7 +253,10 @@ func (diag *diagnoser) runtests() {
 
 	// TODO: detect routing errors here, like finding wb2 at the
 	// wb1 address.
-	for i, svc := range []struct{name string; config *arvados.Service}{
+	for i, svc := range []struct {
+		name   string
+		config *arvados.Service
+	}{
 		{"Keepproxy", &cluster.Services.Keepproxy},
 		{"WebDAV", &cluster.Services.WebDAV},
 		{"WebDAVDownload", &cluster.Services.WebDAVDownload},
