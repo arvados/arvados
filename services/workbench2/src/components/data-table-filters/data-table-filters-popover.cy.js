@@ -15,11 +15,11 @@ describe("<DataTableFiltersPopover />", () => {
 
         cy.mount(
             <ThemeProvider theme={CustomTheme}>
-                <DataTableFiltersPopover name="" filters={filters} />
+                <DataTableFiltersPopover name="" filters={filters} columnFilterCount={{}}/>
             </ThemeProvider>
         );
         cy.get('span[role=button]').eq(0).click();
-        cy.get('input[type=checkbox]').should('have.length', 7);
+        cy.get('input[type=checkbox]').should('have.length', 8);
         //"All" should be the only item selected
         cy.get('input[type=checkbox]').eq(0).should('be.checked');
         cy.get('input[type=checkbox]').eq(1).should('not.be.checked');

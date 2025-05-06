@@ -447,7 +447,7 @@ export const DataTable = withStyles(styles)(
                             name={`${name} filters`}
                             mutuallyExclusive={column.mutuallyExclusiveFilters}
                             onChange={filters => onFiltersChange && onFiltersChange(filters, column)}
-                            columnFilterCount={this.props.columnFilterCounts[name] || {}}
+                            columnFilterCount={this.props.columnFilterCounts?.[name] || {}}
                             filters={filters}>
                             {name}
                         </DataTableFiltersPopover>
