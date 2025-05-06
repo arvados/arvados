@@ -491,7 +491,8 @@ func (s *IntegrationSuite) testZip(c *C, opts testZipOptions) {
 		c.Check(zipr.Comment, Equals, strings.Replace(opts.expectZipComment, "{{stage.coll.UUID}}", stage.coll.UUID, -1))
 	}
 	f, err := zipr.Open("collection.json")
-	c.Check(err == nil, Equals, opts.expectMetadata != nil)
+	c.Check(err == nil, Equals, opts.expectMetadata != nil,
+		Commentf("collection.json file existence (%v) did not match expectation (%v)", err == nil, opts.expectMetadata != nil))
 	if err == nil {
 		defer f.Close()
 		if opts.expectMetadata["uuid"] == "{{stage.coll.UUID}}" {
