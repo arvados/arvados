@@ -197,6 +197,18 @@ func (s *IntegrationSuite) TestZip_SelectDirectory_Form(c *C) {
 	})
 }
 
+func (s *IntegrationSuite) TestZip_SelectDirectory_SpecifyDownloadFilename_Form(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:         "POST",
+		reqContentType:    "application/x-www-form-urlencoded",
+		reqToken:          arvadostest.ActiveTokenV2,
+		reqBody:           (url.Values{"files": {"dir1"}, "download_filename": {"Foo Bar.zip"}}).Encode(),
+		expectStatus:      200,
+		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt"},
+		expectDisposition: `attachment; filename="Foo Bar.zip"`,
+	})
+}
+
 func (s *IntegrationSuite) TestZip_SelectDirectory_JSON(c *C) {
 	s.testZip(c, testZipOptions{
 		reqMethod:         "POST",
@@ -221,6 +233,18 @@ func (s *IntegrationSuite) TestZip_SelectDirectory_TrailingSlash(c *C) {
 	})
 }
 
+func (s *IntegrationSuite) TestZip_SelectDirectory_SpecifyDownloadFilename(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod:         "POST",
+		reqContentType:    "application/json",
+		reqToken:          arvadostest.ActiveTokenV2,
+		reqBody:           `{"files":["dir1/"],"download_filename":"Foo bar ⛵.zip"}`,
+		expectStatus:      200,
+		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt"},
+		expectDisposition: `attachment; filename*=utf-8''Foo%20bar%20%E2%9B%B5.zip`,
+	})
+}
+
 func (s *IntegrationSuite) TestZip_SelectFile(c *C) {
 	s.testZip(c, testZipOptions{
 		reqMethod:         "POST",
@@ -242,6 +266,21 @@ func (s *IntegrationSuite) TestZip_SelectFiles_Query(c *C) {
 		expectStatus:      200,
 		expectFiles:       []string{"dir1/file1.txt", "dir2/file2.txt"},
 		expectDisposition: `attachment; filename="keep-web zip test collection - 2 files.zip"`,
+	})
+}
+
+func (s *IntegrationSuite) TestZip_SelectFiles_SpecifyDownloadFilename_Query(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod: "POST",
+		reqQuery: "?" + (&url.Values{
+			"files":             []string{"dir1/file1.txt", "dir2/file2.txt"},
+			"download_filename": []string{"Sue.zip"},
+		}).Encode(),
+		reqContentType:    "application/json",
+		reqToken:          arvadostest.ActiveTokenV2,
+		expectStatus:      200,
+		expectFiles:       []string{"dir1/file1.txt", "dir2/file2.txt"},
+		expectDisposition: `attachment; filename=Sue.zip`,
 	})
 }
 

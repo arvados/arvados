@@ -24,6 +24,7 @@ import (
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 type zipParams struct {
+	DownloadFilename          string `json:"download_filename"`
 	Files                     []string
 	IncludeCollectionMetadata bool `json:"include_collection_metadata"`
 }
@@ -56,6 +57,7 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	params.DownloadFilename = r.Form.Get("download_filename")
 	params.Files = r.Form["files"]
 	params.IncludeCollectionMetadata = r.Form.Get("include_collection_metadata") != ""
 
@@ -97,12 +99,9 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 	}
 
 	// (Unless fetching by PDH) get additional collection details
-	// for logging, collection metadata file, and suggested
-	// filename for user agent.
-	var zipfilename string
-	if coll.UUID == "" {
-		zipfilename = coll.PortableDataHash
-	} else {
+	// for logging, collection metadata file, and default download
+	// filename.
+	if coll.UUID != "" {
 		err = session.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 			"select": []string{
 				"created_at",
@@ -123,22 +122,30 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 			}
 			return
 		}
-		zipfilename = coll.Name
 	}
-	if len(filepaths) == 1 && len(params.Files) == 1 && filepaths[0] == params.Files[0] {
-		// If the client specified a single (non-directory)
-		// file, include the name of the file in the zip
-		// archive name.
-		_, basename := filepath.Split(filepaths[0])
-		zipfilename += " - " + basename
-	} else if len(matcher) > 0 && !matcher["/"] {
-		// If the client specified any other subset of the
-		// collection, mention the number of files that will
-		// be in the archive, to make it more obvious that
-		// it's not an archive of the entire collection.
-		zipfilename += fmt.Sprintf(" - %d files", len(filepaths))
+
+	if params.DownloadFilename == "" {
+		if coll.UUID == "" {
+			params.DownloadFilename = coll.PortableDataHash
+		} else {
+			params.DownloadFilename = coll.Name
+		}
+		if len(filepaths) == 1 && len(params.Files) == 1 && filepaths[0] == params.Files[0] {
+			// If the request specified a single
+			// (non-directory) file, include the name of
+			// the file in the zip archive name.
+			_, basename := filepath.Split(filepaths[0])
+			params.DownloadFilename += " - " + basename
+		} else if len(matcher) > 0 && !matcher["/"] {
+			// If the request specified any other subset
+			// of the collection, mention the number of
+			// files that will be in the archive, to make
+			// it more obvious that it's not an archive of
+			// the entire collection.
+			params.DownloadFilename += fmt.Sprintf(" - %d files", len(filepaths))
+		}
+		params.DownloadFilename += ".zip"
 	}
-	zipfilename += ".zip"
 
 	logpath := ""
 	if len(filepaths) == 1 {
@@ -182,17 +189,17 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		}
 	}
 
-	err = h.writeZip(w, coll, collfs, zipfilename, filepaths, params, user)
+	err = h.writeZip(w, coll, collfs, filepaths, params, user)
 	if err != nil {
 		ctxlog.FromContext(r.Context()).Errorf("error writing zip archive after sending response header: %s", err)
 	}
 }
 
-func (h *handler) writeZip(w http.ResponseWriter, coll *arvados.Collection, collfs fs.FS, zipfilename string, filepaths []string, params zipParams, user arvados.User) error {
+func (h *handler) writeZip(w http.ResponseWriter, coll *arvados.Collection, collfs fs.FS, filepaths []string, params zipParams, user arvados.User) error {
 	// Note mime.FormatMediaType() also sets the "filename*" param
-	// if zipfilename contains non-ASCII chars, as recommended by
-	// RFC 6266.
-	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": zipfilename}))
+	// if params.DownloadFilename contains non-ASCII chars, as
+	// recommended by RFC 6266.
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": params.DownloadFilename}))
 	w.Header().Set("Content-Type", "application/zip")
 	w.WriteHeader(http.StatusOK)
 	zipw := zip.NewWriter(w)

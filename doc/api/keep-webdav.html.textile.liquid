@@ -58,7 +58,7 @@ Keep-web returns an error if one of the specified paths does not exist in the re
 
 The ZIP archive comment will include a download URL with the collection UUID or portable data hash, e.g., "Downloaded from https://collections.example.com/by_id/zzzzz-4zz18-0pg114rezrbz46u/".
 
-The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=1@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's metadata (UUID, name, description, portable data hash, properties, creation time, modification time) and information about the user who last modified it (UUID, full name, username, and email). If the collection is specified by portable data hash rather than name or UUID, collection.json contains only the portable data hash.
+The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=true@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's metadata (UUID, name, description, portable data hash, properties, creation time, modification time) and information about the user who last modified it (UUID, full name, username, and email). If the collection is specified by portable data hash rather than name or UUID, @collection.json@ will contain only the portable data hash.
 
 Example @collection.json@ content:
 
@@ -79,6 +79,30 @@ Example @collection.json@ content:
     "key":"value"
   },
   "uuid":"zzzzz-4zz18-0pg114rezrbz46u"
+}
+</pre>
+
+The request can also include a @download_filename@ parameter with a desired name for the downloaded zip file. This filename will be included in the @Content-Disposition@ response header. If this parameter is not provided, the filename suggested in the response header will be based on the collection name or portable data hash:
+* @{collection name}.zip@ if downloading an entire collection
+* @{collection name} - {file name}.zip@ if a single file was specified in the request
+* @{collection name} - 3 files.zip@ if a directory or multiple files were specified in the request
+* @{portable data hash}.zip@, @{portable data hash} - {file name}.zip@, etc., if the source collection was specified by portable data hash rather than name or UUID
+
+Example request:
+
+<pre>
+GET /by_id/zzzzz-4zz18-0pg114rezrbz46u
+Accept: application/zip
+Content-Type: application/json
+
+{
+  "download_filename": "odd-numbered files and directories.zip",
+  "files": [
+    "file1.txt",
+    "file3.bin",
+    "dir5"
+  ],
+  "include_collection_metadata": true
 }
 </pre>
 
