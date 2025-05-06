@@ -38,8 +38,6 @@ import { ProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-act
 import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
-import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
-import { SubprocessPanelColumnNames } from "views/subprocess-panel/subprocess-panel-root";
 import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 
@@ -230,6 +228,11 @@ type DataExplorerState = {
     typeFilter: string;
 };
 
+enum FilteredColumnNames {
+    STATUS = 'Status',
+    TYPE = 'Type',
+}
+
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
         state: DataExplorerState = {
@@ -248,7 +251,7 @@ export const DataExplorer = withStyles(styles)(
             }
             this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             this.setState({
-                typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, ProjectPanelRunColumnNames.TYPE ))
+                typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, FilteredColumnNames.TYPE ))
             });
         }
 
@@ -280,7 +283,7 @@ export const DataExplorer = withStyles(styles)(
                 }
                 if (prevProps.items !== this.props.items) {
                     this.setState({
-                        typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, ProjectPanelRunColumnNames.TYPE ))
+                        typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, FilteredColumnNames.TYPE ))
                     });
                 }
             }
@@ -292,7 +295,7 @@ export const DataExplorer = withStyles(styles)(
             const parentUuid = getParentUuid(this.props.parentResource);
             filterCountColumns.forEach(columnName => {
                 // more columns to fetch for can be added later
-                if(columnName === ProjectPanelRunColumnNames.STATUS || columnName === SubprocessPanelColumnNames.STATUS) {
+                if(columnName === FilteredColumnNames.STATUS || columnName === FilteredColumnNames.STATUS) {
                     this.props.fetchProcessStatusCounts(parentUuid, this.state.typeFilter).then(result=>{
                         if(result) {
                             this.setState({
@@ -605,9 +608,9 @@ const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => 
 
 const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any, any>) => {
     const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID ];
-    const goodColumnNames = [ 'Status' ];
+    const goodColumnNames = [ FilteredColumnNames.STATUS ];
     return columns.reduce((acc: string[], curr) => {
-        if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name)) {
+        if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name as FilteredColumnNames)) {
             acc.push(curr.name);
         }
         return acc;
