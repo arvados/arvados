@@ -40,6 +40,8 @@ import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-b
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
 import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
 import { SubprocessPanelColumnNames } from "views/subprocess-panel/subprocess-panel-root";
+import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
+import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 
 type CssRules =
     | 'titleWrapper'
@@ -226,6 +228,7 @@ type DataExplorerState = {
     hideToolbar: boolean;
     isSearchResults: boolean;
     columnFilterCounts: ColumnFilterCounts;
+    typeFilter: string;
 };
 
 export const DataExplorer = withStyles(styles)(
@@ -234,6 +237,7 @@ export const DataExplorer = withStyles(styles)(
             hideToolbar: true,
             isSearchResults: false,
             columnFilterCounts: {},
+            typeFilter: '',
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -244,9 +248,12 @@ export const DataExplorer = withStyles(styles)(
                 this.props.onSetColumns(this.props.columns);
             }
             this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
+            this.setState({
+                typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, ProjectPanelRunColumnNames.TYPE ))
+            });
         }
 
-        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
+        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<DataExplorerState>, snapshot?: any ): void {
             const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer, setSelectedUuid } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 setIsSelectedResourceInDataExplorer(this.isSelectedResourceInTable(selectedResourceUuid));
@@ -269,8 +276,13 @@ export const DataExplorer = withStyles(styles)(
             // parentResource is only truthy when filterCounts needs to be fetched
             // i.e. when item counts need to be displayed
             if (this.props.parentResource) {
-                if (!Object.keys(this.state.columnFilterCounts).length || prevProps.items !==this.props.items) {
+                if (!Object.keys(this.state.columnFilterCounts).length || this.state.typeFilter !== prevState.typeFilter) {
                     this.loadFilterCounts();
+                }
+                if (prevProps.items !== this.props.items) {
+                    this.setState({
+                        typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, ProjectPanelRunColumnNames.TYPE ))
+                    });
                 }
             }
         }
@@ -282,7 +294,7 @@ export const DataExplorer = withStyles(styles)(
             filterCountColumns.forEach(columnName => {
                 // more columns to fetch for can be added later
                 if(columnName === ProjectPanelRunColumnNames.STATUS || columnName === SubprocessPanelColumnNames.STATUS) {
-                    this.props.fetchProcessStatusCounts(parentUuid).then(result=>{
+                    this.props.fetchProcessStatusCounts(parentUuid, this.state.typeFilter).then(result=>{
                         if(result) {
                             this.setState({
                                 columnFilterCounts: {...this.state.columnFilterCounts, [columnName]: result.counts}
