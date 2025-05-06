@@ -34,7 +34,7 @@ import { InlinePulser } from "components/loading/inline-pulser";
 import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
 import { ProjectResource } from "models/project";
 import { Process } from "store/processes/process";
-import { ProgressBarStatus } from "components/subprocess-progress-bar/subprocess-progress-bar";
+import { ProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-actions";
 import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
@@ -183,7 +183,6 @@ interface DataExplorerDataProps<T> {
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
     title?: React.ReactNode;
-    progressBar?: React.ReactNode;
     path?: string;
     currentRouteUuid: string;
     selectedResourceUuid: string;
@@ -219,7 +218,7 @@ interface DataExplorerActionProps<T> {
     usesDetailsCard: (uuid: string) => boolean;
     loadDetailsPanel: (uuid: string) => void;
     setIsSelectedResourceInDataExplorer: (isIn: boolean) => void;
-    fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
+    fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => Promise<ProcessStatusCounts | undefined>;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -240,7 +239,7 @@ export const DataExplorer = withStyles(styles)(
             typeFilter: '',
         };
 
-        multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
+        multiSelectToolbarInTitle = !this.props.title;
         maxItemsAvailable = 0;
 
         componentDidMount() {
@@ -297,7 +296,7 @@ export const DataExplorer = withStyles(styles)(
                     this.props.fetchProcessStatusCounts(parentUuid, this.state.typeFilter).then(result=>{
                         if(result) {
                             this.setState({
-                                columnFilterCounts: {...this.state.columnFilterCounts, [columnName]: result.counts}
+                                columnFilterCounts: {...this.state.columnFilterCounts, [columnName]: result}
                             })
                         }
                     })
@@ -338,7 +337,6 @@ export const DataExplorer = withStyles(styles)(
                 fetchMode,
                 selectedResourceUuid,
                 title,
-                progressBar,
                 doHidePanel,
                 doMaximizePanel,
                 doUnMaximizePanel,
@@ -464,12 +462,6 @@ export const DataExplorer = withStyles(styles)(
                     item
                     className={classes.dataTable}
                 >
-                    {!!progressBar &&
-                     <div className={classNames({
-                         [classes.progressWrapper]: true,
-                         [classes.progressWrapperNoTitle]: !title,
-                     })}>{progressBar}</div>
-                    }
                     <DataTable
                         columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                         items={items}

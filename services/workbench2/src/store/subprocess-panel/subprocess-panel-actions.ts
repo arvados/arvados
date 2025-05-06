@@ -7,7 +7,6 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
-import { ProgressBarStatus, ProgressBarCounts } from 'components/subprocess-progress-bar/subprocess-progress-bar';
 import { ProcessStatusFilter, buildProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { Process } from 'store/processes/process';
 import { ProjectResource } from 'models/project';
@@ -25,18 +24,28 @@ export const loadSubprocessPanel = () =>
     };
 
 /**
- * Holds a ProgressBarData status type and process count result
+ * Holds a Process status type and process count result
  */
 type ProcessStatusCount = {
-    status: keyof ProgressBarCounts;
+    status: keyof ProcessStatusCounts;
     count: number;
+};
+
+export type ProcessStatusCounts = {
+    [ProcessStatusFilter.ALL]: number;
+    [ProcessStatusFilter.COMPLETED]: number;
+    [ProcessStatusFilter.RUNNING]: number;
+    [ProcessStatusFilter.FAILED]: number;
+    [ProcessStatusFilter.QUEUED]: number;
+    [ProcessStatusFilter.ONHOLD]: number;
+    [ProcessStatusFilter.CANCELLED]: number;
 };
 
 /**
  * Associates each of the limited progress bar segment types with an array of
  * ProcessStatusFilterTypes to be combined when displayed
  */
-type ProcessStatusMap = Record<keyof ProgressBarCounts, ProcessStatusFilter[]>;
+type ProcessStatusMap = Record<keyof ProcessStatusCounts, ProcessStatusFilter[]>;
 
 const statusMap: ProcessStatusMap = {
         [ProcessStatusFilter.ALL]: [ProcessStatusFilter.ALL],
@@ -51,7 +60,7 @@ const statusMap: ProcessStatusMap = {
 /**
  * Utility type to hold a pair of associated progress bar status and process status
  */
-type ProgressBarStatusPair = {
+type ProcessStatusPair = {
     barStatus: keyof ProcessStatusMap;
     processStatus: ProcessStatusFilter;
 };
@@ -75,7 +84,7 @@ const isContainerRequest = <T extends Resource>(resource: T | ContainerRequestRe
 };
 
 export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProgressBarStatus | undefined> => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProcessStatusCounts | undefined> => {
         const resources = getState().resources;
         const parentResource = getResource<ProjectResource | ContainerRequestResource>(parentResourceUuid)(resources);
 
@@ -104,7 +113,7 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
 
             try {
                 // Create return object
-                let result: ProgressBarCounts = {
+                let result: ProcessStatusCounts = {
                     [ProcessStatusFilter.ALL]: 0,
                     [ProcessStatusFilter.COMPLETED]: 0,
                     [ProcessStatusFilter.RUNNING]: 0,
@@ -118,8 +127,8 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
                 // Helps to make the requests simultaneously while preserving the association with the status key as a typed key
                 const promises = (Object.keys(statusMap) as Array<keyof ProcessStatusMap>)
                     // Split statusMap into pairs of progress bar status and process status
-                    .reduce((acc, curr) => [...acc, ...statusMap[curr].map(processStatus => ({barStatus: curr, processStatus}))], [] as ProgressBarStatusPair[])
-                    .map(async (statusPair: ProgressBarStatusPair): Promise<ProcessStatusCount> => {
+                    .reduce((acc, curr) => [...acc, ...statusMap[curr].map(processStatus => ({barStatus: curr, processStatus}))], [] as ProcessStatusPair[])
+                    .map(async (statusPair: ProcessStatusPair): Promise<ProcessStatusCount> => {
                         // For each status pair, request count and return bar status and count
                         const { barStatus, processStatus } = statusPair;
                         const filter = buildProcessStatusFilters(new FilterBuilder(baseFilter), processStatus);
@@ -134,20 +143,7 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
                     result[singleResult.status] += singleResult.count;
                 });
 
-                // CR polling is handled in progress bar based on store updates
-                // This bool triggers polling without causing a final fetch when disabled
-                // The shouldPoll logic here differs slightly from shouldPollProcess:
-                //   * Process gets websocket updates through the store so using isProcessRunning
-                //     ignores Queued
-                //   * In projects, we get no websocket updates on CR state changes so we treat
-                //     Queued processes as running in order to let polling keep us up to date
-                //     when anything transitions to Running. This also means that a project with
-                //     CRs in a stopped state won't start polling if CRs are started elsewhere
-                const shouldPollProject = isContainerRequest(parentResource)
-                    ? false
-                    : (result[ProcessStatusFilter.RUNNING] + result[ProcessStatusFilter.QUEUED]) > 0;
-
-                return {counts: result, shouldPollProject};
+                return result;
             } catch (e) {
                 return undefined;
             }
