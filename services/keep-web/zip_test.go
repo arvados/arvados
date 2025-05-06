@@ -284,6 +284,20 @@ func (s *IntegrationSuite) TestZip_SelectFiles_SpecifyDownloadFilename_Query(c *
 	})
 }
 
+func (s *IntegrationSuite) TestZip_SpecifyDownloadFilename_NoZipExt(c *C) {
+	s.testZip(c, testZipOptions{
+		reqMethod: "GET",
+		reqQuery: "?" + (&url.Values{
+			"download_filename": []string{"Sue.zap"},
+		}).Encode(),
+		reqContentType:    "application/json",
+		reqToken:          arvadostest.ActiveTokenV2,
+		expectStatus:      200,
+		expectFiles:       []string{"dir1/dir/file1.txt", "dir1/file1.txt", "dir2/file2.txt", "file0.txt"},
+		expectDisposition: `attachment; filename=Sue.zap.zip`,
+	})
+}
+
 func (s *IntegrationSuite) TestZip_SelectFile_UseByIDStyle(c *C) {
 	s.testZip(c, testZipOptions{
 		useByIDStyle:      true,

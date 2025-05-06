@@ -124,7 +124,14 @@ func (h *handler) serveZip(w http.ResponseWriter, r *http.Request, session *cach
 		}
 	}
 
-	if params.DownloadFilename == "" {
+	if params.DownloadFilename != "" {
+		// Add .zip extension if the user forgot to do that
+		if !strings.HasSuffix(strings.ToLower(params.DownloadFilename), ".zip") {
+			params.DownloadFilename += ".zip"
+		}
+	} else {
+		// No download_filename provided. Make up a reasonable
+		// default.
 		if coll.UUID == "" {
 			params.DownloadFilename = coll.PortableDataHash
 		} else {
