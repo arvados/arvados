@@ -39,6 +39,7 @@ export type ProcessStatusCounts = {
     [ProcessStatusFilter.QUEUED]: number;
     [ProcessStatusFilter.ONHOLD]: number;
     [ProcessStatusFilter.CANCELLED]: number;
+    [ProcessStatusFilter.DRAFT]: number;
 };
 
 /**
@@ -55,6 +56,7 @@ const statusMap: ProcessStatusMap = {
         [ProcessStatusFilter.CANCELLED]: [ProcessStatusFilter.CANCELLED],
         [ProcessStatusFilter.QUEUED]: [ProcessStatusFilter.QUEUED],
         [ProcessStatusFilter.ONHOLD]: [ProcessStatusFilter.ONHOLD],
+        [ProcessStatusFilter.DRAFT]: [ProcessStatusFilter.DRAFT],
 };
 
 /**
@@ -121,6 +123,7 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
                     [ProcessStatusFilter.QUEUED]: 0,
                     [ProcessStatusFilter.ONHOLD]: 0,
                     [ProcessStatusFilter.CANCELLED]: 0,
+                    [ProcessStatusFilter.DRAFT]: 0,
                 }
 
                 // Create array of promises that returns the status associated with the item count
