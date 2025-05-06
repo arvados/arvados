@@ -132,11 +132,11 @@ func (s *IntegrationSuite) TestZip_Logging(c *C) {
 		expectStatus: 200,
 		expectFiles:  []string{"dir1/dir/file1.txt", "dir1/file1.txt", "dir2/file2.txt", "file0.txt"},
 		expectLogsMatch: []string{
-			`(?ms).*msg="File download".*`,
-			`(?ms).*user_uuid=` + arvadostest.ActiveUserUUID + `\s.*`,
-			`(?ms).*user_full_name="Active User".*`,
-			`(?ms).*portable_data_hash=6acf043b102afcf04e3be2443e7ea2ba\+223.*`,
-			`(?ms).*collection_file_path=\s.*`,
+			`(?ms).*\smsg="File download".*`,
+			`(?ms).*\suser_uuid=` + arvadostest.ActiveUserUUID + `\s.*`,
+			`(?ms).*\suser_full_name="Active User".*`,
+			`(?ms).*\sportable_data_hash=6acf043b102afcf04e3be2443e7ea2ba\+223\s.*`,
+			`(?ms).*\scollection_file_path=\s.*`,
 		},
 	})
 }
@@ -150,7 +150,7 @@ func (s *IntegrationSuite) TestZip_Logging_OneFile(c *C) {
 		expectStatus:   200,
 		expectFiles:    []string{"dir1/file1.txt"},
 		expectLogsMatch: []string{
-			`(?ms).*collection_file_path=dir1/file1.txt.*`,
+			`(?ms).*\scollection_file_path=dir1/file1.txt\s.*`,
 		},
 	})
 }
