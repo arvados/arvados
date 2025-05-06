@@ -235,6 +235,9 @@ func (h *handler) writeZip(w http.ResponseWriter, coll *arvados.Collection, coll
 			return err
 		}
 		err = json.NewEncoder(zipf).Encode(m)
+		if err != nil {
+			return err
+		}
 	}
 	for _, path := range filepaths {
 		f, err := collfs.Open(path)
