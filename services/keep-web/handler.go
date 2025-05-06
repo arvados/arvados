@@ -187,6 +187,16 @@ func (h *handler) Done() <-chan struct{} {
 	return nil
 }
 
+// Close releases the active database connection, if any.
+//
+// Currently Close() is not part of the service.Handler interface.
+// However, it is used by the test suite to avoid accumulating
+// database connections when starting up lots of keep-web
+// servers/handlers.
+func (h *handler) Close() {
+	h.getDBConnector().Close()
+}
+
 func (h *handler) getDBConnector() *ctrlctx.DBConnector {
 	h.dbConnectorMtx.Lock()
 	defer h.dbConnectorMtx.Unlock()

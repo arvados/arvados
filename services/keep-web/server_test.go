@@ -572,6 +572,9 @@ func (s *IntegrationSuite) TearDownTest(c *check.C) {
 	if s.testServer != nil {
 		s.testServer.Close()
 	}
+	if s.handler != nil {
+		s.handler.Close()
+	}
 }
 
 // Gocheck boilerplate
