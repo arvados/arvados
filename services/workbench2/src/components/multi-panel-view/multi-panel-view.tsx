@@ -17,28 +17,16 @@ import { InfoIcon } from 'components/icon/icon';
 import classNames from 'classnames';
 
 type CssRules =
-    | 'root'
-    | 'gridContainerRoot'
     | 'exclusiveGridContainerRoot'
     | 'symmetricTabs'
     | 'gridItemRoot'
     | 'paperRoot'
     | 'button'
-    | 'buttonIcon'
-    | 'content'
     | 'exclusiveContentPaper'
     | 'exclusiveContent'
-    | 'buttonBarGridContainer'
     | 'tabs';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
-    root: {
-        marginTop: '0',
-    },
-    gridContainerRoot: {
-        margin: '10px -4px -4px',
-        width: 'calc(100% + 8px) !important',
-    },
     exclusiveGridContainerRoot: {
         marginTop: 0,
     },
@@ -52,6 +40,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     paperRoot: {
         height: '100%',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
     },
@@ -59,25 +48,12 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         padding: '2px 5px',
         marginRight: '5px',
     },
-    buttonIcon: {
-        boxShadow: 'none',
-        padding: '2px 0px 2px 5px',
-        fontSize: '1rem'
-    },
-    content: {
-        overflow: 'auto',
-        margin: '-4px',
-        padding: '4px !important',
-    },
     exclusiveContent: {
         overflow: 'auto',
         margin: 0,
     },
     exclusiveContentPaper: {
         boxShadow: 'none',
-    },
-    buttonBarGridContainer: {
-        padding: '4px !important',
     },
     tabs: {
         flexGrow: 1,
@@ -187,7 +163,6 @@ export interface MPVPanelState {
 }
 interface MPVContainerDataProps {
     panelStates?: MPVPanelState[];
-    mutuallyExclusive?: boolean;
     router: RouterState;
 }
 type MPVContainerProps = MPVContainerDataProps & GridProps;
@@ -197,7 +172,7 @@ const mapStateToProps = (state: RootState): Pick<MPVContainerDataProps, 'router'
 });
 
 // Grid container compatible component that also handles panel toggling.
-const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusive, router, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
+const MPVContainerComponent = ({ children, panelStates, classes, router, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
     if (children === undefined || children === null || Object.keys(children).length === 0) {
         children = [];
     } else if (!isArray(children)) {
@@ -232,20 +207,12 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
     if (isArray(children)) {
         const showFn = (idx: number) => () => {
             setPreviousPanelVisibility(initialVisibility);
-            if (mutuallyExclusive) {
-                // Hide all other panels
-                setPanelVisibility([
-                    ...(new Array(idx).fill(false)),
-                    true,
-                    ...(new Array(panelVisibility.length-(idx+1)).fill(false)),
-                ]);
-            } else {
-                setPanelVisibility([
-                    ...panelVisibility.slice(0, idx),
-                    true,
-                    ...panelVisibility.slice(idx + 1)
-                ]);
-            }
+            // Hide all other panels
+            setPanelVisibility([
+                ...(new Array(idx).fill(false)),
+                true,
+                ...(new Array(panelVisibility.length-(idx+1)).fill(false)),
+            ]);
             setSelectedPanel(idx);
         };
         const hideFn = (idx: number) => () => {
@@ -309,7 +276,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
                     key={idx}
                     visible={panelVisibility[idx]}
                     name={panelName}
-                    paperClassName={mutuallyExclusive ? classes.exclusiveContentPaper : undefined}
+                    paperClassName={classes.exclusiveContentPaper}
                     panelRef={(idx === selectedPanel) ? panelRef : undefined}
                     maximized={panelIsMaximized} illuminated={idx === highlightedPanel}
                     doHidePanel={hideFn(idx)} doMaximizePanel={maximizeFn(idx)} doUnMaximizePanel={panelIsMaximized ? unMaximizeFn(idx) : () => null}>
@@ -318,16 +285,13 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
             panels = [...panels, aPanel];
         };
 
-        buttonBar = mutuallyExclusive ?
+        buttonBar = (
             <Tabs className={classes.symmetricTabs} value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
                 {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
-            </Tabs> :
-            <Grid container item direction="row" className={classes.buttonBarGridContainer}>
-                {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
-            </Grid>;
+            </Tabs>);
     };
 
-    const content = <Grid container direction="column" item {...props} xs className={mutuallyExclusive ? classes.exclusiveContent : classes.content}
+    const content = <Grid container direction="column" item {...props} xs className={classes.exclusiveContent}
         onScroll={() => setSelectedPanel(-1)}>
         {panelVisibility.includes(true)
             ? panels
@@ -336,21 +300,15 @@ const MPVContainerComponent = ({ children, panelStates, classes, mutuallyExclusi
             </Grid>}
     </Grid>;
 
-    if (mutuallyExclusive) {
-        return <Grid container {...props} className={classNames(classes.exclusiveGridContainerRoot, props.className)}>
-            <Grid item {...props} className={classes.gridItemRoot}>
-                <Paper className={classes.paperRoot}>
-                    {buttonBar}
-                    {content}
-                </Paper>
-            </Grid>
-        </Grid>;
-    } else {
-        return <Grid container {...props} className={classNames(classes.gridContainerRoot, props.className)}>
-            {buttonBar}
-            {content}
-        </Grid>;
-    }
+        return (
+            <Grid container {...props} className={classNames(classes.exclusiveGridContainerRoot, props.className)}>
+                <Grid item {...props} className={classes.gridItemRoot}>
+                    <Paper className={classes.paperRoot}>
+                        {buttonBar}
+                        {content}
+                    </Paper>
+                </Grid>
+            </Grid>);
 };
 
 export const MPVContainer = connect(mapStateToProps)(withStyles(styles)(MPVContainerComponent));

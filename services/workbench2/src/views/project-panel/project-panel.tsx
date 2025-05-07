@@ -97,7 +97,6 @@ export const ProjectPanel = withStyles(styles)(
                     <MPVContainer
                         className={classes.mpvRoot}
                         panelStates={initialPanelState}
-                        mutuallyExclusive
                         justify-content="flex-start"
                         style={{flexWrap: 'nowrap'}}>
                         <MPVPanelContent
