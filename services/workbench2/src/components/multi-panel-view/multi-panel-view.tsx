@@ -37,6 +37,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     gridItemRoot: {
         paddingTop: '0 !important',
+        width: '100%',
     },
     paperRoot: {
         height: '100%',

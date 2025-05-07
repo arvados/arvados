@@ -103,6 +103,14 @@ export const ProjectPanel = withStyles(styles)(
                             forwardProps
                             xs="auto"
                             item
+                            data-cy="project-details"
+                            className={classes.dataExplorer}>
+                            <>foo</>
+                        </MPVPanelContent>
+                        <MPVPanelContent
+                            forwardProps
+                            xs="auto"
+                            item
                             data-cy="process-data"
                             className={classes.dataExplorer}>
                             <ProjectPanelData
