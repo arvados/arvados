@@ -41,6 +41,71 @@ It is possible for a project or a "filter group":methods/groups.html#filter to a
 * @/by_id/uuid_of_f/p@ will show the parent project's contents, including @f@.
 * @/by_id/uuid_of_f/p/f@ will appear as an empty directory.
 
+h3(#zip). Downloading ZIP archives
+
+Keep-web can produce an uncompressed ZIP archive of a collection, or a subset of a collection.
+
+To request a ZIP archive:
+* The request header must specify @Accept: application/zip@.
+* The request URI must specify the root directory of a collection, e.g., @/by_id/<uuid>/@.  See "Keep-web URLs":keep-web-urls.html for more examples.
+
+To download a subset of a collection, the request can specify one or more pathnames relative to the collection directory:
+* A @files@ parameter in the query of a @GET@ request, e.g., @https://<uuid>.collections.example.com/?files=file1&files=file2@,
+* A @files@ parameter in the body of a @POST@ request with a @Content-Type: application/x-www-form-urlencoded@ header, or
+* The value of a @files@ key in a JSON object in the body of a @POST@ request with a @Content-Type: application/json@ header, e.g., @{"files":["file1","file2"]}@.
+
+Keep-web returns an error if one of the specified paths does not exist in the requested collection.
+
+The ZIP archive comment will include a download URL with the collection UUID or portable data hash, e.g., "Downloaded from https://collections.example.com/by_id/zzzzz-4zz18-0pg114rezrbz46u/".
+
+The ZIP archive will also include collection metadata if the request sets an @include_collection_metadata@ parameter, e.g., @https://<uuid>.collections.example.com/?include_collection_metadata=true@. The resulting ZIP archive will also include a file named @collection.json@ containing the collection's metadata (UUID, name, description, portable data hash, properties, creation time, modification time) and information about the user who last modified it (UUID, full name, username, and email). If the collection is specified by portable data hash rather than name or UUID, @collection.json@ will contain only the portable data hash.
+
+Example @collection.json@ content:
+
+<pre>
+{
+  "created_at":"2025-04-28T19:50:49.046969000Z",
+  "description":"Description of test collection\n",
+  "modified_at":"2025-04-28T19:50:49.093166000Z",
+  "modified_by_user":{
+    "email":"example@example.com",
+    "full_name":"Example Name",
+    "username":"example",
+    "uuid":"zzzzz-tpzed-xurymjxw79nv3jz"
+  },
+  "name":"collection name",
+  "portable_data_hash":"6acf043b102afcf04e3be2443e7ea2ba+223",
+  "properties":{
+    "key":"value"
+  },
+  "uuid":"zzzzz-4zz18-0pg114rezrbz46u"
+}
+</pre>
+
+The request can also include a @download_filename@ parameter with a desired name for the downloaded zip file. This filename will be included in the @Content-Disposition@ response header. If this parameter is not provided, the filename suggested in the response header will be based on the collection name or portable data hash:
+* @{collection name}.zip@ if downloading an entire collection
+* @{collection name} - {file name}.zip@ if a single file was specified in the request
+* @{collection name} - 3 files.zip@ if a directory or multiple files were specified in the request
+* @{portable data hash}.zip@, @{portable data hash} - {file name}.zip@, etc., if the source collection was specified by portable data hash rather than name or UUID
+
+Example request:
+
+<pre>
+GET /by_id/zzzzz-4zz18-0pg114rezrbz46u
+Accept: application/zip
+Content-Type: application/json
+
+{
+  "download_filename": "odd-numbered files and directories.zip",
+  "files": [
+    "file1.txt",
+    "file3.bin",
+    "dir5"
+  ],
+  "include_collection_metadata": true
+}
+</pre>
+
 h3(#auth). Authentication mechanisms
 
 A token can be provided in an Authorization header as a @Bearer@ token:

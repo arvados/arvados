@@ -41,6 +41,7 @@ var _ = check.Suite(&IntegrationSuite{})
 type IntegrationSuite struct {
 	testServer *httptest.Server
 	handler    *handler
+	ctx        context.Context
 }
 
 func (s *IntegrationSuite) TestNoToken(c *check.C) {
@@ -554,14 +555,13 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
 
-	ctx := ctxlog.Context(context.Background(), logger)
-
-	s.handler = newHandlerOrErrorHandler(ctx, cluster, cluster.SystemRootToken, prometheus.NewRegistry()).(*handler)
+	s.ctx = ctxlog.Context(context.Background(), logger)
+	s.handler = newHandlerOrErrorHandler(s.ctx, cluster, cluster.SystemRootToken, prometheus.NewRegistry()).(*handler)
 	s.testServer = httptest.NewUnstartedServer(
 		httpserver.AddRequestIDs(
 			httpserver.LogRequests(
 				s.handler)))
-	s.testServer.Config.BaseContext = func(net.Listener) context.Context { return ctx }
+	s.testServer.Config.BaseContext = func(net.Listener) context.Context { return s.ctx }
 	s.testServer.Start()
 
 	cluster.Services.WebDAV.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: s.testServer.URL[7:]}: {}}
@@ -571,6 +571,9 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 func (s *IntegrationSuite) TearDownTest(c *check.C) {
 	if s.testServer != nil {
 		s.testServer.Close()
+	}
+	if s.handler != nil {
+		s.handler.Close()
 	}
 }
 

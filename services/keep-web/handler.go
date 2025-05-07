@@ -12,6 +12,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -184,6 +185,16 @@ func (h *handler) CheckHealth() error {
 // Done implements service.Handler.
 func (h *handler) Done() <-chan struct{} {
 	return nil
+}
+
+// Close releases the active database connection, if any.
+//
+// Currently Close() is not part of the service.Handler interface.
+// However, it is used by the test suite to avoid accumulating
+// database connections when starting up lots of keep-web
+// servers/handlers.
+func (h *handler) Close() {
+	h.getDBConnector().Close()
 }
 
 func (h *handler) getDBConnector() *ctrlctx.DBConnector {
@@ -612,6 +623,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if accept := strings.Split(r.Header.Get("Accept"), ","); len(accept) == 1 {
+		mediatype, _, err := mime.ParseMediaType(accept[0])
+		if err == nil && mediatype == "application/zip" {
+			releaseSession()
+			h.serveZip(w, r, session, sessionFS, fstarget, tokenUser)
+			return
+		}
+	}
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		if fi, err := sessionFS.Stat(fstarget); err == nil && fi.IsDir() {
 			releaseSession() // because we won't be writing anything
@@ -636,7 +655,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, nil, tokenUser)
+	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, 1, nil, tokenUser)
 
 	if webdavPrefix == "" && stripParts > 0 {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
@@ -1189,6 +1208,7 @@ type fileEventLog struct {
 	collUUID     string
 	collPDH      string
 	collFilePath string
+	fileCount    int
 	clientAddr   string
 	clientToken  string
 }
@@ -1197,6 +1217,7 @@ func newFileEventLog(
 	h *handler,
 	r *http.Request,
 	filepath string,
+	fileCount int,
 	collection *arvados.Collection,
 	user *arvados.User,
 	token string,
@@ -1237,6 +1258,7 @@ func newFileEventLog(
 		eventType:   eventType,
 		clientAddr:  clientAddr,
 		clientToken: token,
+		fileCount:   fileCount,
 	}
 
 	if user != nil {
@@ -1272,6 +1294,7 @@ func (ev *fileEventLog) asDict() arvadosclient.Dict {
 		"reqPath":              ev.requestPath,
 		"collection_uuid":      ev.collUUID,
 		"collection_file_path": ev.collFilePath,
+		"file_count":           ev.fileCount,
 	}
 	if ev.shouldLogPDH() {
 		props["portable_data_hash"] = ev.collPDH
@@ -1288,6 +1311,7 @@ func (ev *fileEventLog) asFields() logrus.Fields {
 		"collection_file_path": ev.collFilePath,
 		"collection_uuid":      ev.collUUID,
 		"user_uuid":            ev.userUUID,
+		"file_count":           ev.fileCount,
 	}
 	if ev.shouldLogPDH() {
 		fields["portable_data_hash"] = ev.collPDH
@@ -1359,6 +1383,7 @@ func (h *handler) logUploadOrDownload(
 	client *arvadosclient.ArvadosClient,
 	fs arvados.CustomFileSystem,
 	filepath string,
+	fileCount int,
 	collection *arvados.Collection,
 	user *arvados.User,
 ) {
@@ -1373,7 +1398,7 @@ func (h *handler) logUploadOrDownload(
 			fileInfo, _ = fs.Stat(path.Join("by_id", collection.UUID, filepath))
 		}
 	}
-	event := newFileEventLog(h, r, filepath, collection, user, client.ApiToken)
+	event := newFileEventLog(h, r, filepath, fileCount, collection, user, client.ApiToken)
 	if !h.shouldLogEvent(event, r, fileInfo, time.Now()) {
 		return
 	}
