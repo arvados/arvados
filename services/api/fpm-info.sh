@@ -18,7 +18,7 @@ fpm_depends+=(
 )
 
 case "$TARGET" in
-    centos*|rocky*)
+    rocky9)
         fpm_depends+=(
             # Dependencies to build gems
             automake
@@ -27,11 +27,34 @@ case "$TARGET" in
             libyaml-devel
             postgresql
             postgresql-devel
+            redhat-rpm-config
             "ruby-devel >= 2.7.0"
             zlib-devel
             # Passenger runtime dependencies
             libnsl
             openssl-devel
+            rubygem-rake
+            # nginx compilation dependencies
+            pcre2-devel
+            tar
+        )
+        ;;
+    rocky*)
+        fpm_depends+=(
+            # Dependencies to build gems
+            automake
+            gcc-c++
+            libcurl-devel
+            libyaml-devel
+            postgresql
+            postgresql-devel
+            redhat-rpm-config
+            "ruby-devel >= 2.7.0"
+            zlib-devel
+            # Passenger runtime dependencies
+            libnsl
+            openssl-devel
+            rubygem-rake
         )
         ;;
     ubuntu2004)
@@ -48,6 +71,7 @@ case "$TARGET" in
             # libnsl2 is excluded because it was included as part of glibc
             libnss-systemd
             libssl-dev
+            rake
         )
         ;;
     debian* | ubuntu*)
@@ -64,6 +88,7 @@ case "$TARGET" in
             libnsl2
             libnss-systemd
             libssl-dev
+            rake
         )
         ;;
 esac
