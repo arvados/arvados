@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -137,7 +136,9 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	fmt.Fprint(h, s.ctrUUID)
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
-	rtr := router.New(s.localdb, router.Config{})
+	rtr := router.New(s.localdb, router.Config{
+		ContainerWebServicesURL: arvados.URL{Host: "*.containers.example.com"},
+	})
 	s.srv = httptest.NewUnstartedServer(httpserver.AddRequestIDs(httpserver.LogRequests(rtr)))
 	s.srv.StartTLS()
 	// the test setup doesn't use lib/service so
@@ -340,11 +341,8 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 				Name:  "arvados_api_token",
 				Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
 			})
-			portnum, err := strconv.Atoi(port)
-			c.Assert(err, check.IsNil)
 			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
-				UUID:    s.ctrUUID,
-				Port:    portnum,
+				Target:  fmt.Sprintf("%s-%s", s.ctrUUID, port),
 				Request: req,
 			})
 			c.Assert(err, check.IsNil)
@@ -396,15 +394,12 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_ContainerNotReadable
 func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, svcIdx int, token string, expectCode int) {
 	_, svcPort, err := net.SplitHostPort(s.containerServices[svcIdx].Addr)
 	c.Assert(err, check.IsNil)
-	svcPortInt, err := strconv.Atoi(svcPort)
-	c.Assert(err, check.IsNil)
 	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
 	vhost := s.ctrUUID + "-" + svcPort + ".containers.example.com"
 	req, err := http.NewRequest("GET", "https://"+vhost+"/via-"+s.gw.Address, nil)
 	c.Assert(err, check.IsNil)
 	_, err = s.localdb.ContainerHTTPProxy(ctx, arvados.ContainerHTTPProxyOptions{
-		UUID:    s.ctrUUID,
-		Port:    svcPortInt,
+		Target:  fmt.Sprintf("%s-%s", s.ctrUUID, svcPort),
 		Request: req,
 	})
 	c.Check(err, check.NotNil)
