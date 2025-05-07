@@ -167,14 +167,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def self.any_searchable_columns operator
-    datetime_columns = self.columns.select do |col|
-      case col.type
-      when :datetime
-        true
-      else
-        false
-      end
-    end.map(&:name)
+    datetime_columns = self.columns.select { |col| col.type == :datetime }.map(&:name)
     self.searchable_columns(operator) - datetime_columns
   end
 

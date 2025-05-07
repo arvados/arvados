@@ -37,9 +37,10 @@ class Arvados::V1::CredentialsController < ApplicationController
   end
 
   def secret
+    # Should have previously determined the user can read the credential in @object
     c = Container.for_current_token
-    if !@object || !c || c.state != Container::Running || !current_user.can?(read: @object)
-      send_error("Token is not associated with a container.", status: 403)
+    if !@object || !c || c.state != Container::Running
+      send_error("Token is not associated with a running container.", status: 403)
       return
     end
 
@@ -53,8 +54,8 @@ class Arvados::V1::CredentialsController < ApplicationController
     lg.object_owner_uuid = @object.owner_uuid
     lg.properties = {
       "name": @object.name,
-                     "credential_class": @object.credential_class,
-                     "external_id": @object.external_id,
+      "credential_class": @object.credential_class,
+      "external_id": @object.external_id,
     }
     lg.save!
     send_json({"external_id" => @object.external_id, "secret" => @object.secret})
