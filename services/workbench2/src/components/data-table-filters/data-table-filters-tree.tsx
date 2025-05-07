@@ -73,10 +73,10 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
     }
 }
 
-const renderItem = (item: TreeItem<DataTableFilterItem>) =>
+const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<DataTableFilterItem>) =>
     <span>
-        {item.data.name}
-        {item.initialState !== item.selected ? <>
+        {count ? `${name} (${count})` : name}
+        {initialState !== selected ? <>
             *
         </> : null}
     </span>;
