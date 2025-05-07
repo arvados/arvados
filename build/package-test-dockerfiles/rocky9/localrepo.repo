@@ -1,0 +1,9 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+[localrepo]
+name=Arvados Test
+baseurl=file:///arvados/packages/rocky9
+gpgcheck=0
+enabled=1

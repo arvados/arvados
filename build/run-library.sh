@@ -473,7 +473,7 @@ test_package_presence() {
     else
       local rpm_root
       case "$TARGET" in
-        rocky8) rpm_root="RHEL/8/dev" ;;
+        rocky8 | rocky9) rpm_root="RHEL/${TARGET#rocky}/dev" ;;
         *)
           echo "FIXME: Don't know RPM URL path for $TARGET, building"
           return 0
@@ -543,6 +543,9 @@ BEGIN { OFS="\0"; ORS="\0"; }
 ' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 gem fetch
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
+        # Tip: If this command removes "stale" gems downloaded in the previous
+        # step, that might mean those gems declare that the version of Ruby
+        # you're running is too new.
         bundle cache
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
