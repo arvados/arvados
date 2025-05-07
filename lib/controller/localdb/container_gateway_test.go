@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -403,7 +404,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, svcIdx i
 		Request: req,
 	})
 	c.Check(err, check.NotNil)
-	se := httpserver.HTTPStatusError(nil)
+	var se httpserver.HTTPStatusError
 	c.Assert(errors.As(err, &se), check.Equals, true)
 	c.Check(se.HTTPStatus(), check.Equals, expectCode)
 }
@@ -494,6 +495,57 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcI
 	c.Check(err, check.Equals, nil)
 	c.Check(buf.String(), check.Matches, `handled `+method+` /.*`)
 	return buf.String()
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_PublishedPortByName_ProxyTunnel(c *check.C) {
+	forceProxyForTest = true
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxy_PublishedPortByName(c)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_PublishedPortByName(c *check.C) {
+	s.testContainerHTTPProxy_PublishedPortByName(c)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxy_PublishedPortByName(c *check.C) {
+	srv := s.containerServices[1]
+	_, port, _ := net.SplitHostPort(srv.Addr)
+	portnum, err := strconv.Atoi(port)
+	c.Assert(err, check.IsNil)
+	namelink, err := s.localdb.LinkCreate(s.userctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"link_class": "published_port",
+			"name":       "warthogfacedbuffoon",
+			"head_uuid":  s.ctrUUID,
+			"properties": map[string]interface{}{
+				"port": portnum}}})
+	c.Assert(err, check.IsNil)
+	defer s.localdb.LinkDelete(s.userctx, arvados.DeleteOptions{UUID: namelink.UUID})
+
+	vhost := namelink.Name + ".containers.example.com"
+	req, err := http.NewRequest("METHOD", "https://"+vhost+"/path", nil)
+	c.Assert(err, check.IsNil)
+	// Token is already passed to ContainerHTTPProxy() call in
+	// s.userctx, but we also need to add an auth cookie to the
+	// http request: if the request gets passed through http (see
+	// forceProxyForTest), the target router will start with a
+	// fresh context and load tokens from the request.
+	req.AddCookie(&http.Cookie{
+		Name:  "arvados_api_token",
+		Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
+	})
+	handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
+		Target:  namelink.Name,
+		Request: req,
+	})
+	c.Assert(err, check.IsNil)
+	rw := httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	resp := rw.Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	body, err := io.ReadAll(resp.Body)
+	c.Assert(err, check.IsNil)
+	c.Check(string(body), check.Matches, `handled METHOD /path with Host \Q`+vhost+`\E`)
 }
 
 func (s *ContainerGatewaySuite) setupLogCollection(c *check.C) {

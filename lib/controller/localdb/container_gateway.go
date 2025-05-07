@@ -491,6 +491,10 @@ func (conn *Conn) checkContainerLoginPermission(ctx context.Context, userUUID, c
 // specified port on a running container, via crunch-run's container
 // gateway.
 func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
+	// We'll use ctxRoot to do requests below that don't depend on
+	// the supplied token.
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+
 	var targetUUID string
 	var targetPort int
 	if len(opts.Target) > 28 && arvadosclient.UUIDMatch(opts.Target[:27]) && opts.Target[27] == '-' {
@@ -500,7 +504,23 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 			return nil, httpserver.ErrorWithStatus(fmt.Errorf("cannot parse port number from vhost prefix %q", opts.Target), http.StatusBadRequest)
 		}
 	} else {
-		return nil, httpserver.ErrorWithStatus(fmt.Errorf("container web service not found : %q", opts.Target), http.StatusNotFound)
+		links, err := conn.railsProxy.LinkList(ctxRoot, arvados.ListOptions{
+			Limit: 1,
+			Filters: []arvados.Filter{
+				{"link_class", "=", "published_port"},
+				{"name", "=", opts.Target}}})
+		if err != nil {
+			return nil, fmt.Errorf("lookup failed: %w", err)
+		}
+		if len(links.Items) == 0 {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("container web service not found: %q", opts.Target), http.StatusNotFound)
+		}
+		targetUUID = links.Items[0].HeadUUID
+		port, ok := links.Items[0].Properties["port"].(float64)
+		targetPort = int(port)
+		if !ok || targetPort < 1 || targetPort > 65535 {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("invalid port in published_port link: %v", links.Items[0].Properties["port"]), http.StatusInternalServerError)
+		}
 	}
 
 	query := opts.Request.URL.Query()
@@ -528,7 +548,6 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	// can check whether the requested port is marked public in
 	// published_ports.  (This needs to work even if the request
 	// did not provide a token at all.)
-	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 	ctr, err := conn.railsProxy.ContainerGet(ctxRoot, arvados.GetOptions{
 		UUID:   targetUUID,
 		Select: []string{"uuid", "state", "gateway_address", "published_ports"},
