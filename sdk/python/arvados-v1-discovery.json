@@ -1481,6 +1481,235 @@
         }
       }
     },
+    "credentials": {
+      "methods": {
+        "get": {
+          "id": "arvados.credentials.get",
+          "path": "credentials/{uuid}",
+          "httpMethod": "GET",
+          "description": "Get a Credential record by UUID.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Credential to return.",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "An array of names of attributes to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "parameterOrder": [
+            "uuid"
+          ],
+          "response": {
+            "$ref": "Credential"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "list": {
+          "id": "arvados.credentials.list",
+          "path": "credentials",
+          "httpMethod": "GET",
+          "description": "Retrieve a CredentialList.",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "An array of names of attributes to return from each matching object.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "Cluster ID of a federated cluster to return objects from",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "CredentialList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "create": {
+          "id": "arvados.credentials.create",
+          "path": "credentials",
+          "httpMethod": "POST",
+          "description": "Create a new Credential.",
+          "parameters": {
+            "select": {
+              "type": "array",
+              "description": "An array of names of attributes to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "ensure_unique_name": {
+              "type": "boolean",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
+              "location": "query",
+              "required": false,
+              "default": "false"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
+              "location": "query",
+              "required": false
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "credential": {
+                "$ref": "Credential"
+              }
+            }
+          },
+          "response": {
+            "$ref": "Credential"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "update": {
+          "id": "arvados.credentials.update",
+          "path": "credentials/{uuid}",
+          "httpMethod": "PUT",
+          "description": "Update attributes of an existing Credential.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Credential to update.",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "An array of names of attributes to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "credential": {
+                "$ref": "Credential"
+              }
+            }
+          },
+          "response": {
+            "$ref": "Credential"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "delete": {
+          "id": "arvados.credentials.delete",
+          "path": "credentials/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "Delete an existing Credential.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Credential to delete.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "Credential"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "secret": {
+          "id": "arvados.credentials.secret",
+          "path": "credentials/{uuid}/secret",
+          "httpMethod": "GET",
+          "description": "Fetch the secret part of the credential (can only be invoked by running containers).",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Credential to query.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "Credential"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        }
+      }
+    },
     "groups": {
       "methods": {
         "get": {
@@ -4408,6 +4637,85 @@
         "published_ports": {
           "description": "A hash where keys are numeric TCP ports on the container which expose HTTP services.  Arvados\nwill proxy HTTP requests to these ports.  Values are hashes with the following keys:\n\n  * `\"access\"` --- One of 'private' or 'public' indicating if an Arvados API token is required to access the endpoint.\n  * `\"label\"` --- A human readable label describing the service, for display in Workbench.\n  * `\"initial_path\"` --- The relative path that should be included when constructing the URL that will be presented to the user in Workbench.",
           "type": "Hash"
+        }
+      }
+    },
+    "CredentialList": {
+      "id": "CredentialList",
+      "description": "A list of Credential objects.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Object type. Always arvados#credentialList.",
+          "default": "arvados#credentialList"
+        },
+        "etag": {
+          "type": "string",
+          "description": "List cache version."
+        },
+        "items": {
+          "type": "array",
+          "description": "An array of matching Credential objects.",
+          "items": {
+            "$ref": "Credential"
+          }
+        }
+      }
+    },
+    "Credential": {
+      "id": "Credential",
+      "description": "Arvados credential.",
+      "type": "object",
+      "uuidPrefix": "oss07",
+      "properties": {
+        "etag": {
+          "type": "string",
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This credential's Arvados UUID, like `zzzzz-oss07-12345abcde67890`."
+        },
+        "owner_uuid": {
+          "description": "The UUID of the user or group that owns this credential.",
+          "type": "string"
+        },
+        "created_at": {
+          "description": "The time this credential was created. The string encodes a UTC date and time in ISO 8601 format.",
+          "type": "datetime"
+        },
+        "modified_at": {
+          "description": "The time this credential was last updated. The string encodes a UTC date and time in ISO 8601 format.",
+          "type": "datetime"
+        },
+        "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this credential.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of this credential assigned by a user.",
+          "type": "string"
+        },
+        "description": {
+          "description": "A longer HTML description of this credential assigned by a user.\nAllowed HTML tags are `a`, `b`, `blockquote`, `br`, `code`,\n`del`, `dd`, `dl`, `dt`, `em`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`,\n`i`, `img`, `kbd`, `li`, `ol`, `p`, `pre`,\n`s`, `section`, `span`, `strong`, `sub`, `sup`, and `ul`.",
+          "type": "text"
+        },
+        "credential_class": {
+          "description": "The type of credential being stored.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "The resources the credential applies to or should be used with.",
+          "type": "Array"
+        },
+        "external_id": {
+          "description": "The non-secret external identifier associated with a credential, e.g. a username.",
+          "type": "string"
+        },
+        "expires_at": {
+          "description": "Date after which the credential_secret field is no longer valid. The string encodes a UTC date and time in ISO 8601 format.",
+          "type": "datetime"
         }
       }
     },

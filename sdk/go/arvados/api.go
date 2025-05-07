@@ -105,6 +105,11 @@ var (
 	EndpointAPIClientAuthorizationList      = APIEndpoint{"GET", "arvados/v1/api_client_authorizations", ""}
 	EndpointAPIClientAuthorizationDelete    = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
 	EndpointAPIClientAuthorizationGet       = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
+	EndpointCredentialCreate                = APIEndpoint{"POST", "arvados/v1/credentials", "credential"}
+	EndpointCredentialUpdate                = APIEndpoint{"PATCH", "arvados/v1/credentials/{uuid}", "credential"}
+	EndpointCredentialGet                   = APIEndpoint{"GET", "arvados/v1/credentials/{uuid}", ""}
+	EndpointCredentialDelete                = APIEndpoint{"DELETE", "arvados/v1/credentials/{uuid}", ""}
+	EndpointCredentialSecret                = APIEndpoint{"GET", "arvados/v1/credentials/{uuid}/credential_secret", ""}
 )
 
 type ContainerHTTPProxyOptions struct {

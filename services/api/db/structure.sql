@@ -665,6 +665,26 @@ ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
 
 
 --
+-- Name: credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.credentials (
+    uuid character varying NOT NULL,
+    owner_uuid character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    modified_at timestamp(6) without time zone NOT NULL,
+    modified_by_user_uuid character varying,
+    name character varying,
+    description text,
+    credential_class character varying,
+    scopes jsonb DEFAULT '[]'::jsonb,
+    external_id character varying,
+    secret text,
+    expires_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: frozen_groups; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1696,6 +1716,14 @@ ALTER TABLE ONLY public.containers
 
 
 --
+-- Name: credentials credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credentials
+    ADD CONSTRAINT credentials_pkey PRIMARY KEY (uuid);
+
+
+--
 -- Name: groups groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1927,6 +1955,13 @@ CREATE INDEX groups_trgm_text_search_idx ON public.groups USING gin (((((((((COA
 --
 
 CREATE INDEX humans_search_index ON public.humans USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid);
+
+
+--
+-- Name: idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_8f8cf5e570; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_uuid_owner_uuid_modified_by_user_uuid_name_c_8f8cf5e570 ON public.credentials USING btree (uuid, owner_uuid, modified_by_user_uuid, name, credential_class, external_id);
 
 
 --
@@ -2221,6 +2256,27 @@ CREATE INDEX index_containers_on_secret_mounts_md5 ON public.containers USING bt
 --
 
 CREATE UNIQUE INDEX index_containers_on_uuid ON public.containers USING btree (uuid);
+
+
+--
+-- Name: index_credentials_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_credentials_on_owner_uuid ON public.credentials USING btree (owner_uuid);
+
+
+--
+-- Name: index_credentials_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_credentials_on_owner_uuid_and_name ON public.credentials USING btree (owner_uuid, name);
+
+
+--
+-- Name: index_credentials_on_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_credentials_on_uuid ON public.credentials USING btree (uuid);
 
 
 --
@@ -3148,6 +3204,7 @@ SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20250426201300'),
+('20250422103000'),
 ('20250402131700'),
 ('20250315222222'),
 ('20250312141843'),
@@ -3375,4 +3432,3 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20130105224358'),
 ('20130105203021'),
 ('20121016005009');
-

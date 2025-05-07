@@ -2029,13 +2029,20 @@ func (s *CollectionFSSuite) skipMostRepackCostTests(c *check.C) {
 	}
 }
 
+// If we upload 500 files (or 99999) and get a manifest with 60 or
+// fewer blocks (the third parameter of testRepackCost) then repacking
+// is working.  The number of blocks is going to proportional to the
+// amount of data in the source tree so these numbers may need to be
+// updated periodically, but what we're really testing for is that we
+// didn't get back a manifest with 500 or 5000 blocks.
+
 func (s *CollectionFSSuite) TestRepackCost_SourceTree_Part(c *check.C) {
-	s.testRepackCost(c, dataToWrite_SourceTree(c, 500), 40)
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 500), 60)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_SourceTree(c *check.C) {
 	s.skipMostRepackCostTests(c)
-	s.testRepackCost(c, dataToWrite_SourceTree(c, 99999), 50)
+	s.testRepackCost(c, dataToWrite_SourceTree(c, 99999), 60)
 }
 
 func (s *CollectionFSSuite) TestRepackCost_1000x_1M_Files(c *check.C) {

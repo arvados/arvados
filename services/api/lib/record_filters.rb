@@ -35,7 +35,7 @@ module RecordFilters
         raise ArgumentError.new("Full text search operator is no longer supported")
       end
       if attrs_in == 'any'
-        attrs = model_class.searchable_columns(operator)
+        attrs = model_class.any_searchable_columns(operator)
       elsif attrs_in.is_a? Array
         attrs = attrs_in
       else
