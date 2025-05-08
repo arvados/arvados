@@ -12,6 +12,7 @@ fpm_depends+=(
     # Passenger dependencies
     curl
     procps
+    tar
     # Dependencies of our API server code
     "git >= 1.7.10"
     shared-mime-info
@@ -36,7 +37,6 @@ case "$TARGET" in
             rubygem-rake
             # nginx compilation dependencies
             pcre2-devel
-            tar
         )
         ;;
     rocky*)
