@@ -40,6 +40,8 @@ import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-b
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
 import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
+import { WorkflowResource } from "models/workflow";
+import { WORKFLOW_PROCESSES_PANEL_ID } from "store/workflow-panel/workflow-panel-actions";
 
 type CssRules =
     | 'titleWrapper'
@@ -194,7 +196,7 @@ interface DataExplorerDataProps<T> {
     detailsPanelResourceUuid: string;
     isDetailsPanelOpen: boolean;
     isSelectedResourceInDataExplorer: boolean;
-    parentResource?: ProjectResource | Process;
+    parentResource?: ProjectResource | Process | WorkflowResource;
 }
 
 interface DataExplorerActionProps<T> {
@@ -295,7 +297,7 @@ export const DataExplorer = withStyles(styles)(
             const parentUuid = getParentUuid(this.props.parentResource);
             filterCountColumns.forEach(columnName => {
                 // more columns to fetch for can be added later
-                if(columnName === FilteredColumnNames.STATUS || columnName === FilteredColumnNames.STATUS) {
+                if(columnName === FilteredColumnNames.STATUS) {
                     this.props.fetchProcessStatusCounts(parentUuid, this.state.typeFilter).then(result=>{
                         if(result) {
                             this.setState({
@@ -607,7 +609,7 @@ const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => 
 );
 
 const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any, any>) => {
-    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID ];
+    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID, WORKFLOW_PROCESSES_PANEL_ID ];
     const goodColumnNames = [ FilteredColumnNames.STATUS ];
     return columns.reduce((acc: string[], curr) => {
         if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name as FilteredColumnNames)) {
@@ -617,7 +619,7 @@ const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any,
     }, [])
 };
 
-const getParentUuid = (parentResource: ProjectResource | Process | undefined) => {
+const getParentUuid = (parentResource: ProjectResource | Process | WorkflowResource | undefined) => {
     return parentResource
     ? isProcess(parentResource)
         ? parentResource.containerRequest.uuid

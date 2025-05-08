@@ -12,7 +12,8 @@ import { Process } from 'store/processes/process';
 import { ProjectResource } from 'models/project';
 import { getResource } from 'store/resources/resources';
 import { ContainerRequestResource } from 'models/container-request';
-import { Resource } from 'models/resource';
+import { WorkflowResource } from 'models/workflow';
+import { Resource, ResourceKind } from 'models/resource';
 
 export const SUBPROCESS_PANEL_ID = "subprocessPanel";
 export const SUBPROCESS_ATTRIBUTES_DIALOG = 'subprocessAttributesDialog';
@@ -88,7 +89,7 @@ const isContainerRequest = <T extends Resource>(resource: T | ContainerRequestRe
 export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProcessStatusCounts | undefined> => {
         const resources = getState().resources;
-        const parentResource = getResource<ProjectResource | ContainerRequestResource>(parentResourceUuid)(resources);
+        const parentResource = getResource<ProjectResource | ContainerRequestResource | WorkflowResource>(parentResourceUuid)(resources);
 
         const requestContainerStatusCount = async (fb: FilterBuilder) => {
             return await services.containerRequestService.list({
@@ -102,8 +103,10 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
         if (isContainerRequest(parentResource) && parentResource.containerUuid) {
             // Prevent CR without containerUuid from generating baseFilter
             baseFilter = new FilterBuilder().addEqual('requesting_container_uuid', parentResource.containerUuid).getFilters();
-        } else if (parentResource && !isContainerRequest(parentResource)) {
             // isCR type narrowing needed since CR without container may fall through
+        } else if (parentResource?.kind === ResourceKind.WORKFLOW && !isContainerRequest(parentResource)) {
+            baseFilter = new FilterBuilder().addEqual('properties.template_uuid', parentResource.uuid).getFilters();
+        } else if (parentResource && !isContainerRequest(parentResource)) {
             baseFilter = new FilterBuilder().addEqual('owner_uuid', parentResource.uuid).getFilters();
         }
 
