@@ -8,7 +8,7 @@ import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Button 
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, MoreVerticalIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
+import { MoreVerticalIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
 import { Process, isProcessRunnable, isProcessResumable, isProcessCancelable } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
@@ -73,7 +73,7 @@ export interface ProcessDetailsCardDataProps {
 type ProcessDetailsCardProps = ProcessDetailsCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessDetailsCard = withStyles(styles)(
-    ({ cancelProcess, startProcess, resumeOnHoldWorkflow, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
+    ({ cancelProcess, startProcess, resumeOnHoldWorkflow, onContextMenu, classes, process, panelName }: ProcessDetailsCardProps) => {
         let runAction: ((uuid: string) => void) | undefined = undefined;
         if (isProcessRunnable(process)) {
             runAction = startProcess;
@@ -136,10 +136,6 @@ export const ProcessDetailsCard = withStyles(styles)(
                                     <MoreVerticalIcon />
                                 </IconButton>
                             </Tooltip>
-                            {doHidePanel &&
-                             <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                 <IconButton onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                             </Tooltip>}
                         </div>
                     } />
             <CardContent className={classes.content}>

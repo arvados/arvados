@@ -67,31 +67,16 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
 interface MPVHideablePanelDataProps {
     name: string;
     visible: boolean;
-    maximized: boolean;
-    illuminated: boolean;
     children: ReactNode;
     panelRef?: MutableRefObject<any>;
     paperClassName?: string;
 }
 
-interface MPVHideablePanelActionProps {
-    doHidePanel: () => void;
-    doMaximizePanel: () => void;
-    doUnMaximizePanel: () => void;
-}
-
-type MPVHideablePanelProps = MPVHideablePanelDataProps & MPVHideablePanelActionProps;
-
-const MPVHideablePanel = ({ doHidePanel, doMaximizePanel, doUnMaximizePanel, name, visible, maximized, illuminated, paperClassName, ...props }: MPVHideablePanelProps) =>
+const MPVHideablePanel = ({ name, visible, paperClassName, ...props }: MPVHideablePanelDataProps) =>
     visible
         ? <>
             {React.cloneElement((props.children as ReactElement), {
-                doHidePanel,
-                doMaximizePanel,
-                doUnMaximizePanel,
                 panelName: name,
-                panelMaximized: maximized,
-                panelIlluminated: illuminated,
                 panelRef: props.panelRef,
                 paperClassName,
             })}
@@ -100,8 +85,6 @@ const MPVHideablePanel = ({ doHidePanel, doMaximizePanel, doUnMaximizePanel, nam
 
 interface MPVPanelDataProps {
     panelName?: string;
-    panelMaximized?: boolean;
-    panelIlluminated?: boolean;
     panelRef?: MutableRefObject<any>;
     forwardProps?: boolean;
     maxHeight?: string;
@@ -109,36 +92,21 @@ interface MPVPanelDataProps {
     paperClassName?: string;
 }
 
-interface MPVPanelActionProps {
-    doHidePanel?: () => void;
-    doMaximizePanel?: () => void;
-    doUnMaximizePanel?: () => void;
-}
-
 // Props received by panel implementors
-export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
+export type MPVPanelProps = MPVPanelDataProps;
 
 type MPVPanelContentProps = { children: ReactElement } & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
-export const MPVPanelContent = React.memo(({ doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName,
-    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight, minHeight, paperClassName,
+export const MPVPanelContent = React.memo(({ panelName,
+    panelRef, forwardProps, maxHeight, minHeight, paperClassName,
     ...props }: MPVPanelContentProps) => {
-    useEffect(() => {
-        if (panelRef && panelRef.current) {
-            panelRef.current.scrollIntoView({ alignToTop: true });
-        }
-    }, [panelRef]);
 
-    const maxH = panelMaximized
-        ? '100%'
-        : maxHeight;
-
-    return <Grid item style={{ maxHeight: maxH, minHeight, padding: '4px' }} {...props}>
+    return <Grid item style={{ maxHeight: maxHeight, minHeight, padding: '4px' }} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
-        <Paper style={{ height: '100%' }} elevation={panelIlluminated ? 8 : 0}>
+        <Paper style={{ height: '100%' }} elevation={0}>
             {forwardProps
-                ? React.cloneElement(props.children, { doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, paperClassName })
+                ? React.cloneElement(props.children, { panelName, paperClassName })
                 : React.cloneElement(props.children)}
         </Paper>
     </Grid>;
@@ -147,12 +115,6 @@ export const MPVPanelContent = React.memo(({ doHidePanel, doMaximizePanel, doUnM
 // return true to prevent re-render, false to allow re-render
 function preventRerender(prevProps: MPVPanelContentProps, nextProps: MPVPanelContentProps) {
     if (!isEqual(prevProps.children, nextProps.children)) {
-        return false;
-    }
-    if (prevProps.panelMaximized !== nextProps.panelMaximized) {
-        return false;
-    }
-    if (prevProps.panelIlluminated !== nextProps.panelIlluminated) {
         return false;
     }
     return true;
@@ -184,8 +146,6 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
         (panelStates[idx] &&
             (panelStates[idx].visible || panelStates[idx].visible === undefined)));
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(initialVisibility);
-    const [previousPanelVisibility, setPreviousPanelVisibility] = useState<boolean[]>(initialVisibility);
-    const [highlightedPanel, setHighlightedPanel] = useState<number>(-1);
     const currentSelectedPanel = panelVisibility.findIndex(Boolean);
     const [selectedPanel, setSelectedPanel] = useState<number>(-1);
     const panelRef = useRef<any>(null);
@@ -194,8 +154,6 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
     const currentRoute = router.location ? router.location.pathname : "";
     useEffect(() => {
         setPanelVisibility(initialVisibility);
-        setPreviousPanelVisibility(initialVisibility);
-        setHighlightedPanel(-1);
         setSelectedPanel(-1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentRoute]); // Omit initialVisibility to avoid infinite loops
@@ -207,7 +165,6 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
 
     if (isArray(children)) {
         const showFn = (idx: number) => () => {
-            setPreviousPanelVisibility(initialVisibility);
             // Hide all other panels
             setPanelVisibility([
                 ...(new Array(idx).fill(false)),
@@ -216,27 +173,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
             ]);
             setSelectedPanel(idx);
         };
-        const hideFn = (idx: number) => () => {
-            setPreviousPanelVisibility(initialVisibility);
-            setPanelVisibility([
-                ...panelVisibility.slice(0, idx),
-                false,
-                ...panelVisibility.slice(idx+1)
-            ])
-        };
-        const maximizeFn = (idx: number) => () => {
-            setPreviousPanelVisibility(panelVisibility);
-            // Maximize X == hide all but X
-            setPanelVisibility([
-                ...panelVisibility.slice(0, idx).map(() => false),
-                true,
-                ...panelVisibility.slice(idx+1).map(() => false),
-            ]);
-        };
-        const unMaximizeFn = (idx: number) => () => {
-            setPanelVisibility(previousPanelVisibility);
-            setSelectedPanel(idx);
-        }
+
         for (let idx = 0; idx < children.length; idx++) {
             const panelName = panelStates === undefined
                 ? `Panel ${idx + 1}`
@@ -247,20 +184,12 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
             const btnTooltip = panelVisibility[idx]
                 ? ``
                 : `Open ${panelName} panel`;
-            const panelIsMaximized = panelVisibility[idx] &&
-                panelVisibility.filter(e => e).length === 1;
 
             buttons = [
                 ...buttons,
                 <Tooltip title={btnTooltip} disableFocusListener>
                     <Button variant={btnVariant} size="small" color="primary"
                         className={classNames(classes.button)}
-                        onMouseEnter={() => {
-                            setHighlightedPanel(idx);
-                        }}
-                        onMouseLeave={() => {
-                            setHighlightedPanel(-1);
-                        }}
                         onClick={showFn(idx)}>
                         {panelName}
                     </Button>
@@ -279,8 +208,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
                     name={panelName}
                     paperClassName={classes.exclusiveContentPaper}
                     panelRef={(idx === selectedPanel) ? panelRef : undefined}
-                    maximized={panelIsMaximized} illuminated={idx === highlightedPanel}
-                    doHidePanel={hideFn(idx)} doMaximizePanel={maximizeFn(idx)} doUnMaximizePanel={panelIsMaximized ? unMaximizeFn(idx) : () => null}>
+                    >
                     {children[idx]}
                 </MPVHideablePanel>;
             panels = [...panels, aPanel];

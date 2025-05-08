@@ -9,7 +9,7 @@ import { CustomTheme } from "common/custom-theme";
 import { Provider } from "react-redux";
 import { combineReducers, createStore } from "redux";
 
-const PanelMock = ({panelName, panelMaximized, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelIlluminated, panelRef, children, ...rest}) =>
+const PanelMock = ({panelName, panelRef, children, ...rest}) =>
     <div {...rest}>{children}</div>;
 
 describe('<MPVContainer />', () => {

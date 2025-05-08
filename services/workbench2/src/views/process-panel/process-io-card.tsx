@@ -8,7 +8,6 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Card,
     CardHeader,
-    IconButton,
     CardContent,
     Tooltip,
     Typography,
@@ -25,7 +24,7 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
-import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon, WarningIcon } from "components/icon/icon";
+import { InputIcon, OutputIcon, InfoIcon, WarningIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import {
     BooleanCommandInputParameter,
@@ -288,10 +287,6 @@ export const ProcessIOCard = withStyles(styles)(
         raw,
         mounts,
         outputUuid,
-        doHidePanel,
-        doMaximizePanel,
-        doUnMaximizePanel,
-        panelMaximized,
         panelName,
         process,
         forceShowParams,
@@ -334,40 +329,6 @@ export const ProcessIOCard = withStyles(styles)(
                     >
                                  {label}
                     </Typography>
-                }
-                action={
-                    <div>
-                          {doUnMaximizePanel && panelMaximized && (
-                              <Tooltip
-                                  title={`Unmaximize ${panelName || "panel"}`}
-                                  disableFocusListener
-                              >
-                                  <IconButton onClick={doUnMaximizePanel} size="large">
-                                      <UnMaximizeIcon />
-                                  </IconButton>
-                              </Tooltip>
-                          )}
-                                                      {doMaximizePanel && !panelMaximized && (
-                                                          <Tooltip
-                                                              title={`Maximize ${panelName || "panel"}`}
-                                                              disableFocusListener
-                                                          >
-                                                              <IconButton onClick={doMaximizePanel} size="large">
-                                                                  <MaximizeIcon />
-                                                              </IconButton>
-                                                          </Tooltip>
-                                                      )}
-                                                                                  {doHidePanel && (
-                                                                                      <Tooltip
-                                                                                          title={`Close ${panelName || "panel"}`}
-                                                                                          disableFocusListener
-                                                                                      >
-                                                                                          <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
-                                                                                              <CloseIcon />
-                                                                                          </IconButton>
-                                                                                      </Tooltip>
-                                                                                  )}
-                    </div>
                 }
             />
             <CardContent className={classes.content}>

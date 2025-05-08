@@ -10,12 +10,9 @@ import withStyles from '@mui/styles/withStyles';
 import { useAsyncInterval } from 'common/use-async-interval';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
-    CloseIcon,
     CollectionIcon,
     CopyIcon,
     LogIcon,
-    MaximizeIcon,
-    UnMaximizeIcon,
     TextDecreaseIcon,
     TextIncreaseIcon,
     WordWrapOffIcon,
@@ -88,8 +85,7 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines,
-       onLogFilterChange, navigateToLog, onCopy, pollProcessLogs,
-       doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
+       onLogFilterChange, navigateToLog, onCopy, pollProcessLogs, panelName }: ProcessLogsCardProps) => {
            const [wordWrap, setWordWrap] = useState<boolean>(true);
            const [fontSize, setFontSize] = useState<number>(3);
            const fontBaseSize = 10;
@@ -148,18 +144,6 @@ export const ProcessLogsCard = withStyles(styles)(
                                                </IconButton>
                                            </Tooltip>
                                        </Grid>
-                                                           { doUnMaximizePanel && panelMaximized &&
-                                                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
-                                                                 <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
-                                                             </Tooltip> }
-                                                                                     { doMaximizePanel && !panelMaximized &&
-                                                                                       <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
-                                                                                           <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
-                                                                                       </Tooltip> }
-                                                                                                               { doHidePanel &&
-                                                                                                                 <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                                                                                                     <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                                                                                                                 </Tooltip> }
                                    </Grid>}
                                    title={
                                        <Typography noWrap variant='h6' className={classes.title}>

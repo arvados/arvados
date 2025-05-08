@@ -124,10 +124,6 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-        doHidePanel={props.doHidePanel}
-        doMaximizePanel={props.doMaximizePanel}
-        doUnMaximizePanel={props.doUnMaximizePanel}
-        panelMaximized={props.panelMaximized}
         panelName={props.panelName}
         title={<SubProcessesTitle/>}
         progressBar={<SubprocessProgressBar parentResource={props.process} />}

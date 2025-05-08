@@ -121,10 +121,6 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-        doHidePanel={props.doHidePanel}
-        doMaximizePanel={props.doMaximizePanel}
-        doUnMaximizePanel={props.doUnMaximizePanel}
-        panelMaximized={props.panelMaximized}
         panelName={props.panelName}
         title={<WorkflowProcessesTitle />}
         />;
