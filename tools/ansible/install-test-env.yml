@@ -68,6 +68,7 @@
           - bsdextrautils
           - net-tools
           # build/run-build-packages*.sh
+          - apt-utils
           - createrepo-c
           - dpkg-dev
           # doc
