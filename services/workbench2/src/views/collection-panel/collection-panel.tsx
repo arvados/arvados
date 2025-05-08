@@ -34,9 +34,11 @@ import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 import { collectionPanelActions } from 'store/collection-panel/collection-panel-action';
+import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
 
 type CssRules =
     'root'
+    | 'mpvRoot'
     | 'button'
     | 'infoCard'
     | 'propertiesCard'
@@ -58,6 +60,10 @@ type CssRules =
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+    },
+    mpvRoot: {
+        width: '100%',
+        height: '100%',
     },
     button: {
         cursor: 'pointer'
@@ -214,67 +220,70 @@ export const CollectionPanel = withStyles(styles)(connect(
                     { name: "Files" },
                 ];
                 return item
-                    ? <MPVContainer container className={classes.root} spacing={1} justifyContent="flex-start" panelStates={panelsData}>
-                        <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
-                            <Card className={classes.infoCard}>
-                                <CardHeader
-                                    className={classes.header}
-                                    classes={{
-                                        content: classes.title,
-                                        avatar: classes.avatar,
-                                    }}
-                                    avatar={<IconButton onClick={this.openCollectionDetails} size="large">
-                                        {isOldVersion
-                                            ? <CollectionOldVersionIcon className={classes.iconHeader} />
-                                            : <CollectionIcon className={classes.iconHeader} />}
-                                    </IconButton>}
-                                    title={
-                                        <span>
-                                            <IllegalNamingWarning name={item.name} />
-                                            {item.name}
-                                            {isWritable ||
-                                                <Tooltip title="Read-only">
-                                                    <span><ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} /></span>
-                                                </Tooltip>
-                                                }
-                                        </span>
-                                    }
-                                    action={
-                                        <Tooltip title="Actions" disableFocusListener>
-                                            <IconButton
-                                                data-cy='collection-panel-options-btn'
-                                                aria-label="Actions"
-                                                onClick={this.handleContextMenu}
-                                                size="large">
-                                                <MoreVerticalIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    }
-                                />
-                                <CardContent className={classes.content}>
-                                    <Typography variant="caption"
-                                        dangerouslySetInnerHTML={{ __html: item.description }}
+                    ? <section className={classes.root}>
+                        <DetailsCardRoot />
+                        <MPVContainer container className={classes.mpvRoot} justifyContent="flex-start" panelStates={panelsData}>
+                            <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
+                                <Card className={classes.infoCard}>
+                                    <CardHeader
+                                        className={classes.header}
+                                        classes={{
+                                            content: classes.title,
+                                            avatar: classes.avatar,
+                                        }}
+                                        avatar={<IconButton onClick={this.openCollectionDetails} size="large">
+                                            {isOldVersion
+                                                ? <CollectionOldVersionIcon className={classes.iconHeader} />
+                                                : <CollectionIcon className={classes.iconHeader} />}
+                                        </IconButton>}
+                                        title={
+                                            <span>
+                                                <IllegalNamingWarning name={item.name} />
+                                                {item.name}
+                                                {isWritable ||
+                                                    <Tooltip title="Read-only">
+                                                        <span><ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} /></span>
+                                                    </Tooltip>
+                                                    }
+                                            </span>
+                                        }
+                                        action={
+                                            <Tooltip title="Actions" disableFocusListener>
+                                                <IconButton
+                                                    data-cy='collection-panel-options-btn'
+                                                    aria-label="Actions"
+                                                    onClick={this.handleContextMenu}
+                                                    size="large">
+                                                    <MoreVerticalIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        }
                                     />
-                                    <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
-                                    {(item.properties.container_request || item.properties.containerRequest) &&
-                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
-                                            <DetailsAttribute classLabel={classes.link} label='Link to process' />
-                                        </span>
-                                    }
-                                    {isOldVersion &&
-                                        <Typography className={classes.warningLabel} variant="caption">
-                                            This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
-                                        </Typography>
-                                    }
-                                </CardContent>
-                            </Card>
-                        </MPVPanelContent>
-                        <MPVPanelContent item xs>
-                            <Card className={classes.filesCard}>
-                                <CollectionPanelFiles isWritable={isWritable} />
-                            </Card>
-                        </MPVPanelContent>
-                    </MPVContainer >
+                                    <CardContent className={classes.content}>
+                                        <Typography variant="caption"
+                                            dangerouslySetInnerHTML={{ __html: item.description }}
+                                        />
+                                        <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
+                                        {(item.properties.container_request || item.properties.containerRequest) &&
+                                            <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
+                                                <DetailsAttribute classLabel={classes.link} label='Link to process' />
+                                            </span>
+                                        }
+                                        {isOldVersion &&
+                                            <Typography className={classes.warningLabel} variant="caption">
+                                                This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
+                                            </Typography>
+                                        }
+                                    </CardContent>
+                                </Card>
+                            </MPVPanelContent>
+                            <MPVPanelContent item xs>
+                                <Card className={classes.filesCard}>
+                                    <CollectionPanelFiles isWritable={isWritable} />
+                                </Card>
+                            </MPVPanelContent>
+                        </MPVContainer >
+                    </section>
                     : <NotFoundView
                         icon={CollectionIcon}
                         messages={["Collection not found"]}
