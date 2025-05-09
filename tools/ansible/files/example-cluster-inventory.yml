@@ -182,3 +182,8 @@ arvados_workbench:
 #arvados_shell:
 #  hosts:
 #    shell.arvados.example:
+#      # The installer will automatically create an Arvados virtual machine
+#      # record for each shell node. The `hostname` attribute in that record
+#      # will come from the inventory hostname by default. If you need to use
+#      # a different hostname externally, set `arvados_shell_hostname` like this:
+#      #arvados_shell_hostname: shellhost.arvados.example

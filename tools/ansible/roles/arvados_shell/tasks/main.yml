@@ -28,7 +28,7 @@
 
 - name: Query virtual machine record
   vars:
-    filters: [["hostname", "=", "{{ ansible_fqdn }}"]]
+    filters: [["hostname", "=", "{{ arvados_shell_hostname }}"]]
     order: [["created_at", "desc"], ["uuid", "desc"]]
   ansible.builtin.command:
     argv:
@@ -47,7 +47,7 @@
   when: "(arvados_virtual_machine_list.stdout|from_json)['items'] is falsy"
   vars:
     virtual_machine:
-      hostname: "{{ ansible_fqdn }}"
+      hostname: "{{ arvados_shell_hostname }}"
   ansible.builtin.command:
     argv:
       - /usr/local/bin/arv
