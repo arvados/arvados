@@ -26,9 +26,6 @@ setup(name='arvados-cwl-runner',
       entry_points={"console_scripts": ["cwl-runner=arvados_cwl:main",
                                         "arvados-cwl-runner=arvados_cwl:main"],
                     "cwltest.fsaccess": ["fsaccess=arvados_cwl.fsaccess:get_fsaccess"]},
-      # Note that arvados/build/run-build-packages.sh looks at this
-      # file to determine what version of cwltool and schema-salad to
-      # build.
       install_requires=[
           *arvados_version.iter_dependencies(version),
           'cwltool==3.1.20240508115724',
