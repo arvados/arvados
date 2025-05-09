@@ -3,6 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # install-arvados-cluster.yml - Ansible playbook to set up an Arvados cluster
+#
+# This playbook installs all services necessary for an Arvados cluster. It is
+# still in early development, so it does not support all configurations or
+# integrate with third-party services. Refer to
+# `files/example-cluster-inventory.yml` for information about how to write
+# configuration for this playbook.
 
 - name: Load Arvados configuration
   hosts: all
