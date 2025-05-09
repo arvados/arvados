@@ -73,18 +73,38 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
     }
 }
 
+const renderedItemStyles = {
+    root: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        '&hover': {
+            color: 'grey',
+        },
+    },
+    name: {
+        marginRight: '10px',
+    },
+};
+
 const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<DataTableFilterItem>) =>
-    <span>
-        {count ? `${name} (${count})` : name}
-        {initialState !== selected ? <>
-            *
-        </> : null}
-    </span>;
+    count ? <div style={renderedItemStyles.root}>
+                <span style={renderedItemStyles.name}>{name}</span>
+                <span>{`${count || '0'}`}</span>
+                {initialState !== selected ? <>
+                    *
+                </> : null}
+            </div>
+            :
+            <span>
+                {name}{initialState !== selected ? <>*</> : null}
+            </span>;
 
 const renderRadioItem = ({data: {name, count}}: TreeItem<DataTableFilterItem>) =>
-    <span>
-        {count ? `${name} (${count})` : name}
-    </span>;
+    <div style={renderedItemStyles.root}>
+        <span style={renderedItemStyles.name}>{name}</span>
+        <span>{`${count || '0'}`}</span>
+    </div>;
 
 const filterToTreeItem = (filters: DataTableFilters, columnFilterCount: ColumnFilterCount) =>
     (id: string): TreeItem<any> => {

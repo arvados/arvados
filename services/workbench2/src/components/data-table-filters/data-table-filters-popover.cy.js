@@ -26,7 +26,7 @@ describe("<DataTableFiltersPopover />", () => {
             if (idx === 0) {
                 cy.get('[data-cy=tree-li]').contains(key).should('contain', 'All')
             } else {
-                cy.get('[data-cy=tree-li]').contains(key).should('contain', columnFilterCount[key])
+                cy.get('[data-cy=tree-li]').contains(key).parent().should('contain', columnFilterCount[key])
             }
         })
         //"All" should be the only item selected
