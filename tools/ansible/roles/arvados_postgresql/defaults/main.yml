@@ -12,7 +12,7 @@ arvados_postgresql_config:
 # The path where arvados_postgresql_config will be written.
 # If not set, the role will write the file to `conf.d/arvados-ansible.conf`
 # in the same directory as the HBA file.
-arvados_postgreqsl_config_path: ""
+arvados_postgresql_config_path: ""
 # If not specified, the role tasks will query the path from the server.
 arvados_postgresql_hba_file: ""
 arvados_postgresql_hba_contype: host

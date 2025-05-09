@@ -41,7 +41,7 @@
     conf_dir: "{{ (arvados_postgresql_hba_file or pg_hba_query.query_result.0.hba_file)|dirname }}"
   ansible.builtin.template:
     src: arvados-ansible.conf.j2
-    dest: "{{ arvados_postgreqsl_config_path or (conf_dir, 'conf.d', 'arvados-ansible.conf')|path_join }}"
+    dest: "{{ arvados_postgresql_config_path or (conf_dir, 'conf.d', 'arvados-ansible.conf')|path_join }}"
     owner: root
     group: root
     mode: 0644
