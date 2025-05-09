@@ -1,0 +1,184 @@
+### Example inventory for install-arvados-cluster.yml ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This file illustrates host groups you can deploy with
+# install-arvados-cluster.yml and variables you can use to customize
+# the deployment. Copy this file somewhere else, edit it following the
+# comments, and run the installer like:
+#   $ ansible-playbook -Ki YOUR-INVENTORY.yml install-arvados-cluster.yml
+
+### Core cluster configuration settings ###
+all:
+  vars:
+    # To deploy a cluster, you must write a cluster configuration file and have
+    # a copy on the node where you run the Ansible installer. This file will be
+    # deployed to cluster hosts as needed and read by the Ansible installer for
+    # service configuration.
+    # Refer to <https://doc.arvados.org/admin/config.html> for details.
+    arvados_config_file: /PATH/TO/arvados/config.yml
+
+    # This is the cluster identifier (five alphanumerics) for the cluster
+    # configured in `arvados_config_file` that you want to deploy.
+    arvados_cluster_id: zzzzz
+    
+    # If specified, this file will be deployed to cluster hosts as
+    # /etc/arvados/ca-certificates.crt. Arvados services use this file as a
+    # source of trusted CA certificates.
+    #arvados_certificates_file: /PATH/TO/ca-certificates.crt
+
+    # `arvados_tls` defines the source of the TLS certificate for each Arvados
+    # service. Each key corresponds to a key in the `Services` section of your
+    # cluster configuration.
+    arvados_tls:
+      Controller:
+        cert: /PATH/TO/controller.pem
+        key: /PATH/TO/controller.key
+        # Set `remote` to `true` if the `cert` and `key` files already exist on
+        # the hosts running this service (for example, because they're already
+        # deployed by another service).
+        remote: false
+      # Settings from this `Default` section will be used for any service that
+      # does not have a specific configuration in `arvados_tls`. This is handy
+      # to use if you have a wildcard certificate that can be used by most/all
+      # of your cluster services.
+      #Default:
+      #  cert: /PATH/TO/arvados-cluster.pem
+      #  key: /PATH/TO/arvados-cluster.key
+      #  remote: false
+
+    # `arvados_nginx_internal_networks` is an array of netmasks that should be
+    # considered "internal" to the Arvados cluster. Several Arvados services
+    # use this information to coordinate inter-service communication.
+    arvados_nginx_internal_networks:
+      - 127.0.0.1/24
+      #- 10.0.0.0/8
+      #- 172.16.0.0/12
+      #- 192.168.0.0/16
+
+    # `arvados_nginx_server_names` defines additional server name(s) for
+    # individual services beyond what's in the service's `ExternalURL` in the
+    # cluster configuration. The service's nginx front-end will be configured
+    # to recognize all listed server names. Each key corresponds to a key in
+    # `Services` section of your cluster configuration.
+    #arvados_nginx_server_names:
+    #  Controller:
+    #    - arvados.example
+    #    - api.arvados.example
+
+    # `arvados_apt_periodic_default` defines the number of days that periodic
+    # apt tasks like unattended upgrades should run. Set this to `0` to disable
+    # periodic tasks.
+    #arvados_apt_periodic_default: 1
+    # If you need more advanced control, `arvados_apt_periodic` can set separate
+    # values for different periodic settings. Refer to
+    # `roles/distro_apt/defaults/main.yml`.
+
+
+### Host groups for core Arvados services ###
+# Most Arvados clusters will have at least one host in each of these groups.
+# It's normal to have the same host in multiple groups. For example, most
+# clusters have the same host(s) in the `arvados_api`, `arvados_controller`,
+# and `arvados_websocket` groups.
+
+# arvados_api host(s) run the Arvados Rails API server.
+arvados_api:
+  hosts:
+    api.arvados.example:
+  vars:
+    # If your cluster will use an external database, specify the database
+    # superuser credentials here. These will be used to set up a dedicated
+    # Arvados role and database.
+    #arvados_database_login_user: ""
+    #arvados_database_login_password: ""
+
+# arvados_controller host(s) run the Arvados API controller.
+arvados_controller:
+  hosts:
+    api.arvados.example:
+
+# arvados_websocket host(s) run the Arvados websockets server.
+arvados_websocket:
+  hosts:
+    api.arvados.example:
+
+# arvados_keepstore host(s) run the Arvados keepstore services.
+arvados_keepstore:
+  hosts:
+    keep0.arvados.example:
+    keep1.arvados.example:
+
+# arvados_keepproxy host(s) run the Arvados keepproxy service.
+arvados_keepproxy:
+  hosts:
+    keep.arvados.example:
+
+# arvados_keep_web host(s) run the Arvados keep-web/WebDAV service.
+arvados_keep_web:
+  hosts:
+    webdav.arvados.example:
+
+# arvados_keepstore host(s) serve the Arvados Workbench front-end.
+arvados_workbench:
+  hosts:
+    workbench.arvados.example:
+
+
+### Host groups for Arvados dispatchers ###
+# A complete Arvados cluster must deploy at least one dispatcher, but
+# different clusters run different dispatchers. Uncomment and define the
+# group(s) for the dispatcher(s) your cluster will run.
+
+# arvados_dispatch_cloud host(s) run the arvados-dispatch-cloud service
+# to create dedicated cloud nodes to configure containers. You must have
+# `Containers.CloudVMs` configured in your cluster configuration for this
+# to work.
+#arvados_dispatch_cloud:
+#  hosts:
+#    api.arvados.example:
+
+# arvados_dispatch_local host(s) run the crunch-dispatch-local service
+# to run containers on the local host. This is only intended for small
+# development clusters, not production use. These hosts will automatically
+# have compute requirements like Docker and arv-mount installed.
+#arvados_dispatch_local:
+#  hosts:
+#    compute0.arvados.example:
+#    compute1.arvados.example:
+
+
+### Host groups for Arvados supporting services ###
+# These groups deploy services that can make an Arvados cluster easier to
+# deploy or use, but they are not required for all clusters. Uncomment and
+# define the group(s) for the services you want to run.
+
+# arvados_postgresql host(s) will have the PostgreSQL server installed to host
+# the cluster database. The Ansible installer currently does minimal server
+# configuration and does not set up replication or other high-level features.
+# You do not need this group if your cluster uses an externally managed database
+# (e.g., Amazon RDS).
+#arvados_postgresql:
+#  hosts:
+#    api.arvados.example:
+#  vars:
+#    # `arvados_postgresql_hba_sources` is an array of IPv4 or v6 netmasks,
+#    # or special values recognized in `pg_hba.conf`. The Arvados database user
+#    # will be allowed to connect from these sources. This must be configured
+#    # so that all cluster services are allowed to connect to the database.
+#    arvados_postgresql_hba_sources:
+#      - samenet
+#    # `arvados_postgresql_hba_method` defines the PostgreSQL authentication
+#    # method that will be accepted for the Arvados database user. Set this
+#    # to `md5` if your distribution includes a version of PostgreSQL too old
+#    # to support `scram-sha-256`.
+#    arvados_postgresql_hba_method: scram-sha-256
+#    # If you need to do advanced database setup, refer to other settings in
+#    # `roles/arvados_postgresql/defaults/main.yml`.
+
+# arvados_shell host(s) have all client tools installed so cluster users can
+# access a complete client environment via SSH or webshell.
+# (Note the Ansible installer does not currently deploy webshell.)
+#arvados_shell:
+#  hosts:
+#    shell.arvados.example:
