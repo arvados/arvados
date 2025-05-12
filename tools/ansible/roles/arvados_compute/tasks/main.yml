@@ -11,6 +11,9 @@
 # the node to receive dispatched jobs. Test nodes want to be able to install
 # this software without that configuration.
 
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Install Arvados compute packages
   become: yes
   ansible.builtin.apt:

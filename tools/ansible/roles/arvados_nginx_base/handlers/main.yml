@@ -1,0 +1,9 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: restart nginx
+  become: yes
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: restarted

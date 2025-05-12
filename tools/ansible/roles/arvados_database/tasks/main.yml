@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install psycopg2
+  become: yes
+  ansible.builtin.apt:
+    name: python3-psycopg2
+
 - name: Create database user
   become: "{{ arvados_database_login_host is falsy }}"
   become_user: "{{ arvados_database_login_user }}"

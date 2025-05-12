@@ -17,6 +17,8 @@
       - "{{ ansible_distribution_release }}"
       - "{{ ansible_distribution_release }}-updates"
     components: "{{ distro_apt[ansible_distribution].components }}"
+  notify:
+    - apt update
 
 - name: Set up distribution's security apt repository
   become: yes
@@ -27,3 +29,14 @@
     suites:
       - "{{ ansible_distribution_release }}-security"
     components: "{{ distro_apt[ansible_distribution].components }}"
+  notify:
+    - apt update
+
+- name: Configure APT::Periodic tasks
+  become: yes
+  ansible.builtin.template:
+    src: 65arvados-ansible-unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/65arvados-ansible-unattended-upgrades
+    owner: root
+    group: root
+    mode: 0644

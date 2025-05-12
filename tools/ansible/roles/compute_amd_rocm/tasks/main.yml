@@ -26,6 +26,26 @@
     group: root
     mode: 0644
 
+- name: Install AMD GPU+ROCm apt repositories
+  ansible.builtin.deb822_repository:
+    name: amd_rocm
+    types: deb
+    uris:
+      - "https://repo.radeon.com/amdgpu/{{ arvados_compute_amd_rocm_version }}/ubuntu"
+      - "https://repo.radeon.com/rocm/apt/{{ arvados_compute_amd_rocm_version }}"
+    suites:
+      - "{{ arvados_compute_amd_rocm_suites_map[ansible_distribution_release] }}"
+    components:
+      - main
+    architectures:
+      - amd64
+    signed_by: https://repo.radeon.com/rocm/rocm.gpg.key
+  notify:
+    - apt update
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Install AMD ROCm build prerequisites
   ansible.builtin.apt:
     name:
@@ -41,25 +61,8 @@
     name:
       - "linux-modules-extra-{{ ansible_kernel }}"
 
-- name: Install AMD GPU+ROCm apt repositories
-  ansible.builtin.deb822_repository:
-    name: amd_rocm
-    types: deb
-    uris:
-      - "https://repo.radeon.com/amdgpu/{{ arvados_compute_amd_rocm_version }}/ubuntu"
-      - "https://repo.radeon.com/rocm/apt/{{ arvados_compute_amd_rocm_version }}"
-    suites:
-      - "{{ arvados_compute_amd_rocm_suites_map[ansible_distribution_release] }}"
-    components:
-      - main
-    architectures:
-      - amd64
-    signed_by: https://repo.radeon.com/rocm/rocm.gpg.key
-  register: amd_rocm_repo
-
 - name: Install AMD ROCm packages
   ansible.builtin.apt:
-    update_cache: "{{ amd_rocm_repo.changed }}"
     name:
       - amdgpu-dkms
       - rocm

@@ -1,0 +1,44 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: "Install nginx {{ arvados_nginx_service_key }} certificates"
+  vars:
+    tls_source: "{{ arvados_tls.get(arvados_nginx_service_key, arvados_tls.Default) }}"
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ tls_source[item] }}"
+    dest: "/etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.{{ item }}"
+    remote_src: "{{ tls_source.remote|default(false)|bool }}"
+    owner: root
+    group: www-data
+    mode: 0640
+  loop:
+    - cert
+    - key
+  notify:
+    - restart nginx
+
+- name: "Set up nginx {{ arvados_nginx_service_key }} site"
+  become: yes
+  vars:
+    arvados_nginx_site_map:
+      Workbench2: workbench
+  ansible.builtin.template:
+    src: "arvados-nginx-{{ arvados_nginx_site_map.get(arvados_nginx_service_key, 'site') }}.conf.j2"
+    dest: "/etc/nginx/sites-available/arvados-{{ arvados_nginx_service_key|lower }}"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart nginx
+  register: arvados_nginx_site
+
+- name: "Enable nginx {{ arvados_nginx_service_key }} site"
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ arvados_nginx_site.dest }}"
+    dest: "{{ arvados_nginx_site.dest|replace('/sites-available/', '/sites-enabled/') }}"
+  notify:
+    - restart nginx

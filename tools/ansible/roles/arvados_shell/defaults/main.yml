@@ -1,0 +1,11 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This value will be used as the `hostname` attribute for the shell node's
+# corresponding Arvados record.
+arvados_shell_hostname: "{{ inventory_hostname }}"
+
+# Set this false if you don't want to run the arvados-login-sync service.
+# It will still be installed but disabled.
+arvados_shell_login_sync: true

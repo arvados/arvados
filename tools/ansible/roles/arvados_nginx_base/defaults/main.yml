@@ -1,0 +1,9 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# A hash that identifies network clients that should be considered
+# "internal" to Arvados. Each key is a CIDR netmask. The value is a
+# boolean. If it's the literal `false`, the netmask will not be considered
+# internal. *Any* other value will be considered internal.
+arvados_nginx_internal_networks: {}

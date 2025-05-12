@@ -1,0 +1,19 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install arvados-controller
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - arvados-controller
+
+- name: Start and enable arvados-controller.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: arvados-controller.service
+    state: "{{ 'restarted' if arvados_config_changed else 'started' }}"
+    enabled: true

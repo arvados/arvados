@@ -40,7 +40,7 @@
       ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
       loop:
         - update
-        - install acl gnupg python3-apt python3-debian python3-psycopg2 xz-utils
+        - install acl gnupg python3-apt python3-debian xz-utils
     - name: Install all required development packages
       become: yes
       ansible.builtin.apt:
@@ -145,8 +145,7 @@
     - ansible.builtin.include_role:
         name: arvados_postgresql
       vars:
-        arvados_postgresql_hba_users: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
-        arvados_postgresql_hba_databases: "{{ arvados_cluster.PostgreSQL.Connection.dbname }}"
+        arvados_postgresql_config: {}
         arvados_postgresql_hba_sources:
           - "127.0.0.1/24"
           - "::1/128"
@@ -208,9 +207,7 @@
     - ansible.builtin.include_role:
         name: arvados_database
       vars:
-        arvados_database_name: "{{ arvados_cluster.PostgreSQL.Connection.dbname }}"
-        arvados_database_user_name: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
-        arvados_database_user_password: "{{ arvados_cluster.PostgreSQL.Connection.password }}"
+        arvados_database_login_host: ""
         # Let the test user drop and recreate the database wholesale
         arvados_database_role_attr_flags: CREATEDB
 

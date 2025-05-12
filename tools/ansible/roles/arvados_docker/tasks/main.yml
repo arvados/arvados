@@ -21,11 +21,14 @@
     suites: "{{ ansible_distribution_release }}"
     components: stable
     signed_by: "{{ docker_apt_url }}/gpg"
-  register: docker_apt_task
+  notify:
+    - apt update
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
 
 - name: Install Docker
   become: yes
   ansible.builtin.apt:
-    update_cache: "{{ docker_apt_task.changed }}"
     name: docker-ce
     install_recommends: false

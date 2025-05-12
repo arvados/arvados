@@ -1,0 +1,41 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install nginx
+  become: yes
+  ansible.builtin.apt:
+    name: nginx
+
+- name: Disable nginx default site
+  become: yes
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: Set up nginx base configuration
+  become: yes
+  ansible.builtin.template:
+    src: arvados-nginx-base.conf.j2
+    dest: /etc/nginx/conf.d/arvados-ansible.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart nginx
+
+- name: Create Arvados nginx TLS directory
+  become: yes
+  ansible.builtin.file:
+    state: directory
+    path: /etc/nginx/arvados-certs
+    owner: root
+    group: www-data
+    mode: 0750
+
+- name: Enable nginx service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: nginx
+    enabled: true
+    state: started

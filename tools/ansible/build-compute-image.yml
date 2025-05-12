@@ -68,9 +68,7 @@
       loop:
         - update
         - install gnupg python3-apt python3-debian xz-utils
-    - include_role:
-        name: distro_apt
-    - include_role:
+    - ansible.builtin.include_role:
         name: arvados_apt
     - name: List linux-image packages pre-upgrade
       ansible.builtin.shell:
@@ -78,10 +76,11 @@
           dpkg-query --list "linux-image-[1-9]*-$(dpkg --print-architecture)" |
           awk '($1 ~ /^[irp][HUFWti]$/) { print $2; }'
       register: linux_image_preupgrade
+    - name: apt update if needed
+      ansible.builtin.meta: flush_handlers
     - name: Upgrade packages
       become: yes
       ansible.builtin.apt:
-        update_cache: true
         upgrade: true
     - name: Remove unwanted packages
       become: yes
@@ -110,11 +109,6 @@
         state: absent
         purge: true
         name: "{{ linux_image_preupgrade.stdout_lines }}"
-  handlers:
-    - name: apt update
-      ansible.builtin.debug:
-        msg: Skipping apt update handler before an apt upgrade
-        verbosity: 1
 
 - name: Install compute node software
   hosts: default

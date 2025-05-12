@@ -1,0 +1,40 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install arvados-login-sync
+  become: yes
+  community.general.gem:
+    name: arvados-login-sync
+    user_install: no
+    version: "{{ arvados_pin_version or omit }}"
+
+- name: Write arvados-login-sync credentials
+  become: yes
+  ansible.builtin.template:
+    src: login-sync.env.j2
+    dest: /etc/arvados/login-sync.env
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Write arvados-login-sync service and timer definitions
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - arvados-login-sync.service
+    - arvados-login-sync.timer
+  register: arvados_login_sync_systemd
+
+- name: Configure arvados-login-sync.timer
+  become: yes
+  ansible.builtin.systemd_service:
+    name: arvados-login-sync.timer
+    daemon_reload: "{{ arvados_login_sync_systemd.changed }}"
+    enabled: "{{ arvados_shell_login_sync|bool }}"
+    state: "{{ 'stopped' if not arvados_shell_login_sync|bool else 'restarted' if arvados_login_sync_systemd.changed else 'started' }}"
