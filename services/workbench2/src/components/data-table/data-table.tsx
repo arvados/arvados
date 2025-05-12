@@ -23,15 +23,25 @@ import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { DataTableMultiselectPopover, DataTableMultiselectOption } from "components/data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty, createTree } from "models/tree";
-import { IconType, PendingIcon } from "components/icon/icon";
+import { IconType } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { LoadingIndicator } from "components/loading-indicator/loading-indicator";
 
 export enum DataTableFetchMode {
     PAGINATED,
     INFINITE,
 }
+
+const LOADING_PLACEHOLDER_COUNT = 3;
+
+enum DataTableContentType {
+    ROWS,
+    NOTFOUND,
+    LOADING,
+    EMPTY,
+};
 
 export interface DataTableDataProps<I> {
     items: I[];
@@ -74,7 +84,8 @@ type CssRules =
     | "hovered"
     | "arrow"
     | "arrowButton"
-    | "tableCellWorkflows";
+    | "tableCellWorkflows"
+    | "loadingRow";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -156,6 +167,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     arrowButton: {
         color: theme.palette.text.primary,
+    },
+    loadingRow: {
+        height: "49px",
     },
 });
 
@@ -357,9 +371,30 @@ export const DataTable = withStyles(styles)(
             }
         };
 
-        render() {
-            const { items, classes, columns, isNotFound } = this.props;
+        /**
+         * Helper to contain display state logic to avoid recalculating in multiple places
+         * @param items Data table items array
+         * @returns An enum value representing what should be displayed
+         */
+        getDataTableContentType = (items: T[]): DataTableContentType => {
+            const { working, isNotFound } = this.props;
             const { isLoaded } = this.state;
+
+            if (isLoaded && !isNotFound && !!items.length) {
+                return DataTableContentType.ROWS;
+            } else if (isNotFound && isLoaded) {
+                return DataTableContentType.NOTFOUND;
+            } else if (isLoaded === false || working === true) {
+                return DataTableContentType.LOADING;
+            } else {
+                // isLoaded && !working && !isNotFound
+                return DataTableContentType.EMPTY;
+            }
+        };
+
+        render() {
+            const { items, classes, columns } = this.props;
+            const dataTableContentType = this.getDataTableContentType(items);
             if (columns.length && columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
@@ -369,34 +404,44 @@ export const DataTable = withStyles(styles)(
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
-                            <TableBody className={classes.tableBody}>{(isLoaded && !isNotFound) && items.map(this.renderBodyRow)}</TableBody>
+                            <TableBody className={classes.tableBody}>
+                                {dataTableContentType === DataTableContentType.ROWS && items.map(this.renderBodyRow)}
+                                {dataTableContentType === DataTableContentType.LOADING && this.renderLoadingPlaceholder()}
+                            </TableBody>
                         </Table>
-                        {(!isLoaded || isNotFound || items.length === 0) && this.renderNoItemsPlaceholder(this.props.columns)}
+                        {this.renderNoItemsPlaceholder(dataTableContentType, this.props.columns)}
                     </div>
                 </div>
             );
         }
 
-        renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
-            const { isLoaded } = this.state;
-            const { working, isNotFound } = this.props;
+        renderLoadingPlaceholder = () => {
+            return <>
+                {(new Array(LOADING_PLACEHOLDER_COUNT).fill(0)).map(() => {
+                    return <TableRow hover className={this.props.classes.loadingRow}>
+                        {this.mapVisibleColumns((column, colIndex) => (
+                            <TableCell
+                                key={column.key || colIndex}
+                                data-cy={column.key || colIndex}
+                                >
+                                <LoadingIndicator />
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                })}
+            </>;
+        };
+
+        renderNoItemsPlaceholder = (dataTableContentType: DataTableContentType, columns: DataColumns<T, any>) => {
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            if (isNotFound && isLoaded) {
+            if (dataTableContentType === DataTableContentType.NOTFOUND) {
                 return (
                     <DataTableDefaultView
                         icon={this.props.defaultViewIcon}
                         messages={["No items found"]}
                     />
                 );
-            } else
-            if (isLoaded === false || working === true) {
-                return (
-                    <DataTableDefaultView
-                        icon={PendingIcon}
-                        messages={["Loading data, please wait"]}
-                    />
-                );
-            } else {
+            } else if (dataTableContentType === DataTableContentType.EMPTY) {
                 // isLoaded && !working && !isNotFound
                 return (
                     <DataTableDefaultView
@@ -406,6 +451,8 @@ export const DataTable = withStyles(styles)(
                         filtersApplied={dirty}
                     />
                 );
+            } else {
+                return <></>;
             }
         };
 
