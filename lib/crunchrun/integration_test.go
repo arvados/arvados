@@ -312,35 +312,10 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	c.Assert(err, IsNil)
 	c.Logf("Finished container request: %#v", s.cr)
 
-	var log arvados.Collection
-	err = s.client.RequestAndDecode(&log, "GET", "arvados/v1/collections/"+s.cr.LogUUID, nil, nil)
-	c.Assert(err, IsNil)
-	fs, err := log.FileSystem(s.client, s.kc)
-	c.Assert(err, IsNil)
-	if d, err := fs.Open("/"); c.Check(err, IsNil) {
-		fis, err := d.Readdir(-1)
-		c.Assert(err, IsNil)
-		for _, fi := range fis {
-			if fi.IsDir() {
-				continue
-			}
-			f, err := fs.Open(fi.Name())
-			c.Assert(err, IsNil)
-			buf, err := ioutil.ReadAll(f)
-			c.Assert(err, IsNil)
-			c.Logf("\n===== %s =====\n%s", fi.Name(), buf)
-			s.logFiles[fi.Name()] = string(buf)
-		}
-	}
-	s.logCollection = log
-
-	var output arvados.Collection
-	err = s.client.RequestAndDecode(&output, "GET", "arvados/v1/collections/"+s.cr.OutputUUID, nil, nil)
-	c.Assert(err, IsNil)
-	s.outputCollection = output
+	s.loadLogAndOutputCollections(c)
 
 	if len(s.cr.OutputGlob) == 0 {
-		fs, err = output.FileSystem(s.client, s.kc)
+		fs, err := s.outputCollection.FileSystem(s.client, s.kc)
 		c.Assert(err, IsNil)
 		if f, err := fs.Open("inputfile"); c.Check(err, IsNil) {
 			defer f.Close()
@@ -370,4 +345,89 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 			}
 		}
 	}
+}
+
+func (s *integrationSuite) loadLogAndOutputCollections(c *C) {
+	var log arvados.Collection
+	err := s.client.RequestAndDecode(&log, "GET", "arvados/v1/collections/"+s.cr.LogUUID, nil, nil)
+	c.Assert(err, IsNil)
+	fs, err := log.FileSystem(s.client, s.kc)
+	c.Assert(err, IsNil)
+	if d, err := fs.Open("/"); c.Check(err, IsNil) {
+		fis, err := d.Readdir(-1)
+		c.Assert(err, IsNil)
+		for _, fi := range fis {
+			if fi.IsDir() {
+				continue
+			}
+			f, err := fs.Open(fi.Name())
+			c.Assert(err, IsNil)
+			buf, err := ioutil.ReadAll(f)
+			c.Assert(err, IsNil)
+			c.Logf("\n===== %s =====\n%s", fi.Name(), buf)
+			s.logFiles[fi.Name()] = string(buf)
+		}
+	}
+	s.logCollection = log
+
+	var output arvados.Collection
+	err = s.client.RequestAndDecode(&output, "GET", "arvados/v1/collections/"+s.cr.OutputUUID, nil, nil)
+	c.Assert(err, IsNil)
+	s.outputCollection = output
+}
+
+func (s *integrationSuite) TestRunContainer_CopyManyFiles(c *C) {
+	biginput := arvados.Collection{}
+	fs, err := biginput.FileSystem(s.client, s.kc)
+	c.Assert(err, IsNil)
+	for i := 0; i < 1000; i++ {
+		f, err := fs.OpenFile(fmt.Sprintf("file%d", i), os.O_CREATE|os.O_WRONLY, 0755)
+		c.Assert(err, IsNil)
+		_, err = f.Write([]byte{'a'})
+		c.Assert(err, IsNil)
+		err = f.Close()
+		c.Assert(err, IsNil)
+	}
+	biginput.ManifestText, err = fs.MarshalManifest(".")
+	c.Assert(err, IsNil)
+	err = s.client.RequestAndDecode(&biginput, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"ensure_unique_name": true,
+		"collection": map[string]interface{}{
+			"manifest_text": biginput.ManifestText,
+		},
+	})
+	c.Assert(err, IsNil)
+	s.cr.Mounts["/mnt/out/in"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: biginput.PortableDataHash,
+	}
+	s.testRunContainer_ShellCommand(c, "set -e; cd /mnt/out/in; ls | while read f; do cp $f ../out-$f; done; cd /mnt/out; ls -R | wc -l")
+	s.loadLogAndOutputCollections(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*\Qcopying "in" from `+biginput.PortableDataHash+`/.\E\n.*`)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*\Qcopying "out-file999" (1 bytes)\E\n.*`)
+	c.Check(s.logFiles["stdout.txt"], Matches, `.* 2004\n`)
+}
+
+func (s *integrationSuite) testRunContainer_ShellCommand(c *C, cmdline string) {
+	if err := exec.Command("which", s.engine).Run(); err != nil {
+		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
+	}
+	s.cr.Command = []string{"sh", "-c", cmdline}
+	s.setup(c)
+	args := []string{
+		"-runtime-engine=" + s.engine,
+		"-enable-memory-limit=false",
+	}
+	if s.stdin.Len() > 0 {
+		args = append(args, "-stdin-config=true")
+	}
+	args = append(args, s.args...)
+	args = append(args, s.cr.ContainerUUID)
+	code := command{}.RunCommand("crunch-run", args, &s.stdin, io.MultiWriter(&s.stdout, os.Stderr), io.MultiWriter(&s.stderr, os.Stderr))
+	c.Logf("\n===== stdout =====\n%s", s.stdout.String())
+	c.Logf("\n===== stderr =====\n%s", s.stderr.String())
+	c.Check(code, Equals, 0)
+	err := s.client.RequestAndDecode(&s.cr, "GET", "arvados/v1/container_requests/"+s.cr.UUID, nil, nil)
+	c.Assert(err, IsNil)
+	c.Logf("Finished container request: %#v", s.cr)
 }
