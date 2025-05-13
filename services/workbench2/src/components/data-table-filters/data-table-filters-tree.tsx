@@ -30,6 +30,7 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
         const { filters, columnFilterCount } = this.props;
         const hasSubfilters = countNodes(filters) !== countChildren('')(filters);
         return <TreeComponent
+            key={JSON.stringify(columnFilterCount)}
             levelIndentation={hasSubfilters ? 20 : 0}
             itemRightPadding={20}
             items={filtersToTree(filters, columnFilterCount)}
@@ -90,7 +91,7 @@ const renderedItemStyles = {
 const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<DataTableFilterItem>) =>
     count ? <div style={renderedItemStyles.root}>
                 <span style={renderedItemStyles.name}>{name}</span>
-                <span>{`${count || '0'}`}</span>
+                <span>{`${count.toLocaleString() || '0'}`}</span>
                 {initialState !== selected ? <>
                     *
                 </> : null}
@@ -103,7 +104,7 @@ const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<Data
 const renderRadioItem = ({data: {name, count}}: TreeItem<DataTableFilterItem>) =>
     <div style={renderedItemStyles.root}>
         <span style={renderedItemStyles.name}>{name}</span>
-        <span>{`${count || '0'}`}</span>
+        <span>{`${count?.toLocaleString() || '0'}`}</span>
     </div>;
 
 const filterToTreeItem = (filters: DataTableFilters, columnFilterCount: ColumnFilterCount) =>
