@@ -39,6 +39,7 @@ import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subproces
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
 import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
 import { WORKFLOW_PROCESSES_PANEL_ID } from "store/workflow-panel/workflow-panel-actions";
+import { SHARED_WITH_ME_PANEL_ID } from "store/shared-with-me-panel/shared-with-me-panel-actions";
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
 import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
@@ -606,7 +607,7 @@ const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => 
 );
 
 const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any, any>) => {
-    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID, WORKFLOW_PROCESSES_PANEL_ID, ALL_PROCESSES_PANEL_ID];
+    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID, WORKFLOW_PROCESSES_PANEL_ID, ALL_PROCESSES_PANEL_ID, SHARED_WITH_ME_PANEL_ID ];
     const goodColumnNames = [ FilteredColumnNames.STATUS ];
     return columns.reduce((acc: string[], curr) => {
         if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name as FilteredColumnNames)) {

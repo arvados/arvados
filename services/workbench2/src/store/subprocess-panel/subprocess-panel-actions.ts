@@ -15,6 +15,7 @@ import { ContainerRequestResource } from 'models/container-request';
 import { WorkflowResource } from 'models/workflow';
 import { Resource, ResourceKind } from 'models/resource';
 import { ALL_PROCESSES_PANEL_ID } from 'store/all-processes-panel/all-processes-panel-action';
+import { SHARED_WITH_ME_PANEL_ID } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
 
 export const SUBPROCESS_PANEL_ID = "subprocessPanel";
 export const SUBPROCESS_ATTRIBUTES_DIALOG = 'subprocessAttributesDialog';
@@ -100,6 +101,15 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
             });
         }
 
+        const requestGroupsServiceCount = async (fb: FilterBuilder) => {
+            return await services.groupsService.contents('', {
+                limit: 0,
+                count: 'exact',
+                filters: fb.getFilters(),
+                excludeHomeProject: true,
+            });
+        }
+
         let baseFilter: string = "";
         if (isContainerRequest(parentResource) && parentResource.containerUuid) {
             // Prevent CR without containerUuid from generating baseFilter
@@ -109,9 +119,17 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
             baseFilter = new FilterBuilder().addEqual('properties.template_uuid', parentResource.uuid).getFilters();
         } else if (parentResource && !isContainerRequest(parentResource)) {
             baseFilter = new FilterBuilder().addEqual('owner_uuid', parentResource.uuid).getFilters();
+        } else if (!isContainerRequest(parentResource) && isSharedWithMePanel(parentResourceUuid)) {
+            const { auth } = getState();
+            baseFilter = new FilterBuilder()
+                .addIsA('uuid', 'arvados#containerRequest')
+                .addEqual('requesting_container_uuid', null)
+                .addDistinct('uuid', `${auth.config.uuidPrefix}-j7d0g-publicfavorites`)
+                .addDistinct('owner_uuid', `${auth.user?.uuid}`)
+                .getFilters();
         }
 
-        if ((parentResource && baseFilter) || isAllProcessesPanel(parentResourceUuid)) {
+        if ((parentResource && baseFilter) || (isSharedWithMePanel(parentResourceUuid) && baseFilter) || isAllProcessesPanel(parentResourceUuid)) {
             // Add type filters from consumers that want to sync progress stats with filters
             if (typeFilter) {
                 baseFilter = joinFilters(baseFilter, typeFilter);
@@ -139,7 +157,8 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
                         // For each status pair, request count and return bar status and count
                         const { barStatus, processStatus } = statusPair;
                         const filter = buildProcessStatusFilters(new FilterBuilder(baseFilter), processStatus);
-                        const count = (await requestContainerStatusCount(filter))?.itemsAvailable;
+                        const requestFunc = isSharedWithMePanel(parentResourceUuid) ? requestGroupsServiceCount : requestContainerStatusCount;
+                        const count = (await requestFunc(filter))?.itemsAvailable;
                         if (count === undefined) return Promise.reject();
                         return {status: barStatus, count};
                     });
@@ -175,3 +194,4 @@ async function resolvePromisesSequentially<T>(promises: Promise<T>[]) {
 }
 
 const isAllProcessesPanel = (parentResourceUuid: string) => parentResourceUuid === ALL_PROCESSES_PANEL_ID;
+const isSharedWithMePanel = (parentResourceUuid: string) => parentResourceUuid === SHARED_WITH_ME_PANEL_ID;
