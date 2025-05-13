@@ -14,6 +14,7 @@ import { getResource } from 'store/resources/resources';
 import { ContainerRequestResource } from 'models/container-request';
 import { WorkflowResource } from 'models/workflow';
 import { Resource, ResourceKind } from 'models/resource';
+import { ALL_PROCESSES_PANEL_ID } from 'store/all-processes-panel/all-processes-panel-action';
 
 export const SUBPROCESS_PANEL_ID = "subprocessPanel";
 export const SUBPROCESS_ATTRIBUTES_DIALOG = 'subprocessAttributesDialog';
@@ -110,7 +111,7 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
             baseFilter = new FilterBuilder().addEqual('owner_uuid', parentResource.uuid).getFilters();
         }
 
-        if (parentResource && baseFilter) {
+        if ((parentResource && baseFilter) || isAllProcessesPanel(parentResourceUuid)) {
             // Add type filters from consumers that want to sync progress stats with filters
             if (typeFilter) {
                 baseFilter = joinFilters(baseFilter, typeFilter);
@@ -172,3 +173,5 @@ async function resolvePromisesSequentially<T>(promises: Promise<T>[]) {
 
     return results;
 }
+
+const isAllProcessesPanel = (parentResourceUuid: string) => parentResourceUuid === ALL_PROCESSES_PANEL_ID;

@@ -37,11 +37,12 @@ import { Process } from "store/processes/process";
 import { ProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-actions";
 import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
+import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
+import { WORKFLOW_PROCESSES_PANEL_ID } from "store/workflow-panel/workflow-panel-actions";
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
 import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 import { WorkflowResource } from "models/workflow";
-import { WORKFLOW_PROCESSES_PANEL_ID } from "store/workflow-panel/workflow-panel-actions";
 
 type CssRules =
     | 'titleWrapper'
@@ -277,24 +278,20 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
-            // parentResource is only truthy when filterCounts needs to be fetched
-            // i.e. when item counts need to be displayed
-            if (this.props.parentResource) {
+            if (prevProps.items !== this.props.items && getFilterCountColumns(this.props.id, this.props.columns).length) {
                 if (!Object.keys(this.state.columnFilterCounts).length || this.state.typeFilter !== prevState.typeFilter) {
                     this.loadFilterCounts();
                 }
-                if (prevProps.items !== this.props.items) {
-                    this.setState({
-                        typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, FilteredColumnNames.TYPE ))
-                    });
-                }
+                this.setState({
+                    typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, FilteredColumnNames.TYPE ))
+                });
             }
         }
 
         loadFilterCounts = () => {
             const { id, columns } = this.props;
             const filterCountColumns = getFilterCountColumns(id, columns);
-            const parentUuid = getParentUuid(this.props.parentResource);
+            const parentUuid = getParentUuid(this.props.parentResource) || id;
             filterCountColumns.forEach(columnName => {
                 // more columns to fetch for can be added later
                 if(columnName === FilteredColumnNames.STATUS) {
@@ -609,7 +606,7 @@ const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => 
 );
 
 const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any, any>) => {
-    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID, WORKFLOW_PROCESSES_PANEL_ID ];
+    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID, WORKFLOW_PROCESSES_PANEL_ID, ALL_PROCESSES_PANEL_ID];
     const goodColumnNames = [ FilteredColumnNames.STATUS ];
     return columns.reduce((acc: string[], curr) => {
         if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name as FilteredColumnNames)) {
