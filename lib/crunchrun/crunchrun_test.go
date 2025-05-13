@@ -609,7 +609,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	c.Check(api.Content[0]["ensure_unique_name"], Equals, true)
 	c.Check(api.Content[0]["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Check(api.Content[0]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
-	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
+	c.Check(*cr.logPDHFinal, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
 func (s *TestSuite) TestUpdateContainerRunning(c *C) {
@@ -619,7 +619,7 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
-	err = cr.UpdateContainerRunning("")
+	err = cr.UpdateContainerRunning()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
@@ -632,8 +632,8 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
-	cr.LogsPDH = new(string)
-	*cr.LogsPDH = "d3a229d2fe3690c2c3e75a71a153c6a3+60"
+	cr.logPDHFinal = new(string)
+	*cr.logPDHFinal = "d3a229d2fe3690c2c3e75a71a153c6a3+60"
 
 	cr.ExitCode = new(int)
 	*cr.ExitCode = 42
@@ -642,7 +642,7 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	err = cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.logPDHFinal)
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["exit_code"], Equals, *cr.ExitCode)
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 }
