@@ -167,5 +167,5 @@ interface ThreeDotsSuspenseProps {
 export const ThreeDotsSuspense: React.FC<ThreeDotsSuspenseProps> = ({ el, isLoaded }) => {
     return isLoaded
         ? <>{el}</>
-        : <ThreeDots height={50} width={50} color="#999" />;
+        : <ThreeDots height={10} width={60} color="#999" />;
 };
