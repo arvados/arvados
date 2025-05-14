@@ -101,7 +101,8 @@ setup(name='arvados-python-client',
           'bin/arv-normalize',
           'bin/arv-put',
           'bin/arv-ws',
-          'bin/arv-export'
+          'bin/arv-export',
+          'bin/arv-import'
       ],
       data_files=[
           ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
