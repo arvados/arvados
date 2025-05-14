@@ -31,18 +31,18 @@ export const loadSubprocessPanel = () =>
  */
 type ProcessStatusCount = {
     status: keyof ProcessStatusCounts;
-    count: number;
+    count: string | null;
 };
 
 export type ProcessStatusCounts = {
-    [ProcessStatusFilter.ALL]: number;
-    [ProcessStatusFilter.COMPLETED]: number;
-    [ProcessStatusFilter.RUNNING]: number;
-    [ProcessStatusFilter.FAILED]: number;
-    [ProcessStatusFilter.QUEUED]: number;
-    [ProcessStatusFilter.ONHOLD]: number;
-    [ProcessStatusFilter.CANCELLED]: number;
-    [ProcessStatusFilter.DRAFT]: number;
+    [ProcessStatusFilter.ALL]: string | null;
+    [ProcessStatusFilter.COMPLETED]: string | null;
+    [ProcessStatusFilter.RUNNING]: string | null;
+    [ProcessStatusFilter.FAILED]: string | null;
+    [ProcessStatusFilter.QUEUED]: string | null;
+    [ProcessStatusFilter.ONHOLD]: string | null;
+    [ProcessStatusFilter.CANCELLED]: string | null;
+    [ProcessStatusFilter.DRAFT]: string | null;
 };
 
 /**
@@ -138,14 +138,14 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
             try {
                 // Create return object
                 let result: ProcessStatusCounts = {
-                    [ProcessStatusFilter.ALL]: 0,
-                    [ProcessStatusFilter.COMPLETED]: 0,
-                    [ProcessStatusFilter.RUNNING]: 0,
-                    [ProcessStatusFilter.FAILED]: 0,
-                    [ProcessStatusFilter.QUEUED]: 0,
-                    [ProcessStatusFilter.ONHOLD]: 0,
-                    [ProcessStatusFilter.CANCELLED]: 0,
-                    [ProcessStatusFilter.DRAFT]: 0,
+                    [ProcessStatusFilter.ALL]: null,
+                    [ProcessStatusFilter.COMPLETED]: null,
+                    [ProcessStatusFilter.RUNNING]: null,
+                    [ProcessStatusFilter.FAILED]: null,
+                    [ProcessStatusFilter.QUEUED]: null,
+                    [ProcessStatusFilter.ONHOLD]: null,
+                    [ProcessStatusFilter.CANCELLED]: null,
+                    [ProcessStatusFilter.DRAFT]: null,
                 }
 
                 // Create array of promises that returns the status associated with the item count
@@ -158,7 +158,7 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
                         const { barStatus, processStatus } = statusPair;
                         const filter = buildProcessStatusFilters(new FilterBuilder(baseFilter), processStatus);
                         const requestFunc = isSharedWithMePanel(parentResourceUuid) ? requestGroupsServiceCount : requestContainerStatusCount;
-                        const count = (await requestFunc(filter))?.itemsAvailable;
+                        const count = (await requestFunc(filter))?.itemsAvailable?.toLocaleString();
                         if (count === undefined) return Promise.reject();
                         return {status: barStatus, count};
                     });
@@ -166,7 +166,7 @@ export const fetchProcessStatusCounts = (parentResourceUuid: string, typeFilter?
                 // Simultaneously requests each status count and apply them to the return object
                 const results = await resolvePromisesSequentially(promises);
                 results.forEach((singleResult) => {
-                    result[singleResult.status] += singleResult.count;
+                    result[singleResult.status] = singleResult.count;
                 });
 
                 return result;

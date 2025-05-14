@@ -11,7 +11,7 @@ import { countNodes, countChildren } from 'models/tree';
 import { DataTableFilterItem, DataTableFilters } from './data-table-filters';
 import { ThreeDotsSuspense } from "components/loading/three-dots";
 
-export type ColumnFilterCount = Record<string, number>;
+export type ColumnFilterCount = Record<string, string>;
 export type ColumnFilterCounts = Record<string, ColumnFilterCount>;
 
 export interface DataTableFilterProps {
@@ -92,7 +92,7 @@ const renderedItemStyles = {
 const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<DataTableFilterItem>) =>
     count ? <div style={renderedItemStyles.root}>
                 <span style={renderedItemStyles.name}>{name}</span>
-                <span>{`${count.toLocaleString() || '0'}`}</span>
+                <ThreeDotsSuspense el={<span>{count}</span>} isLoaded={!!count} />
                 {initialState !== selected ? <>
                     *
                 </> : null}
@@ -105,7 +105,7 @@ const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<Data
 const renderRadioItem = ({data: {name, count}}: TreeItem<DataTableFilterItem>) =>
     <div style={renderedItemStyles.root}>
         <span style={renderedItemStyles.name}>{name}</span>
-        <ThreeDotsSuspense el={<span>{count?.toLocaleString()}</span>} isLoaded={!!count} />
+        <ThreeDotsSuspense el={<span>{count}</span>} isLoaded={!!count} />
     </div>;
 
 const filterToTreeItem = (filters: DataTableFilters, columnFilterCount: ColumnFilterCount) =>
