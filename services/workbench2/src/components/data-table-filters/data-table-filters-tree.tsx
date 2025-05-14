@@ -9,6 +9,7 @@ import { noop, map } from "lodash/fp";
 import { toggleNodeCollapse } from 'models/tree';
 import { countNodes, countChildren } from 'models/tree';
 import { DataTableFilterItem, DataTableFilters } from './data-table-filters';
+import { ThreeDotsSuspense } from "components/loading/three-dots";
 
 export type ColumnFilterCount = Record<string, number>;
 export type ColumnFilterCounts = Record<string, ColumnFilterCount>;
@@ -104,7 +105,7 @@ const renderItem = ({data: {name, count}, initialState, selected}: TreeItem<Data
 const renderRadioItem = ({data: {name, count}}: TreeItem<DataTableFilterItem>) =>
     <div style={renderedItemStyles.root}>
         <span style={renderedItemStyles.name}>{name}</span>
-        <span>{`${count?.toLocaleString() || '0'}`}</span>
+        <ThreeDotsSuspense el={<span>{count?.toLocaleString()}</span>} isLoaded={!!count} />
     </div>;
 
 const filterToTreeItem = (filters: DataTableFilters, columnFilterCount: ColumnFilterCount) =>

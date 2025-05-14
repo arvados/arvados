@@ -158,3 +158,14 @@ export const ThreeDots: FunctionComponent<ThreeDotsProps> = ({
         </svg>
     </SvgWrapper>
 );
+
+interface ThreeDotsSuspenseProps {
+    el: React.ReactNode;
+    isLoaded: boolean;
+}
+
+export const ThreeDotsSuspense: React.FC<ThreeDotsSuspenseProps> = ({ el, isLoaded }) => {
+    return isLoaded
+        ? <>{el}</>
+        : <ThreeDots height={50} width={50} color="#999" />;
+};
