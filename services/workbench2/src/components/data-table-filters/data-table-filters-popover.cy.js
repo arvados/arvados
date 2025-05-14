@@ -12,7 +12,7 @@ describe("<DataTableFiltersPopover />", () => {
     it("renders filters according to their state", () => {
         // 1st filter (All) is selected, the rest aren't.
         const filters = getInitialProcessStatusFilters()
-        const columnFilterCount = {'All': 0, 'Draft': 1, 'On hold': 2, 'Queued': 3, 'Running': 4, 'Completed': 5, 'Cancelled': 6, 'Failed': 7}
+        const columnFilterCount = {'All': '0', 'Draft': '1', 'On hold': '2', 'Queued': '3', 'Running': '4', 'Completed': '5', 'Cancelled': '6', 'Failed': '7'}
 
         cy.mount(
             <ThemeProvider theme={CustomTheme}>
