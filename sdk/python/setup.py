@@ -100,7 +100,8 @@ setup(name='arvados-python-client',
           'bin/arv-federation-migrate',
           'bin/arv-normalize',
           'bin/arv-put',
-          'bin/arv-ws'
+          'bin/arv-ws',
+          'bin/arv-export'
       ],
       data_files=[
           ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
