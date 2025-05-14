@@ -119,6 +119,9 @@ def main():
     if re.match(arvados.util.collection_uuid_pattern, args.object_uuid):
         return export_collection(apiclient, args.object_uuid, collectionsdir, keepdir)
 
+    if re.match(arvados.util.group_uuid_pattern, args.object_uuid):
+        return export_project(apiclient, args.object_uuid, collectionsdir, keepdir)
+
 
 
 if __name__ == "__main__":
