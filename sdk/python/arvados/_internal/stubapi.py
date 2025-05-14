@@ -55,7 +55,7 @@ def match_filter(fl, obj):
     if op == "=":
         return obj[key] == val
     else:
-        return False
+        raise NotImplementedError()
 
 def match_filters(fl, obj):
     for f in fl:
