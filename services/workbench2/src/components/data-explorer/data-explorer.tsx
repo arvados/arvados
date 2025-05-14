@@ -280,7 +280,7 @@ export const DataExplorer = withStyles(styles)(
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
             if (prevProps.items !== this.props.items && getFilterCountColumns(this.props.id, this.props.columns).length) {
-                if (!Object.keys(this.state.columnFilterCounts).length || this.state.typeFilter !== prevState.typeFilter) {
+                if (!Object.keys(this.state.columnFilterCounts).length || prevProps.items !== this.props.items || this.state.typeFilter !== prevState.typeFilter) {
                     this.loadFilterCounts();
                 }
                 this.setState({
