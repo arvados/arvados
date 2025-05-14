@@ -15,7 +15,7 @@ import json
 
 from arvados._version import __version__
 from arvados.logging import log_handler
-from arvados._internal.arvcopy import api_for_instance, copy_collection
+from arvados._internal.arvcopy import api_for_instance, copy_collection, copy_project
 from arvados._internal.stubapi import StubArvadosAPI
 import arvados.commands._util as arv_cmd
 
@@ -38,6 +38,14 @@ def argument_parser():
         help='Export even if the object appears to already have been exported already.')
 
     export_opts.add_argument(
+        '--recursive', dest='recursive', action='store_true',
+        help='Recursively copy any dependencies for this object, and subprojects. (default)')
+    export_opts.add_argument(
+        '--no-recursive', dest='recursive', action='store_false',
+        help='Do not copy any dependencies or subprojects.')
+
+
+    export_opts.add_argument(
         'object_uuid',
         help='The UUID of the collection or project to export.')
 
@@ -53,12 +61,23 @@ def main():
     args.project_uuid = None
     args.export_all_fields = True
 
+    if args.verbose:
+        arvlogger.setLevel(logging.DEBUG)
+    else:
+        arvlogger.setLevel(logging.INFO)
+        keeplogger.setLevel(logging.WARNING)
+
     apiclient = api_for_instance(args.object_uuid[0:5], 3)
 
     stubapi = StubArvadosAPI(os.path.realpath("."))
 
     if re.match(arvados.util.collection_uuid_pattern, args.object_uuid):
         return copy_collection(args.object_uuid, apiclient, stubapi, args)
+    elif re.match(arvados.util.group_uuid_pattern, args.object_uuid):
+        return copy_project(args.object_uuid, apiclient, stubapi, args.project_uuid, args)
+    else:
+        logger.error("Object type not supported for export")
+        exit(1)
 
 
 if __name__ == "__main__":

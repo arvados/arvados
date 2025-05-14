@@ -28,7 +28,7 @@ class StubKeepClient:
 
     def get(self, locator):
         blockdir = os.path.join(self._basedir, locator[0:3])
-        filepath = os.path.join(blockdir, locator)
+        filepath = os.path.join(blockdir, arvados.KeepLocator(locator).md5sum)
         with open(filepath, "rb") as fr:
             return fr.read()
 
@@ -65,8 +65,9 @@ def match_filters(fl, obj):
     return True
 
 class StubArvadosResources:
-    def __init__(self, basedir):
+    def __init__(self, basedir, resource_type):
         self._basedir = basedir
+        self._resource_type = resource_type
 
     @defer_execution
     def get(self, *, uuid=""):
@@ -75,10 +76,28 @@ class StubArvadosResources:
 
     @defer_execution
     def create(self, *, body=None, ensure_unique_name=None):
-        if "collection" in body:
-            body = body["collection"]
+        if self._resource_type in body:
+            body = body[self._resource_type]
         with open(os.path.join(self._basedir, body["uuid"]), "wt") as fw:
-            return json.dump(body, fw, indent=2)
+            json.dump(body, fw, indent=2)
+
+        return body
+
+    @defer_execution
+    def update(self, *, uuid="", body=None):
+        if self._resource_type in body:
+            body = body[self._resource_type]
+        with open(os.path.join(self._basedir, uuid), "rt") as fr:
+            obj = json.load(fr)
+
+        for k,v in body.items():
+            obj[k] = v
+
+        with open(os.path.join(self._basedir, uuid), "wt") as fw:
+            json.dump(obj, fw, indent=2)
+
+        return obj
+
 
     @defer_execution
     def list(self, *, filters=None):
@@ -104,8 +123,16 @@ class StubArvadosAPI:
 
         os.makedirs(os.path.join(self._basedir, "keep"), exist_ok=True)
         os.makedirs(os.path.join(self._basedir, "arvados/v1/collections"), exist_ok=True)
+        os.makedirs(os.path.join(self._basedir, "arvados/v1/links"), exist_ok=True)
+        os.makedirs(os.path.join(self._basedir, "arvados/v1/groups"), exist_ok=True)
 
         self.keep = StubKeepClient(os.path.realpath("keep"))
 
     def collections(self):
-        return StubArvadosResources(os.path.join(self._basedir, "arvados/v1/collections"))
+        return StubArvadosResources(os.path.join(self._basedir, "arvados/v1/collections"), "collection")
+
+    def links(self):
+        return StubArvadosResources(os.path.join(self._basedir, "arvados/v1/links"), "link")
+
+    def groups(self):
+        return StubArvadosResources(os.path.join(self._basedir, "arvados/v1/groups"), "group")

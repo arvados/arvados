@@ -11,19 +11,21 @@ import logging
 import re
 import io
 import os
-
-from arvados._internal.stubapi import StubArvadosAPI
+import json
 
 from arvados._version import __version__
 from arvados.logging import log_handler
+from arvados._internal.arvcopy import api_for_instance, copy_collection
+from arvados._internal.stubapi import StubArvadosAPI
+import arvados.commands._util as arv_cmd
 
 arvlogger = logging.getLogger('arvados')
 keeplogger = logging.getLogger('arvados.keep')
-logger = logging.getLogger('arvados.arv-import')
+logger = logging.getLogger('arvados.arv-export')
 googleapi_logger = logging.getLogger('googleapiclient.http')
 
 def argument_parser():
-    import_opts = argparse.ArgumentParser()
+    import_opts = argparse.ArgumentParser(add_help=False)
 
     import_opts.add_argument(
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
@@ -32,16 +34,37 @@ def argument_parser():
         '-v', '--verbose', dest='verbose', action='store_true',
         help='Verbose output.')
     import_opts.add_argument(
+        '-f', '--force', dest='force', action='store_true',
+        help='Export even if the object appears to already have been exported already.')
+    import_opts.add_argument(
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the collection or project should be imported.')
-
+    import_opts.add_argument(
+        '--storage-classes',
+        type=arv_cmd.UniqueSplit(),
+        help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
+    import_opts.add_argument(
+        '--replication',
+        type=arv_cmd.RangedValue(int, range(1, sys.maxsize)),
+        metavar='N',
+        help="""
+Number of replicas per storage class for the copied collections at the destination.
+If not provided (or if provided with invalid value),
+use the destination's default replication-level setting (if found),
+or the fallback value 2.
+""")
     import_opts.add_argument(
         'object_uuid',
         help='The UUID of the collection or project to import.')
 
-    return import_opts
+    return argparse.ArgumentParser(
+        description='Import stuff from local filesystem.',
+        parents=[import_opts, arv_cmd.retry_opt])
 
-def make_api_client(args):
+def main():
+    args = argument_parser().parse_args()
+    args.progress = None
+    args.export_all_fields = False
 
     if args.verbose:
         arvlogger.setLevel(logging.DEBUG)
@@ -49,76 +72,15 @@ def make_api_client(args):
         arvlogger.setLevel(logging.INFO)
         keeplogger.setLevel(logging.WARNING)
 
-    googleapi_logger.setLevel(logging.WARN)
-    googleapi_logger.addHandler(log_handler)
-
-    apiclient = arvados.api('v1')
-
-    # Once we've successfully contacted the cluster, we probably
-    # don't want to see logging about retries (unless the user asked
-    # for verbose output).
-    if not args.verbose:
-        googleapi_logger.setLevel(logging.ERROR)
-
-    return apiclient
-
-
-def import_collection(stubapi, remoteapi, collection_uuid,
-                      owner_uuid):
-
-    c = stubapi.collections().get(uuid=collection_uuid).execute()
-
-    manifest = c['manifest_text']
-
-    dst_manifest = io.StringIO()
-    dst_locators = {}
-
-    for line in manifest.splitlines():
-        words = line.split()
-        dst_manifest.write(words[0])
-        for word in words[1:]:
-            try:
-                loc = arvados.KeepLocator(word)
-            except ValueError:
-                # If 'word' can't be parsed as a locator,
-                # presume it's a filename.
-                dst_manifest.write(' ')
-                dst_manifest.write(word)
-                continue
-
-            blockhash = loc.md5sum
-            if blockhash not in dst_locators:
-                block = stubapi.keep.get(blockhash)
-                dst_locators[blockhash] = remoteapi.keep.put(block)
-
-            dst_manifest.write(' ')
-            dst_manifest.write(dst_locators[blockhash])
-
-        dst_manifest.write("\n")
-
-    newcollection = {
-        "description": c["description"],
-        "manifest_text": dst_manifest.getvalue(),
-        "name": c["name"],
-        "portable_data_hash": c["portable_data_hash"],
-        "properties": c["properties"],
-        "owner_uuid": owner_uuid
-    }
-
-    result = remoteapi.collections().create(body={"collection": newcollection}).execute()
-    logger.info("%s (%s) imported as %s", c["uuid"], c["portable_data_hash"], result["uuid"])
-
-def main():
-    args = argument_parser().parse_args()
-
-    dest_project = args.project_uuid or apiclient.users().current().execute()["uuid"]
-
-    apiclient = make_api_client(args)
+    apiclient = api_for_instance(args.project_uuid[0:5], 3)
 
     stubapi = StubArvadosAPI(os.path.realpath("."))
 
     if re.match(arvados.util.collection_uuid_pattern, args.object_uuid):
-        return import_collection(stubapi, apiclient, args.object_uuid, dest_project)
+        return copy_collection(args.object_uuid, stubapi, apiclient, args)
+    else:
+        logger.error("Object type not supported for import")
+
 
 if __name__ == "__main__":
     main()

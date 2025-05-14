@@ -587,12 +587,17 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
     existing = dst.groups().list(filters=[["owner_uuid", "=", owner_uuid],
                                           ["name", "=", src_project_record["name"]]]).execute(num_retries=args.retries)
     if len(existing["items"]) == 0:
-        project_record = dst.groups().create(body={"group": {"group_class": "project",
-                                                             "owner_uuid": owner_uuid,
-                                                             "name": src_project_record["name"]}}).execute(num_retries=args.retries)
+        if args.export_all_fields:
+            prj = src_project_record
+        else:
+            prj = {"group": {"group_class": "project",
+                             "owner_uuid": owner_uuid,
+                             "name": src_project_record["name"]}}
+        project_record = dst.groups().create(body=prj).execute(num_retries=args.retries)
     else:
         project_record = existing["items"][0]
 
+    # Update the description.
     dst.groups().update(uuid=project_record["uuid"],
                         body={"group": {
                             "description": src_project_record["description"]}}).execute(num_retries=args.retries)
