@@ -147,9 +147,13 @@ _and_
 *.collections.@ClusterID.example.com@ _or_
 *<notextile>--</notextile>collections.@ClusterID.example.com@ _or_
 collections.@ClusterID.example.com@ (see the "keep-web install docs":install-keep-web.html)|
+|Container web services|*.containers.@ClusterID.example.com@ _or_
+*<notextile>--</notextile>containers.@ClusterID.example.com@|
 </div>
 
-Setting up Arvados is easiest when Wildcard TLS and wildcard DNS are available. It is also possible to set up Arvados without wildcard TLS and DNS, but not having a wildcard for @keep-web@ (i.e. not having *.collections.@ClusterID.example.com@) comes with a tradeoff: it will disable some features that allow users to view Arvados-hosted data in their browsers. More information on this tradeoff caused by the CORS rules applied by modern browsers is available in the "keep-web URL pattern guide":../api/keep-web-urls.html.
+Setting up Arvados is easiest when Wildcard TLS and wildcard DNS are available. It is also possible to set up Arvados without wildcard TLS and DNS, but some functionality will be unavailable:
+* A wildcard for @keep-web@ (e.g., *.collections.@ClusterID.example.com@) is needed to allow users to view Arvados-hosted data in their browsers. More information on this tradeoff caused by the CORS rules applied by modern browsers is available in the "keep-web URL pattern guide":../api/keep-web-urls.html.
+* A wildcard for @controller@ (e.g., *.containers.@ClusterID.example.com@) is needed to allow users to connect to Arvados-hosted services in their browsers.
 
 The table below lists the required TLS certificates and DNS names in each scenario.
 
@@ -158,7 +162,8 @@ table(table table-bordered table-condensed).
 ||_. Wildcard TLS and DNS available|_. Wildcard TLS available|_. Other|
 |TLS|@ClusterID.example.com@
 *.@ClusterID.example.com@
-*.collections.@ClusterID.example.com@|*.@ClusterID.example.com@
+*.collections.@ClusterID.example.com@
+*.containers.@ClusterID.example.com@|*.@ClusterID.example.com@
 @ClusterID.example.com@|@ClusterID.example.com@
 git.@ClusterID.example.com@
 webshell.@ClusterID.example.com@
@@ -176,7 +181,8 @@ workbench.@ClusterID.example.com@
 workbench2.@ClusterID.example.com@
 keep.@ClusterID.example.com@
 download.@ClusterID.example.com@
-*.collections.@ClusterID.example.com@|@ClusterID.example.com@
+*.collections.@ClusterID.example.com@
+*.containers.@ClusterID.example.com@|@ClusterID.example.com@
 git.@ClusterID.example.com@
 webshell.@ClusterID.example.com@
 ws.@ClusterID.example.com@

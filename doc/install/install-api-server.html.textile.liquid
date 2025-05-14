@@ -89,6 +89,9 @@ h3. Services
         # Does not have an ExternalURL
         InternalURLs:
           <span class="userinput">"http://localhost:8004": {}</span>
+      ContainerWebServices:
+        # Does not have InternalURLs
+        ExternalURL: <span class="userinput">"https://*.containers.ClusterID.example.com"</span>
 </code></pre>
 </notextile>
 
@@ -136,7 +139,8 @@ server {
   # the request is reverse proxied to the upstream 'controller'
 
   listen       443 ssl;
-  server_name  <span class="userinput">ClusterID.example.com</span>;
+  server_name  <span class="userinput">ClusterID.example.com</span>
+               *.<span class="userinput">containers.ClusterID.example.com</span>;
 
   ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
   ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;

@@ -32,6 +32,14 @@ h2(#main). development main
 
 "previous: Upgrading to 3.1.1":#v3_1_1
 
+h3. Configure ExternalURL, DNS, and TLS for container web services
+
+Arvados now allows external clients to connect to HTTP services running in containers. To enable this feature:
+* Add a @Services.ContainerWebServices.ExternalURL@ entry to @/etc/arvados/config.yml@ with a wildcard URL, e.g., @https://*.containers.ClusterID.example.com/@
+* Add the wildcard name to the @server_name@ directive in the controller section of your Nginx configuration, e.g., @server_name ClusterID.example.com *.containers.ClusterID.example.com;@
+* Add wildcard DNS records so @*.containers.ClusterID.example.com@ names resolve to the same address(es) as your controller's external URL
+* Update the TLS certificate used by Nginx for @ClusterID.example.com@ so it also validates for @*.containers.ClusterID.example.com@
+
 h2(#v3_1_1). v3.1.1 (2025-04-14)
 
 "previous: Upgrading to 3.1.0":#v3_1_0
