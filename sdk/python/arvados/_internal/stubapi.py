@@ -100,7 +100,7 @@ class StubArvadosResources:
 
 
     @defer_execution
-    def list(self, *, filters=None):
+    def list(self, *, filters=None, limit=None, count=None, order=None):
         items = []
         for dirent in os.scandir(self._basedir):
             if not arvados.util.uuid_pattern.match(dirent.name) or not dirent.is_file():
@@ -111,6 +111,9 @@ class StubArvadosResources:
 
             if match_filters(filters, obj):
                 items.append(obj)
+
+        if limit is not None:
+            items = items[0:limit]
 
         return {
             "items": items,
@@ -125,6 +128,7 @@ class StubArvadosAPI:
         os.makedirs(os.path.join(self._basedir, "arvados/v1/collections"), exist_ok=True)
         os.makedirs(os.path.join(self._basedir, "arvados/v1/links"), exist_ok=True)
         os.makedirs(os.path.join(self._basedir, "arvados/v1/groups"), exist_ok=True)
+        os.makedirs(os.path.join(self._basedir, "arvados/v1/workflows"), exist_ok=True)
 
         self.keep = StubKeepClient(os.path.realpath("keep"))
 
@@ -136,3 +140,6 @@ class StubArvadosAPI:
 
     def groups(self):
         return StubArvadosResources(os.path.join(self._basedir, "arvados/v1/groups"), "group")
+
+    def workflows(self):
+        return StubArvadosResources(os.path.join(self._basedir, "arvados/v1/workflows"), "workflow")

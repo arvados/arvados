@@ -15,7 +15,7 @@ import json
 
 from arvados._version import __version__
 from arvados.logging import log_handler
-from arvados._internal.arvcopy import api_for_instance, copy_collection
+from arvados._internal.arvcopy import api_for_instance, copy_collection, copy_project
 from arvados._internal.stubapi import StubArvadosAPI
 import arvados.commands._util as arv_cmd
 
@@ -54,6 +54,13 @@ use the destination's default replication-level setting (if found),
 or the fallback value 2.
 """)
     import_opts.add_argument(
+        '--recursive', dest='recursive', action='store_true',
+        help='Recursively copy any dependencies for this object, and subprojects. (default)')
+    import_opts.add_argument(
+        '--no-recursive', dest='recursive', action='store_false',
+        help='Do not copy any dependencies or subprojects.')
+
+    import_opts.add_argument(
         'object_uuid',
         help='The UUID of the collection or project to import.')
 
@@ -72,12 +79,16 @@ def main():
         arvlogger.setLevel(logging.INFO)
         keeplogger.setLevel(logging.WARNING)
 
-    apiclient = api_for_instance(args.project_uuid[0:5], 3)
+    apiclient = api_for_instance(args.project_uuid[0:5] if args.project_uuid else '', 3)
 
     stubapi = StubArvadosAPI(os.path.realpath("."))
 
     if re.match(arvados.util.collection_uuid_pattern, args.object_uuid):
         return copy_collection(args.object_uuid, stubapi, apiclient, args)
+    elif re.match(arvados.util.group_uuid_pattern, args.object_uuid):
+        return copy_project(args.object_uuid, stubapi, apiclient,
+                            args.project_uuid or apiclient.users().current().execute()["uuid"],
+                            args)
     else:
         logger.error("Object type not supported for import")
 
