@@ -427,6 +427,25 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	}
 	fspath += reMultipleSlashChars.ReplaceAllString(r.URL.Path, "/")
 
+	if needSync, err := h.needSync(r.Context(), fs, fspath); err != nil {
+		s3ErrorResponse(w, InternalError, fmt.Sprintf("internal error: %s", err), r.URL.Path+"?"+r.URL.RawQuery, http.StatusInternalServerError)
+		return true
+	} else if needSync {
+		_, collpath := h.determineCollection(fs, fspath)
+		syncpath := strings.TrimSuffix(fspath, collpath)
+		syncf, err := fs.OpenFile(syncpath, os.O_RDONLY, 0)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, fmt.Sprintf("internal error: %s", err), r.URL.Path+"?"+r.URL.RawQuery, http.StatusInternalServerError)
+			return true
+		}
+		defer syncf.Close()
+		err = syncf.Sync()
+		if err != nil {
+			s3ErrorResponse(w, InternalError, fmt.Sprintf("internal error: %s", err), r.URL.Path+"?"+r.URL.RawQuery, http.StatusInternalServerError)
+			return true
+		}
+	}
+
 	switch {
 	case r.Method == http.MethodGet && !objectNameGiven:
 		// Path is "/{uuid}" or "/{uuid}/", has no object name
@@ -516,6 +535,10 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InvalidArgument, "Missing object name in PUT request.", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return true
+		}
 		var objectIsDir bool
 		if strings.HasSuffix(fspath, "/") {
 			if !h.Cluster.Collections.S3FolderObjects {
@@ -550,46 +573,74 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InvalidArgument, "object name conflicts with existing object", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
-		// create missing parent/intermediate directories, if any
-		for i, c := range fspath {
-			if i > 0 && c == '/' {
-				dir := fspath[:i]
-				if strings.HasSuffix(dir, "/") {
-					err = errors.New("invalid object name (consecutive '/' chars)")
-					s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
-					return true
-				}
-				err = fs.Mkdir(dir, 0755)
-				if errors.Is(err, arvados.ErrInvalidArgument) || errors.Is(err, arvados.ErrInvalidOperation) {
-					// Cannot create a directory
-					// here.
-					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-					s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
-					return true
-				} else if err != nil && !os.IsExist(err) {
-					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-					s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
-					return true
+		h.logUploadOrDownload(r, sess.arvadosclient, fs, fspath, 1, nil, tokenUser)
+		if objectIsDir {
+			// create directory, and any missing
+			// parent/intermediate directories
+			for i, c := range fspath {
+				if i > 0 && c == '/' {
+					dir := fspath[:i]
+					if strings.HasSuffix(dir, "/") {
+						err = errors.New("invalid object name (consecutive '/' chars)")
+						s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
+						return true
+					}
+					err = fs.Mkdir(dir, 0755)
+					if errors.Is(err, arvados.ErrInvalidArgument) || errors.Is(err, arvados.ErrInvalidOperation) {
+						// Cannot create a directory
+						// here.
+						err = fmt.Errorf("mkdir %q failed: %w", dir, err)
+						s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
+						return true
+					} else if err != nil && !os.IsExist(err) {
+						err = fmt.Errorf("mkdir %q failed: %w", dir, err)
+						s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+						return true
+					}
 				}
 			}
-		}
-		if !objectIsDir {
-			f, err := fs.OpenFile(fspath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+			err = h.syncCollection(fs, readfs, fspath)
+			if err != nil {
+				err = fmt.Errorf("sync failed: %w", err)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+				return true
+			}
+		} else if fi, err := fs.Stat(fspath); err == nil && fi.IsDir() {
+			s3ErrorResponse(w, InvalidArgument, "object name conflicts with existing directory", r.URL.Path, http.StatusBadRequest)
+			return true
+		} else {
+			// Copy the file data from the request body
+			// into a file (named "file") in a new empty
+			// collection.  Then, use the replace_files
+			// API to atomically splice that into the
+			// destination collection.
+			//
+			// Note this doesn't update our in-memory
+			// filesystem.  If a subsequent request
+			// depends on the outcome, it will call Sync
+			// to update (see needSync above).
+			coll, destpath := h.determineCollection(fs, fspath)
+			if coll == nil {
+				s3ErrorResponse(w, InvalidArgument, "invalid argument: path is not in a collection", r.URL.Path, http.StatusBadRequest)
+				return true
+			}
+			client := sess.client.WithRequestID(r.Header.Get("X-Request-Id"))
+			tmpfs, err := (&arvados.Collection{}).FileSystem(client, sess.keepclient)
+			if err != nil {
+				err = fmt.Errorf("tmpfs failed: %w", err)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+				return true
+			}
+			f, err := tmpfs.OpenFile("file", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 			if os.IsNotExist(err) {
-				f, err = fs.OpenFile(fspath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+				f, err = tmpfs.OpenFile("file", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 			}
 			if err != nil {
-				err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
+				err = fmt.Errorf("open failed: %w", err)
 				s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			defer f.Close()
-
-			if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
-				http.Error(w, "Not permitted", http.StatusForbidden)
-				return true
-			}
-			h.logUploadOrDownload(r, sess.arvadosclient, fs, fspath, 1, nil, tokenUser)
 
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
@@ -603,12 +654,22 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 				return true
 			}
-		}
-		err = h.syncCollection(fs, readfs, fspath)
-		if err != nil {
-			err = fmt.Errorf("sync failed: %w", err)
-			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
-			return true
+			manifest, err := tmpfs.MarshalManifest(".")
+			if err != nil {
+				err = fmt.Errorf("marshal tmpfs: %w", err)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+				return true
+			}
+			err = client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+				"replace_files": map[string]string{"/" + destpath: "manifest_text/file"},
+				"collection":    map[string]interface{}{"manifest_text": manifest}})
+			if err != nil {
+				status := http.StatusInternalServerError
+				if te := new(arvados.TransactionError); errors.As(err, te) {
+					status = te.HTTPStatus()
+				}
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, status)
+			}
 		}
 		w.WriteHeader(http.StatusOK)
 		return true
@@ -620,6 +681,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		if !objectNameGiven || r.URL.Path == "/" {
 			s3ErrorResponse(w, InvalidArgument, "missing object name in DELETE request", r.URL.Path, http.StatusBadRequest)
+			return true
+		}
+		coll, destpath := h.determineCollection(fs, fspath)
+		if coll == nil {
+			s3ErrorResponse(w, InvalidArgument, "invalid argument: path is not in a collection", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		if strings.HasSuffix(fspath, "/") {
@@ -646,21 +712,16 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			w.WriteHeader(http.StatusNoContent)
 			return true
 		}
-		err = fs.Remove(fspath)
-		if os.IsNotExist(err) {
-			w.WriteHeader(http.StatusNoContent)
-			return true
-		}
+		destpath = strings.TrimSuffix(destpath, "/")
+		client := sess.client.WithRequestID(r.Header.Get("X-Request-Id"))
+		err = client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+			"replace_files": map[string]string{"/" + destpath: ""}})
 		if err != nil {
-			err = fmt.Errorf("rm failed: %w", err)
-			s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
-			return true
-		}
-		err = h.syncCollection(fs, readfs, fspath)
-		if err != nil {
-			err = fmt.Errorf("sync failed: %w", err)
-			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
-			return true
+			status := http.StatusInternalServerError
+			if te := new(arvados.TransactionError); errors.As(err, te) {
+				status = te.HTTPStatus()
+			}
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, status)
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return true
