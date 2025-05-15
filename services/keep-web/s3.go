@@ -529,7 +529,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			} else if n > 0 {
 				s3ErrorResponse(w, InvalidArgument, "cannot create object with trailing '/' char unless content is empty", r.URL.Path, http.StatusBadRequest)
 				return true
-			} else if strings.SplitN(r.Header.Get("Content-Type"), ";", 2)[0] != "application/x-directory" {
+			} else if mediatype, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mediatype != "application/x-directory" {
 				s3ErrorResponse(w, InvalidArgument, "cannot create object with trailing '/' char unless Content-Type is 'application/x-directory'", r.URL.Path, http.StatusBadRequest)
 				return true
 			}
