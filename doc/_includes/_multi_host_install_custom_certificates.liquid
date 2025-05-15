@@ -12,6 +12,7 @@ To simplify certificate management, we recommend creating a single certificate f
 xarv1.example.com
 *.xarv1.example.com
 *.collections.xarv1.example.com
+*.containers.xarv1.example.com
 </pre>
 
 (Replacing @xarv1.example.com@ with your own @${DOMAIN}@)
@@ -22,7 +23,7 @@ The script expects cert/key files with these basenames (matching the role except
 
 # @balancer@         -- Optional on multi-node installations
 # @collections@      -- Part of keepweb, must be a wildcard for @*.collections.${DOMAIN}@
-# @controller@
+# @controller@       -- Must be valid for @${DOMAIN}@ and @*.containers.${DOMAIN}@
 # @download@         -- Part of keepweb
 # @grafana@          -- Service available by default on multi-node installations
 # @keepproxy@        -- Corresponds to default domain @keep.${DOMAIN}@
