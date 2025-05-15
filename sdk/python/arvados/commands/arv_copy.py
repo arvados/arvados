@@ -112,6 +112,15 @@ or the fallback value 2.
         '--storage-classes',
         type=arv_cmd.UniqueSplit(),
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
+
+    copy_opts.add_argument(
+        '--block-copy', dest='keep_block_copy', action='store_true', default=True,
+        help='Copy keep blocks when copying collections.')
+    copy_opts.add_argument(
+        '--no-block-copy', dest='keep_block_copy', action='store_false', default=True,
+        help='Do not copy keep blocks.  Must be admin to copy collections.')
+
+
     copy_opts.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
 

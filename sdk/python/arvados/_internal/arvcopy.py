@@ -502,29 +502,29 @@ def copy_collection(obj_uuid, src, dst, args):
             finally:
                 put_queue.task_done()
 
-    for line in manifest.splitlines():
-        words = line.split()
-        for word in words[1:]:
-            try:
-                loc = arvados.KeepLocator(word)
-            except ValueError:
-                # If 'word' can't be parsed as a locator,
-                # presume it's a filename.
-                continue
+    if args.keep_block_copy:
+        for line in manifest.splitlines():
+            words = line.split()
+            for word in words[1:]:
+                try:
+                    loc = arvados.KeepLocator(word)
+                except ValueError:
+                    # If 'word' can't be parsed as a locator,
+                    # presume it's a filename.
+                    continue
+                get_queue.put(word)
 
-            get_queue.put(word)
+        for i in range(0, threadcount):
+            get_queue.put(None)
 
-    for i in range(0, threadcount):
-        get_queue.put(None)
+        for i in range(0, threadcount):
+            threading.Thread(target=get_thread, daemon=True).start()
 
-    for i in range(0, threadcount):
-        threading.Thread(target=get_thread, daemon=True).start()
+        for i in range(0, threadcount):
+            threading.Thread(target=put_thread, daemon=True).start()
 
-    for i in range(0, threadcount):
-        threading.Thread(target=put_thread, daemon=True).start()
-
-    get_queue.join()
-    put_queue.join()
+        get_queue.join()
+        put_queue.join()
 
     if len(transfer_error) > 0:
         return {"error_token": "Failed to transfer blocks"}
@@ -543,7 +543,10 @@ def copy_collection(obj_uuid, src, dst, args):
                 continue
             blockhash = loc.md5sum
             dst_manifest.write(' ')
-            dst_manifest.write(dst_locators[blockhash])
+            if args.keep_block_copy:
+                dst_manifest.write(dst_locators[blockhash])
+            else:
+                dst_manifest.write(loc.stripped())
         dst_manifest.write("\n")
 
     if progress_writer:

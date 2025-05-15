@@ -44,6 +44,12 @@ def argument_parser():
         '--no-recursive', dest='recursive', action='store_false',
         help='Do not copy any dependencies or subprojects.')
 
+    export_opts.add_argument(
+        '--block-copy', dest='keep_block_copy', action='store_true', default=True,
+        help='Export keep blocks when exporting collections.')
+    export_opts.add_argument(
+        '--no-block-copy', dest='keep_block_copy', action='store_false', default=True,
+        help='Do not export keep blocks when exporting collections.')
 
     export_opts.add_argument(
         'object_uuid',

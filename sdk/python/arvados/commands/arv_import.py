@@ -61,6 +61,13 @@ or the fallback value 2.
         help='Do not copy any dependencies or subprojects.')
 
     import_opts.add_argument(
+        '--block-copy', dest='keep_block_copy', action='store_true', default=True,
+        help='Import keep blocks when importing collections.')
+    import_opts.add_argument(
+        '--no-block-copy', dest='keep_block_copy', action='store_false', default=True,
+        help='Do not copy keep blocks.  Must be admin to import collections.')
+
+    import_opts.add_argument(
         'object_uuid',
         help='The UUID of the collection or project to import.')
 

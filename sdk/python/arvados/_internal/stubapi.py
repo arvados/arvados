@@ -54,8 +54,10 @@ def match_filter(fl, obj):
 
     if op == "=":
         return obj[key] == val
+    if op == ">":
+        return obj[key] > val
     else:
-        raise NotImplementedError()
+        raise NotImplementedError("unsupported op %s" % op)
 
 def match_filters(fl, obj):
     for f in fl:
@@ -111,6 +113,19 @@ class StubArvadosResources:
 
             if match_filters(filters, obj):
                 items.append(obj)
+
+        if order:
+            if len(order) == 1:
+                k1, r1 = order[0].split(' ')
+                keycomp = lambda x: x[k1]
+            elif len(order) == 2:
+                k1, r1 = order[0].split(' ')
+                k2, r2 = order[1].split(' ')
+                if r1 != r2:
+                    raise NotImplementedError("Can't have secondary sort column in opposite direction")
+                keycomp = lambda x: (x[k1], x[k2])
+
+            items.sort(key=keycomp, reverse=(r1=='desc'))
 
         if limit is not None:
             items = items[0:limit]
