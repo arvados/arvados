@@ -31,6 +31,7 @@ table(table table-bordered table-condensed).
 |controller     |yes                    |yes|yes ^2,4^|InternalURLs used by reverse proxy and container shell connections|
 |arvados-dispatch-cloud|no              |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
 |arvados-dispatch-lsf|no                |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|container web services|yes             |no |no    |controller's InternalURLs are used by reverse proxy (e.g. Nginx)|
 |git-ssh        |yes                    |no |no    ||
 |keepproxy      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
 |keepstore      |no                     |yes|yes   |All clients connect to InternalURLs|
@@ -184,7 +185,7 @@ Consider this section for the @Controller@ service:
     ExternalURL: "https://ClusterID.example.com"
 {% endcodeblock %}
 
-The @ExternalURL@ advertised to clients is @https://ClusterID.example.com@. The @arvados-controller@ process will listen on @localhost@ port 8003. Other Arvados service processes in the cluster can connect to this specific controller instance, using the URL @https://ctrl-0.internal@. Nginx is configured to sit in front of the @Controller@ service and terminate TLS:
+The @ExternalURL@ advertised to clients is @https://ClusterID.example.com@. The @arvados-controller@ process will listen on @localhost@ port 8003. Other Arvados service processes in the cluster can connect to this specific controller instance, using the URL @https://ctrl-0.internal@. Container web service traffic at @https://*.containers.ClusterID.example.com@ is also handled by the same @arvados-controller@ process. Nginx is configured to sit in front of the @Controller@ service and terminate TLS:
 
 <notextile><pre><code>
 # This is the port where nginx expects to contact arvados-controller.
@@ -197,7 +198,9 @@ server {
   # the request is reverse proxied to the upstream 'controller'
 
   listen       443 ssl;
-  server_name  ClusterID.example.com ctrl-0.internal;
+  server_name  ClusterID.example.com
+               ctrl-0.internal
+               *.containers.ClusterID.example.com;
 
   ssl_certificate     /YOUR/PATH/TO/cert.pem;
   ssl_certificate_key /YOUR/PATH/TO/cert.key;
