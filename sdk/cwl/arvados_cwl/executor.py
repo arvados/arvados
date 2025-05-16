@@ -623,7 +623,7 @@ The 'jobs' API is no longer supported.
             return
 
         for key in ("uuid", "name"):
-            result = self.api.credentials().list([[key, "=", runtimeContext.selected_credential]]).execute()
+            result = self.api.credentials().list(filters=[[key, "=", runtimeContext.selected_credential]]).execute()
             if len(result["items"]) == 1:
                 self.selected_credential = result["items"][0]
                 break
