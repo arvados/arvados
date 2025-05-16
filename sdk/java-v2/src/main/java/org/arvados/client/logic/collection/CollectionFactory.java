@@ -16,10 +16,8 @@ import org.arvados.client.config.FileConfigProvider;
 import org.arvados.client.config.ConfigProvider;
 import org.arvados.client.exception.ArvadosClientException;
 
-import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
 
 public class CollectionFactory {
@@ -30,14 +28,10 @@ public class CollectionFactory {
 
     private final String name;
     private final String projectUuid;
-    private final List<File> manifestFiles;
-    private final List<String> manifestLocators;
 
-    private CollectionFactory(ConfigProvider config, String name, String projectUuid, List<File> manifestFiles, List<String> manifestLocators) {
+    private CollectionFactory(ConfigProvider config, String name, String projectUuid) {
         this.name = name;
         this.projectUuid = projectUuid;
-        this.manifestFiles = manifestFiles;
-        this.manifestLocators = manifestLocators;
         this.config = config;
         setApiClients();
     }
@@ -54,15 +48,8 @@ public class CollectionFactory {
     }
 
     public Collection create() {
-        ManifestFactory manifestFactory = ManifestFactory.builder()
-            .files(manifestFiles)
-            .locators(manifestLocators)
-            .build();
-        String manifest = manifestFactory.create();
-        
         Collection newCollection = new Collection();
         newCollection.setName(getNameOrDefault(name));
-        newCollection.setManifestText(manifest);
         newCollection.setOwnerUuid(getDesiredProjectUuid(projectUuid));
 
         return newCollection;
@@ -95,8 +82,6 @@ public class CollectionFactory {
         private ConfigProvider config;
         private String name;
         private String projectUuid;
-        private List<File> manifestFiles;
-        private List<String> manifestLocators;
 
         CollectionFactoryBuilder() {
         }
@@ -116,18 +101,8 @@ public class CollectionFactory {
             return this;
         }
 
-        public CollectionFactoryBuilder manifestFiles(List<File> manifestFiles) {
-            this.manifestFiles = manifestFiles;
-            return this;
-        }
-
-        public CollectionFactoryBuilder manifestLocators(List<String> manifestLocators) {
-            this.manifestLocators = manifestLocators;
-            return this;
-        }
-
         public CollectionFactory build() {
-            return new CollectionFactory(config, name, projectUuid, manifestFiles, manifestLocators);
+            return new CollectionFactory(config, name, projectUuid);
         }
 
     }
