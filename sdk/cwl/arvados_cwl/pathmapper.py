@@ -60,7 +60,7 @@ def resolve_aws_key(apiclient, s3url):
     if len(results["items"]) == 1:
         return results["items"][0]
 
-    raise WorkflowException("No AWS credentials found, must register AWS credentials with Arvados or use --enable-aws-credential-capture to use locally-defined credentials." % bucket)
+    raise WorkflowException("No AWS credentials found, must register AWS credentials with Arvados or use --enable-aws-credential-capture to use locally-defined credentials.")
 
 
 class ArvPathMapper(PathMapper):
