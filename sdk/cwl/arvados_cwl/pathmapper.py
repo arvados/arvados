@@ -176,7 +176,7 @@ class ArvPathMapper(PathMapper):
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
                 except Exception as e:
-                    logger.warning("Download error: %s", e)
+                    logger.warning("Download error: %s", e, exc_info=self.debug)
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 

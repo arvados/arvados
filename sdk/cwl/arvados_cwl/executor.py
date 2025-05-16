@@ -703,7 +703,11 @@ The 'jobs' API is no longer supported.
 
         self.runtime_status_update("activity", "data transfer")
 
+        current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         self.get_credential(runtimeContext)
+        if current_container:
+            logger.info("Running inside container %s", current_container.get("uuid"))
+            self.get_credential_secret()
 
         # Upload local file references in the job order.
         with Perf(metrics, "upload_job_order"):
@@ -878,11 +882,8 @@ The 'jobs' API is no longer supported.
 
         self.runtime_status_update("activity", "workflow execution")
 
-        current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:
-            logger.info("Running inside container %s", current_container.get("uuid"))
             self.set_container_request_properties(current_container, git_info)
-            self.get_credential_secret()
 
         self.poll_api = arvados.api('v1', timeout=runtimeContext.http_timeout)
         self.polling_thread = threading.Thread(target=self.poll_states)
