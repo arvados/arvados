@@ -143,6 +143,7 @@ class ArvCwlExecutor(object):
         self.git_info = arvargs.git_info
         self.debug = False
         self.botosession = None
+        self.selected_credential = None
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -617,6 +618,22 @@ The 'jobs' API is no longer supported.
             cr["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in properties.items()})
             self.api.container_requests().update(uuid=cr["uuid"], body={"container_request": {"properties": cr["properties"]}}).execute(num_retries=self.num_retries)
 
+    def get_credential(self, runtimeContext):
+        if runtimeContext.selected_credential is None:
+            return
+
+        for key in ("uuid", "name"):
+            result = self.api.credentials().list([[key, "=", runtimeContext.selected_credential]]).execute()
+            if len(result["items"]) == 1:
+                self.selected_credential = result["items"][0]
+                break
+
+    def get_credential_secret(self):
+        if self.selected_credential is None:
+            return
+        self.selected_credential.update(self.api.credentials().secret(uuid=self.selected_credential["uuid"]).execute())
+
+
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
@@ -685,6 +702,8 @@ The 'jobs' API is no longer supported.
         self.project_uuid = runtimeContext.project_uuid
 
         self.runtime_status_update("activity", "data transfer")
+
+        self.get_credential(runtimeContext)
 
         # Upload local file references in the job order.
         with Perf(metrics, "upload_job_order"):
@@ -863,6 +882,7 @@ The 'jobs' API is no longer supported.
         if current_container:
             logger.info("Running inside container %s", current_container.get("uuid"))
             self.set_container_request_properties(current_container, git_info)
+            self.get_credential_secret()
 
         self.poll_api = arvados.api('v1', timeout=runtimeContext.http_timeout)
         self.polling_thread = threading.Thread(target=self.poll_states)

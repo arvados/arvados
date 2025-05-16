@@ -45,6 +45,28 @@ def cleanup_name_for_collection(name):
 class OutputGlobError(RuntimeError):
     pass
 
+def resolve_aws_key(apiclient, s3url):
+    parsed = urllib.parse.urlparse(s3url)
+    bucket = "s3://%s" % parsed.netloc
+
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
+                                                    ["scopes", "contains", bucket]]).execute()
+    if len(results["items"]) > 1:
+        raise WorkflowException("Multiple credentials found for bucket '%s' in Arvados, use --use-credential to specify which one to use." % bucket)
+
+    if len(results["items"]) == 1:
+        return results["items"][0]
+
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"]]).execute()
+
+    if len(results["items"]) > 1:
+        raise WorkflowException("Multiple AWS credentials found in Arvados, provide --use-credential to specify which one to use")
+
+    if len(results["items"]) == 1:
+        return results["items"][0]
+
+    raise WorkflowException("No AWS credentials found, must register AWS credentials with Arvados or use --enable-aws-credential-capture to use locally-defined credentials." % bucket)
+
 
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
@@ -1000,6 +1022,9 @@ aws_secret_access_key = {}
 
         if self.fast_parser:
             command.append("--fast-parser")
+
+        if self.arvrunner.selected_credential is not None:
+            command.append("--use-credential="+self.arvrunner.selected_credential["uuid"])
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

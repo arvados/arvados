@@ -232,11 +232,14 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--defer-downloads", action="store_true", default=False,
                         help="When submitting a workflow, defer downloading HTTP or S3 URLs to launch of the workflow runner container instead of downloading to Keep before submit.")
 
-    parser.add_argument("--enable-aws-credential-capture", action="store_true", default=True, dest="aws_credential_capture",
+    parser.add_argument("--enable-aws-credential-capture", action="store_true", default=False, dest="aws_credential_capture",
                         help="When submitting a workflow that requires AWS credentials, capture them from the local environment for use by the workflow runner container.")
 
-    parser.add_argument("--disable-aws-credential-capture", action="store_false", default=True, dest="aws_credential_capture",
-                        help="Do not capture AWS credentials from the local environment, credentials must be provided to the submitted workflow runner container some other way.")
+    parser.add_argument("--disable-aws-credential-capture", action="store_false", default=False, dest="aws_credential_capture",
+                        help="Do not capture AWS credentials from the local environment, must use credentials registered with Arvados.")
+
+    parser.add_argument("--use-credential", default=None, dest="selected_credential",
+                        help="Name or uuid of a credential registered with Arvados that will be used to fetch external resources.")
 
     parser.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
