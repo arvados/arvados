@@ -123,9 +123,10 @@ type ContainerRunner struct {
 	ExitCode      *int
 	CrunchLog     *logWriter
 	logUUID       string
+	logPDH        string
 	logMtx        sync.Mutex
 	LogCollection arvados.CollectionFileSystem
-	LogsPDH       *string
+	logPDHFinal   *string
 	RunArvMount   RunArvMount
 	MkTempDir     MkTempDir
 	ArvMount      *exec.Cmd
@@ -1159,7 +1160,7 @@ func (runner *ContainerRunner) updateLogs() {
 			saveAtTime = time.Now()
 		}
 		runner.logMtx.Lock()
-		done := runner.LogsPDH != nil
+		done := runner.logPDHFinal != nil
 		runner.logMtx.Unlock()
 		if done {
 			return
@@ -1170,23 +1171,11 @@ func (runner *ContainerRunner) updateLogs() {
 		}
 		saveAtTime = time.Now().Add(crunchLogUpdatePeriod)
 		saveAtSize = runner.LogCollection.Size() + crunchLogUpdateSize
-		saved, err := runner.saveLogCollection(false)
+		err := runner.saveLogCollection(false)
 		if err != nil {
 			runner.CrunchLog.Printf("error updating log collection: %s", err)
 			continue
 		}
-
-		err = runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
-			"select": []string{"uuid"},
-			"container": arvadosclient.Dict{
-				"log": saved.PortableDataHash,
-			},
-		}, nil)
-		if err != nil {
-			runner.CrunchLog.Printf("error updating container log to %s: %s", saved.PortableDataHash, err)
-			continue
-		}
-
 		savedSize = size
 	}
 }
@@ -1457,8 +1446,8 @@ func (runner *ContainerRunner) CommitLogs() error {
 		runner.keepstoreLogger = nil
 	}
 
-	if runner.LogsPDH != nil {
-		// If we have already assigned something to LogsPDH,
+	if runner.logPDHFinal != nil {
+		// If we have already assigned something to logPDHFinal,
 		// we must be closing the re-opened log, which won't
 		// end up getting attached to the container record and
 		// therefore doesn't need to be saved as a collection
@@ -1466,30 +1455,28 @@ func (runner *ContainerRunner) CommitLogs() error {
 		return nil
 	}
 
-	saved, err := runner.saveLogCollection(true)
-	if err != nil {
-		return fmt.Errorf("error saving log collection: %s", err)
-	}
-	runner.logMtx.Lock()
-	defer runner.logMtx.Unlock()
-	runner.LogsPDH = &saved.PortableDataHash
-	return nil
+	return runner.saveLogCollection(true)
 }
 
-// Create/update the log collection. Return value has UUID and
-// PortableDataHash fields populated, but others may be blank.
-func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.Collection, err error) {
+// Flush buffered logs to Keep and create/update the log collection.
+//
+// Also update the container record with the updated log PDH -- except
+// this part is skipped if (a) the container hasn't entered Running
+// state yet, meaning we can't assign a log value, or (b) final==true,
+// meaning the caller will immediately update the container record to
+// Completed state and update the log PDH in the same API call.
+func (runner *ContainerRunner) saveLogCollection(final bool) error {
 	runner.logMtx.Lock()
 	defer runner.logMtx.Unlock()
-	if runner.LogsPDH != nil {
+	if runner.logPDHFinal != nil {
 		// Already finalized.
-		return
+		return nil
 	}
 	updates := arvadosclient.Dict{
 		"name": "logs for " + runner.Container.UUID,
 	}
-	mt, err1 := runner.LogCollection.MarshalManifest(".")
-	if err1 == nil {
+	mt, errFlush := runner.LogCollection.MarshalManifest(".")
+	if errFlush == nil {
 		// Only send updated manifest text if there was no
 		// error.
 		updates["manifest_text"] = mt
@@ -1516,43 +1503,65 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 		"select":     []string{"uuid", "portable_data_hash"},
 		"collection": updates,
 	}
-	var err2 error
+	var saved arvados.Collection
+	var errUpdate error
 	if runner.logUUID == "" {
 		reqBody["ensure_unique_name"] = true
-		err2 = runner.DispatcherArvClient.Create("collections", reqBody, &response)
+		errUpdate = runner.DispatcherArvClient.Create("collections", reqBody, &saved)
 	} else {
-		err2 = runner.DispatcherArvClient.Update("collections", runner.logUUID, reqBody, &response)
+		errUpdate = runner.DispatcherArvClient.Update("collections", runner.logUUID, reqBody, &saved)
 	}
-	if err2 == nil {
-		runner.logUUID = response.UUID
+	if errUpdate == nil {
+		runner.logUUID = saved.UUID
+		runner.logPDH = saved.PortableDataHash
 	}
 
-	if err1 != nil || err2 != nil {
-		err = fmt.Errorf("error recording logs: %q, %q", err1, err2)
+	if errFlush != nil || errUpdate != nil {
+		return fmt.Errorf("error recording logs: %q, %q", errFlush, errUpdate)
 	}
-	return
+	if final {
+		runner.logPDHFinal = &saved.PortableDataHash
+	}
+	if final || runner.finalState == "Queued" {
+		// If final, the caller (Run -> CommitLogs) will
+		// immediately update the log attribute to logPDHFinal
+		// while setting state to Complete, so it would be
+		// redundant to do it here.
+		//
+		// If runner.finalState=="Queued", the container state
+		// has not changed to "Running", so updating the log
+		// attribute is not allowed.
+		return nil
+	}
+	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		"select": []string{"uuid"},
+		"container": arvadosclient.Dict{
+			"log": saved.PortableDataHash,
+		},
+	}, nil)
 }
 
 // UpdateContainerRunning updates the container state to "Running"
-func (runner *ContainerRunner) UpdateContainerRunning(logId string) error {
+func (runner *ContainerRunner) UpdateContainerRunning() error {
+	runner.logMtx.Lock()
+	logPDH := runner.logPDH
+	runner.logMtx.Unlock()
+
 	runner.cStateLock.Lock()
 	defer runner.cStateLock.Unlock()
 	if runner.cCancelled {
 		return ErrCancelled
 	}
-	updates := arvadosclient.Dict{
-		"gateway_address": runner.gateway.Address,
-		"state":           "Running",
-	}
-	if logId != "" {
-		updates["log"] = logId
-	}
 	return runner.DispatcherArvClient.Update(
 		"containers",
 		runner.Container.UUID,
 		arvadosclient.Dict{
-			"select":    []string{"uuid"},
-			"container": updates,
+			"select": []string{"uuid"},
+			"container": arvadosclient.Dict{
+				"gateway_address": runner.gateway.Address,
+				"state":           "Running",
+				"log":             logPDH,
+			},
 		},
 		nil,
 	)
@@ -1579,8 +1588,8 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 func (runner *ContainerRunner) UpdateContainerFinal() error {
 	update := arvadosclient.Dict{}
 	update["state"] = runner.finalState
-	if runner.LogsPDH != nil {
-		update["log"] = *runner.LogsPDH
+	if runner.logPDHFinal != nil {
+		update["log"] = *runner.logPDHFinal
 	}
 	if runner.ExitCode != nil {
 		update["exit_code"] = *runner.ExitCode
@@ -1682,6 +1691,11 @@ func (runner *ContainerRunner) Run() (err error) {
 		}
 
 		if bindmounts != nil {
+			if errSave := runner.saveLogCollection(false); errSave != nil {
+				// This doesn't merit failing the
+				// container, but should be logged.
+				runner.CrunchLog.Printf("error saving log collection: %v", errSave)
+			}
 			checkErr("CaptureOutput", runner.CaptureOutput(bindmounts))
 		}
 		checkErr("stopHoststat", runner.stopHoststat())
@@ -1740,14 +1754,11 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
-	logCollection, err := runner.saveLogCollection(false)
-	var logId string
-	if err == nil {
-		logId = logCollection.PortableDataHash
-	} else {
-		runner.CrunchLog.Printf("Error committing initial log collection: %v", err)
+	err = runner.saveLogCollection(false)
+	if err != nil {
+		return
 	}
-	err = runner.UpdateContainerRunning(logId)
+	err = runner.UpdateContainerRunning()
 	if err != nil {
 		return
 	}
