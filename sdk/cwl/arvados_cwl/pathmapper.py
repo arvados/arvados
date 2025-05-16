@@ -159,7 +159,7 @@ class ArvPathMapper(PathMapper):
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
-                        if self.arvrunner.selected_credential is None:
+                        if self.arvrunner.selected_credential is None and self.arvrunner.botosession is None:
                             self.arvrunner.selected_credential = resolve_aws_key(self.arvrunner.api, src)
                             logger.info("S3 downloads will use access key id %s which is Arvados credential '%s' (%s)",
                                         self.arvrunner.selected_credential['external_id'],
@@ -176,7 +176,7 @@ class ArvPathMapper(PathMapper):
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
                 except Exception as e:
-                    logger.warning("Download error: %s", e, exc_info=self.debug)
+                    logger.warning("Download error: %s", e, exc_info=debug)
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 
