@@ -21,8 +21,7 @@ server {
   # Workbench2 uses a call to /config.json to bootstrap itself
   # and find out where to contact the API server.
   location /config.json {
-{% set api_addr = arvados_cluster.Services.Controller|external_addr %}
-    return 200 '{"API_HOST":"{{api_addr.address }}:{{api_addr.port}}"}';
+    return 200 '{"API_HOST":"{{ arvados_cluster.Services.Controller|external_addr }}"}';
   }
 
   location / {
