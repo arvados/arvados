@@ -41,6 +41,9 @@ collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
 collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
 
 def resolve_aws_key(apiclient, s3url):
+    if "credentials" not in apiclient._rootDesc["resources"]:
+        raise WorkflowException("Arvados instance does not support the external credentials API.  Use --enable-aws-credential-capture to use locally-defined credentials.")
+
     parsed = urllib.parse.urlparse(s3url)
     bucket = "s3://%s" % parsed.netloc
 
