@@ -61,6 +61,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     root: {
         height: '100%',
+        overflow: 'hidden',
     },
 });
 
