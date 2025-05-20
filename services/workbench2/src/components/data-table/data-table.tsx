@@ -85,7 +85,9 @@ type CssRules =
     | "arrow"
     | "arrowButton"
     | "tableCellWorkflows"
-    | "loadingRow";
+    | "loadingRow"
+    | "hiddenCell"
+    | "skeleton";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -170,6 +172,26 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     loadingRow: {
         height: "49px",
+    },
+    hiddenCell: {
+        position: "relative",
+        "& > *": {
+            visibility: "hidden",
+        },
+    },
+    skeleton: {
+        visibility: "visible",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        paddingLeft: "5px",
+        paddingRight: "24px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: "8px",
     },
 });
 
@@ -405,8 +427,10 @@ export const DataTable = withStyles(styles)(
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
                             <TableBody className={classes.tableBody}>
-                                {dataTableContentType === DataTableContentType.ROWS && items.map(this.renderBodyRow)}
-                                {dataTableContentType === DataTableContentType.LOADING && this.renderLoadingPlaceholder()}
+                                {(
+                                    dataTableContentType === DataTableContentType.ROWS ||
+                                    dataTableContentType === DataTableContentType.LOADING
+                                ) && items.map((item, index) => this.renderBodyRow(item, index, dataTableContentType))}
                             </TableBody>
                         </Table>
                         {this.renderNoItemsPlaceholder(dataTableContentType, this.props.columns)}
@@ -524,15 +548,17 @@ export const DataTable = withStyles(styles)(
             </IconButton>
         );
 
-        renderBodyRow = (item: any, index: number) => {
+        renderBodyRow = (item: any, index: number, dataTableContentType: DataTableContentType) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             const { hoveredIndex } = this.state;
             const isRowSelected = item === selectedResourceUuid;
-            const getClassnames = (colIndex: number) => {
-                if(currentRoute === '/workflows') return classes.tableCellWorkflows;
-                if(colIndex === 0) return classnames(classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
-                if(colIndex === 1) return classnames(classes.tableCell, classes.firstTableCell, isRowSelected ? classes.selected : "");
-                return classnames(classes.tableCell, isRowSelected ? classes.selected : "");
+            const getCellClassnames = (colIndex: number) => {
+                let cellClasses: string[] = [];
+                if (dataTableContentType === DataTableContentType.LOADING) cellClasses.push(classes.hiddenCell);
+                if(currentRoute === '/workflows') return classnames(cellClasses, classes.tableCellWorkflows);
+                if(colIndex === 0) return classnames(cellClasses, classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
+                if(colIndex === 1) return classnames(cellClasses, classes.tableCell, classes.firstTableCell, isRowSelected ? classes.selected : "");
+                return classnames(cellClasses, classes.tableCell, isRowSelected ? classes.selected : "");
             };
             const handleHover = (index: number | null) => {
                 this.setState({ hoveredIndex: index });
@@ -555,8 +581,9 @@ export const DataTable = withStyles(styles)(
                         <TableCell
                             key={column.key || colIndex}
                             data-cy={column.key || colIndex}
-                            className={getClassnames(colIndex)}>
+                            className={getCellClassnames(colIndex)}>
                             {column.render(item)}
+                            {dataTableContentType === DataTableContentType.LOADING && <LoadingIndicator inline={true} containerClassName={classes.skeleton} />}
                         </TableCell>
                     ))}
                 </TableRow>
