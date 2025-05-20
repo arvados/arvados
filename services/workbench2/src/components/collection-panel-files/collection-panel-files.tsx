@@ -154,7 +154,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: "0.5rem",
         marginBottom: "0.5rem",
         backgroundColor: "#fff",
-        boxShadow: "0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)",
     },
     pathPanelPathWrapper: {
         display: "inline-block",
@@ -166,7 +165,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         whiteSpace: "nowrap",
         position: "relative",
         backgroundColor: "#fff",
-        boxShadow: "0px 3px 3px 0px rgb(0 0 0 / 20%), 0px 3px 1px 0px rgb(0 0 0 / 14%), 0px 3px 1px -1px rgb(0 0 0 / 12%)",
     },
     leftPanelVisible: {
         opacity: 1,
@@ -196,7 +194,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         marginTop: "-0.5rem",
         position: "relative",
         backgroundColor: "#fff",
-        boxShadow: "0px 3px 3px 0px rgb(0 0 0 / 20%), 0px 3px 1px 0px rgb(0 0 0 / 14%), 0px 3px 1px -1px rgb(0 0 0 / 12%)",
     },
     pathPanelItem: {
         cursor: "pointer",

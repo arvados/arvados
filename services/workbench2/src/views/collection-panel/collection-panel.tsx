@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { IconButton, Grid, Tooltip, Typography, Card, CardHeader, CardContent } from '@mui/material';
+import { IconButton, Grid, Tooltip, Typography, CardHeader, CardContent } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
@@ -60,6 +60,8 @@ type CssRules =
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
     },
     mpvRoot: {
         width: '100%',
@@ -224,7 +226,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                         <DetailsCardRoot />
                         <MPVContainer container className={classes.mpvRoot} justifyContent="flex-start" panelStates={panelsData}>
                             <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
-                                <Card className={classes.infoCard}>
+                                <section className={classes.infoCard}>
                                     <CardHeader
                                         className={classes.header}
                                         classes={{
@@ -275,12 +277,12 @@ export const CollectionPanel = withStyles(styles)(connect(
                                             </Typography>
                                         }
                                     </CardContent>
-                                </Card>
+                                </section>
                             </MPVPanelContent>
                             <MPVPanelContent item xs>
-                                <Card className={classes.filesCard}>
+                                <section className={classes.filesCard}>
                                     <CollectionPanelFiles isWritable={isWritable} />
-                                </Card>
+                                </section>
                             </MPVPanelContent>
                         </MPVContainer >
                     </section>

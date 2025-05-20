@@ -49,6 +49,9 @@ type CssRules =
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'none',
     },
     mpvRoot: {
         width: '100%',
@@ -151,7 +154,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                             <MPVPanelContent
                                 xs='auto'
                                 data-cy='registered-workflow-info-panel'>
-                                <Card className={classes.infoCard}>
+                                <section className={classes.infoCard}>
                                     <CardHeader
                                         className={classes.header}
                                         classes={{
@@ -191,7 +194,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                     <CardContent className={classes.content}>
                                         <WorkflowDetailsAttributes workflow={item} />
                                     </CardContent>
-                                </Card>
+                                </section>
                             </MPVPanelContent>
                             <MPVPanelContent
                                 forwardProps

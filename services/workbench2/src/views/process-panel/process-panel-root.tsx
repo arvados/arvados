@@ -36,6 +36,8 @@ type CssRules = "root" | 'mpvRoot';
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: "100%",
+        display: "flex",
+        flexDirection: "column",
     },
     mpvRoot: {
         width: '100%',
@@ -151,7 +153,6 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 <DetailsCardRoot />
                 <MPVContainer
                     className={props.classes.mpvRoot}
-                    spacing={1}
                     panelStates={panelsData}
                     justifyContent="flex-start">
                     <MPVPanelContent
