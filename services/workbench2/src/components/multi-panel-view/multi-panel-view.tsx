@@ -58,6 +58,8 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         flexGrow: 1,
         flexShrink: 1,
         maxWidth: 'initial',
+        minWidth: 'fit-content',
+        padding: '0 5px',
         borderBottom: `1px solid ${theme.palette.grey[300]}`,
     },
 });
