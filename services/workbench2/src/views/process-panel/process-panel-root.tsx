@@ -75,7 +75,7 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 const panelsData: MPVPanelState[] = [
     { name: "Details" },
-    { name: "Logs", visible: true },
+    { name: "Logs" },
     { name: "Subprocesses" },
     { name: "Outputs" },
     { name: "Inputs" },

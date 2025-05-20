@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, IconButton, CardContent, Tooltip, Grid, Typography } from '@mui/material';
+import { CardHeader, IconButton, CardContent, Tooltip, Grid, Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { useAsyncInterval } from 'common/use-async-interval';

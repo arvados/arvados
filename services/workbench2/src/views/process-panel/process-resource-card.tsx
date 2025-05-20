@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, CardContent, Typography, Grid, Link } from '@mui/material';
+import { CardHeader, CardContent, Typography, Grid, Link } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
