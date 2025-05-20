@@ -97,7 +97,7 @@ export const ProcessLogsCard = withStyles(styles)(
 
            return (
                <Grid item className={classes.root} xs={12}>
-                   <Card className={classes.card}>
+                   <section className={classes.card}>
                        <CardHeader className={classes.header}
                                    avatar={<LogIcon className={classes.iconHeader} />}
                                    action={<Grid container direction='row' alignItems='center'>
@@ -166,7 +166,7 @@ export const ProcessLogsCard = withStyles(styles)(
                                   messages={['No logs yet']} />
                            }
                        </CardContent>
-                   </Card>
+                   </section>
                </Grid >
            );
 });

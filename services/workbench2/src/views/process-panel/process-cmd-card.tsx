@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Grid } from '@mui/material';
+import { CardHeader, IconButton, CardContent, Tooltip, Typography, Grid } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -81,7 +81,7 @@ export const ProcessCmdCard = withStyles(styles)(
     );
 
     return (
-      <Card className={classes.card}>
+      <section className={classes.card}>
         <CardHeader
           className={classes.header}
           classes={{
@@ -118,7 +118,7 @@ export const ProcessCmdCard = withStyles(styles)(
             linked
           />
         </CardContent>
-      </Card>
+      </section>
     );
   }
 );

@@ -102,6 +102,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "100%",
         flex: 1,
         overflowY: "auto",
+        boxShadow: 'none',
     },
     moreOptionsButton: {
         padding: 0,

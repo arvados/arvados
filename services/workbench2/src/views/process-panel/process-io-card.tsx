@@ -6,7 +6,6 @@ import React, { ReactElement, memo } from "react";
 import { Dispatch } from "redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    Card,
     CardHeader,
     CardContent,
     Tooltip,
@@ -310,7 +309,7 @@ export const ProcessIOCard = withStyles(styles)(
         const subProcessLoading = loading && !hasOutputCollecton && !hasInputMounts;
 
         return (
-            <Card
+            <section
             className={classes.card}
             data-cy="process-io-card"
             >
@@ -443,7 +442,7 @@ export const ProcessIOCard = withStyles(styles)(
                             </>
                 ))}
                 </CardContent>
-                </Card>
+                </section>
         );
             }
 );

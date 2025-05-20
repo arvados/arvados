@@ -75,7 +75,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
         }
 
         return (
-            <Card className={classes.card} data-cy="process-resources-card">
+            <section className={classes.card} data-cy="process-resources-card">
                 <CardHeader
                     className={classes.header}
                     classes={{
@@ -208,7 +208,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                     </Grid>
                     <Typography>* RAM available to the program is limited to Requested RAM, not Instance RAM</Typography>
                 </CardContent>
-            </Card >
+            </section >
         );
     }
 ));

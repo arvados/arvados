@@ -12,8 +12,6 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { GridProps } from '@mui/material/Grid';
 import { isArray, isEqual } from 'lodash';
-import { DefaultView } from 'components/default-view/default-view';
-import { InfoIcon } from 'components/icon/icon';
 import classNames from 'classnames';
 
 type CssRules =
@@ -222,11 +220,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
 
     const content = <Grid container direction="column" item {...props} xs className={classes.exclusiveContent}
         onScroll={() => setSelectedPanel(-1)}>
-        {panelVisibility.includes(true)
-            ? panels
-            : <Grid container item alignItems='center' justifyContent='center'>
-                <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
-            </Grid>}
+        {panelVisibility.includes(true) && panels}
     </Grid>;
 
         return (

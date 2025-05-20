@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Tooltip, Typography, Card, CardHeader, CardContent, IconButton } from '@mui/material';
+import { Tooltip, Typography, CardHeader, CardContent, IconButton } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
@@ -227,13 +227,13 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                             <MPVPanelContent
                                 xs
                                 maxHeight='100%'>
-                                <Card className={classes.filesCard}>
+                                <section className={classes.filesCard}>
                                     <CardHeader title='Workflow Definition' />
                                     <ProcessOutputCollectionFiles
                                         isWritable={false}
                                         currentItemUuid={workflowCollection}
                                     />
-                                </Card>
+                                </section>
                             </MPVPanelContent>
                         </MPVContainer>
                     </section>
