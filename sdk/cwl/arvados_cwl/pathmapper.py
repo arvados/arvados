@@ -158,6 +158,8 @@ class ArvPathMapper(PathMapper):
                                                                                aws_secret_access_key=self.arvrunner.selected_credential["secret"])
                         else:
                             self.arvrunner.botosession = boto3.session.Session()
+                        if not self.arvrunner.botosession.get_credentials():
+                            raise WorkflowException("boto3 did not find any local AWS credentials to use to download from S3.  If you want to use credentials registered with Arvados, use --defer-downloads")
                         logger.info("S3 downloads will use access key id %s in region %s", self.arvrunner.botosession.get_credentials().access_key, self.arvrunner.botosession.region_name)
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
