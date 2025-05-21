@@ -55,7 +55,7 @@ def resolve_aws_key(apiclient, s3url):
     if len(results["items"]) == 1:
         return results["items"][0]
 
-    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"]]).execute()
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"], ["scopes", "=", []]]).execute()
 
     if len(results["items"]) > 1:
         raise WorkflowException("Multiple AWS credentials found in Arvados, provide --use-credential to specify which one to use")
