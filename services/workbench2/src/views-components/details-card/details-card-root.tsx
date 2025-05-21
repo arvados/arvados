@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { ProjectResource } from 'models/project';
@@ -17,22 +18,38 @@ import { getResource } from 'store/resources/resources';
 import { CollectionCard } from './collection-details-card';
 import { WorkflowCard } from './workflow-details-card';
 import { ProcessCard } from './process-details-card';
+import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 
-const mapStateToProps = ({ resources, properties }: RootState) => {
+const mapStateToProps = ({ resources, properties, selectedResource }: RootState) => {
     const currentResource = getResource(properties.currentRouteUuid)(resources);
     return {
         currentResource,
+        selectedResourceUuid: selectedResource.selectedResourceUuid,
     };
 };
 
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    setSelectedResourceUuid: (uuid: string) => dispatch<any>(setSelectedResourceUuid(uuid)),
+});
+
 type DetailsCardProps = {
     currentResource: ProjectResource | UserResource | CollectionResource | WorkflowResource | ProcessResource | undefined;
+    selectedResourceUuid: string;
+    setSelectedResourceUuid: (uuid: string) => void;
 };
 
-export const DetailsCardRoot = connect(mapStateToProps)(({ currentResource }: DetailsCardProps) => {
+export const DetailsCardRoot = connect(mapStateToProps, mapDispatchToProps)(({ currentResource, selectedResourceUuid }: DetailsCardProps) => {
     if (!currentResource) {
         return null;
     }
+
+    useEffect(() => {
+        if (selectedResourceUuid !== currentResource.uuid) {
+            setSelectedResourceUuid(currentResource.uuid);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     switch (currentResource.kind as string) {
         case ResourceKind.USER:
             return <UserCard />;
