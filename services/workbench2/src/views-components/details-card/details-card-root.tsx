@@ -38,7 +38,7 @@ type DetailsCardProps = {
     setSelectedResourceUuid: (uuid: string) => void;
 };
 
-export const DetailsCardRoot = connect(mapStateToProps, mapDispatchToProps)(({ currentResource, selectedResourceUuid }: DetailsCardProps) => {
+export const DetailsCardRoot = connect(mapStateToProps, mapDispatchToProps)(({ currentResource, selectedResourceUuid, setSelectedResourceUuid }: DetailsCardProps) => {
     if (!currentResource) {
         return null;
     }
