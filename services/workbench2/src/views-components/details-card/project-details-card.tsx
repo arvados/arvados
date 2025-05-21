@@ -43,7 +43,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         display: 'flex',
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
     },
     cardHeader: {
@@ -139,25 +139,24 @@ export const ProjectCard = connect(
                                         style={{ marginRight: '1rem' }}
                                     >
                                         {name}
-                                    </Typography>
-
                                     <FavoriteStar
                                         className={classes.faveIcon}
                                         resourceUuid={currentResource.uuid}
-                                    />
+                                        />
                                     <PublicFavoriteStar
                                         className={classes.faveIcon}
                                         resourceUuid={currentResource.uuid}
-                                    />
+                                        />
                                     {!!frozenByFullName && (
                                         <Tooltip
-                                            className={classes.frozenIcon}
-                                            disableFocusListener
-                                            title={<span>Project was frozen by {frozenByFullName}</span>}
+                                        className={classes.frozenIcon}
+                                        disableFocusListener
+                                        title={<span>Project was frozen by {frozenByFullName}</span>}
                                         >
                                             <span><FreezeIcon style={{ fontSize: '1.25rem' }} /></span>
                                         </Tooltip>
                                     )}
+                                    </Typography>
                                 </section>
                             </section>
                         }
