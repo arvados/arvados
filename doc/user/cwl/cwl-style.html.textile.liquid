@@ -9,21 +9,26 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-* "Does your application support NVIDIA GPU acceleration?":#nvidiagpu
-* "Trying to reduce costs?":#preemptible
-* "You have a sequence of short-running steps":#RunInSingleContainer
-* "Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@":#avoidExcessRequirements
-* "Prefer text substitution to Javascript":#preferTextSubst
-* "Use @ExpressionTool@ to efficiently rearrange input files":#expressionTool
-* "Limit RAM requests to what you really need":#limitRAM
-* "Avoid scattering by step by step":#avoidScatterByStep
-* "Always provide @DockerRequirement@":#DockerRequirement
-* "Build a reusable library of components":#reusecode
-* "Supply scripts as input parameters":#scriptsasinput
-* "Getting the temporary and output directories":#tempdirs
-* "Specifying @ResourceRequirement@":#ResourceRequirement
-* "Importing data into Keep from HTTP":#httpimport
-* "Importing data into Keep from S3":#s3import
+*Performance*
+# "Does your application support NVIDIA GPU acceleration?":#nvidiagpu
+# "Trying to reduce costs?":#preemptible
+# "You have a sequence of short-running steps":#RunInSingleContainer
+# "Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@":#avoidExcessRequirements
+# "Prefer text substitution to Javascript":#preferTextSubst
+# "Use @ExpressionTool@ to efficiently rearrange input files":#expressionTool
+# "Limit RAM requests to what you really need":#limitRAM
+# "Avoid scattering by step by step":#avoidScatterByStep
+
+*Portability*
+# "Always provide @DockerRequirement@":#DockerRequirement
+# "Build a reusable library of components":#reusecode
+# "Supply scripts as input parameters":#scriptsasinput
+# "Getting the temporary and output directories":#tempdirs
+# "Specifying @ResourceRequirement@":#ResourceRequirement
+
+*Data import*
+# "Importing data into Keep from HTTP":#httpimport
+# "Importing data into Keep from S3":#s3import
 
 h2(#performance). Performance
 
@@ -251,6 +256,8 @@ steps:
         tmpdirMin: 90000
 {% endcodeblock %}
 
+h2. Data import
+
 h3(#httpimport). Importing data into Keep from HTTP
 
 You can use HTTP URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
@@ -267,7 +274,7 @@ fastq2:
 Files are downloaded and stored in Keep collections with HTTP header information stored in metadata.  If a file was previously downloaded, @arvados-cwl-runner@ uses HTTP caching rules to decide if a file should be re-downloaded or not.
 
 The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.  There are a couple reasons you may want to do this:
-# You are submitting from a workstation where limited bandwith between the upstream HTTP server, workstation and Arvados cluster mean longer transfer times than using the compute node
+# You are submitting from a workstation, but expect the file will be downloaded faster by the compute node
 # You are submitting multiple workflow runs in a row and want to parallelize downloads
 
 @arvados-cwl-runner@ provides two additional options to control caching behavior.
@@ -302,13 +309,15 @@ fastq2:
 Files are downloaded and stored in Keep collections.  If the bucket is versioned, it will make note of the object version and last modified time.  If a file was previously downloaded, @arvados-cwl-runner@ will use the object version and/or last modified time to decide if a file should be re-downloaded or not.  The @--prefer-cached-downloads@ option will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
 
 The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.  There are several reasons you may want to do this:
-# You are submitting from a workstation where limited bandwith between the S3 bucket, workstation and Arvados cluster mean longer transfer times than using the compute node
+# You are submitting from a workstation, but expect the file will be downloaded faster by the compute node
 # You are submitting multiple workflow runs in a row and want to parallelize downloads
 # You don't have credentials to access the S3 bucket locally but do have read access to AWS credentials registered with Arvados
 
-When using the @--defer-download@ option, @arvados-cwl-runner@ use the following process to choose which AWS credentials to use to access the S3 bucket.  In each case, if more than one @credential@ matches, it will throw an error, and the user must provide @--use-credential@ on the command line with the name or uuid of the credential to specify precisely which one to use.
+When using the @--defer-download@ option, @arvados-cwl-runner@ use the following process to choose which AWS credentials to use to access the S3 bucket.
 
-# Arvados will first check to see if you have access to a credential of with @credential_class: aws_access_key@ where the s3 bucket is present in @scopes@ (the bucket name must be formatted as @s3://bucketname@).
-# Otherwise, Arvados will look for a credential with @credential_class: aws_access_key@ where @scopes@ is empty.
+# Arvados will first check to see if you have access to a "credential":{{site.baseurl}}/api/methods/credentials.html with @credential_class: aws_access_key@ where the s3 bucket is present in @scopes@ (the bucket name must be formatted as @s3://bucketname@).
+# Otherwise, Arvados will look for a "credential":{{site.baseurl}}/api/methods/credentials.html with @credential_class: aws_access_key@ where @scopes@ is empty.
 
-If no AWS credentials are registered with Arvados, but you have AWS credentials available locally (for example, in @~/.aws/credentials@), you can use @--enable-aws-credential-capture@.  This causes @arvados-cwl-runner@ to capture the active AWS credentials from your environment and pass them to the workflow runner container as a secret file.  In this case, these credentials are only stored in Arvados for the duration of the workflow run and are discarded when the workflow finishes.  Arvados uses the @boto3@ library to access S3, which "has a list of locations where it will search for credentials.":https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html .
+In each case, if more than one "credential":{{site.baseurl}}/api/methods/credentials.html matches, it will throw an error, and the user must provide @--use-credential@ on the command line with the name or uuid of the credential to specify precisely which one to use.
+
+If no AWS credentials are registered with Arvados, but you have AWS credentials available locally (for example, in @~/.aws/credentials@), you can use @--enable-aws-credential-capture@.  This instructs @arvados-cwl-runner@ to capture the active AWS credentials from your environment and pass them to the workflow runner container as a secret file.  In this case, these credentials are only stored in Arvados for the duration of the workflow run and are discarded when the workflow finishes.  Arvados uses the @boto3@ library to access S3, which "has a list of locations where it will search for credentials.":https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
