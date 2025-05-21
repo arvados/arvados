@@ -64,7 +64,19 @@ Compute node templates are only available in the Arvados source tree. Clone a co
 
 h3(#install-ansible). Install Ansible
 
-We provide an Ansible playbook that can run on a Debian or Ubuntu system to set up a node with all the software and configuration necessary to do Arvados compute work. "Install Ansible following their instructions.":https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html It is okay to install Ansible to a nonstandard location; you can configure other parts of the automation with that location.
+We provide an Ansible playbook that can run on a Debian or Ubuntu system to set up a node with all the software and configuration necessary to do Arvados compute work. "Install Ansible following their instructions":https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html. Our playbooks are tested with Ansible 8.7 and require at least Ansible 8. If you install Ansible with @pipx@ or @pip@, you can request this version by running:
+
+<notextile>
+<pre><code>~$ <span class="userinput">pipx install <strong>ansible~=8.7</strong></span>
+OR ~$ <span class="userinput">pip install <strong>ansible~=8.7</strong></span>
+</code></pre>
+</notextile>
+
+It is okay to install Ansible to a nonstandard location; you can configure other parts of the automation with that location.
+
+{% include 'notebox_begin_warning' %}
+Ubuntu 20.04 "focal" includes Python 3.8, which is too old to run Ansible 8 and our Ansible playbooks. If your cluster runs Ubuntu 20.04, you will need to use a system with a newer version of Python to build the compute node image. The system where you build the compute node image only needs to be able to communicate with your cloud provider. It does not need to be part of the Arvados cluster or have any Arvados client tools installed. Your Arvados cluster, and the compute node image you build, can all still be based on Ubuntu 20.04.
+{% include 'notebox_end' %}
 
 h3(#install-packer). Install Packer and the Ansible plugin
 
