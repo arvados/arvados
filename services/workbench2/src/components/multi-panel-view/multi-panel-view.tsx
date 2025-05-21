@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 import { RouterState } from "react-router-redux";
 import { RootState } from 'store/store';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button, Grid, Paper, Tooltip, Tabs, Tab } from "@mui/material";
+import { Grid, Paper, Tabs, Tab } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { GridProps } from '@mui/material/Grid';
@@ -22,7 +22,8 @@ type CssRules =
     | 'button'
     | 'exclusiveContentPaper'
     | 'exclusiveContent'
-    | 'tabs';
+    | 'tab'
+    | 'selectedTab';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     exclusiveGridContainerRoot: {
@@ -54,13 +55,14 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     exclusiveContentPaper: {
         boxShadow: 'none',
     },
-    tabs: {
+    tab: {
         flexGrow: 1,
         flexShrink: 1,
         maxWidth: 'initial',
         minWidth: 'fit-content',
         padding: '0 5px',
-        borderBottom: `1px solid ${theme.palette.grey[300]}`,
+    },
+    selectedTab: {
     },
 });
 
@@ -156,14 +158,13 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
     const currentRoute = router.location ? router.location.pathname : "";
     useEffect(() => {
         setPanelVisibility(initialVisibility);
-        setSelectedPanel(-1);
+        setSelectedPanel(initialVisibility.indexOf(true));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentRoute]); // Omit initialVisibility to avoid infinite loops
 
     let panels: JSX.Element[] = [];
-    let buttons: JSX.Element[] = [];
     let tabs: JSX.Element[] = [];
-    let buttonBar: JSX.Element = <></>;
+    let tabBar: JSX.Element = <></>;
 
     if (isArray(children)) {
         const showFn = (idx: number) => () => {
@@ -180,23 +181,6 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
             const panelName = panelStates === undefined
                 ? `Panel ${idx + 1}`
                 : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx + 1}`;
-            const btnVariant = panelVisibility[idx]
-                ? "contained"
-                : "outlined";
-            const btnTooltip = panelVisibility[idx]
-                ? ``
-                : `Open ${panelName} panel`;
-
-            buttons = [
-                ...buttons,
-                <Tooltip title={btnTooltip} disableFocusListener>
-                    <Button variant={btnVariant} size="small" color="primary"
-                        className={classNames(classes.button)}
-                        onClick={showFn(idx)}>
-                        {panelName}
-                    </Button>
-                </Tooltip>
-            ];
 
             tabs = [
                 ...tabs,
@@ -216,22 +200,21 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
             panels = [...panels, aPanel];
         };
 
-        buttonBar = (
+        tabBar = (
             <Tabs className={classes.symmetricTabs} value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
-                {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
+                {tabs.map((tgl, idx) => <Tab className={classNames(classes.tab, idx === selectedPanel ? classes.selectedTab : '')} key={idx} label={tgl} />)}
             </Tabs>);
     };
 
-    const content = <Grid container direction="column" item {...props} xs className={classes.exclusiveContent}
-        onScroll={() => setSelectedPanel(-1)}>
-        {panelVisibility.includes(true) && panels}
-    </Grid>;
+    const content = <Grid container direction="column" item {...props} xs className={classes.exclusiveContent}>
+                        {panelVisibility.includes(true) && panels}
+                    </Grid>;
 
         return (
             <Grid container {...props} className={classNames(classes.exclusiveGridContainerRoot, props.className)}>
                 <Grid item {...props} className={classes.gridItemRoot}>
                     <Paper className={classes.paperRoot}>
-                        {buttonBar}
+                        {tabBar}
                         {content}
                     </Paper>
                 </Grid>
