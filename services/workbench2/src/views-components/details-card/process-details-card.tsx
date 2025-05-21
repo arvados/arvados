@@ -98,7 +98,6 @@ export const ProcessCard = connect(
                         title={
                             <section className={classes.nameContainer}>
                                 <Typography
-                                    noWrap
                                     variant='h6'
                                 >
                                     {name}

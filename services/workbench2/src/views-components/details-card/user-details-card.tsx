@@ -111,7 +111,6 @@ export const UserCard = connect(
                         title={
                             <section className={classes.userNameContainer}>
                                 <Typography
-                                    noWrap
                                     variant='h6'
                                 >
                                     {fullName}

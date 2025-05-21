@@ -98,7 +98,6 @@ export const CollectionCard = connect(
                         title={
                             <section className={classes.nameContainer}>
                                 <Typography
-                                    noWrap
                                     variant='h6'
                                 >
                                     {name}
