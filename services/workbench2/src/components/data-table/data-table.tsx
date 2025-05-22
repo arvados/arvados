@@ -427,10 +427,7 @@ export const DataTable = withStyles(styles)(
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
                             <TableBody className={classes.tableBody}>
-                                {(
-                                    dataTableContentType === DataTableContentType.ROWS ||
-                                    dataTableContentType === DataTableContentType.LOADING
-                                ) && items.map((item, index) => this.renderBodyRow(item, index, dataTableContentType))}
+                                {this.renderBody(items, dataTableContentType)}
                             </TableBody>
                         </Table>
                         {this.renderNoItemsPlaceholder(dataTableContentType, this.props.columns)}
@@ -547,6 +544,18 @@ export const DataTable = withStyles(styles)(
                 />
             </IconButton>
         );
+
+        renderBody = (items: any[], dataTableContentType: DataTableContentType) => {
+            if (items.length) {
+                // Have items, renderBodyRow renders rows or skeleton over rows
+                return items.map((item, index) => this.renderBodyRow(item, index, dataTableContentType));
+            } else if (dataTableContentType === DataTableContentType.LOADING) {
+                // No rows and loading, use static skeleton
+                return this.renderLoadingPlaceholder();
+            }
+            // No rows and not loading, let empty view outside table body display
+            return <></>;
+        };
 
         renderBodyRow = (item: any, index: number, dataTableContentType: DataTableContentType) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
