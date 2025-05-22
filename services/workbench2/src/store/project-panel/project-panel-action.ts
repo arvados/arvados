@@ -14,7 +14,7 @@ import { PROJECT_PANEL_CURRENT_UUID, IS_PROJECT_PANEL_TRASHED } from "./project-
  * project tab with the values stored in user preferences which also referece these values
  */
 export const ProjectPanelTabLabels = {
-    Details: "Details",
+    Overview: "Overview",
     DATA: "Data",
     RUNS: "Workflow Runs",
 };

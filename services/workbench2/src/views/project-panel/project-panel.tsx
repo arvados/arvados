@@ -23,6 +23,7 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
+import { ProjectOverview } from './project-overview';
 import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
@@ -105,7 +106,7 @@ export const ProjectPanel = withStyles(styles)(
                             item
                             data-cy="project-details"
                             className={classes.dataExplorer}>
-                            <>foo</>
+                            <ProjectOverview />
                         </MPVPanelContent>
                         <MPVPanelContent
                             forwardProps

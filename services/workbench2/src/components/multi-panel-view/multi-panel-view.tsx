@@ -61,6 +61,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         maxWidth: 'initial',
         minWidth: 'fit-content',
         padding: '0 5px',
+        borderBottom: `1px solid ${theme.palette.grey[300]}`,
     },
     selectedTab: {
     },

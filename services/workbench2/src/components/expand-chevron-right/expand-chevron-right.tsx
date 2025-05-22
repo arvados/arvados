@@ -17,7 +17,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '24px',
         height: '24px',
         cursor: 'pointer',
-        marginLeft: '1em',
+        marginLeft: '.25em',
         marginTop: "-.2em",
     },
     default: {
