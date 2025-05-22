@@ -402,7 +402,7 @@ export const DataTable = withStyles(styles)(
             const { working, isNotFound } = this.props;
             const { isLoaded } = this.state;
 
-            if (isLoaded && !isNotFound && !!items.length) {
+            if (isLoaded && !isNotFound && !!items.length && !working) {
                 return DataTableContentType.ROWS;
             } else if (isNotFound && isLoaded) {
                 return DataTableContentType.NOTFOUND;

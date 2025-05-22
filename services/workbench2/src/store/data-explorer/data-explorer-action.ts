@@ -26,6 +26,7 @@ export const dataExplorerActions = unionize({
     SET_FETCH_MODE: ofType<{ id: string; fetchMode: DataTableFetchMode }>(),
     SET_COLUMNS: ofType<{ id: string; columns: DataColumns<any, any> }>(),
     SET_FILTERS: ofType<{ id: string; columnName: string; filters: DataTableFilters }>(),
+    SET_WORKING: ofType<{ id: string, working: boolean }>(),
     SET_ITEMS: ofType<{ id: string; items: any[]; page: number; rowsPerPage: number; itemsAvailable?: number }>(),
     APPEND_ITEMS: ofType<{ id: string; items: any[]; page: number; rowsPerPage: number; itemsAvailable?: number }>(),
     SET_PAGE: ofType<{ id: string; page: number }>(),
@@ -52,6 +53,7 @@ export const bindDataExplorerActions = (id: string) => ({
     SET_FETCH_MODE: (payload: { fetchMode: DataTableFetchMode }) => dataExplorerActions.SET_FETCH_MODE({ ...payload, id }),
     SET_COLUMNS: (payload: { columns: DataColumns<any, any> }) => dataExplorerActions.SET_COLUMNS({ ...payload, id }),
     SET_FILTERS: (payload: { columnName: string; filters: DataTableFilters }) => dataExplorerActions.SET_FILTERS({ ...payload, id }),
+    SET_WORKING: (working: boolean) => dataExplorerActions.SET_WORKING({ id, working }),
     SET_ITEMS: (payload: { items: any[]; page: number; rowsPerPage: number; itemsAvailable?: number }) =>
         dataExplorerActions.SET_ITEMS({ ...payload, id }),
     APPEND_ITEMS: (payload: { items: any[]; page: number; rowsPerPage: number; itemsAvailable?: number }) =>
