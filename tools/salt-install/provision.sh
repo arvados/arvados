@@ -287,7 +287,7 @@ VERSION="latest"
 SALT_VERSION="3006"
 
 # Other formula versions we depend on
-ARVADOS_TAG="eed69116c1bcaf46474b7ff7c93383eb855695b4"
+ARVADOS_TAG="928762f4c2b3d47ce15b33fe1e8528b7e5a527e9"
 POSTGRES_TAG="a809e03bad115bbdf24ad347e2dc9a52e144c31f"
 POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
 NGINX_TAG="v2.8.1"
