@@ -30,7 +30,7 @@ if ! openssl verify -CAfile $root_cert $root_cert ; then
 	    -nodes \
 	    -sha256 \
 	    -x509 \
-	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=test root CA for ${uuid_prefix} generated $(date --rfc-3339=seconds)" \
+	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=test root CA for ${uuid_prefix} generated $(date --rfc-3339=date)" \
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign")) \
@@ -69,7 +69,7 @@ if ! openssl verify -CAfile $root_cert $server_cert ; then
 	    -new \
 	    -nodes \
 	    -sha256 \
-	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=test server cert for ${uuid_prefix} generated $(date --rfc-3339=seconds)" \
+	    -subj "/C=US/ST=MA/O=Arvados testing/OU=arvbox/CN=test server cert for ${uuid_prefix} generated $(date --rfc-3339=date)" \
 	    -reqexts x509_ext \
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \
