@@ -4,4 +4,4 @@
 
 arvados_apt_url: "https://apt.arvados.org"
 arvados_apt_suites: "{{ ansible_distribution_release }}"
-arvados_pin_version: "{{ '' if arvados_apt_suites.endswith(('-dev', '-testing')) else '3.1.1' }}"
+arvados_pin_version: "{{ '' if arvados_apt_suites.endswith(('-dev', '-testing')) else '3.1.2' }}"
