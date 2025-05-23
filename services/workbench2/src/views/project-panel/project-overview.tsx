@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Collapse, Typography } from '@mui/material';
-import classNames from 'classnames';
+import { Grid, Typography } from '@mui/material';
 import { RootState } from 'store/store';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -20,28 +19,14 @@ import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { GroupClass } from 'models/group';
 import { formatDate } from 'common/formatters';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
+import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
 
-type CssRules = 'root' | 'description' | 'descriptionSection' | 'fadedDescription' | 'tag';
+type CssRules = 'root' | 'tag';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         padding: theme.spacing(1),
-    },
-    descriptionSection: {
-        // marginBottom: '-1rem',
-    },
-    description: {
-        paddingBottom: '-1rem',
-    },
-    fadedDescription: {
-        position: 'relative',
-        WebkitMaskImage: 'linear-gradient(to bottom, black 1rem, transparent 2.5rem)',
-        maskImage: 'linear-gradient(to bottom, black 1rem, transparent 2.5rem)',
-        WebkitMaskSize: '100% 100%',
-        maskSize: '100% 100%',
-        WebkitMaskRepeat: 'no-repeat',
-        maskRepeat: 'no-repeat',
     },
     tag: {
         marginRight: theme.spacing(0.5),
@@ -61,39 +46,20 @@ const mapStateToProps = (state: RootState): Pick<ProjectOverviewProps, 'project'
 
 export const ProjectOverview = connect(mapStateToProps)(withStyles(styles)((({ project, classes }: ProjectOverviewProps) => {
     if (!project || project.kind !== ResourceKind.PROJECT) {
-        // TODO: User/RootProject
         return null;
     }
     const hasDescription = project.description && project.description.length > 0;
     const hasProperties = (typeof project.properties === 'object' && Object.keys(project.properties).length > 0);
 
     const [showDescription, setShowDescription] = useState(false);
-    const [fadeDescription, setFadeDescription] = useState(!showDescription);
-
-    useEffect(() => {
-        setTimeout(() => setFadeDescription(!fadeDescription), 100);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showDescription]);
 
     return (
         <Grid container spacing={1} className={classes.root}>
-            <Grid item xs={12} md={12} onClick={() => setShowDescription(!showDescription)} className={classes.descriptionSection}>
+            <Grid item xs={12} md={12} onClick={() => setShowDescription(!showDescription)}>
                 <DetailsAttribute label={'Description'} button={hasDescription ? <ExpandChevronRight expanded={showDescription} /> : undefined}>
-                    {hasDescription ? <Collapse
-                        in={showDescription}
-                        timeout='auto'
-                        collapsedSize='2.3rem'
-                    >
-                        <section data-cy='project-description'>
-                            <Typography
-                                className={classNames(fadeDescription ? classes.description : classes.fadedDescription)}
-                                component='div'
-                                //dangerouslySetInnerHTML is ok here only if description is sanitized,
-                                //which it is before it is loaded into the redux store
-                                dangerouslySetInnerHTML={{ __html: project.description }}
-                            />
-                        </section>
-                    </Collapse> : <Typography>No description available</Typography>}
+                    {hasDescription
+                        ? <CollapsibleDescription description={project.description} showDescription={showDescription} />
+                        : <Typography>No description available</Typography>}
                 </DetailsAttribute>
             </Grid>
             <Grid item xs={12} md={6}>
