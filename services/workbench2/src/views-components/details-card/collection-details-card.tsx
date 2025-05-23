@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, Typography, Grid } from '@mui/material';
+import { Card, CardHeader, Typography, Grid, Tooltip } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -17,8 +17,13 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { CollectionResource } from 'models/collection';
+import { IllegalNamingWarning } from 'components/warning/warning';
+import { GroupResource } from 'models/group';
+import { UserResource } from 'models/user';
+import { resourceIsFrozen } from 'common/frozen-resources';
+import { ReadOnlyIcon } from 'components/icon/icon';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'readOnlyIcon' | 'nameContainer' | 'toolbarStyles';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -44,19 +49,27 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: '30rem',
         padding: '0.2rem 0.4rem 0.2rem 1rem',
     },
+    readOnlyIcon: {
+        marginLeft: theme.spacing(1),
+        fontSize: 'small',
+    },
     toolbarStyles: {
         paddingTop: '4px',
     },
 });
 
-const mapStateToProps = ({ auth, selectedResource, resources, properties }: RootState) => {
-    const currentResource = getResource(properties.currentRouteUuid)(resources);
+const mapStateToProps = ({ auth, selectedResource, resources, properties }: RootState): Pick<CollectionCardProps, 'currentUserUUID' | 'currentResource' | 'isSelected' | 'itemOwner' | 'isFrozen'> => {
+    const currentResource = getResource<CollectionResource>(properties.currentRouteUuid)(resources);
     const isSelected = selectedResource.selectedResourceUuid === properties.currentRouteUuid;
+    const itemOwner = currentResource ? getResource<GroupResource | UserResource>(currentResource.ownerUuid)(resources) : undefined;
+    const isFrozen = (currentResource && resourceIsFrozen(currentResource, resources)) || false;
 
     return {
-        isAdmin: auth.user?.isAdmin,
+        currentUserUUID: auth.user?.uuid || '',
         currentResource,
         isSelected,
+        itemOwner,
+        isFrozen,
     };
 };
 
@@ -69,8 +82,11 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 });
 
 type CollectionCardProps = WithStyles<CssRules> & {
-    currentResource: CollectionResource;
+    currentResource: CollectionResource | undefined;
     isSelected: boolean;
+    currentUserUUID: string;
+    itemOwner: GroupResource | UserResource | undefined;
+    isFrozen: boolean;
     handleCardClick: (resource: any) => void;
 };
 
@@ -79,8 +95,17 @@ export const CollectionCard = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: CollectionCardProps) => {
-        const { classes, currentResource, handleCardClick, isSelected } = props;
+        const { classes, currentResource, handleCardClick, isSelected, currentUserUUID, itemOwner, isFrozen } = props;
+        if (!currentResource) return null;
         const { name, uuid } = currentResource;
+
+        const [isWritable, setIsWritable] = useState(false);
+
+        useEffect(() => {
+            const isWritable = checkIsWritable(currentResource, itemOwner, currentUserUUID, isFrozen);
+            setIsWritable(isWritable);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [currentResource, currentUserUUID, isFrozen]);
 
         return (
             <Card
@@ -97,11 +122,17 @@ export const CollectionCard = connect(
                         className={classes.cardHeader}
                         title={
                             <section className={classes.nameContainer}>
+                                <IllegalNamingWarning name={name} />
                                 <Typography
                                     variant='h6'
                                 >
                                     {name}
                                 </Typography>
+                                {!isWritable &&
+                                    <Tooltip title="Read-only">
+                                        <span><ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} /></span>
+                                    </Tooltip>
+                                }
                             </section>
                         }
                     />
@@ -111,3 +142,23 @@ export const CollectionCard = connect(
         );
     })
 );
+
+const checkIsWritable = (item: CollectionResource, itemOwner: GroupResource | UserResource | undefined, currentUserUUID: string, isFrozen: boolean): boolean => {
+    const isCurrentVersion = item.currentVersionUuid === item.uuid
+
+    let isWritable = false;
+
+    if (isCurrentVersion) {
+        if (item.ownerUuid === currentUserUUID) {
+            isWritable = true;
+        } else {
+            if (itemOwner) {
+                isWritable = itemOwner.canWrite;
+            }
+        }
+    }
+    if (isWritable) {
+        isWritable = !isFrozen;
+    }
+    return isWritable;
+}

@@ -4,14 +4,14 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { IconButton, Grid, Tooltip, Typography, CardHeader, CardContent } from '@mui/material';
+import { Grid, Tooltip, Typography, CardContent } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { MoreVerticalIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
+import { CollectionIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
@@ -22,7 +22,6 @@ import { formatDate, formatFileSize } from "common/formatters";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
-import { IllegalNamingWarning } from 'components/warning/warning';
 import { GroupResource } from 'models/group';
 import { UserResource } from 'models/user';
 import { Link } from 'react-router-dom';
@@ -35,26 +34,20 @@ import { setSelectedResourceUuid } from 'store/selected-resource/selected-resour
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 import { collectionPanelActions } from 'store/collection-panel/collection-panel-action';
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
+import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
 type CssRules =
     'root'
     | 'mpvRoot'
     | 'button'
     | 'infoCard'
-    | 'propertiesCard'
     | 'filesCard'
-    | 'iconHeader'
     | 'tag'
     | 'label'
     | 'value'
     | 'link'
-    | 'centeredLabel'
     | 'warningLabel'
-    | 'collectionName'
-    | 'readOnlyIcon'
-    | 'header'
-    | 'title'
-    | 'avatar'
     | 'content';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -72,15 +65,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     infoCard: {
     },
-    propertiesCard: {
-        padding: 0,
-    },
     filesCard: {
         padding: 0,
-    },
-    iconHeader: {
-        fontSize: '1.875rem',
-        color: theme.customs.colors.greyL
     },
     tag: {
         marginRight: theme.spacing(0.5),
@@ -89,15 +75,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
         fontSize: '0.875rem',
     },
-    centeredLabel: {
-        fontSize: '0.875rem',
-        textAlign: 'center'
-    },
     warningLabel: {
         fontStyle: 'italic'
-    },
-    collectionName: {
-        flexDirection: 'column',
     },
     value: {
         textTransform: 'none',
@@ -109,23 +88,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             cursor: 'pointer'
         }
-    },
-    readOnlyIcon: {
-        marginLeft: theme.spacing(1),
-        fontSize: 'small',
-    },
-    header: {
-        paddingTop: theme.spacing(1),
-        paddingBottom: theme.spacing(1),
-    },
-    title: {
-        overflow: 'hidden',
-        paddingTop: theme.spacing(0.5),
-        color: theme.customs.colors.green700,
-    },
-    avatar: {
-        alignSelf: 'flex-start',
-        paddingTop: theme.spacing(0.5),
     },
     content: {
         padding: theme.spacing(1),
@@ -147,7 +109,9 @@ type CollectionPanelState = {
     item: CollectionResource | null;
     itemOwner: GroupResource | UserResource | null;
     isWritable: boolean;
-    isOldVersion: boolean
+    isOldVersion: boolean;
+    hasDescription: boolean;
+    showDescription: boolean;
 }
 
 export const CollectionPanel = withStyles(styles)(connect(
@@ -163,20 +127,27 @@ export const CollectionPanel = withStyles(styles)(connect(
                 itemOwner: null,
                 isWritable: false,
                 isOldVersion: false,
+                hasDescription: false,
+                showDescription: false,
             }
 
             shouldComponentUpdate( nextProps: Readonly<CollectionPanelProps & RouteComponentProps<{ id: string }>>, nextState: Readonly<CollectionPanelState>, nextContext: any ): boolean {
                     return this.props.match.params.id !== nextProps.match.params.id
                         || this.props.resources !== nextProps.resources
-                        || this.state.isWritable !== nextState.isWritable;
+                        || this.state.isWritable !== nextState.isWritable
+                        || this.state.hasDescription !== nextState.hasDescription
+                        || this.state.showDescription !== nextState.showDescription;
             }
 
             componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<CollectionPanelState>, snapshot?: any ): void {
                 const { currentUserUUID, resources } = this.props;
                 const collection = getResource<CollectionResource>(this.props.match.params.id)(this.props.resources);
-                const itemOwner = collection ? getResource<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources) : undefined;
                 if (!this.state.item && collection) this.setState({ item: collection });
                 if (collection) {
+                    this.setState({
+                        hasDescription: collection.description && collection.description.length > 0,
+                    });
+                    const itemOwner = collection ? getResource<GroupResource | UserResource>(collection.ownerUuid)(this.props.resources) : undefined;
                     if (prevState.item !== collection) {
                         this.props.dispatch<any>(setSelectedResourceUuid(collection.uuid))
                         this.setState({
@@ -214,11 +185,15 @@ export const CollectionPanel = withStyles(styles)(connect(
                 return isWritable;
             }
 
+            setShowDescription = (showDescription: boolean) => {
+                this.setState({ showDescription });
+            }
+
             render() {
                 const { classes, dispatch } = this.props;
-                const { isWritable, item, isOldVersion } = this.state;
+                const { isWritable, item, isOldVersion, hasDescription, showDescription } = this.state;
                 const panelsData: MPVPanelState[] = [
-                    { name: "Details" },
+                    { name: "Overview" },
                     { name: "Files" },
                 ];
                 return item
@@ -227,44 +202,14 @@ export const CollectionPanel = withStyles(styles)(connect(
                         <MPVContainer container className={classes.mpvRoot} justifyContent="flex-start" panelStates={panelsData}>
                             <MPVPanelContent item xs="auto" data-cy='collection-info-panel'>
                                 <section className={classes.infoCard}>
-                                    <CardHeader
-                                        className={classes.header}
-                                        classes={{
-                                            content: classes.title,
-                                            avatar: classes.avatar,
-                                        }}
-                                        avatar={<IconButton onClick={this.openCollectionDetails} size="large">
-                                            {isOldVersion
-                                                ? <CollectionOldVersionIcon className={classes.iconHeader} />
-                                                : <CollectionIcon className={classes.iconHeader} />}
-                                        </IconButton>}
-                                        title={
-                                            <span>
-                                                <IllegalNamingWarning name={item.name} />
-                                                {item.name}
-                                                {isWritable ||
-                                                    <Tooltip title="Read-only">
-                                                        <span><ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} /></span>
-                                                    </Tooltip>
-                                                    }
-                                            </span>
-                                        }
-                                        action={
-                                            <Tooltip title="Actions" disableFocusListener>
-                                                <IconButton
-                                                    data-cy='collection-panel-options-btn'
-                                                    aria-label="Actions"
-                                                    onClick={this.handleContextMenu}
-                                                    size="large">
-                                                    <MoreVerticalIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        }
-                                    />
                                     <CardContent className={classes.content}>
-                                        <Typography variant="caption"
-                                            dangerouslySetInnerHTML={{ __html: item.description }}
-                                        />
+                                        <Grid item xs={12} md={12} onClick={() => this.setShowDescription(!showDescription)}>
+                                            <DetailsAttribute label={'Description'} button={hasDescription ? <ExpandChevronRight expanded={showDescription} /> : undefined}>
+                                                {hasDescription
+                                                    ? <CollapsibleDescription description={item.description} showDescription={showDescription} />
+                                                    : <Typography>No description available</Typography>}
+                                            </DetailsAttribute>
+                                        </Grid>
                                         <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
