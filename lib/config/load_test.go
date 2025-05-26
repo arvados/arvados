@@ -914,3 +914,16 @@ func (s *LoadSuite) TestLoadSSHKey(c *check.C) {
 	_, err = LoadSSHKey("file://" + cwd + "/../dispatchcloud/test/sshkey_dispatch")
 	c.Check(err, check.IsNil)
 }
+
+func (s *LoadSuite) TestLoadSSHKeyTypes(c *check.C) {
+	for _, keytype := range []string{"ecdsa", "ed25519", "rsa"} {
+		c.Logf("=== keytype %s", keytype)
+		tmpdir := c.MkDir()
+		buf, err := exec.Command("ssh-keygen", "-N", "", "-t", keytype, "-f", tmpdir+"/key").CombinedOutput()
+		if !c.Check(err, check.IsNil, check.Commentf("(keytype %s) %s", keytype, buf)) {
+			continue
+		}
+		_, err = LoadSSHKey("file://" + tmpdir + "/key")
+		c.Check(err, check.IsNil, check.Commentf("(keytype %s)", keytype))
+	}
+}
