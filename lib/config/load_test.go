@@ -916,14 +916,20 @@ func (s *LoadSuite) TestLoadSSHKey(c *check.C) {
 }
 
 func (s *LoadSuite) TestLoadSSHKeyTypes(c *check.C) {
-	for _, keytype := range []string{"ecdsa", "ed25519", "rsa"} {
-		c.Logf("=== keytype %s", keytype)
-		tmpdir := c.MkDir()
-		buf, err := exec.Command("ssh-keygen", "-N", "", "-t", keytype, "-f", tmpdir+"/key").CombinedOutput()
-		if !c.Check(err, check.IsNil, check.Commentf("(keytype %s) %s", keytype, buf)) {
-			continue
+	for _, format := range []string{"PEM", "RFC4716", "PKCS8"} {
+		for _, keytype := range []string{"dsa", "ecdsa", "ed25519", "rsa"} {
+			c.Logf("=== keytype %s", keytype)
+			if keytype == "dsa" && format != "PEM" {
+				c.Logf("... skipping due to lack of support in stdlib")
+				continue
+			}
+			tmpdir := c.MkDir()
+			buf, err := exec.Command("ssh-keygen", "-N", "", "-t", keytype, "-m", format, "-f", tmpdir+"/key").CombinedOutput()
+			if !c.Check(err, check.IsNil, check.Commentf("(keytype %s, format %s) %s", keytype, format, buf)) {
+				continue
+			}
+			_, err = LoadSSHKey("file://" + tmpdir + "/key")
+			c.Check(err, check.IsNil, check.Commentf("LoadSSHKey failed on keytype %s in format %s", keytype, format))
 		}
-		_, err = LoadSSHKey("file://" + tmpdir + "/key")
-		c.Check(err, check.IsNil, check.Commentf("(keytype %s)", keytype))
 	}
 }
