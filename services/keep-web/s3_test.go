@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -590,22 +591,26 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 	bucket := stage.projbucket
 
 	for _, trial := range []struct {
-		path        string
-		size        int
-		contentType string
+		path         string
+		size         int
+		contentType  string
+		errorMatches string
 	}{
 		{
-			path:        "newfile",
-			size:        1234,
-			contentType: "application/octet-stream",
+			path:         "newfile",
+			size:         1234,
+			contentType:  "application/octet-stream",
+			errorMatches: `invalid argument: path is not in a collection`,
 		}, {
-			path:        "newdir/newfile",
-			size:        1234,
-			contentType: "application/octet-stream",
+			path:         "newdir/newfile",
+			size:         1234,
+			contentType:  "application/octet-stream",
+			errorMatches: `invalid argument: path is not in a collection`,
 		}, {
-			path:        "newdir2/",
-			size:        0,
-			contentType: "application/x-directory",
+			path:         "newdir2/",
+			size:         0,
+			contentType:  "application/x-directory",
+			errorMatches: `mkdir "/by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2" failed: invalid operation`,
 		},
 	} {
 		c.Logf("=== %v", trial)
@@ -621,7 +626,7 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 		err = bucket.PutReader(trial.path, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
 		c.Check(err.(*s3.Error).StatusCode, check.Equals, 400)
 		c.Check(err.(*s3.Error).Code, check.Equals, `InvalidArgument`)
-		c.Check(err, check.ErrorMatches, `(mkdir "/by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2?"|open "/zzzzz-j7d0g-[a-z0-9]{15}/newfile") failed: invalid (argument|operation)`)
+		c.Check(err, check.ErrorMatches, trial.errorMatches)
 
 		_, err = bucket.GetReader(trial.path)
 		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
@@ -710,7 +715,7 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 			rand.Read(buf)
 
 			err := bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
-			if !c.Check(err, check.ErrorMatches, `(invalid object name.*|open ".*" failed.*|object name conflicts with existing object|Missing object name in PUT request.)`, check.Commentf("PUT %q should fail", objname)) {
+			if !c.Check(err, check.ErrorMatches, `(invalid object name.*|open ".*" failed.*|object name conflicts with existing (directory|object)|Missing object name in PUT request.)`, check.Commentf("PUT %q should fail", objname)) {
 				return
 			}
 
@@ -819,6 +824,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			checkEtag:      true,
 		},
 	} {
+		c.Logf("=== %s %s", trial.method, trial.url)
 		url, err := url.Parse(trial.url)
 		c.Assert(err, check.IsNil)
 		req, err := http.NewRequest(trial.method, url.String(), bytes.NewReader([]byte(trial.body)))
@@ -1496,4 +1502,74 @@ func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {
 	hdr, body, _ := s.runCurl(c, "AWS "+arvadostest.ActiveTokenV2+":none", stage.coll.UUID+".collections.example.com", "/sailboat.txt")
 	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
 	c.Check(body, check.Equals, "⛵\n")
+}
+
+func (s *IntegrationSuite) TestS3ConcurrentPUT(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	ndirs, nfiles := 5, 5
+	var wg sync.WaitGroup
+	for di := 0; di < ndirs; di++ {
+		di := di
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for fi := 0; fi < nfiles; fi++ {
+				fi := fi
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					s.checkPut(c, stage, fmt.Sprintf("dir%d/file%d", di, fi), []byte("acbde"))
+				}()
+			}
+		}()
+	}
+	wg.Wait()
+	for di := 0; di < ndirs; di++ {
+		for fi := 0; fi < nfiles; fi++ {
+			s.checkGet(c, stage, fmt.Sprintf("dir%d/file%d", di, fi), 5)
+		}
+	}
+	if c.Failed() {
+		c.Log("preserved files:")
+		var saved arvados.Collection
+		err := stage.arv.RequestAndDecode(&saved, "GET", "arvados/v1/collections/"+stage.coll.UUID, nil, arvados.GetOptions{
+			Select: []string{"uuid", "manifest_text"}})
+		c.Assert(err, check.IsNil)
+		cfs, err := saved.FileSystem(stage.arv, stage.kc)
+		c.Assert(err, check.IsNil)
+		fs.WalkDir(arvados.FS(cfs), "", func(path string, _ fs.DirEntry, _ error) error {
+			c.Logf("%s", path)
+			return nil
+		})
+	}
+}
+
+func (s *IntegrationSuite) checkPut(c *check.C, stage s3stage, path string, data []byte) {
+	url, err := url.Parse("https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/" + path)
+	c.Assert(err, check.IsNil)
+	req, err := http.NewRequest(http.MethodPut, url.String(), bytes.NewReader([]byte(data)))
+	c.Assert(err, check.IsNil)
+	s.sign(c, req, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken)
+	rr := httptest.NewRecorder()
+	s.handler.ServeHTTP(rr, req)
+	resp := rr.Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+}
+
+func (s *IntegrationSuite) checkGet(c *check.C, stage s3stage, path string, expectLength int) {
+	url, err := url.Parse("https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/" + path)
+	c.Assert(err, check.IsNil)
+	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	c.Assert(err, check.IsNil)
+	s.sign(c, req, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken)
+	rr := httptest.NewRecorder()
+	s.handler.ServeHTTP(rr, req)
+	resp := rr.Result()
+	if !c.Check(resp.StatusCode, check.Equals, http.StatusOK, check.Commentf("%s", path)) {
+		return
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, check.IsNil)
+	c.Check(string(body), check.HasLen, expectLength)
 }
