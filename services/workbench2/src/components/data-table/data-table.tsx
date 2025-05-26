@@ -265,6 +265,7 @@ export const DataTable = withStyles(styles)(
             }
             if(prevProps.working === false && this.props.working === true) {
                 this.setState({ isLoaded: false });
+                this.handleSelectNone(this.props.checkedList);
             }
             if(prevProps.working === true && this.props.working === false) {
                 this.setState({ isLoaded: true });
@@ -573,14 +574,22 @@ export const DataTable = withStyles(styles)(
                 this.setState({ hoveredIndex: index });
             }
 
+            const noopWhenLoading = (func) => {
+                if (dataTableContentType === DataTableContentType.LOADING) {
+                    return (e) => e.preventDefault();
+                } else {
+                    return func;
+                }
+            }
+
             return (
                 <TableRow
                     data-cy={'data-table-row'}
                     hover
                     key={extractKey ? extractKey(item) : index}
-                    onClick={event => onRowClick && onRowClick(event, item)}
-                    onContextMenu={this.handleRowContextMenu(item)}
-                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
+                    onClick={noopWhenLoading(event => onRowClick && onRowClick(event, item))}
+                    onContextMenu={noopWhenLoading(this.handleRowContextMenu(item))}
+                    onDoubleClick={noopWhenLoading(event => onRowDoubleClick && onRowDoubleClick(event, item))}
                     selected={isRowSelected}
                     className={isRowSelected ? classes.selected : ""}
                     onMouseEnter={()=>handleHover(index)}
