@@ -17,5 +17,14 @@ Restart=always
 RestartSec=1
 RestartPreventExitStatus=2
 
+# Before Arvados 3.1, arvados-dispatch-cloud did not try to read the
+# configuration at ~/.aws. Now it can, but we disable that functionality
+# here to avoid disrupting existing clusters which might have credentials
+# for another service there. Administrators who do want to read the
+# configuration at ~/.aws can unset these environment variables in an
+# override.
+Environment=AWS_CONFIG_FILE=/dev/null
+Environment=AWS_SHARED_CREDENTIALS_FILE=/dev/null
+
 [Install]
 WantedBy=multi-user.target
