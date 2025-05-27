@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WorkflowIcon, StartIcon } from 'components/icon/icon';
+import { WorkflowIcon } from 'components/icon/icon';
 import {
     WorkflowResource, parseWorkflowDefinition, getWorkflowInputs,
     getWorkflowOutputs, getWorkflow
@@ -14,7 +14,7 @@ import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
 import { Grid } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button } from '@mui/material';
+import { Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
@@ -26,6 +26,8 @@ import { formatInputData, formatOutputData } from 'store/process-panel/process-p
 import { AuthState } from 'store/auth/auth-reducer';
 import { RootState } from 'store/store';
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
+import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
 export interface WorkflowDetailsCardDataProps {
     workflow?: WorkflowResource;
@@ -40,18 +42,11 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         () => wf && dispatch<any>(openRunProcess(wf.uuid, wf.ownerUuid, wf.name)),
 });
 
-type CssRules = 'runButton' | 'propertyTag';
+type CssRules = 'description' | 'propertyTag';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    runButton: {
-        backgroundColor: theme.customs.colors.green700,
-        '&:hover': {
-            backgroundColor: theme.customs.colors.green800,
-        },
-        marginRight: "5px",
-        boxShadow: 'none',
-        padding: '2px 10px 2px 5px',
-        marginLeft: 'auto'
+    description: {
+        padding: theme.spacing(1),
     },
     propertyTag: {
         marginRight: theme.spacing(0.5),
@@ -123,18 +118,23 @@ const mapStateToProps = (state: RootState): AuthStateDataProps => {
 
 export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
-        ({ workflow, onClick, auth, classes }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps & WithStyles<CssRules>) => {
+        ({ workflow, auth, classes }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps & WithStyles<CssRules>) => {
             if (!workflow) {
                 return <Grid />
             }
 
+            const hasDescription = workflow.description && workflow.description.length > 0;
+            const [showDescription, setShowDescription] = React.useState(false);
+
             const data = getRegisteredWorkflowPanelData(workflow, auth);
             return <Grid container>
-                <Button onClick={workflow && onClick(workflow)} className={classes.runButton} variant='contained'
-                    data-cy='workflow-details-panel-run-btn' color='primary' size='small'>
-                    <StartIcon />
-                    Run Workflow
-                </Button>
+                <Grid item xs={12} md={12} onClick={() => setShowDescription(!showDescription)}>
+                    <DetailsAttribute label={'Description'} button={hasDescription ? <ExpandChevronRight expanded={showDescription} /> : undefined}>
+                        {hasDescription
+                            ? <CollapsibleDescription description={workflow.description} showDescription={showDescription} />
+                            : <Typography>No description available</Typography>}
+                    </DetailsAttribute>
+                </Grid>
                 <Grid item xs={12} >
                     <DetailsAttribute
                         label={"Workflow UUID"}

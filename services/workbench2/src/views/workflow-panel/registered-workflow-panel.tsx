@@ -4,14 +4,14 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Tooltip, Typography, CardHeader, CardContent, IconButton } from '@mui/material';
+import { CardHeader, CardContent } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { WorkflowIcon, MoreVerticalIcon } from 'components/icon/icon';
+import { WorkflowIcon } from 'components/icon/icon';
 import { WorkflowResource } from 'models/workflow';
 import { ProcessOutputCollectionFiles } from 'views/process-panel/process-output-collection-files';
 import { WorkflowDetailsAttributes, RegisteredWorkflowPanelDataProps, getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
@@ -29,20 +29,8 @@ type CssRules =
     | 'mpvRoot'
     | 'button'
     | 'infoCard'
-    | 'propertiesCard'
     | 'filesCard'
-    | 'iconHeader'
-    | 'tag'
     | 'label'
-    | 'value'
-    | 'link'
-    | 'centeredLabel'
-    | 'warningLabel'
-    | 'collectionName'
-    | 'readOnlyIcon'
-    | 'header'
-    | 'title'
-    | 'avatar'
     | 'content'
     | 'subHeader';
 
@@ -62,63 +50,14 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     infoCard: {
     },
-    propertiesCard: {
-        padding: 0,
-    },
     filesCard: {
         padding: 0,
-    },
-    iconHeader: {
-        fontSize: '1.875rem',
-        color: theme.customs.colors.greyL
     },
     subHeader: {
         color: theme.customs.colors.greyD
     },
-    tag: {
-        marginRight: theme.spacing(0.5),
-        marginBottom: theme.spacing(0.5)
-    },
     label: {
         fontSize: '0.875rem',
-    },
-    centeredLabel: {
-        fontSize: '0.875rem',
-        textAlign: 'center'
-    },
-    warningLabel: {
-        fontStyle: 'italic'
-    },
-    collectionName: {
-        flexDirection: 'column',
-    },
-    value: {
-        textTransform: 'none',
-        fontSize: '0.875rem'
-    },
-    link: {
-        fontSize: '0.875rem',
-        color: theme.palette.primary.main,
-        '&:hover': {
-            cursor: 'pointer'
-        }
-    },
-    readOnlyIcon: {
-        marginLeft: theme.spacing(1),
-        fontSize: 'small',
-    },
-    header: {
-        paddingTop: theme.spacing(1),
-        paddingBottom: theme.spacing(1),
-    },
-    title: {
-        overflow: 'hidden',
-        paddingTop: theme.spacing(0.5),
-        color: theme.customs.colors.green700,
-    },
-    avatar: {
-        alignSelf: 'flex-start',
-        paddingTop: theme.spacing(0.5)
     },
     content: {
         padding: theme.spacing(1),
@@ -142,7 +81,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
         class extends React.Component<RegisteredWorkflowPanelProps> {
             render() {
                 const { classes, item, inputParams, outputParams, workflowCollection } = this.props;
-                const panelsData: MPVPanelState[] = [{ name: 'Details' }, { name: 'Runs' }, { name: 'Outputs' }, { name: 'Inputs' }, { name: 'Definition' }];
+                const panelsData: MPVPanelState[] = [{ name: 'Overview' }, { name: 'Runs' }, { name: 'Outputs' }, { name: 'Inputs' }, { name: 'Definition' }];
                 return item ? (
                     <section className={classes.root}>
                         <DetailsCardRoot />
@@ -155,42 +94,6 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 xs='auto'
                                 data-cy='registered-workflow-info-panel'>
                                 <section className={classes.infoCard}>
-                                    <CardHeader
-                                        className={classes.header}
-                                        classes={{
-                                            content: classes.title,
-                                            avatar: classes.avatar,
-                                        }}
-                                        avatar={<WorkflowIcon className={classes.iconHeader} />}
-                                        title={
-                                            <Tooltip
-                                                title={item.name}
-                                                placement='bottom-start'>
-                                                <Typography
-                                                    noWrap
-                                                    variant='h6'>
-                                                    {item.name}
-                                                </Typography>
-                                            </Tooltip>
-                                        }
-                                        subheader={
-                                            <div
-                                                className={classes.subHeader}
-                                                dangerouslySetInnerHTML={{ __html: item.description || '(no-description)' }}>
-                                            </div>
-                                        }
-                                        action={
-                                            <Tooltip
-                                                title='More options'
-                                                disableFocusListener>
-                                                <IconButton
-                                                    aria-label='More options'
-                                                    onClick={(event) => this.handleContextMenu(event)}
-                                                    size='large'>
-                                                    <MoreVerticalIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        }/>
                                     <CardContent className={classes.content}>
                                         <WorkflowDetailsAttributes workflow={item} />
                                     </CardContent>
