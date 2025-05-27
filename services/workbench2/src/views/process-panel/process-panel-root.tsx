@@ -10,7 +10,7 @@ import { ProcessIcon } from "components/icon/icon";
 import { Process, getProcess, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
-import { ProcessDetailsCard } from "./process-details-card";
+import { ProcessOverviewCard } from "./process-overview-card";
 import { ProcessIOCard, ProcessIOCardType } from "./process-io-card";
 import { ProcessResourceCard } from "./process-resource-card";
 import { getProcessPanelLogs, ProcessLogsPanel } from "store/process-logs-panel/process-logs-panel";
@@ -74,7 +74,7 @@ export interface ProcessPanelRootActionProps {
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
 
 const panelsData: MPVPanelState[] = [
-    { name: "Details" },
+    { name: "Overview" },
     { name: "Logs" },
     { name: "Subprocesses" },
     { name: "Outputs" },
@@ -160,7 +160,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                         item
                         xs="auto"
                         data-cy="process-details">
-                        <ProcessDetailsCard
+                        <ProcessOverviewCard
                             process={process}
                             onContextMenu={event => onContextMenu(event, process)}
                             cancelProcess={cancelProcess}

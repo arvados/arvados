@@ -92,6 +92,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
             const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
+            const hasDescription = containerRequest?.description && containerRequest.description.length > 0;
 
             function parseMounts(mounts: { [path: string]: MountType } | undefined) {
                 if (!mounts || !mounts[MOUNT_PATH_CWL_WORKFLOW]) {
@@ -133,6 +134,13 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     This process failed but was automatically resubmitted.  <Link to={resubmittedUrl}> Click here to go to the resubmitted process.</Link>
                 </Typography>
             </Grid>}
+            <Grid item xs={12} md={12}>
+                <DetailsAttribute label={'Description'}>
+                    {hasDescription
+                        ? <Typography>{containerRequest.description}</Typography>
+                        : <Typography>No description available</Typography>}
+                </DetailsAttribute>
+            </Grid>
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
             </Grid>
