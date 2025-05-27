@@ -30,7 +30,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: {{ server_name }}
+            - server_name: {{ server_name }} '~^(.*\.)?containers\.__DOMAIN__'
             - listen:
               - 80 default
             - location /.well-known:
@@ -67,7 +67,7 @@ nginx:
           __CERT_REQUIRES__
         config:
           - server:
-            - server_name: {{ server_name }}
+            - server_name: {{ server_name }} '~^(.*\.)?containers\.__DOMAIN__'
             - listen:
               - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm

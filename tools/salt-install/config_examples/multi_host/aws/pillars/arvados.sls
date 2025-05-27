@@ -167,6 +167,8 @@ arvados:
       AutoSetupNewUsers: true
 
     Services:
+      ContainerWebServices:
+        ExternalURL: 'https://*.containers.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
       Controller:
         ExternalURL: 'https://__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:

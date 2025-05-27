@@ -9,6 +9,7 @@ The nodes requiring certificates are:
 * collections.DOMAIN
 * controller.DOMAIN
 * \*.collections.DOMAIN
+* \*.containers.DOMAIN
 * grafana.DOMAIN
 * download.DOMAIN
 * keep.DOMAIN
