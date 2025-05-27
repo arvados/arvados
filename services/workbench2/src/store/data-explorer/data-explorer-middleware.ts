@@ -56,7 +56,7 @@ export const dataExplorerMiddleware =
                                 getState: () => RootState,
                                 services: ServiceRepository
                             ) => {
-                                if (criteriaChanged && !background) { api.dispatch(actions.SET_WORKING(true)); }
+                                if (!background) { api.dispatch(actions.SET_WORKING(true)); }
                                 while (true) {
                                     let de = getDataExplorer(
                                         getState().dataExplorer,
