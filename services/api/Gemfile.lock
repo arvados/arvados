@@ -325,7 +325,7 @@ PLATFORMS
 DEPENDENCIES
   acts_as_api
   andand
-  arvados (~> 3.1.0)
+  arvados (~> 3.1.2)
   byebug
   factory_bot (= 6.4.5)
   factory_bot_rails
