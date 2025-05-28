@@ -32,6 +32,18 @@ h2(#main). development main
 
 "previous: Upgrading to 3.1.2":#v3_1_2
 
+h3. Admin container shell access is enabled by default
+
+"Container shell access":{{ site.baseurl }}/user/debugging/container-shell-access.html by admin users is now enabled by default.  If you prefer to leave it disabled, update your configuration file accordingly.
+
+<notextile><pre>
+Containers:
+  ShellAccess:
+    Admin: false
+</pre></notextile>
+
+Container shell access for non-admin users is still disabled by default.
+
 h3. Configure ExternalURL, DNS, and TLS for container web services
 
 Arvados now allows external clients to connect to HTTP services running in containers. To enable this feature:
