@@ -1279,7 +1279,7 @@ Clusters:
         # An admin user can use "arvados-client shell" to start an
         # interactive shell (with any user ID) in any running
         # container.
-        Admin: false
+        Admin: true
 
         # Any user can use "arvados-client shell" to start an
         # interactive shell (with any user ID) in any running
