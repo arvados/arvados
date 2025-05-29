@@ -23,15 +23,25 @@ import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { DataTableMultiselectPopover, DataTableMultiselectOption } from "components/data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty, createTree } from "models/tree";
-import { IconType, PendingIcon } from "components/icon/icon";
+import { IconType } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { LoadingIndicator } from "components/loading-indicator/loading-indicator";
 
 export enum DataTableFetchMode {
     PAGINATED,
     INFINITE,
 }
+
+const LOADING_PLACEHOLDER_COUNT = 3;
+
+enum DataTableContentType {
+    ROWS,
+    NOTFOUND,
+    LOADING,
+    EMPTY,
+};
 
 export interface DataTableDataProps<I> {
     items: I[];
@@ -74,7 +84,10 @@ type CssRules =
     | "hovered"
     | "arrow"
     | "arrowButton"
-    | "tableCellWorkflows";
+    | "tableCellWorkflows"
+    | "loadingRow"
+    | "hiddenCell"
+    | "skeleton";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -157,6 +170,29 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     arrowButton: {
         color: theme.palette.text.primary,
     },
+    loadingRow: {
+        height: "49px",
+    },
+    hiddenCell: {
+        position: "relative",
+        "& > *": {
+            visibility: "hidden",
+        },
+    },
+    skeleton: {
+        visibility: "visible",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        paddingLeft: "5px",
+        paddingRight: "24px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: "8px",
+    },
 });
 
 export type TCheckedList = Record<string, boolean>;
@@ -229,6 +265,7 @@ export const DataTable = withStyles(styles)(
             }
             if(prevProps.working === false && this.props.working === true) {
                 this.setState({ isLoaded: false });
+                this.handleSelectNone(this.props.checkedList);
             }
             if(prevProps.working === true && this.props.working === false) {
                 this.setState({ isLoaded: true });
@@ -357,9 +394,30 @@ export const DataTable = withStyles(styles)(
             }
         };
 
-        render() {
-            const { items, classes, columns, isNotFound } = this.props;
+        /**
+         * Helper to contain display state logic to avoid recalculating in multiple places
+         * @param items Data table items array
+         * @returns An enum value representing what should be displayed
+         */
+        getDataTableContentType = (items: T[]): DataTableContentType => {
+            const { working, isNotFound } = this.props;
             const { isLoaded } = this.state;
+
+            if (isLoaded && !isNotFound && !!items.length && !working) {
+                return DataTableContentType.ROWS;
+            } else if (isNotFound && isLoaded) {
+                return DataTableContentType.NOTFOUND;
+            } else if (isLoaded === false || working === true) {
+                return DataTableContentType.LOADING;
+            } else {
+                // isLoaded && !working && !isNotFound
+                return DataTableContentType.EMPTY;
+            }
+        };
+
+        render() {
+            const { items, classes, columns } = this.props;
+            const dataTableContentType = this.getDataTableContentType(items);
             if (columns.length && columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
@@ -369,34 +427,43 @@ export const DataTable = withStyles(styles)(
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
-                            <TableBody className={classes.tableBody}>{(isLoaded && !isNotFound) && items.map(this.renderBodyRow)}</TableBody>
+                            <TableBody className={classes.tableBody}>
+                                {this.renderBody(items, dataTableContentType)}
+                            </TableBody>
                         </Table>
-                        {(!isLoaded || isNotFound || items.length === 0) && this.renderNoItemsPlaceholder(this.props.columns)}
+                        {this.renderNoItemsPlaceholder(dataTableContentType, this.props.columns)}
                     </div>
                 </div>
             );
         }
 
-        renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
-            const { isLoaded } = this.state;
-            const { working, isNotFound } = this.props;
+        renderLoadingPlaceholder = () => {
+            return <>
+                {(new Array(LOADING_PLACEHOLDER_COUNT).fill(0)).map(() => {
+                    return <TableRow hover className={this.props.classes.loadingRow}>
+                        {this.mapVisibleColumns((column, colIndex) => (
+                            <TableCell
+                                key={column.key || colIndex}
+                                data-cy={column.key || colIndex}
+                                >
+                                <LoadingIndicator />
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                })}
+            </>;
+        };
+
+        renderNoItemsPlaceholder = (dataTableContentType: DataTableContentType, columns: DataColumns<T, any>) => {
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            if (isNotFound && isLoaded) {
+            if (dataTableContentType === DataTableContentType.NOTFOUND) {
                 return (
                     <DataTableDefaultView
                         icon={this.props.defaultViewIcon}
                         messages={["No items found"]}
                     />
                 );
-            } else
-            if (isLoaded === false || working === true) {
-                return (
-                    <DataTableDefaultView
-                        icon={PendingIcon}
-                        messages={["Loading data, please wait"]}
-                    />
-                );
-            } else {
+            } else if (dataTableContentType === DataTableContentType.EMPTY) {
                 // isLoaded && !working && !isNotFound
                 return (
                     <DataTableDefaultView
@@ -406,6 +473,8 @@ export const DataTable = withStyles(styles)(
                         filtersApplied={dirty}
                     />
                 );
+            } else {
+                return <></>;
             }
         };
 
@@ -477,18 +546,40 @@ export const DataTable = withStyles(styles)(
             </IconButton>
         );
 
-        renderBodyRow = (item: any, index: number) => {
+        renderBody = (items: any[], dataTableContentType: DataTableContentType) => {
+            if (items.length) {
+                // Have items, renderBodyRow renders rows or skeleton over rows
+                return items.map((item, index) => this.renderBodyRow(item, index, dataTableContentType));
+            } else if (dataTableContentType === DataTableContentType.LOADING) {
+                // No rows and loading, use static skeleton
+                return this.renderLoadingPlaceholder();
+            }
+            // No rows and not loading, let empty view outside table body display
+            return <></>;
+        };
+
+        renderBodyRow = (item: any, index: number, dataTableContentType: DataTableContentType) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             const { hoveredIndex } = this.state;
             const isRowSelected = item === selectedResourceUuid;
-            const getClassnames = (colIndex: number) => {
-                if(currentRoute === '/workflows') return classes.tableCellWorkflows;
-                if(colIndex === 0) return classnames(classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
-                if(colIndex === 1) return classnames(classes.tableCell, classes.firstTableCell, isRowSelected ? classes.selected : "");
-                return classnames(classes.tableCell, isRowSelected ? classes.selected : "");
+            const getCellClassnames = (colIndex: number) => {
+                let cellClasses: string[] = [];
+                if (dataTableContentType === DataTableContentType.LOADING) cellClasses.push(classes.hiddenCell);
+                if(currentRoute === '/workflows') return classnames(cellClasses, classes.tableCellWorkflows);
+                if(colIndex === 0) return classnames(cellClasses, classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
+                if(colIndex === 1) return classnames(cellClasses, classes.tableCell, classes.firstTableCell, isRowSelected ? classes.selected : "");
+                return classnames(cellClasses, classes.tableCell, isRowSelected ? classes.selected : "");
             };
             const handleHover = (index: number | null) => {
                 this.setState({ hoveredIndex: index });
+            }
+
+            const noopWhenLoading = (func) => {
+                if (dataTableContentType === DataTableContentType.LOADING) {
+                    return (e) => e.preventDefault();
+                } else {
+                    return func;
+                }
             }
 
             return (
@@ -496,9 +587,9 @@ export const DataTable = withStyles(styles)(
                     data-cy={'data-table-row'}
                     hover
                     key={extractKey ? extractKey(item) : index}
-                    onClick={event => onRowClick && onRowClick(event, item)}
-                    onContextMenu={this.handleRowContextMenu(item)}
-                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
+                    onClick={noopWhenLoading(event => onRowClick && onRowClick(event, item))}
+                    onContextMenu={noopWhenLoading(this.handleRowContextMenu(item))}
+                    onDoubleClick={noopWhenLoading(event => onRowDoubleClick && onRowDoubleClick(event, item))}
                     selected={isRowSelected}
                     className={isRowSelected ? classes.selected : ""}
                     onMouseEnter={()=>handleHover(index)}
@@ -508,8 +599,9 @@ export const DataTable = withStyles(styles)(
                         <TableCell
                             key={column.key || colIndex}
                             data-cy={column.key || colIndex}
-                            className={getClassnames(colIndex)}>
+                            className={getCellClassnames(colIndex)}>
                             {column.render(item)}
+                            {dataTableContentType === DataTableContentType.LOADING && <LoadingIndicator inline={true} containerClassName={classes.skeleton} />}
                         </TableCell>
                     ))}
                 </TableRow>
