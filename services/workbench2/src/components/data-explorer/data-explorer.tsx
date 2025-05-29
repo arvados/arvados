@@ -41,8 +41,6 @@ import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-
 import { WORKFLOW_PROCESSES_PANEL_ID } from "store/workflow-panel/workflow-panel-actions";
 import { SHARED_WITH_ME_PANEL_ID } from "store/shared-with-me-panel/shared-with-me-panel-actions";
 import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
-import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
-import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 import { WorkflowResource } from "models/workflow";
 
 type CssRules =
@@ -199,6 +197,7 @@ interface DataExplorerDataProps<T> {
     isDetailsPanelOpen: boolean;
     isSelectedResourceInDataExplorer: boolean;
     parentResource?: ProjectResource | Process | WorkflowResource;
+    typeFilter: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -229,10 +228,9 @@ type DataExplorerState = {
     hideToolbar: boolean;
     isSearchResults: boolean;
     columnFilterCounts: ColumnFilterCounts;
-    typeFilter: string;
 };
 
-enum FilteredColumnNames {
+export enum FilteredColumnNames {
     STATUS = 'Status',
     TYPE = 'Type',
 }
@@ -243,7 +241,6 @@ export const DataExplorer = withStyles(styles)(
             hideToolbar: true,
             isSearchResults: false,
             columnFilterCounts: {},
-            typeFilter: '',
         };
 
         multiSelectToolbarInTitle = !this.props.title;
@@ -253,10 +250,10 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
-            this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
+            this.loadFilterCounts();
             this.setState({
-                typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, FilteredColumnNames.TYPE ))
-            });
+                isSearchResults: this.props.path?.includes("search-results") ? true : false ,
+            })
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<DataExplorerState>, snapshot?: any ): void {
@@ -279,13 +276,10 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
-            if (prevProps.items !== this.props.items && getFilterCountColumns(this.props.id, this.props.columns).length) {
-                if (!Object.keys(this.state.columnFilterCounts).length || prevProps.items !== this.props.items || this.state.typeFilter !== prevState.typeFilter) {
+            if (getFilterCountColumns(this.props.id, this.props.columns)) {
+                if (!Object.keys(this.state.columnFilterCounts).length || (prevProps.items !== this.props.items) || this.props.typeFilter !== prevProps.typeFilter) {
                     this.loadFilterCounts();
                 }
-                this.setState({
-                    typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(this.props.columns, FilteredColumnNames.TYPE ))
-                });
             }
         }
 
@@ -296,7 +290,7 @@ export const DataExplorer = withStyles(styles)(
             filterCountColumns.forEach(columnName => {
                 // more columns to fetch for can be added later
                 if(columnName === FilteredColumnNames.STATUS) {
-                    this.props.fetchProcessStatusCounts(parentUuid, this.state.typeFilter).then(result=>{
+                    this.props.fetchProcessStatusCounts(parentUuid, this.props.typeFilter).then(result=>{
                         if(result) {
                             this.setState({
                                 columnFilterCounts: {...this.state.columnFilterCounts, [columnName]: result}
