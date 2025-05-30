@@ -85,7 +85,7 @@ const renderedItemStyles = {
         },
     },
     name: {
-        marginRight: '10px',
+        marginRight: '20px',
     },
 };
 
