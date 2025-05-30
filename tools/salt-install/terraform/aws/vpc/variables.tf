@@ -54,6 +54,9 @@ variable "dns_aliases" {
   description = "Sets DNS name aliases for every service node"
   type = map(list(string))
   default = {
+    controller = [
+      "*.containers"
+    ],
     workbench = [
       "ws",
       "workbench2",
