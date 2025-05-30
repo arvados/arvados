@@ -39,8 +39,8 @@
   become: "{{ arvados_database_login_host is falsy }}"
   become_user: "{{ arvados_database_login_user }}"
   community.postgresql.postgresql_ext:
-    db: "{{ arvados_database_name }}"
     name: pg_trgm
+    login_db: "{{ arvados_database_name }}"
     login_host: "{{ arvados_database_login_host }}"
     login_password: "{{ arvados_database_login_password }}"
     login_port: "{{ arvados_database_login_port }}"

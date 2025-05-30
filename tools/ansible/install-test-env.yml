@@ -147,7 +147,7 @@
       vars:
         arvados_postgresql_config: {}
         arvados_postgresql_hba_sources:
-          - "127.0.0.1/24"
+          - "127.0.0.0/24"
           - "::1/128"
 
     # Workbench build dependencies
