@@ -12,7 +12,7 @@
 postgres:
   pkgs_extra:
     - postgresql-contrib
-  use_upstream_repo: true
+  use_upstream_repo: false
   version: {{ pg_version }}
   postgresconf: |-
     listen_addresses = '*'  # listen on all interfaces
