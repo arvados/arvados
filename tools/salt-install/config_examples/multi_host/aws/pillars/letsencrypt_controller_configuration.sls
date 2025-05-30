@@ -8,6 +8,5 @@ letsencrypt:
   domainsets:
     controller.__DOMAIN__:
       - __DOMAIN__
-    containers.__DOMAIN__:
       - containers.__DOMAIN__
       - '*.containers.__DOMAIN__'
