@@ -47,7 +47,7 @@ def resolve_aws_key(apiclient, s3url):
 
     parsed = urllib.parse.urlparse(s3url)
     bucket = "s3://%s" % parsed.netloc
-    expires_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)
+    expires_at = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
     results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
                                                     ["scopes", "contains", bucket],
@@ -171,7 +171,9 @@ class ArvPathMapper(PathMapper):
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
-                        if self.arvrunner.selected_credential is None and self.arvrunner.botosession is None:
+                        if (self.arvrunner.selected_credential is None and
+                            self.arvrunner.botosession is None and
+                            not self.arvrunner.toplevel_runtimeContext.s3_public_bucket):
                             self.arvrunner.selected_credential = resolve_aws_key(self.arvrunner.api, src)
                             logger.info("S3 downloads will use access key id %s which is Arvados credential '%s' (%s)",
                                         self.arvrunner.selected_credential['external_id'],

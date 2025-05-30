@@ -720,10 +720,11 @@ The 'jobs' API is no longer supported.
         # are going to wait for the result, and always_submit_runner
         # is false, then we don't submit a runner process.
 
-        submitting = (runtimeContext.submit and not
+        submitting = ((runtimeContext.submit and not
                        (updated_tool.tool["class"] == "CommandLineTool" and
                         runtimeContext.wait and
-                        not runtimeContext.always_submit_runner))
+                        not runtimeContext.always_submit_runner)) or
+                      runtimeContext.defer_downloads)
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False

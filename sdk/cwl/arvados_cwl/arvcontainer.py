@@ -1003,7 +1003,7 @@ aws_secret_access_key = {}
         if self.arvrunner.selected_credential is not None:
             command.append("--use-credential="+self.arvrunner.selected_credential["uuid"])
 
-        if self.runtimeContext.s3_public_bucket is True:
+        if runtimeContext.s3_public_bucket is True:
             command.append("--s3-public-bucket")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
