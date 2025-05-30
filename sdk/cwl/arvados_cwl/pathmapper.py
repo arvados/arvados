@@ -6,6 +6,7 @@ import re
 import logging
 import uuid
 import os
+import datetime
 import urllib.request, urllib.parse, urllib.error
 
 import arvados_cwl.util
@@ -46,16 +47,20 @@ def resolve_aws_key(apiclient, s3url):
 
     parsed = urllib.parse.urlparse(s3url)
     bucket = "s3://%s" % parsed.netloc
+    expires_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)
 
     results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
-                                                    ["scopes", "contains", bucket]]).execute()
+                                                    ["scopes", "contains", bucket],
+                                                    ["expires_at", ">", expires_at]]).execute()
     if len(results["items"]) > 1:
         raise WorkflowException("Multiple credentials found for bucket '%s' in Arvados, use --use-credential to specify which one to use." % bucket)
 
     if len(results["items"]) == 1:
         return results["items"][0]
 
-    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"], ["scopes", "=", []]]).execute()
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
+                                                    ["scopes", "=", []],
+                                                    ["expires_at", ">", expires_at]]).execute()
 
     if len(results["items"]) > 1:
         raise WorkflowException("Multiple AWS credentials found in Arvados, provide --use-credential to specify which one to use")
@@ -156,11 +161,12 @@ class ArvPathMapper(PathMapper):
                             # Fetch the secret and create the boto session.
                             self.arvrunner.botosession = boto3.session.Session(aws_access_key_id=self.arvrunner.selected_credential["external_id"],
                                                                                aws_secret_access_key=self.arvrunner.selected_credential["secret"])
+                            logger.info("Using Arvados credential %s (%s)", self.arvrunner.selected_credential["name"], self.arvrunner.selected_credential["uuid"])
                         else:
                             self.arvrunner.botosession = boto3.session.Session()
                         if not self.arvrunner.botosession.get_credentials():
                             raise WorkflowException("boto3 did not find any local AWS credentials to use to download from S3.  If you want to use credentials registered with Arvados, use --defer-downloads")
-                        logger.info("S3 downloads will use access key id %s in region %s", self.arvrunner.botosession.get_credentials().access_key, self.arvrunner.botosession.region_name)
+                        logger.info("S3 downloads will use AWS access key id %s", self.arvrunner.botosession.get_credentials().access_key)
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)

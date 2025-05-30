@@ -17,7 +17,7 @@ def get_intermediate_collection_info(workflow_step_name, current_container, inte
         name = "Intermediate collection"
     trash_time = None
     if intermediate_output_ttl > 0:
-        trash_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=intermediate_output_ttl)
+        trash_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=intermediate_output_ttl)
     container_uuid = None
     props = {"type": "intermediate"}
     if current_container:
