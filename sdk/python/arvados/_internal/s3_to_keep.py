@@ -94,26 +94,36 @@ class _Downloader(DownloaderBase):
             logger.info("%d downloaded, %6.2f MiB/s", self.count, (bps / (1024.0*1024.0)))
         self.checkpoint = loopnow
 
+def get_botoclient(botosession, unsigned_requests):
+    if unsigned_requests:
+        from botocore import UNSIGNED
+        from botocore.config import Config
+        return botosession.client('s3', config=Config(signature_version=UNSIGNED))
+    else:
+        return botosession.client('s3')
+
+
 def check_cached_url(api, botosession, project_uuid, url, etags,
                      utcnow=datetime.datetime.utcnow,
-                     prefer_cached_downloads=False):
+                     prefer_cached_downloads=False,
+                     unsigned_requests=False):
 
-    return generic_check_cached_url(api, _Downloader(api, botosession.client('s3')),
+    return generic_check_cached_url(api, _Downloader(api, get_botoclient(botosession, unsigned_requests)),
                             project_uuid, url, etags,
                             utcnow=utcnow,
                             prefer_cached_downloads=prefer_cached_downloads)
 
-
 def s3_to_keep(api, botosession, project_uuid, url,
                utcnow=datetime.datetime.utcnow,
-               prefer_cached_downloads=False):
+               prefer_cached_downloads=False,
+               unsigned_requests=False):
     """Download a file over S3 and upload it to keep, with HTTP headers as metadata.
 
     Because simple S3 object fetches are just HTTP underneath, we can
-    reuse most of the HTTP downloading infrastucture.
+    reuse most of the HTTP downloading infrastructure.
     """
 
-    return url_to_keep(api, _Downloader(api, botosession.client('s3')),
+    return url_to_keep(api, _Downloader(api, get_botoclient(botosession, unsigned_requests)),
                        project_uuid, url,
                        utcnow=utcnow,
                        prefer_cached_downloads=prefer_cached_downloads)

@@ -238,6 +238,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--disable-aws-credential-capture", action="store_false", default=False, dest="aws_credential_capture",
                         help="Do not capture AWS credentials from the local environment, must use credentials registered with Arvados.")
 
+    parser.add_argument("--s3-public-bucket", action="store_true",
+                        help="Downloads are from a public bucket, so no AWS credentials are required.")
+
     parser.add_argument("--use-credential", default=None, dest="selected_credential",
                         help="Name or uuid of a credential registered with Arvados that will be used to fetch external resources.")
 

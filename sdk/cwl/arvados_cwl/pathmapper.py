@@ -164,9 +164,10 @@ class ArvPathMapper(PathMapper):
                             logger.info("Using Arvados credential %s (%s)", self.arvrunner.selected_credential["name"], self.arvrunner.selected_credential["uuid"])
                         else:
                             self.arvrunner.botosession = boto3.session.Session()
-                        if not self.arvrunner.botosession.get_credentials():
-                            raise WorkflowException("boto3 did not find any local AWS credentials to use to download from S3.  If you want to use credentials registered with Arvados, use --defer-downloads")
-                        logger.info("S3 downloads will use AWS access key id %s", self.arvrunner.botosession.get_credentials().access_key)
+                        if not self.arvrunner.botosession.get_credentials() and not self.arvrunner.toplevel_runtimeContext.s3_public_bucket:
+                            raise WorkflowException("boto3 did not find any local AWS credentials to use to download from S3.  If you want to use credentials registered with Arvados, use --defer-downloads.  If the bucket is public, use --s3-public-bucket.")
+                        if self.arvrunner.botosession.get_credentials():
+                            logger.info("S3 downloads will use AWS access key id %s", self.arvrunner.botosession.get_credentials().access_key)
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
@@ -182,7 +183,8 @@ class ArvPathMapper(PathMapper):
                                              self.arvrunner.botosession,
                                              self.arvrunner.project_uuid,
                                              src,
-                                             prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
+                                             prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads,
+                                             unsigned_requests=self.arvrunner.toplevel_runtimeContext.s3_public_bucket)
                         keepref = "keep:%s/%s" % (results[0], results[1])
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
