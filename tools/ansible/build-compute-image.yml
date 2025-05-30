@@ -3,8 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Load Arvados configuration
+- name: Bootstrap node
   hosts: default
+  gather_facts: no
   tasks:
     - name: Load Arvados configuration file
       delegate_to: localhost
@@ -57,17 +58,14 @@
             path: "{{ key_tempfile.path }}"
             state: absent
 
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
+
 - name: Set up compute node base distribution
   # `default` is the name that the Packer Ansible plugin assigns to the
   # instance used to create the image.
   hosts: default
   tasks:
-    - name: Bootstrap packages required for Ansible
-      become: yes
-      ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
-      loop:
-        - update
-        - install gnupg python3-apt python3-debian xz-utils
     - ansible.builtin.include_role:
         name: arvados_apt
     - name: List linux-image packages pre-upgrade

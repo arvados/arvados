@@ -15,8 +15,9 @@
 # Pass the path of your file to `ansible-playbook` with
 # `-e arvados_config_file=config.yml`.
 
-- name: Load Arvados configuration
+- name: Bootstrap nodes
   hosts: all
+  gather_facts: no
   tasks:
     - name: Load Arvados configuration file
       delegate_to: localhost
@@ -27,6 +28,8 @@
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters.zzzzz }}"
       failed_when: arvados_cluster is undefined
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
 
 - hosts: all
   vars:
@@ -35,12 +38,6 @@
     arvados_nodejs_destdir: "/opt/node-v{{ arvados_nodejs_version }}-linux-x64"
 
   tasks:
-    - name: Bootstrap packages required for Ansible
-      become: yes
-      ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
-      loop:
-        - update
-        - install acl gnupg python3-apt python3-debian xz-utils
     - name: Install all required development packages
       become: yes
       ansible.builtin.apt:

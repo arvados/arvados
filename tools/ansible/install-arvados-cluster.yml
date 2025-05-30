@@ -10,8 +10,9 @@
 # `files/example-cluster-inventory.yml` for information about how to write
 # configuration for this playbook.
 
-- name: Load Arvados configuration
+- name: Bootstrap nodes
   hosts: all
+  gather_facts: no
   tasks:
     - name: Load Arvados configuration file
       delegate_to: localhost
@@ -22,16 +23,8 @@
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
       failed_when: arvados_cluster is undefined
-
-- name: Prepare base system
-  hosts: all
-  tasks:
-    - name: Bootstrap packages required for Ansible
-      become: yes
-      ansible.builtin.raw: "apt-get -o DPkg::Lock::Timeout=300 -qy {{ item }}"
-      loop:
-        - update
-        - install acl python3-apt python3-debian
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
 
 - name: Install PostgreSQL
   hosts: arvados_postgresql

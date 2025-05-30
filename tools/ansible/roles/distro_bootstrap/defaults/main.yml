@@ -1,0 +1,12 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+distro_bootstrap_apt_command: "apt-get -o DPkg::Lock::Timeout=300 -qy"
+distro_bootstrap_apt_packages:
+  # acl is a core Linux utility and required to use become_user.
+  - acl
+  # Required by ansible.builtin.apt
+  - python3-apt
+  # Required by ansible.builtin.deb822_repository
+  - python3-debian
