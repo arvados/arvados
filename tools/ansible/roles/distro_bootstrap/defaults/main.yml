@@ -10,3 +10,10 @@ distro_bootstrap_apt_packages:
   - python3-apt
   # Required by ansible.builtin.deb822_repository
   - python3-debian
+
+distro_bootstrap_dnf_command: "dnf --quiet --assumeyes"
+distro_bootstrap_dnf_packages:
+  # acl is a core Linux utility and required to use become_user.
+  - acl
+  # Required by ansible.builtin.dnf
+  - python3-dnf
