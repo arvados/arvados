@@ -6,6 +6,7 @@ import re
 import logging
 import uuid
 import os
+import datetime
 import urllib.request, urllib.parse, urllib.error
 
 import arvados_cwl.util
@@ -39,6 +40,36 @@ def trim_listing(obj):
 collection_pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+$')
 collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
 collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
+
+def resolve_aws_key(apiclient, s3url):
+    if "credentials" not in apiclient._rootDesc["resources"]:
+        raise WorkflowException("Arvados instance does not support the external credentials API.  Use --enable-aws-credential-capture to use locally-defined credentials.")
+
+    parsed = urllib.parse.urlparse(s3url)
+    bucket = "s3://%s" % parsed.netloc
+    expires_at = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
+                                                    ["scopes", "contains", bucket],
+                                                    ["expires_at", ">", expires_at]]).execute()
+    if len(results["items"]) > 1:
+        raise WorkflowException("Multiple credentials found for bucket '%s' in Arvados, use --use-credential to specify which one to use." % bucket)
+
+    if len(results["items"]) == 1:
+        return results["items"][0]
+
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
+                                                    ["scopes", "=", []],
+                                                    ["expires_at", ">", expires_at]]).execute()
+
+    if len(results["items"]) > 1:
+        raise WorkflowException("Multiple AWS credentials found in Arvados, provide --use-credential to specify which one to use")
+
+    if len(results["items"]) == 1:
+        return results["items"][0]
+
+    raise WorkflowException("No AWS credentials found, must register AWS credentials with Arvados or use --enable-aws-credential-capture to use locally-defined credentials.")
+
 
 class ArvPathMapper(PathMapper):
     """Convert container-local paths to and from Keep collection ids."""
@@ -106,8 +137,8 @@ class ArvPathMapper(PathMapper):
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
                     else:
                         results = http_to_keep(self.arvrunner.api, self.arvrunner.project_uuid, src,
-                                                              varying_url_params=self.arvrunner.toplevel_runtimeContext.varying_url_params,
-                                                              prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
+                                               varying_url_params=self.arvrunner.toplevel_runtimeContext.varying_url_params,
+                                               prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
                         keepref = "keep:%s/%s" % (results[0], results[1])
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
@@ -126,23 +157,41 @@ class ArvPathMapper(PathMapper):
                         # credentials that will be passed to the
                         # workflow runner container later.
                         import boto3.session
-                        self.arvrunner.botosession = boto3.session.Session()
-                        logger.info("S3 downloads will use access key id %s in region %s", self.arvrunner.botosession.get_credentials().access_key, self.arvrunner.botosession.region_name)
+                        if self.arvrunner.selected_credential is not None:
+                            # Fetch the secret and create the boto session.
+                            self.arvrunner.botosession = boto3.session.Session(aws_access_key_id=self.arvrunner.selected_credential["external_id"],
+                                                                               aws_secret_access_key=self.arvrunner.selected_credential["secret"])
+                            logger.info("Using Arvados credential %s (%s)", self.arvrunner.selected_credential["name"], self.arvrunner.selected_credential["uuid"])
+                        else:
+                            self.arvrunner.botosession = boto3.session.Session()
+                        if not self.arvrunner.botosession.get_credentials() and not self.arvrunner.toplevel_runtimeContext.s3_public_bucket:
+                            raise WorkflowException("boto3 did not find any local AWS credentials to use to download from S3.  If you want to use credentials registered with Arvados, use --defer-downloads.  If the bucket is public, use --s3-public-bucket.")
+                        if self.arvrunner.botosession.get_credentials():
+                            logger.info("S3 downloads will use AWS access key id %s", self.arvrunner.botosession.get_credentials().access_key)
                     if self.arvrunner.defer_downloads:
                         # passthrough, we'll download it later.
                         self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
+                        if (self.arvrunner.selected_credential is None and
+                            self.arvrunner.botosession is None and
+                            not self.arvrunner.toplevel_runtimeContext.s3_public_bucket):
+                            self.arvrunner.selected_credential = resolve_aws_key(self.arvrunner.api, src)
+                            logger.info("S3 downloads will use access key id %s which is Arvados credential '%s' (%s)",
+                                        self.arvrunner.selected_credential['external_id'],
+                                        self.arvrunner.selected_credential['name'],
+                                        self.arvrunner.selected_credential['uuid'])
                     else:
                         from arvados._internal.s3_to_keep import s3_to_keep
                         results = s3_to_keep(self.arvrunner.api,
                                              self.arvrunner.botosession,
                                              self.arvrunner.project_uuid,
                                              src,
-                                             prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads)
+                                             prefer_cached_downloads=self.arvrunner.toplevel_runtimeContext.prefer_cached_downloads,
+                                             unsigned_requests=self.arvrunner.toplevel_runtimeContext.s3_public_bucket)
                         keepref = "keep:%s/%s" % (results[0], results[1])
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
                 except Exception as e:
-                    logger.warning("Download error: %s", e)
+                    logger.warning("Download error: %s", e, exc_info=debug)
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 

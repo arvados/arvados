@@ -45,7 +45,6 @@ def cleanup_name_for_collection(name):
 class OutputGlobError(RuntimeError):
     pass
 
-
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
@@ -1000,6 +999,12 @@ aws_secret_access_key = {}
 
         if self.fast_parser:
             command.append("--fast-parser")
+
+        if self.arvrunner.selected_credential is not None:
+            command.append("--use-credential="+self.arvrunner.selected_credential["uuid"])
+
+        if runtimeContext.s3_public_bucket is True:
+            command.append("--s3-public-bucket")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
