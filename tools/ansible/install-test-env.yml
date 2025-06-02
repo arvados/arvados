@@ -240,3 +240,8 @@
             export CONFIGSRC="$HOME/.config/arvados"
           fi
         dest: /etc/profile.d/arvados-test.sh
+
+    - ansible.builtin.include_role:
+        name: arvados_ansible
+      vars:
+        arvados_ansible_galaxy_user: "{{ arvados_dev_user }}"
