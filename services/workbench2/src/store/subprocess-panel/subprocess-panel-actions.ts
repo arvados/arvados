@@ -193,5 +193,5 @@ async function resolvePromisesSequentially<T>(promises: Promise<T>[]) {
     return results;
 }
 
-const isAllProcessesPanel = (parentResourceUuid: string) => parentResourceUuid === ALL_PROCESSES_PANEL_ID;
-const isSharedWithMePanel = (parentResourceUuid: string) => parentResourceUuid === SHARED_WITH_ME_PANEL_ID;
+export const isAllProcessesPanel = (parentResourceUuid: string) => parentResourceUuid === ALL_PROCESSES_PANEL_ID;
+export const isSharedWithMePanel = (parentResourceUuid: string) => parentResourceUuid === SHARED_WITH_ME_PANEL_ID;

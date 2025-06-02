@@ -34,7 +34,7 @@ import { InlinePulser } from "components/loading/inline-pulser";
 import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
 import { ProjectResource } from "models/project";
 import { Process } from "store/processes/process";
-import { ProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-actions";
+import { ProcessStatusCounts, isAllProcessesPanel, isSharedWithMePanel } from "store/subprocess-panel/subprocess-panel-actions";
 import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
 import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
@@ -276,17 +276,15 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
-            if (getFilterCountColumns(this.props.id, this.props.columns)) {
-                if (!Object.keys(this.state.columnFilterCounts).length || (prevProps.items !== this.props.items) || this.props.typeFilter !== prevProps.typeFilter) {
-                    this.loadFilterCounts();
-                }
+            if ((prevProps.items !== this.props.items || this.props.typeFilter !== prevProps.typeFilter)) {
+                this.loadFilterCounts();
             }
         }
 
         loadFilterCounts = () => {
             const { id, columns } = this.props;
             const filterCountColumns = getFilterCountColumns(id, columns);
-            const parentUuid = getParentUuid(this.props.parentResource) || id;
+            const parentUuid = getParentUuid(this.props.parentResource, id);
             filterCountColumns.forEach(columnName => {
                 // more columns to fetch for can be added later
                 if(columnName === FilteredColumnNames.STATUS) {
@@ -611,10 +609,14 @@ const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any,
     }, [])
 };
 
-const getParentUuid = (parentResource: ProjectResource | Process | WorkflowResource | undefined) => {
-    return parentResource
-    ? isProcess(parentResource)
-        ? parentResource.containerRequest.uuid
-        : parentResource.uuid
-    : "";
+const getParentUuid = (parentResource: ProjectResource | Process | WorkflowResource | undefined, id: string) => {
+    if (parentResource) {
+        return isProcess(parentResource)
+            ? parentResource.containerRequest.uuid
+            : parentResource.uuid
+    }
+    if (isAllProcessesPanel(id) || isSharedWithMePanel(id)) {
+        return id;
+    }
+    return '';
 };
