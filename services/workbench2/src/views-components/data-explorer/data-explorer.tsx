@@ -4,7 +4,7 @@
 
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { DataExplorer as DataExplorerComponent } from "components/data-explorer/data-explorer";
+import { DataExplorer as DataExplorerComponent, FilteredColumnNames } from "components/data-explorer/data-explorer";
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { Dispatch } from "redux";
 import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
@@ -15,6 +15,9 @@ import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multis
 import { setSelectedResourceUuid, setIsSelectedResourceInDataExplorer } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { fetchProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-actions";
+import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
+import { serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 
 interface Props {
     id: string;
@@ -32,6 +35,7 @@ const mapStateToProps = ({ dataExplorer, router, multiselect, selectedResource, 
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
+        id,
         path: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
@@ -42,6 +46,7 @@ const mapStateToProps = ({ dataExplorer, router, multiselect, selectedResource, 
         searchBarValue: searchBar.searchValue,
         detailsPanelResourceUuid: detailsPanel.resourceUuid,
         isDetailsPanelOpen: detailsPanel.isOpened,
+        typeFilter: serializeOnlyProcessTypeFilters(false)(getDataExplorerColumnFilters(dataExplorerState.columns, FilteredColumnNames.TYPE ))
     };
 };
 
@@ -97,6 +102,10 @@ const mapDispatchToProps = () => {
 
         setIsSelectedResourceInDataExplorer: (isIn: boolean) => {
             dispatch<any>(setIsSelectedResourceInDataExplorer(isIn));
+        },
+
+        fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => {
+            return dispatch<any>(fetchProcessStatusCounts(parentResourceUuid, typeFilter));
         },
 
         onRowClick,

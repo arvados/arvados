@@ -32,6 +32,16 @@ import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { isMoreThanOneSelected } from "store/multiselect/multiselect-actions";
+import { ProjectResource } from "models/project";
+import { Process } from "store/processes/process";
+import { ProcessStatusCounts, isAllProcessesPanel, isSharedWithMePanel } from "store/subprocess-panel/subprocess-panel-actions";
+import { SUBPROCESS_PANEL_ID, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
+import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
+import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
+import { WORKFLOW_PROCESSES_PANEL_ID } from "store/workflow-panel/workflow-panel-actions";
+import { SHARED_WITH_ME_PANEL_ID } from "store/shared-with-me-panel/shared-with-me-panel-actions";
+import { ColumnFilterCounts } from "components/data-table-filters/data-table-filters-tree";
+import { WorkflowResource } from "models/workflow";
 
 type CssRules =
     | 'titleWrapper'
@@ -153,6 +163,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface DataExplorerDataProps<T> {
+    id: string;
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
@@ -172,7 +183,6 @@ interface DataExplorerDataProps<T> {
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
     title?: React.ReactNode;
-    progressBar?: React.ReactNode;
     path?: string;
     currentRouteUuid: string;
     selectedResourceUuid: string;
@@ -186,6 +196,8 @@ interface DataExplorerDataProps<T> {
     detailsPanelResourceUuid: string;
     isDetailsPanelOpen: boolean;
     isSelectedResourceInDataExplorer: boolean;
+    parentResource?: ProjectResource | Process | WorkflowResource;
+    typeFilter: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -207,28 +219,44 @@ interface DataExplorerActionProps<T> {
     usesDetailsCard: (uuid: string) => boolean;
     loadDetailsPanel: (uuid: string) => void;
     setIsSelectedResourceInDataExplorer: (isIn: boolean) => void;
+    fetchProcessStatusCounts: (parentResourceUuid: string, typeFilter?: string) => Promise<ProcessStatusCounts | undefined>;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
+type DataExplorerState = {
+    hideToolbar: boolean;
+    isSearchResults: boolean;
+    columnFilterCounts: ColumnFilterCounts;
+};
+
+export enum FilteredColumnNames {
+    STATUS = 'Status',
+    TYPE = 'Type',
+}
+
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
-        state = {
+        state: DataExplorerState = {
             hideToolbar: true,
             isSearchResults: false,
+            columnFilterCounts: {},
         };
 
-        multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
+        multiSelectToolbarInTitle = !this.props.title;
         maxItemsAvailable = 0;
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
-            this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
+            this.loadFilterCounts();
+            this.setState({
+                isSearchResults: this.props.path?.includes("search-results") ? true : false ,
+            })
         }
 
-        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
+        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<DataExplorerState>, snapshot?: any ): void {
             const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer, setSelectedUuid } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 setIsSelectedResourceInDataExplorer(this.isSelectedResourceInTable(selectedResourceUuid));
@@ -248,6 +276,27 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.path !== prevProps.path) {
                 this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
+            if ((prevProps.items !== this.props.items || this.props.typeFilter !== prevProps.typeFilter)) {
+                this.loadFilterCounts();
+            }
+        }
+
+        loadFilterCounts = () => {
+            const { id, columns } = this.props;
+            const filterCountColumns = getFilterCountColumns(id, columns);
+            const parentUuid = getParentUuid(this.props.parentResource, id);
+            filterCountColumns.forEach(columnName => {
+                // more columns to fetch for can be added later
+                if(columnName === FilteredColumnNames.STATUS) {
+                    this.props.fetchProcessStatusCounts(parentUuid, this.props.typeFilter).then(result=>{
+                        if(result) {
+                            this.setState({
+                                columnFilterCounts: {...this.state.columnFilterCounts, [columnName]: result}
+                            })
+                        }
+                    })
+                }
+            })
         }
 
         isSelectedResourceInTable = (resourceUuid) => {
@@ -283,7 +332,6 @@ export const DataExplorer = withStyles(styles)(
                 fetchMode,
                 selectedResourceUuid,
                 title,
-                progressBar,
                 doHidePanel,
                 doMaximizePanel,
                 doUnMaximizePanel,
@@ -409,12 +457,6 @@ export const DataExplorer = withStyles(styles)(
                     item
                     className={classes.dataTable}
                 >
-                    {!!progressBar &&
-                     <div className={classNames({
-                         [classes.progressWrapper]: true,
-                         [classes.progressWrapperNoTitle]: !title,
-                     })}>{progressBar}</div>
-                    }
                     <DataTable
                         columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                         items={items}
@@ -437,6 +479,7 @@ export const DataExplorer = withStyles(styles)(
                         isNotFound={this.props.isNotFound}
                         detailsPanelResourceUuid={detailsPanelResourceUuid}
                         loadDetailsPanel={loadDetailsPanel}
+                        columnFilterCounts={this.state.columnFilterCounts}
                     />
                 </Grid>
                 <Grid
@@ -554,3 +597,26 @@ const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => 
             ? { }
             : { disabled: true } // Disable next button on empty lists since that's not default behavior
 );
+
+const getFilterCountColumns = (dataExplorerId: string, columns: DataColumns<any, any>) => {
+    const goodDataExplorers = [ PROJECT_PANEL_RUN_ID, SUBPROCESS_PANEL_ID, WORKFLOW_PROCESSES_PANEL_ID, ALL_PROCESSES_PANEL_ID, SHARED_WITH_ME_PANEL_ID ];
+    const goodColumnNames = [ FilteredColumnNames.STATUS ];
+    return columns.reduce((acc: string[], curr) => {
+        if(goodDataExplorers.includes(dataExplorerId) && goodColumnNames.includes(curr.name as FilteredColumnNames)) {
+            acc.push(curr.name);
+        }
+        return acc;
+    }, [])
+};
+
+const getParentUuid = (parentResource: ProjectResource | Process | WorkflowResource | undefined, id: string) => {
+    if (parentResource) {
+        return isProcess(parentResource)
+            ? parentResource.containerRequest.uuid
+            : parentResource.uuid
+    }
+    if (isAllProcessesPanel(id) || isSharedWithMePanel(id)) {
+        return id;
+    }
+    return '';
+};

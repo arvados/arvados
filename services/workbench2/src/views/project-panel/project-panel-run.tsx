@@ -27,7 +27,6 @@ import {
     ResourceUUID,
 } from "views-components/data-explorer/renderers";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
-import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
@@ -196,7 +195,7 @@ export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunP
         contextMenuColumn={false}
         defaultViewIcon={ProjectIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-        progressBar={<SubprocessProgressBar parentResource={props.project} dataExplorerId={PROJECT_PANEL_RUN_ID} />}
+        parentResource={props.project}
         paperClassName={props.paperClassName}
     />;
 });
