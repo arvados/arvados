@@ -1,0 +1,44 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This inventory defines container names, base images, and built image tags
+# for the `build-docker-image.yml` playbook.
+
+arvados_package_tests:
+  hosts:
+    arvados_pkgtest_debian11:
+      arvados_docker_from: debian:11-slim
+      arvados_docker_tag: arvados/package-test:debian11
+    arvados_pkgtest_debian12:
+      arvados_docker_from: debian:12-slim
+      arvados_docker_tag: arvados/package-test:debian12
+    arvados_pkgtest_ubuntu2004:
+      arvados_docker_from: ubuntu:focal
+      arvados_docker_tag: arvados/package-test:ubuntu2004
+    arvados_pkgtest_ubuntu2204:
+      arvados_docker_from: ubuntu:jammy
+      arvados_docker_tag: arvados/package-test:ubuntu2204
+    arvados_pkgtest_ubuntu2404:
+      arvados_docker_from: ubuntu:noble
+      arvados_docker_tag: arvados/package-test:ubuntu2404
+    arvados_pkgtest_rocky8:
+      arvados_docker_from: rockylinux:8-minimal
+      arvados_docker_tag: arvados/package-test:rocky8
+      arvados_pkgtest_dnf_modules:
+        - postgresql:10
+        - python39:3.9
+        - ruby:3.1
+      arvados_pkgtest_dnf_devel_basename: Rocky-PowerTools
+      arvados_pkgtest_dnf_devel_section: powertools
+    arvados_pkgtest_rocky9:
+      arvados_docker_from: rockylinux:9-minimal
+      arvados_docker_tag: arvados/package-test:rocky9
+      arvados_pkgtest_dnf_modules:
+        - ruby:3.1
+  vars:
+    ansible_connection: docker
+    ansible_user: root
+    arvados_docker_changes:
+      - "ENV DEBIAN_FRONTEND=noninteractive"
+    distro_bootstrap_dnf_command: "microdnf --assumeyes"

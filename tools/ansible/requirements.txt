@@ -10,6 +10,7 @@
 #      pip install -c requirements.txt ansible-core
 
 ansible-core ~= 2.15.13
+docker ~= 7.0
 
 # It's not required for any playbook, but if you want to automate creating or
 # editing Arvados config.yml files, yq is our go-to tool.
