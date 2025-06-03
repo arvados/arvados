@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# install-test-env.yml - Install Arvados development tooling
+# install-dev-tools.yml - Install Arvados development tooling
 #
 ### Introduction
 #
@@ -32,7 +32,7 @@
 #
 ### Run the playbook
 #
-# $ ansible-playbook -Ki YOUR-INVENTORY.yml install-test-env.yml
+# $ ansible-playbook -Ki YOUR-INVENTORY.yml install-dev-tools.yml
 #
 ### Advanced groups
 #
