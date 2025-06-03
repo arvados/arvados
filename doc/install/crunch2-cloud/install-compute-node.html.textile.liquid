@@ -36,11 +36,11 @@ h2(#prerequisites). Prerequisites
 
 h3(#sshkeypair). Create and configure an SSH keypair
 
-@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, an SSH keypair is needed. The key type must be RSA or ED25519 to work with Amazon EC2. Generate an RSA keypair with no passphrase:
+@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, an SSH keypair is needed. The key type must be RSA or ED25519 to work with Amazon EC2. Generate an ED25519 keypair with no passphrase:
 
 <notextile>
-<pre><code>~$ <span class="userinput">ssh-keygen -t rsa -N '' -f ~/.ssh/id_dispatcher</span>
-Generating public/private rsa key pair.
+<pre><code>~$ <span class="userinput">ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_dispatcher</span>
+Generating public/private ed25519 key pair.
 Your identification has been saved in /home/user/.ssh/id_dispatcher.
 Your public key has been saved in /home/user/.ssh/id_dispatcher.pub.
 The key fingerprint is:
