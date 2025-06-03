@@ -66,6 +66,14 @@ type copier struct {
 	staged arvados.CollectionFileSystem
 
 	manifestCache map[string]string
+
+	// tmpfs is the filesystem representation of the source
+	// collection that was most recently handled in
+	// copyFromCollection.  This improves performance slightly in
+	// the special case where many mounts reference the same
+	// source collection.
+	tmpfs             arvados.CollectionFileSystem
+	tmpfsManifestText string
 }
 
 // Copy copies data as needed, and returns a new manifest.
@@ -397,6 +405,8 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 			return err
 		}
 	}
+	cp.tmpfs = nil
+	cp.tmpfsManifestText = ""
 	if walkMountsBelow {
 		return cp.walkMountsBelow(dest, src)
 	}
@@ -404,11 +414,15 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 }
 
 func (cp *copier) copyFromCollection(dest string, coll *arvados.Collection, srcRelPath string) error {
-	tmpfs, err := coll.FileSystem(cp.client, cp.keepClient)
-	if err != nil {
-		return err
+	if coll.ManifestText == "" || coll.ManifestText != cp.tmpfsManifestText {
+		tmpfs, err := coll.FileSystem(cp.client, cp.keepClient)
+		if err != nil {
+			return err
+		}
+		cp.tmpfs = tmpfs
+		cp.tmpfsManifestText = coll.ManifestText
 	}
-	snap, err := arvados.Snapshot(tmpfs, srcRelPath)
+	snap, err := arvados.Snapshot(cp.tmpfs, srcRelPath)
 	if err != nil {
 		return err
 	}
