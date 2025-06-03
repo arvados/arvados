@@ -153,9 +153,13 @@ func (s *copierSuite) TestRepetitiveMountsInOutputDir(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(fis, check.HasLen, nmounts)
 
+	// nmounts -- Δalloc before -> Δalloc after fixing #22827
+	// 500 -- 1542 MB -> 15 MB
+	// 200 -- 254 MB -> 5 MB
 	var memstats runtime.MemStats
 	runtime.ReadMemStats(&memstats)
-	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
+	delta := (memstats.Alloc - memstats0.Alloc) / 1000000
+	c.Check(delta < 40, check.Equals, true, check.Commentf("Δalloc %d MB is suspiciously high, expect ~ 5 MB", delta))
 }
 
 func (s *copierSuite) TestRegularFilesAndDirs(c *check.C) {
