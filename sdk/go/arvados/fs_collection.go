@@ -1303,10 +1303,15 @@ func (fn *filenode) Snapshot() (inode, error) {
 	for _, seg := range fn.segments {
 		segments = append(segments, seg.Slice(0, seg.Len()))
 	}
-	return &filenode{
+	newfn := &filenode{
 		fileinfo: fn.fileinfo,
 		segments: segments,
-	}, nil
+	}
+	// Clear references to the original filesystem, otherwise the
+	// snapshot will prevent the old filesystem from being garbage
+	// collected.
+	newfn.setFS(nil)
+	return newfn, nil
 }
 
 func (fn *filenode) Splice(repl inode) error {
@@ -1330,11 +1335,22 @@ func (fn *filenode) Splice(repl inode) error {
 	case *filenode:
 		repl.parent = fn.parent
 		repl.fileinfo.name = fn.fileinfo.name
-		repl.fs = fn.fs
+		repl.setFS(fn.fs)
 	default:
 		return fmt.Errorf("cannot splice snapshot containing %T: %w", repl, ErrInvalidArgument)
 	}
 	return nil
+}
+
+// Caller must have lock.
+func (fn *filenode) setFS(fs *collectionFileSystem) {
+	fn.fs = fs
+	for i, seg := range fn.segments {
+		if ss, ok := seg.(storedSegment); ok {
+			ss.kc = fs
+			fn.segments[i] = ss
+		}
+	}
 }
 
 type dirnode struct {
@@ -2031,7 +2047,7 @@ func (dn *dirnode) Splice(repl inode) error {
 		if err != nil {
 			return fmt.Errorf("error replacing filenode: dn.parent.Child(): %w", err)
 		}
-		repl.fs = dn.fs
+		repl.setFS(dn.fs)
 	}
 	return nil
 }
@@ -2043,7 +2059,7 @@ func (dn *dirnode) setTreeFS(fs *collectionFileSystem) {
 		case *dirnode:
 			child.setTreeFS(fs)
 		case *filenode:
-			child.fs = fs
+			child.setFS(fs)
 		}
 	}
 }
