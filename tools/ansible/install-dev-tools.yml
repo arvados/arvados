@@ -259,8 +259,6 @@
           - bison
           - g++
           - libcurl4-openssl-dev
-          - libnsl2
-          - libnss-systemd
           - libpq-dev
           - libssl-dev
           - libyaml-dev
