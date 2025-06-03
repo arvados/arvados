@@ -205,13 +205,16 @@ fi
 JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
 if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
-    if [[ -n "$test_packages" ]]; then
-	    pushd "$JENKINS_DIR/package-test-dockerfiles"
-    else
-	    pushd "$JENKINS_DIR/package-build-dockerfiles"
-	    make "$TARGET/generated"
-    fi
-
+  if [[ -n "$test_packages" ]]; then
+    env -C "$WORKSPACE/tools/ansible" ansible-galaxy install -r requirements.yml
+    env -C "$WORKSPACE/tools/ansible" ansible-playbook \
+        --extra-vars=arvados_build_playbook=setup-package-tests.yml \
+        --inventory=files/development-docker-images.yml \
+        --limit="arvados_pkgtest_$TARGET" \
+        build-docker-image.yml
+  else
+	pushd "$JENKINS_DIR/package-build-dockerfiles"
+	make "$TARGET/generated"
     GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
 
     echo $TARGET
@@ -221,6 +224,7 @@ if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
 	 --build-arg BRANCH=$(git rev-parse HEAD) \
 	 --build-arg GOVERSION=$GOVERSION --no-cache .
     popd
+  fi
 fi
 
 if test -z "$packages" ; then

@@ -17,7 +17,7 @@
   become: yes
   become_user: postgres
   community.postgresql.postgresql_query:
-    db: postgres
+    login_db: postgres
     query: SHOW hba_file;
   register: pg_hba_query
 

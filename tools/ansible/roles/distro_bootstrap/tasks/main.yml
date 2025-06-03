@@ -1,0 +1,23 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Get distribution IDs
+  ansible.builtin.raw: ". /etc/os-release && printf '%s\\n' $ID $ID_LIKE"
+  register: distro_ids
+
+- name: Bootstrap apt packages
+  when: "'debian' in distro_ids.stdout_lines"
+  become: yes
+  ansible.builtin.raw: "{{ distro_bootstrap_apt_command }} {{ item }}"
+  loop:
+    - update
+    - "install {{ distro_bootstrap_apt_packages|map('quote')|join(' ') }}"
+
+- name: Bootstrap rpm packages
+  when: "'rhel' in distro_ids.stdout_lines"
+  become: yes
+  ansible.builtin.raw: "{{ distro_bootstrap_dnf_command }} {{ item }}"
+  loop:
+    - makecache
+    - "install {{ distro_bootstrap_dnf_packages|map('quote')|join(' ') }}"

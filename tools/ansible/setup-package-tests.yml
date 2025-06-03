@@ -1,0 +1,74 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This playbook sets up a Docker image to run Arvados package tests.
+# It's meant to be used with `build-docker-image.yml`.
+
+- name: Bootstrap nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
+
+- name: Group nodes by package manager
+  hosts: all
+  tasks:
+    - ansible.builtin.group_by:
+        key: "pkg_mgr_{{ ansible_pkg_mgr }}"
+
+- name: Setup apt nodes
+  hosts: pkg_mgr_apt
+  tasks:
+    - name: Install apt dependencies
+      ansible.builtin.apt:
+        name:
+          - diffutils
+          - findutils
+
+    - name: Install apt repository
+      ansible.builtin.deb822_repository:
+        name: arvados_pkgtest
+        types: deb
+        uris: "file:///arvados/packages/{{ ansible_distribution|lower }}{{ ansible_distribution_version|replace('.', '') if ansible_distribution == 'Ubuntu' else ansible_distribution_major_version }}"
+        suites:
+          - "/"
+        trusted: true
+
+- name: Setup dnf nodes
+  hosts: pkg_mgr_dnf
+  tasks:
+    - name: Install dnf dependencies
+      ansible.builtin.dnf:
+        name:
+          - cpio
+          - diffutils
+          - findutils
+
+    - name: Enable dnf modules
+      when: arvados_pkgtest_dnf_modules is defined
+      vars:
+        dnf:
+          - microdnf
+          - "--assumeyes"
+          - module
+          - enable
+      ansible.builtin.command:
+        argv: "{{ dnf + arvados_pkgtest_dnf_modules }}"
+
+    - name: Enable development repository
+      community.general.ini_file:
+        path: "/etc/yum.repos.d/{{ arvados_pkgtest_dnf_devel_basename|default('rocky-devel') }}.repo"
+        section: "{{ arvados_pkgtest_dnf_devel_section|default('devel') }}"
+        option: enabled
+        value: "1"
+        create: false
+
+    - name: Create test package repository
+      ansible.builtin.yum_repository:
+        name: arvados-test
+        description: Arvados Test Packages
+        baseurl: "file:///arvados/packages/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}"
+        enabled: true
+        gpgcheck: false

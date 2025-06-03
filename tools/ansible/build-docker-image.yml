@@ -1,0 +1,57 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# build-docker-image.yml - Build a Docker image from another playbook
+#
+# Typical usage looks like:
+#
+#   ansible-playbook -i files/development-docker-images.yml \
+#     -e arvados_build_playbook=FILENAME.yml \
+#     [--limit=...] build-docker-image.yml
+#
+# `arvados_build_playbook` is the name of the playbook that turns a base image
+# into a new image. The inventory defines container names, base images,
+# and built image tags.
+
+- name: Start container(s)
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Start container
+      delegate_to: localhost
+      community.docker.docker_container:
+        name: "{{ inventory_hostname }}"
+        state: "{{ arvados_docker_startstate|default('healthy') }}"
+        image: "{{ arvados_docker_from }}"
+        pull: "{{ arvados_docker_pull|default('missing') }}"
+        command: "{{ arvados_docker_command|default(['sleep', 'infinity']) }}"
+
+- name: Run playbook
+  ansible.builtin.import_playbook: "{{ arvados_build_playbook }}"
+
+- name: Commit image(s)
+  hosts: all
+  tasks:
+    - name: Commit container
+      delegate_to: localhost
+      vars:
+        argv_start:
+          - docker
+          - container
+          - commit
+          - "--author={{ arvados_docker_author|default('Arvados Package Maintainers <packaging@arvados.org>') }}"
+          - '--change=CMD ["bash"]'
+        # `map` just adds the option flag to the start of each string.
+        argv_changes: "{{ arvados_docker_changes|default([])|map('replace', '', '--change=', 1)|list }}"
+        argv_args:
+          - "{{ inventory_hostname }}"
+          - "{{ arvados_docker_tag }}"
+      ansible.builtin.command:
+        argv: "{{ argv_start + argv_changes + argv_args }}"
+
+    - name: Clean up container
+      delegate_to: localhost
+      community.docker.docker_container:
+        name: "{{ inventory_hostname }}"
+        state: "{{ arvados_docker_endstate|default('absent') }}"
