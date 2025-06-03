@@ -2,80 +2,382 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# install-test-env.yml - Ansible playbook to set up a host to run Arvados tests
+# install-test-env.yml - Install Arvados development tooling
 #
-# After you run this playbook on a host, you should be able to clone the
-# Arvados git repository and run `build/run-tests.sh`.
-# As of April 2025 this has been tested to work on Debian 12.
+### Introduction
 #
-# In order to use this playbook, you must write an Arvados `config.yml` with
-# PostgreSQL connection details for the `zzzzz` cluster.
-# `files/default-test-config.yml` has the default credentials used by tests.
-# You can copy that file and edit `dbname`, `user`, and `password` to taste.
-# Pass the path of your file to `ansible-playbook` with
-# `-e arvados_config_file=config.yml`.
+# This playbook installs and configures software necessary for Arvados
+# development. It uses host groups from your inventory to select which
+# dependencies are managed.
+#
+# The most inclusive group is `arvados_test_all`. Hosts in this group will
+# have everything they need to clone the Arvados source and run
+# `build/run-tests.sh`.
+#
+# Another useful group is `arvados_build_all`. Hosts in this group will have
+# enough software to build Arvados binaries and language packages like Ruby
+# gems. This is NOT enough software to run an Arvados cluster; it's mainly
+# useful for building distribution packages and related tooling.
+#
+### Example Inventory
+#
+# arvados_test_all:
+#   hosts:
+#     dev.arvados.example:
+#   vars:
+#     # See files/default-test-config.yml for an example.
+#     # You can change the Arvados database configuration and this playbook
+#     # will set up PostgreSQL to match.
+#     arvados_config_file: /home/example/path/arvados/config.yml
+#
+### Run the playbook
+#
+# $ ansible-playbook -Ki YOUR-INVENTORY.yml install-test-env.yml
+#
+### Advanced groups
+#
+# This documentation is aimed at Arvados developers building tooling with
+# this playbook.
+#
+# The pattern of group names is `arvados_build_COMPONENT` and
+# `arvados_test_COMPONENT`. The `build` group installs everything you need
+# to "build" the component from source. (Exactly what that means varies by
+# language.) `arvados_test_COMPONENT` adds everything you need to run that
+# component's tests. Any host in an `arvados_test` group is automatically
+# added to its corresponding `arvados_build` group.
+#
+# See the `core_components` variable below for the list of components. In
+# general, it is the name of a language we have multiple components in; or
+# the name of a component that can be tested independently in `run-tests.sh`.
 
 - name: Bootstrap nodes
   hosts: all
   gather_facts: no
+  vars:
+    # The `arvados_build_all` group will be expanded to the
+    # `arvados_build_NAME` group for every name in this list.
+    # This corresponds to the components we build distribution packages for.
+    core_components:
+      - cwl
+      - doc
+      - go
+      - python
+      - ruby
+      - workbench
+    # `arvados_test_all` works similarly with additional components.
+    # The primary user of `arvados_build_all` is package build Docker images,
+    # so excluding components we don't package avoids Docker image bloat.
+    test_components:
+      - deb
+      - java
+      - R
+      - rpm
+
   tasks:
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
+
+    # If the host is in no `arvados` groups, add it to `arvados_test_all`.
+    - name: Build default group arvados_test_all
+      when: "hostvars[item]['group_names']|map('regex_search', '^arvados_')|select|first is undefined"
+      ansible.builtin.add_host:
+        host: "{{ item }}"
+        groups:
+          - arvados_test_all
+      loop: "{{ ansible_play_hosts }}"
+
+    - name: Expand arvados_build_all group
+      ansible.builtin.add_host:
+        host: "{{ item }}"
+        groups: "{{ core_components|map('replace', '', 'arvados_build_', 1) }}"
+      loop: "{{ groups.arvados_build_all|default([]) }}"
+
+    - name: Expand arvados_test_all group
+      ansible.builtin.add_host:
+        host: "{{ item }}"
+        groups: "{{ (core_components + test_components)|map('replace', '', 'arvados_test_', 1) }}"
+      loop: "{{ groups.arvados_test_all|default([]) }}"
+
+    - name: Add test hosts to build groups
+      ansible.builtin.add_host:
+        host: "{{ item }}"
+        groups: "{{ hostvars[item]['group_names']|map('regex_replace', '^arvados_test_', 'arvados_build_', 1)|list }}"
+      loop: "{{ ansible_play_hosts }}"
+
+### Core dependencies
+
+- hosts: arvados_build_*
+  tasks:
+    - name: Install common build tools
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - diffutils
+          - findutils
+          - git
+          - jq
+
+    - name: Set up Arvados development user
+      become: yes
+      ansible.builtin.user:
+        name: "{{ arvados_dev_user|default(ansible_user_id) }}"
+      register: dev_user
+
+# All of these test suites will spin up an entire development cluster, which
+# requires:
+#  * building and running arvados-server
+#  * building Ruby gems and running the API server in test mode
+#  * installing the Python SDK to run `run_test_server.py`
+# So we take this as one big group, and this is the play where we set up all
+# the prerequisites to do that.
+- hosts: arvados_test_cwl:arvados_test_go:arvados_test_python:arvados_test_ruby
+  tasks:
+    - name: Add host to prerequisite build groups
+      ansible.builtin.add_host:
+        host: "{{ item }}"
+        groups:
+          - arvados_build_go
+          - arvados_build_python
+          - arvados_build_ruby
+      loop: "{{ ansible_play_hosts }}"
+
     - name: Load Arvados configuration file
       delegate_to: localhost
       ansible.builtin.include_vars:
         name: arvados_config
         file: "{{ arvados_config_file }}"
+
     - name: Load Arvados cluster configuration
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters.zzzzz }}"
       failed_when: arvados_cluster is undefined
+
+    - name: Install shared test dependencies
+      ansible.builtin.apt:
+        name:
+          - locales
+          - nginx
+          - openssl
+          # Direct dependencies of run-tests.sh
+          - bsdextrautils
+          - net-tools
+
+    # Tests assume the underlying database uses en_US.UTF-8.
+    # It must be generated before starting the PostgreSQL server.
+    - name: Configure en_US.UTF-8 locale
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
+        line: en_US.UTF-8 UTF-8
+      register: locale_gen
+
+    - name: Run locale-gen
+      when: locale_gen.changed
+      become: yes
+      ansible.builtin.command:
+        cmd: locale-gen
+
     - ansible.builtin.include_role:
-        name: distro_bootstrap
+        name: arvados_postgresql
+      vars:
+        arvados_postgresql_config: {}
+        arvados_postgresql_hba_sources:
+          - "127.0.0.0/24"
+          - "::1/128"
 
-- hosts: all
-  vars:
-    arvados_dev_user: "{{ ansible_user_id }}"
+    - ansible.builtin.include_role:
+        name: arvados_database
+      vars:
+        arvados_database_login_host: ""
+        # Let the test user drop and recreate the database wholesale
+        arvados_database_role_attr_flags: CREATEDB
 
+    - name: Set up .config/arvados
+      become: yes
+      become_user: "{{ dev_user.name }}"
+      ansible.builtin.file:
+        path: "{{ (dev_user.home, item)|path_join }}"
+        state: directory
+      loop:
+        - .config
+        - .config/arvados
+
+    - name: Write arvados/config.yml for testing
+      become: yes
+      become_user: "{{ dev_user.name }}"
+      ansible.builtin.copy:
+        src: "{{ arvados_config_file }}"
+        dest: "{{ (dev_user.home, '.config/arvados/config.yml')|path_join }}"
+        mode: 0600
+
+    - name: Add Arvados test configuration to profile.d
+      become: yes
+      ansible.builtin.copy:
+        content: |
+          if [ -z "${CONFIGSRC:-}" ] && [ -e ~/.config/arvados/config.yml ]; then
+            export CONFIGSRC="$HOME/.config/arvados"
+          fi
+        dest: /etc/profile.d/arvados-test.sh
+
+### Core language build dependencies
+
+- hosts: arvados_build_go
   tasks:
-    - name: Install all required development packages
+    - ansible.builtin.include_role:
+        name: arvados_go
+
+    - name: Install Go build dependencies
       become: yes
       ansible.builtin.apt:
         name:
-          # Common build and test tools
-          - bison
-          - ca-certificates
-          - curl
-          - diffutils
+          - libpam-dev
+
+- hosts: arvados_build_python
+  tasks:
+    - name: Install Python build requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
           - g++
-          - git
-          - jq
-          - libnss-systemd
+          - libcurl4-openssl-dev
+          - libfuse-dev
+          - libssl-dev
           - make
-          - nginx
-          - postgresql-client
+          - pkgconf
           - python3-dev
           - python3-venv
+
+- hosts: arvados_build_ruby
+  tasks:
+    - name: Install Ruby build requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - bison
+          - g++
+          - libcurl4-openssl-dev
+          - libnsl2
+          - libnss-systemd
+          - libpq-dev
+          - libssl-dev
+          - libyaml-dev
+          - make
+          - pkgconf
+          - postgresql-client
+          - procps
           - ruby
           - ruby-dev
-          # Common libraries
-          - libcurl4-openssl-dev
-          - libssl-dev
-          # build/run-tests.sh
-          - bsdextrautils
-          - net-tools
-          # build/run-build-packages*.sh
+          - shared-mime-info
+          - zlib1g-dev
+
+### Distribution package dependencies
+# These are ordered here because some of the language test suites later
+# expand the Docker installation.
+
+- hosts: arvados_build_deb:arvados_build_rpm
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_ansible
+      vars:
+        arvados_ansible_galaxy_user: "{{ dev_user.name }}"
+
+    - ansible.builtin.include_role:
+        name: arvados_docker
+
+    - name: Add development user to docker group
+      become: yes
+      ansible.builtin.user:
+        name: "{{ dev_user.name }}"
+        groups:
+          - docker
+        append: yes
+
+- hosts: arvados_test_deb
+  tasks:
+    - name: Install deb test dependencies
+      become: yes
+      ansible.builtin.apt:
+        name:
           - apt-utils
-          - createrepo-c
           - dpkg-dev
-          # doc
-          - linkchecker
+
+- hosts: arvados_test_rpm
+  tasks:
+    - name: Install RPM test dependencies
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - createrepo-c
+
+### Core language test dependencies
+
+- hosts: arvados_test_cwl:arvados_test_go
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_compute
+      vars:
+        arvados_compute_packages: []
+        arvados_compute_docker: true
+        arvados_compute_singularity: "{{ 'arvados_test_go' in group_names }}"
+
+    - name: Add development user to docker group
+      become: yes
+      ansible.builtin.user:
+        name: "{{ dev_user.name }}"
+        groups:
+          - docker
+        append: yes
+
+- hosts: arvados_test_go
+  tasks:
+    - name: Install Go test dependencies
+      become: yes
+      ansible.builtin.apt:
+        name:
           # lib/controller
           - rsync
-          # lib/pam
-          - libpam-dev
-          # sdk/java-v2
+          # services/keep-web
+          - cadaver
+          - mime-support
+
+### Individual component dependencies
+
+- hosts: arvados_build_doc
+  tasks:
+    - name: Install doc build requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - python3-venv
+          - ruby
+
+- hosts: arvados_test_doc
+  tasks:
+    - name: Install doc test requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - linkchecker
+
+- hosts: arvados_build_java
+  tasks:
+    - name: Install Java build requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
           - default-jdk-headless
           - gradle
-          # sdk/R
+
+- hosts: arvados_build_R
+  tasks:
+    - name: Install R build requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - g++
           - libfontconfig1-dev
           - libfreetype6-dev
           - libfribidi-dev
@@ -84,23 +386,28 @@
           - libpng-dev
           - libtiff5-dev
           - libxml2-dev
+          - make
           - r-base
+
+- hosts: arvados_test_R
+  tasks:
+    - name: Install R test requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
           - r-cran-testthat
-          # services/api
-          - libnsl2
-          - libpq-dev
-          - libyaml-dev
-          - locales
-          - procps
-          - shared-mime-info
-          - zlib1g-dev
-          # services/fuse
-          - fuse
-          - libfuse-dev
-          # services/keep-web
-          - cadaver
-          - mime-support
-          # services/workbench2
+
+- hosts: arvados_build_workbench
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nodejs
+
+- hosts: arvados_test_workbench
+  tasks:
+    - name: Install Workbench test requirements
+      become: yes
+      ansible.builtin.apt:
+        name:
           # <https://docs.cypress.io/app/get-started/install-cypress#Linux-Prerequisites>
           - firefox-esr
           - libasound2
@@ -114,45 +421,11 @@
           - xauth
           - xvfb
 
-    - ansible.builtin.include_role:
-        name: arvados_go
-    - ansible.builtin.include_role:
-        name: arvados_compute
-      vars:
-        arvados_compute_packages: []
-        arvados_compute_docker: true
-        arvados_compute_singularity: true
-
-    # RailsAPI tests depend on the en_US.UTF-8 locale.
-    # It must be generated before starting the PostgreSQL server.
-    - name: Configure en_US.UTF-8 locale
-      become: yes
-      ansible.builtin.lineinfile:
-        path: /etc/locale.gen
-        regexp: "^[# ]*en_US.UTF-8 +UTF-8 *$"
-        line: en_US.UTF-8 UTF-8
-      register: locale_gen
-    - name: Run locale-gen
-      when: locale_gen.changed
-      become: yes
-      ansible.builtin.command:
-        cmd: locale-gen
-    - ansible.builtin.include_role:
-        name: arvados_postgresql
-      vars:
-        arvados_postgresql_config: {}
-        arvados_postgresql_hba_sources:
-          - "127.0.0.0/24"
-          - "::1/128"
-
-
-    - ansible.builtin.include_role:
-        name: arvados_nodejs
-    # Configuration to run Workbench
     - name: Check fs.inotify.max_user_watches sysctl value
       ansible.builtin.command:
         cmd: /sbin/sysctl --values fs.inotify.max_user_watches
       register: max_user_watches_value
+
     - name: Increase fs.inotify.max_user_watches
       vars:
         max_user_watches_wanted: 524288
@@ -163,6 +436,7 @@
           - sysctl
           - "fs.inotify.max_user_watches={{ max_user_watches_wanted }}"
       register: max_user_watches_set
+
     - name: Set fs.inotify.max_user_watches permanently
       when: max_user_watches_set.changed
       become: yes
@@ -175,48 +449,3 @@
         owner: root
         group: root
         mode: 0644
-
-    - ansible.builtin.include_role:
-        name: arvados_database
-      vars:
-        arvados_database_login_host: ""
-        # Let the test user drop and recreate the database wholesale
-        arvados_database_role_attr_flags: CREATEDB
-
-    - name: Set up Arvados development user
-      become: yes
-      ansible.builtin.user:
-        name: "{{ arvados_dev_user }}"
-        groups:
-          - docker
-        append: yes
-      register: dev_user
-    - name: Set up .config/arvados
-      become: yes
-      become_user: "{{ arvados_dev_user }}"
-      ansible.builtin.file:
-        path: "{{ (dev_user.home, item)|path_join }}"
-        state: directory
-      loop:
-        - .config
-        - .config/arvados
-    - name: Write arvados/config.yml for testing
-      become: yes
-      become_user: "{{ arvados_dev_user }}"
-      ansible.builtin.copy:
-        src: "{{ arvados_config_file }}"
-        dest: "{{ (dev_user.home, '.config/arvados/config.yml')|path_join }}"
-        mode: 0600
-    - name: Add Arvados test configuration to profile.d
-      become: yes
-      ansible.builtin.copy:
-        content: |
-          if [ -z "${CONFIGSRC:-}" ] && [ -e ~/.config/arvados/config.yml ]; then
-            export CONFIGSRC="$HOME/.config/arvados"
-          fi
-        dest: /etc/profile.d/arvados-test.sh
-
-    - ansible.builtin.include_role:
-        name: arvados_ansible
-      vars:
-        arvados_ansible_galaxy_user: "{{ arvados_dev_user }}"
