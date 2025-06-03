@@ -159,6 +159,7 @@ func (s *copierSuite) TestRepetitiveMountsInOutputDir(c *check.C) {
 	var memstats runtime.MemStats
 	runtime.ReadMemStats(&memstats)
 	delta := (memstats.Alloc - memstats0.Alloc) / 1000000
+	c.Logf("Δalloc %d MB", delta)
 	c.Check(delta < 40, check.Equals, true, check.Commentf("Δalloc %d MB is suspiciously high, expect ~ 5 MB", delta))
 }
 
