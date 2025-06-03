@@ -1,0 +1,6 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_nodejs_version: "14.21.3"
+arvados_nodejs_destdir: "/opt/node-v{{ arvados_nodejs_version }}-linux-x64"

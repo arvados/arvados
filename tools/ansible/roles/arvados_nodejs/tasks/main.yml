@@ -1,0 +1,31 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Node.js
+  become: yes
+  ansible.builtin.unarchive:
+    src: "https://nodejs.org/dist/v{{ arvados_nodejs_version }}/node-v{{ arvados_nodejs_version }}-linux-x64.tar.xz"
+    dest: "{{ arvados_nodejs_destdir|dirname }}"
+    remote_src: yes
+    creates: "{{ (arvados_nodejs_destdir, 'bin/node')|path_join }}"
+
+- name: Install yarn
+  become: yes
+  ansible.builtin.command:
+    cmd: npm install -g yarn
+    creates: "{{ (arvados_nodejs_destdir, 'bin/yarn')|path_join }}"
+  environment:
+    PATH: "{{ (arvados_nodejs_destdir, 'bin')|path_join }}:{{ ansible_env.PATH }}"
+
+- name: Add Node commands to PATH
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ (arvados_nodejs_destdir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+  loop:
+    - node
+    - npm
+    - yarn
+    - yarnpkg
