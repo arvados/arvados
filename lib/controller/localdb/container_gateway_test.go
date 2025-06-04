@@ -296,15 +296,22 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 }
 
-// Connect to crunch-run container gateway directly.
+// Connect to crunch-run container gateway directly, using container
+// UUID.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct(c *check.C) {
-	s.testContainerHTTPProxy(c)
+	s.testContainerHTTPProxy(c, s.ctrUUID)
+}
+
+// Connect to crunch-run container gateway directly, using container
+// request UUID.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct_ContainerRequestUUID(c *check.C) {
+	s.testContainerHTTPProxy(c, s.reqUUID)
 }
 
 // Connect through a tunnel terminated at this controller process.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxy(c)
+	s.testContainerHTTPProxy(c, s.ctrUUID)
 }
 
 // Connect through a tunnel terminated at a different controller
@@ -312,10 +319,10 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ProxyTunnel(c *check.C) {
 	forceProxyForTest = true
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxy(c)
+	s.testContainerHTTPProxy(c, s.ctrUUID)
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
+func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID string) {
 	testMethods := []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"}
 
 	var wg sync.WaitGroup
@@ -328,7 +335,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 			method := testMethods[idx%len(testMethods)]
 			_, port, err := net.SplitHostPort(srv.Addr)
 			c.Assert(err, check.IsNil)
-			vhost := s.ctrUUID + "-" + port + ".containers.example.com"
+			vhost := targetUUID + "-" + port + ".containers.example.com"
 			req, err := http.NewRequest(method, "https://"+vhost+"/via-"+s.gw.Address, nil)
 			c.Assert(err, check.IsNil)
 			// Token is already passed to
@@ -343,7 +350,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 				Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
 			})
 			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
-				Target:  fmt.Sprintf("%s-%s", s.ctrUUID, port),
+				Target:  fmt.Sprintf("%s-%s", targetUUID, port),
 				Request: req,
 			})
 			c.Assert(err, check.IsNil)
@@ -516,7 +523,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy_PublishedPortByName(c *ch
 		Attrs: map[string]interface{}{
 			"link_class": "published_port",
 			"name":       "warthogfacedbuffoon",
-			"head_uuid":  s.ctrUUID,
+			"head_uuid":  s.reqUUID,
 			"properties": map[string]interface{}{
 				"port": portnum}}})
 	c.Assert(err, check.IsNil)

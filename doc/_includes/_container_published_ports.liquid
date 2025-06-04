@@ -10,7 +10,7 @@ Containers can expose web services.  These can be interactive web applications s
 
 @https://<uuid>-<port>.containers.zzzzz.example.com@
 
-Where the @uuid@ is the container uuid and @port@ is the port on the container to which the client wishes to send the request.  To be able to accept requests, the container should listen on all interfaces (i.e. bind to 0.0.0.0; binding only to loopback, i.e. 127.0.0.1 will *not* work) and handle plain text HTTP/1.1 traffic.
+Where the @uuid@ is a container UUID or container request UUID, and @port@ is the port on the container to which the client wishes to send the request.  To be able to accept requests, the container should listen on all interfaces (i.e. bind to 0.0.0.0; binding only to loopback, i.e. 127.0.0.1 will *not* work) and handle plain text HTTP/1.1 traffic.
 
 The @published_ports@ field of the container record advertises which ports on the container are available to receive requests.
 
