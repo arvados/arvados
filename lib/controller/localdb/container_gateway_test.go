@@ -79,7 +79,7 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 	// s.containerServices[0] will be unlisted
 	// s.containerServices[1] will be listed with access=public
 	// s.containerServices[2,...] will be listed with access=private
-	publishedPorts := make(map[string]arvados.PublishedPort)
+	publishedPorts := make(map[string]arvados.RequestPublishedPort)
 	for i, srv := range s.containerServices {
 		access := arvados.PublishedPortAccessPrivate
 		_, port, _ := net.SplitHostPort(srv.Addr)
@@ -87,7 +87,7 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 			access = arvados.PublishedPortAccessPublic
 		}
 		if i > 0 {
-			publishedPorts[port] = arvados.PublishedPort{
+			publishedPorts[port] = arvados.RequestPublishedPort{
 				Access: access,
 				Label:  "port " + port,
 			}

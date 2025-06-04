@@ -1444,4 +1444,62 @@ class ContainerTest < ActiveSupport::TestCase
       )
     end
   end
+
+  test "published_ports base_url when ExternalURL is wildcard" do
+    Rails.configuration.Services.ContainerWebServices.ExternalURL = URI.parse("https://*.example.com/")
+    set_user_from_auth :active
+    c, _ = minimal_new(
+         published_ports:
+           {"1234" => {
+              "access": "public",
+              "label": "example",
+              "initial_path": "initial_path"}})
+    set_user_from_auth :system_user
+    c.lock
+    c.update! state: Container::Running
+
+    c.reload
+    assert_equal "https://#{c.uuid}-1234.example.com/", c.published_ports["1234"]["base_url"]
+    assert_equal "https://#{c.uuid}-1234.example.com/initial_path", c.published_ports["1234"]["initial_url"]
+  end
+
+  test "published_ports base_url when ExternalURL has port range" do
+    Rails.configuration.Services.ContainerWebServices.ExternalURL = URI.parse("https://example.com/")
+    Rails.configuration.Services.ContainerWebServices.ExternalPortMin = 2000
+    Rails.configuration.Services.ContainerWebServices.ExternalPortMax = 3000
+    set_user_from_auth :active
+    c, _ = minimal_new(
+         published_ports:
+           {"1234" => {
+              "access": "public",
+              "label": "example",
+              "initial_path": "/initial_path"},
+            "9999" => {
+              "access": "private",
+              "label": "label",
+              "initial_path": ""}})
+    set_user_from_auth :system_user
+    c.lock
+    c.update! state: Container::Running
+
+    c.reload
+    assert_equal "https://example.com:2000/", c.published_ports["1234"]["base_url"]
+    assert_equal "https://example.com:2000/initial_path", c.published_ports["1234"]["initial_url"]
+    assert_equal "https://example.com:2001/", c.published_ports["9999"]["base_url"]
+    assert_equal "https://example.com:2001/", c.published_ports["9999"]["initial_url"]
+    assert_equal [[1234,2000], [9999,2001]], assigned_ports_for_container(c.uuid)
+
+    c.update! state: Container::Cancelled
+
+    assert_equal [], assigned_ports_for_container(c.uuid)
+  end
+
+  def assigned_ports_for_container(uuid)
+    ActiveRecord::Base.connection.exec_query(
+      'select * from container_ports where container_uuid=$1',
+      '',
+      [uuid]).map do |row|
+      [row['container_port'], row['external_port']]
+    end
+  end
 end

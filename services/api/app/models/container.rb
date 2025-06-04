@@ -49,6 +49,7 @@ class Container < ArvadosModel
   before_save :update_secret_mounts_md5
   before_save :scrub_secrets
   before_save :clear_runtime_status_when_queued
+  before_save :assign_external_ports
   after_save :update_cr_logs
   after_save :handle_completed
 
@@ -753,6 +754,65 @@ class Container < ArvadosModel
     # Avoid leaking status messages between different dispatch attempts
     if self.state_was == Locked && self.state == Queued
       self.runtime_status = {}
+    end
+  end
+
+  def assign_external_ports
+    if state_was == Running && state != Running
+      ActiveRecord::Base.connection.exec_query(
+        'delete from container_ports where container_uuid=$1',
+        'assign_external_ports',
+        [uuid])
+    elsif state_was != Running && state == Running
+      exturl = Rails.configuration.Services.ContainerWebServices.ExternalURL
+      port_min = Rails.configuration.Services.ContainerWebServices.ExternalPortMin
+      port_max = Rails.configuration.Services.ContainerWebServices.ExternalPortMax
+      if port_min.andand > 0 &&
+         port_max.andand > 0 &&
+         !exturl.andand.host.andand.starts_with?("*")
+        ActiveRecord::Base.connection.execute(
+          'lock table container_ports in exclusive mode')
+        published_ports.each do |ppkey, ppvalue|
+          external_port = nil
+          ActiveRecord::Base.connection.exec_query(
+            'select * from generate_series($1::int, $2::int) as port ' +
+            'where port not in (select external_port from container_ports) ' +
+            'limit 1',
+            'assign_external_ports',
+            [port_min, port_max]).each do |row|
+            external_port = row['port']
+          end
+          if !external_port
+            Rails.logger.debug("no ports available for #{uuid} port #{ppkey}")
+            break
+          end
+          ActiveRecord::Base.connection.exec_query(
+            'insert into container_ports ' +
+            '(external_port, container_uuid, container_port) ' +
+            'values ($1, $2, $3)',
+            'assign_external_ports',
+            [external_port, uuid, ppkey.to_i])
+          ppvalue['external_port'] = external_port
+          published_ports[ppkey] = ppvalue
+        end
+      end
+      published_ports.each do |ppkey, ppvalue|
+        baseurl = exturl.dup
+        if baseurl.host.starts_with?("*")
+          baseurl.host = "#{uuid}-#{ppkey}#{baseurl.host[1..]}"
+        elsif ppvalue['external_port'].andand > 0
+          baseurl.port = ppvalue['external_port'].to_s
+        else
+          next
+        end
+        ppvalue['base_url'] = baseurl.to_s
+        initialurl = baseurl
+        if ppvalue['initial_path'] && ppvalue['initial_path'] != ""
+          initialurl.path = "/" + ppvalue['initial_path'].delete_prefix("/")
+        end
+        ppvalue['initial_url'] = initialurl.to_s
+        published_ports[ppkey] = ppvalue
+      end
     end
   end
 
