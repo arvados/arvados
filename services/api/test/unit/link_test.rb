@@ -132,27 +132,40 @@ class LinkTest < ActiveSupport::TestCase
     assert_empty Link.where(uuid: link2)
   end
 
+  ['zzzzz-dz642-runningcontainr', ''].each do |head_uuid|
+    test "published_port link is invalid because head_uuid #{head_uuid.inspect} is not a container request UUID" do
+      act_as_user users(:active) do
+        link = Link.create(head_uuid: head_uuid,
+                           link_class: 'published_port',
+                           name: 'service1',
+                           properties: {"port" => 80})
+        assert_equal(false, link.valid?)
+        assert_equal("must be a container request UUID", link.errors.messages[:head_uuid].first)
+      end
+    end
+  end
+
   test "Cannot create two published_port links with the same name" do
     act_as_user users(:active) do
-      Link.create(head_uuid: containers(:running).uuid,
-                  link_class: 'published_port',
-                  name: 'service1',
-                  properties: {"port" => 80})
+      Link.create!(head_uuid: container_requests(:running).uuid,
+                   link_class: 'published_port',
+                   name: 'service1',
+                   properties: {"port" => 80})
 
       # not ok
       assert_raises(ActiveRecord::RecordNotUnique,
                     "should not be able to create two published_port links with the same name") do
-        Link.create(head_uuid: containers(:running_older).uuid,
-                    link_class: 'published_port',
-                    name: 'service1',
-                    properties: {"port" => 80})
+        Link.create!(head_uuid: container_requests(:running_older).uuid,
+                     link_class: 'published_port',
+                     name: 'service1',
+                     properties: {"port" => 80})
       end
 
       # ok
-      Link.create(head_uuid: containers(:running_older).uuid,
-                  link_class: 'published_port',
-                  name: 'service2',
-                  properties: {"port" => 80})
+      Link.create!(head_uuid: container_requests(:running_older).uuid,
+                   link_class: 'published_port',
+                   name: 'service2',
+                   properties: {"port" => 80})
 
     end
   end

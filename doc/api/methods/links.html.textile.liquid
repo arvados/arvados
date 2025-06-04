@@ -91,6 +91,33 @@ table(table table-bordered table-condensed).
 |&rarr;Collection           | _tag name_ &rarr; _collection uuid_|
 |&rarr;Job                  | _tag name_ &rarr; _job uuid_|
 
+h3. published_port
+
+A **published_port** link enables external access to container ports via user-defined domain names.
+
+If the cluster is configured as follows to forward HTTP requests from external clients to container ports:
+
+<pre>
+Services:
+  ContainerWebServices:
+    ExternalURL: https://*.example.com/
+</pre>
+
+A user can create the following link to route HTTP requests like @https://servicename.example.com/@ to port 12345 in the container running for container request @zzzzz-xvhdp-012340123401234@:
+
+<pre>
+{
+  "link_class" "published_port",
+  "head_uuid": "zzzzz-xvhdp-012340123401234",
+  "name": "servicename",
+  "properties": {
+    "port": 12345
+  }
+}
+</pre>
+
+Refer to the "documentation about published ports":container_requests.html#published_ports for additional information.
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.

@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/localdb"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
@@ -445,7 +446,11 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 }
 
 func (conn *Conn) ContainerHTTPProxy(ctx context.Context, options arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
-	return conn.chooseBackend(options.UUID).ContainerHTTPProxy(ctx, options)
+	if len(options.Target) >= 29 && options.Target[27] == '-' && arvadosclient.UUIDMatch(options.Target[:27]) {
+		return conn.chooseBackend(options.Target[:27]).ContainerHTTPProxy(ctx, options)
+	} else {
+		return conn.local.ContainerHTTPProxy(ctx, options)
+	}
 }
 
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ConnectionResponse, error) {

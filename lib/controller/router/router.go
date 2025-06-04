@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -28,6 +28,10 @@ type router struct {
 }
 
 type Config struct {
+	// Wildcard URL where container web services should be
+	// accessible.  Host must have leading "*".
+	ContainerWebServicesURL arvados.URL
+
 	// Return an error if request body exceeds this size. 0 means
 	// unlimited.
 	MaxRequestSize int
@@ -711,14 +715,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 }
 
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if len(r.Host) > 28 && arvadosclient.UUIDMatch(r.Host[:27]) && r.Host[27] == '-' {
-		var port int
-		fmt.Sscanf(r.Host[28:], "%d", &port)
-		if port < 1 {
-			rtr.sendError(w, httpError(http.StatusBadRequest, fmt.Errorf("cannot parse port number from vhost %q", r.Host)))
-			return
-		}
-		rtr.serveContainerHTTPProxy(w, r, r.Host[:27], port)
+	if rtr.routeAsContainerHTTPProxy(w, r) {
 		return
 	}
 	switch strings.SplitN(strings.TrimLeft(r.URL.Path, "/"), "/", 2)[0] {
@@ -763,7 +760,44 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rtr.mux.ServeHTTP(w, r)
 }
 
-func (rtr *router) serveContainerHTTPProxy(w http.ResponseWriter, req *http.Request, uuid string, port int) {
+// If req is a container http proxy request, handle it and return
+// true.  Otherwise, return false.
+func (rtr *router) routeAsContainerHTTPProxy(w http.ResponseWriter, req *http.Request) bool {
+	configurl := url.URL(rtr.config.ContainerWebServicesURL)
+	confhostname := configurl.Hostname()
+	if !strings.HasPrefix(confhostname, "*") {
+		// Feature disabled by config
+		return false
+	}
+	confport := configurl.Port()
+
+	// Use req.Host (not req.URL), but use url.URL to parse it,
+	// which differs from net.SplitHostPort (port must be numeric,
+	// [] are stripped even if there is no port).
+	requrl := url.URL{Host: req.Host}
+	reqhostname := requrl.Hostname()
+	reqport := requrl.Port()
+
+	// Check that the requested port matches the ExternalURL port.
+	// We don't know the request scheme, so we just assume it was
+	// "https" for the purpose of comparing implicit/explicit ways
+	// of spelling "default port for this scheme".
+	if !(reqport == confport ||
+		(reqport == "" && confport == "443") ||
+		(reqport == "443" && confport == "")) {
+		return false
+	}
+	targetlen := len(reqhostname) - len(confhostname) + 1
+	if targetlen < 1 ||
+		!strings.EqualFold(reqhostname[targetlen:], confhostname[1:]) {
+		return false
+	}
+	target := reqhostname[:targetlen]
+	rtr.serveContainerHTTPProxy(w, req, target)
+	return true
+}
+
+func (rtr *router) serveContainerHTTPProxy(w http.ResponseWriter, req *http.Request, target string) {
 	// This API bypasses the generic auth middleware in
 	// addRoute(), so here we need to load tokens into ctx, log
 	// their UUIDs, and propagate the incoming X-Request-Id.
@@ -786,8 +820,7 @@ func (rtr *router) serveContainerHTTPProxy(w http.ResponseWriter, req *http.Requ
 	req.Header.Del("X-Arvados-No-Forward")
 
 	handler, err := rtr.backend.ContainerHTTPProxy(req.Context(), arvados.ContainerHTTPProxyOptions{
-		UUID:      uuid,
-		Port:      port,
+		Target:    target,
 		Request:   req,
 		NoForward: noForward,
 	})

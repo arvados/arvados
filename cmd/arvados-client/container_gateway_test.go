@@ -268,7 +268,7 @@ func (s *shellSuite) TestGatewayHTTPProxy(c *check.C) {
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://"+os.Getenv("ARVADOS_API_HOST")+"/foo", nil)
 	c.Assert(err, check.IsNil)
 	req.AddCookie(&http.Cookie{Name: "arvados_api_token", Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2))})
-	req.Host = s.runningUUID + "-" + port + ".example.com"
+	req.Host = s.runningUUID + "-" + port + ".containers.zzzzz.example.com"
 	resp, err := client.Do(req)
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
