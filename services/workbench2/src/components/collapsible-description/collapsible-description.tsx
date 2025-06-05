@@ -18,8 +18,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     fadedDescription: {
         position: 'relative',
-        WebkitMaskImage: 'linear-gradient(to bottom, black 1rem, transparent 2.5rem)',
-        maskImage: 'linear-gradient(to bottom, black 1rem, transparent 2.5rem)',
+        WebkitMaskImage: 'linear-gradient(to bottom, black 18rem, transparent 20rem)',
+        maskImage: 'linear-gradient(to bottom, black 18rem, transparent 20rem)',
         WebkitMaskSize: '100% 100%',
         maskSize: '100% 100%',
         WebkitMaskRepeat: 'no-repeat',
@@ -30,10 +30,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type CollapsibleDescriptionProps = {
     description: string;
     showDescription: boolean;
+    collapsedSize?: string;
 };
 
 export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDescriptionProps & WithStyles<CssRules>) => {
-    const { classes, description, showDescription } = props;
+    const { classes, description, showDescription, collapsedSize } = props;
     const [fadeDescription, setFadeDescription] = React.useState(!showDescription);
 
     //prevents jarring pop-in/out animations
@@ -47,7 +48,7 @@ export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDesc
             <Collapse
                 in={showDescription}
                 timeout='auto'
-                collapsedSize='2.3rem'
+                collapsedSize={collapsedSize || '2.3rem'}
             >
                 <section data-cy='resource-description'>
                     <Typography
