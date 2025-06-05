@@ -1476,6 +1476,7 @@ class Collection(RichCollectionBase):
             merge: bool=True,
             num_retries: Optional[int]=None,
             preserve_version: bool=False,
+            description: Optional[str]=None,
     ) -> str:
         """Save collection to an existing API record
 
@@ -1514,6 +1515,10 @@ class Collection(RichCollectionBase):
           and after the update. If `True` when the API server is not
           configured with collection versioning, this method raises
           `arvados.errors.ArgumentError`.
+
+        * description: str | None --- If provided, the description on
+          the API record will be replaced with the new description provided.
+
         """
         if properties and type(properties) is not dict:
             raise errors.ArgumentError("properties must be dictionary type.")
@@ -1539,6 +1544,8 @@ class Collection(RichCollectionBase):
             body["trash_at"] = t
         if preserve_version:
             body["preserve_version"] = preserve_version
+        if description:
+            body["description"] = description
 
         if not self.committed():
             if self._has_remote_blocks:
@@ -1586,6 +1593,7 @@ class Collection(RichCollectionBase):
             ensure_unique_name: bool=False,
             num_retries: Optional[int]=None,
             preserve_version: bool=False,
+            description: Optional[str]=None,
     ):
         """Save collection to a new API record
 
@@ -1609,6 +1617,9 @@ class Collection(RichCollectionBase):
           new collection record.
 
         * properties: dict[str, Any] | None --- The `properties` field to use on
+          the new collection record.
+
+        * description: str | None --- The `description` field to use on
           the new collection record.
 
         * storage_classes: list[str] | None --- The
@@ -1671,6 +1682,8 @@ class Collection(RichCollectionBase):
                 body["owner_uuid"] = owner_uuid
             if properties:
                 body["properties"] = properties
+            if description:
+                body["description"] = description
             if self.storage_classes_desired():
                 body["storage_classes_desired"] = self.storage_classes_desired()
             if trash_at:

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from argparse import ArgumentError
 import os
 import json
 import copy
@@ -64,85 +65,6 @@ Directory
 |record
 |string
 )(?:\[\])?\??''', re.VERBOSE)
-
-def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool):
-    col = arvados.collection.Collection(api_client=arvRunner.api,
-                                        keep_client=arvRunner.keep_client)
-
-    with col.open("workflow.json", "wt") as f:
-        json.dump(packed, f, sort_keys=True, indent=4, separators=(',',': '))
-
-    pdh = col.portable_data_hash()
-
-    toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
-    if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
-        toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
-
-    existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", pdh], ["owner_uuid", "=", project_uuid]]).execute(num_retries=arvRunner.num_retries)
-    if len(existing["items"]) == 0:
-        col.save_new(name=toolname, owner_uuid=project_uuid, ensure_unique_name=True)
-
-    # now construct the wrapper
-
-    step = {
-        "id": "#main/" + toolname,
-        "in": [],
-        "out": [],
-        "run": "keep:%s/workflow.json#main" % pdh,
-        "label": name
-    }
-
-    newinputs = []
-    for i in main["inputs"]:
-        inp = {}
-        # Make sure to only copy known fields that are meaningful at
-        # the workflow level. In practice this ensures that if we're
-        # wrapping a CommandLineTool we don't grab inputBinding.
-        # Right now also excludes extension fields, which is fine,
-        # Arvados doesn't currently look for any extension fields on
-        # input parameters.
-        for f in ("type", "label", "secondaryFiles", "streamable",
-                  "doc", "id", "format", "loadContents",
-                  "loadListing", "default"):
-            if f in i:
-                inp[f] = i[f]
-        newinputs.append(inp)
-
-    wrapper = {
-        "class": "Workflow",
-        "id": "#main",
-        "inputs": newinputs,
-        "outputs": [],
-        "steps": [step]
-    }
-
-    for i in main["inputs"]:
-        step["in"].append({
-            "id": "#main/step/%s" % shortname(i["id"]),
-            "source": i["id"]
-        })
-
-    for i in main["outputs"]:
-        step["out"].append({"id": "#main/step/%s" % shortname(i["id"])})
-        wrapper["outputs"].append({"outputSource": "#main/step/%s" % shortname(i["id"]),
-                                   "type": i["type"],
-                                   "id": i["id"]})
-
-    wrapper["requirements"] = [{"class": "SubworkflowFeatureRequirement"}]
-
-    if main.get("requirements"):
-        wrapper["requirements"].extend(main["requirements"])
-    if main.get("hints"):
-        wrapper["hints"] = main["hints"]
-
-    doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
-
-    if git_info:
-        for g in git_info:
-            doc[g] = git_info[g]
-
-    return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
-
 
 def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
     if s.startswith("keep:") or s.startswith("arvwf:"):
@@ -266,7 +188,7 @@ def drop_ids(d):
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
                         runtimeContext,
-                        uuid=None,
+                        update_workflow_uuid=None,
                         submit_runner_ram=0, name=None, merged_map=None,
                         submit_runner_image=None,
                         git_info=None,
@@ -281,7 +203,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     # The document loader index will have entries for all the files
     # that were loaded in the process of parsing the entire workflow
     # (including subworkflows, tools, imports, etc).  We use this to
-    # get compose a list of the workflow file dependencies.
+    # compose a list of the workflow file dependencies.
     for w in tool.doc_loader.idx:
         if w.startswith("file://"):
             workflow_files.add(urllib.parse.urldefrag(w)[0])
@@ -364,6 +286,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
         toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
 
+    toolname = toolname.replace("/", " ")
     toolfile = tool.tool["id"][len(prefix):]
 
     properties = {
@@ -376,29 +299,15 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
             p = g.split("#", 1)[1]
             properties["arv:"+p] = git_info[g]
 
-    # Check if a collection with the same content already exists in the target project.  If so, just use that one.
-    existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", col.portable_data_hash()],
-                                                         ["owner_uuid", "=", arvRunner.project_uuid]]).execute(num_retries=arvRunner.num_retries)
-
-    if len(existing["items"]) == 0:
-        toolname = toolname.replace("/", " ")
-        col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
-        logger.info("Workflow uploaded to %s", col.manifest_locator())
-    else:
-        logger.info("Workflow uploaded to %s", existing["items"][0]["uuid"])
-
     # Now that we've updated the workflow and saved it to a
     # collection, we're going to construct a minimal "wrapper"
     # workflow which consists of only of input and output parameters
     # connected to a single step that runs the real workflow.
 
-    runfile = "keep:%s/%s" % (col.portable_data_hash(), toolfile)
-
     step = {
         "id": "#main/" + toolname,
         "in": [],
         "out": [],
-        "run": runfile,
         "label": name
     }
 
@@ -501,19 +410,80 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     # Remove any lingering file references.
     drop_ids(wrapper)
 
-    return doc
+    properties["arv:cwl_inputs"] = wrapper.get("inputs") or []
+    properties["arv:cwl_outputs"] = wrapper.get("outputs") or []
+    properties["arv:cwl_requirements"] = wrapper.get("requirements") or []
+    properties["arv:cwl_hints"] = wrapper.get("hints") or []
+
+    workflow_collection_uuid = ""
+    pdh = ""
+    linked_workflow = False
+    if update_workflow_uuid:
+        # Update the collection backing the workflow record
+        workflow_record = arvRunner.api.workflows().get(uuid=update_workflow_uuid).execute()
+        if workflow_record.get("collection_uuid"):
+            workflow_collection_uuid = workflow_record.get("collection_uuid")
+            target_col = arvados.collection.Collection(workflow_collection_uuid, api_client=arvRunner.api)
+            target_col.apply(target_col.diff(col))
+            try:
+                target_col.save(properties=properties, preserve_version=True, description=main.get("doc", ""))
+            except arvados.errors.ArgumentError:
+                target_col.save(properties=properties, preserve_version=False, description=main.get("doc", ""))
+            pdh = target_col.portable_data_hash()
+            logger.info("Workflow uploaded to %s", target_col.manifest_locator())
+            linked_workflow = True
+
+    if not linked_workflow:
+        # Check if a collection with the same content already exists in the target project.
+        # If found, use that one.
+        existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", col.portable_data_hash()],
+                                                             ["owner_uuid", "=", project_uuid]]).execute(num_retries=arvRunner.num_retries)
+
+        pdh = col.portable_data_hash()
+        if len(existing["items"]) == 0:
+            # Not found, create a new one.
+            col.save_new(name=toolname, owner_uuid=project_uuid, ensure_unique_name=True, properties=properties, description=main.get("doc", ""))
+            logger.info("Workflow uploaded to %s", col.manifest_locator())
+            workflow_collection_uuid = col.manifest_locator()
+        else:
+            # Found one with the same content, just update the
+            # properties.
+            logger.info("Workflow uploaded to %s", existing["items"][0]["uuid"])
+            workflow_collection_uuid = existing["items"][0]["uuid"]
+            existprop = existing["items"][0]["properties"]
+            existprop.update(properties)
+            properties = existprop
+            arvRunner.api.collections().update(uuid=workflow_collection_uuid,
+                                               body={"collection": {"properties": properties,
+                                                                    "description": main.get("doc", "")}
+                                                     }).execute()
+
+    runfile = "keep:%s/%s" % (pdh, toolfile)
+    step["run"] = runfile
+
+    return (doc, workflow_collection_uuid, linked_workflow)
 
 
-def make_workflow_record(arvRunner, doc, name, tool, project_uuid, update_uuid):
+def make_workflow_record(arvRunner, doc, name, tool, project_uuid, update_uuid, workflow_collection_uuid, linked_workflow):
 
     wrappertext = json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
-    body = {
-        "workflow": {
-            "name": name,
-            "description": tool.tool.get("doc", ""),
-            "definition": wrappertext
-        }}
+    if arvRunner.api._rootDesc["revision"] >= "20250402":
+        if update_uuid and linked_workflow:
+            # Updated automatically when we updated the collection.
+            return update_uuid
+        body = {
+            "workflow": {
+                "collection_uuid": workflow_collection_uuid
+            }}
+    else:
+        body = {
+            "workflow": {
+                "name": name,
+                "description": tool.tool.get("doc", ""),
+                "definition": wrappertext
+            }}
+
     if project_uuid:
         body["workflow"]["owner_uuid"] = project_uuid
 

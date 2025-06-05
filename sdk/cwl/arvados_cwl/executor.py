@@ -753,10 +753,12 @@ The 'jobs' API is no longer supported.
         if (submitting and not self.fast_submit) or runtimeContext.update_workflow or runtimeContext.create_workflow or runtimeContext.print_keep_deps:
             # upload workflow and get back the workflow wrapper
 
-            workflow_wrapper = upload_workflow(self, tool, job_order,
+            workflow_wrapper, workflow_collection_uuid, linked_workflow = upload_workflow(self,
+                                                                                          tool,
+                                                                                          job_order,
                                                runtimeContext.project_uuid,
                                                runtimeContext,
-                                               uuid=runtimeContext.update_workflow,
+                                               update_workflow_uuid=runtimeContext.update_workflow,
                                                submit_runner_ram=runtimeContext.submit_runner_ram,
                                                name=runtimeContext.name,
                                                merged_map=merged_map,
@@ -769,7 +771,8 @@ The 'jobs' API is no longer supported.
                 # We're registering the workflow, so create or update
                 # the workflow record and then exit.
                 uuid = make_workflow_record(self, workflow_wrapper, runtimeContext.name, tool,
-                                            runtimeContext.project_uuid, runtimeContext.update_workflow)
+                                            runtimeContext.project_uuid, runtimeContext.update_workflow,
+                                            workflow_collection_uuid, linked_workflow)
                 self.stdout.write(uuid + "\n")
                 return (None, "success")
 
