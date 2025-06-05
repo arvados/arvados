@@ -59,7 +59,7 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ res
             <Grid item xs={12} md={12} onClick={() => setShowDescription(!showDescription)}>
                 <DetailsAttribute label={'Description'} button={hasDescription ? <ExpandChevronRight expanded={showDescription} /> : undefined}>
                     {hasDescription
-                        ? <CollapsibleDescription description={resource.description} showDescription={showDescription} collapsedSize={'20rem'} />
+                        ? <CollapsibleDescription description={resource.description} showDescription={showDescription} />
                         : <Typography>No description available</Typography>}
                 </DetailsAttribute>
                 {detailsElement}
