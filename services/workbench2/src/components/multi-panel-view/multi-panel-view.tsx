@@ -143,6 +143,8 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
         children = [];
     } else if (!isArray(children)) {
         children = [children];
+    } else {
+        children = children.filter(child => child !== null);
     }
     // if panelStates wasn't passed or passed with none selected, default to first panel visible
     const initialVisibility = panelStates && panelStates.some(state => state.visible)

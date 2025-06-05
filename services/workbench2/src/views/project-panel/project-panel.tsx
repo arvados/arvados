@@ -23,12 +23,13 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
-import { ProjectOverview } from './project-overview';
 import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
-import { ProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
+import { ProjectPanelTabLabels, RootProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
+import { OverviewPanel } from 'components/overview-panel/overview-panel';
+import { ProjectAttributes } from './project-attributes';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -61,6 +62,7 @@ interface ProjectPanelDataProps {
     resources: ResourcesState;
     isAdmin: boolean;
     defaultTab?: string;
+    isRootProject: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
@@ -72,6 +74,7 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
         resources: state.resources,
         isAdmin: state.auth.user!.isAdmin,
         defaultTab: state.auth.user?.prefs.wb?.default_project_tab,
+        isRootProject: currentItemId === state.auth.user?.uuid,
     };
 }
 
@@ -84,15 +87,17 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             render() {
+                const { classes, isRootProject } = this.props;
+                // Root project doesn't have Overview Panel
+                const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
                 // Default to data tab if no user preference
-                const defaultTab = this.props.defaultTab || ProjectPanelTabLabels.DATA;
+                const defaultTab = this.props.defaultTab || tabSet.DATA;
                 // Apply user preference or default to initial state
-                const initialPanelState: MPVPanelState[] = Object.keys(ProjectPanelTabLabels).map(key => ({
-                        name: ProjectPanelTabLabels[key],
-                        visible: ProjectPanelTabLabels[key] === defaultTab,
+                const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
+                        name: tabSet[key],
+                        visible: tabSet[key] === defaultTab,
                 }));
 
-                const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
                     <DetailsCardRoot />
                     <MPVContainer
@@ -100,14 +105,14 @@ export const ProjectPanel = withStyles(styles)(
                         panelStates={initialPanelState}
                         justify-content="flex-start"
                         style={{flexWrap: 'nowrap'}}>
-                        <MPVPanelContent
+                        {isRootProject ? null : <MPVPanelContent
                             forwardProps
                             xs="auto"
                             item
                             data-cy="project-details"
                             className={classes.dataExplorer}>
-                            <ProjectOverview />
-                        </MPVPanelContent>
+                            <OverviewPanel detailsElement={<ProjectAttributes />} />
+                        </MPVPanelContent>}
                         <MPVPanelContent
                             forwardProps
                             xs="auto"

@@ -19,6 +19,11 @@ export const ProjectPanelTabLabels = {
     RUNS: "Workflow Runs",
 };
 
+export const RootProjectPanelTabLabels = {
+    DATA: "Data",
+    RUNS: "Workflow Runs",
+};
+
 export const openProjectPanel = (projectUuid: string) => async (dispatch: Dispatch) => {
     await dispatch<any>(loadProject(projectUuid));
     dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
