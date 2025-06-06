@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/router"
@@ -50,7 +51,13 @@ type ContainerGatewaySuite struct {
 	ctrUUID           string
 	srv               *httptest.Server
 	gw                *crunchrun.Gateway
+	assignedExtPort   atomic.Int32
 }
+
+const (
+	testDynamicPortMin = 10000
+	testDynamicPortMax = 20000
+)
 
 func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 	s.localdbSuite.SetUpSuite(c)
@@ -138,7 +145,11 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
 	rtr := router.New(s.localdb, router.Config{
-		ContainerWebServicesURL: arvados.URL{Host: "*.containers.example.com"},
+		ContainerWebServices: arvados.ServiceWithPortRange{
+			Service: arvados.Service{
+				ExternalURL: arvados.URL{Host: "*.containers.example.com"},
+			},
+		},
 	})
 	s.srv = httptest.NewUnstartedServer(httpserver.AddRequestIDs(httpserver.LogRequests(rtr)))
 	s.srv.StartTLS()
@@ -180,6 +191,8 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.cluster.Containers.ShellAccess.User = true
 	_, err = s.db.Exec(`update containers set interactive_session_started=$1 where uuid=$2`, false, s.ctrUUID)
 	c.Check(err, check.IsNil)
+
+	s.assignedExtPort.Store(testDynamicPortMin)
 }
 
 func (s *ContainerGatewaySuite) TearDownTest(c *check.C) {
@@ -192,6 +205,8 @@ func (s *ContainerGatewaySuite) TearDownTest(c *check.C) {
 		s.srv.Close()
 		s.srv = nil
 	}
+	_, err := s.db.Exec(`delete from container_ports where external_port >= $1 and external_port <= $2`, testDynamicPortMin, testDynamicPortMax)
+	c.Check(err, check.IsNil)
 	s.localdbSuite.TearDownTest(c)
 }
 
@@ -299,19 +314,19 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 // Connect to crunch-run container gateway directly, using container
 // UUID.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct(c *check.C) {
-	s.testContainerHTTPProxy(c, s.ctrUUID)
+	s.testContainerHTTPProxy(c, s.ctrUUID, s.vhostAndTargetForWildcard)
 }
 
 // Connect to crunch-run container gateway directly, using container
 // request UUID.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct_ContainerRequestUUID(c *check.C) {
-	s.testContainerHTTPProxy(c, s.reqUUID)
+	s.testContainerHTTPProxy(c, s.reqUUID, s.vhostAndTargetForWildcard)
 }
 
 // Connect through a tunnel terminated at this controller process.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxy(c, s.ctrUUID)
+	s.testContainerHTTPProxy(c, s.ctrUUID, s.vhostAndTargetForWildcard)
 }
 
 // Connect through a tunnel terminated at a different controller
@@ -319,10 +334,14 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ProxyTunnel(c *check.C) {
 	forceProxyForTest = true
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxy(c, s.ctrUUID)
+	s.testContainerHTTPProxy(c, s.ctrUUID, s.vhostAndTargetForWildcard)
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID string) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_DynamicPort(c *check.C) {
+	s.testContainerHTTPProxy(c, s.ctrUUID, s.vhostAndTargetForDynamicPort)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID string, vhostAndTargetFunc func(*check.C, string, string) (string, string)) {
 	testMethods := []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"}
 
 	var wg sync.WaitGroup
@@ -331,11 +350,12 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID st
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			c.Logf("sending request to %s via %s", srv.Addr, s.gw.Address)
 			method := testMethods[idx%len(testMethods)]
 			_, port, err := net.SplitHostPort(srv.Addr)
-			c.Assert(err, check.IsNil)
-			vhost := targetUUID + "-" + port + ".containers.example.com"
+			c.Assert(err, check.IsNil, check.Commentf("%s", srv.Addr))
+			vhost, target := vhostAndTargetFunc(c, targetUUID, port)
+			comment := check.Commentf("srv.Addr %s => proxy vhost %s, target %s", srv.Addr, vhost, target)
+			c.Logf("%s", comment.CheckCommentString())
 			req, err := http.NewRequest(method, "https://"+vhost+"/via-"+s.gw.Address, nil)
 			c.Assert(err, check.IsNil)
 			// Token is already passed to
@@ -350,10 +370,10 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID st
 				Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
 			})
 			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
-				Target:  fmt.Sprintf("%s-%s", targetUUID, port),
+				Target:  target,
 				Request: req,
 			})
-			c.Assert(err, check.IsNil)
+			c.Assert(err, check.IsNil, comment)
 			rw := httptest.NewRecorder()
 			handler.ServeHTTP(rw, req)
 			resp := rw.Result()
@@ -366,24 +386,48 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID st
 	wg.Wait()
 }
 
+// Return the virtualhost (in the http request) and opts.Target that
+// lib/controller/router.Router will pass to ContainerHTTPProxy() when
+// Services.ContainerWebServices.ExternalURL is a wildcard like
+// "*.containers.example.com".
+func (s *ContainerGatewaySuite) vhostAndTargetForWildcard(c *check.C, targetUUID, targetPort string) (string, string) {
+	return targetUUID + "-" + targetPort + ".containers.example.com", fmt.Sprintf("%s-%s", targetUUID, targetPort)
+}
+
+// Return the virtualhost (in the http request) and opts.Target that
+// lib/controller/router.Router will pass to ContainerHTTPProxy() when
+// Services.ContainerWebServices.ExternalPortMin and
+// Services.ContainerWebServices.ExternalPortMax are positive, and
+// Services.ContainerWebServices.ExternalURL is not a wildcard.
+func (s *ContainerGatewaySuite) vhostAndTargetForDynamicPort(c *check.C, targetUUID, targetPort string) (string, string) {
+	s.localdb.cluster.Services.ContainerWebServices.ExternalURL.Host = "containers.example.com"
+	s.localdb.cluster.Services.ContainerWebServices.ExternalPortMin = testDynamicPortMin
+	s.localdb.cluster.Services.ContainerWebServices.ExternalPortMax = testDynamicPortMax
+	assignedPort := s.assignedExtPort.Add(1)
+	_, err := s.db.Exec(`insert into container_ports (external_port, container_uuid, container_port) values ($1, $2, $3)`,
+		assignedPort, targetUUID, targetPort)
+	c.Assert(err, check.IsNil)
+	return "containers.example.com", fmt.Sprintf(":%d", assignedPort)
+}
+
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken_Unlisted(c *check.C) {
-	s.testContainerHTTPProxyError(c, 0, "", http.StatusUnauthorized)
+	s.testContainerHTTPProxyError(c, 0, "", s.vhostAndTargetForWildcard, http.StatusUnauthorized)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken_Private(c *check.C) {
-	s.testContainerHTTPProxyError(c, 2, "", http.StatusUnauthorized)
+	s.testContainerHTTPProxyError(c, 2, "", s.vhostAndTargetForWildcard, http.StatusUnauthorized)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_InvalidToken(c *check.C) {
-	s.testContainerHTTPProxyError(c, 0, arvadostest.ActiveTokenV2+"bogus", http.StatusUnauthorized)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.ActiveTokenV2+"bogus", s.vhostAndTargetForWildcard, http.StatusUnauthorized)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken_Unlisted(c *check.C) {
-	s.testContainerHTTPProxyError(c, 0, arvadostest.AnonymousToken, http.StatusNotFound)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.AnonymousToken, s.vhostAndTargetForWildcard, http.StatusNotFound)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_AnonymousToken_Private(c *check.C) {
-	s.testContainerHTTPProxyError(c, 2, arvadostest.AnonymousToken, http.StatusNotFound)
+	s.testContainerHTTPProxyError(c, 2, arvadostest.AnonymousToken, s.vhostAndTargetForWildcard, http.StatusNotFound)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_CRsDifferentUsers(c *check.C) {
@@ -392,22 +436,26 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_CRsDifferentUsers(c 
 	defer s.localdb.ContainerRequestDelete(rootctx, arvados.DeleteOptions{UUID: cr.UUID})
 	c.Assert(err, check.IsNil)
 	c.Assert(cr.ContainerUUID, check.Equals, s.ctrUUID)
-	s.testContainerHTTPProxyError(c, 0, arvadostest.ActiveTokenV2, http.StatusForbidden)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.ActiveTokenV2, s.vhostAndTargetForWildcard, http.StatusForbidden)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_ContainerNotReadable(c *check.C) {
-	s.testContainerHTTPProxyError(c, 0, arvadostest.SpectatorToken, http.StatusNotFound)
+	s.testContainerHTTPProxyError(c, 0, arvadostest.SpectatorToken, s.vhostAndTargetForWildcard, http.StatusNotFound)
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, svcIdx int, token string, expectCode int) {
+func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_DynamicPort(c *check.C) {
+	s.testContainerHTTPProxyError(c, 0, arvadostest.SpectatorToken, s.vhostAndTargetForDynamicPort, http.StatusNotFound)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, svcIdx int, token string, vhostAndTargetFunc func(*check.C, string, string) (string, string), expectCode int) {
 	_, svcPort, err := net.SplitHostPort(s.containerServices[svcIdx].Addr)
 	c.Assert(err, check.IsNil)
 	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
-	vhost := s.ctrUUID + "-" + svcPort + ".containers.example.com"
+	vhost, target := vhostAndTargetFunc(c, s.ctrUUID, svcPort)
 	req, err := http.NewRequest("GET", "https://"+vhost+"/via-"+s.gw.Address, nil)
 	c.Assert(err, check.IsNil)
 	_, err = s.localdb.ContainerHTTPProxy(ctx, arvados.ContainerHTTPProxyOptions{
-		Target:  fmt.Sprintf("%s-%s", s.ctrUUID, svcPort),
+		Target:  target,
 		Request: req,
 	})
 	c.Check(err, check.NotNil)

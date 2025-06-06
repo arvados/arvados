@@ -42,7 +42,11 @@ func (s *RouterSuite) SetUpTest(c *check.C) {
 		mux:     mux.NewRouter(),
 		backend: &s.stub,
 		config: Config{
-			ContainerWebServicesURL: arvados.URL{Host: "*.containers.zzzzz.example.com"},
+			ContainerWebServices: arvados.ServiceWithPortRange{
+				Service: arvados.Service{
+					ExternalURL: arvados.URL{Host: "*.containers.zzzzz.example.com"},
+				},
+			},
 		},
 	}
 	s.rtr.addRoutes()
@@ -359,7 +363,7 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 	cluster := &arvados.Cluster{}
 	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
-	arvadostest.SetServiceURL(&cluster.Services.ContainerWebServices, "https://*.containers.zzzzz.example.com")
+	arvadostest.SetServiceURL(&cluster.Services.ContainerWebServices.Service, "https://*.containers.zzzzz.example.com")
 	url, _ := url.Parse("https://" + os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider), Config{})
 }

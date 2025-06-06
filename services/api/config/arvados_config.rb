@@ -132,6 +132,9 @@ arvcfg.declare_config "Containers.MaxRetryAttempts", Integer, :container_count_m
 arvcfg.declare_config "Containers.AlwaysUsePreemptibleInstances", Boolean, :preemptible_instances
 arvcfg.declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
 arvcfg.declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
+arvcfg.declare_config "Services.ContainerWebServices.ExternalURL", URI
+arvcfg.declare_config "Services.ContainerWebServices.ExternalPortMin", Integer
+arvcfg.declare_config "Services.ContainerWebServices.ExternalPortMax", Integer
 arvcfg.declare_config "Services.Controller.ExternalURL", URI
 arvcfg.declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
 arvcfg.declare_config "Services.Websocket.ExternalURL", URI, :websocket_address

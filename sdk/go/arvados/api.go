@@ -113,7 +113,8 @@ var (
 )
 
 type ContainerHTTPProxyOptions struct {
-	// "{container uuid}-{port}" or the name of a published port
+	// "{container uuid}-{port}", ":{dynamic-external-port}", or
+	// the name of a published port
 	Target    string        `json:"target"`
 	NoForward bool          `json:"no_forward"`
 	Request   *http.Request `json:"-"`
