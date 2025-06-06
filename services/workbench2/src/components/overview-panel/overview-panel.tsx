@@ -56,6 +56,10 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ res
 
     const [showDescription, setShowDescription] = useState(false);
 
+    React.useEffect(() => {
+        setShowDescription(false);
+    }, [resource]);
+
     return (
         <section className={classes.root}>
             <Grid item xs={12} md={12}>
