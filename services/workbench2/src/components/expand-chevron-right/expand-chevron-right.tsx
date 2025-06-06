@@ -32,6 +32,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface ExpandChevronRightDataProps {
     expanded: boolean;
+    onClick?: () => void;
 }
 
 type ExpandChevronRightProps = ExpandChevronRightDataProps & WithStyles<CssRules>;
@@ -41,9 +42,11 @@ export const ExpandChevronRight = withStyles(styles)(
         render() {
             const { classes, expanded } = this.props;
             return (
-                <IconButton className={classes.root}>
-                    <ChevronRight className={expanded ? classes.expanded : classes.default} />
-                </IconButton>
+                <span onClick={this.props.onClick}>
+                    <IconButton className={classes.root}>
+                        <ChevronRight className={expanded ? classes.expanded : classes.default} />
+                    </IconButton>
+                </span>
             );
         }
     }

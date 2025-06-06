@@ -15,6 +15,8 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
+import { CollectionResource } from 'models/collection';
+import { ProjectResource } from 'models/project';
 
 type CssRules = 'root' | 'tag';
 
@@ -34,13 +36,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type OverviewPanelProps = {
-    resource: any;
+    resource: ProjectResource | CollectionResource | undefined;
     detailsElement: React.ReactNode;
 } & WithStyles<CssRules>;
 
 const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'resource'> => {
     return {
-        resource: getResource(state.properties.projectPanelCurrentUuid)(state.resources),
+        resource: getResource<any>(state.properties.currentRouteUuid)(state.resources),
     };
 };
 
@@ -56,8 +58,12 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ res
 
     return (
         <section className={classes.root}>
-            <Grid item xs={12} md={12} onClick={() => setShowDescription(!showDescription)}>
-                <DetailsAttribute label={'Description'} button={hasDescription ? <ExpandChevronRight expanded={showDescription} /> : undefined}>
+            <Grid item xs={12} md={12}>
+                <DetailsAttribute
+                    label={'Description'}
+                    button={hasDescription
+                                ? <ExpandChevronRight expanded={showDescription} onClick={() => setShowDescription(!showDescription)} />
+                                : undefined}>
                     {hasDescription
                         ? <CollapsibleDescription description={resource.description} showDescription={showDescription} />
                         : <Typography>No description available</Typography>}

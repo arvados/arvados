@@ -1019,6 +1019,30 @@ export const ResponsiblePerson = compose(
     );
 });
 
+export const RenderResponsiblePerson = (props: { responsiblePersonUUID: string | null; responsiblePersonName: string}) => {
+    const { responsiblePersonUUID, responsiblePersonName} = props;
+
+    if (!responsiblePersonName) {
+        return (
+            <Typography
+                display="inline"
+                noWrap
+            >
+                {responsiblePersonUUID}
+            </Typography>
+        );
+    }
+
+    return (
+        <Typography
+            display="inline"
+            noWrap
+        >
+            {responsiblePersonName} ({responsiblePersonUUID})
+        </Typography>
+    );
+}
+
 const renderType = (type: string, subtype: string) => <Typography noWrap>{resourceLabel(type, subtype)}</Typography>;
 
 export const ResourceType = connect((state: RootState, props: { uuid: string }) => {

@@ -6,12 +6,11 @@ import React from 'react';
 import { CollectionIcon, RenameIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { DetailsData } from "./details-data";
-import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
 import { RootState } from 'store/store';
 import { filterResources, getResource, ResourcesState } from 'store/resources/resources';
 import { connect } from 'react-redux';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button, Grid, ListItem, Typography } from '@mui/material';
+import { Button, Grid, ListItem, Typography, Tooltip, Link as ButtonLink } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { formatDate, formatFileSize } from 'common/formatters';
@@ -22,6 +21,9 @@ import { openContextMenuAndSelect } from 'store/context-menu/context-menu-action
 import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
+import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
+import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 
 export type CssRules = 'versionBrowserHeader'
     | 'versionBrowserItem'
@@ -229,3 +231,96 @@ const CollectionVersionBrowser = withStyles(styles)(
                 </Grid>
             </div>;
         }));
+
+interface CollectionDetailsProps {
+    item: CollectionResource;
+    classes?: any;
+    twoCol?: boolean;
+    showVersionBrowser?: () => void;
+}
+
+export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
+    const item = props.item;
+    const classes = props.classes || { label: '', value: '', button: '', tag: '' };
+    const isOldVersion = item && item.currentVersionUuid !== item.uuid;
+    const mdSize = props.twoCol ? 6 : 12;
+    const showVersionBrowser = props.showVersionBrowser;
+    const responsiblePersonRef = React.useRef(null);
+    return <Grid container>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label={isOldVersion ? "This version's UUID" : "Collection UUID"}
+                linkToUuid={item.uuid} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label={isOldVersion ? "This version's PDH" : "Portable data hash"}
+                linkToUuid={item.portableDataHash} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Owner' linkToUuid={item.ownerUuid}
+                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+        </Grid>
+        <div data-cy="responsible-person-wrapper" ref={responsiblePersonRef}>
+            <Grid item xs={12} md={12}>
+                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                    label='Responsible person' linkToUuid={item.ownerUuid}
+                    uuidEnhancer={(uuid: string) => <ResponsiblePerson uuid={item.uuid} parentRef={responsiblePersonRef.current} />} />
+            </Grid>
+        </div>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Head version'
+                value={isOldVersion ? undefined : 'this one'}
+                linkToUuid={isOldVersion ? item.currentVersionUuid : undefined} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute
+                classLabel={classes.label} classValue={classes.value}
+                label='Version number'
+                value={showVersionBrowser !== undefined
+                    ? <Tooltip title="Open version browser"><ButtonLink underline='none' className={classes.button} onClick={() => showVersionBrowser()}>
+                        {<span data-cy='collection-version-number'>{item.version}</span>}
+                    </ButtonLink></Tooltip>
+                    : item.version
+                }
+            />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Number of files' value={<span data-cy='collection-file-count'>{item.fileCount}</span>} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Content size' value={formatFileSize(item.fileSizeTotal)} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Storage classes' value={item.storageClassesDesired ? item.storageClassesDesired.join(', ') : ["default"]} />
+        </Grid>
+
+        {/*
+            NOTE: The property list should be kept at the bottom, because it spans
+            the entire available width, without regards of the twoCol prop.
+          */}
+        <Grid item xs={12} md={12}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Properties' />
+            {item.properties && Object.keys(item.properties).length > 0
+                ? Object.keys(item.properties).map(k =>
+                    Array.isArray(item.properties[k])
+                        ? item.properties[k].map((v: string) =>
+                            getPropertyChip(k, v, undefined, classes.tag))
+                        : getPropertyChip(k, item.properties[k], undefined, classes.tag))
+                : <div className={classes.value}>No properties</div>}
+        </Grid>
+    </Grid>;
+};
+

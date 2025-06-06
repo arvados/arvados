@@ -9,7 +9,6 @@ import { RouteComponentProps } from 'react-router';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { Resource } from 'models/resource';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
@@ -140,10 +139,6 @@ export const ProjectPanel = withStyles(styles)(
                     </MPVContainer>
                 </div>
             }
-
-            isCurrentItemChild = (resource: Resource) => {
-                return resource.ownerUuid === this.props.currentItemId;
-            };
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const { resources, isAdmin, currentItemId } = this.props;
