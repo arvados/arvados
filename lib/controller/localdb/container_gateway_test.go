@@ -137,7 +137,9 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	fmt.Fprint(h, s.ctrUUID)
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
-	rtr := router.New(s.localdb, router.Config{})
+	rtr := router.New(s.localdb, router.Config{
+		ContainerWebServicesURL: arvados.URL{Host: "*.containers.example.com"},
+	})
 	s.srv = httptest.NewUnstartedServer(httpserver.AddRequestIDs(httpserver.LogRequests(rtr)))
 	s.srv.StartTLS()
 	// the test setup doesn't use lib/service so
@@ -294,15 +296,22 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 }
 
-// Connect to crunch-run container gateway directly.
+// Connect to crunch-run container gateway directly, using container
+// UUID.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct(c *check.C) {
-	s.testContainerHTTPProxy(c)
+	s.testContainerHTTPProxy(c, s.ctrUUID)
+}
+
+// Connect to crunch-run container gateway directly, using container
+// request UUID.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Direct_ContainerRequestUUID(c *check.C) {
+	s.testContainerHTTPProxy(c, s.reqUUID)
 }
 
 // Connect through a tunnel terminated at this controller process.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxy(c)
+	s.testContainerHTTPProxy(c, s.ctrUUID)
 }
 
 // Connect through a tunnel terminated at a different controller
@@ -310,10 +319,10 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Tunnel(c *check.C) {
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ProxyTunnel(c *check.C) {
 	forceProxyForTest = true
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.testContainerHTTPProxy(c)
+	s.testContainerHTTPProxy(c, s.ctrUUID)
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
+func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID string) {
 	testMethods := []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"}
 
 	var wg sync.WaitGroup
@@ -326,7 +335,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 			method := testMethods[idx%len(testMethods)]
 			_, port, err := net.SplitHostPort(srv.Addr)
 			c.Assert(err, check.IsNil)
-			vhost := s.ctrUUID + "-" + port + ".containers.example.com"
+			vhost := targetUUID + "-" + port + ".containers.example.com"
 			req, err := http.NewRequest(method, "https://"+vhost+"/via-"+s.gw.Address, nil)
 			c.Assert(err, check.IsNil)
 			// Token is already passed to
@@ -340,11 +349,8 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C) {
 				Name:  "arvados_api_token",
 				Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
 			})
-			portnum, err := strconv.Atoi(port)
-			c.Assert(err, check.IsNil)
 			handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
-				UUID:    s.ctrUUID,
-				Port:    portnum,
+				Target:  fmt.Sprintf("%s-%s", targetUUID, port),
 				Request: req,
 			})
 			c.Assert(err, check.IsNil)
@@ -396,19 +402,16 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_ContainerNotReadable
 func (s *ContainerGatewaySuite) testContainerHTTPProxyError(c *check.C, svcIdx int, token string, expectCode int) {
 	_, svcPort, err := net.SplitHostPort(s.containerServices[svcIdx].Addr)
 	c.Assert(err, check.IsNil)
-	svcPortInt, err := strconv.Atoi(svcPort)
-	c.Assert(err, check.IsNil)
 	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
 	vhost := s.ctrUUID + "-" + svcPort + ".containers.example.com"
 	req, err := http.NewRequest("GET", "https://"+vhost+"/via-"+s.gw.Address, nil)
 	c.Assert(err, check.IsNil)
 	_, err = s.localdb.ContainerHTTPProxy(ctx, arvados.ContainerHTTPProxyOptions{
-		UUID:    s.ctrUUID,
-		Port:    svcPortInt,
+		Target:  fmt.Sprintf("%s-%s", s.ctrUUID, svcPort),
 		Request: req,
 	})
 	c.Check(err, check.NotNil)
-	se := httpserver.HTTPStatusError(nil)
+	var se httpserver.HTTPStatusError
 	c.Assert(errors.As(err, &se), check.Equals, true)
 	c.Check(se.HTTPStatus(), check.Equals, expectCode)
 }
@@ -499,6 +502,57 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcI
 	c.Check(err, check.Equals, nil)
 	c.Check(buf.String(), check.Matches, `handled `+method+` /.*`)
 	return buf.String()
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_PublishedPortByName_ProxyTunnel(c *check.C) {
+	forceProxyForTest = true
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.testContainerHTTPProxy_PublishedPortByName(c)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_PublishedPortByName(c *check.C) {
+	s.testContainerHTTPProxy_PublishedPortByName(c)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxy_PublishedPortByName(c *check.C) {
+	srv := s.containerServices[1]
+	_, port, _ := net.SplitHostPort(srv.Addr)
+	portnum, err := strconv.Atoi(port)
+	c.Assert(err, check.IsNil)
+	namelink, err := s.localdb.LinkCreate(s.userctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"link_class": "published_port",
+			"name":       "warthogfacedbuffoon",
+			"head_uuid":  s.reqUUID,
+			"properties": map[string]interface{}{
+				"port": portnum}}})
+	c.Assert(err, check.IsNil)
+	defer s.localdb.LinkDelete(s.userctx, arvados.DeleteOptions{UUID: namelink.UUID})
+
+	vhost := namelink.Name + ".containers.example.com"
+	req, err := http.NewRequest("METHOD", "https://"+vhost+"/path", nil)
+	c.Assert(err, check.IsNil)
+	// Token is already passed to ContainerHTTPProxy() call in
+	// s.userctx, but we also need to add an auth cookie to the
+	// http request: if the request gets passed through http (see
+	// forceProxyForTest), the target router will start with a
+	// fresh context and load tokens from the request.
+	req.AddCookie(&http.Cookie{
+		Name:  "arvados_api_token",
+		Value: auth.EncodeTokenCookie([]byte(arvadostest.ActiveTokenV2)),
+	})
+	handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
+		Target:  namelink.Name,
+		Request: req,
+	})
+	c.Assert(err, check.IsNil)
+	rw := httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	resp := rw.Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	body, err := io.ReadAll(resp.Body)
+	c.Assert(err, check.IsNil)
+	c.Check(string(body), check.Matches, `handled METHOD /path with Host \Q`+vhost+`\E`)
 }
 
 func (s *ContainerGatewaySuite) setupLogCollection(c *check.C) {

@@ -113,8 +113,8 @@ var (
 )
 
 type ContainerHTTPProxyOptions struct {
-	UUID      string        `json:"uuid"`
-	Port      int           `json:"port"`
+	// "{container uuid}-{port}" or the name of a published port
+	Target    string        `json:"target"`
 	NoForward bool          `json:"no_forward"`
 	Request   *http.Request `json:"-"`
 }

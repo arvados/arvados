@@ -13,6 +13,7 @@ class Link < ArvadosModel
 
   validate :name_links_are_obsolete
   validate :permission_to_attach_to_objects
+  validate :validate_published_port, :if => Proc.new { link_class == 'published_port' }
   before_update :restrict_alter_permissions
   before_update :apply_max_overlapping_permissions
   before_create :apply_max_overlapping_permissions
@@ -218,6 +219,12 @@ class Link < ArvadosModel
       false
     else
       true
+    end
+  end
+
+  def validate_published_port
+    if head_uuid.length != 27 || head_uuid[6..10] != ContainerRequest.uuid_prefix
+      errors.add('head_uuid', 'must be a container request UUID')
     end
   end
 

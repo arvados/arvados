@@ -41,6 +41,9 @@ func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.rtr = &router{
 		mux:     mux.NewRouter(),
 		backend: &s.stub,
+		config: Config{
+			ContainerWebServicesURL: arvados.URL{Host: "*.containers.zzzzz.example.com"},
+		},
 	}
 	s.rtr.addRoutes()
 }
@@ -292,7 +295,7 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			path:            "/foo/bar",
 			header: http.Header{
 				"Cookie":               {"arvados_api_token=" + auth.EncodeTokenCookie([]byte(arvadostest.ActiveToken))},
-				"Host":                 {arvadostest.RunningContainerUUID + "-12345.example.com"},
+				"Host":                 {arvadostest.RunningContainerUUID + "-12345.containers.zzzzz.example.com"},
 				"X-Arvados-No-Forward": {"1"},
 				"X-Example-Header":     {"preserved header value"},
 			},
@@ -304,15 +307,14 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 				}
 				c.Check(opts.Request.Method, check.Equals, "POST")
 				c.Check(opts.Request.URL.Path, check.Equals, "/foo/bar")
-				c.Check(opts.Request.Host, check.Equals, arvadostest.RunningContainerUUID+"-12345.example.com")
+				c.Check(opts.Request.Host, check.Equals, arvadostest.RunningContainerUUID+"-12345.containers.zzzzz.example.com")
 				c.Check(opts.Request.Header, check.DeepEquals, http.Header{
 					"Cookie":           {"arvados_api_token=" + auth.EncodeTokenCookie([]byte(arvadostest.ActiveToken))},
 					"X-Example-Header": {"preserved header value"},
 				})
 				opts.Request = nil
 				c.Check(opts, check.DeepEquals, arvados.ContainerHTTPProxyOptions{
-					UUID:      arvadostest.RunningContainerUUID,
-					Port:      12345,
+					Target:    arvadostest.RunningContainerUUID + "-12345",
 					NoForward: true,
 				})
 			},
@@ -335,8 +337,8 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			c.Check(calls, check.HasLen, 0, comment)
 			continue
 		}
-		if len(calls) != 1 {
-			c.Check(calls, check.HasLen, 1, comment)
+		if !c.Check(calls, check.HasLen, 1, comment) {
+			continue
 		}
 		c.Check(calls[0].Method, isMethodNamed, trial.shouldCall, comment)
 		if trial.checkOptions != nil {
@@ -357,6 +359,7 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 	cluster := &arvados.Cluster{}
 	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
+	arvadostest.SetServiceURL(&cluster.Services.ContainerWebServices, "https://*.containers.zzzzz.example.com")
 	url, _ := url.Parse("https://" + os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider), Config{})
 }

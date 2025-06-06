@@ -29,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/lib/webdavfs"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -499,6 +500,38 @@ func (conn *Conn) checkContainerLoginPermission(ctx context.Context, userUUID, c
 // specified port on a running container, via crunch-run's container
 // gateway.
 func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.ContainerHTTPProxyOptions) (http.Handler, error) {
+	// We'll use ctxRoot to do requests below that don't depend on
+	// the supplied token.
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+
+	var targetUUID string
+	var targetPort int
+	if len(opts.Target) > 28 && arvadosclient.UUIDMatch(opts.Target[:27]) && opts.Target[27] == '-' {
+		targetUUID = opts.Target[:27]
+		fmt.Sscanf(opts.Target[28:], "%d", &targetPort)
+		if targetPort < 1 {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("cannot parse port number from vhost prefix %q", opts.Target), http.StatusBadRequest)
+		}
+	} else {
+		links, err := conn.railsProxy.LinkList(ctxRoot, arvados.ListOptions{
+			Limit: 1,
+			Filters: []arvados.Filter{
+				{"link_class", "=", "published_port"},
+				{"name", "=", opts.Target}}})
+		if err != nil {
+			return nil, fmt.Errorf("lookup failed: %w", err)
+		}
+		if len(links.Items) == 0 {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("container web service not found: %q", opts.Target), http.StatusNotFound)
+		}
+		targetUUID = links.Items[0].HeadUUID
+		port, ok := links.Items[0].Properties["port"].(float64)
+		targetPort = int(port)
+		if !ok || targetPort < 1 || targetPort > 65535 {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("invalid port in published_port link: %v", links.Items[0].Properties["port"]), http.StatusInternalServerError)
+		}
+	}
+
 	query := opts.Request.URL.Query()
 	if token := query.Get("arvados_api_token"); token != "" {
 		// Redirect-with-cookie avoids showing the token in
@@ -520,23 +553,54 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		}), nil
 	}
 
-	// First we need to fetch the container record as root, so we
-	// can check whether the requested port is marked public in
-	// published_ports.  (This needs to work even if the request
-	// did not provide a token at all.)
-	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
-	ctr, err := conn.railsProxy.ContainerGet(ctxRoot, arvados.GetOptions{
-		UUID:   opts.UUID,
-		Select: []string{"uuid", "state", "gateway_address", "published_ports"},
-	})
-	if err == nil && ctr.PublishedPorts[strconv.Itoa(opts.Port)].Access == arvados.PublishedPortAccessPublic {
-		// Allow all users and anonymous connections.
+	// First we need to fetch the container request (or container)
+	// record as root, so we can check whether the requested port
+	// is marked public in published_ports.  This needs to work
+	// even if the request did not provide a token at all.
+	var ctr arvados.Container
+	var isPublic bool
+	if len(targetUUID) == 27 && targetUUID[6:11] == "xvhdp" {
+		// Look up specified container request
+		ctrreq, err := conn.railsProxy.ContainerRequestGet(ctxRoot, arvados.GetOptions{
+			UUID:   targetUUID,
+			Select: []string{"uuid", "state", "published_ports", "container_uuid"},
+		})
+		if err == nil && ctrreq.PublishedPorts[strconv.Itoa(targetPort)].Access == arvados.PublishedPortAccessPublic {
+			isPublic = true
+			targetUUID = ctrreq.ContainerUUID
+		}
 	} else {
-		// Re-fetch the container record, this time as the
-		// authenticated user instead of root.  This lets us
-		// return 404 if the container is not readable by this
-		// user, for example.
-		ctr, err = conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address"}})
+		// Look up specified container
+		var err error
+		ctr, err = conn.railsProxy.ContainerGet(ctxRoot, arvados.GetOptions{
+			UUID:   targetUUID,
+			Select: []string{"uuid", "state", "gateway_address", "published_ports"},
+		})
+		if err == nil && ctr.PublishedPorts[strconv.Itoa(targetPort)].Access == arvados.PublishedPortAccessPublic {
+			isPublic = true
+		}
+	}
+
+	if !isPublic {
+		// Re-fetch the container request record, this time as
+		// the authenticated user instead of root.  This lets
+		// us return 404 if the container is not readable by
+		// this user, for example.
+		if len(targetUUID) == 27 && targetUUID[6:11] == "xvhdp" {
+			ctrreq, err := conn.railsProxy.ContainerRequestGet(ctxRoot, arvados.GetOptions{
+				UUID:   targetUUID,
+				Select: []string{"uuid", "state", "published_ports", "container_uuid"},
+			})
+			if err != nil {
+				return nil, fmt.Errorf("container request lookup error: %w", err)
+			}
+			if ctrreq.ContainerUUID == "" {
+				return nil, httpserver.ErrorWithStatus(errors.New("container request does not have an assigned container"), http.StatusBadRequest)
+			}
+			targetUUID = ctrreq.ContainerUUID
+		}
+		var err error
+		ctr, err = conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: targetUUID, Select: []string{"uuid", "state", "gateway_address"}})
 		if err != nil {
 			return nil, fmt.Errorf("container lookup failed: %w", err)
 		}
@@ -552,6 +616,15 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 			if err != nil {
 				return nil, err
 			}
+		}
+	} else if ctr.UUID == "" {
+		// isPublic, but we don't have the container record
+		// yet because the request specified a container
+		// request UUID.
+		var err error
+		ctr, err = conn.railsProxy.ContainerGet(ctxRoot, arvados.GetOptions{UUID: targetUUID, Select: []string{"uuid", "state", "gateway_address"}})
+		if err != nil {
+			return nil, fmt.Errorf("container lookup failed: %w", err)
 		}
 	}
 	dial, arpc, err := conn.findGateway(ctx, ctr, opts.NoForward)
@@ -575,8 +648,8 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		gatewayProxy(dial, w, http.Header{
-			"X-Arvados-Container-Gateway-Uuid": {opts.UUID},
-			"X-Arvados-Container-Target-Port":  {strconv.Itoa(opts.Port)},
+			"X-Arvados-Container-Gateway-Uuid": {targetUUID},
+			"X-Arvados-Container-Target-Port":  {strconv.Itoa(targetPort)},
 		}, nil).ServeHTTP(w, opts.Request)
 	}), nil
 }
