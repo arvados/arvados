@@ -6436,6 +6436,7 @@ __metadata:
     react-dropzone: 5.1.1
     react-highlight-words: 0.14.0
     react-idle-timer: 4.3.6
+    react-loading-skeleton: ^3.5.0
     react-redux: 5.1.0
     react-refresh: ^0.11.0
     react-router: 4.3.1
@@ -14990,6 +14991,15 @@ __metadata:
   version: 3.0.4
   resolution: "react-lifecycles-compat@npm:3.0.4"
   checksum: a904b0fc0a8eeb15a148c9feb7bc17cec7ef96e71188280061fc340043fd6d8ee3ff233381f0e8f95c1cf926210b2c4a31f38182c8f35ac55057e453d6df204f
+  languageName: node
+  linkType: hard
+
+"react-loading-skeleton@npm:^3.5.0":
+  version: 3.5.0
+  resolution: "react-loading-skeleton@npm:3.5.0"
+  peerDependencies:
+    react: ">=16.8.0"
+  checksum: bc631b2513eb01e419c00e5b9cd830feeba62a6d139bc6cce6002dec5d3a2de177f5939056d5c8c094555dbedc9982d0cb0874be96812fe2ec4858a8c5e1f564
   languageName: node
   linkType: hard
 

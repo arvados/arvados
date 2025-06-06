@@ -17,6 +17,10 @@ class MockDateTime(datetime.datetime):
     def utcnow(cls):
         return datetime.datetime(2018, 1, 1, 0, 0, 0, 0)
 
+    @classmethod
+    def now(cls, tz):
+        return datetime.datetime(2018, 1, 1, 0, 0, 0, 0)
+
 datetime.datetime = MockDateTime
 
 class TestUtil(unittest.TestCase):

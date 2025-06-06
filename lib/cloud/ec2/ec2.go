@@ -11,6 +11,7 @@ import (
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -193,7 +194,30 @@ func newEC2InstanceSet(confRaw json.RawMessage, instanceSetID cloud.InstanceSetI
 	return instanceSet, nil
 }
 
-func awsKeyFingerprint(pk ssh.PublicKey) (md5fp string, sha1fp string, err error) {
+// Calculate the public key fingerprints that AWS might use for a
+// given key.  For an rsa key, return the AWS MD5 and SHA-1
+// fingerprints in that order, like
+// {"02:d8:ca:c4:67:58:7b:46:64:50:41:59:3d:90:33:40",
+// "da:39:a3:ee:5e:6b:4b:0d:32:55:bf:ef:95:60:18:90:af:d8:07:09"}.
+// For an ed25519 key, return the SHA-256 fingerprint with and without
+// padding, like
+// {"SHA256:jgxbPn8JspgUBbZo3nRPWJ5e2h4v6FbiwlTe49NsNKE=",
+// "SHA256:jgxbPn8JspgUBbZo3nRPWJ5e2h4v6FbiwlTe49NsNKE"}.
+//
+// "When Amazon EC2 calculates a fingerprint, Amazon EC2 might append
+// padding to the fingerprint with = characters."
+//
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-keys.html
+func awsKeyFingerprints(pk ssh.PublicKey) ([]string, error) {
+	if pk.Type() != "ssh-rsa" {
+		// sha256 is always 256 bits, so the padded base64
+		// encoding will always be the unpadded encoding (as
+		// returned by ssh.FingerprintSHA256) plus a final
+		// "=".
+		hash2 := ssh.FingerprintSHA256(pk)
+		hash1 := hash2 + "="
+		return []string{hash1, hash2}, nil
+	}
 	// AWS key fingerprints don't use the usual key fingerprint
 	// you get from ssh-keygen or ssh.FingerprintLegacyMD5()
 	// (you can get that from md5.Sum(pk.Marshal())
@@ -206,24 +230,28 @@ func awsKeyFingerprint(pk ssh.PublicKey) (md5fp string, sha1fp string, err error
 		N    *big.Int
 	}
 	if err := ssh.Unmarshal(pk.Marshal(), &rsaPub); err != nil {
-		return "", "", fmt.Errorf("Unmarshal failed to parse public key: %w", err)
+		return nil, fmt.Errorf("Unmarshal failed to parse public key: %w", err)
 	}
 	rsaPk := rsa.PublicKey{
 		E: int(rsaPub.E.Int64()),
 		N: rsaPub.N,
 	}
 	pkix, _ := x509.MarshalPKIXPublicKey(&rsaPk)
-	md5pkix := md5.Sum([]byte(pkix))
-	sha1pkix := sha1.Sum([]byte(pkix))
-	md5fp = ""
-	sha1fp = ""
-	for i := 0; i < len(md5pkix); i++ {
-		md5fp += fmt.Sprintf(":%02x", md5pkix[i])
+	sum1 := md5.Sum(pkix)
+	sum2 := sha1.Sum(pkix)
+	return []string{
+		hexFingerprint(sum1[:]),
+		hexFingerprint(sum2[:]),
+	}, nil
+}
+
+// Return hex-fingerprint representation of sum, like "12:34:56:...".
+func hexFingerprint(sum []byte) string {
+	hexarray := make([]string, len(sum))
+	for i, c := range sum {
+		hexarray[i] = hex.EncodeToString([]byte{c})
 	}
-	for i := 0; i < len(sha1pkix); i++ {
-		sha1fp += fmt.Sprintf(":%02x", sha1pkix[i])
-	}
-	return md5fp[1:], sha1fp[1:], nil
+	return strings.Join(hexarray, ":")
 }
 
 func (instanceSet *ec2InstanceSet) Create(
@@ -361,17 +389,17 @@ func (instanceSet *ec2InstanceSet) Create(
 func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, error) {
 	instanceSet.keysMtx.Lock()
 	defer instanceSet.keysMtx.Unlock()
-	md5keyFingerprint, sha1keyFingerprint, err := awsKeyFingerprint(publicKey)
+	fingerprints, err := awsKeyFingerprints(publicKey)
 	if err != nil {
 		return "", fmt.Errorf("Could not make key fingerprint: %w", err)
 	}
-	if keyname, ok := instanceSet.keys[md5keyFingerprint]; ok {
+	if keyname, ok := instanceSet.keys[fingerprints[0]]; ok {
 		return keyname, nil
 	}
 	keyout, err := instanceSet.client.DescribeKeyPairs(context.Background(), &ec2.DescribeKeyPairsInput{
 		Filters: []types.Filter{{
 			Name:   aws.String("fingerprint"),
-			Values: []string{md5keyFingerprint, sha1keyFingerprint},
+			Values: fingerprints,
 		}},
 	})
 	if err != nil {
@@ -380,7 +408,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 	if len(keyout.KeyPairs) > 0 {
 		return *(keyout.KeyPairs[0].KeyName), nil
 	}
-	keyname := "arvados-dispatch-keypair-" + md5keyFingerprint
+	keyname := "arvados-dispatch-keypair-" + fingerprints[0]
 	_, err = instanceSet.client.ImportKeyPair(context.Background(), &ec2.ImportKeyPairInput{
 		KeyName:           &keyname,
 		PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
@@ -388,7 +416,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 	if err != nil {
 		return "", fmt.Errorf("Could not import keypair: %w", err)
 	}
-	instanceSet.keys[md5keyFingerprint] = keyname
+	instanceSet.keys[fingerprints[0]] = keyname
 	return keyname, nil
 }
 

@@ -174,6 +174,7 @@ describe('Project Details Card tests', function () {
 
         //add description
         cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
+        cy.get('[data-cy=project-panel]').should('exist');
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
         cy.get('[data-cy=context-menu]').contains('Edit').click();
         cy.get('[data-cy=form-dialog]').within(() => {
@@ -182,6 +183,7 @@ describe('Project Details Card tests', function () {
         });
         cy.waitForDom();
         cy.get('[data-cy=project-panel]').should('be.visible');
+        cy.get('[data-cy=project-panel]').should('exist');
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
@@ -194,12 +196,14 @@ describe('Project Details Card tests', function () {
 
         // modify description to be multi-line
         cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
+        cy.get('[data-cy=project-panel]').should('exist');
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
         cy.get('[data-cy=context-menu]').contains('Edit').click();
         cy.get('[data-cy=form-dialog]').within(() => {
             cy.get('div[contenteditable=true]').click().type(multiLineProjDescription);
             cy.get('[data-cy=form-submit-btn]').click();
         });
+        cy.get('[data-cy=project-panel]').should('exist');
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 

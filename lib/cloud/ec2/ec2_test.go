@@ -27,11 +27,14 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"os/exec"
+	"regexp"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	libconfig "git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -663,5 +666,37 @@ func (*EC2InstanceSetSuite) TestInstanceQuotaGroup(c *check.C) {
 			ProviderType: trial.ptype,
 			Preemptible:  trial.spot,
 		}), check.Equals, trial.quotaGroup)
+	}
+}
+
+func (*EC2InstanceSetSuite) TestAWSKeyFingerprints(c *check.C) {
+	for _, keytype := range []string{"rsa", "ed25519"} {
+		tmpdir := c.MkDir()
+		buf, err := exec.Command("ssh-keygen", "-f", tmpdir+"/key", "-N", "", "-t", keytype).CombinedOutput()
+		c.Assert(err, check.IsNil, check.Commentf("ssh-keygen: %s", buf))
+		var expectfps []string
+		switch keytype {
+		case "rsa":
+			for _, hash := range []string{"md5", "sha1"} {
+				cmd := exec.Command("bash", "-c", "set -e -o pipefail; ssh-keygen -ef key -m PEM | openssl rsa -RSAPublicKey_in -outform DER | openssl "+hash+" -c")
+				cmd.Dir = tmpdir
+				buf, err := cmd.CombinedOutput()
+				c.Assert(err, check.IsNil, check.Commentf("bash: %s", buf))
+				expectfps = append(expectfps, string(regexp.MustCompile(`[0-9a-f:]{20,}`).Find(buf)))
+			}
+		case "ed25519":
+			buf, err := exec.Command("ssh-keygen", "-l", "-f", tmpdir+"/key").CombinedOutput()
+			c.Assert(err, check.IsNil, check.Commentf("ssh-keygen: %s", buf))
+			sum := string(regexp.MustCompile(`SHA256:\S+`).Find(buf))
+			expectfps = []string{sum + "=", sum}
+		default:
+			c.Error("don't know how to test fingerprint for key type " + keytype)
+			continue
+		}
+		pk, err := libconfig.LoadSSHKey("file://" + tmpdir + "/key")
+		c.Assert(err, check.IsNil)
+		fingerprints, err := awsKeyFingerprints(pk.PublicKey())
+		c.Assert(err, check.IsNil)
+		c.Check(fingerprints, check.DeepEquals, expectfps)
 	}
 }

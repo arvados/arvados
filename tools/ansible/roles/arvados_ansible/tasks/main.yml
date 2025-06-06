@@ -1,0 +1,79 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install python3-venv
+  when: "ansible_pkg_mgr == 'apt'"
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - python3-venv
+
+# RHEL's python3 package includes venv, so we don't need a corresponding dnf task.
+
+- name: Create requirements.txt tempfile
+  ansible.builtin.tempfile:
+    prefix: "requirements-"
+    suffix: ".txt"
+  register: requirements_tempfile
+
+- name: Upload requirements.txt
+  ansible.builtin.copy:
+    src: requirements.txt
+    dest: "{{ requirements_tempfile.path }}"
+
+- name: Install Ansible virtualenv
+  become: yes
+  ansible.builtin.pip:
+    virtualenv: "{{ arvados_ansible_venv_dir }}"
+    virtualenv_command: "{{ ansible_python.executable|quote }} -m venv"
+    requirements: "{{ requirements_tempfile.path }}"
+    umask: "0022"
+
+# It would be cute to reuse the same tempfile, but we can't because
+# ansible-galaxy is sensitive to the filename extension.
+
+- name: Remove requirements.txt
+  ansible.builtin.file:
+    path: "{{ requirements_tempfile.path }}"
+    state: absent
+
+- name: Add Ansible commands to PATH
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ (arvados_ansible_venv_dir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+  loop:
+    - ansible
+    - ansible-galaxy
+    - ansible-playbook
+
+- name: Install Ansible requirements
+  when: arvados_ansible_galaxy_user is truthy
+  become: "{{ arvados_ansible_galaxy_user != ansible_user_id }}"
+  become_user: "{{ arvados_ansible_galaxy_user }}"
+  block:
+    - name: Create requirements.yml tempfile
+      ansible.builtin.tempfile:
+        prefix: "requirements-"
+        suffix: ".yml"
+      register: requirements_tempfile
+
+    - name: Upload requirements.yml
+      ansible.builtin.copy:
+        src: requirements.yml
+        dest: "{{ requirements_tempfile.path }}"
+
+    - name: Install Ansible requirements
+      ansible.builtin.command:
+        argv:
+          - "{{ (arvados_ansible_venv_dir, 'bin', 'ansible-galaxy')|path_join }}"
+          - install
+          - "-r"
+          - "{{ requirements_tempfile.path }}"
+
+    - name: Remove requirements.yml
+      ansible.builtin.file:
+        path: "{{ requirements_tempfile.path }}"
+        state: absent

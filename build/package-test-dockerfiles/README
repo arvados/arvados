@@ -1,7 +1,0 @@
-==================
-DOCKER IMAGE BUILD
-==================
-
-1. `make`
-2. `cd DISTRO`
-3. `docker build -t arvados/build:DISTRO .`

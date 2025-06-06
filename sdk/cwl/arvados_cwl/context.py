@@ -50,6 +50,8 @@ class ArvRuntimeContext(RuntimeContext):
         self.enable_usage_report = None
         self.usage_report_notes = []
         self.aws_credential_capture = True
+        self.selected_credential = None
+        self.s3_public_bucket = False
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

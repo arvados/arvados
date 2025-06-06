@@ -654,11 +654,15 @@ func (diag *diagnoser) runtests() {
 	diag.dotest(150, "connecting to webshell service", func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
+		u := cluster.Services.WebShell.ExternalURL
+		if u == (arvados.URL{}) {
+			diag.infof("skipping, webshell not configured")
+			return nil
+		}
 		if vm.UUID == "" {
 			diag.warnf("skipping, no vm available")
 			return nil
 		}
-		u := cluster.Services.WebShell.ExternalURL
 		webshellurl := u.String() + vm.Hostname + "?"
 		if strings.HasPrefix(u.Host, "*") {
 			u.Host = vm.Hostname + u.Host[1:]

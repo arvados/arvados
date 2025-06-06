@@ -772,6 +772,7 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 Cypress.Commands.add("doDataExplorerSearch", (value) => {
     cy.waitForDom();
     cy.get('[data-cy=search-input]').clear().type(value);
+    cy.waitForDom();
 });
 
 /**

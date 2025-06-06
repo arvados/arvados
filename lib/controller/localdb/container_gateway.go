@@ -280,6 +280,15 @@ func gatewayProxy(dial gatewayDialer, responseWriter http.ResponseWriter, setReq
 				expectRespondAuth = respondAuth
 				return tlsconn, nil
 			},
+			// This transport is only used for a single
+			// request, so http keep-alive would
+			// accumulate open sockets without providing
+			// any benefit.  So, disable keep-alive.
+			DisableKeepAlives: true,
+			// Use stdlib defaults.
+			ForceAttemptHTTP2:     http.DefaultTransport.(*http.Transport).ForceAttemptHTTP2,
+			TLSHandshakeTimeout:   http.DefaultTransport.(*http.Transport).TLSHandshakeTimeout,
+			ExpectContinueTimeout: http.DefaultTransport.(*http.Transport).ExpectContinueTimeout,
 		},
 		Director: func(r *http.Request) {
 			// Scheme/host of incoming r.URL are

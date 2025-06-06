@@ -1192,7 +1192,7 @@ Clusters:
       # or an idle instance of type B is already running.
       MaximumPriceFactor: 1.5
 
-      # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
+      # PEM encoded SSH key (RSA, DSA, ECDSA, or ED25519) used by the
       # cloud dispatcher for executing containers on worker VMs.
       # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
@@ -1200,6 +1200,8 @@ Clusters:
       # Use "file:///absolute/path/to/key" to load the key from a
       # separate file instead of embedding it in the configuration
       # file.
+      #
+      # Amazon EC2 only supports RSA and ED25519 keys.
       DispatchPrivateKey: ""
 
       # Maximum time to wait for workers to come up before abandoning
@@ -1289,7 +1291,7 @@ Clusters:
         # An admin user can use "arvados-client shell" to start an
         # interactive shell (with any user ID) in any running
         # container.
-        Admin: false
+        Admin: true
 
         # Any user can use "arvados-client shell" to start an
         # interactive shell (with any user ID) in any running

@@ -82,8 +82,8 @@ GEM
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
     andand (1.3.3)
-    arvados (3.1.0)
-      activesupport (>= 3)
+    arvados (3.1.2)
+      activesupport (~> 7.1.3.4)
       andand (~> 1.3, >= 1.3.3)
       arvados-google-api-client (>= 0.8.7.5, < 0.8.8)
       i18n
@@ -325,7 +325,7 @@ PLATFORMS
 DEPENDENCIES
   acts_as_api
   andand
-  arvados (~> 3.1.0)
+  arvados (~> 3.1.2)
   byebug
   factory_bot (= 6.4.5)
   factory_bot_rails
