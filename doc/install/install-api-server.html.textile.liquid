@@ -142,6 +142,19 @@ server {
   server_name  <span class="userinput">ClusterID.example.com</span>
                *.<span class="userinput">containers.ClusterID.example.com</span>;
 
+  ## If a wildcard name like <span class="userinput">*.containers.ClusterID.example.com</span> is not
+  ## available, and Services.ContainerWebServices.ExternalPortMin and
+  ## ExternalPortMax are configured instead, then the "listen" and
+  ## "server_name" directives should be adjusted accordingly.  Example:
+  # listen       443 ssl;
+  # listen       2000-3000 ssl;
+  # server_name  <span class="userinput">ClusterID.example.com</span>
+  #              <span class="userinput">containers.ClusterID.example.com</span>;
+  ## Depending on the number of ports in the range, you might also
+  ## need to increase worker_connections in the events section of your
+  ## Nginx configuration:
+  # events { worker_connections: 3000; }
+
   ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
   ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
