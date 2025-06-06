@@ -51,7 +51,7 @@ export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDesc
             <Typography
                 className={classNames(fadeDescription ? classes.description : classes.fadedDescription)}
                 component='div'
-                style={{ maxHeight: showDescription ? '500rem' : '20rem' , transition: 'max-height 0.75s' , overflow: 'hidden' }}
+                style={{ maxHeight: showDescription ? `${description.length / 30}rem` : '20rem' , transition: 'max-height 0.75s' , overflow: 'hidden' }}
                 //dangerouslySetInnerHTML is ok here only if description is sanitized,
                 //which it is before it is loaded into the redux store
                 dangerouslySetInnerHTML={{ __html: description }}
