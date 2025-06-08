@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"runtime"
 	"sort"
 	"syscall"
 
@@ -112,6 +113,54 @@ func (s *copierSuite) TestOutputCollectionWithOnlySubmounts(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(fis, check.HasLen, 1)
 	c.Check(fis[0].Size(), check.Equals, int64(3))
+}
+
+func (s *copierSuite) TestRepetitiveMountsInOutputDir(c *check.C) {
+	var memstats0 runtime.MemStats
+	runtime.ReadMemStats(&memstats0)
+
+	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":""}`)
+	s.cp.mounts[s.cp.ctrOutputDir] = arvados.Mount{
+		Kind:     "collection",
+		Writable: true,
+	}
+	nmounts := 200
+	ncollections := 1
+	pdh := make([]string, ncollections)
+	s.cp.manifestCache = make(map[string]string)
+	for i := 0; i < ncollections; i++ {
+		mtxt := arvadostest.FakeManifest(1, nmounts, 2, 4<<20)
+		pdh[i] = arvados.PortableDataHash(mtxt)
+		s.cp.manifestCache[pdh[i]] = mtxt
+	}
+	for i := 0; i < nmounts; i++ {
+		filename := fmt.Sprintf("file%d", i)
+		s.cp.mounts[path.Join(s.cp.ctrOutputDir, filename)] = arvados.Mount{
+			Kind:             "collection",
+			Path:             fmt.Sprintf("dir0/dir%d/file%d", i, i),
+			PortableDataHash: pdh[i%ncollections],
+		}
+	}
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Assert(err, check.IsNil)
+
+	// Files mounted under output dir have been copied from the
+	// fake collections to s.cp.staged via Snapshot+Splice.
+	rootdir, err := s.cp.staged.Open(".")
+	c.Assert(err, check.IsNil)
+	defer rootdir.Close()
+	fis, err := rootdir.Readdir(-1)
+	c.Assert(err, check.IsNil)
+	c.Assert(fis, check.HasLen, nmounts)
+
+	// nmounts -- Δalloc before -> Δalloc after fixing #22827
+	// 500 -- 1542 MB -> 15 MB
+	// 200 -- 254 MB -> 5 MB
+	var memstats runtime.MemStats
+	runtime.ReadMemStats(&memstats)
+	delta := (int64(memstats.Alloc) - int64(memstats0.Alloc)) / 1000000
+	c.Logf("Δalloc %d MB", delta)
+	c.Check(delta < 40, check.Equals, true, check.Commentf("Δalloc %d MB is suspiciously high, expect ~ 5 MB", delta))
 }
 
 func (s *copierSuite) TestRegularFilesAndDirs(c *check.C) {
