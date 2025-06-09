@@ -13,21 +13,13 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
 import { Grid } from '@mui/material';
-import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Typography } from '@mui/material';
-import { WithStyles } from '@mui/styles';
-import withStyles from '@mui/styles/withStyles';
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessIOParameter } from 'views/process-panel/process-io-card';
 import { formatInputData, formatOutputData } from 'store/process-panel/process-panel-actions';
 import { AuthState } from 'store/auth/auth-reducer';
 import { RootState } from 'store/store';
-import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
-import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
-import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
 export interface WorkflowDetailsCardDataProps {
     workflow?: WorkflowResource;
@@ -40,18 +32,6 @@ export interface WorkflowDetailsCardActionProps {
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onClick: (wf: WorkflowResource) =>
         () => wf && dispatch<any>(openRunProcess(wf.uuid, wf.ownerUuid, wf.name)),
-});
-
-type CssRules = 'description' | 'propertyTag';
-
-const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    description: {
-        padding: theme.spacing(1),
-    },
-    propertyTag: {
-        marginRight: theme.spacing(0.5),
-        marginBottom: theme.spacing(0.5)
-    },
 });
 
 interface AuthStateDataProps {
@@ -117,24 +97,12 @@ const mapStateToProps = (state: RootState): AuthStateDataProps => {
 };
 
 export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToProps)(
-    withStyles(styles)(
-        ({ workflow, auth, classes }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps & WithStyles<CssRules>) => {
+        ({ workflow }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps) => {
             if (!workflow) {
                 return <Grid />
             }
 
-            const hasDescription = workflow.description && workflow.description.length > 0;
-            const [showDescription, setShowDescription] = React.useState(false);
-
-            const data = getRegisteredWorkflowPanelData(workflow, auth);
             return <Grid container>
-                <Grid item xs={12} md={12} onClick={() => setShowDescription(!showDescription)}>
-                    <DetailsAttribute label={'Description'} button={hasDescription ? <ExpandChevronRight expanded={showDescription} /> : undefined}>
-                        {hasDescription
-                            ? <CollapsibleDescription description={workflow.description} showDescription={showDescription} />
-                            : <Typography>No description available</Typography>}
-                    </DetailsAttribute>
-                </Grid>
                 <Grid item xs={12} >
                     <DetailsAttribute
                         label={"Workflow UUID"}
@@ -156,13 +124,8 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
                         label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
-                <Grid item xs={12} md={12}>
-                    <DetailsAttribute label='Properties' />
-                    {Object.keys(data.gitprops).map(k =>
-                        getPropertyChip(k, data.gitprops[k], undefined, classes.propertyTag))}
-                </Grid>
             </Grid >;
-        }));
+        });
 
 export class WorkflowDetails extends DetailsData<WorkflowResource> {
     getIcon(className?: string) {

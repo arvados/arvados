@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { CardHeader, CardContent } from '@mui/material';
+import { CardHeader } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
@@ -23,49 +23,26 @@ import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { WorkflowProcessesPanel } from './workflow-processes-panel';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
+import { OverviewPanel } from 'components/overview-panel/overview-panel';
 
 type CssRules =
     'root'
     | 'mpvRoot'
-    | 'button'
-    | 'infoCard'
     | 'filesCard'
-    | 'label'
-    | 'content'
-    | 'subHeader';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'none',
     },
     mpvRoot: {
         width: '100%',
         height: '100%',
     },
-    button: {
-        cursor: 'pointer'
-    },
-    infoCard: {
-    },
     filesCard: {
         padding: 0,
     },
-    subHeader: {
-        color: theme.customs.colors.greyD
-    },
-    label: {
-        fontSize: '0.875rem',
-    },
-    content: {
-        padding: theme.spacing(1),
-        paddingTop: theme.spacing(0.5),
-        '&:last-child': {
-            paddingBottom: theme.spacing(1),
-        }
-    }
 });
 
 type RegisteredWorkflowPanelProps = RegisteredWorkflowPanelDataProps & DispatchProp & WithStyles<CssRules>
@@ -87,17 +64,12 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                         <DetailsCardRoot />
                         <MPVContainer
                             className={classes.mpvRoot}
-                            spacing={1}
                             justifyContent='flex-start'
                             panelStates={panelsData}>
                             <MPVPanelContent
                                 xs='auto'
                                 data-cy='registered-workflow-info-panel'>
-                                <section className={classes.infoCard}>
-                                    <CardContent className={classes.content}>
-                                        <WorkflowDetailsAttributes workflow={item} />
-                                    </CardContent>
-                                </section>
+                                        <OverviewPanel detailsElement={<WorkflowDetailsAttributes workflow={item} />} />
                             </MPVPanelContent>
                             <MPVPanelContent
                                 forwardProps
