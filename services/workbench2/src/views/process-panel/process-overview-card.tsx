@@ -4,13 +4,18 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { CardContent } from '@mui/material';
+import {  Grid, Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import { ProcessDetailsAttributes } from './process-details-attributes';
+import { OverviewPanel } from 'components/overview-panel/overview-panel';
+import WarningIcon from '@mui/icons-material/Warning';
+import { Link } from "react-router-dom";
+import { ProcessProperties } from "store/processes/process";
+import { getResourceUrl } from "routes/routes";
+import { ProcessAttributes } from './process-attributes';
 
 type CssRules = 'card' | 'content';
 
@@ -39,13 +44,19 @@ type ProcessDetailsCardProps = ProcessOverviewCardDataProps & WithStyles<CssRule
 
 export const ProcessOverviewCard = withStyles(styles)(
     ({ classes, process }: ProcessDetailsCardProps) => {
+        const containerRequest = process.containerRequest;
+        const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
 
         return (
-            <section className={classes.card}>
-                <CardContent className={classes.content}>
-                    <ProcessDetailsAttributes request={process.containerRequest} container={process.container} twoCol hideProcessPanelRedundantFields />
-                </CardContent>
-            </section>
+            <>
+                {resubmittedUrl && <Grid item xs={12}>
+                    <Typography>
+                        <WarningIcon />
+                        This process failed but was automatically resubmitted.  <Link to={resubmittedUrl}> Click here to go to the resubmitted process.</Link>
+                    </Typography>
+                </Grid>}
+                <OverviewPanel detailsElement={<ProcessAttributes request={process.containerRequest} container={process.container} hideProcessPanelRedundantFields />} />
+            </>
         );
     }
 );

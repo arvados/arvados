@@ -17,6 +17,11 @@ import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevr
 import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
 import { CollectionResource } from 'models/collection';
 import { ProjectResource } from 'models/project';
+import { ResourceKind } from 'models/resource';
+import { Process, getProcess } from 'store/processes/process';
+import { ContainerRequestResource } from 'models/container-request';
+import { ContainerResource } from 'models/container';
+import { ProcessRuntimeStatus } from 'views-components/process-runtime-status/process-runtime-status';
 
 type CssRules = 'root' | 'tag';
 
@@ -36,17 +41,22 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type OverviewPanelProps = {
-    resource: ProjectResource | CollectionResource | undefined;
+    resource: ProjectResource | CollectionResource | ContainerRequestResource | undefined;
+    process?: Process;
+    container?: ContainerResource;
     detailsElement: React.ReactNode;
 } & WithStyles<CssRules>;
 
-const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'resource'> => {
+const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'resource' | 'process' | 'container'> => {
+    const resource = getResource<any>(state.properties.currentRouteUuid)(state.resources);
+    const process = getProcess(resource.uuid)(state.resources);
     return {
-        resource: getResource<any>(state.properties.currentRouteUuid)(state.resources),
+        resource: resource.containerRequest ? process : resource,
+        container: process?.container,
     };
 };
 
-export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ resource, detailsElement, classes }: OverviewPanelProps) => {
+export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ resource, container, detailsElement, classes }: OverviewPanelProps) => {
     if (!resource) {
         return null;
     }
@@ -62,18 +72,23 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ res
 
     return (
         <section className={classes.root}>
-            <Grid item xs={12} md={12}>
-                <DetailsAttribute
-                    label={'Description'}
-                    button={hasDescription
-                                ? <ExpandChevronRight expanded={showDescription} onClick={() => setShowDescription(!showDescription)} />
-                                : undefined}>
-                    {hasDescription
-                        ? <CollapsibleDescription description={resource.description} showDescription={showDescription} />
-                        : <Typography>No description available</Typography>}
-                </DetailsAttribute>
-                {detailsElement}
-            </Grid>
+            <section>
+                {resource.kind === ResourceKind.CONTAINER_REQUEST && <Grid item xs={12}>
+                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={resource.containerCount} />
+                </Grid>}
+                <Grid item xs={12} md={12}>
+                    <DetailsAttribute
+                        label={'Description'}
+                        button={hasDescription
+                                    ? <ExpandChevronRight expanded={showDescription} onClick={() => setShowDescription(!showDescription)} />
+                                    : undefined}>
+                        {hasDescription
+                            ? <CollapsibleDescription description={resource.description} showDescription={showDescription} />
+                            : <Typography>No description available</Typography>}
+                    </DetailsAttribute>
+                    {detailsElement}
+                </Grid>
+            </section>
             <section>
                 {hasProperties &&
                     <>

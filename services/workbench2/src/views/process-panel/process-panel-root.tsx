@@ -31,7 +31,7 @@ import { getInlineFileUrl } from "views-components/context-menu/actions/helpers"
 import { CollectionFile } from "models/collection-file";
 import { DetailsCardRoot } from "views-components/details-card/details-card-root";
 
-type CssRules = "root" | 'mpvRoot';
+type CssRules = "root" | 'mpvRoot' | 'overview';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -40,7 +40,16 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: "column",
     },
     mpvRoot: {
-        width: '100%',
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        flexWrap: 'nowrap',
+        minHeight: "500px",
+        '& > div': {
+            height: '100%',
+        },
+    },
+    overview: {
         height: '100%',
     },
 });
@@ -159,6 +168,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                         forwardProps
                         item
                         xs="auto"
+                        className={props.classes.overview}
                         data-cy="process-details">
                         <ProcessOverviewCard
                             process={process}
