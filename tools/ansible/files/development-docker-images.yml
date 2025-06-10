@@ -25,17 +25,11 @@ arvados_package_tests:
     arvados_pkgtest_rocky8:
       arvados_docker_from: rockylinux:8-minimal
       arvados_docker_tag: arvados/package-test:rocky8
-      arvados_pkgtest_dnf_modules:
-        - postgresql:10
-        - python39:3.9
-        - ruby:3.1
       arvados_pkgtest_dnf_devel_basename: Rocky-PowerTools
       arvados_pkgtest_dnf_devel_section: powertools
     arvados_pkgtest_rocky9:
       arvados_docker_from: rockylinux:9-minimal
       arvados_docker_tag: arvados/package-test:rocky9
-      arvados_pkgtest_dnf_modules:
-        - ruby:3.1
   vars:
     ansible_connection: docker
     ansible_user: root

@@ -1,0 +1,21 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Example:
+#
+# - ansible.builtin.include_role:
+#     name: distro_dnf
+#   vars:
+#     arvados_dnf_modules:
+#       - python
+#       - ruby
+
+- name: Enable dnf modules
+  when: "ansible_pkg_mgr == 'dnf' and module_args is truthy"
+  become: yes
+  vars:
+    version_map: "{{ arvados_dnf_modules_map[ansible_distribution_major_version]|default({}) }}"
+    module_args: "{{ arvados_dnf_modules|select('in', version_map)|map('extract', version_map)|flatten|unique|list }}"
+  ansible.builtin.command:
+    cmd: "{{ arvados_dnf_command }} module enable {{ module_args|map('quote')|join(' ') }}"

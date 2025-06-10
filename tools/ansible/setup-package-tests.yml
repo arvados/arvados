@@ -46,16 +46,13 @@
         name:
           - cpio
 
-    - name: Enable dnf modules
-      when: arvados_pkgtest_dnf_modules is defined
+    - ansible.builtin.include_role:
+        name: distro_dnf
       vars:
-        dnf:
-          - microdnf
-          - "--assumeyes"
-          - module
-          - enable
-      ansible.builtin.command:
-        argv: "{{ dnf + arvados_pkgtest_dnf_modules }}"
+        arvados_dnf_modules:
+          - postgresql
+          - python
+          - ruby
 
     - name: Enable development repository
       community.general.ini_file:
