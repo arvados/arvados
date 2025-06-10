@@ -54,24 +54,25 @@
   hosts: all
   gather_facts: no
   vars:
-    # The `arvados_build_all` group will be expanded to the
+    # The `arvados_build_one_target` group will be expanded to the
     # `arvados_build_NAME` group for every name in this list.
     # This corresponds to the components we build distribution packages for.
     core_components:
       - cwl
-      - doc
       - go
       - python
       - ruby
       - workbench
     # `arvados_test_all` works similarly with additional components.
-    # The primary user of `arvados_build_all` is package build Docker images,
-    # so excluding components we don't package avoids Docker image bloat.
     test_components:
-      - deb
+      # `arvados_build_all_targets` installs Docker+Ansible to build and run
+      # package build/test Docker images.
+      # `arvados_test_all_targets` installs additional tools necessary to
+      # orchestrate the package test Docker containers.
+      - all_targets
+      - doc
       - java
       - R
-      - rpm
 
   tasks:
     - ansible.builtin.include_role:
@@ -86,11 +87,11 @@
           - arvados_test_all
       loop: "{{ ansible_play_hosts }}"
 
-    - name: Expand arvados_build_all group
+    - name: Expand arvados_build_one_target group
       ansible.builtin.add_host:
         host: "{{ item }}"
         groups: "{{ core_components|map('replace', '', 'arvados_build_', 1) }}"
-      loop: "{{ groups.arvados_build_all|default([]) }}"
+      loop: "{{ groups.arvados_build_one_target|default([]) }}"
 
     - name: Expand arvados_test_all group
       ansible.builtin.add_host:
@@ -135,6 +136,13 @@
 # the prerequisites to do that.
 - hosts: arvados_test_cwl:arvados_test_go:arvados_test_python:arvados_test_ruby
   tasks:
+    # Most arvados ansible roles don't currently have dnf tasks, support RHEL
+    # configuration paths, etc.
+    - name: Check distribution support
+      when: "ansible_pkg_mgr != 'apt'"
+      ansible.builtin.fail:
+        msg: Install test prerequisites is currently only supported on Debian and Ubuntu
+
     - name: Add host to prerequisite build groups
       ansible.builtin.add_host:
         host: "{{ item }}"
@@ -256,6 +264,12 @@
 - hosts: arvados_build_ruby
   tasks:
     - ansible.builtin.include_role:
+        name: distro_dnf
+      vars:
+        arvados_dnf_modules:
+          - ruby
+
+    - ansible.builtin.include_role:
         name: distro_packages
       vars:
         task_name: Install Ruby build requirements
@@ -275,11 +289,53 @@
           - shared-mime-info
           - zlib1g-dev
 
-### Distribution package dependencies
-# These are ordered here because some of the language test suites later
-# expand the Docker installation.
+    - name: Install bundler gem
+      become: yes
+      community.general.gem:
+        name: bundler
+        user_install: no
+        version: "~> 2.4.22"
 
-- hosts: arvados_build_deb:arvados_build_rpm
+### Distribution package dependencies
+# These are ordered here because they depend on the core language
+# dependencies above, but some of the language test suites later expand the
+# Docker installation.
+
+- hosts: arvados_build_one_target
+  tasks:
+    - name: Get Ruby version
+      ansible.builtin.command:
+        argv:
+          - ruby
+          - "-e"
+          - print RUBY_VERSION
+      register: ruby_version
+
+    # This is a dependency of fpm that dropped support for Ruby 2.7
+    # in its 3.0 release.
+    - name: Install dotenv gem
+      when: "ruby_version.stdout is version('3.0.0', operator='<')"
+      become: yes
+      community.general.gem:
+        name: dotenv
+        user_install: no
+        version: "~> 2.8"
+
+    - name: Install fpm gem
+      become: yes
+      community.general.gem:
+        name: fpm
+        user_install: no
+        version: "~> 1.16"
+
+    - name: Install rpm-build
+      when: "ansible_pkg_mgr == 'dnf'"
+      become: yes
+      ansible.builtin.dnf:
+        name:
+          - rpm-build
+
+- hosts: arvados_build_all_targets
   tasks:
     - ansible.builtin.include_role:
         name: arvados_ansible
@@ -297,22 +353,15 @@
           - docker
         append: yes
 
-- hosts: arvados_test_deb
+- hosts: arvados_test_all_targets
   tasks:
-    - name: Install deb test dependencies
+    - name: Install package test dependencies
       become: yes
       ansible.builtin.apt:
         name:
           - apt-utils
-          - dpkg-dev
-
-- hosts: arvados_test_rpm
-  tasks:
-    - name: Install RPM test dependencies
-      become: yes
-      ansible.builtin.apt:
-        name:
           - createrepo-c
+          - dpkg-dev
 
 ### Core language test dependencies
 

@@ -5,9 +5,6 @@ AUTHORS
 */bootstrap.css
 */bootstrap.js
 *bootstrap-theme.css
-build/package-test-dockerfiles/centos7/localrepo.repo
-build/package-test-dockerfiles/rocky8/localrepo.repo
-build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 *by-sa-3.0.html
 *by-sa-3.0.txt
 *COPYING
@@ -75,8 +72,6 @@ tools/crunchstat-summary/tests/crunchstat_error_messages.txt
 tools/crunchstat-summary/crunchstat_summary/synchronizer.js
 tools/cluster-activity/test/*.html
 tools/cluster-activity/test/*.csv
-build/package-build-dockerfiles/debian9/D39DC0E3.asc
-build/package-test-dockerfiles/debian9/D39DC0E3.asc
 sdk/R/DESCRIPTION
 sdk/R/NAMESPACE
 sdk/R/.Rbuildignore

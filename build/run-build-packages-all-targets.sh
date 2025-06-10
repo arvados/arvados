@@ -93,8 +93,9 @@ cd $(dirname $0)
 
 FINAL_EXITCODE=0
 
-for dockerfile_path in $(find -name Dockerfile | grep package-build-dockerfiles); do
-    if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" --build-version "$ARVADOS_BUILDING_VERSION" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
+for pkgtest_path in package-testing/test-packages-*.sh; do
+    target="$(basename "${pkgtest_path##*-}" .sh)"
+    if ./run-build-packages-one-target.sh --target "$target" --command "$COMMAND" --build-version "$ARVADOS_BUILDING_VERSION" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
         true
     else
         FINAL_EXITCODE=$?
