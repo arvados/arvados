@@ -108,10 +108,11 @@
 
 - hosts: arvados_build_*
   tasks:
-    - name: Install common build tools
-      become: yes
-      ansible.builtin.apt:
-        name:
+    - ansible.builtin.include_role:
+        name: distro_packages
+      vars:
+        task_name: Install common build tools
+        package_names:
           - ca-certificates
           - curl
           - diffutils
@@ -229,18 +230,20 @@
     - ansible.builtin.include_role:
         name: arvados_go
 
-    - name: Install Go build dependencies
-      become: yes
-      ansible.builtin.apt:
-        name:
+    - ansible.builtin.include_role:
+        name: distro_packages
+      vars:
+        task_name: Install Go build dependencies
+        package_names:
           - libpam-dev
 
 - hosts: arvados_build_python
   tasks:
-    - name: Install Python build requirements
-      become: yes
-      ansible.builtin.apt:
-        name:
+    - ansible.builtin.include_role:
+        name: distro_packages
+      vars:
+        task_name: Install Python build requirements
+        package_names:
           - g++
           - libcurl4-openssl-dev
           - libfuse-dev
@@ -252,10 +255,11 @@
 
 - hosts: arvados_build_ruby
   tasks:
-    - name: Install Ruby build requirements
-      become: yes
-      ansible.builtin.apt:
-        name:
+    - ansible.builtin.include_role:
+        name: distro_packages
+      vars:
+        task_name: Install Ruby build requirements
+        package_names:
           - bison
           - g++
           - libcurl4-openssl-dev

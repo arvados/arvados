@@ -18,15 +18,17 @@
     - ansible.builtin.group_by:
         key: "pkg_mgr_{{ ansible_pkg_mgr }}"
 
-- name: Setup apt nodes
-  hosts: pkg_mgr_apt
-  tasks:
-    - name: Install apt dependencies
-      ansible.builtin.apt:
-        name:
+    - ansible.builtin.include_role:
+        name: distro_packages
+      vars:
+        task_name: Install package test dependencies
+        package_names:
           - diffutils
           - findutils
 
+- name: Setup apt nodes
+  hosts: pkg_mgr_apt
+  tasks:
     - name: Install apt repository
       ansible.builtin.deb822_repository:
         name: arvados_pkgtest
@@ -39,12 +41,10 @@
 - name: Setup dnf nodes
   hosts: pkg_mgr_dnf
   tasks:
-    - name: Install dnf dependencies
+    - name: Install RHEL test dependencies
       ansible.builtin.dnf:
         name:
           - cpio
-          - diffutils
-          - findutils
 
     - name: Enable dnf modules
       when: arvados_pkgtest_dnf_modules is defined
