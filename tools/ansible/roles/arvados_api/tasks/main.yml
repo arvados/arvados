@@ -1,0 +1,45 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Install the RailsAPI server and configure it to match the cluster
+# configuration.
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install arvados-api-server
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - arvados-api-server
+  register: arvados_api_server_apt
+
+- name: Create arvados-railsapi.service.d
+  become: yes
+  ansible.builtin.file:
+    path: /etc/systemd/system/arvados-railsapi.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Write cluster configuration to arvados-railsapi.service override
+  become: yes
+  ansible.builtin.template:
+    src: cluster.conf.j2
+    dest: "/etc/systemd/system/arvados-railsapi.service.d/ansible-{{ arvados_cluster_id }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  register: arvados_api_server_override
+
+- name: Start and enable arvados-railsapi.service
+  become: yes
+  vars:
+    arvados_api_server_changed: "{{ arvados_api_server_apt.changed or arvados_api_server_override.changed or arvados_config_changed }}"
+  ansible.builtin.systemd_service:
+    name: arvados-railsapi.service
+    daemon_reload: "{{ arvados_api_server_changed }}"
+    state: "{{ 'restarted' if arvados_api_server_changed else 'started' }}"
+    enabled: true

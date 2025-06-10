@@ -99,6 +99,7 @@ import { searchResultsActionSet } from "views-components/context-menu/action-set
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@coreui/coreui/dist/css/coreui.min.css';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 
 declare module '@mui/styles/defaultTheme' {

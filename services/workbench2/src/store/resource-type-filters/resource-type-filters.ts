@@ -20,7 +20,8 @@ export enum ProcessStatusFilter {
     COMPLETED = 'Completed',
     CANCELLED = 'Cancelled',
     ONHOLD = 'On hold',
-    QUEUED = 'Queued'
+    QUEUED = 'Queued',
+    DRAFT = 'Draft',
 }
 
 export enum ObjectTypeFilter {
@@ -151,6 +152,7 @@ export const getInitialProcessStatusFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     pipe(
         initFilter(ProcessStatusFilter.ALL, '', true),
+        initFilter(ProcessStatusFilter.DRAFT, '', false),
         initFilter(ProcessStatusFilter.ONHOLD, '', false),
         initFilter(ProcessStatusFilter.QUEUED, '', false),
         initFilter(ProcessStatusFilter.RUNNING, '', false),
@@ -437,6 +439,10 @@ export const buildProcessStatusFilters = (fb: FilterBuilder, activeStatusFilter:
         case ProcessStatusFilter.CANCELLED:
         case ProcessStatusFilter.RUNNING: {
             fb.addEqual('container.state', activeStatusFilter, resourcePrefix);
+            break;
+        }
+        case ProcessStatusFilter.DRAFT: {
+            fb.addEqual('state', ContainerRequestState.UNCOMMITTED, resourcePrefix);
             break;
         }
     }

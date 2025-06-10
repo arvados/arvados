@@ -1,0 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The directory where the Ansible virtualenv will be installed.
+arvados_ansible_venv_dir: /opt/arvados-ansible
+
+# The user that will install Galaxy collections.
+# If this is not set (the default), collection installation is skipped.
+arvados_ansible_galaxy_user: null

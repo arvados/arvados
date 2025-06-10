@@ -1,0 +1,9 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+{% for key, val in arvados_apt_periodic.items() %}
+APT::Periodic::{{ key }} "{{ arvados_apt_periodic_default if val is none else val }}";
+{% endfor %}

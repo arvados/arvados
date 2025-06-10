@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This file documents the Python modules required to run Arvados playbooks.
+# If you're doing something advanced, you can use this as a constraints file
+# to install only the components you want and still get the right versions.
+# For example, if you only want Ansible and no extras:
+#
+#      pip install -c requirements.txt ansible-core
+
+ansible-core ~= 2.15.13
+docker ~= 7.0
+
+# It's not required for any playbook, but if you want to automate creating or
+# editing Arvados config.yml files, yq is our go-to tool.
+yq ~= 3.4

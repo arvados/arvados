@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { connect } from 'react-redux';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from 'models/container-request';
@@ -22,6 +23,9 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
+import { getResource } from 'store/resources/resources';
+import { WorkflowResource } from 'models/workflow';
+import { RootState } from 'store/store';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
@@ -85,6 +89,7 @@ export const workflowProcessesPanelColumns: DataColumns<string, ProcessResource>
 
 export interface WorkflowProcessesPanelDataProps {
     resources: ResourcesState;
+    workflow?: WorkflowResource;
 }
 
 export interface WorkflowProcessesPanelActionProps {
@@ -112,7 +117,15 @@ const WorkflowProcessesTitle = withStyles(styles)(
         </div>
 );
 
-export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & MPVPanelProps) => {
+const mapStateToProps = (state: RootState): Pick<WorkflowProcessesPanelDataProps, 'workflow'> => {
+    const currentRouteUuid = state.properties.currentRouteUuid;
+    const workflow = getResource<WorkflowResource>(currentRouteUuid)(state.resources);
+    return {
+        workflow,
+    };
+};
+
+export const WorkflowProcessesPanelRoot = connect(mapStateToProps)((props: WorkflowProcessesPanelProps & MPVPanelProps) => {
     return <DataExplorer
         id={WORKFLOW_PROCESSES_PANEL_ID}
         onRowClick={props.onItemClick}
@@ -122,6 +135,7 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         panelName={props.panelName}
+        parentResource={props.workflow}
         title={<WorkflowProcessesTitle />}
         />;
-};
+});

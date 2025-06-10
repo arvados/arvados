@@ -25,8 +25,9 @@ import { DataTableFilters } from './data-table-filters';
 import { DataTableFiltersTree } from './data-table-filters-tree';
 import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
+import { ColumnFilterCount } from './data-table-filters-tree';
 
-export type CssRules = 'root' | 'icon' | 'iconButton' | 'active' | 'checkbox';
+export type CssRules = 'root' | 'icon' | 'iconButton' | 'active' | 'checkbox' | 'closeButtonContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -63,6 +64,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: 24,
         height: 24,
     },
+    closeButtonContainer: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+    },
 });
 
 enum SelectionMode {
@@ -86,6 +91,7 @@ export interface DataTableFilterProps {
      * Use `none` when label is supposed to be grayed out when no filter is selected.
      */
     defaultSelection?: SelectionMode;
+    columnFilterCount: ColumnFilterCount;
 }
 
 interface DataTableFilterState {
@@ -134,16 +140,18 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         <CardContent>
                             <Typography variant='caption'>{name}</Typography>
                         </CardContent>
-                        <DataTableFiltersTree filters={this.state.filters} mutuallyExclusive={this.props.mutuallyExclusive} onChange={this.onChange} />
-                        <>
-                            {this.props.mutuallyExclusive || (
-                                <CardActions>
-                                    <Button color='primary' variant='outlined' size='small' onClick={this.close}>
-                                        Close
-                                    </Button>
-                                </CardActions>
-                            )}
-                        </>
+                        <DataTableFiltersTree
+                            filters={this.state.filters}
+                            mutuallyExclusive={this.props.mutuallyExclusive}
+                            columnFilterCount={this.props.columnFilterCount}
+                            onChange={this.onChange} />
+                        <section className={classes.closeButtonContainer}>
+                            <CardActions>
+                                <Button color='primary' variant='outlined' size='small' onClick={this.close}>
+                                    Close
+                                </Button>
+                            </CardActions>
+                        </section>
                     </Card>
                 </Popover>
             </>;

@@ -1,0 +1,19 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install crunch-dispatch-local
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - crunch-dispatch-local
+
+- name: Start and enable crunch-dispatch-local.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: crunch-dispatch-local.service
+    state: "{{ 'restarted' if arvados_config_changed else 'started' }}"
+    enabled: true

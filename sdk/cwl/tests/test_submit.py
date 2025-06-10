@@ -1600,7 +1600,7 @@ class TestSubmit(unittest.TestCase):
         sessionmock.get_credentials.return_value = CredsTuple('123key', '789secret')
 
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug", "--defer-download",
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--defer-download", "--enable-aws-credential-capture",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job_s3.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
@@ -1633,6 +1633,15 @@ class TestSubmit(unittest.TestCase):
         sessionmock = mock.MagicMock(region_name='us-east-2')
         botosession.return_value = sessionmock
 
+        stubs.api.credentials().list().execute.return_value = {
+            "items": [{
+                "uuid": "zzzzz-oss07-8jgyh6siwlfoofw",
+                "name": "AWS_TEST_CRED",
+                "external_id": "AKIASRXXXXXXXXXXYZKG",
+                "scopes": []
+            }]
+        }
+
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--defer-download", "--disable-aws-credential-capture",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job_s3.json"],
@@ -1642,6 +1651,15 @@ class TestSubmit(unittest.TestCase):
 
         expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['location'] = 's3://examplebucket/blorp.txt'
         del expect_container['mounts']['/var/lib/cwl/cwl.input.json']['content']['x']['size']
+
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
+                                       '--no-log-timestamps', '--disable-validate', '--disable-color',
+                                       '--eval-timeout=20', '--thread-count=0',
+                                       '--enable-reuse', "--collection-cache-size=256",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                                       '--debug', "--on-error=continue", '--use-credential=zzzzz-oss07-8jgyh6siwlfoofw',
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(stubs.capture_stdout.getvalue(),

@@ -143,6 +143,7 @@ class ArvCwlExecutor(object):
         self.git_info = arvargs.git_info
         self.debug = False
         self.botosession = None
+        self.selected_credential = None
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -617,6 +618,22 @@ The 'jobs' API is no longer supported.
             cr["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in properties.items()})
             self.api.container_requests().update(uuid=cr["uuid"], body={"container_request": {"properties": cr["properties"]}}).execute(num_retries=self.num_retries)
 
+    def get_credential(self, runtimeContext):
+        if runtimeContext.selected_credential is None:
+            return
+
+        for key in ("uuid", "name"):
+            result = self.api.credentials().list(filters=[[key, "=", runtimeContext.selected_credential]]).execute()
+            if len(result["items"]) == 1:
+                self.selected_credential = result["items"][0]
+                break
+
+    def get_credential_secret(self):
+        if self.selected_credential is None:
+            return
+        self.selected_credential.update(self.api.credentials().secret(uuid=self.selected_credential["uuid"]).execute())
+
+
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
@@ -686,6 +703,12 @@ The 'jobs' API is no longer supported.
 
         self.runtime_status_update("activity", "data transfer")
 
+        current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
+        self.get_credential(runtimeContext)
+        if current_container:
+            logger.info("Running inside container %s", current_container.get("uuid"))
+            self.get_credential_secret()
+
         # Upload local file references in the job order.
         with Perf(metrics, "upload_job_order"):
             job_order, jobmapper = upload_job_order(self, "%s input" % runtimeContext.name,
@@ -697,10 +720,11 @@ The 'jobs' API is no longer supported.
         # are going to wait for the result, and always_submit_runner
         # is false, then we don't submit a runner process.
 
-        submitting = (runtimeContext.submit and not
+        submitting = ((runtimeContext.submit and not
                        (updated_tool.tool["class"] == "CommandLineTool" and
                         runtimeContext.wait and
-                        not runtimeContext.always_submit_runner))
+                        not runtimeContext.always_submit_runner)) or
+                      runtimeContext.defer_downloads)
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
@@ -859,9 +883,7 @@ The 'jobs' API is no longer supported.
 
         self.runtime_status_update("activity", "workflow execution")
 
-        current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:
-            logger.info("Running inside container %s", current_container.get("uuid"))
             self.set_container_request_properties(current_container, git_info)
 
         self.poll_api = arvados.api('v1', timeout=runtimeContext.http_timeout)

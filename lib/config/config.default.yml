@@ -217,10 +217,8 @@ Clusters:
       # normally be returned in a single response).
       # Note 1: This setting never reduces the number of returned rows to
       # zero, no matter how big the first data row is.
-      # Note 2: Currently, this is only checked against a specific set of
-      # columns that tend to get large (collections.manifest_text,
-      # containers.mounts, workflows.definition). Other fields (e.g.,
-      # "properties" hashes) are not counted against this limit.
+      # Note 2: Only columns that *can* grow large count against this limit.
+      # Small fixed-width columns like UUIDs and datetimes never do.
       MaxIndexDatabaseRead: 134217728
 
       # Maximum number of items to return when responding to a APIs that
@@ -1184,7 +1182,7 @@ Clusters:
       # or an idle instance of type B is already running.
       MaximumPriceFactor: 1.5
 
-      # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
+      # PEM encoded SSH key (RSA, DSA, ECDSA, or ED25519) used by the
       # cloud dispatcher for executing containers on worker VMs.
       # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
@@ -1192,6 +1190,8 @@ Clusters:
       # Use "file:///absolute/path/to/key" to load the key from a
       # separate file instead of embedding it in the configuration
       # file.
+      #
+      # Amazon EC2 only supports RSA and ED25519 keys.
       DispatchPrivateKey: ""
 
       # Maximum time to wait for workers to come up before abandoning
@@ -1281,7 +1281,7 @@ Clusters:
         # An admin user can use "arvados-client shell" to start an
         # interactive shell (with any user ID) in any running
         # container.
-        Admin: false
+        Admin: true
 
         # Any user can use "arvados-client shell" to start an
         # interactive shell (with any user ID) in any running

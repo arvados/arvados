@@ -808,6 +808,12 @@ def setup_config():
                 "http://%s:%s"%(localhost, keep_web_port): {},
             },
         },
+        "ContainerWebServices": {
+            "ExternalURL": "https://*.containers.zzzzz.example.com",
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, controller_port): {},
+            },
+        },
     }
 
     config = {

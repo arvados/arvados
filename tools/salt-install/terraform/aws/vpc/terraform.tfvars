@@ -47,6 +47,9 @@
 #
 # Map assigning DNS aliases for service node names. Defaults:
 # dns_aliases = {
+#   controller = [
+#     "*.containers"
+#   ],
 #   workbench = [
 #     "ws",
 #     "workbench2",

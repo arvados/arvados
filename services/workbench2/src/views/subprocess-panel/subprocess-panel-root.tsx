@@ -22,7 +22,6 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
-import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';
 import { Process } from 'store/processes/process';
 
 type CssRules = 'iconHeader' | 'cardHeader';
@@ -126,6 +125,6 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         panelName={props.panelName}
         title={<SubProcessesTitle/>}
-        progressBar={<SubprocessProgressBar parentResource={props.process} />}
+        parentResource={props.process}
     />;
 };

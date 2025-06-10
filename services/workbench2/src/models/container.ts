@@ -14,6 +14,7 @@ export enum ContainerState {
     RUNNING = 'Running',
     COMPLETE = 'Complete',
     CANCELLED = 'Cancelled',
+    UNCOMMITTED = 'Uncommitted',
 }
 
 export interface ContainerResource extends Resource {

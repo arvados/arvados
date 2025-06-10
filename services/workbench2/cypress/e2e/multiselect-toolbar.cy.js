@@ -222,10 +222,12 @@ describe('For project resources', () => {
 
             //freeze project
             cy.get('[aria-label="Freeze project"]').click();
+            cy.doDataExplorerSelect(testProject.name);
             cy.assertToolbarButtons(tooltips.adminFrozenProject);
 
             //unfreeze project
             cy.get('[aria-label="Unfreeze project"]').click();
+            cy.doDataExplorerSelect(testProject.name);
             cy.assertToolbarButtons(tooltips.adminProject);
 
             //Add to favorites

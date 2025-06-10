@@ -80,7 +80,8 @@ In order to build packages on a new distribution, you MUST:
 * Add the new `TARGET/generated` rule to the `all` target in
   `package-build-dockerfiles/Makefile`.
 * Write `package-build-dockerfiles/TARGET/Dockerfile`.
-* Write `package-test-dockerfiles/TARGET/Dockerfile`.
+* Define a container to build the test Docker image in
+  `tools/ansible/files/development-docker-images.yml`.
 * Create `package-testing/test-packages-TARGET.sh`, ideally by making it a
   symlink to `FORMAT-common-test-packages.sh`.
 * Update the package download code near the bottom of `test_package_presence`

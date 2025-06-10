@@ -60,7 +60,7 @@ func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *C
 		// It's not safe to copy *http.DefaultTransport
 		// because it has a mutex (which might be locked)
 		// protecting a private map (which might not be nil).
-		// So we build our own, using the Go 1.12 default
+		// So we build our own, using the Go 1.23 default
 		// values, ignoring any changes the application has
 		// made to http.DefaultTransport.
 		transport = &http.Transport{
@@ -69,6 +69,7 @@ func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *C
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			}).DialContext,
+			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,

@@ -1,0 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dependencies:
+  - role: arvados_apt
+  - role: arvados_service
+  - role: arvados_nginx_frontend
+    vars:
+      arvados_nginx_service_key: Keepproxy

@@ -1,0 +1,110 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# install-arvados-cluster.yml - Ansible playbook to set up an Arvados cluster
+#
+# This playbook installs all services necessary for an Arvados cluster. It is
+# still in early development, so it does not support all configurations or
+# integrate with third-party services. Refer to
+# `files/example-cluster-inventory.yml` for information about how to write
+# configuration for this playbook.
+
+- name: Bootstrap nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Load Arvados configuration file
+      delegate_to: localhost
+      ansible.builtin.include_vars:
+        name: arvados_config
+        file: "{{ arvados_config_file }}"
+    - name: Load Arvados cluster configuration
+      ansible.builtin.set_fact:
+        arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+      failed_when: arvados_cluster is undefined
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
+
+- name: Install PostgreSQL
+  hosts: arvados_postgresql
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_postgresql
+
+- name: Set up Arvados database
+  hosts: arvados_postgresql,arvados_api
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_database
+      run_once: true
+
+- name: Set up RailsAPI service(s)
+  hosts: arvados_api
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_api
+
+- name: Set up API controller(s)
+  hosts: arvados_controller
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_controller
+
+- name: Set up WebSocket server
+  hosts: arvados_websocket
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_websocket
+
+- name: Set up keepstore(s)
+  hosts: arvados_keepstore
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keepstore
+
+- name: Set up keepproxy(ies)
+  hosts: arvados_keepproxy
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keepproxy
+
+- name: Set up keep-web(s)
+  hosts: arvados_keep_web
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keep_web
+
+- name: Set up Workbench(es)
+  hosts: arvados_workbench
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_workbench
+
+- name: Set up shell node(s)
+  hosts: arvados_shell
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_shell
+
+- name: Set up local dispatch nodes
+  hosts: arvados_dispatch_local
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_dispatch_local
+
+- name: Set up cloud dispatcher(s)
+  hosts: arvados_dispatch_cloud
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_dispatch_cloud

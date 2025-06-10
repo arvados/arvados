@@ -9,19 +9,40 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+*Performance*
+# "Does your application support NVIDIA GPU acceleration?":#nvidiagpu
+# "Trying to reduce costs?":#preemptible
+# "You have a sequence of short-running steps":#RunInSingleContainer
+# "Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@":#avoidExcessRequirements
+# "Prefer text substitution to Javascript":#preferTextSubst
+# "Use @ExpressionTool@ to efficiently rearrange input files":#expressionTool
+# "Limit RAM requests to what you really need":#limitRAM
+# "Avoid scattering by step by step":#avoidScatterByStep
+
+*Portability*
+# "Always provide @DockerRequirement@":#DockerRequirement
+# "Build a reusable library of components":#reusecode
+# "Supply scripts as input parameters":#scriptsasinput
+# "Getting the temporary and output directories":#tempdirs
+# "Specifying @ResourceRequirement@":#ResourceRequirement
+
+*Data import*
+# "Importing data into Keep from HTTP":#httpimport
+# "Importing data into Keep from S3":#s3import
+
 h2(#performance). Performance
 
 To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices.
 
-h3. Does your application support NVIDIA GPU acceleration?
+h3(#nvidiagpu). Does your application support NVIDIA GPU acceleration?
 
 Use "cwltool:CUDARequirement":cwl-extensions.html#CUDARequirement to request nodes with GPUs.
 
-h3. Trying to reduce costs?
+h3(#preemptible). Trying to reduce costs?
 
 Try "using preemptible (spot) instances":cwl-run-options.html#preemptible .
 
-h3. You have a sequence of short-running steps
+h3(#RunInSingleContainer). You have a sequence of short-running steps
 
 If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together in the same container on the same node.  To use this feature, @cwltool@ must be installed in the container image.  Example:
 
@@ -50,15 +71,15 @@ steps:
     run: subworkflow-with-short-steps.cwl
 {% endcodeblock %}
 
-h3. Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@
+h3(#avoidExcessRequirements). Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@
 
 Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may add extra overhead.
 
-h3. Prefer text substitution to Javascript
+h3(#preferTextSubst). Prefer text substitution to Javascript
 
 When combining a parameter value with a string, such as adding a filename extension, write @$(inputs.file.basename).ext@ instead of @$(inputs.file.basename + 'ext')@.  The first form is evaluated as a simple text substitution, the second form (using the @+@ operator) is evaluated as an arbitrary Javascript expression and requires that you declare @InlineJavascriptRequirement@.
 
-h3. Use @ExpressionTool@ to efficiently rearrange input files
+h3(#expressionTool). Use @ExpressionTool@ to efficiently rearrange input files
 
 Use @ExpressionTool@ to efficiently rearrange input files between steps of a Workflow.  For example, the following expression accepts a directory containing files paired by @_R1_@ and @_R2_@ and produces an array of Directories containing each pair.
 
@@ -94,11 +115,11 @@ expression: |
   }
 {% endcodeblock %}
 
-h3. Limit RAM requests to what you really need
+h3(#limitRAM). Limit RAM requests to what you really need
 
 Available compute nodes types vary over time and across different cloud providers, so it is important to limit the RAM requirement to what the program actually needs.  However, if you need to target a specific compute node type, see this discussion on "calculating RAM request and choosing instance type for containers.":{{site.baseurl}}/api/execution.html#RAM
 
-h3. Avoid scattering by step by step
+h3(#avoidScatterByStep). Avoid scattering by step by step
 
 Instead of a scatter step that feeds into another scatter step, prefer to scatter over a subworkflow.
 
@@ -166,15 +187,15 @@ h2. Portability
 
 To write workflows that are easy to modify and portable across CWL runners (in the event you need to share your workflow with others), there are several best practices to follow:
 
-h3. Always provide @DockerRequirement@
+h3(#DockerRequirement). Always provide @DockerRequirement@
 
 Workflows should always provide @DockerRequirement@ in the @hints@ or @requirements@ section.
 
-h3. Build a reusable library of components
+h3(#reusecode). Build a reusable library of components
 
 Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-library and tool registries such as "Dockstore":http://dockstore.org .
 
-h3. Supply scripts as input parameters
+h3(#scriptsasinput). Supply scripts as input parameters
 
 CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
 
@@ -204,13 +225,13 @@ outputs:
       glob: "*.fastq"
 {% endcodeblock %}
 
-h3. Getting the temporary and output directories
+h3(#tempdirs). Getting the temporary and output directories
 
 You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
 
 Similarly, you can get the designated output directory using @$(runtime.outdir)@, or from the @HOME@ environment variable in your script.
 
-h3. Specifying @ResourceRequirement@
+h3(#ResourceRequirement). Specifying @ResourceRequirement@
 
 Avoid specifying resources in the @requirements@ section of a @CommandLineTool@, put it in the @hints@ section instead.  This enables you to override the tool resource hint with a workflow step level requirement:
 
@@ -235,7 +256,9 @@ steps:
         tmpdirMin: 90000
 {% endcodeblock %}
 
-h3. Importing data into Keep from HTTP
+h2. Data import
+
+h3(#httpimport). Importing data into Keep from HTTP
 
 You can use HTTP URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
 
@@ -250,7 +273,9 @@ fastq2:
 
 Files are downloaded and stored in Keep collections with HTTP header information stored in metadata.  If a file was previously downloaded, @arvados-cwl-runner@ uses HTTP caching rules to decide if a file should be re-downloaded or not.
 
-The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, if data transfer is time consuming and you are submitting multiple workflow runs in a row, or the node submitting the workflow has limited bandwidth, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.
+The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.  There are a couple reasons you may want to do this:
+# You are submitting from a workstation, but expect the file will be downloaded faster by the compute node
+# You are submitting multiple workflow runs in a row and want to parallelize downloads
 
 @arvados-cwl-runner@ provides two additional options to control caching behavior.
 
@@ -268,7 +293,7 @@ arvados-cwl-runner --defer-download \
 		   workflow.cwl params.yml
 {% endcodeblock %}
 
-h3. Importing data into Keep from S3
+h3(#s3import). Importing data into Keep from S3
 
 You can use S3 URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
 
@@ -283,6 +308,18 @@ fastq2:
 
 Files are downloaded and stored in Keep collections.  If the bucket is versioned, it will make note of the object version and last modified time.  If a file was previously downloaded, @arvados-cwl-runner@ will use the object version and/or last modified time to decide if a file should be re-downloaded or not.  The @--prefer-cached-downloads@ option will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
 
-The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, if data transfer is time consuming and you are submitting multiple workflow runs in a row, or the node submitting the workflow has limited bandwidth, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.
+The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.  There are several reasons you may want to do this:
+# You are submitting from a workstation, but expect the file will be downloaded faster by the compute node
+# You are submitting multiple workflow runs in a row and want to parallelize downloads
+# You don't have credentials to access the S3 bucket locally but do have read access to AWS credentials registered with Arvados
 
-Arvados uses the @boto3@ library to access S3, which "has a list of locations where it will search for credentials.":https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html When using the @--defer-download@ option, by default @arvados-cwl-runner@ will capture the active AWS credentials from your environment and pass them to the workflow runner container as a secret file; this enables the workflow runner to download files from S3 on your behalf.  If you do not want AWS credentials passed from the client environment, or want to skip the credential search entirely, use @--disable-aws-credential-capture@.  In this case, AWS credentials must be provided to the workflow runner container in some other way.
+When using the @--defer-download@ option, @arvados-cwl-runner@ use the following process to choose which AWS credentials to use to access the S3 bucket.
+
+# Arvados will first check to see if you have access to a "credential":{{site.baseurl}}/api/methods/credentials.html with @credential_class: aws_access_key@ where the s3 bucket is present in @scopes@ (the bucket name must be formatted as @s3://bucketname@).
+# Otherwise, Arvados will look for a "credential":{{site.baseurl}}/api/methods/credentials.html with @credential_class: aws_access_key@ where @scopes@ is empty.
+
+In each case, if more than one "credential":{{site.baseurl}}/api/methods/credentials.html matches, it will throw an error, and the user must provide @--use-credential@ on the command line with the name or uuid of the credential to specify precisely which one to use.
+
+If no AWS credentials are registered with Arvados, but you have AWS credentials available locally (for example, in @~/.aws/credentials@), you can use @--enable-aws-credential-capture@.  This instructs @arvados-cwl-runner@ to capture the active AWS credentials from your environment and pass them to the workflow runner container as a secret file.  In this case, these credentials are only stored in Arvados for the duration of the workflow run and are discarded when the workflow finishes.  Arvados uses the @boto3@ library to access S3, which "has a list of locations where it will search for credentials.":https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+
+If the source S3 bucket is a public bucket, you can download from it without AWS credentials by providing @--s3-public-bucket@ on the command line.

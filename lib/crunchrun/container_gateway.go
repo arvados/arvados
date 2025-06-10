@@ -168,6 +168,15 @@ func (gw *Gateway) Start() error {
 			TLSConfig: &tls.Config{
 				Certificates: []tls.Certificate{cert},
 			},
+			// Typically the client is arvados-controller,
+			// which disables keep-alive, so we mostly
+			// don't rely on IdleTimeout.  But in general,
+			// these timeouts prevent abandoned open
+			// sockets from piling up if client
+			// connections don't get terminated properly
+			// (e.g., network mishap).
+			IdleTimeout:       time.Minute,
+			ReadHeaderTimeout: time.Minute,
 		},
 		Addr: net.JoinHostPort(listenHost, extPort),
 	}

@@ -1,0 +1,68 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install shell client packages
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - arvados-client
+      - python3-arvados-python-client
+      - python3-arvados-fuse
+      - build-essential
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - ruby-dev
+      - ruby-rubygems
+      - zlib1g-dev
+
+- name: Install shell client gems
+  become: yes
+  community.general.gem:
+    name: arvados-cli
+    user_install: no
+    version: "{{ arvados_pin_version or omit }}"
+
+- name: Query virtual machine record
+  vars:
+    filters: [["hostname", "=", "{{ arvados_shell_hostname }}"]]
+    order: [["created_at", "desc"], ["uuid", "desc"]]
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/arv
+      - virtual_machine
+      - list
+      - "--filters={{ filters|to_json }}"
+      - "--order={{ order|to_json }}"
+  environment:
+    ARVADOS_API_HOST: "{{ arvados_cluster.Services.Controller | external_addr }}"
+    ARVADOS_API_TOKEN: "{{ arvados_cluster.SystemRootToken }}"
+    SSL_CERT_FILE: "{{ '/etc/arvados/ca-certificates.crt' if arvados_certificates_file is truthy else omit }}"
+  register: arvados_virtual_machine_list
+
+- name: Create virtual machine record
+  when: "(arvados_virtual_machine_list.stdout|from_json)['items'] is falsy"
+  vars:
+    virtual_machine:
+      hostname: "{{ arvados_shell_hostname }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/arv
+      - virtual_machine
+      - create
+      - "--virtual-machine={{ virtual_machine|to_json }}"
+  environment:
+    ARVADOS_API_HOST: "{{ arvados_cluster.Services.Controller | external_addr }}"
+    ARVADOS_API_TOKEN: "{{ arvados_cluster.SystemRootToken }}"
+    SSL_CERT_FILE: "{{ '/etc/arvados/ca-certificates.crt' if arvados_certificates_file is truthy else omit }}"
+  register: arvados_virtual_machine_create
+
+- name: Register virtual machine fact
+  ansible.builtin.set_fact:
+    arvados_virtual_machine: "{{ (arvados_virtual_machine_create.stdout|from_json) if arvados_virtual_machine_create.stdout is defined else ((arvados_virtual_machine_list.stdout|from_json)['items']|first) }}"
+
+- name: Set up arvados-login-sync
+  ansible.builtin.import_tasks: login_sync.yml

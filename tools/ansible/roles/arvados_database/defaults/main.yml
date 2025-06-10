@@ -1,22 +1,21 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
-#
-# Users MUST define:
-# * arvados_database_name
-# * arvados_database_user_name
-# * arvados_database_user_password
-# with the database name and credentials for its owner.
+
+# User and database to set up
+arvados_database_name: "{{ arvados_cluster.PostgreSQL.Connection.dbname }}"
+arvados_database_user_name: "{{ arvados_cluster.PostgreSQL.Connection.user }}"
+arvados_database_user_password: "{{ arvados_cluster.PostgreSQL.Connection.password }}"
 
 # Comma-separated list of `CREATE ROLE WITH` arguments,
 # like `CREATEDB`, `NOLOGIN`, etc.
 arvados_database_role_attr_flags: ""
 
 # How to connect to the PostgreSQL server.
-# If login_host is empty (the default), the role will "become"
-# login_user on the managed node to perform database administration.
-arvados_database_login_host: ""
-arvados_database_login_port: 5432
+# If login_host is empty, the role will "become" login_user on the managed node
+# to perform database administration.
+arvados_database_login_host: "{{ arvados_cluster.PostgreSQL.Connection.host }}"
+arvados_database_login_port: "{{ arvados_cluster.PostgreSQL.Connection.port }}"
 
 # Credentials for the PostgreSQL server.
 arvados_database_login_user: postgres

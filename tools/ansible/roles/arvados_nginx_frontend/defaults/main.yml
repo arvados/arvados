@@ -1,0 +1,31 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_nginx_client_max_body_size:
+  Controller: "{{ arvados_cluster.API.MaxRequestSize }}"
+  Keepproxy: "64m"
+  WebDAV: "0"
+
+arvados_nginx_proxy_config:
+  redirect: "off"
+  connect_timeout: "90s"
+  read_timeout: "300s"
+  max_temp_file_size: "0"
+  request_buffering: "off"
+  buffering: "off"
+  http_version: "1.1"
+
+arvados_nginx_proxy_headers:
+  Host: "$http_host"
+  Upgrade: "$http_upgrade"
+  Connection: '"upgrade"'
+  X-External-Client: "$external_client"
+  X-Forwarded-For: "$proxy_add_x_forwarded_for"
+  X-Forwarded-Proto: "https"
+  X-Real-IP: "$remote_addr"
+
+# This mapping provides additional names for specific services like keep-web.
+# Each key is the name of a service in the Arvados cluster configuration, like
+# WebDAV. The value is a list of strings with additional server names.
+arvados_nginx_server_names: {}
