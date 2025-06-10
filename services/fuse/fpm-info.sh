@@ -15,6 +15,6 @@ case "$TARGET" in
     debian* | ubuntu*)
         # We depend on libfuse2 for llfuse.
         # We depend on libcurl because the Python SDK does for its Keep client.
-        fpm_depends+=(libfuse2 libcurl3-gnutls)
+        fpm_depends+=(libfuse2 libcurl4)
         ;;
 esac
