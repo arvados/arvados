@@ -75,7 +75,7 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
         resources: state.resources,
         isAdmin: state.auth.user!.isAdmin,
         defaultTab: state.auth.user?.prefs.wb?.default_project_tab,
-        isRootProject: isUserResource(resource) || currentItemId === state.auth.user?.uuid ,
+        isRootProject: (resource && isUserResource(resource)) || currentItemId === state.auth.user?.uuid ,
     };
 }
 
