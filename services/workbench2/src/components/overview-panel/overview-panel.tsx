@@ -50,9 +50,9 @@ type OverviewPanelProps = {
 
 const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'resource' | 'process' | 'container'> => {
     const resource = getResource<any>(state.properties.currentRouteUuid)(state.resources);
-    const process = getProcess(resource.uuid)(state.resources);
+    const process = getProcess(resource?.uuid)(state.resources) || undefined;
     return {
-        resource: resource.containerRequest ? process : resource,
+        resource: resource?.containerRequest ? process : resource,
         container: process?.container,
     };
 };
