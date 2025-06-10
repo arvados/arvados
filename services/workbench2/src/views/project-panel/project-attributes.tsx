@@ -23,7 +23,6 @@ type CssRules = 'root' | 'tag';
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
-        padding: theme.spacing(1),
     },
     tag: {
         marginRight: theme.spacing(0.5),

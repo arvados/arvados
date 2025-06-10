@@ -22,6 +22,7 @@ import { Process, getProcess } from 'store/processes/process';
 import { ContainerRequestResource } from 'models/container-request';
 import { ContainerResource } from 'models/container';
 import { ProcessRuntimeStatus } from 'views-components/process-runtime-status/process-runtime-status';
+import { isUserResource } from 'models/user';
 
 type CssRules = 'root' | 'tag';
 
@@ -57,7 +58,7 @@ const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'resource' 
 };
 
 export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ resource, container, detailsElement, classes }: OverviewPanelProps) => {
-    if (!resource) {
+    if (!resource || isUserResource(resource)) {
         return null;
     }
 
