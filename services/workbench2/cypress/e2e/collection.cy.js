@@ -39,8 +39,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testCollection.uuid}`);
 
-                cy.get("[data-cy=collection-panel-options-btn]").click();
-                cy.get("[data-cy=context-menu]").contains("Open with 3rd party client").click();
+                cy.get('[data-title="Open with 3rd party client"]').click();
                 cy.get("[data-cy=download-button").click();
 
                 const filename = path.join(downloadsFolder, `${testCollection.name}.duck`);
@@ -108,8 +107,7 @@ describe("Collection panel tests", function () {
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
         // Attempt to rename the collection with the duplicate name
-        cy.get("[data-cy=collection-panel-options-btn]").click();
-        cy.get("[data-cy=context-menu]").contains("Edit collection").click();
+        cy.get('[data-title="Edit collection"]').click();
         cy.get("[data-cy=form-dialog]")
             .should("contain", "Edit Collection")
             .within(() => {
@@ -132,10 +130,9 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
-                cy.get("[data-cy=collection-info-panel").should("contain", this.testCollection.name).and("not.contain", "Color: Magenta");
+                cy.get("[data-cy=collection-details-card").should("contain", this.testCollection.name).and("not.contain", "Color: Magenta");
 
-                cy.get("[data-cy=collection-panel-options-btn]").click();
-                cy.get("[data-cy=context-menu]").contains("Edit collection").click();
+                cy.get('[data-title="Edit collection"]').click();
                 cy.get("[data-cy=form-dialog]").should("contain", "Properties");
 
                 // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
@@ -160,7 +157,7 @@ describe("Collection panel tests", function () {
                         expect(this.collection.properties.IDTAGCOLORS).to.equal("IDVALCOLORS3");
                     });
                 // Confirm the property is displayed on the UI.
-                cy.get("[data-cy=collection-info-panel").should("contain", this.testCollection.name).and("contain", "Color: Magenta");
+                cy.get("[data-cy=resource-properties").should("contain", "Color: Magenta");
             });
     });
 
@@ -175,12 +172,11 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
-                cy.get("[data-cy=collection-info-panel")
+                cy.get("[data-cy=collection-details-card")
                     .should("contain", this.testCollection.name)
                     .and("not.contain", "Color: Magenta")
                     .and("not.contain", "Size: S");
-                cy.get("[data-cy=collection-panel-options-btn]").click();
-                cy.get("[data-cy=context-menu]").contains("View details").click();
+                cy.get("[data-title='View details']").click();
 
                 cy.get("[data-cy=details-panel]").within(() => {
                     cy.get("[data-cy=details-panel-edit-btn]").click();
@@ -230,9 +226,8 @@ describe("Collection panel tests", function () {
                     });
 
                 // Confirm properties display on the UI.
-                cy.get("[data-cy=collection-info-panel")
-                    .should("contain", this.testCollection.name)
-                    .and("contain", "Color: Magenta")
+                cy.get("[data-cy=resource-properties]")
+                    .should("contain", "Color: Magenta")
                     .and("contain", "Size: S");
             });
     });
@@ -283,31 +278,34 @@ describe("Collection panel tests", function () {
                             cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                             // Check that name & uuid are correct.
-                            cy.get("[data-cy=collection-info-panel]")
+                            cy.get("[data-cy=collection-details-card]")
                                 .should("contain", this.testCollection.name)
-                                .and("contain", this.testCollection.uuid)
+                            cy.get("[data-cy=details-element]")
+                                .should("contain", this.testCollection.uuid)
                                 .and("not.contain", "This is an old version");
                             // Check for the read-only icon
                             cy.get("[data-cy=read-only-icon]").should(`${isWritable ? "not." : ""}exist`);
                             // Check that both read and write operations are available on
                             // the 'More options' menu.
-                            cy.get("[data-cy=collection-panel-options-btn]").click();
-                            cy.get("[data-cy=context-menu]")
-                                .should("contain", "Add to favorites")
-                                .and(`${isWritable ? "" : "not."}contain`, "Edit collection");
+                            cy.get("[data-cy=collection-details-card]").within(() => {
+                                cy.get("[data-targetid='Add to favorites']");
+                                if (isWritable) {
+                                    cy.get("[data-targetid='Edit collection']");
+                                } else {
+                                    cy.get("[data-targetid='Edit collection']").should("not.exist");
+                                }
+                            });
                             cy.get("body").click(); // Collapse the menu avoiding details panel expansion
-                            cy.get("[data-cy=collection-info-panel]")
+                            cy.get("[data-cy=resource-properties]")
                                 .should("contain", "someKey: someValue")
                                 .and("not.contain", "anotherKey: anotherValue");
                             // Check that the file listing show both read & write operations
                             cy.waitForDom()
-                                .get("[data-cy=collection-files-panel]")
-                                .within(() => {
-                                    cy.get("[data-cy=collection-files-right-panel]", { timeout: 5000 }).should("contain", fileName);
-                                    if (isWritable) {
-                                        cy.get("[data-cy=upload-button]").should(`${isWritable ? "" : "not."}contain`, "Upload data");
-                                    }
-                                });
+                            cy.get('button').contains('Files').click();
+                            cy.get("[data-cy=collection-files-right-panel]", { timeout: 5000 }).should("contain", fileName);
+                            if (isWritable) {
+                                cy.get("[data-cy=upload-button]").should(`${isWritable ? "" : "not."}contain`, "Upload data");
+                            }
                             // Test context menus
                             cy.get("[data-cy=collection-files-panel]").contains(fileName).rightclick();
                             cy.get("[data-cy=context-menu]")
@@ -383,6 +381,7 @@ describe("Collection panel tests", function () {
                     "bar", // make sure we can go back to the original name as a last step
                 ];
                 cy.intercept({ method: "PUT", url: "**/arvados/v1/collections/*" }).as("renameRequest");
+                cy.get('button').contains('Files').click();
                 eachPair(names, (from, to) => {
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains(`${from}`).rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
@@ -411,6 +410,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
+                cy.get('button').contains('Files').click();
                 ["subdir", "G%C3%BCnter's%20file", "table%&?*2"].forEach(subdir => {
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains("bar").rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
@@ -463,7 +463,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testCollection.uuid}`);
                 cy.wait(5000);
-                cy.get("[data-cy=collection-info-panel]").contains(`Collection User`);
+                cy.get("[data-cy=details-element]").contains(`Collection User`);
             });
     });
 
@@ -489,6 +489,7 @@ describe("Collection panel tests", function () {
                     ["foo ", "Leading/trailing whitespaces not allowed"],
                     ["//foo", "Empty dir name not allowed"],
                 ];
+                cy.get('button').contains('Files').click();
                 illegalNamesFromUI.forEach(([name, errMsg]) => {
                     cy.get("[data-cy=collection-files-panel]").contains("bar").rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
@@ -556,9 +557,10 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${oldVersionUuid}`);
 
-                cy.get("[data-cy=collection-info-panel]").should("contain", "This is an old version");
+                cy.get("[data-cy=details-element]").should("contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("exist");
-                cy.get("[data-cy=collection-info-panel]").should("contain", colName);
+                cy.get("[data-cy=collection-details-card]").should("contain", colName);
+                cy.get('button').contains('Files').click();
                 cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
             });
     });
@@ -578,7 +580,7 @@ describe("Collection panel tests", function () {
                 cy.goToPath(`/collections/${this.collection.uuid}`);
 
                 // Initial check: it should show the 'default' storage class
-                cy.get("[data-cy=collection-info-panel]")
+                cy.get("[data-cy=collection-details-card]")
                     .should("contain", "Storage classes")
                     .and("contain", "default")
                     .and("not.contain", "foo")
@@ -596,7 +598,7 @@ describe("Collection panel tests", function () {
                         cy.get("[data-cy=checkbox-foo]").click();
                     });
                 cy.get("[data-cy=form-submit-btn]").click();
-                cy.get("[data-cy=collection-info-panel]").should("contain", "default").and("contain", "foo").and("not.contain", "bar");
+                cy.get("[data-cy=collection-details-card]").should("contain", "default").and("contain", "foo").and("not.contain", "bar");
                 cy.doRequest("GET", `/arvados/v1/collections/${this.collection.uuid}`)
                     .its("body")
                     .as("updatedCollection")
@@ -616,7 +618,7 @@ describe("Collection panel tests", function () {
                         cy.get("[data-cy=checkbox-default]").click();
                     });
                 cy.get("[data-cy=form-submit-btn]").click();
-                cy.get("[data-cy=collection-info-panel]").should("not.contain", "default").and("contain", "foo").and("not.contain", "bar");
+                cy.get("[data-cy=collection-details-card]").should("not.contain", "default").and("contain", "foo").and("not.contain", "bar");
                 cy.doRequest("GET", `/arvados/v1/collections/${this.collection.uuid}`)
                     .its("body")
                     .as("updatedCollection")
@@ -646,7 +648,7 @@ describe("Collection panel tests", function () {
             cy.loginAs(activeUser);
             cy.goToPath(`/collections/${testCollection.uuid}`);
             cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
-            cy.get("[data-cy=collection-info-panel]").should("not.contain", projName).and("not.contain", testProject.uuid);
+            cy.get("[data-cy=collection-details-card]").should("not.contain", projName).and("not.contain", testProject.uuid);
             cy.get("[data-cy=collection-panel-options-btn]").click();
             cy.get("[data-cy=context-menu]").should('exist');
             cy.get("[data-cy='Move to']").click();
@@ -661,7 +663,7 @@ describe("Collection panel tests", function () {
                 });
             cy.get("[data-cy=form-submit-btn]").click();
             cy.get("[data-cy=snackbar]").contains("Collection has been moved");
-            cy.get("[data-cy=collection-info-panel]").contains(projName).and("contain", testProject.uuid);
+            cy.get("[data-cy=collection-details-card]").contains(projName).and("contain", testProject.uuid);
             // Double check that the collection is in the project
             cy.goToPath(`/projects/${testProject.uuid}`);
             cy.waitForDom().get("[data-cy=project-panel]").should("contain", collName);
@@ -684,7 +686,7 @@ describe("Collection panel tests", function () {
             cy.goToPath(`/collections/${testCollection.uuid}`);
             cy.get("[data-cy=collection-files-panel]").should("contain", "This collection is empty");
             cy.get("[data-cy=collection-files-panel]").should("not.contain", files[0]);
-            cy.get("[data-cy=collection-info-panel]").should("contain", collName);
+            cy.get("[data-cy=collection-details-card]").should("contain", collName);
 
             files.map((fileName, i, files) => {
                 cy.updateCollection(adminUser.token, testCollection.uuid, {
@@ -693,7 +695,7 @@ describe("Collection panel tests", function () {
                 }).as("updatedCollection");
                 cy.getAll("@updatedCollection").then(function ([updatedCollection]) {
                     expect(updatedCollection.name).to.equal(`${collName + " updated"}`);
-                    cy.get("[data-cy=collection-info-panel]").should("contain", updatedCollection.name);
+                    cy.get("[data-cy=collection-details-card]").should("contain", updatedCollection.name);
                     fileName
                         ? cy.get("[data-cy=collection-files-panel]").should("contain", fileName)
                         : cy.get("[data-cy=collection-files-panel]").should("not.contain", files[i - 1]);
@@ -748,10 +750,10 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.collection.uuid}`);
 
-                cy.get("[data-cy=collection-info-panel]").should("not.contain", "This is an old version");
+                cy.get("[data-cy=collection-details-card]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "1");
-                cy.get("[data-cy=collection-info-panel]").should("contain", colName);
+                cy.get("[data-cy=collection-details-card]").should("contain", colName);
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
                 // Modify collection, expect version number change
@@ -783,10 +785,10 @@ describe("Collection panel tests", function () {
                         cy.get("[data-cy=collection-version-browser-select-3]").should("not.exist");
                         cy.get("[data-cy=collection-version-browser-select-1]").click();
                     });
-                cy.get("[data-cy=collection-info-panel]").should("contain", "This is an old version");
+                cy.get("[data-cy=collection-details-card]").should("contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "1");
-                cy.get("[data-cy=collection-info-panel]").should("contain", colName);
+                cy.get("[data-cy=collection-details-card]").should("contain", colName);
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
                 // Check that only old collection action are available on context menu
@@ -795,11 +797,11 @@ describe("Collection panel tests", function () {
                 cy.get("body").click(); // Collapse the menu avoiding details panel expansion
 
                 // Click on "head version" link, confirm that it's the latest version.
-                cy.get("[data-cy=collection-info-panel]").contains("head version").click();
-                cy.get("[data-cy=collection-info-panel]").should("not.contain", "This is an old version");
+                cy.get("[data-cy=collection-details-card]").contains("head version").click();
+                cy.get("[data-cy=collection-details-card]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "2");
-                cy.get("[data-cy=collection-info-panel]").should("contain", colName);
+                cy.get("[data-cy=collection-details-card]").should("contain", colName);
                 cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
 
                 // Check that old collection action isn't available on context menu
@@ -817,10 +819,10 @@ describe("Collection panel tests", function () {
                         cy.get("input").first().type(" renamed");
                     });
                 cy.get("[data-cy=form-submit-btn]").click();
-                cy.get("[data-cy=collection-info-panel]").should("not.contain", "This is an old version");
+                cy.get("[data-cy=collection-details-card]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "3");
-                cy.get("[data-cy=collection-info-panel]").should("contain", colName + " renamed");
+                cy.get("[data-cy=collection-details-card]").should("contain", colName + " renamed");
                 cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
                 cy.get("[data-cy=collection-version-browser-select-3]").should("contain", "3").and("contain", "3 B");
 
@@ -848,9 +850,9 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=context-menu]").contains("Restore version").click();
                 cy.get("[data-cy=confirmation-dialog]").should("contain", "Restore version");
                 cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
-                cy.get("[data-cy=collection-info-panel]").should("not.contain", "This is an old version");
+                cy.get("[data-cy=collection-details-card]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=collection-version-number]").should("contain", "4");
-                cy.get("[data-cy=collection-info-panel]").should("contain", colName);
+                cy.get("[data-cy=collection-details-card]").should("contain", colName);
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
             });
     });
@@ -1133,7 +1135,7 @@ describe("Collection panel tests", function () {
         cy.waitForDom();
         cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", collName);
-        cy.get("[data-cy=collection-info-panel]")
+        cy.get("[data-cy=collection-details-card]")
             .should("contain", "default")
             .and("contain", "foo")
             .and("contain", "Color: Magenta")

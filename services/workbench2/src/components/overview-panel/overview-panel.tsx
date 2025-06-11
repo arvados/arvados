@@ -87,14 +87,16 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ res
                             ? <CollapsibleDescription description={resource.description} showDescription={showDescription} />
                             : <Typography>No description available</Typography>}
                     </DetailsAttribute>
-                    {detailsElement}
+                    <section data-cy='details-element'>
+                        {detailsElement}
+                    </section>
                 </Grid>
             </section>
             <section>
                 {hasProperties &&
                     <>
                         <DetailsAttribute label='Properties' />
-                        <section>
+                        <section data-cy='resource-properties'>
                             {Object.keys(resource.properties).map((k) =>
                                 Array.isArray(resource.properties[k])
                                 ? resource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
