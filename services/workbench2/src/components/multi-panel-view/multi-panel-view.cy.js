@@ -44,16 +44,14 @@ describe('<MPVContainer />', () => {
         cy.get('button').eq(1).should('contain', 'Panel 2');
         //check if the panels are rendered
         cy.contains('This is one panel');
-        cy.contains('This is another panel');
+        cy.contains('This is another panel').should('not.exist');
     });
 
     it('should show panel when clicking on its button', () => {
         const childs = [
             <PanelMock key={1}>This is one panel</PanelMock>,
+            <PanelMock key={2}>This is another panel</PanelMock>,
         ];
-        props.panelStates = [
-            {name: 'Initially invisible Panel', visible: false},
-        ]
 
         cy.mount(
             <Provider store={store}>
@@ -63,14 +61,14 @@ describe('<MPVContainer />', () => {
             </Provider>
         );
 
-        // Initial state: panel not visible
-        cy.contains('This is one panel').should('not.exist');
-        cy.contains('All panels are hidden');
+        // Initial state: panel 2 not visible
+        cy.contains('This is one panel');
+        cy.contains('This is another panel').should('not.exist');
 
         // Panel visible when clicking on its button
-        cy.get('button').click();
-        cy.contains('This is one panel');
-        cy.contains('All panels are hidden').should('not.exist');
+        cy.get('button').contains('Panel 2').click();
+        cy.contains('This is one panel').should('not.exist');
+        cy.contains('This is another panel');
     });
 
     it('should show custom panel buttons when config provided', () => {
@@ -99,12 +97,14 @@ describe('<MPVContainer />', () => {
         cy.contains('This is another panel');
     });
 
-    it('should set panel hidden when requested', () => {
+    it('should set initial panel visibility according to panelStates prop', () => {
         const childs = [
             <PanelMock key={1}>This is one panel</PanelMock>,
+            <PanelMock key={2}>This is another panel</PanelMock>,
         ];
         props.panelStates = [
-            {name: 'First Panel', visible: false},
+            {name: 'First Panel'},
+            {name: 'Second Panel', visible: true},
         ]
         cy.mount(
             <Provider store={store}>
@@ -113,8 +113,8 @@ describe('<MPVContainer />', () => {
                 </ThemeProvider>
             </Provider>
         );
-        cy.get('button').contains('First Panel');
+        // Initial state: panel 2 not visible
         cy.contains('This is one panel').should('not.exist');
-        cy.contains('All panels are hidden');
+        cy.contains('This is another panel');
     });
 });
