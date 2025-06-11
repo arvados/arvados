@@ -3,23 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { Dispatch } from 'redux';
+import { Link } from 'react-router-dom';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid } from '@mui/material';
+import { Grid, Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect } from "react-redux";
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
-import { CollectionResource } from 'models/collection';
 import { getResource } from 'store/resources/resources';
 import { formatDate, formatFileSize } from "common/formatters";
 import { ResourceWithName, RenderResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getUserFullname, UserResource } from 'models/user';
 import { Resource, ResourceKind } from 'models/resource';
+import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
+import { CollectionResource, getCollectionUrl } from 'models/collection';
 
-type CssRules = 'label' | 'value'
+type CssRules = 'label' | 'value' | 'link' | 'warningLabel'
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
@@ -29,9 +32,19 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textTransform: 'none',
         fontSize: '0.875rem'
     },
+    link: {
+        fontSize: '0.875rem',
+        color: theme.palette.primary.main,
+        '&:hover': {
+            cursor: 'pointer'
+        }
+    },
+    warningLabel: {
+        fontStyle: 'italic'
+    },
 });
 
-const mapStateToProps = (state: RootState): CollectionAttributesProps => {
+const mapStateToProps = (state: RootState): Omit<CollectionAttributesProps, 'navigateToProcess'> => {
     const item = getResource<CollectionResource>(state.properties.currentRouteUuid)(state.resources);
     const { responsiblePersonUUID, responsiblePersonName } = getResponsibleData(state, item?.uuid);
     return {
@@ -39,14 +52,19 @@ const mapStateToProps = (state: RootState): CollectionAttributesProps => {
     };
 };
 
+const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionAttributesProps, 'navigateToProcess'> => ({
+    navigateToProcess: (uuid: string) => dispatch<any>(navigateToProcess(uuid))
+});
+
 
 interface CollectionAttributesProps {
     item?: CollectionResource;
     responsiblePersonUUID: string;
     responsiblePersonName: string;
+    navigateToProcess: (uuid: string) => void;
 }
 
-export const CollectionAttributes = connect(mapStateToProps)(withStyles(styles)((props: CollectionAttributesProps & WithStyles<CssRules>) => {
+export const CollectionAttributes = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)((props: CollectionAttributesProps & WithStyles<CssRules>) => {
     if (!props.item) {
         return null;
     }
@@ -98,6 +116,19 @@ export const CollectionAttributes = connect(mapStateToProps)(withStyles(styles)(
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Storage classes' value={item.storageClassesDesired ? item.storageClassesDesired.join(', ') : ["default"]} />
         </Grid>
+        {(item.properties.container_request || item.properties.containerRequest) &&
+            <Grid item xs={12} md={mdSize}
+                onClick={() => props.navigateToProcess(item.properties.container_request || item.properties.containerRequest)}>
+                <DetailsAttribute classLabel={classes.link} label='Link to process' />
+            </Grid>
+        }
+        {isOldVersion &&
+            <Grid item xs={12} md={12}>
+                <Typography className={classes.warningLabel} variant="caption">
+                    This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
+                </Typography>
+            </Grid>
+        }
     </Grid>;
 }));
 
