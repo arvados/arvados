@@ -6,7 +6,7 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { Link } from 'react-router-dom';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, Typography } from '@mui/material';
+import { Grid, Typography, Tooltip, Link as ButtonLink } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect } from "react-redux";
@@ -21,8 +21,9 @@ import { getUserFullname, UserResource } from 'models/user';
 import { Resource, ResourceKind } from 'models/resource';
 import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 
-type CssRules = 'label' | 'value' | 'link' | 'warningLabel'
+type CssRules = 'label' | 'value' | 'link' | 'button' | 'warningLabel'
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
@@ -39,12 +40,15 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             cursor: 'pointer'
         }
     },
+    button: {
+        cursor: 'pointer'
+    },
     warningLabel: {
         fontStyle: 'italic'
     },
 });
 
-const mapStateToProps = (state: RootState): Omit<CollectionAttributesProps, 'navigateToProcess'> => {
+const mapStateToProps = (state: RootState): Omit<CollectionAttributesProps, 'navigateToProcess' | 'showVersionBrowser'> => {
     const item = getResource<CollectionResource>(state.properties.currentRouteUuid)(state.resources);
     const { responsiblePersonUUID, responsiblePersonName } = getResponsibleData(state, item?.uuid);
     return {
@@ -52,8 +56,9 @@ const mapStateToProps = (state: RootState): Omit<CollectionAttributesProps, 'nav
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionAttributesProps, 'navigateToProcess'> => ({
-    navigateToProcess: (uuid: string) => dispatch<any>(navigateToProcess(uuid))
+const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionAttributesProps, 'navigateToProcess' | 'showVersionBrowser'> => ({
+    navigateToProcess: (uuid: string) => dispatch<any>(navigateToProcess(uuid)),
+    showVersionBrowser: (item: CollectionResource) => dispatch<any>(openDetailsPanel(item.uuid, 1))
 });
 
 
@@ -62,6 +67,7 @@ interface CollectionAttributesProps {
     responsiblePersonUUID: string;
     responsiblePersonName: string;
     navigateToProcess: (uuid: string) => void;
+    showVersionBrowser: (item: CollectionResource) => void;
 }
 
 export const CollectionAttributes = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)((props: CollectionAttributesProps & WithStyles<CssRules>) => {
@@ -97,6 +103,19 @@ export const CollectionAttributes = connect(mapStateToProps, mapDispatchToProps)
                 label='Head version'
                 value={isOldVersion ? undefined : 'this one'}
                 linkToUuid={isOldVersion ? item.currentVersionUuid : undefined} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute
+                classLabel={classes.label} classValue={classes.value}
+                label='Version number'
+                value={
+                <Tooltip title="Open version browser">
+                    <ButtonLink underline='none' className={classes.button} onClick={() => props.showVersionBrowser(item)}>
+                        <span data-cy='collection-version-number'>{item.version}</span>
+                    </ButtonLink>
+                </Tooltip>
+                }
+            />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
