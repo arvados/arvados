@@ -34,6 +34,7 @@ describe('ContextMenu', () => {
             });
 
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
 
             cy.get('[data-cy="data-table-row"]').contains('my-context-menu-project-1').rightclick();
             cy.get('[data-cy="context-menu"]').then(($el) => {
@@ -54,7 +55,7 @@ describe('ContextMenu', () => {
             });
 
             cy.loginAs(adminUser);
-            // Set up intercept for the action
+            cy.get('button').contains('Data').click();
 
             cy.get('[data-cy="data-table-row"]').contains('my-context-menu-project-2').rightclick();
             cy.get('[data-cy="context-menu"]').contains('Share').click();
@@ -74,6 +75,7 @@ describe('ContextMenu', () => {
             });
 
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
 
             // Right click on a project
             cy.get('[data-cy="data-table-row"]').contains('my-context-menu-project-3').rightclick();
@@ -94,6 +96,7 @@ describe('ContextMenu', () => {
 
             // Test as non-admin user
             cy.loginAs(activeUser);
+            cy.get('button').contains('Data').click();
 
             cy.get('[data-cy="data-table-row"]').contains('my-context-menu-project-4').rightclick();
             cy.get('[data-cy="context-menu"]').within(() => {
@@ -109,6 +112,7 @@ describe('ContextMenu', () => {
                 manifest_text: '. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n',
             });
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
 
             // Right click on a project
             cy.get('[data-cy="data-table-row"]').contains('my-context-menu-collection').rightclick();
@@ -130,6 +134,7 @@ describe('ContextMenu', () => {
             });
 
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
 
             // Right click on a workflow
             cy.get('[data-cy="data-table-row"]').contains('my-context-menu-workflow.cwl').rightclick();
