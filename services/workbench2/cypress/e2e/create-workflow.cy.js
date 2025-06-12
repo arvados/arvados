@@ -19,7 +19,6 @@ describe('Create workflow tests', function () {
                 activeUser = this.activeUser;
             }
             );
-            
     });
 
     function createNestedHelper(testRemainder) {
@@ -397,6 +396,7 @@ describe('Create workflow tests', function () {
         cy.getAll('@project1', '@project2', '@testWorkflow').then(([project1, project2, testWorkflow]) => {
             cy.loginAs(adminUser);
 
+            cy.get('button').contains('Data').click();
             cy.get('.layout-pane').contains(this.testWorkflow.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Run Workflow').click();
@@ -451,6 +451,7 @@ describe('Create workflow tests', function () {
                 owner_uuid: mySharedWritableProject.uuid,
                 }).as('parentWritableWF');
             cy.contains('Refresh').click();
+            cy.get('button').contains('Data').click();
             cy.get('main').contains(mySharedWritableProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Share').click({ waitForAnimations: false });
@@ -505,6 +506,7 @@ describe('Create workflow tests', function () {
                 owner_uuid: nonAdminReadonlyProject.uuid,
                 }).as('nonAdminReadonlyWF');
             cy.contains('Refresh').click();
+            cy.get('button').contains('Data').click();
             cy.get('main').contains(nonAdminReadonlyProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Share').click({ waitForAnimations: false });
@@ -527,8 +529,10 @@ describe('Create workflow tests', function () {
             // a non-admin can run a wf in a writable project
             cy.contains('Shared with me').click();
             cy.contains(mySharedWritableProject.name).click();
+            cy.waitForDom();
+            cy.get('button').contains('Data').click();
             cy.contains(parentWritableWF.name).click();
-            cy.get('[data-cy=workflow-details-panel-run-btn]').click();
+            cy.get('[data-title="Run Workflow"]').click();
             cy.get('[data-cy=project-picker-details]').contains(mySharedWritableProject.name);
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="${mySharedWritableProject.name}"]`).should('exist');
@@ -536,8 +540,9 @@ describe('Create workflow tests', function () {
             // a non-admin cannot run a wf in a non-writable project, it defaults to the user's root project instead
             cy.contains('Shared with me').click();
             cy.contains(mySharedReadonlyProject.name).click();
+            cy.get('button').contains('Data').click();
             cy.contains(parentReadonlyWF.name).click();
-            cy.get('[data-cy=workflow-details-panel-run-btn]').click();
+            cy.get('[data-title="Run Workflow"]').click();
             cy.get('[data-cy=project-picker-details]').contains("Active User (root project)");
             cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             cy.get(`input[value="Active User (root project)"]`).should('exist');
@@ -608,6 +613,7 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(activeUser);
+                cy.get('button').contains('Data').click();
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -699,6 +705,7 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(activeUser);
+                cy.get('button').contains('Data').click();
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -773,6 +780,7 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(activeUser);
+                cy.get('button').contains('Data').click();
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -796,6 +804,7 @@ describe('Create workflow tests', function () {
                     });
             cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
 
+            cy.get('button').contains('Inputs').click();
             cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
             cy.get('[data-cy=process-io-card]').should('contain', 'Cannot display secret');
             cy.get('[data-cy=process-io-card]').should('not.contain', 'secret_value_xyz');
@@ -845,6 +854,7 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(adminUser);
+                cy.get('button').contains('Data').click();
 
                 cy.get('main').contains(myProject1.name).click();
 
