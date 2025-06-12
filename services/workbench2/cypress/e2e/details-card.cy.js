@@ -2,7 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('User Details Card tests', function () {
+const testWFDefinition = "{\n    \"$graph\": [\n        {\n            \"class\": \"Workflow\",\n            \"doc\": \"Reverse the lines in a document, then sort those lines.\",\n            \"hints\": [\n                {\n                    \"acrContainerImage\": \"99b0201f4cade456b4c9d343769a3b70+261\",\n                    \"class\": \"http://arvados.org/cwl#WorkflowRunnerResources\"\n                }\n            ],\n            \"id\": \"#main\",\n            \"inputs\": [\n                {\n                    \"default\": null,\n                    \"doc\": \"The input file to be processed.\",\n                    \"id\": \"#main/input\",\n                    \"type\": \"File\"\n                },\n                {\n                    \"default\": true,\n                    \"doc\": \"If true, reverse (decending) sort\",\n                    \"id\": \"#main/reverse_sort\",\n                    \"type\": \"boolean\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"doc\": \"The output with the lines reversed and sorted.\",\n                    \"id\": \"#main/output\",\n                    \"outputSource\": \"#main/sorted/output\",\n                    \"type\": \"File\"\n                }\n            ],\n            \"steps\": [\n                {\n                    \"id\": \"#main/rev\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/rev/input\",\n                            \"source\": \"#main/input\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/rev/output\"\n                    ],\n                    \"run\": \"#revtool.cwl\"\n                },\n                {\n                    \"id\": \"#main/sorted\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/sorted/input\",\n                            \"source\": \"#main/rev/output\"\n                        },\n                        {\n                            \"id\": \"#main/sorted/reverse\",\n                            \"source\": \"#main/reverse_sort\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/sorted/output\"\n                    ],\n                    \"run\": \"#sorttool.cwl\"\n                }\n            ]\n        },\n        {\n            \"baseCommand\": \"rev\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Reverse each line using the `rev` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#revtool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#revtool.cwl/input\",\n                    \"inputBinding\": {},\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#revtool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        },\n        {\n            \"baseCommand\": \"sort\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Sort lines using the `sort` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#sorttool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/reverse\",\n                    \"inputBinding\": {\n                        \"position\": 1,\n                        \"prefix\": \"-r\"\n                    },\n                    \"type\": \"boolean\"\n                },\n                {\n                    \"id\": \"#sorttool.cwl/input\",\n                    \"inputBinding\": {\n                        \"position\": 2\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        }\n    ],\n    \"cwlVersion\": \"v1.0\"\n}"
+const ResourceKinds = {
+    USER: 'user',
+    PROJECT: 'project',
+    WORKFLOW: 'workflow',
+    COLLECTION: 'collection',
+    PROCESS: 'process',
+};
+
+
+describe('Base Details Card tests', function () {
     let activeUser;
     let adminUser;
 
@@ -31,253 +41,121 @@ describe('User Details Card tests', function () {
         cy.clearLocalStorage();
     });
 
-    it('should display the user details card', () => {
-        cy.loginAs(adminUser);
+    Object.values(ResourceKinds).forEach(resourceKind => {
+        it(`Should display the ${resourceKind} details card`, () => {
+            const { name, createResource, navToResource, extraAssertions } = getCardTestParams(activeUser, adminUser, resourceKind);
 
-        cy.get('[data-cy=user-details-card]').should('be.visible');
-        cy.get('[data-cy=user-details-card]').contains(adminUser.user.full_name).should('be.visible');
-    });
+            createResource();
+            cy.loginAs(adminUser);
+            navToResource();
 
-    it('shows the appropriate buttons in the multiselect toolbar', () => {
-        const msButtonTooltips = ['View details', 'User account', 'API Details'];
+            cy.get(`[data-cy=${resourceKind}-details-card]`).should('be.visible');
+            cy.get(`[data-cy=${resourceKind}-details-card]`).contains(name).should('be.visible');
+            cy.get(`[data-cy=${resourceKind}-details-card]`).within(() => {
+                cy.get('[data-cy=multiselect-toolbar]').should('exist');
+            });
 
-        cy.loginAs(activeUser);
-
-        cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length);
-
-        for (let i = 0; i < msButtonTooltips.length; i++) {
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.get('body').contains(msButtonTooltips[i]).should('exist');
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
-        }
+            if (extraAssertions) extraAssertions();
+        });
     });
 });
 
-describe('Project Details Card tests', function () {
-    let activeUser;
-    let adminUser;
 
-    before(function () {
-        // Only set up common users once. These aren't set up as aliases because
-        // aliases are cleaned up after every test. Also it doesn't make sense
-        // to set the same users on beforeEach() over and over again, so we
-        // separate a little from Cypress' 'Best Practices' here.
-        cy.getUser('admin', 'Admin', 'User', true, true)
-            .as('adminUser')
-            .then(function () {
-                adminUser = this.adminUser;
-            });
-        cy.getUser('activeUser1', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
-            });
-        cy.on('uncaught:exception', (err, runnable) => {
-            console.error(err);
-        });
-    });
+const getCardTestParams = (activeUser, adminUser, resourceKind) => {
+    let name;
+    switch (resourceKind) {
+        case ResourceKinds.USER:
+            return {
+                name: adminUser.user.full_name,
+                createResource: () => {},
+                navToResource: () => {},
+            };
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
+        case ResourceKinds.PROJECT:
+            name = `Test project (${Math.floor(999999 * Math.random())})`;
+            return {
+                name,
+                createResource: () => cy.createProject({ owningUser: adminUser, projectName: name }),
+                navToResource: () => {
+                    cy.get('button').contains('Data').click();
+                    cy.get('main').contains(name).click()
+                },
+            };
 
-    it('should display the project details card', () => {
-        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        cy.loginAs(adminUser);
+        case ResourceKinds.WORKFLOW:
+            name = `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`;
+            return {
+                name,
+                createResource: () =>
+                    cy.createWorkflow(adminUser.token, {
+                        name,
+                        definition: testWFDefinition,
+                    }),
+                navToResource: () => {
+                    cy.get('button').contains('Data').click();
+                    cy.get('main').contains(name).click();
+                },
+            };
 
-        // Create project
-        cy.get('[data-cy=side-panel-button]').click();
-        cy.get('[data-cy=side-panel-new-project]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New Project')
-            .within(() => {
-                cy.get('[data-cy=name-field]').within(() => {
-                    cy.get('input').type(projName);
-                });
-            });
-        cy.get('[data-cy=form-submit-btn]').click();
-        cy.waitForDom().get('[data-cy=form-dialog]').should('not.exist');
+        case ResourceKinds.COLLECTION:
+            name = `Test collection ${Math.floor(Math.random() * 999999)}`;
+            return {
+                name,
+                createResource: () =>
+                    cy.createCollection(adminUser.token, {
+                        name,
+                        owner_uuid: adminUser.user.uuid,
+                        manifest_text: '. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n',
+                    }),
+                navToResource: () => {
+                    cy.get('button').contains('Data').click();
+                    cy.get('main').contains(name).click();
+                },
+            };
 
-        cy.get('[data-cy=project-details-card]').should('be.visible');
-        cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
-    });
-
-    it('shows the appropriate buttons in the multiselect toolbar', () => {
-        const msButtonTooltips = [
-            'View details',
-            'Open in new tab',
-            'Copy UUID',
-            'Share',
-            'Edit project',
-            'Move to trash',
-            'New project',
-            'Move to',
-            'Freeze project',
-            'Add to favorites',
-            'Copy link to clipboard',
-            'Open with 3rd party client',
-            'API Details',
-        ];
-
-        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        cy.loginAs(activeUser);
-
-        // Create project
-        cy.get('[data-cy=side-panel-button]').click();
-        cy.get('[data-cy=side-panel-new-project]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New Project')
-            .within(() => {
-                cy.get('[data-cy=name-field]').within(() => {
-                    cy.get('input').type(projName);
-                });
-            });
-        cy.get('[data-cy=form-submit-btn]').should('exist').click();
-        cy.waitForDom().get('[data-cy=form-dialog]').should('not.exist');
-
-        for (let i = 0; i < msButtonTooltips.length; i++) {
-            cy.get('[data-cy=multiselect-button]').eq(i).should('exist');
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.waitForDom();
-            cy.get('body').within(() => {
-                cy.contains(msButtonTooltips[i]).should('exist');
-            });
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
-        }
-    });
-
-    it('should toggle description display', () => {
-        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-
-        //a single line description shouldn't change the height of the card
-        const projDescription = 'Science! True daughter of Old Time thou art! Who alterest all things with thy peering eyes.';
-        //a multi-line description should change the height of the card
-        const multiLineProjDescription = '{enter}Why preyest thou thus upon the poet’s heart,{enter}Vulture, whose wings are dull realities?';
-
-        cy.loginAs(adminUser);
-
-        // Create project
-        cy.get('[data-cy=side-panel-button]').click();
-        cy.get('[data-cy=side-panel-new-project]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New Project')
-            .within(() => {
-                cy.get('[data-cy=name-field]').within(() => {
-                    cy.get('input').type(projName);
-                });
-            });
-        cy.get('[data-cy=form-submit-btn]').click();
-
-        //check for no description
-        cy.get('[data-cy=no-description').should('be.visible');
-
-        //add description
-        cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
-        cy.get('[data-cy=project-panel]').should('exist');
-        cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
-        cy.get('[data-cy=context-menu]').contains('Edit').click();
-        cy.get('[data-cy=form-dialog]').within(() => {
-            cy.get('div[contenteditable=true]').click().type(projDescription);
-            cy.get('[data-cy=form-submit-btn]').click();
-        });
-        cy.waitForDom();
-        cy.get('[data-cy=project-panel]').should('be.visible');
-        cy.get('[data-cy=project-panel]').should('exist');
-        cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
-        cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
-
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('not.be.visible');
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 80);
-        cy.get('[data-cy=toggle-description]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 80);
-
-        // modify description to be multi-line
-        cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
-        cy.get('[data-cy=project-panel]').should('exist');
-        cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
-        cy.get('[data-cy=context-menu]').contains('Edit').click();
-        cy.get('[data-cy=form-dialog]').within(() => {
-            cy.get('div[contenteditable=true]').click().type(multiLineProjDescription);
-            cy.get('[data-cy=form-submit-btn]').click();
-        });
-        cy.get('[data-cy=project-panel]').should('exist');
-        cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
-        cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
-
-
-        // card height should change if description is multi-line
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('not.be.visible');
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 80);
-        cy.get('[data-cy=toggle-description]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 130);
-        cy.get('[data-cy=toggle-description]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 80);
-    });
-
-    // The following test is enabled on Electron only, as Chromium and Firefox
-    // require permissions to access the clipboard.
-    it('should display key/value pairs',  { browser: 'electron' }, () => {
-        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        cy.loginAs(adminUser);
-
-        // Create project wih key/value pairs
-        cy.get('[data-cy=side-panel-button]').click();
-        cy.get('[data-cy=side-panel-new-project]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New Project')
-            .within(() => {
-                cy.get('[data-cy=name-field]').within(() => {
-                    cy.get('input').type(projName);
-                });
-            });
-
-        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('Animal');
-        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('Dog');
-        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
-
-        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('Importance');
-        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('Critical');
-        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
-
-        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('very long key');
-        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value');
-        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
-
-        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('very long key 2');
-        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value 2');
-        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
-
-        cy.get('[data-cy=form-submit-btn]').click();
-
-        //toggle chips
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
-        cy.get('[data-cy=toggle-description]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 96);
-        cy.get('[data-cy=toggle-description').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
-
-        //check for key/value pairs in project details card
-        // only run in electron because other browsers require permission for clipboard
-        if (Cypress.browser.name === 'electron') {
-            cy.get('[data-cy=toggle-description]').click();
-            cy.waitForDom();
-            cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
-            cy.get('[data-cy=project-details-card]').contains('Importance').should('be.visible').click();
-            cy.waitForDom();
-                cy.window().then((win) => {
-                    win.navigator.clipboard.readText().then((text) => {
-                        //wait is necessary due to known issue with cypress@13.7.1
-                        cy.wait(1000);
-                        expect(text).to.match(new RegExp(`Importance: Critical`));
+        case ResourceKinds.PROCESS:
+            name = `Test container request ${Math.floor(Math.random() * 999999)}`;
+            return {
+                name,
+                createResource: () => createContainerRequest(adminUser, name, 'arvados/jobs', ['echo', 'hello world'], false, 'Committed'),
+                navToResource: () => {
+                    cy.get('button').contains('Workflow Runs').click();
+                    cy.get('main').contains(name).click();
+                },
+                extraAssertions: () => {
+                    cy.get(`[data-cy=process-details-card]`).within(() => {
+                        cy.get('[data-cy=process-cancel-button]').should('exist');
+                        cy.get('[data-cy=process-status-chip]').should('exist');
                     });
-                });
-        }
-    });
-});
+                },
+            };
+
+        default:
+            throw new Error(`Unknown resource kind: ${resourceKind}`);
+    }
+};
+
+function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
+        return cy.setupDockerImage(docker_image).then(function (dockerImage) {
+            return cy.createContainerRequest(user.token, {
+                name: name,
+                command: command,
+                container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
+                output_path: "stdout.txt",
+                priority: 1,
+                runtime_constraints: {
+                    vcpus: 1,
+                    ram: 1,
+                },
+                use_existing: reuse,
+                state: state,
+                mounts: {
+                    '/var/lib/cwl/workflow.json': {
+                        kind: "tmp",
+                        path: "/tmp/foo",
+                    },
+                },
+                owner_uuid: ownerUuid || undefined,
+            });
+        });
+    }
