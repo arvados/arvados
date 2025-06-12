@@ -21,8 +21,6 @@ Options:
     Distribution to build packages for
 --only-build <package>
     Build only a specific package (or ONLY_BUILD from environment)
---arch <arch>
-    Build a specific architecture (or ARCH from environment, defaults to native architecture)
 --force-build
     Build even if the package exists upstream or if it has already been
     built locally
@@ -75,6 +73,13 @@ while [ $# -gt 0 ]; do
             FORCE_BUILD=1
             ;;
         --arch)
+            case "$2" in
+                amd64) ;;
+                *)
+                    printf "FATAL: --arch '%s' is not supported" "$2" >&2
+                    exit 2
+                    ;;
+            esac
             ARCH="$2"; shift
             ;;
         --debug)

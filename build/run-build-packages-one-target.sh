@@ -21,8 +21,6 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
---arch <arch>
-    Build a specific architecture (amd64 or arm64, defaults to native architecture)
 --force-build
     Build even if the package exists upstream or if it has already been
     built locally
@@ -95,6 +93,13 @@ while [ $# -gt 0 ]; do
             ONLY_BUILD="$2"; shift
             ;;
         --arch)
+            case "$2" in
+                amd64) ;;
+                *)
+                    printf "FATAL: --arch '%s' is not supported" "$2" >&2
+                    exit 2
+                    ;;
+            esac
             ARCH="$2"; shift
             ;;
         --debug)

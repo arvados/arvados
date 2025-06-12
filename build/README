@@ -20,10 +20,6 @@ This will build package build and test Docker images for the named target
 distribution, build all packages in a build container, then test all
 packages in a test container.
 
-Limit the build to a single architecture by adding the `--arch ARCH`
-option. Supported architectures are amd64 and arm64. Note cross-compilation
-from amd64 to arm64 is currently only supported on Debian 11+.
-
 Limit the build to a single package by adding the `--only-build
 PACKAGE_NAME` option. This is helpful when a build is mostly in good shape
 and you're tracking down last bugs in one or two packages.

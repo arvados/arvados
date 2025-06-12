@@ -87,9 +87,6 @@ get_native_arch() {
     x86_64)
       native_arch="amd64"
       ;;
-    aarch64)
-      native_arch="arm64"
-      ;;
     *)
       echo "Error: architecture not supported"
       exit 1
@@ -171,7 +168,7 @@ calculate_go_package_version() {
   __returnvar="$version"
 }
 
-# Usage: package_go_binary services/foo arvados-foo [deb|rpm] [amd64|arm64] "Compute foo to arbitrary precision" [apache-2.0.txt]
+# Usage: package_go_binary services/foo arvados-foo [deb|rpm] [amd64] "Compute foo to arbitrary precision" [apache-2.0.txt]
 package_go_binary() {
   local src_path="$1"; shift
   local prog="$1"; shift
@@ -213,12 +210,8 @@ package_go_binary() {
   if [[ -n "$target_arch" ]]; then
     archs=($target_arch)
   else
-    # No target architecture specified, default to native target. When on amd64
-    # also crosscompile arm64 (when supported).
+    # No target architecture specified, default to native target.
     archs=($native_arch)
-    if [[ $cross_compilation -ne 0 ]]; then
-      archs+=("arm64")
-    fi
   fi
 
   for ta in ${archs[@]}; do
@@ -230,7 +223,7 @@ package_go_binary() {
   done
 }
 
-# Usage: package_go_binary services/foo arvados-foo deb "Compute foo to arbitrary precision" [amd64/arm64] [amd64/arm64] [apache-2.0.txt]
+# Usage: package_go_binary services/foo arvados-foo deb "Compute foo to arbitrary precision" [amd64] [amd64] [apache-2.0.txt]
 package_go_binary_worker() {
     local src_path="$1"; shift
     local prog="$1"; shift
@@ -251,11 +244,7 @@ package_go_binary_worker() {
     fi
 
     echo "Building $package_format ($target_arch) package for $prog from $src_path"
-    if [[ "$native_arch" == "amd64" ]] && [[ "$target_arch" == "arm64" ]]; then
-      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${target_arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
-    else
-      GOARCH=${arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
-    fi
+    GOARCH=${arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
 
     local -a switches=()
 
@@ -290,7 +279,7 @@ package_go_so() {
     local sofile="$1"; shift
     local pkg="$1"; shift
     local package_format="$1"; shift
-    local target_arch="$1"; shift # supported: amd64, arm64
+    local target_arch="$1"; shift # supported: amd64
     local description="$1"; shift
 
     if [[ -n "$ONLY_BUILD" ]] && [[ "$pkg" != "$ONLY_BUILD" ]]; then
@@ -403,9 +392,6 @@ get_complete_package_name() {
   if [[ "$arch" == "" ]]; then
     native_arch=$(get_native_arch)
     rpm_native_arch="x86_64"
-    if [[ "$HOSTTYPE" == "aarch64" ]]; then
-      rpm_native_arch="arm64"
-    fi
     rpm_architecture="$rpm_native_arch"
     deb_architecture="$native_arch"
 
@@ -579,7 +565,7 @@ BEGIN { OFS="\0"; ORS="\0"; }
     rm -rf "$scripts_dir"
 }
 
-# Usage: handle_api_server [amd64|arm64]
+# Usage: handle_api_server [amd64]
 handle_api_server () {
   local target_arch="${1:-amd64}"; shift
 
@@ -650,26 +636,18 @@ setup_build_virtualenv() {
 }
 
 # Build python packages with a virtualenv built-in
-# Usage: fpm_build_virtualenv arvados-python-client sdk/python [deb|rpm] [amd64|arm64]
+# Usage: fpm_build_virtualenv arvados-python-client sdk/python [deb|rpm] [amd64]
 fpm_build_virtualenv () {
   local pkg=$1; shift
   local pkg_dir=$1; shift
   local package_format="$1"; shift
   local target_arch="${1:-amd64}"; shift
 
-  native_arch=$(get_native_arch)
-  if [[ -n "$target_arch" ]] && [[ "$native_arch" == "$target_arch" ]]; then
-      fpm_build_virtualenv_worker "$pkg" "$pkg_dir" "$package_format" "$native_arch" "$target_arch"
-  elif [[ -z "$target_arch" ]]; then
-    fpm_build_virtualenv_worker "$pkg" "$pkg_dir" "$package_format" "$native_arch" "$native_arch"
-  else
-    echo "Error: no cross compilation support for Python yet, can not build $pkg for $target_arch"
-    return 1
-  fi
+  fpm_build_virtualenv_worker "$pkg" "$pkg_dir" "$package_format" amd64 amd64
 }
 
 # Build python packages with a virtualenv built-in
-# Usage: fpm_build_virtualenv_worker arvados-python-client sdk/python python3 [deb|rpm] [amd64|arm64] [amd64|arm64]
+# Usage: fpm_build_virtualenv_worker arvados-python-client sdk/python python3 [deb|rpm] [amd64] [amd64]
 fpm_build_virtualenv_worker () {
   PKG=$1; shift
   PKG_DIR=$1; shift
