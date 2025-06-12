@@ -14,10 +14,9 @@
 # have everything they need to clone the Arvados source and run
 # `build/run-tests.sh`.
 #
-# Another useful group is `arvados_build_all`. Hosts in this group will have
-# enough software to build Arvados binaries and language packages like Ruby
-# gems. This is NOT enough software to run an Arvados cluster; it's mainly
-# useful for building distribution packages and related tooling.
+# Another useful group is `arvados_build_one_target`. Hosts in this group
+# will have enough software to build Arvados istribution packages. It's
+# meant to run inside Docker containers for different target distributions.
 #
 ### Example Inventory
 #
