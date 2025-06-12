@@ -3,10 +3,16 @@ Prerequisites
 
 In order to build packages, you will need:
 
+* Ansible installed following the instructions in `tools/ansible/README.md`
+* `ansible-galaxy` and `ansible-playbook` in `$PATH` (e.g., by activating
+  your Ansible virtualenv, or having symlinks to those commands inside it)
 * Docker installed
 * permission to run Docker commands
 * the `WORKSPACE` environment variable set to the absolute path of an
   Arvados Git work tree
+
+The Ansible playbook `tools/ansible/install-dev-tools.yml` can install all
+of these prerequisites except the last.
 
 Quickstart
 ==========
