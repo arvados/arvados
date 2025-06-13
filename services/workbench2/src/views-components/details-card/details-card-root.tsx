@@ -48,7 +48,7 @@ export const DetailsCardRoot = connect(mapStateToProps, mapDispatchToProps)(({ c
             setSelectedResourceUuid(currentResource.uuid);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentResource]);
+    }, [currentResource.uuid]);
 
     switch (currentResource.kind as string) {
         case ResourceKind.USER:
