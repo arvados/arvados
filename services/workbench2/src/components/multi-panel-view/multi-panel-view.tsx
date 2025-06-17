@@ -172,11 +172,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
     if (isArray(children)) {
         const showFn = (idx: number) => () => {
             // Hide all other panels
-            setPanelVisibility([
-                ...(new Array(idx).fill(false)),
-                true,
-                ...(new Array(panelVisibility.length-(idx+1)).fill(false)),
-            ]);
+            setPanelVisibility(Array.from({ length: (children as ReactNode[]).length }, (_, index) => index === idx));
             setSelectedPanel(idx);
         };
 
