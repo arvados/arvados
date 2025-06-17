@@ -465,7 +465,7 @@ test_package_presence() {
           return 0
           ;;
       esac
-      pkg_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
+      pkg_url="https://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
     fi
 
     if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$pkg_url"; then
