@@ -21,8 +21,6 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
---arch <arch>
-    Build a specific architecture (amd64 or arm64, defaults to native architecture)
 --force-build
     Build even if the package exists upstream or if it has already been
     built locally
@@ -65,7 +63,7 @@ if [ $? -ne 0 ]; then
 fi
 
 FORCE_BUILD=0
-COMMAND=
+COMMAND=run-build-packages.sh
 DEBUG=
 TARGET=
 
@@ -95,6 +93,13 @@ while [ $# -gt 0 ]; do
             ONLY_BUILD="$2"; shift
             ;;
         --arch)
+            case "$2" in
+                amd64) ;;
+                *)
+                    printf "FATAL: --arch '%s' is not supported" "$2" >&2
+                    exit 2
+                    ;;
+            esac
             ARCH="$2"; shift
             ;;
         --debug)
@@ -142,7 +147,7 @@ orig_umask="$(umask)"
 if [[ -z "$TARGET" ]]; then
     echo "FATAL: --target must be specified" >&2
     exit 2
-elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+elif [[ ! -e "$WORKSPACE/build/package-testing/test-packages-$TARGET.sh" ]]; then
     echo "FATAL: unknown build target '$TARGET'" >&2
     exit 2
 fi
@@ -197,34 +202,29 @@ if [[ -n "$test_packages" ]]; then
   umask "$orig_umask"
 else
   IMAGE="arvados/build:$TARGET"
-  if [[ "$COMMAND" != "" ]]; then
-    COMMAND="bash /jenkins/$COMMAND --target $TARGET$DEBUG"
-  fi
+  COMMAND="bash /jenkins/$COMMAND --target $TARGET$DEBUG"
 fi
 
 JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
 if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
+  env -C "$WORKSPACE/tools/ansible" ansible-galaxy install -r requirements.yml
+  declare -a ansible_opts=()
   if [[ -n "$test_packages" ]]; then
-    env -C "$WORKSPACE/tools/ansible" ansible-galaxy install -r requirements.yml
-    env -C "$WORKSPACE/tools/ansible" ansible-playbook \
-        --extra-vars=arvados_build_playbook=setup-package-tests.yml \
-        --inventory=files/development-docker-images.yml \
-        --limit="arvados_pkgtest_$TARGET" \
-        build-docker-image.yml
+      ansible_opts+=(
+          --extra-vars=arvados_build_playbook=setup-package-tests.yml
+          --limit="arvados_pkgtest_$TARGET"
+      )
   else
-	pushd "$JENKINS_DIR/package-build-dockerfiles"
-	make "$TARGET/generated"
-    GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
-
-    echo $TARGET
-    cd $TARGET
-    time docker build --tag "$IMAGE" \
-	 --build-arg HOSTTYPE=$HOSTTYPE \
-	 --build-arg BRANCH=$(git rev-parse HEAD) \
-	 --build-arg GOVERSION=$GOVERSION --no-cache .
-    popd
+      ansible_opts+=(
+          --extra-vars=arvados_build_playbook=install-dev-tools.yml
+          --limit="arvados_pkgbuild_$TARGET"
+      )
   fi
+  env -C "$WORKSPACE/tools/ansible" ansible-playbook \
+      --inventory=files/development-docker-images.yml \
+      "${ansible_opts[@]}" build-docker-image.yml
+  unset ansible_opts
 fi
 
 if test -z "$packages" ; then

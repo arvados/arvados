@@ -2,8 +2,5 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-case "$TARGET" in
-    debian* | ubuntu*)
-        fpm_depends+=(libcurl4)
-        ;;
-esac
+package_state: present
+task_name: Install packages

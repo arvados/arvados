@@ -5,6 +5,7 @@
 
 import dataclasses
 import ipaddress
+import itertools
 import operator
 import socket
 import typing as t
@@ -13,6 +14,57 @@ import urllib.parse
 from collections import abc
 
 Config = abc.Mapping[str, t.Any]
+DistroID = t.Tuple[str, str]
+PackageMapping = abc.Mapping[str, t.List[str]]
+
+# This mapping defines all the distributions we support. The values translate
+# package names from the latest supported Debian to the named distribution.
+_PACKAGE_NAMES_MAP: t.Dict[DistroID, PackageMapping] = {
+    ('Debian', '11'): {},
+    ('Debian', '12'): {},
+    ('Ubuntu', '20'): {
+        'pkgconf': ['pkg-config'],
+    },
+    ('Ubuntu', '22'): {},
+    ('Ubuntu', '24'): {},
+}
+# Unversioned package translation table for RHEL-based distributions.
+_RHEL_BASE: PackageMapping = {
+        'g++': ['gcc-c++'],
+        'libcurl4-openssl-dev': ['libcurl-devel'],
+        'libfuse-dev': ['fuse-devel'],
+        'libpam-dev': ['pam-devel'],
+        'libpq-dev': ['postgresql-devel'],
+        'libssl-dev': ['openssl-devel'],
+        'libyaml-dev': ['libyaml-devel'],
+        'postgresql': ['postgresql-server'],
+        'postgresql-client': ['postgresql'],
+        'procps': ['procps-ng'],
+        'python3-dev': ['python3-devel'],
+        'python3-venv': ['python3'],
+        'ruby-dev': ['ruby-devel'],
+        'xz-utils': ['xz'],
+        'zlib1g-dev': ['zlib-devel'],
+}
+# Versions of RHEL we support and their version-specific package translations.
+_RHEL_VERSIONS: t.Dict[str, PackageMapping] = {
+    '8': _RHEL_BASE | {
+        'python3-dev': ['python39-devel'],
+        'python3-venv': ['python39'],
+    },
+    '9': _RHEL_BASE | {
+        'python3-dev': ['python3.11-devel'],
+        'python3-venv': ['python3.11'],
+    },
+}
+# Add all the RHEL variants we support to _PACKAGE_NAMES_MAP.
+for _name, (_version, _mapping) in itertools.product([
+        'AlmaLinux',
+        'Red Hat Enterprise Linux',
+        'Rocky',
+], _RHEL_VERSIONS.items()):
+    _PACKAGE_NAMES_MAP[(_name, _version)] = _mapping
+del _RHEL_BASE, _RHEL_VERSIONS, _name, _version, _mapping
 
 class FilterModule:
     """Export functions as Jinja filters to Ansible"""
@@ -81,6 +133,33 @@ class ListenAddress:
 
     def __str__(self) -> str:
         return f'{self.address}:{self.port}'
+
+
+@FilterModule.register
+def distro_packages(
+        names: abc.Sequence[str],
+        distro_name: str,
+        distro_version: str,
+) -> abc.Iterator[str]:
+    """Translate package names from Debian stable to a target distribution
+
+    Given a list of Debian stable package names, iterates the equivalent package
+    names for the given distribution+version. These typically come from the
+    `ansible_distribution` and `ansible_distribution_major_version` facts.
+    """
+    if isinstance(names, str):
+        names = [names]
+    try:
+        names_map = _PACKAGE_NAMES_MAP[(distro_name, distro_version)]
+    except KeyError:
+        raise ValueError(f"no package translations available for {distro_name} {distro_version}") from None
+    for name in names:
+        try:
+            translation = names_map[name]
+        except KeyError:
+            yield name
+        else:
+            yield from translation
 
 
 @FilterModule.register

@@ -5,6 +5,40 @@
 # This inventory defines container names, base images, and built image tags
 # for the `build-docker-image.yml` playbook.
 
+all:
+  vars:
+    ansible_connection: docker
+    ansible_user: root
+    arvados_dnf_command: "microdnf --assumeyes"
+    distro_bootstrap_dnf_command: "{{ arvados_dnf_command }}"
+
+arvados_build_one_target:
+  hosts:
+    arvados_pkgbuild_debian11:
+      arvados_docker_from: debian:11-slim
+      arvados_docker_tag: arvados/build:debian11
+    arvados_pkgbuild_debian12:
+      arvados_docker_from: debian:12-slim
+      arvados_docker_tag: arvados/build:debian12
+    arvados_pkgbuild_ubuntu2004:
+      arvados_docker_from: ubuntu:focal
+      arvados_docker_tag: arvados/build:ubuntu2004
+    arvados_pkgbuild_ubuntu2204:
+      arvados_docker_from: ubuntu:jammy
+      arvados_docker_tag: arvados/build:ubuntu2204
+    arvados_pkgbuild_ubuntu2404:
+      arvados_docker_from: ubuntu:noble
+      arvados_docker_tag: arvados/build:ubuntu2404
+    arvados_pkgbuild_rocky8:
+      arvados_docker_from: rockylinux:8-minimal
+      arvados_docker_tag: arvados/build:rocky8
+    arvados_pkgbuild_rocky9:
+      arvados_docker_from: rockylinux:9-minimal
+      arvados_docker_tag: arvados/build:rocky9
+  vars:
+    arvados_docker_changes:
+      - "ENV WORKSPACE=/arvados"
+
 arvados_package_tests:
   hosts:
     arvados_pkgtest_debian11:
@@ -25,20 +59,11 @@ arvados_package_tests:
     arvados_pkgtest_rocky8:
       arvados_docker_from: rockylinux:8-minimal
       arvados_docker_tag: arvados/package-test:rocky8
-      arvados_pkgtest_dnf_modules:
-        - postgresql:10
-        - python39:3.9
-        - ruby:3.1
       arvados_pkgtest_dnf_devel_basename: Rocky-PowerTools
       arvados_pkgtest_dnf_devel_section: powertools
     arvados_pkgtest_rocky9:
       arvados_docker_from: rockylinux:9-minimal
       arvados_docker_tag: arvados/package-test:rocky9
-      arvados_pkgtest_dnf_modules:
-        - ruby:3.1
   vars:
-    ansible_connection: docker
-    ansible_user: root
     arvados_docker_changes:
       - "ENV DEBIAN_FRONTEND=noninteractive"
-    distro_bootstrap_dnf_command: "microdnf --assumeyes"

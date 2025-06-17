@@ -120,7 +120,7 @@ done
 if [[ -z "$TARGET" ]]; then
     echo "FATAL: --target must be specified" >&2
     exit 2
-elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+elif [[ ! -e "$WORKSPACE/build/package-testing/test-packages-$TARGET.sh" ]]; then
     echo "FATAL: unknown build target '$TARGET'" >&2
     exit 2
 fi
