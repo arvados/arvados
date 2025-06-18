@@ -28,7 +28,8 @@ describe('Registered workflow panel tests', function() {
             .then(function(workflowResource) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/workflows/${workflowResource.uuid}`);
-                cy.get('[data-cy=registered-workflow-info-panel]').should('contain', workflowResource.name);
+                cy.get('button').contains('Overview').click();
+                cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
                 cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
             });
     });
@@ -38,7 +39,8 @@ describe('Registered workflow panel tests', function() {
             .then(function(workflowResource) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/workflows/${workflowResource.uuid}`);
-                cy.get('[data-cy=registered-workflow-info-panel]').should('contain', workflowResource.name);
+                cy.get('button').contains('Overview').click();
+                cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
                 cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
             });
     });
@@ -87,7 +89,8 @@ describe('Registered workflow panel tests', function() {
         }}).then(function(workflowResource) {
             cy.loginAs(activeUser);
             cy.goToPath(`/workflows/${workflowResource.uuid}`);
-            cy.get('[data-cy=registered-workflow-info-panel]').should('contain', workflowResource.name);
+            cy.get('button').contains('Overview').click();
+            cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
             cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
         });
     });
@@ -212,21 +215,25 @@ describe('Registered workflow panel tests', function() {
                 }}).then(function(workflowResource) {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/workflows/${workflowResource.uuid}`);
-                    cy.get('[data-cy=registered-workflow-info-panel]').should('contain', workflowResource.name);
+                    cy.get('button').contains('Overview').click();
+                    cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
                     cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
                     cy.get('[data-cy=registered-workflow-info-panel')
                         .should('contain', 'gitCommit: 9b091ed7e0bef98b3312e9478c52b89ba25792de')
 
+                    cy.get('button').contains('Inputs').click();
                     cy.get('[data-cy=process-io-card] h6').contains('Input Parameters')
                         .parents('[data-cy=process-io-card]').within(() => {
                             verifyIOParameter('file1', null, '', '', '');
                             verifyIOParameter('numbering', null, '', '', '');
                             verifyIOParameter('args.py', null, '', 'args.py', 'de738550734533c5027997c87dc5488e+53');
                         });
+                    cy.get('button').contains('Outputs').click();
                     cy.get('[data-cy=process-io-card] h6').contains('Output Parameters')
                         .parents('[data-cy=process-io-card]').within(() => {
                             verifyIOParameter('args', null, '', '', '');
                         });
+                    cy.get('button').contains('Definition').click();
                     cy.get('[data-cy=collection-files-panel]').within(() => {
                         cy.get('[data-cy=collection-files-right-panel]', { timeout: 5000 })
                             .should('contain', 'bar');
@@ -240,6 +247,7 @@ describe('Registered workflow panel tests', function() {
             .then(function(workflowResource) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/projects/${activeUser.user.uuid}`);
+                cy.get('button').contains('Data').click();
                 cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
                 cy.get('[data-cy=context-menu]').should('exist', { timeout: 10000})
                 cy.get('[data-cy="Delete Workflow"]').click();
@@ -255,13 +263,13 @@ describe('Registered workflow panel tests', function() {
         wfNames.forEach((wfName) => {
             cy.createResource(activeUser.token, "workflows", {workflow: {name: wfName}})
         });
-        
+
         cy.loginAs(activeUser);
 
         wfNames.forEach((wfName) => {
             cy.get('tr').contains('td', wfName).should('exist', { timeout: 10000 }).parent('tr').find('input[type="checkbox"]').click();
         });
-        
+
         cy.waitForDom().get('[data-cy=multiselect-button]', {timeout: 10000}).should('be.visible')
         cy.get('[data-cy=multiselect-button]', {timeout: 10000}).should('have.length', '1').trigger('mouseover');
         cy.get('body').contains('Delete Workflow', {timeout: 10000}).should('exist')
@@ -288,6 +296,7 @@ describe('Registered workflow panel tests', function() {
                         cy.loginAs(activeUser);
                         cy.goToPath(`/shared-with-me`);
                         cy.contains("mySharedReadonlyProject").click();
+                        cy.get('button').contains('Data').click();
                         cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
                         cy.get('[data-cy=context-menu]').should("not.contain", 'Delete Workflow');
                     });
