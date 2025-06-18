@@ -28,6 +28,7 @@ import { OverviewPanel } from 'components/overview-panel/overview-panel';
 type CssRules =
     'root'
     | 'mpvRoot'
+    | 'overviewCard'
     | 'filesCard'
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -37,8 +38,17 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'column',
     },
     mpvRoot: {
-        width: '100%',
-        height: '100%',
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        flexWrap: 'nowrap',
+        minHeight: "500px",
+        '& > div': {
+            height: '100%',
+        },
+    },
+    overviewCard: {
+        height: "100%",
     },
     filesCard: {
         padding: 0,
@@ -68,6 +78,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                             panelStates={panelsData}>
                             <MPVPanelContent
                                 xs='auto'
+                                className={classes.overviewCard}
                                 data-cy='registered-workflow-info-panel'>
                                         <OverviewPanel detailsElement={<WorkflowDetailsAttributes workflow={item} />} />
                             </MPVPanelContent>

@@ -17,12 +17,15 @@ import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevr
 import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
 import { CollectionResource } from 'models/collection';
 import { ProjectResource } from 'models/project';
+import { WorkflowResource } from 'models/workflow';
 import { ResourceKind } from 'models/resource';
 import { Process, getProcess } from 'store/processes/process';
 import { ContainerRequestResource } from 'models/container-request';
 import { ContainerResource } from 'models/container';
 import { ProcessRuntimeStatus } from 'views-components/process-runtime-status/process-runtime-status';
 import { isUserResource } from 'models/user';
+import { getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
+import { AuthState } from 'store/auth/auth-reducer';
 
 type CssRules = 'root' | 'tag';
 
@@ -42,29 +45,28 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type OverviewPanelProps = {
-    resource: ProjectResource | CollectionResource | ContainerRequestResource | undefined;
+    auth: AuthState;
+    resource: ProjectResource | CollectionResource | ContainerRequestResource | WorkflowResource | undefined;
     process?: Process;
     container?: ContainerResource;
     detailsElement: React.ReactNode;
 } & WithStyles<CssRules>;
 
-const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'resource' | 'process' | 'container'> => {
+const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'auth' |'resource' | 'container'> => {
     const resource = getResource<any>(state.properties.currentRouteUuid)(state.resources);
     const process = getProcess(resource?.uuid)(state.resources) || undefined;
     return {
+        auth: state.auth,
         resource: resource?.containerRequest ? process : resource,
         container: process?.container,
     };
 };
 
-export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ resource, container, detailsElement, classes }: OverviewPanelProps) => {
+export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ auth,resource, container, detailsElement, classes }: OverviewPanelProps) => {
     if (!resource || isUserResource(resource)) {
         return null;
     }
-
     const hasDescription = resource.description && resource.description.length > 0;
-    const hasProperties = (typeof resource.properties === 'object' && Object.keys(resource.properties).length > 0);
-
     const [showDescription, setShowDescription] = useState(false);
 
     React.useEffect(() => {
@@ -92,20 +94,34 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ res
                     </section>
                 </Grid>
             </section>
-            <section>
-                {hasProperties &&
-                    <>
-                        <DetailsAttribute label='Properties' />
-                        <section data-cy='resource-properties'>
-                            {Object.keys(resource.properties).map((k) =>
-                                Array.isArray(resource.properties[k])
-                                ? resource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                : getPropertyChip(k, resource.properties[k], undefined, classes.tag)
-                            )}
-                        </section>
-                    </>
-                }
-            </section>
+            <PropertiesElement auth={auth} resource={resource} classes={classes} />
         </section>
     );
 })));
+
+const PropertiesElement = ({auth, resource, classes}: { auth: AuthState, resource: ProjectResource | CollectionResource | ContainerRequestResource | WorkflowResource | undefined, classes: any }) => {
+    if (!resource) {
+        return null;
+    }
+    if (resource.kind === ResourceKind.WORKFLOW) {
+        const wfData = getRegisteredWorkflowPanelData(resource, auth);
+        if (Object.keys(wfData.gitprops).length === 0) {
+            return null;
+        }
+        return <section data-cy='resource-properties'>
+            {Object.keys(wfData.gitprops).map(k =>
+                getPropertyChip(k, wfData.gitprops[k], undefined, classes.tag)
+            )}
+        </section>;
+    }
+    if (typeof resource.properties === 'object' && Object.keys(resource.properties).length > 0) {
+        return <section data-cy='resource-properties'>
+            {Object.keys(resource.properties).map((k) =>
+                Array.isArray(resource.properties[k])
+                ? resource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                : getPropertyChip(k, resource.properties[k], undefined, classes.tag)
+            )}
+        </section>;
+    }
+    return null;
+}

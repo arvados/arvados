@@ -13,6 +13,8 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
 import { Grid } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { WithStyles } from '@mui/styles';
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
@@ -20,9 +22,13 @@ import { ProcessIOParameter } from 'views/process-panel/process-io-card';
 import { formatInputData, formatOutputData } from 'store/process-panel/process-panel-actions';
 import { AuthState } from 'store/auth/auth-reducer';
 import { RootState } from 'store/store';
+import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 
 export interface WorkflowDetailsCardDataProps {
     workflow?: WorkflowResource;
+    includeGitprops?: boolean;
 }
 
 export interface WorkflowDetailsCardActionProps {
@@ -32,6 +38,15 @@ export interface WorkflowDetailsCardActionProps {
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onClick: (wf: WorkflowResource) =>
         () => wf && dispatch<any>(openRunProcess(wf.uuid, wf.ownerUuid, wf.name)),
+});
+
+type CssRules = 'propertyTag';
+
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    propertyTag: {
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
+    },
 });
 
 interface AuthStateDataProps {
@@ -97,10 +112,12 @@ const mapStateToProps = (state: RootState): AuthStateDataProps => {
 };
 
 export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToProps)(
-        ({ workflow }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps) => {
+    withStyles(styles)(
+        ({ workflow, auth, includeGitprops, classes }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps & WithStyles<CssRules>) => {
             if (!workflow) {
                 return <Grid />
             }
+            const data = getRegisteredWorkflowPanelData(workflow, auth);
 
             return <Grid container>
                 <Grid item xs={12} >
@@ -124,8 +141,13 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
                         label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
+                {includeGitprops && <Grid item xs={12} md={12}>
+                    <DetailsAttribute label='Properties' />
+                    {Object.keys(data.gitprops).map(k =>
+                        getPropertyChip(k, data.gitprops[k], undefined, classes.propertyTag))}
+                </Grid>}
             </Grid >;
-        });
+        }));
 
 export class WorkflowDetails extends DetailsData<WorkflowResource> {
     getIcon(className?: string) {
@@ -133,6 +155,6 @@ export class WorkflowDetails extends DetailsData<WorkflowResource> {
     }
 
     getDetails() {
-        return <WorkflowDetailsAttributes workflow={this.item} />;
+        return <WorkflowDetailsAttributes workflow={this.item} includeGitprops={true} />;
     }
 }
