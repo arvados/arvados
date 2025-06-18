@@ -36,6 +36,7 @@ describe('Page not found tests', function() {
 
             // when
             cy.goToPath(path);
+            cy.get('button').contains('Data').click();
 
             // then
             cy.get('[data-cy=default-view]').should('exist');
