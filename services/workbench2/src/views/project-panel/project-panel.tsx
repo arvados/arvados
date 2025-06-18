@@ -91,8 +91,8 @@ export const ProjectPanel = withStyles(styles)(
                 const { classes, isRootProject } = this.props;
                 // Root project doesn't have Overview Panel
                 const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
-                // Default to data tab if no user preference
-                const defaultTab = this.props.defaultTab || tabSet.DATA;
+                // Default to first tab if no user preference
+                const defaultTab = this.props.defaultTab || Object.keys(tabSet)[0];
                 // Apply user preference or default to initial state
                 const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
                         name: tabSet[key],

@@ -146,12 +146,14 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
     } else {
         children = children.filter(child => child !== null);
     }
-    // if panelStates wasn't passed or passed with none selected, default to first panel visible
-    const initialVisibility = panelStates && panelStates.some(state => state.visible)
-                                ? panelStates.map((panelState) => panelState.visible || false)
-                                : new Array(isArray(children) ? children.length : Object.keys(children).length)
-                                    .fill(false)
-                                    .map((_, idx) => idx === 0);
+
+    const [initialVisibility, setInitialVisibility] = useState<boolean[]>(getInitialVisibility(panelStates, children as []));
+
+    useEffect(() => {
+        setInitialVisibility(getInitialVisibility(panelStates, children as []));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [(children as []).length]);
+
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(initialVisibility);
     const currentSelectedPanel = panelVisibility.findIndex(Boolean);
     const [selectedPanel, setSelectedPanel] = useState<number>(-1);
@@ -163,7 +165,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
         setPanelVisibility(initialVisibility);
         setSelectedPanel(initialVisibility.indexOf(true));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentRoute]); // Omit initialVisibility to avoid infinite loops
+    }, [currentRoute, initialVisibility]);
 
     let panels: JSX.Element[] = [];
     let tabs: JSX.Element[] = [];
@@ -172,7 +174,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
     if (isArray(children)) {
         const showFn = (idx: number) => () => {
             // Hide all other panels
-            setPanelVisibility(Array.from({ length: (children as ReactNode[]).length }, (_, index) => index === idx));
+            setPanelVisibility(Array.from({ length: (children as []).length }, (_, index) => index === idx));
             setSelectedPanel(idx);
         };
 
@@ -219,5 +221,13 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
                 </Grid>
             </Grid>);
 };
+
+const getInitialVisibility = (panelStates: MPVPanelState[] | undefined, children: ReactNode[]) => {
+    if (panelStates && panelStates.some(state => state.visible)) {
+        return panelStates.map((panelState) => panelState.visible || false);
+    }
+    // if panelStates wasn't passed or passed with none selected, default to first panel visible
+    return new Array(children.length).fill(false).map((_, idx) => idx === 0);
+}
 
 export const MPVContainer = connect(mapStateToProps)(withStyles(styles)(MPVContainerComponent));
