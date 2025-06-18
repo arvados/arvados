@@ -163,6 +163,7 @@
       failed_when: arvados_cluster is undefined
 
     - name: Install shared test dependencies
+      become: yes
       ansible.builtin.apt:
         name:
           - locales
