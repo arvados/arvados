@@ -170,6 +170,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         // Reserve vertical space for app bar + MainContentBar
         minHeight: `calc(100vh - ${theme.spacing(16)})`,
         display: "flex",
+        flexBasis: "0px", // Arbitrary flexbasis to allow content to shrink
     },
 });
 
