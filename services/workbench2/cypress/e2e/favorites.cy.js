@@ -129,6 +129,7 @@ describe('Favorites tests', function () {
                 });
 
                 cy.visit(`/projects/${mySharedWritableProject.uuid}`).then(() => {
+                    cy.get('button').contains('Data').click();
                     cy.get('main').contains(testCollection.name);
                 });
             });
@@ -365,7 +366,9 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+                cy.get('[data-cy=snackbar]').contains('Item untrashed').should('exist', { timeout: 10000 });
                 // Check project restored to favorites
+                cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
         });
 
@@ -386,7 +389,9 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+                cy.get('[data-cy=snackbar]').contains('Item untrashed').should('exist');
                 // Check collection restored to favorites
+                cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testFavoriteCollection.name);
         });
     });

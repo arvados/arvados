@@ -1596,6 +1596,7 @@ describe("Process tests", function () {
                     // Navigate to process through subproject
                     cy.get('[data-cy=data-table-row]').contains(subproject.name).should('exist').click();
                     cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                    cy.waitForDom();
                     cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').click();
                     cy.waitForDom();
                     cy.url().should("contain", `/processes/${containerRequest.uuid}`);

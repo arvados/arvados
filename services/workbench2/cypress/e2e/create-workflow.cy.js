@@ -531,6 +531,7 @@ describe('Create workflow tests', function () {
             cy.contains(mySharedWritableProject.name).click();
             cy.waitForDom();
             cy.get('button').contains('Data').click();
+            cy.waitForDom();
             cy.contains(parentWritableWF.name).click();
             cy.get('[data-title="Run Workflow"]').click();
             cy.get('[data-cy=project-picker-details]').contains(mySharedWritableProject.name);
