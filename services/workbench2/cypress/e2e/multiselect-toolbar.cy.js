@@ -371,6 +371,7 @@ describe('For project resources', () => {
                 cy.get('button').contains('Data').click();
 
                 cy.assertDataExplorerContains(testProject3.name, true).click();
+                cy.waitForDom()
                 cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);

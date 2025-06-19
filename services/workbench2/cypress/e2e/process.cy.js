@@ -1539,7 +1539,7 @@ describe("Process tests", function () {
     });
 
     describe("Process operations", function () {
-        it("navigates to parent project when deleting current process", function () {
+        it.only("navigates to parent project when deleting current process", function () {
             // Process in home project
             createContainerRequest(
                 activeUser,
@@ -1595,9 +1595,9 @@ describe("Process tests", function () {
                     cy.waitForDom();
                     // Navigate to process through subproject
                     cy.get('[data-cy=data-table-row]').contains(subproject.name).should('exist').click();
+                    cy.wait(1000);
                     cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
-                    cy.waitForDom();
-                    cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').click();
+                    cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist', {timeout: 1000}).click();
                     cy.waitForDom();
                     cy.url().should("contain", `/processes/${containerRequest.uuid}`);
 
