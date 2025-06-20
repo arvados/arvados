@@ -16,7 +16,6 @@ import org.arvados.client.logic.collection.FileToken;
 import org.arvados.client.logic.collection.ManifestDecoder;
 import org.arvados.client.logic.collection.ManifestStream;
 import org.arvados.client.test.utils.FileTestUtils;
-import org.arvados.client.utils.FileMerge;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -30,11 +29,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import static org.arvados.client.test.utils.FileTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,8 +52,6 @@ public class FileDownloaderTest {
 
     @Mock
     private CollectionsApiClient collectionsApiClient;
-    @Mock
-    private KeepClient keepClient;
     @Mock
     private KeepWebApiClient keepWebApiClient;
     @Mock
@@ -75,12 +72,11 @@ public class FileDownloaderTest {
     public void downloadingAllFilesFromCollectionWorksProperly() throws Exception {
         // given
         List<File> files = generatePredefinedFiles();
-        byte[] dataChunk = prepareDataChunk(files);
 
         //having
         when(collectionsApiClient.get(collectionToDownload.getUuid())).thenReturn(collectionToDownload);
         when(manifestDecoder.decode(collectionToDownload.getManifestText())).thenReturn(Arrays.asList(manifestStream));
-        when(keepClient.getDataChunk(manifestStream.getKeepLocators().get(0))).thenReturn(dataChunk);
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), files.get(0).getName())).thenReturn("test".getBytes(StandardCharsets.UTF_8));
 
         //when
         List<File> downloadedFiles = fileDownloader.downloadFilesFromCollection(collectionToDownload.getUuid(), FILE_DOWNLOAD_TEST_DIR);
@@ -166,9 +162,4 @@ public class FileDownloaderTest {
         return new ManifestStream(".", Arrays.asList(keepLocator), fileTokens);
     }
 
-    private byte[] prepareDataChunk(List<File> files) throws IOException {
-        File combinedFile = new File(FILE_SPLIT_TEST_DIR + Characters.SLASH + UUID.randomUUID());
-        FileMerge.merge(files, combinedFile);
-        return FileUtils.readFileToByteArray(combinedFile);
-    }
 }
