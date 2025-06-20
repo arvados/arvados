@@ -26,6 +26,7 @@ import { ProcessRuntimeStatus } from 'views-components/process-runtime-status/pr
 import { isUserResource } from 'models/user';
 import { getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
 import { AuthState } from 'store/auth/auth-reducer';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 
 type CssRules = 'root' | 'tag';
 
@@ -50,20 +51,29 @@ type OverviewPanelProps = {
     process?: Process;
     container?: ContainerResource;
     detailsElement: React.ReactNode;
+    progressIndicator: string[];
 } & WithStyles<CssRules>;
 
-const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'auth' |'resource' | 'container'> => {
+const mapStateToProps = (state: RootState): Pick<OverviewPanelProps, 'auth' |'resource' | 'container' | 'progressIndicator'> => {
     const resource = getResource<any>(state.properties.currentRouteUuid)(state.resources);
     const process = getProcess(resource?.uuid)(state.resources) || undefined;
     return {
         auth: state.auth,
         resource: resource?.containerRequest ? process : resource,
         container: process?.container,
+        progressIndicator: state.progressIndicator
     };
 };
 
-export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ auth,resource, container, detailsElement, classes }: OverviewPanelProps) => {
-    if (!resource || isUserResource(resource)) {
+export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ auth,resource, container, detailsElement, progressIndicator, classes }: OverviewPanelProps) => {
+    const working = progressIndicator.length > 0;
+    if (isUserResource(resource)) {
+        return null
+    };
+    if (!resource) {
+        if (!working) {
+            return <DataTableDefaultView />
+        };
         return null;
     }
     const hasDescription = resource.description && resource.description.length > 0;
