@@ -549,6 +549,8 @@ describe("Project tests", function () {
                 cy.get("[data-cy=project-panel]").contains(mainProject.name).click();
                 cy.get('button').contains('Data').click();
 
+                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 });
+
                 cy.get("[data-cy=project-panel]").contains(mainCollection.name).rightclick();
 
                 cy.get("[data-cy=context-menu]").contains("Move to trash").should("not.exist");
