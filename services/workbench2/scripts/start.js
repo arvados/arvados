@@ -136,16 +136,16 @@ checkBrowsers(paths.appPath, isInteractive)
     });
 
     ['SIGINT', 'SIGTERM'].forEach(function (sig) {
-      process.on(sig, function () {
-        devServer.close();
+      process.on(sig, async function () {
+        await devServer.stop();
         process.exit();
       });
     });
 
     if (process.env.CI !== 'true') {
       // Gracefully exit when stdin ends
-      process.stdin.on('end', function () {
-        devServer.close();
+      process.stdin.on('end', async function () {
+        await devServer.stop();
         process.exit();
       });
     }

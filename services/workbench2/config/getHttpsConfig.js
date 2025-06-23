@@ -64,7 +64,7 @@ function getHttpsConfig() {
     validateKeyAndCerts({ ...config, keyFile, crtFile });
     return config;
   }
-  return isHttps;
+  return {};
 }
 
 module.exports = getHttpsConfig;
