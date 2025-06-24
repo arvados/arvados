@@ -54,6 +54,9 @@ devsuffix="~dev"
 #    else, tag is newer than merge base, so increment point version
 
 nearest_tag=$(git describe --abbrev=0 "$commit")
+# We must use a remote branch here because Jenkins CI checkouts usually only
+# have the current work branch ref (and not even that if we're working by
+# commit hash). As of June 2025 everything uses origin, so,
 merge_base=$(git merge-base origin/main "$commit")
 
 if git merge-base --is-ancestor "$nearest_tag" "$merge_base" ; then
