@@ -70,14 +70,27 @@ if git merge-base --is-ancestor "$nearest_tag" "$merge_base" ; then
     # x.(y+1).0~devTIMESTAMP, where x.y.z is the newest version that does not contain $commit
     # grep reads the list of tags (-f) that contain $commit and filters them out (-v)
     # this prevents a newer tag from retroactively changing the versions of everything before it
-    v=$(git tag | grep -vFf <(git tag --contains "$merge_base") | perl -pe 's/^development-//' | sort -Vr | head -n1 | perl -pe 's/(\d+)\.(\d+)\.\d+.*/"$1.".($2+1).".0"/e')
+    v=$(git tag |
+            grep -vFf <(git tag --contains "$merge_base") |
+            sed -e 's/^development-//' |
+            sort --version-sort |
+            awk '
+BEGIN { FS="."; OFS="."; }
+END { print $1, $2+1, 0; }
+')
 else
     # the nearest tag comes after the merge base with main (the branch
     # point).  Assume this means this is a point release branch,
     # following a major release.
     #
     # x.y.(z+1)~devTIMESTAMP, where x.y.z is the latest released ancestor of $commit
-    v=$(echo $nearest_tag | perl -pe 's/^development-//' | perl -pe 's/(\d+)$/$1+1/e')
+    v=$(awk '
+BEGIN { FS="."; OFS="."; }
+{ print $1, $2, $3+1; exit; }
+' <<EOF
+${nearest_tag#development-}
+EOF
+        )
 fi
 
 isodate=$(TZ=UTC git log -n1 --format=%cd --date=iso "$commit")
