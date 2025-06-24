@@ -213,6 +213,16 @@ if [ $PYTHON -eq 1 ]; then
 fi
 
 if [ $UPLOAD -ne 0 ]; then
+    if get_ci_scripts
+    then
+        checkexit $? "get CI scripts"
+    else
+        checkexit $? "get CI scripts"
+        UPLOAD=0
+    fi
+fi
+
+if [ $UPLOAD -ne 0 ]; then
   echo "Uploading"
 
   if [ $DEBUG > 0 ]; then
@@ -230,7 +240,7 @@ if [ $UPLOAD -ne 0 ]; then
     timer_reset
 
     if [ $PYTHON_BUILD_FAILURES -eq 0 ]; then
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE python
+      "$CI_DIR/run_upload_packages.py" $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE python
     else
       echo "Skipping python packages upload, there were errors building the packages"
     fi
@@ -243,7 +253,7 @@ if [ $UPLOAD -ne 0 ]; then
     timer_reset
 
     if [ $GEM_BUILD_FAILURES -eq 0 ]; then
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE gems
+      "$CI_DIR/run_upload_packages.py" $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE gems
     else
       echo "Skipping ruby gem upload, there were errors building the packages"
     fi

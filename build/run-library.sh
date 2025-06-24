@@ -38,6 +38,25 @@ EOF
     exit 1
 }
 
+# get_ci_scripts sets $CI_DIR to the path of a directory with CI scripts.
+# If it is not already set, it uses the following to get them by creating a
+# temporary Git worktree:
+#  * CI_SRC: a Git checkout of the scripts (default $WORKSPACE)
+#  * CI_REF: the reference used to create that (default `remotes/arvados-ci/main`)
+#  * CI_PATH: the path of CI scripts under the worktree (default `/jenkins`)
+# The defaults are all suitable for jobs running under ci.arvados.org, but
+# you can set them in the environment to customize the behavior, or just set
+# $CI_DIR to a path that already has the scripts ready.
+get_ci_scripts() {
+    if [ -n "${CI_DIR:-}" ]; then
+        return
+    fi
+    local clone_dir="$(mktemp --directory --tmpdir="${WORKSPACE_TMP:-}")" &&
+        git -C "${CI_SRC:-$WORKSPACE}" worktree add "$clone_dir" "${CI_REF:-remotes/arvados-ci/main}" ||
+            return
+    CI_DIR="$clone_dir${CI_PATH:-/jenkins}"
+}
+
 format_last_commit_here() {
     local format="$1"; shift
     local dir="${1:-.}"; shift
