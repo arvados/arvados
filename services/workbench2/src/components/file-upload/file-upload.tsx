@@ -17,23 +17,15 @@ import {
 } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, RemoveIcon } from "../icon/icon";
 import { formatFileSize, formatProgress, formatUploadSpeed } from "common/formatters";
 import { UploadFile } from 'store/file-uploader/file-uploader-actions';
 
-type CssRules = "root" | "dropzone" | "dropzoneWrapper" | "container" | "uploadIcon"
+type CssRules = "dropzoneWrapper" | "container" | "invisibleInput" | "uploadText" | "uploadIcon"
     | "dropzoneBorder" | "dropzoneBorderLeft" | "dropzoneBorderRight" | "dropzoneBorderTop" | "dropzoneBorderBottom"
     | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive" | "deleteButton" | "deleteButtonDisabled" | "deleteIcon";
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
-    root: {
-    },
-    dropzone: {
-        width: "100%",
-        height: "100%",
-        overflow: "auto"
-    },
     dropzoneWrapper: {
         width: "100%",
         height: "200px",
@@ -84,6 +76,12 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     container: {
         height: "100%"
+    },
+    invisibleInput: {
+        opacity: 0, border: '1px solid red', height: '200px', width: '100%', cursor: 'pointer' 
+    },
+    uploadText: {
+        marginTop: '-200px'
     },
     uploadIcon: {
         verticalAlign: "middle"
@@ -140,16 +138,44 @@ export const FileUpload = withStyles(styles)(
             }, 100);
 
         }
+
+        inputRef = React.createRef<HTMLInputElement>();
+
+        handleDrop = async (event) => {
+                    event.preventDefault();
+
+                    const items = event.dataTransfer.items;
+                    const entries: any[] = [];
+
+                    for (let i = 0; i < items.length; i++) {
+                        const entry = items[i].webkitGetAsEntry?.();
+                        if (entry) entries.push(entry);
+                    }
+
+                    const filesArrays = await Promise.all(entries.map((entry) => traverseFileTree(entry)));
+                    const allFiles = filesArrays.flat();
+
+                    this.props.onDrop(allFiles as any); // includes `file.relativePath` if needed
+                }
+
+        handleInputChange = (event) => {
+                const files = Array.from(event.target.files);
+                this.props.onDrop(files as any);
+            };
+
+        handleClick = () => {
+            this.inputRef.current?.click();
+        };
+
         render() {
-            const { classes, onDrop, disabled, files } = this.props;
+            const { classes, disabled, files } = this.props;
             return (
-                <div className={"file-upload-dropzone " + classes.dropzoneWrapper}>
+                <div className={"file-upload-dropzone " + classes.dropzoneWrapper} >
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
-                    <Dropzone className={classes.dropzone}
-                        onDrop={files => onDrop(files)}
+                    <div
                         onClick={() => {
                             const el = document.getElementsByClassName("file-upload-dropzone")[0];
                             const inputs = el.getElementsByTagName("input");
@@ -158,25 +184,24 @@ export const FileUpload = withStyles(styles)(
                             }
                         }}
                         data-cy="drag-and-drop"
-                        disabled={disabled}
-                        inputProps={{
-                            onFocus: () => {
-                                this.setState({
-                                    focused: true
-                                });
-                            },
-                            onBlur: () => {
-                                this.setState({
-                                    focused: false
-                                });
-                            }
-                        }}>
+                        >
                         {files.length === 0 &&
                             <Grid container justifyContent="center" alignItems="center" className={classes.container}>
-                                <Grid item component={"span"}>
+                                <input
+                                    disabled={disabled}
+                                    ref={this.inputRef}
+                                    type='file'
+                                    multiple
+                                    {...{ webkitDirectory: "true" } as any}
+                                    className={classes.invisibleInput}
+                                    onChange={this.handleInputChange}
+                                    onFocus={() => { this.setState({ focused: true }) }}
+                                    onBlur={() => { this.setState({ focused: false }) }}
+                                    />
+                                <Grid item component={"span"} className={classes.uploadText}>
                                     <Typography variant='subtitle1'>
                                         <CloudUploadIcon className={classes.uploadIcon} /> Drag and drop data or click to browse
-                                </Typography>
+                                    </Typography>
                                 </Grid>
                             </Grid>}
                         {files.length > 0 &&
@@ -211,9 +236,26 @@ export const FileUpload = withStyles(styles)(
                                 </TableBody>
                             </Table>
                         }
-                    </Dropzone>
+                    </div>
                 </div>
             );
         }
     }
 );
+
+function traverseFileTree(item, path = '') {
+    return new Promise((resolve) => {
+        if (item.isFile) {
+            item.file((file) => {
+                file.relativePath = path + file.name;
+                resolve([file]);
+            });
+        } else if (item.isDirectory) {
+            const dirReader = item.createReader();
+            dirReader.readEntries(async (entries) => {
+                const files = await Promise.all(entries.map((entry) => traverseFileTree(entry, path + item.name + '/')));
+                resolve(files.flat());
+            });
+        }
+    });
+}
