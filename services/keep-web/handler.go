@@ -623,14 +623,22 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if accept := strings.Split(r.Header.Get("Accept"), ","); len(accept) == 1 {
-		mediatype, _, err := mime.ParseMediaType(accept[0])
+	accept := r.Header.Get("Accept")
+	if acceptq := r.FormValue("accept"); acceptq != "" && attachment {
+		// For the convenience of web frontend code, we accept
+		// "?accept=X" in the query as an override of the
+		// "Accept: X" header.
+		accept = acceptq
+	}
+	if acceptlist := strings.Split(accept, ","); len(acceptlist) == 1 {
+		mediatype, _, err := mime.ParseMediaType(acceptlist[0])
 		if err == nil && mediatype == "application/zip" {
 			releaseSession()
 			h.serveZip(w, r, session, sessionFS, fstarget, tokenUser)
 			return
 		}
 	}
+
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		if fi, err := sessionFS.Stat(fstarget); err == nil && fi.IsDir() {
 			releaseSession() // because we won't be writing anything
