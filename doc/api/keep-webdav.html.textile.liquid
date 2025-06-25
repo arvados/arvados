@@ -46,7 +46,7 @@ h3(#zip). Downloading ZIP archives
 Keep-web can produce an uncompressed ZIP archive of a collection, or a subset of a collection.
 
 To request a ZIP archive:
-* The request header must specify @Accept: application/zip@.
+* The request must include an @Accept: application/zip@ header _or_ @?accept=application/zip&disposition=attachment@ in the query.
 * The request URI must specify the root directory of a collection, e.g., @/by_id/<uuid>/@.  See "Keep-web URLs":keep-web-urls.html for more examples.
 
 To download a subset of a collection, the request can specify one or more pathnames relative to the collection directory:
