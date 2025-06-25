@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/api"
@@ -28,9 +29,8 @@ type router struct {
 }
 
 type Config struct {
-	// Wildcard URL where container web services should be
-	// accessible.  Host must have leading "*".
-	ContainerWebServicesURL arvados.URL
+	// Services.ContainerWebServices section from cluster config.
+	ContainerWebServices arvados.ServiceWithPortRange
 
 	// Return an error if request body exceeds this size. 0 means
 	// unlimited.
@@ -763,13 +763,8 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // If req is a container http proxy request, handle it and return
 // true.  Otherwise, return false.
 func (rtr *router) routeAsContainerHTTPProxy(w http.ResponseWriter, req *http.Request) bool {
-	configurl := url.URL(rtr.config.ContainerWebServicesURL)
+	configurl := url.URL(rtr.config.ContainerWebServices.ExternalURL)
 	confhostname := configurl.Hostname()
-	if !strings.HasPrefix(confhostname, "*") {
-		// Feature disabled by config
-		return false
-	}
-	confport := configurl.Port()
 
 	// Use req.Host (not req.URL), but use url.URL to parse it,
 	// which differs from net.SplitHostPort (port must be numeric,
@@ -777,11 +772,29 @@ func (rtr *router) routeAsContainerHTTPProxy(w http.ResponseWriter, req *http.Re
 	requrl := url.URL{Host: req.Host}
 	reqhostname := requrl.Hostname()
 	reqport := requrl.Port()
+	reqportnum, _ := strconv.Atoi(reqport)
+
+	if strings.EqualFold(confhostname, reqhostname) &&
+		rtr.config.ContainerWebServices.ExternalPortMin > 0 &&
+		rtr.config.ContainerWebServices.ExternalPortMin <= reqportnum &&
+		rtr.config.ContainerWebServices.ExternalPortMax >= reqportnum {
+		// Config uses a port range instead of a wildcard
+		// host.  Pass the port number (like ":1234") as the
+		// target.  The ContainerHTTPProxy API method will
+		// figure out which container it is currently assigned
+		// to.
+		rtr.serveContainerHTTPProxy(w, req, fmt.Sprintf(":%d", reqportnum))
+		return true
+	} else if !strings.HasPrefix(confhostname, "*") {
+		// Feature disabled by config
+		return false
+	}
 
 	// Check that the requested port matches the ExternalURL port.
 	// We don't know the request scheme, so we just assume it was
 	// "https" for the purpose of comparing implicit/explicit ways
 	// of spelling "default port for this scheme".
+	confport := configurl.Port()
 	if !(reqport == confport ||
 		(reqport == "" && confport == "443") ||
 		(reqport == "443" && confport == "")) {
@@ -790,6 +803,8 @@ func (rtr *router) routeAsContainerHTTPProxy(w http.ResponseWriter, req *http.Re
 	targetlen := len(reqhostname) - len(confhostname) + 1
 	if targetlen < 1 ||
 		!strings.EqualFold(reqhostname[targetlen:], confhostname[1:]) {
+		// Request host does not match config wildcard, so
+		// this is not a container http proxy request.
 		return false
 	}
 	target := reqhostname[:targetlen]

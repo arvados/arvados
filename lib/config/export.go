@@ -211,6 +211,8 @@ var whitelist = map[string]bool{
 	"RemoteClusters.*.Scheme":                             true,
 	"Services":                                            true,
 	"Services.*":                                          true,
+	"Services.*.ExternalPortMax":                          false,
+	"Services.*.ExternalPortMin":                          false,
 	"Services.*.ExternalURL":                              true,
 	"Services.*.InternalURLs":                             false,
 	"StorageClasses":                                      true,

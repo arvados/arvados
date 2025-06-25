@@ -529,6 +529,17 @@ ALTER SEQUENCE public.collections_id_seq OWNED BY public.collections.id;
 
 
 --
+-- Name: container_ports; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.container_ports (
+    external_port integer NOT NULL,
+    container_port integer NOT NULL,
+    container_uuid character varying NOT NULL
+);
+
+
+--
 -- Name: container_requests; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2140,6 +2151,20 @@ CREATE UNIQUE INDEX index_collections_on_uuid ON public.collections USING btree 
 
 
 --
+-- Name: index_container_ports_on_container_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_container_ports_on_container_uuid ON public.container_ports USING btree (container_uuid);
+
+
+--
+-- Name: index_container_ports_on_external_port; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_container_ports_on_external_port ON public.container_ports USING btree (external_port);
+
+
+--
 -- Name: index_container_requests_on_container_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3203,6 +3228,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20250527181323'),
 ('20250426201300'),
 ('20250422103000'),
 ('20250402131700'),
