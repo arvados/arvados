@@ -514,6 +514,8 @@ handle_rails_package() {
         # gems that are already available system-wide... and then it complains
         # that your bundle is incomplete. Work around this by fetching gems
         # manually.
+        # `--max-procs=6` is an abritrary number to download in parallel
+        # while being at least a little polite to rubygems.org.
         # TODO: Once all our supported distros have Ruby 3+, we can modify
         # the awk script to print "NAME:VERSION" output, and pipe that directly
         # to `xargs -0r gem fetch` for reduced overhead.
@@ -526,7 +528,7 @@ BEGIN { OFS="\0"; ORS="\0"; }
 (level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
     print "--version", substr($2, 2, length($2) - 2), $1;
 }
-' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 gem fetch
+' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
         # Tip: If this command removes "stale" gems downloaded in the previous
