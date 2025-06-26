@@ -9,12 +9,7 @@
 # with Arvados packages.  We use it as a heuristic to add revisions for
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
-
-if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    RAILS_PACKAGE_ITERATION=1
-else
-    RAILS_PACKAGE_ITERATION="$ARVADOS_BUILDING_ITERATION"
-fi
+RAILS_PACKAGE_ITERATION="${ARVADOS_BUILDING_ITERATION:-1}"
 
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
