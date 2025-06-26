@@ -200,7 +200,7 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.4)
-    nokogiri (1.18.8)
+    nokogiri (1.15.7)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     oj (3.16.9)
@@ -340,6 +340,7 @@ DEPENDENCIES
   mocha
   multi_json
   net-imap (~> 0.3.8)
+  nokogiri (~> 1.15.7)
   oj
   optimist
   passenger (~> 6.0.26)
