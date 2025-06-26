@@ -148,9 +148,9 @@ prepare_database() {
   DB_MIGRATE_STATUS=`"$BUNDLE" exec bin/rake db:migrate:status 2>&1 || true`
   if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" "$BUNDLE" exec bin/rake db:schema:load db:seed
+      run_and_report "Setting up database" "$BUNDLE" exec bin/rake db:schema:load
   elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
-      run_and_report "Running db:migrate" "$BUNDLE" exec bin/rake db:migrate
+      run_and_report "Running db:migrate" "$BUNDLE" exec bin/rake db:migrate db:seed
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
       run_and_report "Running db:setup" "$BUNDLE" exec bin/rake db:setup
   else
