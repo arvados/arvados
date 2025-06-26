@@ -443,7 +443,7 @@ Clusters:
 
       # Send an email to each user when their account has been set up
       # (meaning they are able to log in).
-      SendUserSetupNotificationEmail: true
+      SendUserSetupNotificationEmail: false
 
       # Ruby ERB template used for the email sent out to users when
       # they have been set up.

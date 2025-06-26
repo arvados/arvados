@@ -32,6 +32,15 @@ h2(#main). development main
 
 "previous: Upgrading to 3.1.2":#v3_1_2
 
+h3. @Users.SendUserSetupNotificationEmail@ is disabled by default
+
+If you want to preserve the old default behavior of sending an email to each user when their account has been set up, update your configuration file accordingly.
+
+<notextile><pre>
+Users:
+  SendUserSetupNotificationEmail: true
+</pre></notextile>
+
 h3. Admin container shell access is enabled by default
 
 "Container shell access":{{ site.baseurl }}/user/debugging/container-shell-access.html by admin users is now enabled by default to make it easier to diagnose workflow issues on new deployments.  If you prefer to leave it disabled, update your configuration file accordingly.
