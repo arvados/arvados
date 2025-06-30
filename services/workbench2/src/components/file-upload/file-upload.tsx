@@ -33,6 +33,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         position: "relative",
         border: "1px solid rgba(0, 0, 0, 0.42)",
         boxSizing: 'border-box',
+        overflowY: "scroll",
     },
     dropzoneBorder: {
         content: "",
