@@ -25,6 +25,8 @@ type ReplaceFilesPayload = {
     replace_files: {[key: string]: string};
 }
 
+type FileWithRelativePath = File & { relativePath?: string, webkitRelativePath?: string };
+
 export const emptyCollectionPdh = "d41d8cd98f00b204e9800998ecf8427e+0";
 export const SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE = "Source and destination cannot be the same";
 
@@ -113,9 +115,42 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         if (collectionUuid === "" || files.length === 0) {
             return;
         }
+
+        const isAnyNested = files.some(f => getPathKey(f).length);
+        if (isAnyNested) {
+            const existingDirPaths = new Set((await this.files(collectionUuid))
+                .filter(f => f.type === 'directory')
+                .map(f => f.id.split('/').slice(1).join('/')));
+
+            const allTargetPaths = files.reduce((acc, file: FileWithRelativePath) => {
+                const pathKey = getPathKey(file);
+                if (file[pathKey] && file[pathKey]!.length > 0) {
+                    acc.push(file[pathKey]!.split('/').slice(0, -1).join('/'));
+                }
+                return acc;
+            }, [] as string[]);
+
+            await this.createMinNecessaryDirs(collectionUuid, existingDirPaths, allTargetPaths, true);
+        }
+
         // files have to be uploaded sequentially
         for (let idx = 0; idx < files.length; idx++) {
-            await this.uploadFile(collectionUuid, files[idx], idx, onProgress, targetLocation);
+            const file = files[idx] as FileWithRelativePath;
+            let nestedPath: string | undefined = undefined;
+
+            if (isAnyNested) {
+                const pathKey = getPathKey(file);
+
+                if (file[pathKey] && file[pathKey]!.length > 0) {
+                    nestedPath = file[pathKey]!.split('/').slice(0, -1).join('/');
+                }
+            }
+
+            if (nestedPath) {
+                await this.uploadFile(collectionUuid, file, idx, onProgress, `${collectionUuid}/${nestedPath}/`.replace("//", "/"));
+            } else {
+                await this.uploadFile(collectionUuid, file, idx, onProgress, targetLocation);
+            }
         }
         await this.update(collectionUuid, { preserveVersion: true });
     }
@@ -256,4 +291,36 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
         return this.replaceFiles({ uuid: collectionUuid }, fileMap, showErrors);
     }
+
+    /* since creating a nested dir will create all parent dirs that don't exist,
+    *  we only create the longest unique paths
+    */
+    async createMinNecessaryDirs(collectionUuid: string, existingDirPaths: Set<string>, targetPaths: string[], showErrors?) {
+        const minNecessaryPaths = getMinNecessaryPaths(targetPaths);
+        for (const path of minNecessaryPaths) {
+            if (existingDirPaths.has(path)) {
+                return;
+            }
+            await this.createDirectory(collectionUuid, path, showErrors);
+        }
+    }
+}
+
+
+function getMinNecessaryPaths(paths: string[]): string[] {
+    //remove duplicates
+    const uniquePaths = Array.from(new Set(paths));
+    const minimalPaths: string[] = [];
+
+    for (const path of uniquePaths) {
+        const parentExists = uniquePaths.some((existing) => path === existing || path.startsWith(existing + '/'));
+        if (parentExists) {
+            minimalPaths.push(path);
+        }
+    }
+    return minimalPaths;
+}
+
+const getPathKey = (file: FileWithRelativePath) => {
+    return file.relativePath ? 'relativePath' : 'webkitRelativePath';
 }

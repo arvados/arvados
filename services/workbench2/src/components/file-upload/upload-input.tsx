@@ -60,7 +60,7 @@ export const UploadInput = withStyles(styles)(({ type, disabled, inputRef, handl
                 >
                     {type === FileUploadType.FOLDER ? <DriveFolderUploadIcon fontSize='large' className={classes.icon} /> : <UploadFileIcon fontSize='large' className={classes.icon} />}
                 </IconButton>
-                <Typography variant='body2'>{type === FileUploadType.FOLDER ? 'Upload Folder' : 'Upload File(s)'}</Typography>
+                <Typography variant='body2'>{type === FileUploadType.FOLDER ? 'Upload Folder' : 'Upload Files'}</Typography>
                 {type === FileUploadType.FOLDER ? (
                     <input
                         type='file'
