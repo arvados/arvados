@@ -146,10 +146,14 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                 }
             }
 
-            if (nestedPath) {
-                await this.uploadFile(collectionUuid, file, idx, onProgress, `${collectionUuid}/${nestedPath}/`.replace("//", "/"));
-            } else {
-                await this.uploadFile(collectionUuid, file, idx, onProgress, targetLocation);
+            try {
+                if (nestedPath) {
+                    await this.uploadFile(collectionUuid, file, idx, onProgress, `${collectionUuid}/${nestedPath}/`.replace("//", "/"));
+                } else {
+                    await this.uploadFile(collectionUuid, file, idx, onProgress, targetLocation);
+                }
+            } catch (error) {
+                console.error("Error uploading file", `${collectionUuid}${nestedPath ? `/${nestedPath}`: ''}/${file.name}`, error);
             }
         }
         await this.update(collectionUuid, { preserveVersion: true });
@@ -301,7 +305,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             if (existingDirPaths.has(path)) {
                 return;
             }
-            await this.createDirectory(collectionUuid, path, showErrors);
+            try {
+                await this.createDirectory(collectionUuid, path, showErrors);
+            } catch (error) {
+                console.error("Error creating directory", `${collectionUuid}/${path}`, error);
+            }
         }
     }
 }
