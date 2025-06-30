@@ -24,7 +24,7 @@ import { UploadInput, FileUploadType } from 'components/file-upload/upload-input
 
 type CssRules = "dropzoneWrapper" | "container" | "inputContainer" | "uploadIcon"
     | "dropzoneBorder" | "dropzoneBorderLeft" | "dropzoneBorderRight" | "dropzoneBorderTop" | "dropzoneBorderBottom"
-    | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive" | "deleteButton" | "deleteButtonDisabled" | "deleteIcon";
+    | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive" | "deleteButton" | "deleteButtonDisabled" | "deleteIcon" | "fileTable";
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     dropzoneWrapper: {
@@ -101,7 +101,10 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     deleteIcon: {
         marginLeft: "-6px"
-    }
+    },
+    fileTable: {
+        width: "100%",
+    },
 });
 
 interface FileUploadPropsData {
@@ -181,14 +184,16 @@ export const FileUpload = withStyles(styles)(
         render() {
             const { classes, disabled, files } = this.props;
             return (
-                <div className={"file-upload-dropzone " + classes.dropzoneWrapper} >
+                <div
+                    className={"file-upload-dropzone " + classes.dropzoneWrapper}
+                    onDrop={this.handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                    >
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
                     <div
-                        onDrop={this.handleDrop}
-                        onDragOver={(e) => e.preventDefault()}
                         onClick={() => {
                             const el = document.getElementsByClassName("file-upload-dropzone")[0];
                             const inputs = el.getElementsByTagName("input");
@@ -211,7 +216,7 @@ export const FileUpload = withStyles(styles)(
                                 </Grid>
                             </Grid>}
                         {files.length > 0 &&
-                            <Table style={{ width: "100%" }}>
+                            <Table className={classes.fileTable} stickyHeader>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>File name</TableCell>
