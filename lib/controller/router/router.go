@@ -30,7 +30,7 @@ type router struct {
 
 type Config struct {
 	// Services.ContainerWebServices section from cluster config.
-	ContainerWebServices arvados.ServiceWithPortRange
+	ContainerWebServices *arvados.ServiceWithPortRange
 
 	// Return an error if request body exceeds this size. 0 means
 	// unlimited.

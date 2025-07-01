@@ -145,11 +145,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
 	rtr := router.New(s.localdb, router.Config{
-		ContainerWebServices: arvados.ServiceWithPortRange{
-			Service: arvados.Service{
-				ExternalURL: arvados.URL{Host: "*.containers.example.com"},
-			},
-		},
+		ContainerWebServices: &s.localdb.cluster.Services.ContainerWebServices,
 	})
 	s.srv = httptest.NewUnstartedServer(httpserver.AddRequestIDs(httpserver.LogRequests(rtr)))
 	s.srv.StartTLS()
