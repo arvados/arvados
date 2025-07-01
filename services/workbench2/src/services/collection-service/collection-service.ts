@@ -116,7 +116,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             return;
         }
 
-        const isAnyNested = files.some(f => getPathKey(f).length);
+        const isAnyNested = files.some(file => {
+            const path = file[getPathKey(file)];
+            return path.indexOf('/') > -1;
+        });
+
         if (isAnyNested) {
             const existingDirPaths = new Set((await this.files(collectionUuid))
                 .filter(f => f.type === 'directory')

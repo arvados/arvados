@@ -156,10 +156,12 @@ export const FileUpload = withStyles(styles)(
             event.preventDefault();
 
             const items = event.dataTransfer.items;
+            if (!items) return;
+
             const entries: any[] = [];
 
             for (let i = 0; i < items.length; i++) {
-                const entry = items[i].webkitGetAsEntry?.();
+                const entry = items[i].webkitGetAsEntry?.() || items[i].getAsEntry?.();
                 if (entry) entries.push(entry);
             }
 

@@ -63,6 +63,7 @@ export const UploadInput = withStyles(styles)(({ type, disabled, inputRef, handl
                 <Typography variant='body2'>{type === FileUploadType.FOLDER ? 'Upload Folder' : 'Upload Files'}</Typography>
                 {type === FileUploadType.FOLDER ? (
                     <input
+                        data-cy="folder-upload-input"
                         type='file'
                         ref={inputRef}
                         disabled={disabled}
@@ -75,6 +76,7 @@ export const UploadInput = withStyles(styles)(({ type, disabled, inputRef, handl
                     />
                 ) : (
                     <input
+                        data-cy="file-upload-input"
                         type='file'
                         ref={inputRef}
                         disabled={disabled}
