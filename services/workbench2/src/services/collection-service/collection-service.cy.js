@@ -14,12 +14,26 @@ describe('collection-service', () => {
     let authService;
     let actions;
 
+    const fakeXhr = {
+        status: 200,
+        responseText: '<note><to>User</to><from>Client</from><body>Hello!</body></note>',
+        getResponseHeader: (header) => {
+            if (header.toLowerCase() === 'content-type') {
+                return 'application/xml';
+            }
+            return null;
+        },
+        readyState: 4,
+        responseXML: new DOMParser().parseFromString('<note><to>User</to><from>Client</from><body>Hello!</body></note>', 'application/xml'),
+    };
+
     beforeEach(() => {
         serverApi = axios.create();
         keepWebdavClient = {
             delete: cy.stub(),
             upload: cy.stub().as('upload'),
             mkdir: cy.stub(),
+            propfind: cy.stub().resolves(fakeXhr),
         };
         authService = {};
         actions = {
