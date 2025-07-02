@@ -37,7 +37,7 @@ export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDesc
     const [fadeDescription, setFadeDescription] = React.useState(!showDescription);
 
     // If description length surpasses this huge limit, we revert to scrolling
-    const expandedHeight = description.length / 1000 * 50;
+    const expandedHeight = (description.length / 200) * 5000;
 
     //prevents jarring pop-in/out animations
     React.useEffect(() => {
