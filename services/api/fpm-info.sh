@@ -19,7 +19,7 @@ fpm_depends+=(
 )
 
 case "$TARGET" in
-    rocky9)
+    rocky8)
         fpm_depends+=(
             # Dependencies to build gems
             automake
@@ -35,8 +35,6 @@ case "$TARGET" in
             libnsl
             openssl-devel
             rubygem-rake
-            # nginx compilation dependencies
-            pcre2-devel
         )
         ;;
     rocky*)
@@ -55,6 +53,8 @@ case "$TARGET" in
             libnsl
             openssl-devel
             rubygem-rake
+            # nginx compilation dependencies
+            pcre2-devel
         )
         ;;
     ubuntu2004)

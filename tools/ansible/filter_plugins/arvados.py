@@ -52,6 +52,7 @@ _RHEL_VERSIONS: t.Dict[str, PackageMapping] = {
         'python3-dev': ['python3.11-devel'],
         'python3-venv': ['python3.11'],
     },
+    '10': _RHEL_BASE,
 }
 # Add all the RHEL variants we support to _PACKAGE_NAMES_MAP.
 for _name, (_version, _mapping) in itertools.product([
