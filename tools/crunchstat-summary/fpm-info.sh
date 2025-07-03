@@ -4,6 +4,6 @@
 
 case "$TARGET" in
     debian* | ubuntu*)
-        fpm_depends+=(libcurl3-gnutls)
+        fpm_depends+=(libcurl4)
         ;;
 esac

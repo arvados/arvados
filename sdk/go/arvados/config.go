@@ -339,7 +339,7 @@ type VolumeAccess struct {
 
 type Services struct {
 	Composer             Service
-	ContainerWebServices Service
+	ContainerWebServices ServiceWithPortRange
 	Controller           Service
 	DispatchCloud        Service
 	DispatchLSF          Service
@@ -360,6 +360,12 @@ type Services struct {
 type Service struct {
 	InternalURLs map[URL]ServiceInstance
 	ExternalURL  URL
+}
+
+type ServiceWithPortRange struct {
+	Service
+	ExternalPortMin int
+	ExternalPortMax int
 }
 
 type TestUser struct {

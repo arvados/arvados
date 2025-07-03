@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 arvados_nginx_client_max_body_size:
-  Controller: "{{ arvados_cluster.API.MaxRequestSize }}"
+  Controller: "{{ arvados_cluster.API.MaxRequestSize|default(134217728) }}"
   Keepproxy: "64m"
   WebDAV: "0"
 

@@ -184,6 +184,16 @@ Clusters:
         # From the main domain:
         #   https://*--containers.uuid_prefix.arvadosapi.com
         ExternalURL: ""
+        # If ExternalPortMin and ExternalPortMax are non-zero, and
+        # ExternalURL is not a wildcard, container services listed in
+        # published_ports can be reached via dynamically assigned
+        # ports in the range [ExternalPortMin, ExternalPortMax].  For
+        # example, if ExternalURL is https://example.com/ and
+        # ExternalPortMin is 8000, Arvados will dynamically assign
+        # https://example.com:8000/, https://example.com:8001/, etc.,
+        # as proxy addresses for services in running containers.
+        ExternalPortMin: 0
+        ExternalPortMax: 0
 
     PostgreSQL:
       # max concurrent connections per arvados server daemon

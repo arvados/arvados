@@ -4,7 +4,7 @@
 #
 # These are the "default" Arvados test database credentials.
 # You can use this file as the `arvados_config_file` for the
-# `install-test-env.yml` playbook in low-security applications.
+# `install-dev-tools.yml` playbook in low-security applications.
 
 Clusters:
   zzzzz:

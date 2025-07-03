@@ -47,43 +47,43 @@ type Container struct {
 
 // ContainerRequest is an arvados#container_request resource.
 type ContainerRequest struct {
-	UUID                    string                   `json:"uuid"`
-	OwnerUUID               string                   `json:"owner_uuid"`
-	CreatedAt               time.Time                `json:"created_at"`
-	ModifiedByUserUUID      string                   `json:"modified_by_user_uuid"`
-	ModifiedAt              time.Time                `json:"modified_at"`
-	Etag                    string                   `json:"etag"`
-	Name                    string                   `json:"name"`
-	Description             string                   `json:"description"`
-	Properties              map[string]interface{}   `json:"properties"`
-	State                   ContainerRequestState    `json:"state"`
-	RequestingContainerUUID string                   `json:"requesting_container_uuid"`
-	ContainerUUID           string                   `json:"container_uuid"`
-	ContainerCountMax       int                      `json:"container_count_max"`
-	Mounts                  map[string]Mount         `json:"mounts"`
-	RuntimeConstraints      RuntimeConstraints       `json:"runtime_constraints"`
-	SchedulingParameters    SchedulingParameters     `json:"scheduling_parameters"`
-	ContainerImage          string                   `json:"container_image"`
-	Environment             map[string]string        `json:"environment"`
-	Cwd                     string                   `json:"cwd"`
-	Command                 []string                 `json:"command"`
-	OutputPath              string                   `json:"output_path"`
-	OutputGlob              []string                 `json:"output_glob"`
-	OutputName              string                   `json:"output_name"`
-	OutputTTL               int                      `json:"output_ttl"`
-	Priority                int                      `json:"priority"`
-	UseExisting             bool                     `json:"use_existing"`
-	LogUUID                 string                   `json:"log_uuid"`
-	OutputUUID              string                   `json:"output_uuid"`
-	RuntimeToken            string                   `json:"runtime_token"`
-	ExpiresAt               time.Time                `json:"expires_at"`
-	Filters                 []Filter                 `json:"filters"`
-	ContainerCount          int                      `json:"container_count"`
-	OutputStorageClasses    []string                 `json:"output_storage_classes"`
-	OutputProperties        map[string]interface{}   `json:"output_properties"`
-	CumulativeCost          float64                  `json:"cumulative_cost"`
-	Service                 bool                     `json:"service"`
-	PublishedPorts          map[string]PublishedPort `json:"published_ports"`
+	UUID                    string                          `json:"uuid"`
+	OwnerUUID               string                          `json:"owner_uuid"`
+	CreatedAt               time.Time                       `json:"created_at"`
+	ModifiedByUserUUID      string                          `json:"modified_by_user_uuid"`
+	ModifiedAt              time.Time                       `json:"modified_at"`
+	Etag                    string                          `json:"etag"`
+	Name                    string                          `json:"name"`
+	Description             string                          `json:"description"`
+	Properties              map[string]interface{}          `json:"properties"`
+	State                   ContainerRequestState           `json:"state"`
+	RequestingContainerUUID string                          `json:"requesting_container_uuid"`
+	ContainerUUID           string                          `json:"container_uuid"`
+	ContainerCountMax       int                             `json:"container_count_max"`
+	Mounts                  map[string]Mount                `json:"mounts"`
+	RuntimeConstraints      RuntimeConstraints              `json:"runtime_constraints"`
+	SchedulingParameters    SchedulingParameters            `json:"scheduling_parameters"`
+	ContainerImage          string                          `json:"container_image"`
+	Environment             map[string]string               `json:"environment"`
+	Cwd                     string                          `json:"cwd"`
+	Command                 []string                        `json:"command"`
+	OutputPath              string                          `json:"output_path"`
+	OutputGlob              []string                        `json:"output_glob"`
+	OutputName              string                          `json:"output_name"`
+	OutputTTL               int                             `json:"output_ttl"`
+	Priority                int                             `json:"priority"`
+	UseExisting             bool                            `json:"use_existing"`
+	LogUUID                 string                          `json:"log_uuid"`
+	OutputUUID              string                          `json:"output_uuid"`
+	RuntimeToken            string                          `json:"runtime_token"`
+	ExpiresAt               time.Time                       `json:"expires_at"`
+	Filters                 []Filter                        `json:"filters"`
+	ContainerCount          int                             `json:"container_count"`
+	OutputStorageClasses    []string                        `json:"output_storage_classes"`
+	OutputProperties        map[string]interface{}          `json:"output_properties"`
+	CumulativeCost          float64                         `json:"cumulative_cost"`
+	Service                 bool                            `json:"service"`
+	PublishedPorts          map[string]RequestPublishedPort `json:"published_ports"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.
@@ -170,6 +170,12 @@ type ContainerStatus struct {
 }
 
 type PublishedPort struct {
+	RequestPublishedPort
+	BaseURL    string `json:"base_url"`
+	InitialURL string `json:"initial_url"`
+}
+
+type RequestPublishedPort struct {
 	Access      PublishedPortAccess `json:"access"`
 	Label       string              `json:"label"`
 	InitialPath string              `json:"initial_path"`

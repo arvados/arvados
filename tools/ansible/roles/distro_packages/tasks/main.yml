@@ -1,0 +1,42 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Install a set of packages with both apt and dnf.
+# Requires a `package_names` var with a list of apt package names.
+# Example:
+#
+# - ansible.builtin.include_role:
+#     name: distro_packages
+#   vars:
+#     task_name: Install build dependencies
+#     package_state: present
+#     package_list:
+#       - g++
+#       - make
+#       - zlib1g-dev
+
+- name: "{{ task_name }} (apt)"
+  when: "ansible_pkg_mgr == 'apt'"
+  become: yes
+  ansible.builtin.apt:
+    name: "{{ package_names | distro_packages(ansible_distribution, ansible_distribution_major_version) }}"
+    state: "{{ package_state }}"
+
+- name: "{{ task_name }} (dnf)"
+  when: "ansible_pkg_mgr == 'dnf'"
+  become: yes
+  vars:
+    # `repo_reqs` maps Debian package names to a list of repositories that
+    # need to be enabled for installation.
+    repo_reqs:
+      arvados-api-server:
+        - devel
+      libfuse-dev:
+        - crb
+      libyaml-dev:
+        - devel
+  ansible.builtin.dnf:
+    name: "{{ package_names | distro_packages(ansible_distribution, ansible_distribution_major_version) }}"
+    state: "{{ package_state }}"
+    enablerepo: "{{ package_names|select('in', repo_reqs)|map('extract', repo_reqs)|flatten|unique }}"

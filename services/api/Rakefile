@@ -41,7 +41,7 @@ namespace :db do
       copyright_done = false
       started = false
       begin
-        tmpfile = File.new tmpfnm, 'w'
+        tmpfile = File.new tmpfnm, 'w+'
         origfile = File.new origfnm
         origfile.each_line do |line|
           if !copyright_done
@@ -69,6 +69,16 @@ namespace :db do
           tmpfile.write line
         end
         origfile.close
+
+        # Remove trailing blank lines by stripping all trailing \n and
+        # then adding one back.
+        tmpfile.seek(-1, :END)
+        while tmpfile.read == "\n"
+          tmpfile.truncate(tmpfile.tell - 1)
+          tmpfile.seek(-1, :END)
+        end
+        tmpfile.write "\n"
+
         tmpfile.close
         File.rename tmpfnm, origfnm
         tmpfnm = false

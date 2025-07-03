@@ -62,7 +62,7 @@ if [ $? -ne 0 ]; then
 fi
 
 UPLOAD=0
-RC=0
+UPLOAD_REPO=dev
 DEBUG=
 TARGET=
 
@@ -98,7 +98,7 @@ while [ $# -gt 0 ]; do
             UPLOAD=1
             ;;
         --rc)
-            RC=1
+            UPLOAD_REPO=testing
             ;;
         --build-version)
             build_args+=("$1" "$2")
@@ -120,7 +120,7 @@ done
 if [[ -z "$TARGET" ]]; then
     echo "FATAL: --target must be specified" >&2
     exit 2
-elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+elif [[ ! -e "$WORKSPACE/build/package-testing/test-packages-$TARGET.sh" ]]; then
     echo "FATAL: unknown build target '$TARGET'" >&2
     exit 2
 fi
@@ -180,15 +180,16 @@ if [[ "$UPLOAD" != 0 ]]; then
   title "Start upload packages"
   timer_reset
 
+  get_ci_scripts
+  checkexit $? "get CI scripts"
+
   if [ ${#failures[@]} -eq 0 ]; then
-    set -x
-    if [[ "$RC" != 0 ]]; then
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET
-    else
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org --workspace $WORKSPACE $TARGET
-    fi
+    "$CI_DIR/run_upload_packages.py" \
+        --repo="$UPLOAD_REPO" \
+        -H jenkinsapt@apt.arvados.org \
+        --workspace="$WORKSPACE" \
+        "$TARGET"
     checkexit $? "upload packages"
-    set +x
   else
     echo "Skipping package upload, there were errors building and/or testing the packages"
   fi

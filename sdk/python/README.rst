@@ -71,9 +71,9 @@ Arvados publishes packages for RHEL 8 and distributions based on it. Note that t
   sudo tee /etc/yum.repos.d/arvados.repo >/dev/null <<'EOF'
   [arvados]
   name=Arvados
-  baseurl=http://rpm.arvados.org/RHEL/$releasever/os/$basearch/
+  baseurl=https://rpm.arvados.org/RHEL/$releasever/os/$basearch/
   gpgcheck=1
-  gpgkey=http://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
+  gpgkey=https://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
   EOF
   sudo dnf install python3-arvados-python-client
 

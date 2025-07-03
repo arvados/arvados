@@ -13,6 +13,7 @@ import (
 	"crypto/subtle"
 	"crypto/tls"
 	"crypto/x509"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -496,6 +497,8 @@ func (conn *Conn) checkContainerLoginPermission(ctx context.Context, userUUID, c
 	return nil
 }
 
+var errUnassignedPort = httpserver.ErrorWithStatus(errors.New("unassigned port"), http.StatusGone)
+
 // ContainerHTTPProxy proxies an incoming request through to the
 // specified port on a running container, via crunch-run's container
 // gateway.
@@ -506,7 +509,26 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 
 	var targetUUID string
 	var targetPort int
-	if len(opts.Target) > 28 && arvadosclient.UUIDMatch(opts.Target[:27]) && opts.Target[27] == '-' {
+	if strings.HasPrefix(opts.Target, ":") {
+		// Target ":1234" means "the entry in the
+		// container_ports table with external_port=1234".
+		extport, err := strconv.Atoi(opts.Target[1:])
+		if err != nil {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("invalid port in target: %s", opts.Target), http.StatusBadRequest)
+		}
+		db, err := conn.getdb(ctx)
+		if err != nil {
+			return nil, httpserver.ErrorWithStatus(fmt.Errorf("getdb: %w", err), http.StatusBadGateway)
+		}
+		err = db.QueryRowContext(ctx, `select container_uuid, container_port
+			from container_ports
+			where external_port = $1`, extport).Scan(&targetUUID, &targetPort)
+		if err == sql.ErrNoRows {
+			return nil, errUnassignedPort
+		} else if err != nil {
+			return nil, httpserver.ErrorWithStatus(err, http.StatusBadGateway)
+		}
+	} else if len(opts.Target) > 28 && arvadosclient.UUIDMatch(opts.Target[:27]) && opts.Target[27] == '-' {
 		targetUUID = opts.Target[:27]
 		fmt.Sscanf(opts.Target[28:], "%d", &targetPort)
 		if targetPort < 1 {

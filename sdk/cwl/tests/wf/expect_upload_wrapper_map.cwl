@@ -79,7 +79,7 @@
                     ],
                     "label": "submit_wf_map.cwl",
                     "out": [],
-                    "run": "keep:2b94b65162db72023301a582e085646f+290/wf/submit_wf_map.cwl"
+                    "run": "keep:6e94cbbad95593da698f57a28762f5c1+290/wf/submit_wf_map.cwl"
                 }
             ]
         }

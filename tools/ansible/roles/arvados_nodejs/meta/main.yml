@@ -1,0 +1,11 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dependencies:
+  - role: distro_packages
+    vars:
+      task_name: Install NodeJS unarchive dependencies
+      package_names:
+        - tar
+        - xz-utils
