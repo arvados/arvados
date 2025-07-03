@@ -542,7 +542,7 @@ BEGIN { OFS="\0"; ORS="\0"; }
 (level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
     print "--version", substr($2, 2, length($2) - 2), $1;
 }
-' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch
+' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch --platform=x86_64-linux
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
         # Tip: If this command removes "stale" gems downloaded in the previous
