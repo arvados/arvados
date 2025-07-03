@@ -199,11 +199,13 @@ run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundl
 # errors; all that matters is that we get `bundle install` to succeed, and
 # we check that next. <https://dev.arvados.org/issues/22647>
 echo "Preinstalling bundle gems -- conflict errors are OK..."
-find vendor/cache -maxdepth 1 -name '*.gem' -print0 |
-    xargs -0r gem install --conservative --ignore-dependencies \
-          --local --no-document --quiet \
-          --install-dir="$bundle_path/ruby/$ruby_minor_ver.0" ||
-    true
+for gem_glob in "*.gem" "*-x86_64-linux.gem"; do
+    find vendor/cache -maxdepth 1 -name "$gem_glob" -print0 |
+        xargs -0r gem install --conservative --ignore-dependencies \
+              --local --no-document --quiet \
+              --install-dir="$bundle_path/ruby/$ruby_minor_ver.0" ||
+        true
+done
 echo " done."
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
