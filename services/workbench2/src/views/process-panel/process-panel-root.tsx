@@ -249,7 +249,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                         forwardProps
                         xs="auto"
                         item
-                        maxHeight={"50%"}
+                        maxHeight={maxHeight}
                         data-cy="process-cmd">
                         <ProcessCmdCard
                             onCopy={props.onCopyToClipboard}

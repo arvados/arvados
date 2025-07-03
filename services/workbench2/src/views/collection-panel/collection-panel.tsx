@@ -30,7 +30,6 @@ type CssRules =
     | 'mpvRoot'
     | 'filesCard'
     | 'value'
-    | 'warningLabel'
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -44,9 +43,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     filesCard: {
         padding: 0,
-    },
-    warningLabel: {
-        fontStyle: 'italic'
     },
     value: {
         textTransform: 'none',

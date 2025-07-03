@@ -19,7 +19,6 @@ type CssRules =
     | 'symmetricTabs'
     | 'gridItemRoot'
     | 'paperRoot'
-    | 'button'
     | 'exclusiveContentPaper'
     | 'exclusiveContent'
     | 'tab'
@@ -43,10 +42,6 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-    },
-    button: {
-        padding: '2px 5px',
-        marginRight: '5px',
     },
     exclusiveContent: {
         overflow: 'auto',
