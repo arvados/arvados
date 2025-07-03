@@ -23,17 +23,17 @@ With this configuration, users will sign in with their Google accounts.
 Use the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> to create a set of client credentials.
 # Select or create a project.
 # Click *+ Enable APIs and Services*.
-#* Search for *People API* and click *Enable API*.
+#* Search for *Google People API* and click *Enable API*.
 #* Navigate back to the main "APIs & Services" page.
 # On the sidebar, click *OAuth consent screen*.
 #* On consent screen settings, enter your identifying details.
-#* Under *Authorized domains* add your domain (@example.com@).
+#* Under *Branding* &rarr; *Authorized domains* add your domain (@example.com@).
 #* Click *Save*.
-# On the sidebar, click *Credentials*, then click *Create credentials*&rarr;*OAuth client ID*
+# On the sidebar, click *Clients*, then click *+ Create client*, arriving at the *OAuth client ID* setup page.
 # Under *Application type* select *Web application*.
-# Add the JavaScript origin: @https://ClusterID.example.com/@
-# Add the Redirect URI: @https://ClusterID.example.com/login@
-# Copy the values of *Client ID* and *Client secret* to the @Login.Google@ section of @config.yml@.
+# Add the JavaScript origin: @https://workbench2.ClusterID.example.com@. This should match the Web origin where you will host Workbench. Note that it can only include the schema, hostname, and port parts; the path, in particular a trailing @/@, is not allowed.
+# Add the Redirect URI: @https://ClusterID.example.com/login@. The host part of this URI should match the @ExternalURL@ of the Arvados controller service as specified in the configuration file @/etc/arvados/config.yml@, including the port if specified.
+# Copy the values of *Client ID* and *Client secret* to the @Login.Google@ section of @/etc/arvados/config.yml@.
 
 {% codeblock as yaml %}
     Login:
