@@ -90,6 +90,7 @@ describe('Login tests', function() {
         // Should log the user out.
 
         cy.getAll('@testProject1').then(([testProject1]) => {
+            cy.get('button').contains('Data').click();
             cy.get('main').contains(testProject1.name).click();
             cy.get('div#root').should('contain', 'Please log in');
             // Should retain last visited url when auth is invalidated
@@ -97,7 +98,7 @@ describe('Login tests', function() {
         })
     })
 
-    it('logs in successfully with valid admin token', function() {
+it('logs in successfully with valid admin token', function() {
         cy.visit(`/token/?api_token=${adminUser.token}`);
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');

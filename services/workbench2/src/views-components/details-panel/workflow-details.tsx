@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WorkflowIcon, StartIcon } from 'components/icon/icon';
+import { WorkflowIcon } from 'components/icon/icon';
 import {
     WorkflowResource, parseWorkflowDefinition, getWorkflowInputs,
     getWorkflowOutputs, getWorkflow
@@ -13,22 +13,22 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
 import { Grid } from '@mui/material';
-import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button } from '@mui/material';
-import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
+import { WithStyles } from '@mui/styles';
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessIOParameter } from 'views/process-panel/process-io-card';
 import { formatInputData, formatOutputData } from 'store/process-panel/process-panel-actions';
 import { AuthState } from 'store/auth/auth-reducer';
 import { RootState } from 'store/store';
-import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
+import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 
 export interface WorkflowDetailsCardDataProps {
     workflow?: WorkflowResource;
+    includeGitprops?: boolean;
 }
 
 export interface WorkflowDetailsCardActionProps {
@@ -40,19 +40,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         () => wf && dispatch<any>(openRunProcess(wf.uuid, wf.ownerUuid, wf.name)),
 });
 
-type CssRules = 'runButton' | 'propertyTag';
+type CssRules = 'propertyTag';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    runButton: {
-        backgroundColor: theme.customs.colors.green700,
-        '&:hover': {
-            backgroundColor: theme.customs.colors.green800,
-        },
-        marginRight: "5px",
-        boxShadow: 'none',
-        padding: '2px 10px 2px 5px',
-        marginLeft: 'auto'
-    },
     propertyTag: {
         marginRight: theme.spacing(0.5),
         marginBottom: theme.spacing(0.5)
@@ -123,18 +113,13 @@ const mapStateToProps = (state: RootState): AuthStateDataProps => {
 
 export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
-        ({ workflow, onClick, auth, classes }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps & WithStyles<CssRules>) => {
+        ({ workflow, auth, includeGitprops, classes }: WorkflowDetailsCardDataProps & AuthStateDataProps & WorkflowDetailsCardActionProps & WithStyles<CssRules>) => {
             if (!workflow) {
                 return <Grid />
             }
-
             const data = getRegisteredWorkflowPanelData(workflow, auth);
+
             return <Grid container>
-                <Button onClick={workflow && onClick(workflow)} className={classes.runButton} variant='contained'
-                    data-cy='workflow-details-panel-run-btn' color='primary' size='small'>
-                    <StartIcon />
-                    Run Workflow
-                </Button>
                 <Grid item xs={12} >
                     <DetailsAttribute
                         label={"Workflow UUID"}
@@ -156,11 +141,11 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
                         label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
-                <Grid item xs={12} md={12}>
+                {includeGitprops && <Grid item xs={12} md={12}>
                     <DetailsAttribute label='Properties' />
                     {Object.keys(data.gitprops).map(k =>
                         getPropertyChip(k, data.gitprops[k], undefined, classes.propertyTag))}
-                </Grid>
+                </Grid>}
             </Grid >;
         }));
 
@@ -170,6 +155,6 @@ export class WorkflowDetails extends DetailsData<WorkflowResource> {
     }
 
     getDetails() {
-        return <WorkflowDetailsAttributes workflow={this.item} />;
+        return <WorkflowDetailsAttributes workflow={this.item} includeGitprops={true} />;
     }
 }

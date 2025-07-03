@@ -36,6 +36,8 @@ describe('Page not found tests', function() {
 
             // when
             cy.goToPath(path);
+            cy.get('button').contains('Data').click();
+            cy.waitForDom();
 
             // then
             cy.get('[data-cy=default-view]').should('exist');
@@ -61,6 +63,7 @@ describe('Page not found tests', function() {
         cy.loginAs(adminUser);
         cy.waitForDom();
 
+        cy.get('button').contains('Data').click();
         cy.get('[data-cy=project-panel]').contains("test-project").click();
 
         cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();

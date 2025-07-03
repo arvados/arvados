@@ -31,6 +31,7 @@ describe('Favorites tests', function () {
             group_class: 'project',
         }).as('myFavoriteProject').then(function () {
             cy.contains('Refresh').click();
+            cy.get('button').contains('Data').click();
             cy.get('main').contains('my-favorite-project').rightclick();
             cy.contains('Add to public favorites').click();
             cy.contains('Public Favorites').click();
@@ -109,6 +110,7 @@ describe('Favorites tests', function () {
         cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject', '@myProject1', '@testCollection')
             .then(function ([mySharedWritableProject, mySharedReadonlyProject, myProject1, testCollection]) {
                 cy.loginAs(activeUser);
+                cy.get('button').contains('Data').click();
 
                 cy.contains(testCollection.name).rightclick();
                 cy.get('[data-cy="Move to"]').click();
@@ -127,6 +129,7 @@ describe('Favorites tests', function () {
                 });
 
                 cy.visit(`/projects/${mySharedWritableProject.uuid}`).then(() => {
+                    cy.get('button').contains('Data').click();
                     cy.get('main').contains(testCollection.name);
                 });
             });
@@ -213,6 +216,7 @@ describe('Favorites tests', function () {
                     .as('testWorkflow2');
 
                 cy.loginAs(activeUser);
+                cy.get('button').contains('Data').click();
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -308,6 +312,8 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject2.name).rightclick();
                 cy.contains('Add to favorites').click();
 
+                cy.get('button').contains('Data').click();
+
                 //add two projects to public favorites
                 cy.get('[data-cy=data-table]').contains(myPublicFavoriteProject1.name).rightclick();
                 cy.contains('Add to public favorites').click();
@@ -360,15 +366,17 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+                cy.get('[data-cy=snackbar]').contains('Item untrashed').should('exist', { timeout: 10000 });
                 // Check project restored to favorites
+                cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
-                cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
         });
 
         cy.getAll('@testFavoriteCollection')
             .then(function ([testFavoriteCollection]) {
                 cy.loginAs(adminUser);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
+                cy.get('button').contains('Data').click();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
                 cy.waitForDom()
@@ -381,7 +389,9 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+                cy.get('[data-cy=snackbar]').contains('Item untrashed').should('exist');
                 // Check collection restored to favorites
+                cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testFavoriteCollection.name);
         });
     });

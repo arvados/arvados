@@ -4,7 +4,7 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, Typography } from "@mui/material";
+import { Grid } from "@mui/material";
 import withStyles from '@mui/styles/withStyles';
 import { Dispatch } from 'redux';
 import { formatCost, formatDate } from "common/formatters";
@@ -12,22 +12,17 @@ import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
 import { CollectionName, ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
-import { getProcess, getProcessStatus, ProcessProperties } from "store/processes/process";
+import { getProcess, getProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
 import { ContainerResource } from "models/container";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
-import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
-import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 import { ContainerRequestResource } from "models/container-request";
 import { filterResources } from "store/resources/resources";
 import { JSONMount, MountType } from 'models/mount-types';
 import { getCollectionUrl } from 'models/collection';
-import { Link } from "react-router-dom";
-import { getResourceUrl } from "routes/routes";
-import WarningIcon from '@mui/icons-material/Warning';
 import { ResourcesState } from "store/resources/resources";
 
 type CssRules = 'link' | 'propertyTag';
@@ -73,7 +68,7 @@ type ProcessDetailsDataProps = {
     resources: ResourcesState;
 }
 
-export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
+export const ProcessAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
         (props: ProcessDetailsDataProps & ProcessDetailsAttributesActionProps) => {
             const process = getProcess(props.request.uuid)(props.resources);
@@ -85,14 +80,10 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const containerRequest = process?.containerRequest;
             const container = props.container;
             const classes = props.classes;
-            const mdSize = props.twoCol ? 6 : 12;
+            const mdSize = 6;
             const { workflowCollection, workflowPath } = parseMounts(mounts);
-            const filteredPropertyKeys = Object.keys(containerRequest?.properties)
-                                            .filter(k => (typeof containerRequest?.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
-            const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
-            const hasDescription = containerRequest?.description && containerRequest.description.length > 0;
 
             function parseMounts(mounts: { [path: string]: MountType } | undefined) {
                 if (!mounts || !mounts[MOUNT_PATH_CWL_WORKFLOW]) {
@@ -122,24 +113,8 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             if (!containerRequest) return <></>;
 
             return <Grid container>
-            <Grid item xs={12}>
-                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
-            </Grid>
-            {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+            <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
-            </Grid>}
-            {resubmittedUrl && <Grid item xs={12}>
-                <Typography>
-                    <WarningIcon />
-                    This process failed but was automatically resubmitted.  <Link to={resubmittedUrl}> Click here to go to the resubmitted process.</Link>
-                </Typography>
-            </Grid>}
-            <Grid item xs={12} md={12}>
-                <DetailsAttribute label={'Description'}>
-                    {hasDescription
-                        ? <Typography>{containerRequest.description}</Typography>
-                        : <Typography>No description available</Typography>}
-                </DetailsAttribute>
             </Grid>
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
@@ -209,20 +184,6 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
              </Grid>}
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Priority' value={containerRequest.priority} />
-            </Grid>
-            {/*
-                NOTE: The property list should be kept at the bottom, because it spans
-                the entire available width, without regards of the twoCol prop.
-              */}
-            <Grid item xs={12} md={12}>
-                <DetailsAttribute label='Properties' />
-                {filteredPropertyKeys.length > 0
-                                             ? filteredPropertyKeys.map(k =>
-                                                 Array.isArray(containerRequest.properties[k])
-                                                 ? containerRequest.properties[k].map((v: string) =>
-                                                     getPropertyChip(k, v, undefined, classes.propertyTag))
-                                                 : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
-                                             : <div>No properties</div>}
             </Grid>
             </Grid>;
         }

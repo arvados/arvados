@@ -109,6 +109,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                 cy.loginAs(adminUser);
 
                 // Data tab
+                cy.get('button').contains('Data').click();
                 cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], false);
 
                     //check that a thing can be checked
@@ -185,6 +186,7 @@ describe('For project resources', () => {
         }).as('testProject');
         cy.getAll('@testProject').then(([testProject]) => {
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             cy.doDataExplorerSelect(testProject.name);
 
             // disabled until #22787 is resolved
@@ -232,12 +234,14 @@ describe('For project resources', () => {
 
             //Add to favorites
             cy.get('[aria-label="Add to favorites"]').click();
+            cy.waitForDom();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProject.name)
 
             //Add to public favorites
             cy.get('[aria-label="Add to public favorites"]').click()
+            cy.waitForDom();
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProject.name)
@@ -264,6 +268,7 @@ describe('For project resources', () => {
         }).as('clipboardTestProject');
         cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             cy.doDataExplorerSelect(clipboardTestProject.name);
 
             // Copy UUID
@@ -287,6 +292,7 @@ describe('For project resources', () => {
         }).as('clipboardTestProject');
         cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             cy.doDataExplorerSelect(clipboardTestProject.name);
 
             // Copy link to clipboard
@@ -329,6 +335,7 @@ describe('For project resources', () => {
 
                 // non-admin actions
                 cy.loginAs(activeUser);
+                cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testProject4.name, true);
                 cy.assertDataExplorerContains(testProject5.name, true);
 
@@ -345,6 +352,7 @@ describe('For project resources', () => {
 
                 // admin actions
                 cy.loginAs(adminUser);
+                cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
                 cy.assertDataExplorerContains(testProject3.name, true);
@@ -360,8 +368,11 @@ describe('For project resources', () => {
                 cy.get('[data-cy=picker-dialog-project-search]').find('input').type(testProject3.name);
                 cy.get('[data-cy=projects-tree-search-picker]').contains(testProject3.name).click();
                 cy.get('[data-cy=form-submit-btn]').click();
+                cy.get('button').contains('Data').click();
 
                 cy.assertDataExplorerContains(testProject3.name, true).click();
+                cy.waitForDom()
+                cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
 
@@ -382,6 +393,7 @@ describe('For project resources', () => {
                 cy.assertDataExplorerContains(testProject1.name, false);
                 cy.assertDataExplorerContains(testProject2.name, false);
                 cy.contains(testProject3.name).click();
+                cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
             }
@@ -418,6 +430,7 @@ describe('For collection resources', () => {
         }).as("testCollection")
         cy.getAll('@testCollection').then(([testCollection]) => {
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             cy.doDataExplorerSelect(testCollection.name);
 
             // disabled until #22787 is resolved
@@ -455,12 +468,14 @@ describe('For collection resources', () => {
 
             //Add to favorites
             cy.get('[aria-label="Add to favorites"]').click();
+            cy.waitForDom();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testCollection.name)
 
             //Add to public favorites
             cy.get('[aria-label="Add to public favorites"]').click()
+            cy.waitForDom();
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testCollection.name)
@@ -506,6 +521,7 @@ describe('For collection resources', () => {
             .then(([testProject1, testCollection1, testCollection2, testCollection3, testCollection4]) => {
 
                 cy.loginAs(adminUser);
+                cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
@@ -525,11 +541,14 @@ describe('For collection resources', () => {
                 cy.get('[data-cy=form-submit-btn]').click();
 
                 cy.assertDataExplorerContains(testProject1.name, true).click();
+                cy.waitForDom();
+                cy.get('button').contains('Data').click();
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
 
                 //check multi-collection trash
                 cy.contains('Home Projects').click();
+                cy.get('button').contains('Data').click();
                 cy.doDataExplorerSelect(testCollection3.name);
                 cy.doDataExplorerSelect(testCollection4.name);
                 cy.doToolbarAction('Move to trash');
@@ -545,6 +564,8 @@ describe('For collection resources', () => {
                 cy.doDataExplorerSelect(testProject1.name);
                 cy.assertToolbarButtons(tooltips.readOnlyProject);
                 cy.get("[data-cy=data-table-row]").contains(testProject1.name).click();
+                cy.waitForDom();
+                cy.get('button').contains('Data').click();
                 cy.doDataExplorerSelect(testCollection1.name);
                 cy.assertToolbarButtons(tooltips.readonlyCollection);
                 cy.doDataExplorerSelect(testCollection2.name);
@@ -724,6 +745,7 @@ describe('For workflow resources', () => {
             }).as('testWorkflow');
         cy.getAll('@testWorkflow').then(function ([testWorkflow]) {
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             cy.assertDataExplorerContains(testWorkflow.name, true);
 
             //assert toolbar buttons
@@ -751,6 +773,7 @@ describe('For workflow resources', () => {
                 cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             });
             cy.contains('Home Projects').click();
+            cy.get('button').contains('Data').click();
             cy.doDataExplorerSelect(testWorkflow.name);
 
             //api details
@@ -781,6 +804,7 @@ describe('For workflow resources', () => {
             }).as('testWorkflow2');
         cy.getAll('@testWorkflow1', '@testWorkflow2').then(function ([testWorkflow1, testWorkflow2]) {
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             cy.assertDataExplorerContains(testWorkflow1.name, true);
             cy.assertDataExplorerContains(testWorkflow2.name, true);
 
@@ -1049,6 +1073,7 @@ describe('For multiple resource types', () => {
             .then(([testProject, testCollection,  testProcess]) => {
 
             cy.loginAs(adminUser);
+            cy.get('button').contains('Data').click();
             //add resources to favorites so they are all in the same table
             cy.doDataExplorerSelect(testProject.name);
             cy.get('[aria-label="Add to favorites"]').click();

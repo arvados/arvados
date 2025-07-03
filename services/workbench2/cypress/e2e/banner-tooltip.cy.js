@@ -32,6 +32,8 @@ describe('Banner / tooltip tests', function () {
 
             cy.goToPath(`/collections/${bannerCollection.uuid}`);
 
+            cy.get('button').contains('Files').click();
+            cy.waitForDom();
             cy.get('[data-cy=upload-button]').click();
 
             cy.fixture('files/banner.html').as('banner');
