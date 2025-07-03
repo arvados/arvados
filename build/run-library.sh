@@ -517,6 +517,8 @@ handle_rails_package() {
         #
         # `bundle cache` caches from Git and paths, not just rubygems.org.
         bundle config set cache_all true
+        # `bundle cache` should cache gems for all platforms.
+        bundle config set cache_all_platforms true
         # Disallow changes to Gemfile.
         bundle config set deployment true
         # Avoid loading system-wide gems (although this seems to not work 100%).
@@ -527,13 +529,14 @@ handle_rails_package() {
         # As of April 2024/Bundler 2.4, `bundle cache` seems to skip downloading
         # gems that are already available system-wide... and then it complains
         # that your bundle is incomplete. Work around this by fetching gems
-        # manually.
+        # manually, starting with platform-specific ones.
         # `--max-procs=6` is an abritrary number to download in parallel
         # while being at least a little polite to rubygems.org.
         # TODO: Once all our supported distros have Ruby 3+, we can modify
         # the awk script to print "NAME:VERSION" output, and pipe that directly
         # to `xargs -0r gem fetch` for reduced overhead.
         mkdir -p vendor/cache
+        PLATFORM=x86_64-linux
         awk -- '
 BEGIN { OFS="\0"; ORS="\0"; }
 (/^[A-Z ]*$/) { level1=$0; }
@@ -542,7 +545,18 @@ BEGIN { OFS="\0"; ORS="\0"; }
 (level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
     print "--version", substr($2, 2, length($2) - 2), $1;
 }
-' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch --platform=x86_64-linux
+' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch --platform="$PLATFORM"
+        # For any platform-specific gems we fetched, get the generic "ruby"
+        # version too. Bundler seems to want both.
+        find vendor/cache -name "*-$PLATFORM.gem" -printf '%f\0' | awk -v PLATFORM="$PLATFORM" '
+BEGIN { RS="\0"; OFS="\0"; ORS="\0"; }
+{
+sub("-" PLATFORM "\\.gem$", "");
+ver_idx = match($0, "-[[:digit:]]+[-_+.[:alnum:]]*$");
+if (ver_idx == 0) { exit(66); }  # EX_NOINPUT
+print "--version", substr($0, ver_idx+1), substr($0, 1, ver_idx-1);
+}
+' | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch --platform=ruby
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
         # Tip: If this command removes "stale" gems downloaded in the previous
