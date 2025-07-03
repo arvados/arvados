@@ -32,6 +32,26 @@ h2(#main). development main
 
 "previous: Upgrading to 3.1.2":#v3_1_2
 
+h3. New GPG key URL for Red Hat, AlmaLinux, and Rocky Linux
+
+As part of adding support for the RHEL 9 family of distributions, we have started using a new signing key for packages. For these distributions, the key corresponding to your distribution is now available at a URL that includes the release version. Before you upgrade, on each system where you have the Arvados package repository installed, edit the file with that repository configuration, usually @/etc/yum.repos.d/arvados.repo@. Find the line that defines @gpgkey@:
+
+<notextile>
+<pre><code>[arvados]
+…
+gpgkey=https://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
+</code></pre>
+</notextile>
+
+Edit this line to add @$releasever/@ after @RHEL/@, so it looks like this:
+
+<notextile>
+<pre><code>gpgkey=https://rpm.arvados.org/RHEL/<span class="userinput">$releasever/</span>RPM-GPG-KEY-arvados
+</code></pre>
+</notextile>
+
+Then save and close the file. The old key URL still works, so this step is not required to upgrade Arvados itself. However, doing it now will help ensure you retain access to the Arvados repositories next time you upgrade your distribution.
+
 h3. Admin container shell access is enabled by default
 
 "Container shell access":{{ site.baseurl }}/user/debugging/container-shell-access.html by admin users is now enabled by default to make it easier to diagnose workflow issues on new deployments.  If you prefer to leave it disabled, update your configuration file accordingly.
