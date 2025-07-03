@@ -31,7 +31,7 @@ Use the <a href="https://console.developers.google.com" target="_blank">Google D
 #* Click *Save*.
 # On the sidebar, click *Clients*, then click *+ Create client*, arriving at the *OAuth client ID* setup page.
 # Under *Application type* select *Web application*.
-# Add the JavaScript origin: @https://ClusterID.example.com@. This refers to the Web origin of the Workbench 2 application (notice that it can only include the schema, hostname, and port parts; the path, in particular a trailing @/@, is not allowed).
+# Add the JavaScript origin: @https://workbench2.ClusterID.example.com@. This should match the Web origin where you will host Workbench. Note that it can only include the schema, hostname, and port parts; the path, in particular a trailing @/@, is not allowed.
 # Add the Redirect URI: @https://ClusterID.example.com/login@. The host part of this URI should match the @ExternalURL@ of the Arvados controller service as specified in the configuration file @/etc/arvados/config.yml@, including the port if specified.
 # Copy the values of *Client ID* and *Client secret* to the @Login.Google@ section of @/etc/arvados/config.yml@.
 
