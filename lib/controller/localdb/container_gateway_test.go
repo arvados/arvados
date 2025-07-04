@@ -135,6 +135,10 @@ func (s *ContainerGatewaySuite) TearDownSuite(c *check.C) {
 func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.localdbSuite.SetUpTest(c)
 
+	s.localdb.cluster.Services.ContainerWebServices.ExternalURL.Host = "*.containers.example.com"
+	s.localdb.cluster.Services.ContainerWebServices.ExternalPortMin = 0
+	s.localdb.cluster.Services.ContainerWebServices.ExternalPortMax = 0
+
 	cr, err := s.localdb.ContainerRequestCreate(s.userctx, s.reqCreateOptions)
 	c.Assert(err, check.IsNil)
 	s.reqUUID = cr.UUID
@@ -374,6 +378,9 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy(c *check.C, targetUUID st
 			handler.ServeHTTP(rw, req)
 			resp := rw.Result()
 			c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+			if cookie := getCookie(resp, "arvados_container_uuid"); c.Check(cookie, check.NotNil) {
+				c.Check(cookie.Value, check.Equals, s.ctrUUID)
+			}
 			body, err := io.ReadAll(resp.Body)
 			c.Assert(err, check.IsNil)
 			c.Check(string(body), check.Matches, `handled `+method+` /via-.* with Host \Q`+vhost+`\E`)
@@ -396,14 +403,15 @@ func (s *ContainerGatewaySuite) vhostAndTargetForWildcard(c *check.C, targetUUID
 // Services.ContainerWebServices.ExternalPortMax are positive, and
 // Services.ContainerWebServices.ExternalURL is not a wildcard.
 func (s *ContainerGatewaySuite) vhostAndTargetForDynamicPort(c *check.C, targetUUID, targetPort string) (string, string) {
-	s.localdb.cluster.Services.ContainerWebServices.ExternalURL.Host = "containers.example.com"
+	exthost := "containers.example.com"
+	s.localdb.cluster.Services.ContainerWebServices.ExternalURL.Host = exthost
 	s.localdb.cluster.Services.ContainerWebServices.ExternalPortMin = testDynamicPortMin
 	s.localdb.cluster.Services.ContainerWebServices.ExternalPortMax = testDynamicPortMax
 	assignedPort := s.assignedExtPort.Add(1)
 	_, err := s.db.Exec(`insert into container_ports (external_port, container_uuid, container_port) values ($1, $2, $3)`,
 		assignedPort, targetUUID, targetPort)
 	c.Assert(err, check.IsNil)
-	return "containers.example.com", fmt.Sprintf(":%d", assignedPort)
+	return fmt.Sprintf("%s:%d", exthost, assignedPort), fmt.Sprintf(":%d", assignedPort)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxyError_NoToken_Unlisted(c *check.C) {
@@ -518,10 +526,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcI
 	target, err := vhost.Parse(path)
 	c.Assert(err, check.IsNil)
 
-	tempdir, err := ioutil.TempDir("", "localdb-test-")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(tempdir)
-
+	tempdir := c.MkDir()
 	cmd := exec.Command("curl")
 	if cookietoken != "" {
 		cmd.Args = append(cmd.Args, "--cookie", "arvados_api_token="+string(auth.EncodeTokenCookie([]byte(cookietoken))))
@@ -546,6 +551,191 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcI
 	c.Check(err, check.Equals, nil)
 	c.Check(buf.String(), check.Matches, `handled `+method+` /.*`)
 	return buf.String()
+}
+
+// See testContainerHTTPProxy_ReusedPort().  These integration tests
+// use curl to check the redirect-with-cookie behavior when a request
+// arrives on a dynamically-assigned port and it has cookies
+// indicating that the client has previously accessed a different
+// container's web services on this same port, i.e., it is susceptible
+// to leaking cache/cookie/localstorage data from the previous
+// container's service to the current container's service.
+type testReusedPortCurl struct {
+	svcIdx      int
+	method      string
+	querytoken  string
+	cookietoken string
+}
+
+// Reject non-GET requests.  In principle we could 303 them, but in
+// the most obvious case (an AJAX request initiated by the previous
+// container's web application), delivering the request to the new
+// container would surely not be the intended behavior.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_Curl_RejectPOST(c *check.C) {
+	log := s.testContainerHTTPProxy_ReusedPort_Curl(c, testReusedPortCurl{
+		method:      "POST",
+		cookietoken: arvadostest.ActiveTokenV2,
+	})
+	c.Check(log, check.Matches, `(?ms).*410 Gone.*`)
+	c.Check(log, check.Not(check.Matches), `(?ms).*handled POST.*`)
+	c.Check(log, check.Not(check.Matches), `(?ms).*Set-Cookie: .*`)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_Curl_WithoutToken_ClearApplicationCookie(c *check.C) {
+	log := s.testContainerHTTPProxy_ReusedPort_Curl(c, testReusedPortCurl{
+		svcIdx:      1,
+		method:      "GET",
+		cookietoken: arvadostest.ActiveTokenV2,
+	})
+	c.Check(log, check.Matches, `(?ms).*HTTP/1.1 303 See Other.*`)
+	c.Check(log, check.Matches, `(?ms).*Set-Cookie: stale_cookie=.*`)
+}
+
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_Curl_WithToken_ClearApplicationCookie(c *check.C) {
+	log := s.testContainerHTTPProxy_ReusedPort_Curl(c, testReusedPortCurl{
+		method:     "GET",
+		querytoken: arvadostest.ActiveTokenV2,
+	})
+	c.Check(log, check.Matches, `(?ms).*HTTP/1.1 303 See Other.*`)
+	c.Check(log, check.Matches, `(?ms).*Location: /foobar\r\n.*`)
+	c.Check(log, check.Matches, `(?ms).*Set-Cookie: stale_cookie=.*`)
+	c.Check(log, check.Matches, `(?ms).*handled GET.*`)
+	c.Check(log, check.Not(check.Matches), `(?ms).*handled GET.*handled GET.*`)
+}
+
+func (s *ContainerGatewaySuite) testContainerHTTPProxy_ReusedPort_Curl(c *check.C, t testReusedPortCurl) string {
+	_, svcPort, err := net.SplitHostPort(s.containerServices[t.svcIdx].Addr)
+	c.Assert(err, check.IsNil)
+
+	srvurl, err := url.Parse(s.srv.URL)
+	c.Assert(err, check.IsNil)
+	controllerHost := srvurl.Host
+
+	vhost, _ := s.vhostAndTargetForDynamicPort(c, s.ctrUUID, svcPort)
+	requrl := url.URL{
+		Scheme: "https",
+		Host:   vhost,
+		Path:   "/foobar",
+	}
+	if t.querytoken != "" {
+		requrl.RawQuery = "arvados_api_token=" + t.querytoken
+	}
+
+	// Initialize cookie jar.
+	//
+	// We can't use "--cookie" arguments to set individual cookies
+	// here, because curl doesn't clear/replace those when
+	// instructed by Set-Cookie headers in redirect responses.
+	tempdir := c.MkDir()
+	cookiejar := filepath.Join(tempdir, "cookie.jar")
+	c.Assert(ioutil.WriteFile(cookiejar, []byte(`
+containers.example.com	FALSE	/	FALSE	0	arvados_container_uuid	zzzzz-dz642-compltcontainer
+containers.example.com	FALSE	/	FALSE	0	stale_cookie	abcdefghij
+`), 0666), check.IsNil)
+
+	cmd := exec.Command("curl", "--cookie-jar", cookiejar, "--cookie", cookiejar)
+	if t.cookietoken != "" {
+		cmd.Args = append(cmd.Args, "--cookie", "arvados_api_token="+string(auth.EncodeTokenCookie([]byte(t.cookietoken))))
+	}
+	if t.method != "GET" {
+		cmd.Args = append(cmd.Args, "--request", t.method)
+	}
+	cmd.Args = append(cmd.Args, "--verbose", "--no-progress-meter", "--insecure", "--location", "--connect-to", requrl.Host+":"+controllerHost, requrl.String())
+	cmd.Dir = tempdir
+	c.Logf("cmd: %v", cmd.Args)
+	buf, _ := cmd.CombinedOutput()
+
+	return string(buf)
+}
+
+// Unit tests for clear-cookies-and-redirect behavior when the client
+// still has active cookies (and possibly client-side cache) from a
+// different container that used to be served on the same
+// dynamically-assigned port.
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_QueryToken(c *check.C) {
+	s.testContainerHTTPProxy_ReusedPort(c, arvadostest.ActiveTokenV2, "")
+}
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_CookieToken(c *check.C) {
+	s.testContainerHTTPProxy_ReusedPort(c, "", arvadostest.ActiveTokenV2)
+}
+func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_NoToken(c *check.C) {
+	s.testContainerHTTPProxy_ReusedPort(c, "", "")
+}
+func (s *ContainerGatewaySuite) testContainerHTTPProxy_ReusedPort(c *check.C, querytoken, cookietoken string) {
+	srv := s.containerServices[0]
+	method := "GET"
+	_, port, err := net.SplitHostPort(srv.Addr)
+	c.Assert(err, check.IsNil, check.Commentf("%s", srv.Addr))
+	vhost, target := s.vhostAndTargetForDynamicPort(c, s.ctrUUID, port)
+
+	var tokenCookie *http.Cookie
+	if cookietoken != "" {
+		tokenCookie = &http.Cookie{
+			Name:  "arvados_api_token",
+			Value: string(auth.EncodeTokenCookie([]byte(cookietoken))),
+		}
+	}
+
+	initialURL := "https://" + vhost + "/via-" + s.gw.Address + "/preserve-path?preserve-param=preserve-value"
+	if querytoken != "" {
+		initialURL += "&arvados_api_token=" + querytoken
+	}
+	req, err := http.NewRequest(method, initialURL, nil)
+	c.Assert(err, check.IsNil)
+	req.Header.Add("Cookie", "arvados_container_uuid=zzzzz-dz642-compltcontainer")
+	req.Header.Add("Cookie", "stale_cookie=abcdefghij")
+	if tokenCookie != nil {
+		req.Header.Add("Cookie", tokenCookie.String())
+	}
+	handler, err := s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
+		Target:  target,
+		Request: req,
+	})
+	c.Assert(err, check.IsNil)
+	rw := httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	resp := rw.Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusSeeOther)
+	c.Logf("Received Location: %s", resp.Header.Get("Location"))
+	c.Logf("Received cookies: %v", resp.Cookies())
+	newTokenCookie := getCookie(resp, "arvados_api_token")
+	if querytoken != "" {
+		if c.Check(newTokenCookie, check.NotNil) {
+			c.Check(newTokenCookie.Expires.IsZero(), check.Equals, true)
+		}
+	}
+	if newTokenCookie != nil {
+		tokenCookie = newTokenCookie
+	}
+	if staleCookie := getCookie(resp, "stale_cookie"); c.Check(staleCookie, check.NotNil) {
+		c.Check(staleCookie.Expires.Before(time.Now()), check.Equals, true)
+		c.Check(staleCookie.Value, check.Equals, "")
+	}
+	if ctrCookie := getCookie(resp, "arvados_container_uuid"); c.Check(ctrCookie, check.NotNil) {
+		c.Check(ctrCookie.Expires.Before(time.Now()), check.Equals, true)
+		c.Check(ctrCookie.Value, check.Equals, "")
+	}
+	c.Check(resp.Header.Get("Clear-Site-Data"), check.Equals, `"cache", "storage"`)
+
+	req, err = http.NewRequest(method, resp.Header.Get("Location"), nil)
+	c.Assert(err, check.IsNil)
+	req.Header.Add("Cookie", tokenCookie.String())
+	handler, err = s.localdb.ContainerHTTPProxy(s.userctx, arvados.ContainerHTTPProxyOptions{
+		Target:  target,
+		Request: req,
+	})
+	c.Assert(err, check.IsNil)
+	rw = httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	resp = rw.Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	if ctrCookie := getCookie(resp, "arvados_container_uuid"); c.Check(ctrCookie, check.NotNil) {
+		c.Check(ctrCookie.Expires.IsZero(), check.Equals, true)
+		c.Check(ctrCookie.Value, check.Equals, s.ctrUUID)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+	c.Check(string(body), check.Matches, `handled GET /via-localhost:\d+/preserve-path\?preserve-param=preserve-value with Host containers.example.com:\d+`)
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_PublishedPortByName_ProxyTunnel(c *check.C) {
@@ -1066,4 +1256,13 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 	ctr, err := s.localdb.ContainerGet(s.userctx, arvados.GetOptions{UUID: s.ctrUUID})
 	c.Check(err, check.IsNil)
 	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
+}
+
+func getCookie(resp *http.Response, name string) *http.Cookie {
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == name {
+			return cookie
+		}
+	}
+	return nil
 }
