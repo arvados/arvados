@@ -421,6 +421,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     Rails.configuration.Login.LoginCluster = 'zbbbb'
     email_dest = ActiveSupport::OrderedOptions.new
     email_dest[:'arvados-admin@example.com'] = ActiveSupport::OrderedOptions.new
+    Rails.configuration.Users.SendUserSetupNotificationEmail = true
     Rails.configuration.Users.UserNotifierEmailBcc = email_dest
     Rails.configuration.Users.NewUserNotificationRecipients = email_dest
     Rails.configuration.Users.NewInactiveUserNotificationRecipients = email_dest

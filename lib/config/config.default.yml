@@ -2,13 +2,19 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# Do not use this file for site configuration. Create
-# /etc/arvados/config.yml instead.
+# This file provides documentation and default values for all Arvados
+# configuration entries.
 #
-# The order of precedence (highest to lowest):
-# 1. Legacy component-specific config files (deprecated)
-# 2. /etc/arvados/config.yml
-# 3. config.default.yml
+# It is NOT intended to be copied and used as a starting point for a
+# site configuration file.  If you do that, the "SAMPLE" entries will
+# be misinterpreted as real configuration entries, and future upgrades
+# will leave your configuration file with stale defaults and
+# documentation.  Instead, you should create /etc/arvados/config.yml
+# with only the entries you want to override, and refer to the latest
+# version of this file for documentation.
+#
+# To show the entire configuration, computed from the current defaults
+# and your local site configuration, run `arvados-server config-dump`.
 
 Clusters:
   xxxxx:
@@ -437,7 +443,7 @@ Clusters:
 
       # Send an email to each user when their account has been set up
       # (meaning they are able to log in).
-      SendUserSetupNotificationEmail: true
+      SendUserSetupNotificationEmail: false
 
       # Ruby ERB template used for the email sent out to users when
       # they have been set up.
