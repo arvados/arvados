@@ -4,15 +4,12 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Grid, Link } from '@mui/material';
+import { CardHeader, CardContent, Typography, Grid, Link } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
-    CloseIcon,
-    MaximizeIcon,
     ResourceIcon,
-    UnMaximizeIcon,
     ShowChartIcon,
 } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -66,7 +63,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type ProcessResourceCardProps = ProcessResourceCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessResourceCard = withStyles(styles)(connect()(
-    ({ classes, nodeInfo, usageReport, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName, process, }: ProcessResourceCardProps) => {
+    ({ classes, nodeInfo, usageReport, panelName, process, }: ProcessResourceCardProps) => {
         let diskRequest = 0;
         if (process.container?.mounts) {
             for (const mnt in process.container.mounts) {
@@ -78,7 +75,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
         }
 
         return (
-            <Card className={classes.card} data-cy="process-resources-card">
+            <section className={classes.card} data-cy="process-resources-card">
                 <CardHeader
                     className={classes.header}
                     classes={{
@@ -95,18 +92,6 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                         <div>
                               {usageReport &&
                                <Link href={usageReport} className={classes.reportButton} target="_blank"><ShowChartIcon /> Resource usage report</Link>}
-                                          {doUnMaximizePanel && panelMaximized &&
-                                           <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
-                                               <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
-                                           </Tooltip>}
-                                                                   {doMaximizePanel && !panelMaximized &&
-                                                                    <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
-                                                                        <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
-                                                                    </Tooltip>}
-                                                                                            {doHidePanel &&
-                                                                                             <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                                                                                 <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                                                                                             </Tooltip>}
                         </div>
                     } />
                 <CardContent className={classes.content}>
@@ -223,7 +208,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                     </Grid>
                     <Typography>* RAM available to the program is limited to Requested RAM, not Instance RAM</Typography>
                 </CardContent>
-            </Card >
+            </section >
         );
     }
 ));

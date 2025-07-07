@@ -27,7 +27,7 @@ import { ResourceKind } from 'models/resource';
 import { CollectionFileType } from 'models/collection-file';
 import { DefaultView } from 'components/default-view/default-view';
 import { ProjectDetailsComponent } from 'views-components/details-panel/project-details';
-import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
+import { CollectionDetailsAttributes } from 'views-components/details-panel/collection-details';
 import { RootProjectDetailsComponent } from 'views-components/details-panel/root-project-details';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { formatFileSize } from 'common/formatters';

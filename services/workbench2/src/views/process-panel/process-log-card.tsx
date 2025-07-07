@@ -4,18 +4,15 @@
 
 import React, { useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, IconButton, CardContent, Tooltip, Grid, Typography } from '@mui/material';
+import { CardHeader, IconButton, CardContent, Tooltip, Grid, Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { useAsyncInterval } from 'common/use-async-interval';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
-    CloseIcon,
     CollectionIcon,
     CopyIcon,
     LogIcon,
-    MaximizeIcon,
-    UnMaximizeIcon,
     TextDecreaseIcon,
     TextIncreaseIcon,
     WordWrapOffIcon,
@@ -64,6 +61,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     root: {
         height: '100%',
+        overflow: 'hidden',
     },
 });
 
@@ -88,8 +86,7 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines,
-       onLogFilterChange, navigateToLog, onCopy, pollProcessLogs,
-       doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
+       onLogFilterChange, navigateToLog, onCopy, pollProcessLogs, panelName }: ProcessLogsCardProps) => {
            const [wordWrap, setWordWrap] = useState<boolean>(true);
            const [fontSize, setFontSize] = useState<number>(3);
            const fontBaseSize = 10;
@@ -101,7 +98,7 @@ export const ProcessLogsCard = withStyles(styles)(
 
            return (
                <Grid item className={classes.root} xs={12}>
-                   <Card className={classes.card}>
+                   <section className={classes.card}>
                        <CardHeader className={classes.header}
                                    avatar={<LogIcon className={classes.iconHeader} />}
                                    action={<Grid container direction='row' alignItems='center'>
@@ -148,18 +145,6 @@ export const ProcessLogsCard = withStyles(styles)(
                                                </IconButton>
                                            </Tooltip>
                                        </Grid>
-                                                           { doUnMaximizePanel && panelMaximized &&
-                                                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
-                                                                 <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
-                                                             </Tooltip> }
-                                                                                     { doMaximizePanel && !panelMaximized &&
-                                                                                       <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
-                                                                                           <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
-                                                                                       </Tooltip> }
-                                                                                                               { doHidePanel &&
-                                                                                                                 <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                                                                                                     <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                                                                                                                 </Tooltip> }
                                    </Grid>}
                                    title={
                                        <Typography noWrap variant='h6' className={classes.title}>
@@ -182,7 +167,7 @@ export const ProcessLogsCard = withStyles(styles)(
                                   messages={['No logs yet']} />
                            }
                        </CardContent>
-                   </Card>
+                   </section>
                </Grid >
            );
 });

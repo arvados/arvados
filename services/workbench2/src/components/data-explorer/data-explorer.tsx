@@ -26,7 +26,7 @@ import { MultiselectToolbar } from "components/multiselect-toolbar/MultiselectTo
 import { TCheckedList } from "components/data-table/data-table";
 import { createTree } from "models/tree";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters";
-import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
+import { IconType, MoreVerticalIcon } from "components/icon/icon";
 import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
@@ -112,6 +112,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "100%",
         flex: 1,
         overflowY: "auto",
+        boxShadow: 'none',
     },
     moreOptionsButton: {
         padding: 0,
@@ -332,11 +333,7 @@ export const DataExplorer = withStyles(styles)(
                 fetchMode,
                 selectedResourceUuid,
                 title,
-                doHidePanel,
-                doMaximizePanel,
-                doUnMaximizePanel,
                 panelName,
-                panelMaximized,
                 elementPath,
                 toggleMSToolbar,
                 setCheckedListOnStore,
@@ -418,36 +415,6 @@ export const DataExplorer = withStyles(styles)(
                                         />
                                     )}
                                 </Grid>
-                                {doUnMaximizePanel && panelMaximized && (
-                                    <Tooltip
-                                        title={`Unmaximize ${panelName || "panel"}`}
-                                        disableFocusListener
-                                    >
-                                        <IconButton onClick={doUnMaximizePanel} size="large">
-                                            <UnMaximizeIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                                {doMaximizePanel && !panelMaximized && (
-                                    <Tooltip
-                                        title={`Maximize ${panelName || "panel"}`}
-                                        disableFocusListener
-                                    >
-                                        <IconButton onClick={doMaximizePanel} size="large">
-                                            <MaximizeIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                                {doHidePanel && (
-                                    <Tooltip
-                                        title={`Close ${panelName || "panel"}`}
-                                        disableFocusListener
-                                    >
-                                        <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
-                                            <CloseIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
                             </Toolbar>
                         </Grid>
                     )}

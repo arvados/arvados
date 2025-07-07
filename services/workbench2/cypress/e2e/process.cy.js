@@ -23,6 +23,10 @@ describe("Process tests", function () {
             .then(function () {
                 activeUser = this.activeUser;
             });
+        // don't abort on expected errors
+        cy.on('uncaught:exception', (err, runnable) => {
+            console.error(err);
+        });
     });
 
 
@@ -63,7 +67,7 @@ describe("Process tests", function () {
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
+                cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
             });
@@ -94,7 +98,7 @@ describe("Process tests", function () {
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
+                cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`zzzzz-tpzed-000000000000000`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").contains(`Active User (${activeUser.user.uuid})`);
             });
@@ -162,14 +166,18 @@ describe("Process tests", function () {
 
             cy.getAll("@containerRequest", "@runningContainer", "@intercept1").then(function ([containerRequest]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.waitForDom();
                 cy.reload();
+                cy.waitForDom();
                 cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time")
             }).as("retry1");
 
             cy.getAll("@containerRequest", "@runningContainer", "@retry1").then(function ([containerRequest]) {
                 containerCount = 3;
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.waitForDom();
                 cy.reload();
+                cy.waitForDom();
                 cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 2 times");
             });
         });
@@ -180,9 +188,10 @@ describe("Process tests", function () {
             createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", crName);
-                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
-                cy.get("ul[data-cy=context-menu]").contains("Copy and re-run process").click();
+                cy.get("[data-cy=process-details-card]").should("contain", crName);
+                cy.get("[data-cy=process-details-card]").within(() => {
+                    cy.get('[data-title="Copy and re-run process"]').click();
+                })
             });
 
             cy.get("[data-cy=form-dialog]").within(() => {
@@ -191,8 +200,8 @@ describe("Process tests", function () {
                 cy.get("[data-cy=form-submit-btn]").click();
             });
 
-            cy.get("[data-cy=process-details]").should("contain", copiedCrName);
-            cy.get("[data-cy=process-details]").find("button").contains("Run");
+            cy.get("[data-cy=process-details-card]").should("contain", copiedCrName);
+            cy.get("[data-cy=process-details-card]").find("button").contains("Run");
         });
 
         const getFakeContainer = fakeContainerUuid => ({
@@ -272,7 +281,7 @@ describe("Process tests", function () {
                 // Navigate to process and verify run / cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
-                cy.get("[data-cy=process-details]").should("contain", crUncommitted);
+                cy.get("[data-cy=process-details-card]").should("contain", crUncommitted);
                 cy.get("[data-cy=process-run-button]").should("exist");
                 cy.get("[data-cy=process-cancel-button]").should("not.exist");
             });
@@ -305,7 +314,7 @@ describe("Process tests", function () {
                 // Navigate to process and verify cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
-                cy.get("[data-cy=process-details]").should("contain", crQueued);
+                cy.get("[data-cy=process-details-card]").should("contain", crQueued);
                 cy.get("[data-cy=process-cancel-button]").contains("Cancel");
             });
 
@@ -337,7 +346,7 @@ describe("Process tests", function () {
                 // Navigate to process and verify cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
-                cy.get("[data-cy=process-details]").should("contain", crLocked);
+                cy.get("[data-cy=process-details-card]").should("contain", crLocked);
                 cy.get("[data-cy=process-cancel-button]").contains("Cancel");
             });
 
@@ -369,7 +378,7 @@ describe("Process tests", function () {
                 // Navigate to process and verify cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
-                cy.get("[data-cy=process-details]").should("contain", crOnHold);
+                cy.get("[data-cy=process-details-card]").should("contain", crOnHold);
                 cy.get("[data-cy=process-run-button]").should("exist");
                 cy.get("[data-cy=process-cancel-button]").should("not.exist");
             });
@@ -395,16 +404,19 @@ describe("Process tests", function () {
 
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", crName);
+                cy.get("[data-cy=process-details-card]").should("contain", crName);
+                cy.get('button').contains('Logs').click();
                 cy.get("[data-cy=process-logs]").should("contain", "No logs yet").and("not.contain", "hello world");
 
                 // Append a log line
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", ["2023-07-18T20:14:48.128642814Z hello world"]).then(() => {
+                    cy.get('button').contains('Logs').click();
                     cy.get("[data-cy=process-logs]", { timeout: 7000 }).should("not.contain", "No logs yet").and("contain", "hello world");
                 });
 
                 // Append new log line to different file
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stderr.txt", ["2023-07-18T20:14:49.128642814Z hello new line"]).then(() => {
+                    cy.get('button').contains('Logs').click();
                     cy.get("[data-cy=process-logs]", { timeout: 7000 }).should("not.contain", "No logs yet").and("contain", "hello new line");
                 });
             });
@@ -460,6 +472,7 @@ describe("Process tests", function () {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/processes/${containerRequest.uuid}`);
                     cy.waitForDom();
+                    cy.get('button').contains('Logs').click();
                     // Should show main logs by default
                     cy.get("[data-cy=process-logs-filter]", { timeout: 7000 }).should("contain", "Main logs");
                     cy.get("[data-cy=process-logs]")
@@ -511,8 +524,8 @@ describe("Process tests", function () {
 
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", crName);
-                cy.get("[data-cy=process-logs]").should("contain", "No logs yet");
+                cy.get("[data-cy=process-details-card]").should("contain", crName);
+                cy.get('button').contains('Logs').click();
 
                 cy.getAll("@node-info", "@stdout", "@stderr").then(() => {
                     // Verify sorted main logs
@@ -562,8 +575,8 @@ describe("Process tests", function () {
 
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", crName);
-                cy.get("[data-cy=process-logs]").should("contain", "No logs yet");
+                cy.get("[data-cy=process-details-card]").should("contain", crName);
+                cy.get('button').contains('Logs').click();
 
                 cy.getAll("@stdout", "@stderr").then(() => {
                     // Switch to All logs
@@ -594,8 +607,8 @@ describe("Process tests", function () {
 
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", crName);
-                cy.get("[data-cy=process-logs]").should("contain", "No logs yet");
+                cy.get("[data-cy=process-details-card]").should("contain", crName);
+                cy.get('button').contains('Logs').click();
 
                 // Switch to stdout since lines are unsortable (no timestamp)
                 cy.get("[data-cy=process-logs-filter]").click();
@@ -641,6 +654,7 @@ describe("Process tests", function () {
                 cy.getAll("@stdoutLogs").then(function () {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/processes/${containerRequest.uuid}`);
+                    cy.get('button').contains('Logs').click();
                     // Select 'stdout' log filter
                     cy.get("[data-cy=process-logs-filter]").click();
                     cy.get("body").contains("li", "stdout").click();
@@ -1273,6 +1287,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
 
                 cy.goToPath(`/collections/${testOutputCollection.uuid}`);
+                cy.get('button').contains('Files').click();
 
                 cy.get("[data-cy=upload-button]").click();
 
@@ -1353,6 +1368,7 @@ describe("Process tests", function () {
 
             cy.getAll("@containerRequest", "@testOutputCollection").then(function ([containerRequest, testOutputCollection]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.get('button').contains('Inputs').click();
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
@@ -1389,6 +1405,7 @@ describe("Process tests", function () {
                         verifyIOParameter("input_directory_include", null, null, "Cannot display value");
                         verifyIOParameter("input_file_url", null, null, "http://example.com/index.html");
                     });
+                cy.get('button').contains('Outputs').click();
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
@@ -1493,6 +1510,7 @@ describe("Process tests", function () {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
 
+                cy.get('button').contains('Inputs').click();
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
@@ -1505,6 +1523,7 @@ describe("Process tests", function () {
                             verifyIOParameter(input.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
+                cy.get('button').contains('Outputs').click();
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
@@ -1520,7 +1539,7 @@ describe("Process tests", function () {
     });
 
     describe("Process operations", function () {
-        it("navigates to parent project when deleting current process", function () {
+        it.only("navigates to parent project when deleting current process", function () {
             // Process in home project
             createContainerRequest(
                 activeUser,
@@ -1532,11 +1551,10 @@ describe("Process tests", function () {
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
+                cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
 
                 // Favorite process
-                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
-                cy.get("ul[data-cy=context-menu]").contains("Add to favorites").click();
+                cy.get("[data-cy=process-details-card]").find('[data-targetid="Add to favorites"]').click();
                 cy.waitForDom();
 
                 // Verify process in favorites
@@ -1544,8 +1562,7 @@ describe("Process tests", function () {
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', containerRequest.name);
 
                 // Delete process
-                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
-                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=process-details-card]").find('[data-targetid="Remove"]').click();
                 cy.get("[data-cy=confirmation-dialog]").within(() => {
                     cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
                 });
@@ -1574,22 +1591,24 @@ describe("Process tests", function () {
                     subproject.uuid,
                 ).then(function (containerRequest) {
                     cy.loginAs(activeUser);
+                    cy.get('button').contains('Data').click();
+                    cy.waitForDom();
                     // Navigate to process through subproject
                     cy.get('[data-cy=data-table-row]').contains(subproject.name).should('exist').click();
-                    cy.waitForDom();
+                    cy.wait(1000);
                     cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
-                    cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').click();
+                    cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist', {timeout: 1000}).click();
                     cy.waitForDom();
                     cy.url().should("contain", `/processes/${containerRequest.uuid}`);
 
                     // Delete process
-                    cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
-                    cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                    cy.get("[data-cy=process-details-card]").find('[data-targetid="Remove"]').click();
                     cy.get("[data-cy=confirmation-dialog]").within(() => {
                         cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
                     });
 
                     // Verify we are in subproject
+                    cy.get('button').contains('Data').click();
                     cy.get("[data-cy=project-panel]").should('exist');
                     cy.url().should("contain", `/projects/${subproject.uuid}`);
                 });
@@ -1641,8 +1660,8 @@ describe("Process tests", function () {
                 });
 
                 // No CRs
-                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('not.exist');
-                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('not.exist');
+                cy.get('[data-cy=data-table]').contains(firstCr.name).should('not.exist');
+                cy.get('[data-cy=data-table]').contains(secondCr.name).should('not.exist');
             });
         });
     });

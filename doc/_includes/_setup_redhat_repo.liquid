@@ -26,7 +26,7 @@ Set up the Arvados package repository
 name=Arvados
 baseurl=https://rpm.arvados.org/RHEL/$releasever/os/$basearch/
 gpgcheck=1
-gpgkey=https://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
+gpgkey=https://rpm.arvados.org/RHEL/$releasever/RPM-GPG-KEY-arvados
 EOF</span>
 {%- if modules_to_enable != nil %}
 # <span class="userinput">dnf module enable {{ modules_to_enable }}</span>

@@ -8,20 +8,17 @@ import { Card, CardHeader, Typography, Grid } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { UserResource } from 'models/user';
 import { connect } from 'react-redux';
 import { getResource } from 'store/resources/resources';
-import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
 import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
-import { Resource } from 'models/resource';
-import { ProjectResource } from 'models/project';
+import { WorkflowResource } from 'models/workflow';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'userNameContainer' | 'accountStatusSection' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'toolbarStyles';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -31,7 +28,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: 0,
         minHeight: '3rem',
     },
-    userNameContainer: {
+    nameContainer: {
         display: 'flex',
         alignItems: 'center',
         minHeight: '2.7rem',
@@ -47,12 +44,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: '30rem',
         padding: '0.2rem 0.4rem 0.2rem 1rem',
     },
-    accountStatusSection: {
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingLeft: '1rem',
-    },
     toolbarStyles: {
         paddingTop: '4px',
     },
@@ -60,14 +51,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapStateToProps = ({ auth, selectedResource, resources, properties }: RootState) => {
     const currentResource = getResource(properties.currentRouteUuid)(resources);
-    const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(resources);
-    const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
     const isSelected = selectedResource.selectedResourceUuid === properties.currentRouteUuid;
 
     return {
         isAdmin: auth.user?.isAdmin,
         currentResource,
-        frozenByFullName,
         isSelected,
     };
 };
@@ -80,26 +68,25 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     },
 });
 
-type UserCardProps = WithStyles<CssRules> & {
-    currentResource: UserResource;
-    isAdmin: boolean;
+type WorkflowCardProps = WithStyles<CssRules> & {
+    currentResource: WorkflowResource;
     isSelected: boolean;
     handleCardClick: (resource: any) => void;
 };
 
-export const UserCard = connect(
+export const WorkflowCard = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)((props: UserCardProps) => {
+    withStyles(styles)((props: WorkflowCardProps) => {
         const { classes, currentResource, handleCardClick, isSelected } = props;
-        const { fullName, uuid } = currentResource as UserResource & { fullName: string };
+        const { name, uuid } = currentResource;
 
         return (
             <Card
                 className={classes.root}
                 onClick={() => handleCardClick(uuid)}
-                data-cy='user-details-card'
+                data-cy='workflow-details-card'
             >
                 <Grid
                     container
@@ -109,19 +96,12 @@ export const UserCard = connect(
                     <CardHeader
                         className={classes.cardHeader}
                         title={
-                            <section className={classes.userNameContainer}>
+                            <section className={classes.nameContainer}>
                                 <Typography
                                     variant='h6'
                                 >
-                                    {fullName}
+                                    {name}
                                 </Typography>
-                                <section className={classes.accountStatusSection}>
-                                    {!currentResource.isActive && (
-                                        <Typography>
-                                            <UserResourceAccountStatus uuid={uuid} />
-                                        </Typography>
-                                    )}
-                                </section>
                             </section>
                         }
                     />

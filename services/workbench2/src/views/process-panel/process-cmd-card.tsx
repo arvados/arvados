@@ -4,11 +4,11 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Grid } from '@mui/material';
+import { CardHeader, IconButton, CardContent, Tooltip, Typography, Grid } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, CommandIcon, CopyIcon } from 'components/icon/icon';
+import { CommandIcon, CopyIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { DefaultVirtualCodeSnippet } from 'components/default-code-snippet/default-virtual-code-snippet';
 import { Process } from 'store/processes/process';
@@ -61,7 +61,6 @@ export const ProcessCmdCard = withStyles(styles)(
     process,
     onCopy,
     classes,
-    doHidePanel,
   }: ProcessCmdCardProps) => {
 
     const formatLine = (lines: string[], index: number): string => {
@@ -82,7 +81,7 @@ export const ProcessCmdCard = withStyles(styles)(
     );
 
     return (
-      <Card className={classes.card}>
+      <section className={classes.card}>
         <CardHeader
           className={classes.header}
           classes={{
@@ -109,18 +108,6 @@ export const ProcessCmdCard = withStyles(styles)(
                   </IconButton>
                 </Tooltip>
               </Grid>
-              <Grid item>
-                {doHidePanel && (
-                  <Tooltip
-                    title={`Close Command Panel`}
-                    disableFocusListener
-                  >
-                    <IconButton onClick={doHidePanel} size="large">
-                      <CloseIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </Grid>
             </Grid>
           }
         />
@@ -131,7 +118,7 @@ export const ProcessCmdCard = withStyles(styles)(
             linked
           />
         </CardContent>
-      </Card>
+      </section>
     );
   }
 );

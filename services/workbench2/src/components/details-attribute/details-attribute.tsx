@@ -56,6 +56,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface DetailsAttributeDataProps {
     label: string;
+    button?: React.ReactNode;
     classLabel?: string;
     value?: React.ReactNode;
     classValue?: string;
@@ -119,7 +120,7 @@ interface DetailsAttributeComponentProps {
 export const DetailsAttributeComponent = withStyles(styles)(
     (props: DetailsAttributeDataProps & WithStyles<CssRules> & DetailsAttributeComponentProps) =>
         <Typography component="div" className={props.classes.attribute} data-cy={`details-panel-${props.label.toLowerCase()}`}>
-            <Typography component="div" className={classnames([props.classes.label, props.classLabel])}>{props.label}</Typography>
+            <Typography component="div" className={classnames([props.classes.label, props.classLabel])}>{props.label}{props.button}</Typography>
             <Typography
                 onClick={props.onValueClick}
                 component="div"

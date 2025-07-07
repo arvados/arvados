@@ -74,8 +74,10 @@ describe('Collection details panel', () => {
     // Navigate to the project containing the collection
     cy.get('@testCollection').then((collection) => {
       cy.visit(`/projects/${adminUser.user.uuid}`);
+      cy.waitForDom();
 
       // Wait for the data table to load
+      cy.get('button').contains('Data').click();
       cy.get('[data-cy=data-table]').should('be.visible');
 
       // Find and check the checkbox for the test collection
@@ -136,8 +138,10 @@ describe('Collection details panel', () => {
       cy.get('@testCollection').then((collection) => {
         // Navigate to the project containing the collection
         cy.visit(`/projects/${adminUser.user.uuid}`);
+        cy.waitForDom();
   
         // Wait for the data table to load
+        cy.get('button').contains('Data').click();
         cy.get('[data-cy=data-table]').should('be.visible');
   
         // Find and open the test collection

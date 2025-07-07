@@ -6,11 +6,11 @@ import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
+import {  Grid, Typography } from '@mui/material';
 import { ProcessIcon } from "components/icon/icon";
 import { Process, getProcess, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
-import { ProcessDetailsCard } from "./process-details-card";
 import { ProcessIOCard, ProcessIOCardType } from "./process-io-card";
 import { ProcessResourceCard } from "./process-resource-card";
 import { getProcessPanelLogs, ProcessLogsPanel } from "store/process-logs-panel/process-logs-panel";
@@ -29,12 +29,34 @@ import { RouteComponentProps } from 'react-router';
 import { ResourcesState } from 'store/resources/resources';
 import { getInlineFileUrl } from "views-components/context-menu/actions/helpers";
 import { CollectionFile } from "models/collection-file";
+import { DetailsCardRoot } from "views-components/details-card/details-card-root";
+import { OverviewPanel } from 'components/overview-panel/overview-panel';
+import WarningIcon from '@mui/icons-material/Warning';
+import { Link } from "react-router-dom";
+import { ProcessProperties } from "store/processes/process";
+import { getResourceUrl } from "routes/routes";
+import { ProcessAttributes } from './process-attributes';
 
-type CssRules = "root";
+type CssRules = "root" | 'mpvRoot' | 'overview';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: "100%",
+        display: "flex",
+        flexDirection: "column",
+    },
+    mpvRoot: {
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        flexWrap: 'nowrap',
+        minHeight: "500px",
+        '& > div': {
+            height: '100%',
+        },
+    },
+    overview: {
+        height: '100%',
     },
 });
 
@@ -67,8 +89,8 @@ export interface ProcessPanelRootActionProps {
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
 
 const panelsData: MPVPanelState[] = [
-    { name: "Details" },
-    { name: "Logs", visible: true },
+    { name: "Overview" },
+    { name: "Logs" },
     { name: "Subprocesses" },
     { name: "Outputs" },
     { name: "Inputs" },
@@ -99,6 +121,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
     const containerRequest = process?.containerRequest;
     const inputMounts = getInputCollectionMounts(process?.containerRequest);
     const webSocketConnected = WebSocketService.getInstance().isActive();
+    const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
     const { inputRaw, inputParams, outputData, outputDefinitions, outputParams, nodeInfo, usageReport } = processPanel;
 
     const usageReportWithUrl = (process || null) && usageReport && getInlineFileUrl(
@@ -142,107 +165,110 @@ export const ProcessPanelRoot = withStyles(styles)(({
     }, shouldPoll ? 15000 : null);
 
         return process ? (
-            <MPVContainer
-                className={props.classes.root}
-                spacing={1}
-                panelStates={panelsData}
-                justifyContent="flex-start"
-                direction="column"
-                wrap="nowrap">
-                <MPVPanelContent
-                    forwardProps
-                    item
-                    xs="auto"
-                    data-cy="process-details">
-                    <ProcessDetailsCard
-                        process={process}
-                        onContextMenu={event => onContextMenu(event, process)}
-                        cancelProcess={cancelProcess}
-                        startProcess={startProcess}
-                        resumeOnHoldWorkflow={resumeOnHoldWorkflow}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    item
-                    xs
-                    minHeight={maxHeight}
-                    maxHeight={maxHeight}
-                    data-cy="process-logs">
-                    <ProcessLogsCard
-                        onCopy={props.onCopyToClipboard}
-                        process={process}
-                        lines={getProcessPanelLogs(processLogsPanel)}
-                        selectedFilter={{
-                            label: processLogsPanel.selectedFilter,
-                            value: processLogsPanel.selectedFilter,
-                        }}
-                        filters={processLogsPanel.filters.map(filter => ({ label: filter, value: filter }))}
-                        onLogFilterChange={props.onLogFilterChange}
-                        navigateToLog={props.navigateToLog}
-                        pollProcessLogs={pollProcessLogs}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    xs
-                    item
-                    maxHeight={maxHeight}
-                    data-cy="process-children">
-                    <SubprocessPanel process={process} />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    xs
-                    item
-                    maxHeight={maxHeight}
-                    data-cy="process-outputs">
-                    <ProcessIOCard
-                        label={ProcessIOCardType.OUTPUT}
-                        process={process}
-                        params={outputParams}
-                        raw={outputData?.raw}
-                        failedToLoadOutputCollection={outputData?.failedToLoadOutputCollection}
-                        outputUuid={outputUuid || ""}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    xs
-                    item
-                    maxHeight={maxHeight}
-                    data-cy="process-inputs">
-                    <ProcessIOCard
-                        label={ProcessIOCardType.INPUT}
-                        process={process}
-                        params={inputParams}
-                        raw={inputRaw}
-                        mounts={inputMounts}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    xs="auto"
-                    item
-                    maxHeight={"50%"}
-                    data-cy="process-cmd">
-                    <ProcessCmdCard
-                        onCopy={props.onCopyToClipboard}
-                        process={process}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    xs
-                    item
-                    data-cy="process-resources">
-                    <ProcessResourceCard
-                        process={process}
-                        nodeInfo={nodeInfo}
-                        usageReport={usageReportWithUrl}
-                    />
-                </MPVPanelContent>
-            </MPVContainer>
+            <section className={props.classes.root}>
+                <DetailsCardRoot />
+                <MPVContainer
+                    className={props.classes.mpvRoot}
+                    panelStates={panelsData}
+                    justifyContent="flex-start">
+                    <MPVPanelContent
+                        forwardProps
+                        item
+                        xs="auto"
+                        className={props.classes.overview}
+                        data-cy="process-details">
+                        <>
+                            {resubmittedUrl && <Grid item xs={12}>
+                                <Typography>
+                                    <WarningIcon />
+                                    This process failed but was automatically resubmitted.  <Link to={resubmittedUrl}> Click here to go to the resubmitted process.</Link>
+                                </Typography>
+                            </Grid>}
+                            <OverviewPanel detailsElement={<ProcessAttributes request={process.containerRequest} container={process.container} hideProcessPanelRedundantFields />} />
+                        </>
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        item
+                        xs
+                        minHeight={maxHeight}
+                        maxHeight={maxHeight}
+                        data-cy="process-logs">
+                        <ProcessLogsCard
+                            onCopy={props.onCopyToClipboard}
+                            process={process}
+                            lines={getProcessPanelLogs(processLogsPanel)}
+                            selectedFilter={{
+                                label: processLogsPanel.selectedFilter,
+                                value: processLogsPanel.selectedFilter,
+                            }}
+                            filters={processLogsPanel.filters.map(filter => ({ label: filter, value: filter }))}
+                            onLogFilterChange={props.onLogFilterChange}
+                            navigateToLog={props.navigateToLog}
+                            pollProcessLogs={pollProcessLogs}
+                        />
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        xs
+                        item
+                        maxHeight={maxHeight}
+                        data-cy="process-children">
+                        <SubprocessPanel process={process} />
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        xs
+                        item
+                        maxHeight={maxHeight}
+                        data-cy="process-outputs">
+                        <ProcessIOCard
+                            label={ProcessIOCardType.OUTPUT}
+                            process={process}
+                            params={outputParams}
+                            raw={outputData?.raw}
+                            failedToLoadOutputCollection={outputData?.failedToLoadOutputCollection}
+                            outputUuid={outputUuid || ""}
+                        />
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        xs
+                        item
+                        maxHeight={maxHeight}
+                        data-cy="process-inputs">
+                        <ProcessIOCard
+                            label={ProcessIOCardType.INPUT}
+                            process={process}
+                            params={inputParams}
+                            raw={inputRaw}
+                            mounts={inputMounts}
+                        />
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        xs="auto"
+                        item
+                        maxHeight={maxHeight}
+                        data-cy="process-cmd">
+                        <ProcessCmdCard
+                            onCopy={props.onCopyToClipboard}
+                            process={process}
+                        />
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        xs
+                        item
+                        data-cy="process-resources">
+                        <ProcessResourceCard
+                            process={process}
+                            nodeInfo={nodeInfo}
+                            usageReport={usageReportWithUrl}
+                        />
+                    </MPVPanelContent>
+                </MPVContainer>
+            </section>
         ) : (
             <NotFoundView
                 icon={ProcessIcon}

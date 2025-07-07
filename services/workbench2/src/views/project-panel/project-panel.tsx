@@ -9,7 +9,6 @@ import { RouteComponentProps } from 'react-router';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { Resource } from 'models/resource';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
@@ -27,7 +26,10 @@ import { ProjectPanelData } from './project-panel-data';
 import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
-import { ProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
+import { ProjectPanelTabLabels, RootProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
+import { OverviewPanel } from 'components/overview-panel/overview-panel';
+import { ProjectAttributes } from './project-attributes';
+import { isUserResource } from 'models/user';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -60,17 +62,20 @@ interface ProjectPanelDataProps {
     resources: ResourcesState;
     isAdmin: boolean;
     defaultTab?: string;
+    isRootProject: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
     const currentItemId = getProjectPanelCurrentUuid(state);
+    const resource = getResource<any>(currentItemId)(state.resources);
     return {
         currentItemId,
         resources: state.resources,
         isAdmin: state.auth.user!.isAdmin,
         defaultTab: state.auth.user?.prefs.wb?.default_project_tab,
+        isRootProject: (resource && isUserResource(resource)) || currentItemId === state.auth.user?.uuid ,
     };
 }
 
@@ -83,23 +88,32 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             render() {
-                // Default to data tab if no user preference
-                const defaultTab = this.props.defaultTab || ProjectPanelTabLabels.DATA;
+                const { classes, isRootProject } = this.props;
+                // Root project doesn't have Overview Panel
+                const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
+                // Default to first tab if no user preference
+                const defaultTab = this.props.defaultTab || Object.keys(tabSet)[0];
                 // Apply user preference or default to initial state
-                const initialPanelState: MPVPanelState[] = Object.keys(ProjectPanelTabLabels).map(key => ({
-                        name: ProjectPanelTabLabels[key],
-                        visible: ProjectPanelTabLabels[key] === defaultTab,
+                const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
+                        name: tabSet[key],
+                        visible: tabSet[key] === defaultTab,
                 }));
 
-                const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
                     <DetailsCardRoot />
                     <MPVContainer
                         className={classes.mpvRoot}
                         panelStates={initialPanelState}
-                        mutuallyExclusive
                         justify-content="flex-start"
                         style={{flexWrap: 'nowrap'}}>
+                        {isRootProject ? null : <MPVPanelContent
+                            forwardProps
+                            xs="auto"
+                            item
+                            data-cy="project-details"
+                            className={classes.dataExplorer}>
+                            <OverviewPanel detailsElement={<ProjectAttributes />} />
+                        </MPVPanelContent>}
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
@@ -127,10 +141,6 @@ export const ProjectPanel = withStyles(styles)(
                     </MPVContainer>
                 </div>
             }
-
-            isCurrentItemChild = (resource: Resource) => {
-                return resource.ownerUuid === this.props.currentItemId;
-            };
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const { resources, isAdmin, currentItemId } = this.props;
