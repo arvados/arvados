@@ -118,7 +118,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
         const isAnyNested = files.some(file => {
             const path = file[getPathKey(file)];
-            return path.indexOf('/') > -1;
+            return path && path.indexOf('/') > -1;
         });
 
         if (isAnyNested) {
