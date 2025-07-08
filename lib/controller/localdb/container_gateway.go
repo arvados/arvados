@@ -569,54 +569,11 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	// suitable values for the main function to return: either
 	// (nil, err), or (h, nil) where h implements a redirect.
 	maybeRedirect := func(err error) (http.Handler, error) {
-		query := opts.Request.URL.Query()
-		needTokenCookie := query.Get("arvados_api_token")
-		if needTokenCookie == "" && !needClearSiteData {
+		if opts.Request.URL.Query().Get("arvados_api_token") == "" && !needClearSiteData {
 			// Redirect not needed
 			return nil, err
 		}
-		redir := *opts.Request.URL
-		if needTokenCookie != "" {
-			delete(query, "arvados_api_token")
-			redir.RawQuery = query.Encode()
-		}
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if needTokenCookie != "" {
-				http.SetCookie(w, &http.Cookie{
-					Name:     "arvados_api_token",
-					Value:    auth.EncodeTokenCookie([]byte(needTokenCookie)),
-					Path:     "/",
-					HttpOnly: true,
-					SameSite: http.SameSiteLaxMode,
-				})
-			}
-			if needClearSiteData {
-				if r.Method != http.MethodHead && r.Method != http.MethodGet {
-					w.WriteHeader(http.StatusGone)
-					return
-				}
-				// We cannot use `Clear-Site-Data:
-				// "cookies"` to clear cookies,
-				// because that applies to all origins
-				// in the entire registered domain.
-				// We only want to clear cookies for
-				// this dynamically assigned origin.
-				for _, cookie := range opts.Request.Cookies() {
-					if cookie.Name != "arvados_api_token" {
-						cookie.MaxAge = -1
-						cookie.Expires = time.Time{}
-						cookie.Value = ""
-						http.SetCookie(w, cookie)
-					}
-				}
-				// Unlike the "cookies" directive,
-				// "cache" and "storage" clear data
-				// for the current origin only.
-				w.Header().Set("Clear-Site-Data", `"cache", "storage"`)
-			}
-			w.Header().Set("Location", redir.String())
-			w.WriteHeader(http.StatusSeeOther)
-		}), nil
+		return containerHTTPProxyRedirect(needClearSiteData), nil
 	}
 
 	// First we need to fetch the container request (or container)
@@ -737,6 +694,55 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 			"X-Arvados-Container-Target-Port":  {strconv.Itoa(targetPort)},
 		}, nil).ServeHTTP(w, opts.Request)
 	}), nil
+}
+
+// containerHTTPProxyRedirect returns a redirect handler that (1) if
+// there is a token in the query, moves it to a cookie, and (2) if
+// needClearSiteData is true, clears all other client-side state.
+func containerHTTPProxyRedirect(needClearSiteData bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		redir := *r.URL
+		query := redir.Query()
+		needTokenCookie := query.Get("arvados_api_token")
+		if needTokenCookie != "" {
+			delete(query, "arvados_api_token")
+			redir.RawQuery = query.Encode()
+		}
+		if needTokenCookie != "" {
+			http.SetCookie(w, &http.Cookie{
+				Name:     "arvados_api_token",
+				Value:    auth.EncodeTokenCookie([]byte(needTokenCookie)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+		}
+		if needClearSiteData {
+			if r.Method != http.MethodHead && r.Method != http.MethodGet {
+				w.WriteHeader(http.StatusGone)
+				return
+			}
+			// We cannot use `Clear-Site-Data: "cookies"`
+			// to clear cookies, because that applies to
+			// all origins in the entire registered
+			// domain.  We only want to clear cookies for
+			// this dynamically assigned origin.
+			for _, cookie := range r.Cookies() {
+				if cookie.Name != "arvados_api_token" {
+					cookie.MaxAge = -1
+					cookie.Expires = time.Time{}
+					cookie.Value = ""
+					http.SetCookie(w, cookie)
+				}
+			}
+			// Unlike the "cookies" directive, "cache" and
+			// "storage" clear data for the current origin
+			// only.
+			w.Header().Set("Clear-Site-Data", `"cache", "storage"`)
+		}
+		w.Header().Set("Location", redir.String())
+		w.WriteHeader(http.StatusSeeOther)
+	})
 }
 
 // ContainerGatewayTunnel sets up a tunnel enabling us (controller) to
