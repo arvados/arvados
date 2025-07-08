@@ -256,4 +256,58 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
         return this.replaceFiles({ uuid: collectionUuid }, fileMap, showErrors);
     }
+
+    downloadZip(collectionUuid: string, paths: string[], fileName: string) {
+        // Get webdav base url & token
+        const baseUrl = this.keepWebdavClient.getBaseUrl().endsWith("/")
+            ? this.keepWebdavClient.getBaseUrl().slice(0, -1)
+            : this.keepWebdavClient.getBaseUrl();
+        const apiToken = this.authService.getApiToken();
+
+        // Throw error to be exposed in toast if token missing
+        if (!apiToken) {
+            throw new Error("Token missing");
+        }
+
+        // Create form
+        const form = document.createElement("form");
+        form.setAttribute("method", "get");
+        form.setAttribute("action", `${baseUrl}/c=${collectionUuid}`);
+
+        // Attach token
+        const tokenInput = document.createElement("input");
+        tokenInput.name = "api_token";
+        tokenInput.value = apiToken;
+        form.appendChild(tokenInput);
+
+        // Add accept and disposition
+        const acceptInput = document.createElement("input");
+        acceptInput.name = "accept";
+        acceptInput.value = "application/zip";
+        form.appendChild(acceptInput);
+
+        const dispositionInput = document.createElement("input");
+        dispositionInput.name = "disposition";
+        dispositionInput.value = "attachment";
+        form.appendChild(dispositionInput);
+
+        // Add filename parameter
+        const fileNameInput = document.createElement("input");
+        fileNameInput.name = "download_filename";
+        fileNameInput.value = fileName;
+        form.appendChild(fileNameInput);
+
+        // Add file parameters for each path
+        paths.forEach((path) => {
+            const fileInput = document.createElement("input");
+            fileInput.name = "files";
+            fileInput.value = path.replace(/^\//, '');
+            form.appendChild(fileInput);
+        });
+
+        // Append form to body, submit, and cleanup form
+        document.body.appendChild(form);
+        form.submit();
+        form.remove();
+    }
 }
