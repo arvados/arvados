@@ -531,7 +531,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcI
 	if cookietoken != "" {
 		cmd.Args = append(cmd.Args, "--cookie", "arvados_api_token="+string(auth.EncodeTokenCookie([]byte(cookietoken))))
 	} else {
-		cmd.Args = append(cmd.Args, "--cookie-jar", filepath.Join(tempdir, "cookie.jar"))
+		cmd.Args = append(cmd.Args, "--cookie-jar", filepath.Join(tempdir, "cookies.txt"))
 	}
 	if method != "GET" {
 		cmd.Args = append(cmd.Args, "--request", method)
@@ -627,7 +627,7 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxy_ReusedPort_Curl(c *check.
 	// here, because curl doesn't clear/replace those when
 	// instructed by Set-Cookie headers in redirect responses.
 	tempdir := c.MkDir()
-	cookiejar := filepath.Join(tempdir, "cookie.jar")
+	cookiejar := filepath.Join(tempdir, "cookies.txt")
 	c.Assert(ioutil.WriteFile(cookiejar, []byte(`
 containers.example.com	FALSE	/	FALSE	0	arvados_container_uuid	zzzzz-dz642-compltcontainer
 containers.example.com	FALSE	/	FALSE	0	stale_cookie	abcdefghij
