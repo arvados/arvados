@@ -14,10 +14,10 @@
     state: absent
   notify: restart nginx
 
-- name: Set up nginx base configuration
+- name: Set up nginx http configuration
   become: yes
   ansible.builtin.template:
-    src: arvados-nginx-base.conf.j2
+    src: arvados-nginx-http.conf.j2
     dest: /etc/nginx/conf.d/arvados-ansible.conf
     owner: root
     group: root
