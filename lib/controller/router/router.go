@@ -30,7 +30,7 @@ type router struct {
 
 type Config struct {
 	// Services.ContainerWebServices section from cluster config.
-	ContainerWebServices arvados.ServiceWithPortRange
+	ContainerWebServices *arvados.ServiceWithPortRange
 
 	// Return an error if request body exceeds this size. 0 means
 	// unlimited.
@@ -763,6 +763,9 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // If req is a container http proxy request, handle it and return
 // true.  Otherwise, return false.
 func (rtr *router) routeAsContainerHTTPProxy(w http.ResponseWriter, req *http.Request) bool {
+	if rtr.config.ContainerWebServices == nil {
+		return false
+	}
 	configurl := url.URL(rtr.config.ContainerWebServices.ExternalURL)
 	confhostname := configurl.Hostname()
 

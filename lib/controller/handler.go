@@ -120,7 +120,7 @@ func (h *Handler) setup() {
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.dbConnector.GetDB)
 	h.federation = federation.New(h.BackgroundContext, h.Cluster, &healthFuncs, h.dbConnector.GetDB)
 	h.router = router.New(h.federation, router.Config{
-		ContainerWebServices: h.Cluster.Services.ContainerWebServices,
+		ContainerWebServices: &h.Cluster.Services.ContainerWebServices,
 		MaxRequestSize:       h.Cluster.API.MaxRequestSize,
 		WrapCalls: api.ComposeWrappers(
 			ctrlctx.WrapCallsInTransactions(h.dbConnector.GetDB),

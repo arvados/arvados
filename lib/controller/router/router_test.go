@@ -42,7 +42,7 @@ func (s *RouterSuite) SetUpTest(c *check.C) {
 		mux:     mux.NewRouter(),
 		backend: &s.stub,
 		config: Config{
-			ContainerWebServices: arvados.ServiceWithPortRange{
+			ContainerWebServices: &arvados.ServiceWithPortRange{
 				Service: arvados.Service{
 					ExternalURL: arvados.URL{Host: "*.containers.zzzzz.example.com"},
 				},
