@@ -142,16 +142,10 @@ h3. Run diagnostics
 
 The @arvados-client diagnostics@ command can check all services on a cluster to identify problems with inconsistent configuration. *On your cluster node*, install and run it like this:
 
-* Set @ARVADOS_API_HOST@ to the controller service's @ExternalURL@ in your cluster configuration.
-* Set @ARVADOS_API_TOKEN@ set to the @SystemRootToken@ in your cluster configuration.
-* Remove the option @-docker-image hello-world@ at the end if your user has permission to run Docker on this node (i.e., your account belongs to the @docker@ group).
-
 <notextile>
 <pre><code>$ <span class="userinput">sudo apt install arvados-client</span>
-$ <span class="userinput">unset HISTFILE</span>
-$ <span class="userinput">ARVADOS_API_HOST=<strong>hostname.example:8443</strong> ARVADOS_API_TOKEN=<strong>YourSystemRootToken</strong> arvados-client diagnostics -internal-client <strong>-docker-image hello-world</strong></span>
+$ <span class="userinput">sudo arvados-client sudo diagnostics -internal-client</span>
 INFO       5: running health check (same as `arvados-server check`)
-INFO      ... skipping because config could not be loaded: open /etc/arvados/config.yml: permission denied
 INFO      10: getting discovery document from https://hostname.example:8443/discovery/v1/apis/arvados/v1/rest
 INFO      20: getting exported config from https://hostname.example:8443/arvados/v1/config
 […]
