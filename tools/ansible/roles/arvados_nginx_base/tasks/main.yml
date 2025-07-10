@@ -38,7 +38,7 @@
       become: yes
       ansible.builtin.template:
         src: nginx-core.conf.j2
-        dest: /etc/nginx/arvados-ansible.conf
+        dest: /etc/nginx/arvados-core.conf
         owner: root
         group: root
         mode: 0644
@@ -68,7 +68,7 @@
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/nginx/nginx.conf
-        line: include /etc/nginx/arvados-ansible.conf;
+        line: include /etc/nginx/arvados-core.conf;
       notify:
         - restart nginx
 
