@@ -13,9 +13,22 @@ upstream {{ upstream_name }} {
 }
 
 server {
+{% if arvados_nginx_service_key == "Controller" %}
+{% set external_port_min = arvados_cluster.Services.ContainerWebServices.ExternalPortMin|default(0) %}
+{% set external_port_max = arvados_cluster.Services.ContainerWebServices.ExternalPortMax|default(0) %}
+{% if 0 < external_port_min < external_port_max %}
+  listen       {{ external_port_min }}-{{ external_port_max }} ssl;
+{% endif %}
+{% endif %}
 {% set ext_addr = upstream_svc | external_addr %}
   listen       {{ ext_addr.port }} ssl;
   server_name  {{ ext_addr.address }}
+{% if arvados_nginx_service_key == "Controller" %}
+{% set containers_addr = arvados_cluster.Services.ContainerWebServices|external_addr|default(ext_addr) %}
+{% if containers_addr.address != ext_addr.address %}
+    {{ containers_addr.address }}
+{% endif %}
+{% endif %}
 {% for server_name in arvados_nginx_server_names.get(arvados_nginx_service_key, []) %}
     {{ server_name }}
 {% endfor %}

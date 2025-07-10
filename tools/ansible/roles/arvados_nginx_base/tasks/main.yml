@@ -14,10 +14,71 @@
     state: absent
   notify: restart nginx
 
-- name: Set up nginx base configuration
+# Unfortunately Debian does not provide a good way to extend the core
+# configuration directives in nginx.conf. We have to edit that file
+# directly the old-fashioned way.
+# I have opted to simply delete configuration that we can't duplicate
+# (the events block) and then drop in our own include. We could try to
+# edit individual settings and that would be easier in the simple case
+# but I think this will be more reliable on more systems and easier to
+# extend as needed.
+- name: Extend nginx.conf core configuration
+  vars:
+    extport_min: "{{ arvados_cluster.Services.ContainerWebServices.ExternalPortMin|default(0) }}"
+    extport_max: "{{ arvados_cluster.Services.ContainerWebServices.ExternalPortMax|default(0) }}"
+    extport_count: "{{ extport_max|int - extport_min|int + 1 }}"
+    worker_connections: "{{ extport_count|int * 3 // 2 }}"
+    worker_rlimit_nofile: "{{ extport_count|int * 2 }}"
+  # For now, for limited impact, we only make these changes when we *know*
+  # we need to: to increase the number of worker_connections from Debian's
+  # default to accommodate a block of external container ports for controller.
+  when: |
+    ('arvados_controller' in groups
+     and 0 < extport_min|int < extport_max|int
+     and worker_connections|int > 768)
+  block:
+    - name: Set up nginx core configuration file
+      become: yes
+      ansible.builtin.template:
+        src: nginx-core.conf.j2
+        dest: /etc/nginx/arvados-core.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify:
+        - restart nginx
+
+    - name: Remove nginx default events configuration
+      become: yes
+      ansible.builtin.replace:
+        path: /etc/nginx/nginx.conf
+        regexp: |
+          (?mx)  # Regexp is multiline and verbose
+          # Find the beginning of the events block
+          ^\s* events \s* \{
+          # Consume lines where we don't find the closing } before
+          # the start of a comment with # or the end of the line.
+          # Note this group starts *immediately* after the opening {
+          # and may match zero times/consume nothing.
+          ( [^#}\n]* (|\#.*) \n )*?
+          # Consume remaining text until the closing brace.
+            [^#}\n]* }
+        replace: ""
+      notify:
+        - restart nginx
+
+    - name: Include nginx core configuration in nginx.conf
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/nginx/nginx.conf
+        line: include /etc/nginx/arvados-core.conf;
+      notify:
+        - restart nginx
+
+- name: Set up nginx http configuration
   become: yes
   ansible.builtin.template:
-    src: arvados-nginx-base.conf.j2
+    src: arvados-nginx-http.conf.j2
     dest: /etc/nginx/conf.d/arvados-ansible.conf
     owner: root
     group: root
