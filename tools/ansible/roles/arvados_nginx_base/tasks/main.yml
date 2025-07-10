@@ -32,7 +32,10 @@
   # For now, for limited impact, we only make these changes when we *know*
   # we need to: to increase the number of worker_connections from Debian's
   # default to accommodate a block of external container ports for controller.
-  when: "'arvados_controller' in groups and worker_connections|int > 768"
+  when: |
+    ('arvados_controller' in groups
+     and 0 < extport_min|int < extport_max|int
+     and worker_connections|int > 768)
   block:
     - name: Set up nginx core configuration file
       become: yes
