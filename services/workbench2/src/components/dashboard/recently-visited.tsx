@@ -11,22 +11,35 @@ import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { ArvadosTheme } from 'common/custom-theme';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
-type CssRules = 'root' | 'title' | 'list' | 'item';
+type CssRules = 'root' | 'subHeader' | 'titleBar' | 'lastModHead' | 'lastModDate' | 'hr' | 'list' | 'item';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
     },
-    title: {
-        backgroundColor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
-        borderRadius: '4px',
-        marginLeft: '1rem',
+    subHeader: {
+        margin: '0 1rem',
         padding: '4px',
-        '&:hover': {
-            background: 'lightgray',
-        },
+    },
+    titleBar: {
+        display: 'flex',
+        justifyContent: 'space-between',
+    },
+    lastModHead: {
+        fontSize: '0.875rem',
+        marginRight: '1rem',
+    },
+    lastModDate: {
+        marginLeft: '2rem',
+        width: '12rem',
+        display: 'flex',
+        justifyContent: 'flex-end'
+    },
+    hr: {
+        marginTop: '0',
+        marginBottom: '0',
     },
     list: {
         display: 'flex',
@@ -53,7 +66,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState) => {
-    const selection = Object.keys(state.resources).slice(0, 3);
+    const selection = Object.keys(state.resources).slice(0, 5);
     const recents = selection.map(uuid => state.resources[uuid]);
     return {
         items: recents
@@ -66,12 +79,21 @@ export const RecentlyVisitedSection = connect(mapStateToProps)(withStyles(styles
 
     return (
         <div className={classes.root}>
-            <span className={classes.title} onClick={() => setIsOpen(!isOpen)}>Recently Visited</span>
-            {isOpen ? <Collapse in={isOpen}>
+            <div className={classes.subHeader} onClick={() => setIsOpen(!isOpen)}>
+                <span className={classes.titleBar}>
+                    <span>
+                        <span>Recently Visited</span>
+                        <ExpandChevronRight expanded={isOpen} />
+                    </span>
+                    {isOpen &&<span className={classes.lastModHead}>last modified</span>}
+                </span>
+                <hr className={classes.hr} />
+            </div>
+            <Collapse in={isOpen}>
                 <ul className={classes.list}>
                     {items.map(item => <RecentlyVisitedItem item={item} classes={classes} />)}
                 </ul>
-            </Collapse> : <div style={{margin: '1rem'}}><hr/></div>}
+            </Collapse>
         </div>
     )
 }));
@@ -87,9 +109,8 @@ const RecentlyVisitedItem = ({item, classes}: ItemProps) => {
             <span>
                 <ResourceName uuid={item.uuid} />
             </span>
-            <span style={{display: 'flex'}}>
-                <span>{item.uuid}</span>
-                <div style={{marginLeft: '2rem', width: '12rem'}}>{new Date(item.modifiedAt).toLocaleString()}</div>
+            <span>
+                <div className={classes.lastModDate}>{new Date(item.modifiedAt).toLocaleString()}</div>
             </span>
         </div>
     );

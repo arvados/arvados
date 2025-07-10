@@ -15,24 +15,24 @@ import StarIcon from '@mui/icons-material/Star';
 import Tooltip from '@mui/material/Tooltip';
 import { renderIcon } from 'views-components/data-explorer/renderers';
 import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
-type CssRules = 'root' | 'title' | 'list' | 'item' | 'name' | 'icon' | 'star';
+type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'icon' | 'star';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
     },
     title: {
-        backgroundColor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
-        borderRadius: '4px',
-        marginLeft: '1rem',
+        margin: '0 1rem',
         padding: '4px',
-        '&:hover': {
-            background: 'lightgray',
-        },
+    },
+    hr: {
+        marginTop: '0',
+        marginBottom: '0',
     },
     list: {
+        marginTop: '0.5rem',
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'flex-start',
@@ -42,7 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100px',
         height: '100px',
         margin: theme.spacing(2),
-        marginTop: '0.5rem',
+        marginTop: '0',
         padding: theme.spacing(1),
         background: '#fafafa',
         borderRadius: '8px',
@@ -86,7 +86,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState) => {
-    const selection = (state.dataExplorer.favoritePanel?.items || []);
+    const selection = state.dataExplorer.favoritePanel?.items || [];
     const faves = selection.map((uuid) => state.resources[uuid]);
     return {
         items: faves,
@@ -109,21 +109,25 @@ export const FavePinsSection = connect(
         const [isOpen, setIsOpen] = useState(true);
 
         return (
-            items ? <div className={classes.root}>
-                <span className={classes.title} onClick={() => setIsOpen(!isOpen)}>Favorites</span>
-                {isOpen ? <Collapse in={isOpen}>
-                    <div className={classes.list}>
-                        {items.map((item) => (
-                            <FavePinItem
-                            key={item.uuid}
-                            item={item}
-                            classes={classes}
-                            />
-                        ))}
-                    </div>
-                </Collapse> : <div style={{margin: '1rem'}}><hr/></div>}
-            </div> : <div>Loading...</div>
-        );
+            <div className={classes.root}>
+                <div className={classes.title} onClick={() => setIsOpen(!isOpen)}>
+                    <span>Favorites</span>
+                    <ExpandChevronRight expanded={isOpen} />
+                    <hr className={classes.hr} />
+                </div>
+                <Collapse in={isOpen}>
+                        <div className={classes.list}>
+                            {items.map((item) => (
+                                <FavePinItem
+                                    key={item.uuid}
+                                    item={item}
+                                    classes={classes}
+                                />
+                            ))}
+                        </div>
+                </Collapse>
+            </div>
+        )
     })
 );
 
@@ -132,7 +136,7 @@ const FavePinItem = ({ item, classes }: { item: any } & WithStyles<CssRules>) =>
         <div className={classes.item}>
             <div className={classes.icon}>{renderIcon(item)}</div>
             <div className={classes.name}>{item.name}</div>
-            <Tooltip title="Remove from Favorites">
+            <Tooltip title='Remove from Favorites'>
                 <StarIcon className={classes.star} />
             </Tooltip>
         </div>
