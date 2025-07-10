@@ -135,7 +135,7 @@ export const ResourceName = connect((state: RootState, props: { uuid: string }) 
     return resource;
 })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
-const renderIcon = (item: GroupContentsResource) => {
+export const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
             if (item.groupClass === GroupClass.FILTER) {

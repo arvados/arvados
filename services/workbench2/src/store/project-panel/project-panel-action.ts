@@ -20,6 +20,7 @@ export const ProjectPanelTabLabels = {
 };
 
 export const RootProjectPanelTabLabels = {
+    DASHBOARD: "Dashboard",
     DATA: "Data",
     RUNS: "Workflow Runs",
 };

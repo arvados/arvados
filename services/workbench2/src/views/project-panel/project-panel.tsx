@@ -27,6 +27,7 @@ import { ProjectPanelRun } from './project-panel-run';
 import { isEqual } from 'lodash';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 import { ProjectPanelTabLabels, RootProjectPanelTabLabels } from 'store/project-panel/project-panel-action';
+import { Dashboard } from 'components/dashboard/dashboard';
 import { OverviewPanel } from 'components/overview-panel/overview-panel';
 import { ProjectAttributes } from './project-attributes';
 import { isUserResource } from 'models/user';
@@ -106,7 +107,7 @@ export const ProjectPanel = withStyles(styles)(
                         panelStates={initialPanelState}
                         justify-content="flex-start"
                         style={{flexWrap: 'nowrap'}}>
-                        {isRootProject ? null : <MPVPanelContent
+                        {isRootProject ? <Dashboard /> : <MPVPanelContent
                             forwardProps
                             xs="auto"
                             item
