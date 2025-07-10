@@ -7,6 +7,7 @@ import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { FavePinsSection } from './favorite-pins';
+import { RecentProcessesSection } from './recent-processes';
 import { RecentlyVisitedSection } from './recently-visited';
 
 
@@ -19,9 +20,10 @@ const styles: CustomStyleRulesCallback<CssRules> = () => ({
         display: 'flex',
         flexDirection: 'column',
         padding: 0,
+        paddingTop: '1rem',
     },
     section : {
-        height: '50%'
+        paddingBottom: '1rem'
     }
 });
 
@@ -31,6 +33,9 @@ export const Dashboard = withStyles(styles)(({classes}: WithStyles<CssRules>) =>
         <section className={classes.root}>
             <section className={classes.section}>
                 <FavePinsSection />
+            </section>
+            <section className={classes.section}>
+                <RecentProcessesSection />
             </section>
             <section className={classes.section}>
                 <RecentlyVisitedSection />

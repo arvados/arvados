@@ -2,14 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { Collapse } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { connect } from 'react-redux';
+import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ResourceName } from 'views-components/data-explorer/renderers';
+import { loadAllProcessesPanel } from 'store/all-processes-panel/all-processes-panel-action';
+import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'root' | 'title' | 'list' | 'item';
@@ -53,23 +56,35 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState) => {
-    const selection = Object.keys(state.resources).slice(0, 3);
+    const selection = (state.dataExplorer.allProcessesPanel?.items || []).slice(0, 3);
     const recents = selection.map(uuid => state.resources[uuid]);
     return {
         items: recents
     };
 };
 
-export const RecentlyVisitedSection = connect(mapStateToProps)(withStyles(styles)(({items, classes}: {items: any[]} & WithStyles<CssRules>) => {
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    loadAllProcessesPanel: () => dispatch<any>(loadAllProcessesPanel()),
+});
+
+type RecentProcessesProps = {
+    items: any[];
+    loadAllProcessesPanel: () => void;
+} & WithStyles<CssRules>;
+
+export const RecentProcessesSection = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(({items, loadAllProcessesPanel, classes}: RecentProcessesProps) => {
+    useEffect(() => {
+        loadAllProcessesPanel();
+    }, [loadAllProcessesPanel]);
 
     const [isOpen, setIsOpen] = useState(true);
 
     return (
         <div className={classes.root}>
-            <span className={classes.title} onClick={() => setIsOpen(!isOpen)}>Recently Visited</span>
+            <span className={classes.title} onClick={() => setIsOpen(!isOpen)}>Recent Processes</span>
             {isOpen ? <Collapse in={isOpen}>
                 <ul className={classes.list}>
-                    {items.map(item => <RecentlyVisitedItem item={item} classes={classes} />)}
+                    {items.map(item => <RecentProcessItem item={item} classes={classes} />)}
                 </ul>
             </Collapse> : <div style={{margin: '1rem'}}><hr/></div>}
         </div>
@@ -81,14 +96,14 @@ type ItemProps = {
 } & WithStyles<CssRules>;
 
 
-const RecentlyVisitedItem = ({item, classes}: ItemProps) => {
+const RecentProcessItem = ({item, classes}: ItemProps) => {
     return (
         <div className={classes.item}>
             <span>
                 <ResourceName uuid={item.uuid} />
             </span>
             <span style={{display: 'flex'}}>
-                <span>{item.uuid}</span>
+                <span><ProcessStatus uuid={item.uuid} /></span>
                 <div style={{marginLeft: '2rem', width: '12rem'}}>{new Date(item.modifiedAt).toLocaleString()}</div>
             </span>
         </div>

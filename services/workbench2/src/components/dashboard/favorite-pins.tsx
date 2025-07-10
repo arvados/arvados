@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Collapse } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -15,11 +16,21 @@ import Tooltip from '@mui/material/Tooltip';
 import { renderIcon } from 'views-components/data-explorer/renderers';
 import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 
-type CssRules = 'root' | 'list' | 'item' | 'name' | 'icon' | 'star';
+type CssRules = 'root' | 'title' | 'list' | 'item' | 'name' | 'icon' | 'star';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+    },
+    title: {
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        borderRadius: '4px',
+        marginLeft: '1rem',
+        padding: '4px',
+        '&:hover': {
+            background: 'lightgray',
+        },
     },
     list: {
         display: 'flex',
@@ -31,6 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100px',
         height: '100px',
         margin: theme.spacing(2),
+        marginTop: '0.5rem',
         padding: theme.spacing(1),
         background: '#fafafa',
         borderRadius: '8px',
@@ -43,6 +55,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'center',
         overflow: 'hidden',
         boxSizing: 'border-box',
+        cursor: 'pointer',
         '&:hover': {
             background: 'lightgray',
         },
@@ -73,7 +86,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState) => {
-    const selection = (state.dataExplorer.favoritePanel?.items || []).slice(0, 10);
+    const selection = (state.dataExplorer.favoritePanel?.items || []);
     const faves = selection.map((uuid) => state.resources[uuid]);
     return {
         items: faves,
@@ -89,22 +102,26 @@ export const FavePinsSection = connect(
     mapDispatchToProps
 )(
     withStyles(styles)(({ items, classes, loadFavoritePanel }: { items: any[] } & WithStyles<CssRules> & { loadFavoritePanel: () => void }) => {
-        React.useEffect(() => {
+        useEffect(() => {
             loadFavoritePanel();
         }, [loadFavoritePanel]);
 
+        const [isOpen, setIsOpen] = useState(true);
+
         return (
             items ? <div className={classes.root}>
-                <div>Favorites</div>
-                <div className={classes.list}>
-                    {items.map((item) => (
-                        <FavePinItem
-                        key={item.uuid}
-                        item={item}
-                        classes={classes}
-                        />
-                    ))}
-                </div>
+                <span className={classes.title} onClick={() => setIsOpen(!isOpen)}>Favorites</span>
+                {isOpen ? <Collapse in={isOpen}>
+                    <div className={classes.list}>
+                        {items.map((item) => (
+                            <FavePinItem
+                            key={item.uuid}
+                            item={item}
+                            classes={classes}
+                            />
+                        ))}
+                    </div>
+                </Collapse> : <div style={{margin: '1rem'}}><hr/></div>}
             </div> : <div>Loading...</div>
         );
     })
