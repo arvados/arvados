@@ -19,9 +19,9 @@ all:
     # Refer to <https://doc.arvados.org/admin/config.html> for details.
     arvados_config_file: /PATH/TO/arvados/config.yml
 
-    # This is the cluster identifier (five alphanumerics) for the cluster
-    # configured in `arvados_config_file` that you want to deploy.
-    arvados_cluster_id: zzzzz
+    # This is the cluster identifier (five lowercase alphanumerics) for the
+    # cluster configured in `arvados_config_file` that you want to deploy.
+    arvados_cluster_id: xurid
     
     # If specified, this file will be deployed to cluster hosts as
     # /etc/arvados/ca-certificates.crt. Arvados services use this file as a
@@ -48,14 +48,14 @@ all:
       #  key: /PATH/TO/arvados-cluster.key
       #  remote: false
 
-    # `arvados_nginx_internal_networks` is an array of netmasks that should be
-    # considered "internal" to the Arvados cluster. Several Arvados services
-    # use this information to coordinate inter-service communication.
-    arvados_nginx_internal_networks:
-      - 127.0.0.1/24
-      #- 10.0.0.0/8
-      #- 172.16.0.0/12
-      #- 192.168.0.0/16
+    # `arvados_nginx_internal_networks` is a map of netmasks that should be
+    # considered "internal" to the Arvados cluster. For each netmask key, if its
+    # value is the literal `false`, it will be considered external. *Any* other
+    # value will cause the netmask to be considered internal.
+    #arvados_nginx_internal_networks:
+    #  "10.0.0.0/8": true
+    #  "172.16.0.0/12": true
+    #  "192.168.0.0/16: true
 
     # `arvados_nginx_server_names` defines additional server name(s) for
     # individual services beyond what's in the service's `ExternalURL` in the

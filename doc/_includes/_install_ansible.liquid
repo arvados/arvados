@@ -1,0 +1,104 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{{ header_level|default: 'h3' }}(#install-ansible-pipx). Option 1. Install Ansible with pipx
+
+The pipx tool is packaged in many of our supported distributions. You can install it on Debian/Ubuntu by running:
+
+<notextile>
+<pre># <code class="userinput">apt install pipx
+</code></pre>
+</notextile>
+
+Or install it on Red Hat/AlmaLinux/Rocky Linux by running:
+
+<notextile>
+<pre># <code class="userinput">dnf install pipx</code></pre>
+</code></pre>
+</notextile>
+
+{% include 'notebox_begin' %}
+If the pipx package is not found, it is not available for your distribution. Instead "install Ansible with virtualenv and pip":#install-ansible-venv.
+{% include 'notebox_end' %}
+
+After pipx is installed, install Ansible by running:
+
+<notextile>
+<pre><code>$ <span class="userinput">cd arvados/tools/ansible</span>
+arvados/tools/ansible $ <span class="userinput">pipx install "$(grep -E '^ansible-core[^-_[:alnum:]]' requirements.txt)"</span>
+  installed package ansible-core 2.15.13, installed using Python 3.11.2
+  These apps are now globally available
+    - ansible
+    - ansible-config
+    - ansible-connection
+    - ansible-console
+    - ansible-doc
+    - ansible-galaxy
+    - ansible-inventory
+    - ansible-playbook
+    - ansible-pull
+    - ansible-test
+    - ansible-vault
+done! ✨ 🌟 ✨
+
+arvados/tools/ansible $ <span class="userinput">pipx runpip ansible-core install -r requirements.txt</span>
+[…]
+Successfully installed argcomplete-3.6.2 certifi-2025.6.15 charset_normalizer-3.4.2 docker-7.1.0 [… and other packages…]
+
+arvados/tools/ansible $ <span class="userinput">ansible-galaxy install -r requirements.yml</span>
+[…]
+ansible.posix:2.0.0 was installed successfully
+community.docker:4.6.1 was installed successfully
+community.general:10.7.1 was installed successfully
+community.postgresql:4.1.0 was installed successfully
+</code></pre>
+</notextile>
+
+If you complete these steps successfully, skip the next section.
+
+{{ header_level|default: 'h3' }}(#install-ansible-venv). Option 2. Install Ansible in a virtualenv with pip
+
+This method works on all of our supported distributions, but requires you to configure a lot of paths manually. Install Python and virtualenv on Debian/Ubuntu by running:
+
+<notextile>
+<pre># <code class="userinput">apt install python3-venv
+</code></pre>
+</notextile>
+
+Or install it on Red Hat/AlmaLinux/Rocky Linux by running:
+
+<notextile>
+<pre># <code class="userinput">dnf install python3
+</code></pre>
+</notextile>
+
+Next, set up a virtualenv. If you want to install this somewhere other than @~/arvados-ansible@, you may change that path each time it appears.
+
+<notextile>
+<pre><code>$ <span class="userinput">cd arvados/tools/ansible</span>
+arvados/tools/ansible $ <span class="userinput">python3 -m venv <strong>~/arvados-ansible</strong></span>
+
+arvados/tools/ansible $ <span class="userinput"><strong>~/arvados-ansible</strong>/bin/pip install -r requirements.txt</span>
+[…]
+Successfully installed MarkupSafe-3.0.2 PyYAML-6.0.2 ansible-core-2.15.13 [… and other packages…]
+
+arvados/tools/ansible $ <span class="userinput"><strong>~/arvados-ansible</strong>/bin/ansible-galaxy install -r requirements.yml</span>
+[…]
+ansible.posix:2.0.0 was installed successfully
+community.docker:4.6.1 was installed successfully
+community.general:10.7.1 was installed successfully
+community.postgresql:4.1.0 was installed successfully
+</code></pre>
+</notextile>
+
+Finally, add all the Ansible tools to your executable path. If you keep personal executables somewhere other than @~/.local/bin@, you may change that path.
+
+<notextile>
+<pre><code>$ <span class="userinput">ln -st <strong>~/.local/bin ~/arvados-ansible</strong>/bin/ansible*</span>
+</code></pre>
+</notextile>
+
+Alternatively, you may reconfigure your shell to add <notextile><code><strong>$HOME/arvados-ansible</strong>/bin</code></notextile> to the end of your @$PATH@ variable.
