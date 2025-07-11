@@ -15,11 +15,13 @@
   gather_facts: no
   tasks:
     - name: Load Arvados configuration file
+      no_log: yes
       delegate_to: localhost
       ansible.builtin.include_vars:
         name: arvados_config
         file: "{{ arvados_config_file }}"
     - name: Load Arvados cluster configuration
+      no_log: yes
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
       failed_when: arvados_cluster is undefined
