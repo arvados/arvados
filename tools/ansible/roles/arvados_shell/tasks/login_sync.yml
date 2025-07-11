@@ -10,6 +10,7 @@
     version: "{{ arvados_pin_version or omit }}"
 
 - name: Write arvados-login-sync credentials
+  no_log: yes
   become: yes
   ansible.builtin.template:
     src: login-sync.env.j2
