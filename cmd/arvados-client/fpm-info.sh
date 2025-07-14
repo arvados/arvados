@@ -8,4 +8,7 @@ case "$TARGET" in
     centos*|rocky*)
         fpm_depends+=(fuse-libs)
         ;;
+    debian* | ubuntu*)
+        fpm_depends+=(libfuse2)
+        ;;
 esac
