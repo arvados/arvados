@@ -17,7 +17,7 @@
 - name: Install Arvados compute packages
   become: yes
   ansible.builtin.apt:
-    name: "{{ arvados_compute_packages + ['fuse'] }}"
+    name: "{{ arvados_compute_packages }}"
 
 - name: Configure FUSE with user_allow_other
   become: yes
