@@ -15,9 +15,21 @@
   ansible.builtin.meta: flush_handlers
 
 - name: Install Arvados compute packages
+  when: arvados_compute_packages is truthy
   become: yes
   ansible.builtin.apt:
-    name: "{{ arvados_compute_packages + ['fuse'] }}"
+    name: "{{ arvados_compute_packages }}"
+
+- name: Check for /etc/fuse.conf
+  ansible.builtin.stat:
+    path: /etc/fuse.conf
+  register: fuse_conf
+
+- name: Install FUSE
+  when: not fuse_conf.stat.exists
+  become: yes
+  ansible.builtin.apt:
+    name: fuse3
 
 - name: Configure FUSE with user_allow_other
   become: yes
