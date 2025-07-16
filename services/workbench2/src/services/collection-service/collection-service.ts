@@ -294,8 +294,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         }
     }
 
-    createDirectory(collectionUuid: string, path: string, showErrors?: boolean) {
-        const fileMap = { [this.combineFilePath([path])]: emptyCollectionPdh };
+    createDirectory(collectionUuid: string, paths: string[], showErrors?: boolean) {
+        const fileMap = paths.reduce((fMap, path)=> {
+            fMap[this.combineFilePath([path])] = emptyCollectionPdh;
+            return fMap;
+        }, {})
 
         return this.replaceFiles({ uuid: collectionUuid }, fileMap, showErrors, false);
     }
@@ -304,12 +307,12 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     *  we only create the longest unique paths
     */
     async createMinNecessaryDirs(collectionUuid: string, existingDirPaths: Set<string>, targetPaths: string[], showErrors?) {
-        const minNecessaryPaths = getMinNecessaryPaths(targetPaths).filter(path => !existingDirPaths.has(path));
-        for (const path of minNecessaryPaths) {
+        const pathsToCreate = getMinNecessaryPaths(targetPaths).filter(path => !existingDirPaths.has(path));
+        if (pathsToCreate.length > 0) {
             try {
-                await this.createDirectory(collectionUuid, path, showErrors);
+                await this.createDirectory(collectionUuid, pathsToCreate, showErrors);
             } catch (error) {
-                console.error("Error creating directory", `${collectionUuid}/${path}`, error);
+                console.error(`Error creating directory in ${collectionUuid}`, error);
             }
         }
     }
