@@ -420,7 +420,7 @@ describe('collection-service', () => {
             for (var i = 0; i < directoryNames.length; i++) {
                 serverApi.put = cy.stub().returns(Promise.resolve({ data: {} })).as('put');
                 // when
-                await collectionService.createDirectory(collectionUuid, directoryNames[i].in);
+                await collectionService.createDirectory(collectionUuid, directoryNames.map(d => d.in));
                 // then
                 cy.get('@put').should('have.been.calledOnce');
                 cy.get('@put').should('have.been.calledWith', `/collections/${collectionUuid}`, {
