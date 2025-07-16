@@ -319,9 +319,9 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 }
 
 
-function getMinNecessaryPaths(paths: string[]): string[] {
+export function getMinNecessaryPaths(paths: string[]): string[] {
     //remove duplicates
-    const uniquePaths = Array.from(new Set(paths));
+    const uniquePaths = Array.from(new Set(paths)).filter(path => !!path && typeof path === 'string' && path.length > 0);
 
     return uniquePaths.filter((path) =>
         uniquePaths.every((existing) =>

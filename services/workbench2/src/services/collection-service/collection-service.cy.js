@@ -5,7 +5,7 @@
 import axios from 'axios';
 import { snakeCase } from 'lodash';
 import { defaultCollectionSelectedFields } from 'models/collection';
-import { CollectionService, emptyCollectionPdh } from './collection-service';
+import { CollectionService, emptyCollectionPdh, getMinNecessaryPaths } from './collection-service';
 
 describe('collection-service', () => {
     let collectionService = {};
@@ -432,6 +432,49 @@ describe('collection-service', () => {
                     },
                 });
             }
+        });
+    });
+
+    describe('getMinNecessaryPaths', () => {
+        const testArgs = [
+            {
+                in: [
+                    '/foo/bar/baz/qux',
+                    '/foo/bar/baz/qux/quux',
+                    '/foo/bar/baz/qux/quux/quuux',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx',
+                ],
+                out: ['/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx'],
+            },
+            {
+                in: [
+                    '/foo/bar/baz/qux',
+                    '/foo/bar/baz/quux',
+                    '/foo/bar/baz/quux/quuux',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx',
+                ],
+                out: ['/foo/bar/baz/quux/quuux', '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx'],
+            },
+            {
+                in: [
+                    null,
+                    undefined,
+                    17,
+                    (foo) => {},
+                    '',
+                    '/foo/bar/baz/qux',
+                    '/foo/bar/baz/quux',
+                ],
+                out: ['/foo/bar/baz/qux', '/foo/bar/baz/quux'],
+            },
+        ];
+        it('should return the minimum unique paths', () => {
+            testArgs.forEach((testArg) => {
+                const paths = getMinNecessaryPaths(testArg.in);
+                expect(paths).to.deep.equal(testArg.out);
+            });
         });
     });
 
