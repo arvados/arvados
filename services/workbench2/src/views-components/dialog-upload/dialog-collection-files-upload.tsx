@@ -40,7 +40,7 @@ const UploadCollectionFilesFields = () => <>
         name='files'
         validate={FILES_FIELD_VALIDATION}
         component={FileUploaderField} />
-    <WarningCollection text="Uploading new files will change content address." />
+    <WarningCollection text="Uploading new files will change content address. Empty folders will be ignored." />
 </>;
 
 const FILES_FIELD_VALIDATION = [fieldRequire];
