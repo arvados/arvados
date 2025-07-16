@@ -84,10 +84,10 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         }, "/");
     }
 
-    private replaceFiles(data: CollectionPartialUpdateOrCreate, fileMap: {}, showErrors?: boolean) {
+    private replaceFiles(data: CollectionPartialUpdateOrCreate, fileMap: {}, showErrors?: boolean, preserveVersion: boolean = true) {
         const payload: ReplaceFilesPayload = {
             collection: {
-                preserve_version: true,
+                preserve_version: preserveVersion,
                 ...CommonService.mapKeys(snakeCase)(data),
                 // Don't send uuid in payload when creating
                 uuid: undefined,
@@ -297,7 +297,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     createDirectory(collectionUuid: string, path: string, showErrors?: boolean) {
         const fileMap = { [this.combineFilePath([path])]: emptyCollectionPdh };
 
-        return this.replaceFiles({ uuid: collectionUuid }, fileMap, showErrors);
+        return this.replaceFiles({ uuid: collectionUuid }, fileMap, showErrors, false);
     }
 
     /* since creating a nested dir will create all parent dirs that don't exist,
