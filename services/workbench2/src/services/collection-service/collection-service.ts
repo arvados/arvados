@@ -132,7 +132,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                     acc.push(file[pathKey]!.split('/').slice(0, -1).join('/'));
                 }
                 return acc;
-            }, [] as string[]);
+            }, [] as string[]).filter(path => path.length > 0);
 
             await this.createMinNecessaryDirs(collectionUuid, existingDirPaths, allTargetPaths, true);
         }
