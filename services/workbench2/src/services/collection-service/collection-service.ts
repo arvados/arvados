@@ -304,11 +304,8 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     *  we only create the longest unique paths
     */
     async createMinNecessaryDirs(collectionUuid: string, existingDirPaths: Set<string>, targetPaths: string[], showErrors?) {
-        const minNecessaryPaths = getMinNecessaryPaths(targetPaths);
+        const minNecessaryPaths = getMinNecessaryPaths(targetPaths).filter(path => !existingDirPaths.has(path));
         for (const path of minNecessaryPaths) {
-            if (existingDirPaths.has(path)) {
-                return;
-            }
             try {
                 await this.createDirectory(collectionUuid, path, showErrors);
             } catch (error) {
@@ -322,15 +319,13 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 function getMinNecessaryPaths(paths: string[]): string[] {
     //remove duplicates
     const uniquePaths = Array.from(new Set(paths));
-    const minimalPaths: string[] = [];
 
-    for (const path of uniquePaths) {
-        const parentExists = uniquePaths.some((existing) => path === existing || path.startsWith(existing + '/'));
-        if (parentExists) {
-            minimalPaths.push(path);
-        }
-    }
-    return minimalPaths;
+    return uniquePaths.filter((path) =>
+        uniquePaths.every((existing) =>
+            path === existing || !existing.startsWith(path + '/')
+        )
+    );
+
 }
 
 const getPathKey = (file: FileWithRelativePath) => {
