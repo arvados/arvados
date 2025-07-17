@@ -45,7 +45,7 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
 
     switch (uuid) {
         case SidePanelTreeCategory.DASHBOARD:
-            dispatch(navigateToDashboard);
+            dispatch<any>(navigateToDashboard);
             return;
         case SidePanelTreeCategory.PROJECTS:
             const usr = getState().auth.user;

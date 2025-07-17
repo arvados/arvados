@@ -36,7 +36,7 @@ import {
     setRepositoriesBreadcrumbs,
     setUserPreferencesBreadcrumbs,
 } from "store/breadcrumbs/breadcrumbs-actions";
-import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
+import { navigateTo, navigateToDashboard } from "store/navigation/navigation-action";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { ServiceRepository } from "services/services";
 import { getResource } from "store/resources/resources";
@@ -201,7 +201,11 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
         if (router.location) {
             const match = matchRootRoute(router.location.pathname);
             if (match) {
-                dispatch<any>(navigateToRootProject);
+                dispatch<any>(navigateToDashboard);
+                if (getState().progressIndicator.includes(WORKBENCH_LOADING_SCREEN)) {
+                    dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                }
+
             }
         }
     } else {
