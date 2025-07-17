@@ -21,6 +21,7 @@ import { verifyAndUpdateLinks } from 'common/link-update-name';
 import { ProcessIcon, ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon } from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
+    DASHBOARD = 'Dashboard',
     PROJECTS = 'Home Projects',
     FAVORITES = 'My Favorites',
     PUBLIC_FAVORITES = 'Public Favorites',
@@ -51,6 +52,7 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 };
 
 let SIDE_PANEL_CATEGORIES: string[] = [
+    SidePanelTreeCategory.DASHBOARD,
     SidePanelTreeCategory.PROJECTS,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.PUBLIC_FAVORITES,

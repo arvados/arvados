@@ -110,6 +110,7 @@ import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 import classNames from "classnames";
 import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferences-panel";
+import { Dashboard } from "components/dashboard/dashboard";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -176,6 +177,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 let routes = (
     <>
+        <Route
+            path={Routes.DASHBOARD}
+            component={Dashboard}
+        />
         <Route
             path={Routes.PROJECTS}
             component={ProjectPanel}

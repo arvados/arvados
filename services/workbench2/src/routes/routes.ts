@@ -20,6 +20,7 @@ export const Routes = {
     TOKEN: '/token',
     FED_LOGIN: '/fedtoken',
     ADD_SESSION: '/add-session',
+    DASHBOARD: '/dashboard',
     PROJECTS: `/projects/:id(${RESOURCE_UUID_PATTERN})`,
     COLLECTIONS: `/collections/:id(${RESOURCE_UUID_PATTERN})`,
     PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
