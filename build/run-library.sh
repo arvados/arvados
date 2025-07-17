@@ -647,7 +647,7 @@ handle_arvados_src () {
 setup_build_virtualenv() {
     PYTHON_BUILDROOT="$(mktemp --directory --tmpdir pybuild.XXXXXXXX)"
     "$PYTHON3_EXECUTABLE" -m venv "$PYTHON_BUILDROOT/venv"
-    "$PYTHON_BUILDROOT/venv/bin/pip" install --upgrade build piprepo setuptools wheel
+    "$PYTHON_BUILDROOT/venv/bin/pip" install -r "$WORKSPACE/build/requirements.build-packages.txt"
     mkdir "$PYTHON_BUILDROOT/wheelhouse"
 }
 

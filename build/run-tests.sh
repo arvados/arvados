@@ -364,20 +364,10 @@ setup_virtualenv() {
         all_services_stopped=1
     fi
     . "$VENV3DIR/bin/activate" || fatal "virtualenv activation failed"
-    # pip >= 20.3 is necessary for modern dependency resolution.
-    # setuptools is our chosen Python build tool.
-    # wheel modernizes the venv (as of early 2024) and makes it more closely
-    # match our package build environment.
     # We must have these in place *before* we install the PySDK below.
-    pip install "pip>=20.3" setuptools wheel ||
-        fatal "failed to install build packages in virtualenv"
+    pip install -r "$WORKSPACE/build/requirements.tests.txt" ||
+        fatal "failed to install Python requirements in virtualenv"
     # run-tests.sh uses run_test_server.py from the Python SDK.
-    # This requires both the Python SDK itself and PyYAML.
-    # Hence we must install these dependencies this early for the rest of the
-    # script to work.
-    # s3cmd is used by controller and keep-web tests.
-    # yq is used by controller tests and this script.
-    pip install PyYAML s3cmd "yq~=3.4" || fatal "failed to install test dependencies in virtualenv"
     do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 
@@ -433,10 +423,6 @@ initialize() {
 install_env() {
     go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed"
-    # parameterized and pytest are direct dependencies of Python tests.
-    # pdoc is needed to build PySDK documentation.
-    pip install parameterized pdoc pytest ||
-        fatal "failed to install test+documentation packages in virtualenv"
 }
 
 retry() {
