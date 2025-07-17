@@ -17,29 +17,23 @@ import {
 } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, RemoveIcon } from "../icon/icon";
 import { formatFileSize, formatProgress, formatUploadSpeed } from "common/formatters";
 import { UploadFile } from 'store/file-uploader/file-uploader-actions';
+import { UploadInput, FileUploadType } from 'components/file-upload/upload-input';
 
-type CssRules = "root" | "dropzone" | "dropzoneWrapper" | "container" | "uploadIcon"
+type CssRules = "dropzoneWrapper" | "container" | "inputContainer" | "uploadIcon"
     | "dropzoneBorder" | "dropzoneBorderLeft" | "dropzoneBorderRight" | "dropzoneBorderTop" | "dropzoneBorderBottom"
-    | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive" | "deleteButton" | "deleteButtonDisabled" | "deleteIcon";
+    | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive" | "deleteButton" | "deleteButtonDisabled" | "deleteIcon" | "fileTable";
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
-    root: {
-    },
-    dropzone: {
-        width: "100%",
-        height: "100%",
-        overflow: "auto"
-    },
     dropzoneWrapper: {
         width: "100%",
         height: "200px",
         position: "relative",
         border: "1px solid rgba(0, 0, 0, 0.42)",
         boxSizing: 'border-box',
+        overflowY: "scroll",
     },
     dropzoneBorder: {
         content: "",
@@ -83,7 +77,18 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         transform: "scaleX(1)"
     },
     container: {
-        height: "100%"
+        height: "100%",
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+    },
+    inputContainer: {
+        width: '80%',
+        marginTop: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-around',
     },
     uploadIcon: {
         verticalAlign: "middle"
@@ -96,7 +101,10 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     deleteIcon: {
         marginLeft: "-6px"
-    }
+    },
+    fileTable: {
+        width: "100%",
+    },
 });
 
 interface FileUploadPropsData {
@@ -140,16 +148,54 @@ export const FileUpload = withStyles(styles)(
             }, 100);
 
         }
+
+        fileInputRef = React.createRef<HTMLInputElement>();
+        folderInputRef = React.createRef<HTMLInputElement>();
+
+        handleDrop = async (event) => {
+            event.preventDefault();
+
+            const items = event.dataTransfer.items;
+            if (!items) return;
+
+            const entries: any[] = [];
+
+            for (let i = 0; i < items.length; i++) {
+                const entry = items[i].webkitGetAsEntry?.() || items[i].getAsEntry?.();
+                if (entry) entries.push(entry);
+            }
+
+            const filesArrays = await Promise.all(entries.map((entry) => traverseFileTree(entry)));
+            const allFiles = filesArrays.flat();
+
+            this.props.onDrop(allFiles as any); // includes `file.relativePath` if needed
+        }
+
+        handleInputChange = (event) => {
+                const files = Array.from(event.target.files);
+                this.props.onDrop(files as any);
+            };
+
+        getInputProps = () => ({
+            disabled: this.props.disabled,
+            handleInputChange: this.handleInputChange,
+            onFocus: ()=>this.setState({ focused: true }),
+            onBlur: ()=>this.setState({ focused: false }),
+        })
+
         render() {
-            const { classes, onDrop, disabled, files } = this.props;
+            const { classes, disabled, files } = this.props;
             return (
-                <div className={"file-upload-dropzone " + classes.dropzoneWrapper}>
+                <div
+                    className={"file-upload-dropzone " + classes.dropzoneWrapper}
+                    onDrop={this.handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                    >
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
                     <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
-                    <Dropzone className={classes.dropzone}
-                        onDrop={files => onDrop(files)}
+                    <div
                         onClick={() => {
                             const el = document.getElementsByClassName("file-upload-dropzone")[0];
                             const inputs = el.getElementsByTagName("input");
@@ -158,29 +204,21 @@ export const FileUpload = withStyles(styles)(
                             }
                         }}
                         data-cy="drag-and-drop"
-                        disabled={disabled}
-                        inputProps={{
-                            onFocus: () => {
-                                this.setState({
-                                    focused: true
-                                });
-                            },
-                            onBlur: () => {
-                                this.setState({
-                                    focused: false
-                                });
-                            }
-                        }}>
+                        >
                         {files.length === 0 &&
                             <Grid container justifyContent="center" alignItems="center" className={classes.container}>
                                 <Grid item component={"span"}>
                                     <Typography variant='subtitle1'>
                                         <CloudUploadIcon className={classes.uploadIcon} /> Drag and drop data or click to browse
-                                </Typography>
+                                    </Typography>
+                                </Grid>
+                                <Grid item component={"div"} className={classes.inputContainer}>
+                                    <UploadInput type={FileUploadType.FOLDER} inputRef={this.folderInputRef} {...this.getInputProps()} />
+                                    <UploadInput type={FileUploadType.FILE} inputRef={this.fileInputRef} {...this.getInputProps()} />
                                 </Grid>
                             </Grid>}
                         {files.length > 0 &&
-                            <Table style={{ width: "100%" }}>
+                            <Table className={classes.fileTable} stickyHeader>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>File name</TableCell>
@@ -211,9 +249,26 @@ export const FileUpload = withStyles(styles)(
                                 </TableBody>
                             </Table>
                         }
-                    </Dropzone>
+                    </div>
                 </div>
             );
         }
     }
 );
+
+function traverseFileTree(item, path = '') {
+    return new Promise((resolve) => {
+        if (item.isFile) {
+            item.file((file) => {
+                file.relativePath = path + file.name;
+                resolve([file]);
+            });
+        } else if (item.isDirectory) {
+            const dirReader = item.createReader();
+            dirReader.readEntries(async (entries) => {
+                const files = await Promise.all(entries.map((entry) => traverseFileTree(entry, path + item.name + '/')));
+                resolve(files.flat());
+            });
+        }
+    });
+}

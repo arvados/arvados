@@ -1250,6 +1250,22 @@ describe("Collection panel tests", function () {
             });
         });
 
+        it('uploads and maintains nested folder structure', () => {
+            cy.getAll('@testCollection1').then(function ([testCollection1]) {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${testCollection1.uuid}`);
+                cy.get('[data-cy=upload-button]').click();
+                cy.fixture('files/5mb.bin', 'base64').then((content) => {
+                    cy.get('[data-cy=drag-and-drop]').upload(content, 'foo/bar/baz/qux');
+                    // waits are necessary because the ui refreshes after upload
+                    cy.get("[data-cy=form-submit-btn]").click().wait(1000);
+                    cy.get('[data-subfolder-path="foo"]').should('exist').click().wait(1000);
+                    cy.get('[data-subfolder-path="bar"]').should('exist').click().wait(1000);
+                    cy.get('[data-subfolder-path="baz"]').should('exist').click().wait(1000);
+                })
+            });
+        });
+
         it("allows to cancel running upload", () => {
             cy.getAll("@testCollection1").then(function ([testCollection1]) {
                 cy.loginAs(activeUser);
