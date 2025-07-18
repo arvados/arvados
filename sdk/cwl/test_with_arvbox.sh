@@ -153,7 +153,8 @@ export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados-arvbox/superuser_token)
 
 if test -n "$build" ; then
-  /usr/src/arvados/build/build-dev-docker-jobs-image.sh
+  WORKSPACE=/usr/src/arvados /usr/src/arvados/build/build_docker_image.py \
+    --upload-to=arvados dev-jobs
 fi
 
 EXTRA=--compute-checksum
