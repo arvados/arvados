@@ -25,6 +25,7 @@ def test_set_properties_17004(arv_session, acr_script, jobs_docker_image, tmp_pr
     acr_proc = subprocess.run([
         str(acr_script),
         '--project-uuid', tmp_project['uuid'],
+        '--submit-runner-image', jobs_docker_image,
         str(TESTS_DIR / '17004-output-props.cwl'),
         '--inp', str(inp_path),
     ])
@@ -48,6 +49,7 @@ def test_fix_workflow_18888(acr_script, jobs_docker_image):
     # command line and was thought to be due to command line handling.
     acr_proc = subprocess.run([
         str(acr_script),
+        '--submit-runner-image', jobs_docker_image,
         '18888-download_def.cwl',
         '--scripts', 'scripts/',
     ], cwd=TESTS_DIR)
