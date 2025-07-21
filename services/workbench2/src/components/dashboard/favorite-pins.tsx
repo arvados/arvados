@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useState } from 'react';
-import { Collapse } from '@mui/material';
+import { Collapse, Tooltip } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -12,7 +12,6 @@ import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import StarIcon from '@mui/icons-material/Star';
-import Tooltip from '@mui/material/Tooltip';
 import { renderIcon } from 'views-components/data-explorer/renderers';
 import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
@@ -20,7 +19,7 @@ import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-act
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { navigateTo } from 'store/navigation/navigation-action';
 
-type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'path' | 'icon' | 'namePlate' | 'star';
+type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'icon' | 'namePlate' | 'star';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -67,21 +66,19 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '0.875rem',
         textAlign: 'left',
         lineHeight: '1.2',
-        maxHeight: '1.2rem',
+        maxHeight: '2.5rem',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-    },
-    path: {
-        fontSize: '0.75rem',
-        textAlign: 'left',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
     },
     icon: {
         color: theme.customs.colors.grey700,
         marginRight: '0.5rem',
     },
     namePlate: {
-        width: '75%',
+        width: '80%',
         display: 'flex',
         flexDirection: 'column',
     },
@@ -152,6 +149,7 @@ type FavePinItemProps = {
 };
 
 const FavePinItem = ({ item, openContextMenu, navTo, classes }: FavePinItemProps & WithStyles<CssRules>) => {
+    console.log(">>> FavePinItem", item);
 
     const handleContextMenu = (event: React.MouseEvent) => {
         event.preventDefault();
@@ -164,7 +162,6 @@ const FavePinItem = ({ item, openContextMenu, navTo, classes }: FavePinItemProps
             <div className={classes.icon}>{renderIcon(item)}</div>
             <div className={classes.namePlate}>
                 <div className={classes.name}>{item.name}</div>
-                <div className={classes.path}>{item.uuid}</div>
             </div>
             <Tooltip title='Remove from Favorites'>
                 <StarIcon className={classes.star} />
