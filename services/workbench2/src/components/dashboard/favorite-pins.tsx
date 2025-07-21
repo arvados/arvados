@@ -18,6 +18,7 @@ import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { navigateTo } from 'store/navigation/navigation-action';
 
 type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'path' | 'icon' | 'namePlate' | 'star';
 
@@ -101,6 +102,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
+    navTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
     openContextMenu: (ev: React.MouseEvent<HTMLElement>, uuid: string) => dispatch<any>(openContextMenuOnlyFromUuid(ev, uuid)),
 });
 
@@ -110,7 +112,8 @@ export const FavePinsSection = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)(({ items, classes, loadFavoritePanel, openContextMenu }: FavePinsSectionProps) => {
+    withStyles(styles)(({ items, classes, loadFavoritePanel, navTo, openContextMenu }: FavePinsSectionProps) => {
+
         useEffect(() => {
             loadFavoritePanel();
         }, [loadFavoritePanel]);
@@ -131,6 +134,7 @@ export const FavePinsSection = connect(
                                     key={item.uuid}
                                     item={item}
                                     classes={classes}
+                                    navTo={navTo}
                                     openContextMenu={openContextMenu}
                                 />
                             ))}
@@ -143,10 +147,11 @@ export const FavePinsSection = connect(
 
 type FavePinItemProps = {
     item: GroupContentsResource,
+    navTo: (uuid: string) => void,
     openContextMenu: (event: React.MouseEvent, uuid: string) => void
 };
 
-const FavePinItem = ({ item, openContextMenu, classes }: FavePinItemProps & WithStyles<CssRules>) => {
+const FavePinItem = ({ item, openContextMenu, navTo, classes }: FavePinItemProps & WithStyles<CssRules>) => {
 
     const handleContextMenu = (event: React.MouseEvent) => {
         event.preventDefault();
@@ -155,7 +160,7 @@ const FavePinItem = ({ item, openContextMenu, classes }: FavePinItemProps & With
     };
 
     return (
-        <div className={classes.item} onContextMenu={handleContextMenu}>
+        <div className={classes.item} onContextMenu={handleContextMenu} onClick={() => navTo(item.uuid)}>
             <div className={classes.icon}>{renderIcon(item)}</div>
             <div className={classes.namePlate}>
                 <div className={classes.name}>{item.name}</div>
