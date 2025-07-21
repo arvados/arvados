@@ -1373,6 +1373,19 @@ describe("Collection panel tests", function () {
 
         it('all files', () => {
             cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                const downloadName = `${testCollection1.name}.zip`;
+
+                cy.intercept({ method: "GET", url: `**/c=${testCollection1.uuid}*`, times: 1, query: {
+                    accept: "application/zip",
+                    disposition: "attachment",
+                    download_filename: downloadName,
+                }}, (req) => {
+                    const url = new URL(req.url);
+                    const files = url.searchParams.get("files");
+                    // Cannot assert on null so we assert the comparison
+                    expect(files === null).to.equal(true);
+                }).as('downloadQuery');
+
                 cy.loginAs(activeUser);
 
                 // Navigate to collection files
@@ -1386,13 +1399,32 @@ describe("Collection panel tests", function () {
                 // Verify filename
                 cy.get("[data-cy=form-dialog]").within(() => {
                     cy.get('h2').contains("Download");
-                    cy.get('input[name=fileName]').should('have.value', `${testCollection1.name}.zip`)
+                    cy.get('input[name=fileName]').should('have.value', downloadName);
+                    cy.get('button[data-cy=form-submit-btn]').click();
                 });
+                // Wait for download request to match
+                cy.wait('@downloadQuery');
             });
         });
 
         it('one file', () => {
             cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                const downloadName = `${testCollection1.name} - bar.zip`;
+
+                cy.intercept({ method: "GET", url: `**/c=${testCollection1.uuid}*`, times: 1, query: {
+                    accept: "application/zip",
+                    disposition: "attachment",
+                    download_filename: downloadName,
+                }}, (req) => {
+                    const url = new URL(req.url);
+                    const files = url.searchParams.toString()
+                        .split("&")
+                        .filter(param => param.startsWith("files="))
+                        .join("&");
+
+                    expect(files).to.equal("files=bar");
+                }).as('downloadQuery');
+
                 cy.loginAs(activeUser);
 
                 // Navigate to collection files
@@ -1409,13 +1441,32 @@ describe("Collection panel tests", function () {
                 // Verify filename
                 cy.get("[data-cy=form-dialog]").within(() => {
                     cy.get('h2').contains("Download");
-                    cy.get('input[name=fileName]').should('have.value', `${testCollection1.name} - bar.zip`)
+                    cy.get('input[name=fileName]').should('have.value', downloadName);
+                    cy.get('button[data-cy=form-submit-btn]').click();
                 });
+                // Wait for download request to match
+                cy.wait('@downloadQuery');
             });
         });
 
         it('multi file', () => {
             cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                const downloadName = `${testCollection1.name} - 2 files.zip`;
+
+                cy.intercept({ method: "GET", url: `**/c=${testCollection1.uuid}*`, times: 1, query: {
+                    accept: "application/zip",
+                    disposition: "attachment",
+                    download_filename: downloadName,
+                }}, (req) => {
+                    const url = new URL(req.url);
+                    const files = url.searchParams.toString()
+                        .split("&")
+                        .filter(param => param.startsWith("files="))
+                        .join("&");
+
+                    expect(files).to.equal("files=subdir&files=bar");
+                }).as('downloadQuery');
+
                 cy.loginAs(activeUser);
 
                 // Navigate to collection files
@@ -1433,8 +1484,11 @@ describe("Collection panel tests", function () {
                 // Verify filename
                 cy.get("[data-cy=form-dialog]").within(() => {
                     cy.get('h2').contains("Download");
-                    cy.get('input[name=fileName]').should('have.value', `${testCollection1.name} - 2 files.zip`)
+                    cy.get('input[name=fileName]').should('have.value', downloadName);
+                    cy.get('button[data-cy=form-submit-btn]').click();
                 });
+                // Wait for download request to match
+                cy.wait('@downloadQuery');
             });
         });
     });
