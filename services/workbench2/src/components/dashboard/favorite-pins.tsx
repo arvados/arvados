@@ -18,6 +18,7 @@ import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevr
 import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { navigateTo } from 'store/navigation/navigation-action';
+import { toggleFavorite } from 'store/favorites/favorites-actions';
 
 type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'icon' | 'namePlate' | 'star';
 
@@ -100,6 +101,7 @@ const mapStateToProps = (state: RootState) => {
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
     navTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
+    toggleFavorite: (item: GroupContentsResource) => dispatch<any>(toggleFavorite({ uuid: item.uuid, name: item.name })).then(() => dispatch<any>(loadFavoritePanel())),
     openContextMenu: (ev: React.MouseEvent<HTMLElement>, uuid: string) => dispatch<any>(openContextMenuOnlyFromUuid(ev, uuid)),
 });
 
@@ -109,11 +111,11 @@ export const FavePinsSection = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)(({ items, classes, loadFavoritePanel, navTo, openContextMenu }: FavePinsSectionProps) => {
+    withStyles(styles)(({ items, classes, loadFavoritePanel, navTo, toggleFavorite, openContextMenu }: FavePinsSectionProps) => {
 
         useEffect(() => {
             loadFavoritePanel();
-        }, [loadFavoritePanel]);
+        }, [loadFavoritePanel, items.length]);
 
         const [isOpen, setIsOpen] = useState(true);
 
@@ -132,6 +134,7 @@ export const FavePinsSection = connect(
                                     item={item}
                                     classes={classes}
                                     navTo={navTo}
+                                    toggleFavorite={toggleFavorite}
                                     openContextMenu={openContextMenu}
                                 />
                             ))}
@@ -145,16 +148,22 @@ export const FavePinsSection = connect(
 type FavePinItemProps = {
     item: GroupContentsResource,
     navTo: (uuid: string) => void,
+    toggleFavorite: (item: GroupContentsResource) => void,
     openContextMenu: (event: React.MouseEvent, uuid: string) => void
 };
 
-const FavePinItem = ({ item, openContextMenu, navTo, classes }: FavePinItemProps & WithStyles<CssRules>) => {
-    console.log(">>> FavePinItem", item);
+const FavePinItem = ({ item, openContextMenu, navTo, toggleFavorite, classes }: FavePinItemProps & WithStyles<CssRules>) => {
 
     const handleContextMenu = (event: React.MouseEvent) => {
         event.preventDefault();
         event.stopPropagation();
         openContextMenu(event, item.uuid);
+    };
+
+    const handleToggleFavorite = (event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleFavorite(item);
     };
 
     return (
@@ -163,7 +172,7 @@ const FavePinItem = ({ item, openContextMenu, navTo, classes }: FavePinItemProps
             <div className={classes.namePlate}>
                 <div className={classes.name}>{item.name}</div>
             </div>
-            <Tooltip title='Remove from Favorites'>
+            <Tooltip title='Remove from Favorites' onClick={handleToggleFavorite}>
                 <StarIcon className={classes.star} />
             </Tooltip>
         </div>

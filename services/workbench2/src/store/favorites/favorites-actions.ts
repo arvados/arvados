@@ -24,6 +24,7 @@ export type FavoritesAction = UnionOf<typeof favoritesActions>;
 
 export const toggleFavorite = (resource: { uuid: string; name: string }) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+        console.log(">>> toggleFavorite", resource);
         const userUuid = getUserUuid(getState());
         if (!userUuid) {
             return Promise.reject("No user");
