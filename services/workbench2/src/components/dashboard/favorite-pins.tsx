@@ -16,8 +16,10 @@ import Tooltip from '@mui/material/Tooltip';
 import { renderIcon } from 'views-components/data-explorer/renderers';
 import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
+import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-actions';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 
-type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'icon' | 'star';
+type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'path' | 'icon' | 'namePlate' | 'star';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -39,17 +41,16 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
     },
     item: {
-        width: '100px',
-        height: '100px',
+        width: '18rem',
+        height: '3.5rem',
         margin: theme.spacing(2),
         marginTop: '0',
         padding: theme.spacing(1),
         background: '#fafafa',
         borderRadius: '8px',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center', // Center contents
+        justifyContent: 'center',
         position: 'relative',
         boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
         textAlign: 'center',
@@ -57,31 +58,36 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         boxSizing: 'border-box',
         cursor: 'pointer',
         '&:hover': {
-            background: 'lightgray',
+            background: theme.palette.grey[200],
         },
     },
     name: {
+        width: '100%',
         fontSize: '0.875rem',
-        textAlign: 'center',
+        textAlign: 'left',
         lineHeight: '1.2',
-        maxHeight: '2.4rem', // Ensures it only takes two lines
+        maxHeight: '1.2rem',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        display: '-webkit-box',
-        WebkitLineClamp: 2, // Restricts to two lines
-        WebkitBoxOrient: 'vertical',
+        whiteSpace: 'nowrap',
+    },
+    path: {
+        fontSize: '0.75rem',
+        textAlign: 'left',
     },
     icon: {
         color: theme.customs.colors.grey700,
-        marginTop: '1rem',
-        flex: '1 0 auto', // Uncomment if you have another element above the icon
+        marginRight: '0.5rem',
+    },
+    namePlate: {
+        width: '75%',
+        display: 'flex',
+        flexDirection: 'column',
     },
     star: {
         fontSize: '1.25rem',
-        position: 'absolute',
-        top: '5px',
-        right: '5px',
         color: theme.customs.colors.grey700,
+        marginLeft: '0.5rem',
     },
 });
 
@@ -89,19 +95,22 @@ const mapStateToProps = (state: RootState) => {
     const selection = state.dataExplorer.favoritePanel?.items || [];
     const faves = selection.map((uuid) => state.resources[uuid]);
     return {
-        items: faves,
+        items: faves as GroupContentsResource[],
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
+    openContextMenu: (ev: React.MouseEvent<HTMLElement>, uuid: string) => dispatch<any>(openContextMenuOnlyFromUuid(ev, uuid)),
 });
+
+type FavePinsSectionProps = ReturnType<typeof mapStateToProps> & ReturnType<typeof mapDispatchToProps> & WithStyles<CssRules>;
 
 export const FavePinsSection = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)(({ items, classes, loadFavoritePanel }: { items: any[] } & WithStyles<CssRules> & { loadFavoritePanel: () => void }) => {
+    withStyles(styles)(({ items, classes, loadFavoritePanel, openContextMenu }: FavePinsSectionProps) => {
         useEffect(() => {
             loadFavoritePanel();
         }, [loadFavoritePanel]);
@@ -122,6 +131,7 @@ export const FavePinsSection = connect(
                                     key={item.uuid}
                                     item={item}
                                     classes={classes}
+                                    openContextMenu={openContextMenu}
                                 />
                             ))}
                         </div>
@@ -131,11 +141,26 @@ export const FavePinsSection = connect(
     })
 );
 
-const FavePinItem = ({ item, classes }: { item: any } & WithStyles<CssRules>) => {
+type FavePinItemProps = {
+    item: GroupContentsResource,
+    openContextMenu: (event: React.MouseEvent, uuid: string) => void
+};
+
+const FavePinItem = ({ item, openContextMenu, classes }: FavePinItemProps & WithStyles<CssRules>) => {
+
+    const handleContextMenu = (event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openContextMenu(event, item.uuid);
+    };
+
     return (
-        <div className={classes.item}>
+        <div className={classes.item} onContextMenu={handleContextMenu}>
             <div className={classes.icon}>{renderIcon(item)}</div>
-            <div className={classes.name}>{item.name}</div>
+            <div className={classes.namePlate}>
+                <div className={classes.name}>{item.name}</div>
+                <div className={classes.path}>{item.uuid}</div>
+            </div>
             <Tooltip title='Remove from Favorites'>
                 <StarIcon className={classes.star} />
             </Tooltip>
