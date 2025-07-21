@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useState } from 'react';
+import { isEqual } from 'lodash';
 import { Collapse } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
@@ -57,7 +58,7 @@ export const FavePinsSection = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)(({ items, classes, loadFavoritePanel }: FavePinsSectionProps) => {
+    withStyles(styles)(React.memo(({ items, classes, loadFavoritePanel }: FavePinsSectionProps) => {
 
         useEffect(() => {
             loadFavoritePanel();
@@ -84,5 +85,13 @@ export const FavePinsSection = connect(
                 </Collapse>
             </div>
         )
-    })
-);
+    }, preventRerender))
+)
+
+// return true to prevent re-render, false to allow re-render
+function preventRerender(prevProps: FavePinsSectionProps, nextProps: FavePinsSectionProps) {
+    if (!isEqual(prevProps.items, nextProps.items)) {
+        return false;
+    }
+    return true;
+}
