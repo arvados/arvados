@@ -1361,4 +1361,81 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=breadcrumb-first]").should("contain", "Home Projects");
         });
     });
+
+    describe("zip download", () => {
+        beforeEach(() => {
+            cy.createCollection(adminUser.token, {
+                name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+                owner_uuid: activeUser.user.uuid,
+                manifest_text: "./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+            }).as("testCollection1");
+        });
+
+        it('all files', () => {
+            cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                cy.loginAs(activeUser);
+
+                // Navigate to collection files
+                cy.doDataExplorerNavigate(testCollection1.name);
+                cy.doMPVTabSelect("Files");
+
+                // Click download all files as zip
+                cy.doCollectionPanelOptionsAction("Download all files as zip");
+                cy.waitForDom();
+
+                // Verify filename
+                cy.get("[data-cy=form-dialog]").within(() => {
+                    cy.get('h2').contains("Download");
+                    cy.get('input[name=fileName]').should('have.value', `${testCollection1.name}.zip`)
+                });
+            });
+        });
+
+        it('one file', () => {
+            cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                cy.loginAs(activeUser);
+
+                // Navigate to collection files
+                cy.doDataExplorerNavigate(testCollection1.name);
+                cy.doMPVTabSelect("Files");
+
+                // Select one file
+                cy.doCollectionFileSelect("bar");
+
+                // Click download all files as zip
+                cy.doCollectionPanelOptionsAction("Download selected files as zip");
+                cy.waitForDom();
+
+                // Verify filename
+                cy.get("[data-cy=form-dialog]").within(() => {
+                    cy.get('h2').contains("Download");
+                    cy.get('input[name=fileName]').should('have.value', `${testCollection1.name} - bar.zip`)
+                });
+            });
+        });
+
+        it('multi file', () => {
+            cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                cy.loginAs(activeUser);
+
+                // Navigate to collection files
+                cy.doDataExplorerNavigate(testCollection1.name);
+                cy.doMPVTabSelect("Files");
+
+                // Select multi file
+                cy.doCollectionFileSelect("subdir");
+                cy.doCollectionFileSelect("bar");
+
+                // Click download all files as zip
+                cy.doCollectionPanelOptionsAction("Download selected files as zip");
+                cy.waitForDom();
+
+                // Verify filename
+                cy.get("[data-cy=form-dialog]").within(() => {
+                    cy.get('h2').contains("Download");
+                    cy.get('input[name=fileName]').should('have.value', `${testCollection1.name} - 2 files.zip`)
+                });
+            });
+        });
+    });
 });

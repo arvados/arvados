@@ -747,7 +747,16 @@ Cypress.Commands.add("doToolbarAction", (name) => {
 Cypress.Commands.add("doDataExplorerContextAction", (name, action) => {
     cy.waitForDom();
     cy.get('[data-cy=data-table]', { timeout: 10000 }).contains(name, { timeout: 10000 }).rightclick();
-    cy.get('[data-cy=context-menu]', { timeout: 5000 }).contains(action).click();
+    cy.doContextMenuAction(action);
+});
+
+/**
+ * Perform a collections panel options menu action (the top-right menu, not right click)
+ */
+Cypress.Commands.add("doCollectionPanelOptionsAction", (action) => {
+    cy.waitForDom();
+    cy.get("[data-cy=collection-files-panel-options-btn]", { timeout: 10000 }).click();
+    cy.doContextMenuAction(action);
 });
 
 /**
@@ -765,6 +774,31 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 });
 
 /**
+ * Selects data explorer rows in the collection files panel
+ */
+Cypress.Commands.add("doCollectionFileSelect", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=collection-files-right-panel]', { timeout: 10000 })
+        .contains(name)
+        .parents('[data-item=true]')
+        .find('input[type=checkbox]')
+        .first()
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
+ * Navigates to data explorer item by name
+ */
+Cypress.Commands.add("doDataExplorerNavigate", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table]', { timeout: 10000 })
+        .contains(name)
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
  * Inputs value into data explorer search
  *
  * Useful for when there are too many items in a data explorer for the item of interest to be on the first page
@@ -772,6 +806,15 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 Cypress.Commands.add("doDataExplorerSearch", (value) => {
     cy.waitForDom();
     cy.get('[data-cy=search-input]').clear().type(value);
+    cy.waitForDom();
+});
+
+/**
+ * Changes MPV panel tabs
+ */
+Cypress.Commands.add("doMPVTabSelect", (tabName) => {
+    cy.waitForDom();
+    cy.get('[data-cy=mpv-tabs] button').contains(tabName).click();
     cy.waitForDom();
 });
 
@@ -801,4 +844,12 @@ Cypress.Commands.add("assertCheckboxes", (uuids, shouldBeChecked) => {
     uuids.forEach(uuid => {
         cy.get(`input[data-cy="multiselect-checkbox-${uuid}"]`).should(shouldBeChecked ? 'be.checked' : 'not.be.checked');
     });
+});
+
+/**
+ * Reusable perform context menu action - assumes menu is already open
+ */
+Cypress.Commands.add("doContextMenuAction", (name) => {
+    cy.waitForDom();
+    cy.get("[data-cy=context-menu]", { timeout: 5000 }).contains(name).click();
 });
