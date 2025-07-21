@@ -6,7 +6,7 @@ import React from 'react';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { FavePinsSection } from './favorite-pins';
+import { FavePinsSection } from './favorite-pins/favorite-pins-section';
 import { RecentProcessesSection } from './recent-processes';
 import { RecentlyVisitedSection } from './recently-visited';
 

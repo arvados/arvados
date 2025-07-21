@@ -1,0 +1,88 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import React, { useEffect, useState } from 'react';
+import { Collapse } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { connect } from 'react-redux';
+import { Dispatch } from 'redux';
+import { RootState } from 'store/store';
+import { ArvadosTheme } from 'common/custom-theme';
+import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { FavePinItem } from './favorite-pins-item';
+
+type CssRules = 'root' | 'title' | 'hr' | 'list';
+
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        width: '100%',
+    },
+    title: {
+        margin: '0 1rem',
+        padding: '4px',
+    },
+    hr: {
+        marginTop: '0',
+        marginBottom: '0',
+    },
+    list: {
+        marginTop: '0.5rem',
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        width: '100%',
+    },
+});
+
+const mapStateToProps = (state: RootState) => {
+    const selection = state.dataExplorer.favoritePanel?.items || [];
+    const faves = selection.map((uuid) => state.resources[uuid]);
+    return {
+        items: faves as GroupContentsResource[],
+    };
+};
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
+});
+
+type FavePinsSectionProps = ReturnType<typeof mapStateToProps> & ReturnType<typeof mapDispatchToProps> & WithStyles<CssRules>;
+
+export const FavePinsSection = connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(
+    withStyles(styles)(({ items, classes, loadFavoritePanel }: FavePinsSectionProps) => {
+
+        useEffect(() => {
+            loadFavoritePanel();
+        }, [loadFavoritePanel, items.length]);
+
+        const [isOpen, setIsOpen] = useState(true);
+
+        return (
+            <div className={classes.root}>
+                <div className={classes.title} onClick={() => setIsOpen(!isOpen)}>
+                    <span>Favorites</span>
+                    <ExpandChevronRight expanded={isOpen} />
+                    <hr className={classes.hr} />
+                </div>
+                <Collapse in={isOpen}>
+                        <div className={classes.list}>
+                            {items.map((item) => (
+                                <FavePinItem
+                                    key={item.uuid}
+                                    item={item}
+                                />
+                            ))}
+                        </div>
+                </Collapse>
+            </div>
+        )
+    })
+);

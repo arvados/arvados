@@ -2,45 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from 'react';
-import { Collapse, Tooltip } from '@mui/material';
+import React from 'react';
+import { Tooltip } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import StarIcon from '@mui/icons-material/Star';
 import { renderIcon } from 'views-components/data-explorer/renderers';
 import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
-import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { toggleFavorite } from 'store/favorites/favorites-actions';
 
-type CssRules = 'root' | 'title' | 'hr' | 'list' | 'item' | 'name' | 'icon' | 'namePlate' | 'star';
+type CssRules = 'item' | 'name' | 'icon' | 'namePlate' | 'star';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-        width: '100%',
-    },
-    title: {
-        margin: '0 1rem',
-        padding: '4px',
-    },
-    hr: {
-        marginTop: '0',
-        marginBottom: '0',
-    },
-    list: {
-        marginTop: '0.5rem',
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        width: '100%',
-    },
     item: {
         width: '18rem',
         height: '3.5rem',
@@ -90,60 +70,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = (state: RootState) => {
-    const selection = state.dataExplorer.favoritePanel?.items || [];
-    const faves = selection.map((uuid) => state.resources[uuid]);
-    return {
-        items: faves as GroupContentsResource[],
-    };
-};
-
-const mapDispatchToProps = (dispatch: Dispatch) => ({
-    loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
+const mapDispatchToProps = (dispatch: Dispatch): Omit<FavePinItemProps, 'item'> => ({
     navTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
     toggleFavorite: (item: GroupContentsResource) => dispatch<any>(toggleFavorite({ uuid: item.uuid, name: item.name })).then(() => dispatch<any>(loadFavoritePanel())),
     openContextMenu: (ev: React.MouseEvent<HTMLElement>, uuid: string) => dispatch<any>(openContextMenuOnlyFromUuid(ev, uuid)),
 });
-
-type FavePinsSectionProps = ReturnType<typeof mapStateToProps> & ReturnType<typeof mapDispatchToProps> & WithStyles<CssRules>;
-
-export const FavePinsSection = connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(
-    withStyles(styles)(({ items, classes, loadFavoritePanel, navTo, toggleFavorite, openContextMenu }: FavePinsSectionProps) => {
-
-        useEffect(() => {
-            loadFavoritePanel();
-        }, [loadFavoritePanel, items.length]);
-
-        const [isOpen, setIsOpen] = useState(true);
-
-        return (
-            <div className={classes.root}>
-                <div className={classes.title} onClick={() => setIsOpen(!isOpen)}>
-                    <span>Favorites</span>
-                    <ExpandChevronRight expanded={isOpen} />
-                    <hr className={classes.hr} />
-                </div>
-                <Collapse in={isOpen}>
-                        <div className={classes.list}>
-                            {items.map((item) => (
-                                <FavePinItem
-                                    key={item.uuid}
-                                    item={item}
-                                    classes={classes}
-                                    navTo={navTo}
-                                    toggleFavorite={toggleFavorite}
-                                    openContextMenu={openContextMenu}
-                                />
-                            ))}
-                        </div>
-                </Collapse>
-            </div>
-        )
-    })
-);
 
 type FavePinItemProps = {
     item: GroupContentsResource,
@@ -152,7 +83,8 @@ type FavePinItemProps = {
     openContextMenu: (event: React.MouseEvent, uuid: string) => void
 };
 
-const FavePinItem = ({ item, openContextMenu, navTo, toggleFavorite, classes }: FavePinItemProps & WithStyles<CssRules>) => {
+export const FavePinItem = connect(null, mapDispatchToProps)(
+    withStyles(styles)(({ item, openContextMenu, navTo, toggleFavorite, classes }: FavePinItemProps & WithStyles<CssRules>) => {
 
     const handleContextMenu = (event: React.MouseEvent) => {
         event.preventDefault();
@@ -177,4 +109,4 @@ const FavePinItem = ({ item, openContextMenu, navTo, toggleFavorite, classes }: 
             </Tooltip>
         </div>
     );
-};
+}));
