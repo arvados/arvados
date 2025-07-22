@@ -16,6 +16,10 @@ import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { FavePinItem } from './favorite-pins-item';
+import { linkPanelActions } from 'store/link-panel/link-panel-actions';
+import { getResource } from 'store/resources/resources';
+import { LinkResource } from 'models/link';
+import { ResourcesState } from 'store/resources/resources';
 
 type CssRules = 'root' | 'title' | 'hr' | 'list';
 
@@ -40,40 +44,56 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = (state: RootState) => {
-    const selection = state.dataExplorer.favoritePanel?.items || [];
-    const faves = selection.map((uuid) => state.resources[uuid]);
+const mapStateToProps = (state: RootState): Pick<FavePinsSectionProps, 'faves' | 'resources'> => {
     return {
-        items: faves as GroupContentsResource[],
+        faves: state.favoritesLinks,
+        resources: state.resources,
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<FavePinsSectionProps, 'loadFavoritePanel' | 'loadLinkPanel'> => ({
     loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
+    loadLinkPanel: () => dispatch<any>(linkPanelActions.REQUEST_ITEMS()),
 });
 
-type FavePinsSectionProps = ReturnType<typeof mapStateToProps> & ReturnType<typeof mapDispatchToProps> & WithStyles<CssRules>;
+type FavePinsSectionProps = {
+    faves: LinkResource[];
+    resources: ResourcesState;
+    loadFavoritePanel: () => void;
+    loadLinkPanel: () => void;
+};
 
 export const FavePinsSection = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
-    withStyles(styles)(React.memo(({ items, classes, loadFavoritePanel }: FavePinsSectionProps) => {
+    withStyles(styles)(
+        React.memo(({ faves, resources, loadFavoritePanel, loadLinkPanel, classes }: FavePinsSectionProps & WithStyles<CssRules>) => {
+            const [items, setItems] = useState<GroupContentsResource[]>([]);
+            const [isOpen, setIsOpen] = useState(true);
 
-        useEffect(() => {
-            loadFavoritePanel();
-        }, [loadFavoritePanel, items.length]);
+            useEffect(() => {
+                const sortedFaves = faves.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12); //max 12 items
+                setItems(getResources(sortedFaves, resources));
+            }, [faves, resources]);
 
-        const [isOpen, setIsOpen] = useState(true);
+            useEffect(() => {
+                loadFavoritePanel();
+                loadLinkPanel();
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, []);
 
-        return (
-            <div className={classes.root}>
-                <div className={classes.title} onClick={() => setIsOpen(!isOpen)}>
-                    <span>Favorites</span>
-                    <ExpandChevronRight expanded={isOpen} />
-                    <hr className={classes.hr} />
-                </div>
-                <Collapse in={isOpen}>
+            return (
+                <div className={classes.root}>
+                    <div
+                        className={classes.title}
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <span>Favorites</span>
+                        <ExpandChevronRight expanded={isOpen} />
+                        <hr className={classes.hr} />
+                    </div>
+                    <Collapse in={isOpen}>
                         <div className={classes.list}>
                             {items.map((item) => (
                                 <FavePinItem
@@ -82,16 +102,28 @@ export const FavePinsSection = connect(
                                 />
                             ))}
                         </div>
-                </Collapse>
-            </div>
-        )
-    }, preventRerender))
-)
+                    </Collapse>
+                </div>
+            );
+        }, preventRerender)
+    )
+);
 
 // return true to prevent re-render, false to allow re-render
 function preventRerender(prevProps: FavePinsSectionProps, nextProps: FavePinsSectionProps) {
-    if (!isEqual(prevProps.items, nextProps.items)) {
+    if (!isEqual(prevProps.faves, nextProps.faves)) {
+        return false;
+    }
+    if (!isEqual(prevProps.resources, nextProps.resources)) {
         return false;
     }
     return true;
 }
+
+const getResources = (faves: LinkResource[], resources: ResourcesState) => {
+    return faves.reduce((acc: GroupContentsResource[], fave: LinkResource) => {
+        const res = getResource<GroupContentsResource>(fave.headUuid)(resources);
+        if (res) acc.push(res);
+        return acc;
+    }, []);
+};

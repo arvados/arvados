@@ -15,6 +15,7 @@ import { detailsPanelReducer } from "./details-panel/details-panel-reducer";
 import { contextMenuReducer } from "./context-menu/context-menu-reducer";
 import { reducer as formReducer } from "redux-form";
 import { favoritesReducer } from "./favorites/favorites-reducer";
+import { favoritesLinksReducer } from "./favorites/favorites-links-reducer";
 import { snackbarReducer } from "./snackbar/snackbar-reducer";
 import { collectionPanelFilesReducer } from "./collection-panel/collection-panel-files/collection-panel-files-reducer";
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
@@ -194,6 +195,7 @@ const createRootReducer = (services: ServiceRepository) =>
         detailsPanel: detailsPanelReducer,
         dialog: dialogReducer,
         favorites: favoritesReducer,
+        favoritesLinks: favoritesLinksReducer,
         ownerName: ownerNameReducer,
         publicFavorites: publicFavoritesReducer,
         form: formReducer,
