@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -237,26 +236,11 @@ func (h *Handler) routeContainerEndpoints(rtr http.Handler) middlewareFunc {
 	}
 }
 
-// Route service containers on external ports.
-// FIXME: This essentially duplicates the test in router's
-// routeAsContainerHTTPProxy. Is there a better way to do this?
+// Route ContainerWebServices requests through rtr, pass through
+// everything else.
 func (h *Handler) routeServiceContainerPorts(rtr http.Handler) middlewareFunc {
-	if h.Cluster.Services.ContainerWebServices.ExternalPortMin <= 0 ||
-		h.Cluster.Services.ContainerWebServices.ExternalPortMax <= 0 {
-		return func(w http.ResponseWriter, req *http.Request, next http.Handler) {
-			next.ServeHTTP(w, req)
-		}
-	}
-	configurl := url.URL(h.Cluster.Services.ContainerWebServices.ExternalURL)
-	confighost := configurl.Hostname()
 	return func(w http.ResponseWriter, req *http.Request, next http.Handler) {
-		reqhosturl := url.URL{Host: req.Host}
-		reqhostname := reqhosturl.Hostname()
-		reqport := reqhosturl.Port()
-		reqportnum, _ := strconv.Atoi(reqport)
-		if strings.EqualFold(confighost, reqhostname) &&
-			h.Cluster.Services.ContainerWebServices.ExternalPortMin <= reqportnum &&
-			h.Cluster.Services.ContainerWebServices.ExternalPortMax >= reqportnum {
+		if router.ContainerHTTPProxyTarget(&h.Cluster.Services.ContainerWebServices, req) != "" {
 			rtr.ServeHTTP(w, req)
 		} else {
 			next.ServeHTTP(w, req)
