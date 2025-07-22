@@ -113,3 +113,11 @@ While uploading via this SDK all uploaded files within single collection must ha
 This applies also to uploading files to already existing collection. 
 Renaming files with duplicate names is not implemented in current version.
 
+##### Building with Gradle
+
+The Arvados Java SDK is built with `gradle`. Common development build tasks are:
+
+* `clean`
+* `test`
+* `jar` (build the jar files, including documentation)
+* `install`
