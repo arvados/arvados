@@ -852,4 +852,5 @@ Cypress.Commands.add("assertCheckboxes", (uuids, shouldBeChecked) => {
 Cypress.Commands.add("doContextMenuAction", (name) => {
     cy.waitForDom();
     cy.get("[data-cy=context-menu]", { timeout: 5000 }).contains(name).click();
+    cy.waitForDom();
 });

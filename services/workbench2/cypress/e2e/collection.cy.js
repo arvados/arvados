@@ -330,8 +330,7 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
                             // Hamburger 'more options' menu button
-                            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-                            cy.get("[data-cy=context-menu]").should("contain", "Select all").click();
+                            cy.doCollectionPanelOptionsAction("Select all");
                             cy.get("[data-cy=collection-files-panel-options-btn]").click();
                             cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove selected");
                             cy.get("body").click(); // Collapse the menu
