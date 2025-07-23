@@ -16,7 +16,6 @@ import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { FavePinItem } from './favorite-pins-item';
-import { linkPanelActions } from 'store/link-panel/link-panel-actions';
 import { getResource } from 'store/resources/resources';
 import { LinkResource } from 'models/link';
 import { ResourcesState } from 'store/resources/resources';
@@ -51,16 +50,14 @@ const mapStateToProps = (state: RootState): Pick<FavePinsSectionProps, 'faves' |
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<FavePinsSectionProps, 'loadFavoritePanel' | 'loadLinkPanel'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<FavePinsSectionProps, 'loadFavoritePanel' > => ({
     loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
-    loadLinkPanel: () => dispatch<any>(linkPanelActions.REQUEST_ITEMS()),
 });
 
 type FavePinsSectionProps = {
     faves: LinkResource[];
     resources: ResourcesState;
     loadFavoritePanel: () => void;
-    loadLinkPanel: () => void;
 };
 
 export const FavePinsSection = connect(
@@ -68,7 +65,7 @@ export const FavePinsSection = connect(
     mapDispatchToProps
 )(
     withStyles(styles)(
-        React.memo(({ faves, resources, loadFavoritePanel, loadLinkPanel, classes }: FavePinsSectionProps & WithStyles<CssRules>) => {
+        React.memo(({ faves, resources, loadFavoritePanel, classes }: FavePinsSectionProps & WithStyles<CssRules>) => {
             const [items, setItems] = useState<GroupContentsResource[]>([]);
             const [isOpen, setIsOpen] = useState(true);
 
@@ -79,7 +76,6 @@ export const FavePinsSection = connect(
 
             useEffect(() => {
                 loadFavoritePanel();
-                loadLinkPanel();
                 // eslint-disable-next-line react-hooks/exhaustive-deps
             }, []);
 
