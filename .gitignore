@@ -19,9 +19,7 @@ docker/config.yml
 /doc/sdk/python/search.js
 /doc/sdk/R/arvados
 /doc/sdk/java-v2/javadoc
-/sdk/java/target
 *.class
-/sdk/java/log/
 /sdk/cli/binstubs/
 /sdk/ruby/binstubs/
 /services/api/binstubs/
