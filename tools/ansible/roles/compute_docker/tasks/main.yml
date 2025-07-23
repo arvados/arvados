@@ -21,9 +21,6 @@
   ansible.builtin.file:
     name: "{{ item }}"
     state: directory
-    owner: root
-    group: root
-    mode: 0755
   loop:
     - /etc/arvados
     - /etc/arvados/docker-cleaner
