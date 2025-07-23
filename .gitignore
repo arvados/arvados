@@ -5,6 +5,8 @@
 *.egg
 *.egg-info
 .eggs
+*.pid
+*.pid.lock
 *.gem
 *.rpm
 *.deb
