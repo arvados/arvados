@@ -36,7 +36,7 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     # documentation generation for other Arvados components.
     bad_copies = [
       "sdk/python/arvados-v1-discovery.json",
-      "sdk/R/arvados-v1-discovery.json",
+      "contrib/R-sdk/arvados-v1-discovery.json",
     ].filter_map do |rel_path|
       src_path = Rails.root.join("..", "..", rel_path)
       begin
