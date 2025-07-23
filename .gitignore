@@ -24,6 +24,9 @@ sdk/java/target
 sdk/java/log
 tmp
 sdk/cli/binstubs/
+sdk/ruby/binstubs/
+services/api/binstubs/
+services/login-sync/binstubs/
 services/api/config/arvados-clients.yml
 *#*
 .DS_Store
