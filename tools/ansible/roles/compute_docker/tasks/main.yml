@@ -5,7 +5,7 @@
 - name: Configure Docker daemon
   become: yes
   ansible.builtin.copy:
-    content: "{{ docker_daemon|combine({'dns': [dns_resolver]} if dns_resolver is defined else {})|to_json }}"
+    content: "{{ docker_daemon|dict2items|selectattr('value', '!=', '_OMIT_')|items2dict|to_json }}"
     dest: /etc/docker/daemon.json
     owner: root
     group: docker

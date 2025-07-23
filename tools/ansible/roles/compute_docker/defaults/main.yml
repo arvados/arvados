@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 docker_daemon:
-  data-root: /tmp/docker-data
+  data-root: "{{ arvados_docker_data_root|default('_OMIT_') }}"
   default-ulimits:
     nofile:
       Name: nofile
       Soft: 10000
       Hard: 10000
+  dns: "{{ dns_resolver|default('_OMIT_') }}"
 docker_cleaner:
   Quota: 10G
   RemoveStoppedContainers: always
