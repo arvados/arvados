@@ -1392,7 +1392,7 @@ describe("Collection panel tests", function () {
                 cy.doMPVTabSelect("Files");
 
                 // Click download all files as zip
-                cy.doCollectionPanelOptionsAction("Download all files as zip");
+                cy.doCollectionPanelOptionsAction("Download entire collection as zip");
                 cy.waitForDom();
 
                 // Verify filename

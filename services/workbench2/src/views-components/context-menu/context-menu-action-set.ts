@@ -54,7 +54,7 @@ export enum ContextMenuActionNames {
     REMOVE = 'Remove',
     REMOVE_SELECTED = 'Remove selected',
     DOWNLOAD_SELECTED = 'Download selected files as zip',
-    DOWNLOAD_ALL = 'Download all files as zip',
+    DOWNLOAD_ALL = 'Download entire collection as zip',
     RENAME = 'Rename',
     RESTORE = 'Restore',
     RESTORE_VERSION = 'Restore version',
