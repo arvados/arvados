@@ -1328,7 +1328,7 @@ Clusters:
         # %C number of VCPUs
         # %M memory in MB
         # %T tmp in MB
-        # %G number of GPU devices (runtime_constraints.cuda.device_count)
+        # %G number of GPU devices (runtime_constraints.gpu.device_count)
         # %W maximum run time in minutes (see MaxRunTimeOverhead and
         #    MaxRunTimeDefault below)
         #

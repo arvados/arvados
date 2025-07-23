@@ -1,0 +1,10 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+events {
+  worker_connections  {{ worker_connections }};
+}
+worker_rlimit_nofile  {{ worker_rlimit_nofile }};

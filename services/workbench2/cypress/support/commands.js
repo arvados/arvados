@@ -443,12 +443,36 @@ Cypress.Commands.add(
             const blob = binaryMode ? b64toBlob(file, "", 512) : new Blob([file], { type: "text/plain" });
             const testFile = new window.File([blob], fileName);
 
-            cy.wrap(subject).trigger("drop", {
-                dataTransfer: { files: [testFile] },
+            const dataTransferFile = new File([testFile], testFile.name, {
+                type: 'text/plain',
             });
-        });
-    }
-);
+
+            const data = {
+                dataTransfer: {
+                    files: [dataTransferFile],
+                    items: [
+                        {
+                            kind: 'dataFile',
+                            type: dataTransferFile.type,
+                            getAsFile: () => dataTransferFile,
+                            webkitGetAsEntry: () => ({
+                                isFile: true,
+                                isDirectory: false,
+                                file: (cb) => cb(dataTransferFile),
+                            }),
+                        },
+                    ],
+                    types: ['Files'],
+                },
+            };
+
+            cy.wrap(subject)
+                .trigger('dragenter', data)
+                .trigger('dragover', data)
+                .trigger('drop', data)
+            });
+        }
+    );
 
 function b64toBlob(b64Data, contentType = "", sliceSize = 512) {
     const byteCharacters = atob(b64Data);

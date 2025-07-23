@@ -12,6 +12,7 @@
     mode: 0755
 
 - name: Write Arvados config.yml
+  no_log: yes
   when: arvados_config_file is truthy
   become: yes
   ansible.builtin.copy:
@@ -25,6 +26,7 @@
 # The `arvados_config_changed` fact is permanently set true
 # if `/etc/arvados/config.yml` is ever changed.
 - name: Record if config.yml changed
+  no_log: yes # Not sure if there's a risk of leaking a secret in a diff output here
   ansible.builtin.set_fact:
     arvados_config_changed: "{{ arvados_config_changed|default(false) or arvados_config_copy.changed }}"
 

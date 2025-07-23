@@ -1,0 +1,105 @@
+### Example inventory for install-arvados-cluster.yml ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This file illustrates how to deploy a simple single-node cluster with
+# install-arvados-cluster.yml and variables you can use to customize
+# the deployment. Copy this file somewhere else, edit it following the
+# comments, and run the installer like:
+#   $ ansible-playbook -Ki YOUR-INVENTORY.yml install-arvados-cluster.yml
+
+### Core cluster configuration settings ###
+arvados_cluster_host:
+  hosts:
+    # Write the "main" hostname of your cluster host, with the trailing `:`.
+    hostname.example:
+
+  vars:
+    # To deploy a cluster, you must write a cluster configuration file and have
+    # a copy on the node where you run the Ansible installer. This file will be
+    # deployed to cluster hosts as needed and read by the Ansible installer for
+    # service configuration.
+    # Refer to `examples/simple-cluster-config.yml` for an example.
+    arvados_config_file: /PATH/TO/xurid-config.yml
+
+    # This is the cluster identifier (five lowercase alphanumerics) for the
+    # cluster configured in `arvados_config_file` that you want to deploy.
+    arvados_cluster_id: xurid
+
+    # `arvados_tls` defines the source of the TLS certificate for each Arvados
+    # service. This illustrates how to use the self-signed cert on Debian/Ubuntu
+    # for Arvados services.
+    arvados_tls:
+      Default:
+        cert: /etc/ssl/certs/ssl-cert-snakeoil.pem
+        key: /etc/ssl/private/ssl-cert-snakeoil.key
+        # If you have `cert` and `key` files on the host running Ansible and
+        # want to install them for Arvados services on the cluster host,
+        # set `remote` to `false`.
+        remote: true
+
+    # `arvados_apt_suites` identifies which set of Arvados packages to install.
+    # By default it will get the latest official release. You can set this to
+    # "-testing" to get install the latest release candidate, or "-dev" to get
+    # the very latest packages built out of the main development tree. These
+    # options will install a less stable cluster with more bugs, but let you
+    # experiment with Arvados features under development.
+    #arvados_apt_suites: "-dev"
+
+
+### Database installation ###
+# The configuration below will install a PostgreSQL server on the cluster host
+# for all Arvados services to use. If your Arvados cluster configuration refers
+# to a database server that already exists, you can remove this
+# `arvados_postgresql` section, and set database superuser credentials under
+# the next `arvados_api` section.
+arvados_postgresql:
+  children:
+    arvados_cluster_host:
+  vars:
+    arvados_postgresql_config: {}
+    arvados_postgresql_hba_sources:
+      - samehost
+
+arvados_api:
+  children:
+    arvados_cluster_host:
+  vars:
+    # If your cluster will use an external database, specify the database
+    # superuser credentials here. These will be used to set up a dedicated
+    # Arvados role and database.
+    #arvados_database_login_user: ""
+    #arvados_database_login_password: ""
+
+
+### Arvados services ###
+# The rest of the inventory defines the Arvados services to run on the
+# cluster host. You should not need to change anything from here on.
+arvados_controller:
+  children:
+    arvados_cluster_host:
+
+arvados_websocket:
+  children:
+    arvados_cluster_host:
+
+arvados_keepstore:
+  children:
+    arvados_cluster_host:
+
+arvados_keepproxy:
+  children:
+    arvados_cluster_host:
+
+arvados_keep_web:
+  children:
+    arvados_cluster_host:
+
+arvados_workbench:
+  children:
+    arvados_cluster_host:
+
+arvados_dispatch_local:
+  children:
+    arvados_cluster_host:

@@ -1,0 +1,116 @@
+### Example single-node cluster configuration ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# You can use this file as a baseline for a simple single-node Arvados
+# cluster like you would install with `simple-cluster-inventory.yml`.
+# To use this configuration, you MUST:
+#  * Change the cluster ID `xurid` to your own ID.
+#    Choose a cluster ID with exactly five lowercase alphanumerics.
+#    Make sure you update the references under `PostgreSQL` and `Volumes` too.
+#  * Change each of `ManagementToken`, `SystemRootToken`, `BlobSigningKey`,
+#    and `PostgreSQL.Connection.password` to a unique, strong password.
+#    Tokens can only contain alphanumerics. You can generate one by running:
+#          tr -dc A-Za-z0-9 </dev/urandom | head -c 64
+#  * In every `ExternalURL` setting, change `hostname.example` to the name
+#    or address of your cluster host.
+# You MAY change other settings as noted in comments below.
+
+Clusters:
+  xurid:
+    # These settings are appropriate if you are installing a PostgreSQL
+    # server on the Arvados cluster node (the default). To use an external
+    # database, make sure all parameters match what the database administrator
+    # provides.
+    PostgreSQL:
+      Connection:
+        user: arvados
+        password: FIXMEDefaultPostgreSQLPassword
+        host: localhost
+        port: "5432"
+        dbname: "arvados_xurid"
+
+    ManagementToken: FIXMEDefaultManagementToken
+    SystemRootToken: FIXMEDefaultSystemRootToken
+
+    Collections:
+      BlobSigningKey: FIXMEDefaultBlobSigningKey
+      DefaultReplication: 1
+
+    # This configuration lets users log in to Arvados using the same Unix
+    # username and password they use on the cluster host.
+    Login:
+      PAM:
+        Enable: true
+
+    Users:
+      AutoAdminFirstUser: true
+
+    TLS:
+      Certificate: /etc/ssl/certs/ssl-cert-snakeoil.pem
+      Key: /etc/ssl/private/ssl-cert-snakeoil.key
+
+    Volumes:
+      xurid-nyw5e-000000000000000:
+        Driver: Directory
+        Replication: 1
+        DriverParameters:
+          Root: /var/lib/arvados/keep-data
+
+    # Port ranges used by services:
+    #  8040-8079: Internal service behind nginx
+    #  8440-8479: nginx front-end for corresponding service
+    #  8080-8099: Internal-only service
+    #  8900-8999: Service container ports
+    Services:
+      RailsAPI:
+        InternalURLs:
+          "http://localhost:8080": {}
+
+      Keepstore:
+        InternalURLs:
+          "http://localhost:8088": {}
+
+      Keepbalance:
+        InternalURLs:
+          "http://localhost:8089": {}
+
+      Websocket:
+        InternalURLs:
+          "http://localhost:8040": {}
+        ExternalURL: "wss://hostname.example:8440/websocket"
+
+      Controller:
+        InternalURLs:
+          "http://localhost:8043": {}
+        ExternalURL: "https://hostname.example:8443"
+
+      ContainerWebServices:
+        # This ExternalURL should match Controller's.
+        ExternalURL: "https://hostname.example:8443"
+        ExternalPortMin: 8900
+        ExternalPortMax: 8999
+
+      Keepproxy:
+        InternalURLs:
+          "http://localhost:8044": {}
+        ExternalURL: "https://hostname.example:8444"
+
+      WebDAV:
+        InternalURLs:
+          "http://localhost:8048": {}
+        ExternalURL: "https://hostname.example:8448"
+
+      WebDAVDownload:
+        # These URLs should match WebDAV's.
+        InternalURLs:
+          "http://localhost:8048": {}
+        ExternalURL: "https://hostname.example:8448"
+
+      Workbench2:
+        ExternalURL: "https://hostname.example"
+
+      Workbench1:
+        # These URLs should match Workbench2's.
+        ExternalURL: "https://hostname.example"
