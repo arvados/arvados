@@ -681,10 +681,9 @@ install_sdk/ruby-google-api-client() {
     install_gem arvados-google-api-client sdk/ruby-google-api-client
 }
 
-install_sdk/R() {
+install_contrib/R-sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
-    cd "$WORKSPACE/sdk/R" \
-       && Rscript --vanilla install_deps.R
+    env -C "$WORKSPACE/contrib/R-sdk" Rscript --vanilla install_deps.R
   fi
 }
 
@@ -821,9 +820,9 @@ test_sdk/ruby-google-api-client() {
     true
 }
 
-test_sdk/R() {
+test_contrib/R-sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
-    env -C "$WORKSPACE/sdk/R" make test
+    env -C "$WORKSPACE/contrib/R-sdk" make test
   fi
 }
 
@@ -833,8 +832,8 @@ test_sdk/cli() {
         && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
-test_sdk/java-v2() {
-    cd "$WORKSPACE/sdk/java-v2" && gradle test ${testargs[sdk/java-v2]}
+test_contrib/java-sdk-v2() {
+    env -C "$WORKSPACE/contrib/java-sdk-v2" gradle test ${testargs[contrib/java-sdk-v2]}
 }
 
 test_services/login-sync() {
@@ -884,7 +883,7 @@ install_all() {
     do_install doc
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
-    do_install sdk/R
+    do_install contrib/R-sdk
     do_install sdk/cli
     do_install services/login-sync
     local pkg_dir
@@ -910,10 +909,10 @@ test_all() {
     do_test doc
     do_test sdk/ruby-google-api-client
     do_test sdk/ruby
-    do_test sdk/R
+    do_test contrib/R-sdk
     do_test sdk/cli
     do_test services/login-sync
-    do_test sdk/java-v2
+    do_test contrib/java-sdk-v2
     local pkg_dir
     if [[ -z ${skip[python3]} ]]; then
         for pkg_dir in "${pythonstuff[@]}"
@@ -1062,11 +1061,11 @@ done
 NEED_SDK_R=true
 
 if [[ ${#only[@]} -ne 0 ]] &&
-   [[ -z "${only['sdk/R']}" && -z "${only['doc']}" ]]; then
+   [[ -z "${only['contrib/R-sdk']}" && -z "${only['doc']}" ]]; then
   NEED_SDK_R=false
 fi
 
-if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
+if [[ ${skip["contrib/R-sdk"]} == 1 && ${skip["doc"]} == 1 ]]; then
   NEED_SDK_R=false
 fi
 
