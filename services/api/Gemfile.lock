@@ -338,7 +338,7 @@ DEPENDENCIES
   mini_portile2 (~> 2.8, >= 2.8.1)
   minitest (= 5.10.3)
   mocha
-  multi_json
+  multi_json (~> 1.15.0)
   net-imap (~> 0.3.8)
   nokogiri (~> 1.15.7)
   oj
