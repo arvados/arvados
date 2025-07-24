@@ -817,9 +817,12 @@ func (conn *Conn) findGateway(ctx context.Context, ctr arvados.Container, noForw
 
 	myURL, _ := service.URLFromContext(ctx)
 
-	if host, _, splitErr := net.SplitHostPort(ctr.GatewayAddress); splitErr == nil && host != "" && host != "127.0.0.1" {
+	if host, _, _ := net.SplitHostPort(ctr.GatewayAddress); host != "" &&
+		(host != "127.0.0.1" || conn.cluster.Containers.CloudVMs.Driver == "loopback") {
 		// If crunch-run provided a GatewayAddress like
-		// "ipaddr:port", that means "ipaddr" is one of the
+		// host:port or [host]:port, and host is realistic
+		// (127.0.0.1 is realistic only if we're running the
+		// loopback driver), that means "ipaddr" is one of the
 		// external interfaces where the gateway is
 		// listening. In that case, it's the most
 		// reliable/direct option, so we use it even if a
