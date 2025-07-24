@@ -35,10 +35,10 @@ export const Dashboard = withStyles(styles)(({classes}: WithStyles<CssRules>) =>
                 <FavePinsSection />
             </section>
             <section className={classes.section}>
-                <RecentProcessesSection />
+                <RecentlyVisitedSection />
             </section>
             <section className={classes.section}>
-                <RecentlyVisitedSection />
+                <RecentProcessesSection />
             </section>
         </section>
     );

@@ -11,6 +11,7 @@ import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { pluginConfig } from "plugins";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { saveRecentlyVisited } from "store/recently-visited/recently-visited-actions";
 import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL, INSTANCE_TYPES_PANEL_LABEL, VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, REPOSITORIES_PANEL_LABEL, USER_PREFERENCES_LABEL } from "store/breadcrumbs/breadcrumbs-actions";
 
 export const navigationNotAvailable = (id: string) =>
@@ -34,12 +35,14 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
         case ResourceKind.COLLECTION:
         case ResourceKind.CONTAINER_REQUEST:
             dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
+            dispatch<any>(saveRecentlyVisited(uuid));
             return;
         case ResourceKind.VIRTUAL_MACHINE:
             dispatch<any>(navigateToAdminVirtualMachines);
             return;
         case ResourceKind.WORKFLOW:
             dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
+            dispatch<any>(saveRecentlyVisited(uuid));
             return;
     }
 

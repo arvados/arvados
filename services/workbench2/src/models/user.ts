@@ -14,6 +14,7 @@ export type UserPrefs = {
     },
     wb?: {
         default_project_tab?: string,
+        recentUuids?: string[],
     },
 };
 

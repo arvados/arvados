@@ -54,7 +54,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         background: '#fafafa',
         borderRadius: '8px',
-        // Additional styles for better appearance
         boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
         display: 'flex',
         alignItems: 'center',
