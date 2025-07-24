@@ -2,197 +2,116 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import arvados
-import arvados.collection
+import os
 import subprocess
 
-api = arvados.api()
+import pytest
 
-workflow_content = """# Copyright (C) The Arvados Authors. All rights reserved.
-#
-# SPDX-License-Identifier: Apache-2.0
+from . import INSIDE_ARVBOX, TESTS_DIR, run_cwltest
+from arvados.collection import Collection
 
-cwlVersion: v1.2
-class: CommandLineTool
-baseCommand: echo
-inputs:
-  message:
-    type: File
-    inputBinding:
-      position: 1
-    default:
-      class: File
-      location: keep:d7514270f356df848477718d58308cc4+94/b
+WORKFLOW_PATH = TESTS_DIR / '19070-copy-deps.cwl'
+EXPECTED_WORKFLOW = WORKFLOW_PATH.read_bytes()
 
-outputs: []
-"""
+@pytest.fixture
+def cmd_19070(acr_script, tmp_project, jobs_docker_image):
+    return [
+        str(acr_script), '--disable-git',
+        '--project-uuid', tmp_project['uuid'],
+        '--submit-runner-image', jobs_docker_image,
+        str(WORKFLOW_PATH),
+    ]
 
-expect_file = "19070-copy-deps.cwl"
 
-def check_workflow_content(uuid):
-    c = arvados.collection.Collection(uuid)
+def check_core_contents(arv, group, wf_uuid):
+    """Assert `group` contains `wf_uuid` and the workflow collection"""
+    contents = arv.groups().contents(uuid=group['uuid']).execute()
+    matches = [item for item in contents['items'] if item['uuid'] == wf_uuid]
+    assert len(matches) == 1
+    for item in contents['items']:
+        try:
+            coll = Collection(item['portable_data_hash'])
+        except KeyError:
+            continue
+        try:
+            with coll.open(WORKFLOW_PATH.name, 'rb') as cwl_file:
+                workflow_content =  cwl_file.read()
+        except FileNotFoundError:
+            continue
+        if workflow_content == EXPECTED_WORKFLOW:
+            break
+    else:
+        assert False, "workflow collection not found"
+    return contents
+
+
+def check_dep_contents(arv_or_contents, group):
+    """Assert `group` contains the `testdir` collection and arvados/jobs image"""
     try:
-        with c.open(expect_file) as f:
-            content = f.read()
-        match = (content == workflow_content)
-        return match
-    except:
-        return False
-
-def check_contents(group, wf_uuid):
-    contents = api.groups().contents(uuid=group["uuid"]).execute()
-    if len(contents["items"]) != 4:
-        raise Exception("Expected 4 items in "+group["uuid"]+" was "+str(len(contents["items"])))
-
-    found = False
-    for c in contents["items"]:
-        if c["kind"] == "arvados#workflow" and c["uuid"] == wf_uuid:
-            found = True
-    if not found:
-        raise Exception("Couldn't find workflow in "+group["uuid"])
-
-    found = False
-    for c in contents["items"]:
-        if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "d7514270f356df848477718d58308cc4+94":
-            found = True
-    if not found:
-        raise Exception("Couldn't find collection dependency")
-
-    found = False
-    for c in contents["items"]:
-        if c["kind"] == "arvados#collection" and c["name"].startswith("Docker image arvados jobs"):
-            found = True
-    if not found:
-        raise Exception("Couldn't find jobs image dependency")
-
-    found = False
-    for c in contents["items"]:
-        if c["kind"] == "arvados#collection" and check_workflow_content(c["portable_data_hash"]):
-            found = True
-    if not found:
-        raise Exception("Couldn't find collection containing expected "+expect_file)
+        items = arv_or_contents['items']
+    except TypeError:
+        contents = arv_or_contents.groups().contents(uuid=group['uuid']).execute()
+        items = contents['items']
+    assert any(
+        c['kind'] == 'arvados#collection'
+        and c['portable_data_hash'] == 'd7514270f356df848477718d58308cc4+94'
+        for c in items
+    ), f"couldn't find collection depedency in group {group['uuid']}"
+    assert any(
+        c['kind'] == 'arvados#collection'
+        and c['name'].startswith('Docker image arvados jobs')
+        for c in items
+    ), f"couldn't find jobs image in group {group['uuid']}"
 
 
-def check_create():
-    group = api.groups().create(body={"group": {"name": "test-19070-project-1", "group_class": "project"}}, ensure_unique_name=True).execute()
-    try:
-        contents = api.groups().contents(uuid=group["uuid"]).execute()
-        if len(contents["items"]) != 0:
-            raise Exception("Expected 0 items")
-
-        # Create workflow, by default should also copy dependencies
-        cmd = ["arvados-cwl-runner", "--disable-git", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
-        print(" ".join(cmd))
-        wf_uuid = subprocess.check_output(cmd)
-        wf_uuid = wf_uuid.decode("utf-8").strip()
-        check_contents(group, wf_uuid)
-    finally:
-        api.groups().delete(uuid=group["uuid"]).execute()
+def check_all_contents(arv, group, wf_uuid):
+    """Assert `group` contains both the workflow and its dependencies"""
+    contents = check_core_contents(arv, group, wf_uuid)
+    check_dep_contents(contents, group)
 
 
-def check_update():
-    group = api.groups().create(body={"group": {"name": "test-19070-project-2", "group_class": "project"}}, ensure_unique_name=True).execute()
-    try:
-        contents = api.groups().contents(uuid=group["uuid"]).execute()
-        if len(contents["items"]) != 0:
-            raise Exception("Expected 0 items")
-
-        # Create workflow, but with --no-copy-deps it shouldn't copy anything
-        cmd = ["arvados-cwl-runner", "--disable-git", "--no-copy-deps", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
-        print(" ".join(cmd))
-        wf_uuid = subprocess.check_output(cmd)
-        wf_uuid = wf_uuid.decode("utf-8").strip()
-
-        contents = api.groups().contents(uuid=group["uuid"]).execute()
-        if len(contents["items"]) != 2:
-            raise Exception("Expected 2 items")
-
-        found = False
-        for c in contents["items"]:
-            if c["kind"] == "arvados#workflow" and c["uuid"] == wf_uuid:
-                found = True
-        if not found:
-            raise Exception("Couldn't find workflow")
-
-        found = False
-        for c in contents["items"]:
-            if c["kind"] == "arvados#collection" and check_workflow_content(c["portable_data_hash"]):
-                found = True
-        if not found:
-            raise Exception("Couldn't find collection containing expected "+expect_file)
-
-        # Updating by default will copy missing items
-        cmd = ["arvados-cwl-runner", "--disable-git", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"]
-        print(" ".join(cmd))
-        wf_uuid = subprocess.check_output(cmd)
-        wf_uuid = wf_uuid.decode("utf-8").strip()
-        check_contents(group, wf_uuid)
-
-    finally:
-        api.groups().delete(uuid=group["uuid"]).execute()
+@pytest.mark.integration
+def test_create(arv_session, cmd_19070, tmp_project, integration_colls):
+    # Create workflow, by default should also copy dependencies
+    cmd_19070.insert(1, '--create-workflow')
+    acr_proc = subprocess.run(cmd_19070, capture_output=True, text=True)
+    assert acr_proc.returncode == os.EX_OK
+    check_all_contents(arv_session, tmp_project, acr_proc.stdout.rstrip('\n'))
 
 
-def check_execute():
-    group = api.groups().create(body={"group": {"name": "test-19070-project-3", "group_class": "project"}}, ensure_unique_name=True).execute()
-    try:
-        contents = api.groups().contents(uuid=group["uuid"]).execute()
-        if len(contents["items"]) != 0:
-            raise Exception("Expected 0 items")
+@pytest.mark.integration
+def test_update(arv_session, cmd_19070, tmp_project, integration_colls):
+    # Create workflow, but with --no-copy-deps it shouldn't copy anything
+    acr = cmd_19070.pop(0)
+    create_cmd = [acr, '--create-workflow', '--no-copy-deps'] + cmd_19070
+    create_proc = subprocess.run(create_cmd, capture_output=True, text=True)
+    assert create_proc.returncode == os.EX_OK
+    wf_uuid = create_proc.stdout.rstrip('\n')
+    contents = check_core_contents(arv_session, tmp_project, wf_uuid)
+    with pytest.raises(AssertionError):
+        check_dep_contents(contents, tmp_project)
 
-        # Execute workflow, shouldn't copy anything.
-        cmd = ["arvados-cwl-runner", "--disable-git", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
-        print(" ".join(cmd))
-        wf_uuid = subprocess.check_output(cmd)
-        wf_uuid = wf_uuid.decode("utf-8").strip()
+    update_cmd = [acr, '--update-workflow', wf_uuid] + cmd_19070
+    update_proc = subprocess.run(update_cmd, capture_output=True, text=True)
+    assert update_proc.returncode == os.EX_OK
+    check_all_contents(arv_session, tmp_project, wf_uuid)
 
-        contents = api.groups().contents(uuid=group["uuid"]).execute()
-        # container request
-        # final output collection
-        # container log
-        # step output collection
-        # container request log
-        if len(contents["items"]) != 5:
-            raise Exception("Expected 5 items")
 
-        found = False
-        for c in contents["items"]:
-            if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "d7514270f356df848477718d58308cc4+94":
-                found = True
-        if found:
-            raise Exception("Didn't expect to find collection dependency")
+@pytest.mark.integration
+def test_execute_without_deps(arv_session, cmd_19070, tmp_project, integration_colls):
+    run_proc = subprocess.run(cmd_19070)
+    assert run_proc.returncode == os.EX_OK
+    contents = arv_session.groups().contents(uuid=tmp_project['uuid']).execute()
+    # container request+log+container log+step output+final output == 5 items
+    # If we're inside arvbox, it *might* have uploaded the Docker image here
+    # depending on test ordering, so allow for a possible sixth item.
+    assert 5 <= len(contents['items']) <= (6 if INSIDE_ARVBOX else 5)
+    assert not any(item['kind'] == 'arvados#workflow' for item in contents['items'])
 
-        found = False
-        for c in contents["items"]:
-            if c["kind"] == "arvados#collection" and c["name"].startswith("Docker image arvados jobs"):
-                found = True
-        if found:
-            raise Exception("Didn't expect to find jobs image dependency")
 
-        # Execute workflow with --copy-deps
-        cmd = ["arvados-cwl-runner", "--disable-git", "--project-uuid", group["uuid"], "--copy-deps", "19070-copy-deps.cwl"]
-        print(" ".join(cmd))
-        wf_uuid = subprocess.check_output(cmd)
-        wf_uuid = wf_uuid.decode("utf-8").strip()
-
-        contents = api.groups().contents(uuid=group["uuid"]).execute()
-        found = False
-        for c in contents["items"]:
-            if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "d7514270f356df848477718d58308cc4+94":
-                found = True
-        if not found:
-            raise Exception("Couldn't find collection dependency")
-
-        found = False
-        for c in contents["items"]:
-            if c["kind"] == "arvados#collection" and c["name"].startswith("Docker image arvados jobs"):
-                found = True
-        if not found:
-            raise Exception("Couldn't find jobs image dependency")
-
-    finally:
-        api.groups().delete(uuid=group["uuid"]).execute()
-
-if __name__ == '__main__':
-    check_create()
-    check_update()
-    check_execute()
+@pytest.mark.integration
+def test_execute_with_deps(arv_session, cmd_19070, tmp_project, integration_colls):
+    cmd_19070.insert(1, '--copy-deps')
+    run_proc = subprocess.run(cmd_19070)
+    assert run_proc.returncode == os.EX_OK
+    check_dep_contents(arv_session, tmp_project)

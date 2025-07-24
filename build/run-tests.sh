@@ -513,6 +513,18 @@ do_test_once() {
         do_install_once "$1" "$2" || return
     fi
 
+    local -a targs=()
+    case "$1" in
+        sdk/cwl )
+            # The CWL conformance/integration tests each take ~30
+            # minutes. Before July 2025 they were outside the standard test
+            # suite, so we deselect them by default for consistency.
+            targs+=(-m "not integration")
+            ;;
+    esac
+    # Append the user's arguments to targs, respecting quoted strings.
+    eval "targs+=(${testargs[$1]})"
+
     title "test $1"
     timer_reset
 
@@ -531,11 +543,11 @@ do_test_once() {
         # compilation errors.
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1" && \
             cd "$WORKSPACE/$1" && \
-            if [[ -n "${testargs[$1]}" ]]
+            if [[ "${#targs}" -gt 0 ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
             # does:
-            go test ${short:+-short} ${testflags[@]} ${testargs[$1]}
+            go test ${short:+-short} ${testflags[@]} "${targs[@]}"
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
@@ -554,7 +566,7 @@ do_test_once() {
         while :
         do
             tries=$((${tries}+1))
-            env -C "$WORKSPACE/$1" python3 -m pytest ${testargs[$1]}
+            env -C "$WORKSPACE/$1" python3 -m pytest "${targs[@]}"
             result=$?
             # pytest uses exit code 2 to mean "test collection failed."
             # See discussion in FUSE's IntegrationTest and MountTestBase.
