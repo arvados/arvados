@@ -1210,12 +1210,12 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 func (s *IntegrationSuite) TestContainerHTTPProxy(c *check.C) {
 	ctrport := "12345"
 	var success bool
-	var done bool
+	var done atomic.Bool
 	var ctrLatest atomic.Value
-	defer func() { done = true }()
+	defer func() { done.Store(true) }()
 	go func() {
 		for range time.NewTicker(time.Second).C {
-			if done {
+			if done.Load() {
 				break
 			}
 			ctr, ok := ctrLatest.Load().(arvados.Container)
@@ -1237,13 +1237,13 @@ func (s *IntegrationSuite) TestContainerHTTPProxy(c *check.C) {
 				c.Logf("poll: Do: %v", err)
 				continue
 			}
-			if resp.StatusCode != http.StatusOK {
-				c.Logf("poll: resp.Status %q", resp.Status)
-				continue
-			}
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				c.Logf("poll: error reading response body: %v", err)
+				continue
+			}
+			if resp.StatusCode != http.StatusOK {
+				c.Logf("poll: resp.Status %q body %q", resp.Status, body)
 				continue
 			}
 			if len(body) == 0 {
@@ -1251,18 +1251,19 @@ func (s *IntegrationSuite) TestContainerHTTPProxy(c *check.C) {
 				continue
 			}
 			success = true
-			c.Logf("poll: resp.Body %q", body)
+			c.Logf("poll: %s, resp.Body %q", resp.Status, body)
 			break
 		}
 	}()
 	outcoll, _ := s.runContainer(c, "z1111", "", map[string]interface{}{
-		"command":             []string{"sh", "-c", `nc -l -p ` + ctrport + ` -w 60 -e sh -c 'read req; echo >&2 "$req"; hdr=zzz; while [ "${#hdr}" -gt 1 ]; do read hdr; echo >&2 "${hdr}"; done; printf "HTTP/1.0 201 Created\\r\\n\\r\\nderp %s\\r\\n" "$req"' && touch /out/OK`},
+		// Note "$req" and "$hdr" each have a trailing \r here
+		"command":             []string{"sh", "-c", `nc -l -p ` + ctrport + ` -w 30 -e sh -c 'read req; echo >&2 "$req"; hdr=zzz; while [ "${#hdr}" -gt 1 ]; do read hdr; echo >&2 "${hdr}"; done; printf "HTTP/1.0 200 OK\\r\\n\\r\\n%s\\n" "$req"' && touch /out/OK`},
 		"container_image":     "busybox:uclibc",
 		"cwd":                 "/tmp",
 		"environment":         map[string]string{},
 		"mounts":              map[string]arvados.Mount{"/out": {Kind: "tmp", Capacity: 10000}},
 		"output_path":         "/out",
-		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1, KeepCacheRAM: 1 << 26},
+		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1, KeepCacheRAM: 1 << 26, API: true},
 		"priority":            1,
 		"state":               arvados.ContainerRequestStateCommitted,
 		"published_ports": map[string]arvados.RequestPublishedPort{
@@ -1272,7 +1273,7 @@ func (s *IntegrationSuite) TestContainerHTTPProxy(c *check.C) {
 			}},
 	}, 0, func(ctr arvados.Container) { ctrLatest.Store(ctr) })
 	c.Check(outcoll.ManifestText, check.Matches, `\. d41d8.* 0:0:OK\n`)
-	c.Check(outcoll.PortableDataHash, check.Equals, "8fa5dee9231a724d7cf377c5a2f4907c+65")
+	c.Check(outcoll.PortableDataHash, check.Equals, "c1c354b852802ee13ad87da784b9c28c+44")
 	c.Check(success, check.Equals, true)
 }
 func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
