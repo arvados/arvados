@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Dispatch } from 'redux';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { Collapse } from '@mui/material';
@@ -12,6 +13,9 @@ import { RootState } from 'store/store';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
+import { ResourcesState, getPopulatedResources } from 'store/resources/resources';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { loadRecentlyVisitedPanel } from 'store/recently-visited/recently-visited-actions';
 
 type CssRules = 'root' | 'subHeader' | 'titleBar' | 'lastModHead' | 'lastModDate' | 'hr' | 'list' | 'item';
 
@@ -65,37 +69,59 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState) => {
-    const selection = Object.keys(state.resources).slice(0, 5);
-    const recents = selection.map(uuid => state.resources[uuid]);
     return {
-        items: recents
+        recents: state.auth.user?.prefs?.wb?.recentUuids || [],
+        resources: state.resources,
     };
 };
 
-export const RecentlyVisitedSection = connect(mapStateToProps)(withStyles(styles)(({items, classes}: {items: any[]} & WithStyles<CssRules>) => {
+const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentlyVisitedProps, 'loadRecentlyVisitedPanel'> => ({
+    loadRecentlyVisitedPanel: () => dispatch<any>(loadRecentlyVisitedPanel()),
+});
 
-    const [isOpen, setIsOpen] = useState(true);
+type RecentlyVisitedProps = {
+    recents: string[],
+    resources: ResourcesState
+    loadRecentlyVisitedPanel: () => void;
+};
 
-    return (
-        <div className={classes.root}>
-            <div className={classes.subHeader} onClick={() => setIsOpen(!isOpen)}>
-                <span className={classes.titleBar}>
-                    <span>
-                        <span>Recently Visited</span>
-                        <ExpandChevronRight expanded={isOpen} />
-                    </span>
-                    {isOpen &&<span className={classes.lastModHead}>last modified</span>}
-                </span>
-                <hr className={classes.hr} />
-            </div>
-            <Collapse in={isOpen}>
-                <ul className={classes.list}>
-                    {items.map(item => <RecentlyVisitedItem item={item} classes={classes} />)}
-                </ul>
-            </Collapse>
-        </div>
-    )
-}));
+export const RecentlyVisitedSection = connect(mapStateToProps, mapDispatchToProps)
+    (withStyles(styles)(
+        ({recents, resources, loadRecentlyVisitedPanel, classes}: RecentlyVisitedProps & WithStyles<CssRules>) => {
+
+            const [items, setItems] = useState<GroupContentsResource[]>([]);
+            const [isOpen, setIsOpen] = useState(true);
+
+            useEffect(() => {
+                loadRecentlyVisitedPanel();
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, []);
+
+            useEffect(() => {
+                setItems(getPopulatedResources(recents, resources));
+            }, [recents, resources]);
+
+            return (
+                <div className={classes.root}>
+                    <div className={classes.subHeader} onClick={() => setIsOpen(!isOpen)}>
+                        <span className={classes.titleBar}>
+                            <span>
+                                <span>Recently Visited</span>
+                                <ExpandChevronRight expanded={isOpen} />
+                            </span>
+                            {isOpen &&<span className={classes.lastModHead}>last modified</span>}
+                        </span>
+                        <hr className={classes.hr} />
+                    </div>
+                    <Collapse in={isOpen}>
+                        <ul className={classes.list}>
+                            {items.map(item => <RecentlyVisitedItem item={item} classes={classes} />)}
+                        </ul>
+                    </Collapse>
+                </div>
+            )
+        })
+    );
 
 type ItemProps = {
     item: { name: string, uuid: string, modifiedAt: string }

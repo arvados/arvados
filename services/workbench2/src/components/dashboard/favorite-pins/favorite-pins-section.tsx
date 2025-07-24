@@ -16,9 +16,8 @@ import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { FavePinItem } from './favorite-pins-item';
-import { getResource } from 'store/resources/resources';
 import { LinkResource } from 'models/link';
-import { ResourcesState } from 'store/resources/resources';
+import { ResourcesState, getPopulatedResources } from 'store/resources/resources';
 
 type CssRules = 'root' | 'title' | 'hr' | 'list';
 
@@ -71,7 +70,7 @@ export const FavePinsSection = connect(
 
             useEffect(() => {
                 const sortedFaves = faves.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12); //max 12 items
-                setItems(getResources(sortedFaves, resources));
+                setItems(getPopulatedResources(sortedFaves.map(item => item.headUuid), resources));
             }, [faves, resources]);
 
             useEffect(() => {
@@ -116,10 +115,3 @@ function preventRerender(prevProps: FavePinsSectionProps, nextProps: FavePinsSec
     return true;
 }
 
-const getResources = (faves: LinkResource[], resources: ResourcesState) => {
-    return faves.reduce((acc: GroupContentsResource[], fave: LinkResource) => {
-        const res = getResource<GroupContentsResource>(fave.headUuid)(resources);
-        if (res) acc.push(res);
-        return acc;
-    }, []);
-};

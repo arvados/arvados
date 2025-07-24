@@ -8,10 +8,17 @@ import { ServiceRepository } from "services/services";
 import { showErrorSnackbar } from "store/snackbar/snackbar-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { authActions } from "store/auth/auth-action";
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 
+export const RECENTLY_VISITED_PANEL_ID = "recentlyVisitedPanel";
 const GENERIC_LOAD_ERROR = "Could not load user profile";
 const SAVE_RECENT_UUIDS_ERROR = "Could not save recent uuids";
 
+const recentlyVisitedPanelActions = bindDataExplorerActions(RECENTLY_VISITED_PANEL_ID);
+
+export const loadRecentlyVisitedPanel = () => (dispatch: Dispatch) => {
+    dispatch(recentlyVisitedPanelActions.REQUEST_ITEMS());
+};
 
 export const saveRecentlyVisited = (uuid: string) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     const user = getState().auth.user;

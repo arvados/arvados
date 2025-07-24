@@ -85,6 +85,8 @@ import { composeWithDevTools } from "redux-devtools-extension";
 import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
 import createSagaMiddleware from 'redux-saga';
 import { rootSaga } from "./redux-saga";
+import { RecentlyVisitedMiddlewareService } from "./recently-visited/recently-visited-middleware-services";
+import { RECENTLY_VISITED_PANEL_ID } from "./recently-visited/recently-visited-actions";
 
 declare global {
     interface Window {
@@ -126,6 +128,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         new CollectionsWithSameContentAddressMiddlewareService(services, COLLECTIONS_CONTENT_ADDRESS_PANEL_ID)
     );
     const subprocessMiddleware = dataExplorerMiddleware(new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID));
+    const recentlyVisitedMiddleware = dataExplorerMiddleware(new RecentlyVisitedMiddlewareService(services, RECENTLY_VISITED_PANEL_ID));
 
     const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
         const state = store.getState();
@@ -165,7 +168,8 @@ export function configureStore(history: History, services: ServiceRepository, co
         publicFavoritesMiddleware,
         collectionsContentAddress,
         subprocessMiddleware,
-        workflowProcessessPanelMiddleware
+        workflowProcessessPanelMiddleware,
+        recentlyVisitedMiddleware,
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[], b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);
