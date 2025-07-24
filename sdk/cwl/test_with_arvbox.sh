@@ -40,7 +40,7 @@ while test -n "$1" ; do
             shift ; shift
             ;;
         --build)
-            build=1
+            echo "warning: --build option is no longer supported; ignored" >&2
             shift
             ;;
         --devcwl)
@@ -64,7 +64,7 @@ while test -n "$1" ; do
             shift ; shift
             ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--suite (integration|conformance-v1.0|conformance-*)]"
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--suite (integration|conformance-v1.0|conformance-*)]"
             exit
             ;;
         *)
@@ -151,10 +151,6 @@ fi
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados-arvbox/superuser_token)
-
-if test -n "$build" ; then
-  /usr/src/arvados/build/build-dev-docker-jobs-image.sh
-fi
 
 EXTRA=--compute-checksum
 

@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+#
+# Common requirements to build and install Arvados Python components
+
+build
+
+# 20.3 introduced the modern dependency resolver which we rely on.
+pip >= 20.3
+
+# TODO: It should be possible to remove this requirement after we do #20311.
+# The version cap protects us from interfaces we depend on being removed.
+# It can be bumped as long as `setup.py build` still works.
+setuptools >= 75.0, < 81.0
+
+wheel
