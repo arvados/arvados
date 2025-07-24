@@ -689,10 +689,14 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: "arvados_container_uuid", Value: ctr.UUID})
+		var proxyErr error
 		gatewayProxy(dial, w, http.Header{
 			"X-Arvados-Container-Gateway-Uuid": {targetUUID},
 			"X-Arvados-Container-Target-Port":  {strconv.Itoa(targetPort)},
-		}, nil).ServeHTTP(w, opts.Request)
+		}, &proxyErr).ServeHTTP(w, opts.Request)
+		if proxyErr != nil {
+			httpserver.Error(w, "proxy error: "+proxyErr.Error(), http.StatusBadGateway)
+		}
 	}), nil
 }
 
