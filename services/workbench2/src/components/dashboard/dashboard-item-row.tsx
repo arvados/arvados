@@ -8,10 +8,10 @@ import { connect } from 'react-redux';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { RootState } from 'store/store';
-import { ResourceName } from 'views-components/data-explorer/renderers';
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-actions';
+import { navigateTo } from 'store/navigation/navigation-action';
 
 export const DashboardColumnNames = {
     STATUS: 'Status',
@@ -40,20 +40,38 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
+const mapDispatchToProps = (dispatch: Dispatch): Pick<DashboardItemRowProps, 'navTo' | 'openContextMenu'> => ({
+    navTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
+    openContextMenu: (event: React.MouseEvent<HTMLElement>, uuid: string) => dispatch<any>(openContextMenuOnlyFromUuid(event, uuid)),
+});
+
+export type DashboardItemRowStyles = Partial<Record<keyof typeof DashboardColumnNames, CSSProperties>>;
+
 type DashboardItemRowProps = {
     item: GroupContentsResource;
     columns: Partial<Record<keyof typeof DashboardColumnNames, React.ReactElement<any>>>;
-    forwardStyles?: Partial<Record<keyof typeof DashboardColumnNames, CSSProperties>>; //keys must be DashboardColumnNames
+    forwardStyles?: DashboardItemRowStyles;
+    navTo: (uuid: string) => void,
+    openContextMenu: (event: React.MouseEvent, uuid: string) => void;
 };
 
-export const DashboardItemRow = withStyles(styles)(({ item, columns, classes, forwardStyles }: DashboardItemRowProps & WithStyles<CssRules>) => {
-    return (
-        <div className={classes.root}>
-            {Object.entries(columns).map(([key, element]) => (
-                <span key={key} style={forwardStyles ? forwardStyles[key] : undefined}>
-                    {element}
-                </span>
-            ))}
-        </div>
-    );
-});
+export const DashboardItemRow = connect(null, mapDispatchToProps)(
+    withStyles(styles)(({ item, columns, classes, forwardStyles, navTo, openContextMenu }: DashboardItemRowProps & WithStyles<CssRules>) => {
+
+        const handleContextMenu = (event: React.MouseEvent) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openContextMenu(event, item.uuid);
+            };
+
+        return (
+            <div className={classes.root} onContextMenu={handleContextMenu} onClick={() => navTo(item.uuid)}>
+                {Object.entries(columns).map(([key, element]) => (
+                    <span key={key} style={forwardStyles ? forwardStyles[key] : undefined}>
+                        {element}
+                    </span>
+                ))}
+            </div>
+        );
+    })
+);

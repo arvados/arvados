@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState, useEffect, CSSProperties } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dispatch } from 'redux';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
@@ -15,7 +15,7 @@ import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevr
 import { ResourcesState, getPopulatedResources } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { loadRecentlyVisitedPanel } from 'store/recently-visited/recently-visited-actions';
-import { DashboardItemRow, DashboardColumnNames } from 'components/dashboard/dashboard-item-row';
+import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { RecentUuid } from 'models/user';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 
@@ -51,7 +51,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 // pass any styles to child elements
-const forwardStyles: Partial<Record<keyof typeof DashboardColumnNames, CSSProperties>> = {
+const forwardStyles: DashboardItemRowStyles = {
     [DashboardColumnNames.LAST_VISITED]: {
         marginLeft: '2rem',
         width: '12rem',
