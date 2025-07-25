@@ -6,7 +6,8 @@ import { fieldRequire } from './require';
 import { maxLength } from './max-length';
 import { isRsaKey } from './is-rsa-key';
 import { isRemoteHost } from "./is-remote-host";
-import { validFilePath, validName, validNameAllowSlash } from "./valid-name";
+import { validFileName, validFilePath, validName, validNameAllowSlash } from "./valid-name";
+import { isZipFilename } from './is-zip-filename';
 
 export const TAG_KEY_VALIDATION = [maxLength(255)];
 export const TAG_VALUE_VALIDATION = [maxLength(255)];
@@ -23,6 +24,7 @@ export const COLLECTION_PROJECT_VALIDATION = [fieldRequire];
 export const COPY_NAME_VALIDATION = [fieldRequire, maxLength(255)];
 export const COPY_FILE_VALIDATION = [fieldRequire];
 export const RENAME_FILE_VALIDATION = [fieldRequire, validFilePath];
+export const DOWNLOAD_ZIP_VALIDATION = [fieldRequire, isZipFilename, validFileName];
 
 export const MOVE_TO_VALIDATION = [fieldRequire];
 
