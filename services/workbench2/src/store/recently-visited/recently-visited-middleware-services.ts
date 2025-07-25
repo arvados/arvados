@@ -15,6 +15,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { ContentsArguments } from 'services/groups-service/groups-service';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { RecentUuid } from 'models/user';
 
 export class RecentlyVisitedMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -41,9 +42,9 @@ export class RecentlyVisitedMiddlewareService extends DataExplorerMiddlewareServ
     async requestCount() {}
 }
 
-const getParams = (dataExplorer: DataExplorer, uuids: string[]): ContentsArguments => ({
+const getParams = (dataExplorer: DataExplorer, recents: RecentUuid[]): ContentsArguments => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: new FilterBuilder().addIn('uuid', uuids).getFilters(),
+    filters: new FilterBuilder().addIn('uuid', recents.map(recent => recent.uuid)).getFilters(),
     include: ["owner_uuid", "container_uuid"]
 });
 
