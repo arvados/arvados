@@ -51,6 +51,11 @@ describe("Process tests", function () {
                     },
                 },
                 owner_uuid: ownerUuid || undefined,
+                properties: {
+                    cwl_input: {foo: "bar"},
+                    cwl_output: {baz: "qux"},
+                    foo: "bar"
+                }
             });
         });
     }
@@ -67,7 +72,7 @@ describe("Process tests", function () {
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
+                cy.get("[data-cy=process-details-card]").should('exist', { timeout: 10000 }).and("contain", containerRequest.name);
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
             });
@@ -101,6 +106,10 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`zzzzz-tpzed-000000000000000`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").contains(`Active User (${activeUser.user.uuid})`);
+                cy.assertPropertyTag("foo", "bar");
+                // property values are unimportant here, but [object Object] displays prior to #23063
+                cy.assertPropertyTag("cwl_input", "[object Object]", false);
+                cy.assertPropertyTag("cwl_output", "[object Object]", false);
             });
         });
 
@@ -1539,7 +1548,7 @@ describe("Process tests", function () {
     });
 
     describe("Process operations", function () {
-        it.only("navigates to parent project when deleting current process", function () {
+        it("navigates to parent project when deleting current process", function () {
             // Process in home project
             createContainerRequest(
                 activeUser,
