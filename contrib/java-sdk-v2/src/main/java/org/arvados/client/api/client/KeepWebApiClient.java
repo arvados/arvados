@@ -87,8 +87,9 @@ public class KeepWebApiClient extends BaseApiClient {
     private HttpUrl.Builder getUrlBuilder(String collectionUuid, String filePathName) {
         return new HttpUrl.Builder()
                 .scheme(config.getApiProtocol())
-                .host(collectionUuid + "." + config.getKeepWebHost())
+                .host(config.getKeepWebHost())
                 .port(config.getKeepWebPort())
+                .addPathSegment("c=" + collectionUuid)
                 .addPathSegment(filePathName);
     }
 }

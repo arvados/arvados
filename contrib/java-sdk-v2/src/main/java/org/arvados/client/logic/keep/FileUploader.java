@@ -7,95 +7,52 @@
 
 package org.arvados.client.logic.keep;
 
-import com.google.common.collect.Lists;
 import org.arvados.client.api.client.CollectionsApiClient;
+import org.arvados.client.api.client.KeepWebApiClient;
 import org.arvados.client.api.model.Collection;
-import org.arvados.client.common.Characters;
 import org.arvados.client.config.ConfigProvider;
-import org.arvados.client.exception.ArvadosClientException;
 import org.arvados.client.logic.collection.CollectionFactory;
-import org.arvados.client.utils.FileMerge;
-import org.arvados.client.utils.FileSplit;
 import org.slf4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
-import static java.util.stream.Collectors.toList;
 
 public class FileUploader {
 
-    private final KeepClient keepClient;
+    private final KeepWebApiClient keepWebApiClient;
     private final CollectionsApiClient collectionsApiClient;
     private final ConfigProvider config;
     private final Logger log = org.slf4j.LoggerFactory.getLogger(FileUploader.class);
 
-    public FileUploader(KeepClient keepClient, CollectionsApiClient collectionsApiClient, ConfigProvider config) {
-        this.keepClient = keepClient;
+    public FileUploader(KeepWebApiClient keepWebApiClient, CollectionsApiClient collectionsApiClient, ConfigProvider config) {
+        this.keepWebApiClient = keepWebApiClient;
         this.collectionsApiClient = collectionsApiClient;
         this.config = config;
     }
 
     public Collection upload(List<File> sourceFiles, String collectionName, String projectUuid) {
-        List<String> locators = uploadToKeep(sourceFiles);
-        CollectionFactory collectionFactory = CollectionFactory.builder()
-                .config(config)
-                .name(collectionName)
+        Collection newCollection = CollectionFactory.builder()
+                .config(config).name(collectionName)
                 .projectUuid(projectUuid)
-                .manifestFiles(sourceFiles)
-                .manifestLocators(locators)
-                .build();
+                .build()
+                .create();
 
-        Collection newCollection = collectionFactory.create();
-        return collectionsApiClient.create(newCollection);
+        newCollection = collectionsApiClient.create(newCollection);
+        String newCollectionId = newCollection.getUuid();
+
+        sourceFiles.forEach(file -> uploadFile(newCollectionId, file));
+
+        return collectionsApiClient.get(newCollection.getUuid());
+    }
+
+    private void uploadFile(String collectionUuid, File file) {
+        keepWebApiClient.upload(collectionUuid, file, (progress) -> log.info("Uploaded {} bytes for file: {}", progress, file.getName()));
     }
 
     public Collection uploadToExistingCollection(List<File> files, String collectionUuid) {
-        List<String> locators = uploadToKeep(files);
-        Collection collectionBeforeUpload = collectionsApiClient.get(collectionUuid);
-        String oldManifest = collectionBeforeUpload.getManifestText();
+        files.forEach(file -> uploadFile(collectionUuid, file));
 
-        CollectionFactory collectionFactory = CollectionFactory.builder()
-                .config(config)
-                .manifestFiles(files)
-                .manifestLocators(locators).build();
-
-        String newPartOfManifestText = collectionFactory.create().getManifestText();
-        String newManifest = oldManifest + newPartOfManifestText;
-
-        collectionBeforeUpload.setManifestText(newManifest);
-        return collectionsApiClient.update(collectionBeforeUpload);
+        return collectionsApiClient.get(collectionUuid);
     }
 
-    private List<String> uploadToKeep(List<File> files) {
-        File targetDir = config.getFileSplitDirectory();
-        File combinedFile = new File(targetDir.getAbsolutePath() + Characters.SLASH + UUID.randomUUID());
-        List<File> chunks;
-        try {
-            FileMerge.merge(files, combinedFile);
-            chunks = FileSplit.split(combinedFile, targetDir, config.getFileSplitSize());
-        } catch (IOException e) {
-            throw new ArvadosClientException("Cannot create file chunks for upload", e);
-        }
-        combinedFile.delete();
-
-        int copies = config.getNumberOfCopies();
-        int numRetries = config.getNumberOfRetries();
-
-        List<String> locators = Lists.newArrayList();
-        for (File chunk : chunks) {
-            try {
-                locators.add(keepClient.put(chunk, copies, numRetries));
-            } catch (ArvadosClientException e) {
-                log.error("Problem occurred while uploading chunk file {}", chunk.getName(), e);
-                throw e;
-            }
-        }
-        return locators.stream()
-                .filter(Objects::nonNull)
-                .collect(toList());
-    }
 }
