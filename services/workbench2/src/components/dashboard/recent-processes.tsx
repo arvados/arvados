@@ -12,11 +12,12 @@ import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { loadAllProcessesPanel } from 'store/all-processes-panel/all-processes-panel-action';
-import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
+import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
+import { ResourceStatus } from 'views-components/data-explorer/renderers';
 
-type CssRules = 'root' | 'subHeader' | 'titleBar' | 'lastModHead' | 'lastModDate' | 'hr' | 'list' | 'item';
+type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'statusHead' | 'lastModHead' | 'lastModDate' | 'hr' | 'list' | 'item';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -30,9 +31,20 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         justifyContent: 'space-between',
     },
+    headers: {
+        display: 'flex',
+    },
+    statusHead: {
+        minWidth: '12rem',
+        fontSize: '0.875rem',
+        marginRight: '2rem',
+        textAlign: 'right',
+    },
     lastModHead: {
+        minWidth: '12rem',
         fontSize: '0.875rem',
         marginRight: '1rem',
+        textAlign: 'right',
     },
     lastModDate: {
         marginLeft: '2rem',
@@ -57,7 +69,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         background: '#fafafa',
         borderRadius: '8px',
-        // Additional styles for better appearance
         boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
         display: 'flex',
         alignItems: 'center',
@@ -68,7 +79,22 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = (state: RootState) => {
+// pass any styles to child elements
+const forwardStyles: DashboardItemRowStyles = {
+    [DashboardColumnNames.MODIFIED_AT]: {
+        width: '12rem',
+        display: 'flex',
+        justifyContent: 'flex-end',
+    },
+    [DashboardColumnNames.STATUS]: {
+        marginRight: '1rem',
+        width: '12rem',
+        display: 'flex',
+        justifyContent: 'flex-end',
+    },
+}
+
+const mapStateToProps = (state: RootState): Pick<RecentProcessesProps, 'items'> => {
     const selection = (state.dataExplorer.allProcessesPanel?.items || []).slice(0, 5);
     const recents = selection.map(uuid => state.resources[uuid]);
     return {
@@ -76,58 +102,55 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentProcessesProps, 'loadAllProcessesPanel'> => ({
     loadAllProcessesPanel: () => dispatch<any>(loadAllProcessesPanel()),
 });
 
 type RecentProcessesProps = {
     items: any[];
     loadAllProcessesPanel: () => void;
-} & WithStyles<CssRules>;
+};
 
-export const RecentProcessesSection = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(({items, loadAllProcessesPanel, classes}: RecentProcessesProps) => {
-    useEffect(() => {
-        loadAllProcessesPanel();
-    }, [loadAllProcessesPanel]);
+export const RecentProcessesSection = connect(mapStateToProps, mapDispatchToProps)(
+    withStyles(styles)(({items, loadAllProcessesPanel, classes}: RecentProcessesProps & WithStyles<CssRules>) => {
+        useEffect(() => {
+            loadAllProcessesPanel();
+        }, [loadAllProcessesPanel]);
 
-    const [isOpen, setIsOpen] = useState(true);
+        const [isOpen, setIsOpen] = useState(true);
 
-    return (
-        <div className={classes.root}>
-            <div className={classes.subHeader} onClick={() => setIsOpen(!isOpen)}>
-                <span className={classes.titleBar}>
-                    <span>
-                        <span>Recent Processes</span>
-                        <ExpandChevronRight expanded={isOpen} />
+        return (
+            <div className={classes.root}>
+                <div className={classes.subHeader} onClick={() => setIsOpen(!isOpen)}>
+                    <span className={classes.titleBar}>
+                        <span>
+                            <span>Recent Processes</span>
+                            <ExpandChevronRight expanded={isOpen} />
+                        </span>
+                        {isOpen &&
+                            <span className={classes.headers}>
+                                <div className={classes.statusHead}>status</div>
+                                <div className={classes.lastModHead}>last modified</div>
+                            </span>}
                     </span>
-                    {isOpen && <span className={classes.lastModHead}>last modified</span>}
-                </span>
-                <hr className={classes.hr} />
+                    <hr className={classes.hr} />
+                </div>
+                <Collapse in={isOpen}>
+                    <ul className={classes.list}>
+                        {items.map(item =>
+                            <DashboardItemRow
+                                item={item}
+                                columns={
+                                    {
+                                        [DashboardColumnNames.NAME]: <ResourceName uuid={item.uuid} />,
+                                        [DashboardColumnNames.STATUS]: <ResourceStatus uuid={item.uuid} />,
+                                        [DashboardColumnNames.MODIFIED_AT]: <span>{new Date(item.modifiedAt).toLocaleString()}</span>,
+                                    }
+                                }
+                                forwardStyles={forwardStyles}
+                            />)}
+                    </ul>
+                </Collapse>
             </div>
-            <Collapse in={isOpen}>
-                <ul className={classes.list}>
-                    {items.map(item => <RecentProcessItem item={item} classes={classes} />)}
-                </ul>
-            </Collapse>
-        </div>
-    )
+        )
 }));
-
-type ItemProps = {
-    item: { name: string, uuid: string, modifiedAt: string }
-} & WithStyles<CssRules>;
-
-
-const RecentProcessItem = ({item, classes}: ItemProps) => {
-    return (
-        <div className={classes.item}>
-            <span>
-                <ResourceName uuid={item.uuid} />
-            </span>
-            <span style={{display: 'flex'}}>
-                <span><ProcessStatus uuid={item.uuid} /></span>
-                <div className={classes.lastModDate}>{new Date(item.modifiedAt).toLocaleString()}</div>
-            </span>
-        </div>
-    );
-}

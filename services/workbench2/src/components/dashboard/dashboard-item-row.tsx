@@ -21,7 +21,7 @@ export const DashboardColumnNames = {
     TYPE: 'type',
 }
 
-type CssRules = 'root';
+type CssRules = 'root' | 'columns';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -37,6 +37,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             background: 'lightgray',
         },
+    },
+    columns: {
+        display: 'flex',
     },
 });
 
@@ -66,11 +69,15 @@ export const DashboardItemRow = connect(null, mapDispatchToProps)(
 
         return (
             <div className={classes.root} onContextMenu={handleContextMenu} onClick={() => navTo(item.uuid)}>
-                {Object.entries(columns).map(([key, element]) => (
-                    <span key={key} style={forwardStyles ? forwardStyles[key] : undefined}>
-                        {element}
-                    </span>
-                ))}
+                <span>{columns[DashboardColumnNames.NAME]}</span>
+                <span className={classes.columns}>
+                    {Object.entries(columns).map(([key, element]) => {
+                        if (key === DashboardColumnNames.NAME) return null;
+                        return (<span key={key} style={forwardStyles ? forwardStyles[key] : undefined}>
+                            {element}
+                        </span>
+                    )})}
+                </span>
             </div>
         );
     })
