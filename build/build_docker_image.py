@@ -168,6 +168,7 @@ class JobsImage(PythonVenvImage):
         'tools/crunchstat-summary',
         'sdk/cwl',
     ]
+    _TEST_COMMAND = ['arvados-cwl-runner', '--version']
 
 
 class Environments:
