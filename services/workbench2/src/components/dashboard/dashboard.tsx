@@ -7,9 +7,8 @@ import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { FavePinsSection } from './favorite-pins/favorite-pins-section';
-import { RecentProcessesSection } from './recent-processes';
+import { RecentWorkflowRunsSection } from './recent-workflow-runs';
 import { RecentlyVisitedSection } from './recently-visited';
-
 
 type CssRules = 'root' | 'section';
 
@@ -38,7 +37,7 @@ export const Dashboard = withStyles(styles)(({classes}: WithStyles<CssRules>) =>
                 <RecentlyVisitedSection />
             </section>
             <section className={classes.section}>
-                <RecentProcessesSection />
+                <RecentWorkflowRunsSection />
             </section>
         </section>
     );

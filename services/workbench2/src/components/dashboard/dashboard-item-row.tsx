@@ -14,11 +14,12 @@ import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-act
 import { navigateTo } from 'store/navigation/navigation-action';
 
 export const DashboardColumnNames = {
-    STATUS: 'Status',
-    NAME: 'name',
-    MODIFIED_AT: 'modifiedAt',
+    STATUS: 'status',
+    NAME: 'Name',
+    MODIFIED_AT: 'last modified',
     LAST_VISITED: 'last visited',
     TYPE: 'type',
+    STARTED_AT: 'started at',
 }
 
 type CssRules = 'root' | 'columns';

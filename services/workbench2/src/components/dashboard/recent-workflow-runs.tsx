@@ -16,8 +16,9 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { ResourceStatus } from 'views-components/data-explorer/renderers';
+import { ResourceKind } from 'models/resource';
 
-type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'statusHead' | 'lastModHead' | 'lastModDate' | 'hr' | 'list' | 'item';
+type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'statusHead' | 'startedAtHead' | 'lastModDate' | 'hr' | 'list' | 'item';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -40,7 +41,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginRight: '2rem',
         textAlign: 'right',
     },
-    lastModHead: {
+    startedAtHead: {
         minWidth: '12rem',
         fontSize: '0.875rem',
         marginRight: '1rem',
@@ -81,38 +82,38 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 // pass any styles to child elements
 const forwardStyles: DashboardItemRowStyles = {
-    [DashboardColumnNames.MODIFIED_AT]: {
-        width: '12rem',
-        display: 'flex',
-        justifyContent: 'flex-end',
-    },
     [DashboardColumnNames.STATUS]: {
         marginRight: '1rem',
         width: '12rem',
         display: 'flex',
         justifyContent: 'flex-end',
     },
+    [DashboardColumnNames.STARTED_AT]: {
+        width: '12rem',
+        display: 'flex',
+        justifyContent: 'flex-end',
+    },
 }
 
-const mapStateToProps = (state: RootState): Pick<RecentProcessesProps, 'items'> => {
-    const selection = (state.dataExplorer.allProcessesPanel?.items || []).slice(0, 5);
-    const recents = selection.map(uuid => state.resources[uuid]);
+const mapStateToProps = (state: RootState): Pick<RecentWorkflowRunsProps, 'items'> => {
+    const selection = (state.dataExplorer.allProcessesPanel?.items || []);
+    const recents = selection.map(uuid => state.resources[uuid]).filter(item => item.kind === ResourceKind.PROCESS).slice(0, 5);;
     return {
         items: recents
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentProcessesProps, 'loadAllProcessesPanel'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentWorkflowRunsProps, 'loadAllProcessesPanel'> => ({
     loadAllProcessesPanel: () => dispatch<any>(loadAllProcessesPanel()),
 });
 
-type RecentProcessesProps = {
+type RecentWorkflowRunsProps = {
     items: any[];
     loadAllProcessesPanel: () => void;
 };
 
-export const RecentProcessesSection = connect(mapStateToProps, mapDispatchToProps)(
-    withStyles(styles)(({items, loadAllProcessesPanel, classes}: RecentProcessesProps & WithStyles<CssRules>) => {
+export const RecentWorkflowRunsSection = connect(mapStateToProps, mapDispatchToProps)(
+    withStyles(styles)(({items, loadAllProcessesPanel, classes}: RecentWorkflowRunsProps & WithStyles<CssRules>) => {
         useEffect(() => {
             loadAllProcessesPanel();
         }, [loadAllProcessesPanel]);
@@ -124,13 +125,13 @@ export const RecentProcessesSection = connect(mapStateToProps, mapDispatchToProp
                 <div className={classes.subHeader} onClick={() => setIsOpen(!isOpen)}>
                     <span className={classes.titleBar}>
                         <span>
-                            <span>Recent Processes</span>
+                            <span>Recent Workflow Runs</span>
                             <ExpandChevronRight expanded={isOpen} />
                         </span>
                         {isOpen &&
                             <span className={classes.headers}>
                                 <div className={classes.statusHead}>status</div>
-                                <div className={classes.lastModHead}>last modified</div>
+                                <div className={classes.startedAtHead}>started at</div>
                             </span>}
                     </span>
                     <hr className={classes.hr} />
@@ -144,7 +145,7 @@ export const RecentProcessesSection = connect(mapStateToProps, mapDispatchToProp
                                     {
                                         [DashboardColumnNames.NAME]: <ResourceName uuid={item.uuid} />,
                                         [DashboardColumnNames.STATUS]: <ResourceStatus uuid={item.uuid} />,
-                                        [DashboardColumnNames.MODIFIED_AT]: <span>{new Date(item.modifiedAt).toLocaleString()}</span>,
+                                        [DashboardColumnNames.STARTED_AT]: <span>{new Date(item.createdAt).toLocaleString()}</span>,
                                     }
                                 }
                                 forwardStyles={forwardStyles}
