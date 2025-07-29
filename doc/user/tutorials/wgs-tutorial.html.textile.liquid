@@ -75,7 +75,7 @@ Let’s name your project “WGS Processing Tutorial”. You can also add a desc
 <figcaption> _*Figure 4*:  Renaming new project using Arvados Workbench, enter the name in the "Project Name" box._ </figcaption> </figure>
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image7.png!
-<figcaption> _*Figure 5*: The UUID of the project can be found by selecting the "i" in the upper right-hand corner, under "UUID" and copied using the copy to clipboard option, highlighted in yellow in this image for emphasis._ </figcaption> </figure>
+<figcaption> _*Figure 5*: The UUID of the project can be found in the overview tab, under "UUID" and copied using the copy to clipboard option, highlighted in yellow in this image for emphasis._ </figcaption> </figure>
 
 If you choose to use another name for your project, just keep in mind when the project name is referenced in the walkthrough later on.
 
@@ -86,15 +86,15 @@ Collections in Arvados help organize and manage your data. You can upload your e
 Arvados uses a content-addressable filesystem (i.e. Keep) where the addresses of files are derived from their contents.  A major benefit of this is that Arvados can then verify that when a dataset is retrieved it is the dataset you requested  and can track the exact datasets that were used for each of our previous calculations.  This is what allows you to be certain that we are always working with the data that you think you are using.  You use the portable data hash of a collection when you want to guarantee that you use the same version as input to your workflow.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image1.png!
-<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (this is editable, if you hit the three dots in the upper right-hand corner and click "Edit collection"), a description of the collection (also editable through the same way), the collection UUID, the portable data hash, content size, and some other information like version number._ </figcaption> </figure>
+<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (this is editable, if you have write access and click the "Edit collection" button), a description of the collection (also editable through the same way), the collection UUID, the portable data hash, content size, and some other information like version number._ </figcaption> </figure>
 
 Let’s start working with collections by copying the existing collection that stores the FASTQ data being processed into our new “WGS Processing Tutorial” project.
 
 First, you must find the collection you are interested in copying over to your project.  There are several ways to search for a collection: by collection name, by UUID or by portable data hash.  In this case, let’s search for our collection by name.
 
-In this case it is called “PGP UK FASTQs (ten genomes)”.  Searching for that text in the “Search” box.  The collection will come up in the search results and you can navigate to it by clicking on the name.  You would do similarly if you would want to search by UUID or portable data hash.
+In this case it is called “PGP UK FASTQs” and by searching for it in the “Search” box.  It will come up in the search results and you can navigate to it by clicking on the name.  You would do similarly if you would want to search by UUID or portable data hash.
 
-Now that you have found the collection of FASTQs you want to copy to your project, you can simply click the three dots in the right corner and click "Make a copy" and select your new project to copy the collection there.  You can rename your collection whatever you wish, or use the default name on copy and add whatever description you would like.
+Now that you have found the collection of FASTQs you want to copy to your project, you can simply click the "Make a copy" button in the toolbar and select your new project to copy the collection there.  You can rename your collection whatever you wish, or use the default name on copy and add whatever description you would like.
 
 We want to do the same thing for the other inputs to our WGS workflow. Similar to the “PGP UK FASTQs (ten genomes)” collection there is a collection of inputs entitled “WGS Processing reference data” and that collection can be copied over in a similar fashion.
 
@@ -113,7 +113,7 @@ We have already previously registered the WGS workflow and set default input val
 Let’s find the registered WGS Processing Workflow and run it interactively in our newly created project.
 
 # To find the registered workflow, in the left-hand navigation bar, select "Public Favorites". That listing will include the "WGS Processing Workflow" project. Open that project, and it will include the workflow "WGS processing workflow scattered over samples". Open that workflow.
-# Once you have found the registered workflow, you can run it your project by using the "Run Workflow" button and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a, under *Project where the workflow will run*.
+# Once you have found the registered workflow, you can run it your project by using the "Run Workflow" button in the toolbar and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a. Click OK to continue.
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image8.png!
 <figcaption> _*Figure 7*: This is the dialog that pops up when you press "Run Workflow". The project that you should select is highlighted in yellow._ </figcaption> </figure>
 # Default inputs to the registered workflow will be automatically filled in.  These inputs will work as-is, but can be edited.  You can verify that they match the portable data hashes of the collections you copied over to your new project.
@@ -220,7 +220,7 @@ Once your workflow has finished, you can see how long it took the workflow to ru
 
 If we click on the outputs of the workflow, we will see the output collection. It contains the GVCF, tabix index file, and HTML ClinVar report for each analyzed sample (e.g., set of FASTQs). You can open a report in the browser by selecting it from the listing. You can also download a file to your local machine by right-clicking a file and selecting "Download" from the context menu, or from the action menu available from the far right of each listing.
 
-Logs for the main process can be found back on the workflow process page. Selecting the "LOGS" button at the top navigates down to the logs. You can view the logs directly through that panel, or in the upper right-hand corner select the button with hover-over text "Go to Log collection".
+Logs for the main process can be found back on the workflow process page by selecting the "LOGS" tab. You can view the logs directly through that panel, or in the upper right-hand corner select the "Outputs" button.
 
 There are several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
 
