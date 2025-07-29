@@ -19,6 +19,7 @@ import { RouterState } from "react-router-redux";
 import parse from 'parse-duration';
 import { Config } from 'common/config';
 import { LinkAccountPanelState, LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
+import { saveRecentlyVisited } from "store/recently-visited/recently-visited-actions";
 import { WORKBENCH_LOADING_SCREEN } from 'store/progress-indicator/progress-indicator-actions';
 
 type CssRules = 'root';
@@ -67,6 +68,7 @@ export const MainPanelRoot = withStyles(styles)(
                 const uuid = splitRoute[splitRoute.length - 1];
                 if(Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
+                    saveRecentlyVisited(uuid);
                 } else {
                     setCurrentRouteUuid(null);
                 }
