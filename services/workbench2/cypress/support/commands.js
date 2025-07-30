@@ -798,7 +798,21 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 });
 
 /**
+ * Selects all visible data explorer items using the select all checkbox
+ */
+Cypress.Commands.add("doDataExplorerSelectAll", () => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table] [data-cy=data-table-multiselect-popover]', { timeout: 10000 })
+        .parent()
+        .find('> input[type=checkbox]')
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
  * Selects data explorer rows in the collection files panel
+ *
+ * @param name Name of file to select
  */
 Cypress.Commands.add("doCollectionFileSelect", (name) => {
     cy.waitForDom();
