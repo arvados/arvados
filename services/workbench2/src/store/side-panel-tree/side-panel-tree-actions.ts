@@ -18,7 +18,7 @@ import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
 import { verifyAndUpdateLinks } from 'common/link-update-name';
-import { ProcessIcon, ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon } from 'components/icon/icon';
+import { ProcessIcon, ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon, WheelIcon } from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
     DASHBOARD = 'Dashboard',
@@ -342,6 +342,8 @@ export const getSidePanelIcon = (category: string) => {
             return GroupsIcon;
         case SidePanelTreeCategory.SHELL_ACCESS:
             return TerminalIcon
+        case SidePanelTreeCategory.DASHBOARD:
+            return WheelIcon
         default:
             return ProjectIcon;
     }
