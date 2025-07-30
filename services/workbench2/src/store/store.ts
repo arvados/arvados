@@ -87,6 +87,8 @@ import createSagaMiddleware from 'redux-saga';
 import { rootSaga } from "./redux-saga";
 import { RecentlyVisitedMiddlewareService } from "./recently-visited/recently-visited-middleware-services";
 import { RECENTLY_VISITED_PANEL_ID } from "./recently-visited/recently-visited-actions";
+import { RecentWorkflowsMiddlewareService } from "./recent-wf-runs/recent-wf-runs-middleware-sevice";
+import { RECENT_WF_RUNS_ID } from "./recent-wf-runs/recent-wf-runs-action";
 
 declare global {
     interface Window {
@@ -129,6 +131,7 @@ export function configureStore(history: History, services: ServiceRepository, co
     );
     const subprocessMiddleware = dataExplorerMiddleware(new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID));
     const recentlyVisitedMiddleware = dataExplorerMiddleware(new RecentlyVisitedMiddlewareService(services, RECENTLY_VISITED_PANEL_ID));
+    const recentWorkflowsMiddleware = dataExplorerMiddleware(new RecentWorkflowsMiddlewareService(services, RECENT_WF_RUNS_ID));
 
     const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
         const state = store.getState();
@@ -170,6 +173,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         subprocessMiddleware,
         workflowProcessessPanelMiddleware,
         recentlyVisitedMiddleware,
+        recentWorkflowsMiddleware,
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[], b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);

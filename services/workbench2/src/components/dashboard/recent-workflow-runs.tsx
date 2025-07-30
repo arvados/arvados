@@ -11,14 +11,14 @@ import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ResourceName } from 'views-components/data-explorer/renderers';
-import { loadAllProcessesPanel } from 'store/all-processes-panel/all-processes-panel-action';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { ResourceStatus } from 'views-components/data-explorer/renderers';
-import { ResourceKind } from 'models/resource';
+import { loadRecentWorkflows } from 'store/recent-wf-runs/recent-wf-runs-action';
+import { ProcessResource } from 'models/process';
 
-type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'statusHead' | 'startedAtHead' | 'lastModDate' | 'hr' | 'list' | 'item';
+type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'startedAtHead' | 'lastModDate' | 'hr' | 'list' | 'item';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -34,12 +34,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headers: {
         display: 'flex',
-    },
-    statusHead: {
-        minWidth: '12rem',
-        fontSize: '0.875rem',
-        marginRight: '2rem',
-        textAlign: 'right',
     },
     startedAtHead: {
         minWidth: '12rem',
@@ -96,27 +90,27 @@ const forwardStyles: DashboardItemRowStyles = {
 }
 
 const mapStateToProps = (state: RootState): Pick<RecentWorkflowRunsProps, 'items'> => {
-    const selection = (state.dataExplorer.allProcessesPanel?.items || []);
-    const recents = selection.map(uuid => state.resources[uuid]).filter(item => item.kind === ResourceKind.PROCESS).slice(0, 5);;
+    const selection = (state.dataExplorer.recentWorkflowRuns?.items || []);
+    const recents = selection.map(uuid => state.resources[uuid] as ProcessResource).slice(0, 12);;
     return {
         items: recents
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentWorkflowRunsProps, 'loadAllProcessesPanel'> => ({
-    loadAllProcessesPanel: () => dispatch<any>(loadAllProcessesPanel()),
+const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentWorkflowRunsProps, 'loadRecentWorkflows'> => ({
+    loadRecentWorkflows: () => dispatch<any>(loadRecentWorkflows()),
 });
 
 type RecentWorkflowRunsProps = {
-    items: any[];
-    loadAllProcessesPanel: () => void;
+    items: ProcessResource[];
+    loadRecentWorkflows: () => void;
 };
 
 export const RecentWorkflowRunsSection = connect(mapStateToProps, mapDispatchToProps)(
-    withStyles(styles)(({items, loadAllProcessesPanel, classes}: RecentWorkflowRunsProps & WithStyles<CssRules>) => {
+    withStyles(styles)(({items, loadRecentWorkflows, classes}: RecentWorkflowRunsProps & WithStyles<CssRules>) => {
         useEffect(() => {
-            loadAllProcessesPanel();
-        }, [loadAllProcessesPanel]);
+            loadRecentWorkflows();
+        }, [loadRecentWorkflows]);
 
         const [isOpen, setIsOpen] = useState(true);
 
@@ -130,7 +124,6 @@ export const RecentWorkflowRunsSection = connect(mapStateToProps, mapDispatchToP
                         </span>
                         {isOpen &&
                             <span className={classes.headers}>
-                                <div className={classes.statusHead}>status</div>
                                 <div className={classes.startedAtHead}>started at</div>
                             </span>}
                     </span>
@@ -138,7 +131,8 @@ export const RecentWorkflowRunsSection = connect(mapStateToProps, mapDispatchToP
                 </div>
                 <Collapse in={isOpen}>
                     <ul className={classes.list}>
-                        {items.map(item =>
+                        {items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                            .map(item =>
                             <DashboardItemRow
                                 item={item}
                                 columns={
