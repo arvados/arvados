@@ -17,12 +17,15 @@ type CssRules = 'root' | 'section';
 
 const styles: CustomStyleRulesCallback<CssRules> = () => ({
     root: {
-        width: '100%',
+        width: '102%',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        marginLeft: '-1rem',
+        marginRight: '-2rem',
         padding: 0,
-        paddingTop: '1rem',
+        paddingTop: '0.5rem',
+        overflowY: 'scroll'
     },
     section : {
         paddingBottom: '1rem'
