@@ -90,7 +90,9 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         SyncInterval: 10s
         TimeoutIdle: 1s
         TimeoutBooting: 2s
-      RuntimeEngine: singularity
+      # Note RuntimeEngine: singularity would almost work, except see
+      # comment on TestContainerHTTPProxy()
+      RuntimeEngine: docker
       CrunchRunArgumentsList: ["--broken-node-hook", "true"]
     RemoteClusters:
       z1111:
@@ -1207,6 +1209,14 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 	c.Check(outcoll.PortableDataHash, check.Equals, "8fa5dee9231a724d7cf377c5a2f4907c+65")
 }
 
+// Note that unlike the rest of the suite, this test requires
+// {RuntimeEngine: docker} because:
+//
+//   - the singularity driver relies on ARVADOS_TEST_PRIVESC=sudo to
+//     connect to ports inside the container
+//
+//   - non-passwordless sudo does not work in crunch-run running under
+//     the loopback driver
 func (s *IntegrationSuite) TestContainerHTTPProxy(c *check.C) {
 	ctrport := "12345"
 	var success bool
