@@ -70,7 +70,7 @@ class BuildPython(build_py.build_py):
 
     def get_source_files(self):
         retval = super().get_source_files()
-        retval.append(str(self.json_path))
+        retval.append(self.discovery_json)
         return retval
 
     def get_output_mapping(self):
