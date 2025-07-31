@@ -49,14 +49,14 @@ export const Dashboard = connect(null, mapDispatchToProps)(
     }, [setDashboardBreadcrumbs]);
 
     return (
-        <section className={classes.root}>
-            <section className={classes.section}>
+        <section className={classes.root} data-cy="dashboard-root">
+            <section className={classes.section} data-cy="dashboard-section">
                 <FavePinsSection />
             </section>
-            <section className={classes.section}>
+            <section className={classes.section} data-cy="dashboard-section">
                 <RecentlyVisitedSection />
             </section>
-            <section className={classes.section}>
+            <section className={classes.section} data-cy="dashboard-section">
                 <RecentWorkflowRunsSection />
             </section>
         </section>

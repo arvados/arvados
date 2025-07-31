@@ -99,13 +99,17 @@ export const FavePinItem = connect(null, mapDispatchToProps)(
     };
 
     return (
-        <div className={classes.item} onContextMenu={handleContextMenu} onClick={() => navTo(item.uuid)}>
+        <div data-cy='favorite-pin'
+            className={classes.item}
+            onContextMenu={handleContextMenu}
+            onClick={() => navTo(item.uuid)}
+            >
             <div className={classes.icon}>{renderIcon(item)}</div>
             <div className={classes.namePlate}>
                 <div className={classes.name}>{item.name}</div>
             </div>
             <Tooltip title='Remove from Favorites' onClick={handleToggleFavorite}>
-                <StarIcon className={classes.star} />
+                <StarIcon data-cy={`${item.uuid}-star`} className={classes.star} />
             </Tooltip>
         </div>
     );
