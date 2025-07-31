@@ -8,15 +8,15 @@ import sys
 import re
 
 from pathlib import Path
-from setuptools import setup, find_packages
-from setuptools.command import build_py
+from setuptools import Command, setup, find_packages
+from setuptools.command.build import build as BuildCommand
 
 import arvados_version
 version = arvados_version.get_version()
 README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
-class BuildPython(build_py.build_py):
-    """Extend setuptools `build_py` to generate API documentation
+class BuildDiscoveryPydoc(Command):
+    """Generate Arvados API documentation
 
     This class implements a setuptools subcommand, so it follows
     [the SubCommand protocol][1]. Most of these methods are required by that
@@ -25,18 +25,13 @@ class BuildPython(build_py.build_py):
 
     [1]: https://setuptools.pypa.io/en/latest/userguide/extension.html#setuptools.command.build.SubCommand
     """
-    # This is implemented as functionality on top of `build_py`, rather than a
-    # dedicated subcommand, because that's the only way I can find to run this
-    # code during both `build` and `install`. setuptools' `install` command
-    # normally calls specific `build` subcommands directly, rather than calling
-    # the entire command, so it skips custom subcommands.
-    user_options = build_py.build_py.user_options + [
+    user_options = [
         ('discovery-json=', 'J', 'JSON discovery document used to build pydoc'),
         ('discovery-output=', 'O', 'relative path to write discovery document pydoc'),
     ]
 
     def initialize_options(self):
-        super().initialize_options()
+        self.build_lib = None
         self.discovery_json = 'arvados-v1-discovery.json'
         self.discovery_output = str(Path('arvados', 'api_resources.py'))
 
@@ -48,7 +43,7 @@ class BuildPython(build_py.build_py):
             return retval
 
     def finalize_options(self):
-        super().finalize_options()
+        self.set_undefined_options("build_py", ("build_lib", "build_lib"))
         self.json_path = self._relative_path(self.discovery_json, 'discovery-json')
         self.out_path = Path(
             self.build_lib,
@@ -56,7 +51,6 @@ class BuildPython(build_py.build_py):
         )
 
     def run(self):
-        super().run()
         import discovery2pydoc
         arglist = ['--output-file', str(self.out_path), str(self.json_path)]
         returncode = discovery2pydoc.main(arglist)
@@ -64,19 +58,22 @@ class BuildPython(build_py.build_py):
             raise Exception(f"discovery2pydoc exited {returncode}")
 
     def get_outputs(self):
-        retval = super().get_outputs()
-        retval.append(str(self.out_path))
-        return retval
+        return [str(self.out_path)]
 
     def get_source_files(self):
-        retval = super().get_source_files()
-        retval.append(self.discovery_json)
-        return retval
+        return [self.discovery_json]
 
     def get_output_mapping(self):
-        retval = super().get_output_mapping()
-        retval[str(self.out_path)] = self.discovery_json
-        return retval
+        return {
+            str(self.out_path): self.discovery_json,
+        }
+
+
+class ArvadosBuild(BuildCommand):
+    sub_commands = [
+        *BuildCommand.sub_commands,
+        ('build_discovery_pydoc', None),
+    ]
 
 
 setup(name='arvados-python-client',
@@ -89,7 +86,8 @@ setup(name='arvados-python-client',
       download_url="https://github.com/arvados/arvados.git",
       license='Apache 2.0',
       cmdclass={
-          'build_py': BuildPython,
+          'build': ArvadosBuild,
+          'build_discovery_pydoc': BuildDiscoveryPydoc,
       },
       packages=find_packages(),
       scripts=[
