@@ -69,7 +69,7 @@ export const DashboardItemRow = connect(null, mapDispatchToProps)(
             };
 
         return (
-            <div className={classes.root} onContextMenu={handleContextMenu} onClick={() => navTo(item.uuid)}>
+            <div className={classes.root} onContextMenu={handleContextMenu} onClick={() => navTo(item.uuid)} data-cy={'dashboard-item-row'}>
                 <span>{columns[DashboardColumnNames.NAME]}</span>
                 <span className={classes.columns}>
                     {Object.entries(columns).map(([key, element]) => {

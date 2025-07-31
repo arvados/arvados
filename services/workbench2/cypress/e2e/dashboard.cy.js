@@ -160,33 +160,85 @@ describe('Favorites section', () => {
         });
 });
 
-// describe('Recently Visited section', () => {
-//     let activeUser;
-//     let adminUser;
+describe('Recently Visited section', () => {
+    let activeUser;
+    let adminUser;
 
-//     before(function () {
-//         // Only set up common users once. These aren't set up as aliases because
-//         // aliases are cleaned up after every test. Also it doesn't make sense
-//         // to set the same users on beforeEach() over and over again, so we
-//         // separate a little from Cypress' 'Best Practices' here.
-//         cy.getUser('admin', 'Admin', 'User', true, true)
-//             .as('adminUser')
-//             .then(function () {
-//                 adminUser = this.adminUser;
-//             });
-//         cy.getUser('user', 'Active', 'User', false, true)
-//             .as('activeUser')
-//             .then(function () {
-//                 activeUser = this.activeUser;
-//             });
-//     });
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
 
-//     it('displays the recently visited section', () => {
-//         cy.loginAs(activeUser);
-//         cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
-//         cy.get('[data-cy=dashboard-section]').contains('Recently Visited').should('exist');
-//     });
-// });
+    it('displays the recently visited section', () => {
+        cy.loginAs(activeUser);
+        cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
+        cy.get('[data-cy=dashboard-section]').contains('Recently Visited').should('exist');
+    });
+
+    it('handles recently visited operations', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject2',
+        }).as('testProject2');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject3',
+        }).as('testProject3');
+        cy.getAll('@testProject1', '@testProject2', '@testProject3').then(
+            ([testProject1, testProject2, testProject3]) => {
+                cy.loginAs(adminUser);
+
+                // visit some projects
+                cy.get('[data-cy=side-panel-tree]').contains(testProject1.name).click();
+                cy.get('[data-cy=project-details-card]').contains(testProject1.name).should('exist');
+                cy.get('[data-cy=side-panel-tree]').contains(testProject2.name).click();
+                cy.get('[data-cy=project-details-card]').contains(testProject2.name).should('exist');
+                cy.get('[data-cy=side-panel-tree]').contains(testProject3.name).click();
+                cy.get('[data-cy=project-details-card]').contains(testProject3.name).should('exist');
+                    
+                // verify recently visited
+                cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
+                cy.get('[data-cy=dashboard-section]').contains('Recently Visited').should('exist');
+                cy.get('[data-cy=dashboard-item-row]').should('have.length', 3);
+                cy.get('[data-cy=dashboard-item-row]').eq(0).contains(testProject3.name);
+                cy.get('[data-cy=dashboard-item-row]').eq(1).contains(testProject2.name);
+                cy.get('[data-cy=dashboard-item-row]').eq(2).contains(testProject1.name);
+
+                // opens context menu
+                cy.get('[data-cy=dashboard-item-row]').contains(testProject1.name).rightclick();
+                cy.get('[data-cy=context-menu]').contains(testProject1.name);
+                cy.get('body').click();
+
+                // navs to item
+                cy.get('[data-cy=dashboard-item-row]').contains(testProject1.name).click();
+                cy.get('[data-cy=project-details-card]').contains(testProject1.name).should('exist');
+
+                // verify recently visited order has changed
+                cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
+                cy.get('[data-cy=dashboard-section]').contains('Recently Visited').should('exist');
+                cy.get('[data-cy=dashboard-item-row]').should('have.length', 3);
+                cy.get('[data-cy=dashboard-item-row]').eq(0).contains(testProject1.name);
+                cy.get('[data-cy=dashboard-item-row]').eq(1).contains(testProject3.name);
+                cy.get('[data-cy=dashboard-item-row]').eq(2).contains(testProject2.name);
+            });
+        });
+});
 
 // describe('Recent Workflow Runs section', () => {
 //     let activeUser;
