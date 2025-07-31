@@ -211,7 +211,7 @@ describe('Recently Visited section', () => {
                 cy.get('[data-cy=project-details-card]').contains(testProject2.name).should('exist');
                 cy.get('[data-cy=side-panel-tree]').contains(testProject3.name).click();
                 cy.get('[data-cy=project-details-card]').contains(testProject3.name).should('exist');
-                    
+
                 // verify recently visited
                 cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
                 cy.get('[data-cy=dashboard-section]').contains('Recently Visited').should('exist');
@@ -240,30 +240,60 @@ describe('Recently Visited section', () => {
         });
 });
 
-// describe('Recent Workflow Runs section', () => {
-//     let activeUser;
-//     let adminUser;
+describe('Recent Workflow Runs section', () => {
+    let activeUser;
+    let adminUser;
 
-//     before(function () {
-//         // Only set up common users once. These aren't set up as aliases because
-//         // aliases are cleaned up after every test. Also it doesn't make sense
-//         // to set the same users on beforeEach() over and over again, so we
-//         // separate a little from Cypress' 'Best Practices' here.
-//         cy.getUser('admin', 'Admin', 'User', true, true)
-//             .as('adminUser')
-//             .then(function () {
-//                 adminUser = this.adminUser;
-//             });
-//         cy.getUser('user', 'Active', 'User', false, true)
-//             .as('activeUser')
-//             .then(function () {
-//                 activeUser = this.activeUser;
-//             });
-//     });
+    before(function () {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser')
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+        cy.getUser('user', 'Active', 'User', false, true)
+            .as('activeUser')
+            .then(function () {
+                activeUser = this.activeUser;
+            });
+    });
 
-//     it('displays the recent workflow runs section', () => {
-//         cy.loginAs(activeUser);
-//         cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
-//         cy.get('[data-cy=dashboard-section]').contains('Recent Workflow Runs').should('exist');
-//     });
-// });
+    it('displays the recent workflow runs section', () => {
+        cy.loginAs(activeUser);
+        cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
+        cy.get('[data-cy=dashboard-section]').contains('Recent Workflow Runs').should('exist');
+    });
+
+    it('handles recent workflow runs operations', () => {
+        createContainerRequest(adminUser, "test_container_request_1", "arvados/jobs", ["echo", "hello world"], false, "Committed")
+                .as("containerRequest1");
+        createContainerRequest(adminUser, "test_container_request_2", "arvados/jobs", ["echo", "hello world"], false, "Committed")
+                .as("containerRequest2");
+        createContainerRequest(adminUser, "test_container_request_3", "arvados/jobs", ["echo", "hello world"], false, "Committed")
+                .as("containerRequest3");
+        cy.getAll("@containerRequest1", "@containerRequest2", "@containerRequest3")
+            .then(function ([containerRequest1, containerRequest2, containerRequest3]) {
+                cy.loginAs(adminUser);
+
+                // verify recent workflow runs
+                cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
+                cy.get('[data-cy=dashboard-section]').contains('Recent Workflow Runs').should('exist');
+                cy.get('[data-cy=dashboard-item-row]').should('have.length', 3);
+                cy.get('[data-cy=dashboard-item-row]').eq(0).contains(containerRequest3.name);
+                cy.get('[data-cy=dashboard-item-row]').eq(1).contains(containerRequest2.name);
+                cy.get('[data-cy=dashboard-item-row]').eq(2).contains(containerRequest1.name);
+
+                // open context menu
+                cy.get('[data-cy=dashboard-item-row]').contains(containerRequest1.name).rightclick();
+                cy.get('[data-cy=context-menu]').contains(containerRequest1.name);
+                cy.get('body').click();
+
+                // navs to item
+                cy.get('[data-cy=dashboard-item-row]').contains(containerRequest1.name).click();
+                cy.get('[data-cy=process-details-card]').contains(containerRequest1.name).should('exist');
+            });
+    });
+});
