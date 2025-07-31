@@ -75,7 +75,7 @@ class BuildPython(build_py.build_py):
 
     def get_output_mapping(self):
         retval = super().get_output_mapping()
-        retval[str(self.json_path)] = str(self.out_path)
+        retval[str(self.out_path)] = self.discovery_json
         return retval
 
 
