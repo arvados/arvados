@@ -41,6 +41,11 @@ type IntegrationSuite struct {
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
+	if output, err := exec.Command("docker", "info").CombinedOutput(); err != nil {
+		// See TestContainerHTTPProxy for details about why we
+		// depend on docker instead of singularity.
+		c.Fatalf("this test suite depends on docker, which does not appear to be working. `docker info` reports:\n\n%s", output)
+	}
 	s.oidcprovider = arvadostest.NewOIDCProvider(c)
 	s.oidcprovider.AuthEmail = "user@example.com"
 	s.oidcprovider.AuthEmailVerified = true
