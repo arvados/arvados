@@ -76,7 +76,11 @@ public class FileDownloaderTest {
         //having
         when(collectionsApiClient.get(collectionToDownload.getUuid())).thenReturn(collectionToDownload);
         when(manifestDecoder.decode(collectionToDownload.getManifestText())).thenReturn(Arrays.asList(manifestStream));
-        when(keepWebApiClient.download(collectionToDownload.getUuid(), files.get(0).getName())).thenReturn("test".getBytes(StandardCharsets.UTF_8));
+
+        // Mock download responses for all three files based on the file tokens
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), "test-file1")).thenReturn(FileUtils.readFileToByteArray(files.get(0)));
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), "test-file2")).thenReturn(FileUtils.readFileToByteArray(files.get(1)));
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), "test-file 3")).thenReturn(FileUtils.readFileToByteArray(files.get(2)));
 
         //when
         List<File> downloadedFiles = fileDownloader.downloadFilesFromCollection(collectionToDownload.getUuid(), FILE_DOWNLOAD_TEST_DIR);
@@ -90,10 +94,14 @@ public class FileDownloaderTest {
         // 3 files correctly saved
         assertThat(downloadedFiles).allMatch(File::exists);
 
-        for(int i = 0; i < downloadedFiles.size(); i ++) {
-            File downloaded = new File(collectionDir + Characters.SLASH + files.get(i).getName());
-            assertArrayEquals(FileUtils.readFileToByteArray(downloaded), FileUtils.readFileToByteArray(files.get(i)));
-        }
+        // Verify file contents match
+        File downloaded1 = new File(collectionDir + Characters.SLASH + "test-file1");
+        File downloaded2 = new File(collectionDir + Characters.SLASH + "test-file2");
+        File downloaded3 = new File(collectionDir + Characters.SLASH + "test-file 3");
+
+        assertArrayEquals(FileUtils.readFileToByteArray(downloaded1), FileUtils.readFileToByteArray(files.get(0)));
+        assertArrayEquals(FileUtils.readFileToByteArray(downloaded2), FileUtils.readFileToByteArray(files.get(1)));
+        assertArrayEquals(FileUtils.readFileToByteArray(downloaded3), FileUtils.readFileToByteArray(files.get(2)));
     }
 
     @Test
