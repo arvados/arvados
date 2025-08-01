@@ -364,20 +364,10 @@ setup_virtualenv() {
         all_services_stopped=1
     fi
     . "$VENV3DIR/bin/activate" || fatal "virtualenv activation failed"
-    # pip >= 20.3 is necessary for modern dependency resolution.
-    # setuptools is our chosen Python build tool.
-    # wheel modernizes the venv (as of early 2024) and makes it more closely
-    # match our package build environment.
     # We must have these in place *before* we install the PySDK below.
-    pip install "pip>=20.3" setuptools wheel ||
-        fatal "failed to install build packages in virtualenv"
+    pip install -r "$WORKSPACE/build/requirements.tests.txt" ||
+        fatal "failed to install Python requirements in virtualenv"
     # run-tests.sh uses run_test_server.py from the Python SDK.
-    # This requires both the Python SDK itself and PyYAML.
-    # Hence we must install these dependencies this early for the rest of the
-    # script to work.
-    # s3cmd is used by controller and keep-web tests.
-    # yq is used by controller tests and this script.
-    pip install PyYAML s3cmd "yq~=3.4" || fatal "failed to install test dependencies in virtualenv"
     do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 
@@ -433,10 +423,6 @@ initialize() {
 install_env() {
     go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed"
-    # parameterized and pytest are direct dependencies of Python tests.
-    # pdoc is needed to build PySDK documentation.
-    pip install parameterized pdoc pytest ||
-        fatal "failed to install test+documentation packages in virtualenv"
 }
 
 retry() {
@@ -527,6 +513,18 @@ do_test_once() {
         do_install_once "$1" "$2" || return
     fi
 
+    local -a targs=()
+    case "$1" in
+        sdk/cwl )
+            # The CWL conformance/integration tests each take ~30
+            # minutes. Before July 2025 they were outside the standard test
+            # suite, so we deselect them by default for consistency.
+            targs+=(-m "not integration")
+            ;;
+    esac
+    # Append the user's arguments to targs, respecting quoted strings.
+    eval "targs+=(${testargs[$1]})"
+
     title "test $1"
     timer_reset
 
@@ -545,11 +543,11 @@ do_test_once() {
         # compilation errors.
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1" && \
             cd "$WORKSPACE/$1" && \
-            if [[ -n "${testargs[$1]}" ]]
+            if [[ "${#targs}" -gt 0 ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
             # does:
-            go test ${short:+-short} ${testflags[@]} ${testargs[$1]}
+            go test ${short:+-short} ${testflags[@]} "${targs[@]}"
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
@@ -568,7 +566,7 @@ do_test_once() {
         while :
         do
             tries=$((${tries}+1))
-            env -C "$WORKSPACE/$1" python3 -m pytest ${testargs[$1]}
+            env -C "$WORKSPACE/$1" python3 -m pytest "${targs[@]}"
             result=$?
             # pytest uses exit code 2 to mean "test collection failed."
             # See discussion in FUSE's IntegrationTest and MountTestBase.
@@ -681,10 +679,9 @@ install_sdk/ruby-google-api-client() {
     install_gem arvados-google-api-client sdk/ruby-google-api-client
 }
 
-install_sdk/R() {
+install_contrib/R-sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
-    cd "$WORKSPACE/sdk/R" \
-       && Rscript --vanilla install_deps.R
+    env -C "$WORKSPACE/contrib/R-sdk" Rscript --vanilla install_deps.R
   fi
 }
 
@@ -821,9 +818,9 @@ test_sdk/ruby-google-api-client() {
     true
 }
 
-test_sdk/R() {
+test_contrib/R-sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
-    env -C "$WORKSPACE/sdk/R" make test
+    env -C "$WORKSPACE/contrib/R-sdk" make test
   fi
 }
 
@@ -833,8 +830,8 @@ test_sdk/cli() {
         && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
-test_sdk/java-v2() {
-    cd "$WORKSPACE/sdk/java-v2" && gradle test ${testargs[sdk/java-v2]}
+test_contrib/java-sdk-v2() {
+    env -C "$WORKSPACE/contrib/java-sdk-v2" gradle test ${testargs[contrib/java-sdk-v2]}
 }
 
 test_services/login-sync() {
@@ -884,7 +881,7 @@ install_all() {
     do_install doc
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
-    do_install sdk/R
+    do_install contrib/R-sdk
     do_install sdk/cli
     do_install services/login-sync
     local pkg_dir
@@ -910,10 +907,10 @@ test_all() {
     do_test doc
     do_test sdk/ruby-google-api-client
     do_test sdk/ruby
-    do_test sdk/R
+    do_test contrib/R-sdk
     do_test sdk/cli
     do_test services/login-sync
-    do_test sdk/java-v2
+    do_test contrib/java-sdk-v2
     local pkg_dir
     if [[ -z ${skip[python3]} ]]; then
         for pkg_dir in "${pythonstuff[@]}"
@@ -1062,11 +1059,11 @@ done
 NEED_SDK_R=true
 
 if [[ ${#only[@]} -ne 0 ]] &&
-   [[ -z "${only['sdk/R']}" && -z "${only['doc']}" ]]; then
+   [[ -z "${only['contrib/R-sdk']}" && -z "${only['doc']}" ]]; then
   NEED_SDK_R=false
 fi
 
-if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
+if [[ ${skip["contrib/R-sdk"]} == 1 && ${skip["doc"]} == 1 ]]; then
   NEED_SDK_R=false
 fi
 

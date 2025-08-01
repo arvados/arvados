@@ -5,6 +5,11 @@
 - name: apt update if needed
   ansible.builtin.meta: flush_handlers
 
+- name: Configure Docker if needed
+  when: "arvados_compute_docker|bool"
+  ansible.builtin.include_role:
+    name: compute_docker
+
 - name: Install crunch-dispatch-local
   become: yes
   ansible.builtin.apt:

@@ -547,7 +547,7 @@ describe("Project tests", function () {
                 cy.get("[data-cy=context-menu]").contains("Freeze").click();
 
                 cy.get("[data-cy=project-panel]").contains(mainProject.name).click();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
 
                 cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 });
 

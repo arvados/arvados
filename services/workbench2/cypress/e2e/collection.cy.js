@@ -330,8 +330,7 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
                             // Hamburger 'more options' menu button
-                            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-                            cy.get("[data-cy=context-menu]").should("contain", "Select all").click();
+                            cy.doCollectionPanelOptionsAction("Select all");
                             cy.get("[data-cy=collection-files-panel-options-btn]").click();
                             cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove selected");
                             cy.get("body").click(); // Collapse the menu
@@ -1376,6 +1375,137 @@ describe("Collection panel tests", function () {
 
             cy.waitForDom();
             cy.get("[data-cy=breadcrumb-first]").should("contain", "Home Projects");
+        });
+    });
+
+    describe("zip download", () => {
+        beforeEach(() => {
+            cy.createCollection(adminUser.token, {
+                name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+                owner_uuid: activeUser.user.uuid,
+                manifest_text: "./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+            }).as("testCollection1");
+        });
+
+        it('all files', () => {
+            cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                const downloadName = `${testCollection1.name}.zip`;
+
+                cy.intercept({ method: "GET", url: `**/c=${testCollection1.uuid}*`, times: 1, query: {
+                    accept: "application/zip",
+                    disposition: "attachment",
+                    download_filename: downloadName,
+                }}, (req) => {
+                    const url = new URL(req.url);
+                    const files = url.searchParams.get("files");
+                    // Cannot assert on null so we assert the comparison
+                    expect(files === null).to.equal(true);
+                }).as('downloadQuery');
+
+                cy.loginAs(activeUser);
+
+                // Navigate to collection files
+                cy.doDataExplorerNavigate(testCollection1.name);
+                cy.doMPVTabSelect("Files");
+
+                // Click download all files as zip
+                cy.doCollectionPanelOptionsAction("Download entire collection as zip");
+                cy.waitForDom();
+
+                // Verify filename
+                cy.get("[data-cy=form-dialog]").within(() => {
+                    cy.get('h2').contains("Download");
+                    cy.get('input[name=fileName]').should('have.value', downloadName);
+                    cy.get('button[data-cy=form-submit-btn]').click();
+                });
+                // Wait for download request to match
+                cy.wait('@downloadQuery');
+            });
+        });
+
+        it('one file', () => {
+            cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                const downloadName = `${testCollection1.name} - bar.zip`;
+
+                cy.intercept({ method: "GET", url: `**/c=${testCollection1.uuid}*`, times: 1, query: {
+                    accept: "application/zip",
+                    disposition: "attachment",
+                    download_filename: downloadName,
+                }}, (req) => {
+                    const url = new URL(req.url);
+                    const files = url.searchParams.toString()
+                        .split("&")
+                        .filter(param => param.startsWith("files="))
+                        .join("&");
+
+                    expect(files).to.equal("files=bar");
+                }).as('downloadQuery');
+
+                cy.loginAs(activeUser);
+
+                // Navigate to collection files
+                cy.doDataExplorerNavigate(testCollection1.name);
+                cy.doMPVTabSelect("Files");
+
+                // Select one file
+                cy.doCollectionFileSelect("bar");
+
+                // Click download all files as zip
+                cy.doCollectionPanelOptionsAction("Download selected files as zip");
+                cy.waitForDom();
+
+                // Verify filename
+                cy.get("[data-cy=form-dialog]").within(() => {
+                    cy.get('h2').contains("Download");
+                    cy.get('input[name=fileName]').should('have.value', downloadName);
+                    cy.get('button[data-cy=form-submit-btn]').click();
+                });
+                // Wait for download request to match
+                cy.wait('@downloadQuery');
+            });
+        });
+
+        it('multi file', () => {
+            cy.getAll("@testCollection1").then(function ([testCollection1]) {
+                const downloadName = `${testCollection1.name} - 2 files.zip`;
+
+                cy.intercept({ method: "GET", url: `**/c=${testCollection1.uuid}*`, times: 1, query: {
+                    accept: "application/zip",
+                    disposition: "attachment",
+                    download_filename: downloadName,
+                }}, (req) => {
+                    const url = new URL(req.url);
+                    const files = url.searchParams.toString()
+                        .split("&")
+                        .filter(param => param.startsWith("files="))
+                        .join("&");
+
+                    expect(files).to.equal("files=subdir&files=bar");
+                }).as('downloadQuery');
+
+                cy.loginAs(activeUser);
+
+                // Navigate to collection files
+                cy.doDataExplorerNavigate(testCollection1.name);
+                cy.doMPVTabSelect("Files");
+
+                // Select multi file
+                cy.doCollectionFileSelect("subdir");
+                cy.doCollectionFileSelect("bar");
+
+                // Click download all files as zip
+                cy.doCollectionPanelOptionsAction("Download selected files as zip");
+                cy.waitForDom();
+
+                // Verify filename
+                cy.get("[data-cy=form-dialog]").within(() => {
+                    cy.get('h2').contains("Download");
+                    cy.get('input[name=fileName]').should('have.value', downloadName);
+                    cy.get('button[data-cy=form-submit-btn]').click();
+                });
+                // Wait for download request to match
+                cy.wait('@downloadQuery');
+            });
         });
     });
 });

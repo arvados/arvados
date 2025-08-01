@@ -7,13 +7,14 @@ import { Dispatch } from "redux";
 import { CollectionFilesTree, CollectionFileType, createCollectionFilesTree, CollectionFile } from "models/collection-file";
 import { ServiceRepository } from "services/services";
 import { RootState } from "../../store";
-import { snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
+import { showErrorSnackbar, snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
 import { getNodeValue, mapTreeValues } from "models/tree";
-import { filterCollectionFilesBySelection } from './collection-panel-files-state';
+import { CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection } from './collection-panel-files-state';
 import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { getDialog } from "store/dialog/dialog-reducer";
 import { getFileFullPath, sortFilesTree } from "services/collection-service/collection-service-files-response";
+import { CollectionResource } from "models/collection";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -141,3 +142,40 @@ export const renameFile = (newFullPath: string) =>
             }
         }
     };
+
+export const DOWNLOAD_ZIP_DIALOG = 'downloadZipDialog';
+
+export const openDownloadZipDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const sourceCollection = getState().collectionPanel.item;
+        const files = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
+        const paths = files.map(getFileFullPath);
+
+        if (sourceCollection) {
+            const fileName = getCollectionZipFilename(sourceCollection, files);
+            dispatch(initialize(DOWNLOAD_ZIP_DIALOG, { collectionUuid: sourceCollection.uuid, paths, fileName }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: DOWNLOAD_ZIP_DIALOG, data: {} }));
+        }
+    };
+
+const getCollectionZipFilename = (collection: CollectionResource, files: (CollectionPanelFile | CollectionPanelDirectory)[]) => {
+    let additionalName = "";
+    if (files.length === 1) {
+        additionalName = ` - ${files[0].name}`;
+    } else if (files.length > 1) {
+        additionalName = ` - ${files.length} files`;
+    }
+
+    return `${collection.name}${additionalName}.zip`;
+};
+
+export const downloadZip = (uuid: string, paths: string[], fileName: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            await services.collectionService.downloadZip(uuid, paths, fileName);
+        } catch (e) {
+            dispatch(showErrorSnackbar(`Error creating ZIP${e.message ? `: ${e.message}` : ""}`));
+        } finally {
+            dispatch(dialogActions.CLOSE_DIALOG({ id: DOWNLOAD_ZIP_DIALOG }));
+        }
+    }

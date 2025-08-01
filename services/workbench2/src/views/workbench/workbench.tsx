@@ -110,6 +110,7 @@ import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 import classNames from "classnames";
 import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferences-panel";
+import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -507,6 +508,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveVirtualMachineLoginDialog />
             <VirtualMachineAddLoginDialog />
             <RenameFileDialog />
+            <DownloadFilesAsZipDialog />
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />

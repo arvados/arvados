@@ -34,11 +34,15 @@ end
 
 class JavaSDK
   def self.build_path
-    "sdk/java-v2"
+    "contrib/java-sdk-v2"
   end
 
   def self.can_build?
     can_run?("gradle", "--version")
+  end
+
+  def self.doc_path
+    "sdk/java-v2"
   end
 end
 
@@ -50,15 +54,23 @@ class PythonSDK
   def self.can_build?
     can_run?("./pysdk_pdoc.py", "--version")
   end
+
+  def self.doc_path
+    "sdk/python/arvados"
+  end
 end
 
 class RSDK
   def self.build_path
-    "sdk/R"
+    "contrib/R-sdk"
   end
 
   def self.can_build?
     can_run?("make", "can_run", chdir: File.join("..", self.build_path))
+  end
+
+  def self.doc_path
+    "sdk/R"
   end
 end
 
@@ -142,12 +154,12 @@ file "sdk/R/arvados/index.html" do |t|
   Dir.mkdir("sdk/R")
   Dir.mkdir("sdk/R/arvados")
   cp('css/R.css', 'sdk/R/arvados')
-  raise unless system("make", "man", chdir: "../sdk/R", out: :err)
-  docnames = Dir.glob("../sdk/R/man/*.Rd").map { |rd| File.basename(rd, ".Rd") }.sort
+  raise unless system("make", "man", chdir: "../contrib/R-sdk", out: :err)
+  docnames = Dir.glob("../contrib/R-sdk/man/*.Rd").map { |rd| File.basename(rd, ".Rd") }.sort
   docnames.each do |basename|
     raise unless system(
                    "R", "CMD", "Rdconv", "--type=html", "man/#{basename}.Rd",
-                   chdir: "../sdk/R",
+                   chdir: "../contrib/R-sdk",
                    out: ["sdk/R/arvados/#{basename}.html", "w"],
                  )
   end
@@ -163,7 +175,7 @@ title: "R SDK Overview"
 
 EOF
             )
-    File.open("../sdk/R/README.md", "r") do |rd|
+    File.open("../contrib/R-sdk/README.md", "r") do |rd|
       fn.write(rd.read)
     end
   end
@@ -194,13 +206,13 @@ file "sdk/java-v2/javadoc/index.html" do |t|
   next unless $build_sdks.include?(JavaSDK)
   tgt = Dir.pwd
   docfiles = []
-  Dir.chdir("../sdk/java-v2") do
+  Dir.chdir("../contrib/java-sdk-v2") do
     STDERR.puts `gradle javadoc 2>&1`
     raise if $? != 0
     puts `sed -i "s/@import.*dejavu.css.*//g" build/docs/javadoc/stylesheet.css`
     raise if $? != 0
   end
-  cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
+  cp_r("../contrib/java-sdk-v2/build/docs/javadoc", "sdk/java-v2")
   raise if $? != 0
 end
 
@@ -210,7 +222,7 @@ task :linkchecker => [ :generate ] do
     "--check-extern",
     "--ignore-url=!^file://",
   ]
-  ([JavaSDK, PythonSDK, RSDK] - $build_sdks).map(&:build_path).each do |sdk_path|
+  ([JavaSDK, PythonSDK, RSDK] - $build_sdks).map(&:doc_path).each do |sdk_path|
     sdk_url = URI.join(ENV["baseurl"], sdk_path)
     url_re = Regexp.escape(sdk_url.to_s)
     opts << "--ignore-url=^#{url_re}[./]"

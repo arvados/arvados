@@ -32,7 +32,8 @@ end
 
 gem 'pg', '~> 1.0'
 
-gem 'multi_json'
+# multi_json stopped supporting Ruby 2.7 in 1.16.0.
+gem 'multi_json', '~> 1.15.0'
 gem 'oj'
 
 gem 'jquery-rails'

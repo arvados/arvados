@@ -1,0 +1,33 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+#
+# Python requirements for run-tests
+
+### Requirements for run-tests.sh itself
+-r requirements.build.txt
+
+# Required by sdk/python/tests/run_test_server.py
+# which is run directly by run-tests.sh
+PyYAML
+
+# yq is used by run-tests.sh directly and controller tests
+yq ~= 3.4
+
+### Requirements for Python tests generally
+# Required by older, unittest-style Python tests
+# Prefer using pytest.mark.parametrize in new tests
+parameterized
+
+# Our chosen Python testing tool
+pytest
+
+### Requirements for individual tests
+# Run by CWL integration tests
+cwltest >= 2.5.20241122133319, < 3.0
+
+# Required to build Python SDK documentation
+pdoc
+
+# Used by controller and keep-web tests
+s3cmd

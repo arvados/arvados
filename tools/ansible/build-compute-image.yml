@@ -121,6 +121,8 @@
     - ansible.builtin.include_role:
         name: compute_docker
       when: "arvados_cluster.Containers.RuntimeEngine == 'docker'"
+      vars:
+        arvados_docker_data_root: /tmp/docker-data
     - ansible.builtin.include_role:
         name: compute_user
 
