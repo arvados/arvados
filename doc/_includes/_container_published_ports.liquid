@@ -6,13 +6,14 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Published ports
 
-Containers can expose web services.  These can be interactive web applications such as Jupyter notebooks or AI chats, or HTTP-based APIs.  Arvados acts as a reverse proxy, forwarding HTTP requests to the container and relaying responses back to the client.  Arvados routes HTTP requests based on the URL, based on the following format:
+Containers can expose web services.  These can be interactive web applications such as Jupyter notebooks or AI chats, or HTTP-based APIs.  Arvados acts as a reverse proxy, forwarding HTTP requests to the container and relaying responses back to the client.  The external URL will be one of the following, depending on how Arvados is configured (see ContainerWebServices in the "default config file":{{site.baseurl}}/admin/config.html):
 
-@https://<uuid>-<port>.containers.zzzzz.example.com@
+* @https://<uuid>-<port>.containers.zzzzz.example.com/@ where @<uuid>@ is the container UUID and @<port>@ is the port where the container process is listening
+* @https://containers.zzzzz.example.com:<port>/@ where @<port>@ is a dynamically assigned port
 
-Where the @uuid@ is a container UUID or container request UUID, and @port@ is the port on the container to which the client wishes to send the request.  To be able to accept requests, the container should listen on all interfaces (i.e. bind to 0.0.0.0; binding only to loopback, i.e. 127.0.0.1 will *not* work) and handle plain text HTTP/1.1 traffic.
+To accept requests, the container should listen on 0.0.0.0 (listening on localhost or 127.0.0.1 will _not_ work) and handle plain text HTTP/1.1 requests.
 
-The @published_ports@ field of the container record advertises which ports on the container are available to receive requests.
+The @published_ports@ field of the container request record advertises which ports on the container should be available to external clients.
 
 The value @published_ports@ is a hash.  Each key in the hash is a port number that the container is listening on.  Each entry in the hash has three keys described here:
 
@@ -20,9 +21,20 @@ table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|
 |access|string|One of "public" or "private".  If "private", the client connecting to the container must provide an Arvados API for the user who submitted the container request(s) corresponding to the container.  The token is provided as a query parameter @?arvados_api_token=...@.  Arvados will consume the query parameter and respond with a redirect and a cookie used to authenticate subsequent requests.  If "public", no authentication is required.|
 |label|string|A string that will be displayed to the user on Workbench describing the service.  Cannot be empty.|
-|initial_path|string|The relative path that should be included when constructing the URL that will be presented to the user in Workbench.  May include any or none of path, fragment and query parameter parts of the URL, or be blank.  Leading slash is optional.|
+|initial_path|string|The relative path that should be included when constructing the URL that will be presented in Workbench and in the @initial_url@ field described below.  May include any or none of path, fragment and query parameter parts of the URL, or be blank.  Leading slash is optional.|
 
-For example:
+The @published_ports@ field of the container record is a copy of the corresponding container request field, with the following entries added for each exposed port when the container enters @Running@ state:
+
+table(table table-bordered table-condensed).
+|_. Key|_. Type|_. Description|_. Examples|
+|base_url|string|The external URL where the service is reachable.|@https://zzzzz-dz642-abcdefghijklmno-80.containers.zzzzz.example.com/@
+@https://containers.zzzzz.example.com:2000/@|
+|initial_url|string|The external URL with @initial_path@ applied.|@https://zzzzz-dz642-abcdefghijklmno-80.containers.zzzzz.example.com/index.html?start=true@
+@https://containers.zzzzz.example.com:2000/index.html?start=true@|
+|external_port|integer|The dynamically assigned external port if applicable, otherwise null.|@2000@
+@null@|
+
+Example (container request):
 
 <pre>
 {
@@ -30,10 +42,31 @@ For example:
     "80": {
       "access": "private",
       "label": "Jupyter notebook instance",
-      "initial_path": "",
+      "initial_path": "?path=example.ipynb"
     }
   }
 }
 </pre>
 
-If the container is listening on other ports it is possible to connect to those unpublished ports with the appropriate numeric @<port>@ in the @<uuid>-<port>@ part of the hostname.  Unpublished ports are not displayed in Workbench and have a default acccess level of "private".
+Example (container):
+
+<pre>
+{
+  "published_ports": {
+    "80": {
+      "access": "private",
+      "label": "Jupyter notebook instance",
+      "initial_path": "?path=example.ipynb",
+      "external_port": 2025,
+      "base_url": "https://containers.zzzzz.example.com:2025/",
+      "initial_url": "https://containers.zzzzz.example.com:2025/?path=example.ipynb"
+    }
+  }
+}
+</pre>
+
+h3. Accessing unpublished ports
+
+If the @Services.ContainerWebServices.ExternalURL@ config entry is a wildcard, it is possible to connect to _any_ port in a running container, whether or not it is listed in @published_ports@, by providing the container request or container UUID and the listening port number as @<uuid>-<port>@ in place of the @*@ wildcard in the URL, _i.e._, @https://<uuid>-<port>.containers.zzzzz.example.com/@.
+
+Unpublished ports are not displayed in Workbench and have a default acccess level of "private".
