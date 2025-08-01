@@ -76,15 +76,16 @@ public class ArvadosFacadeTest extends ArvadosClientMockedWebServerTest {
     public void uploadIsPerformedSuccessfully() throws Exception {
 
         // given
-        String keepServicesAccessible = setMockedServerPortToKeepServices("keep-services-accessible");
-        server.enqueue(new MockResponse().setBody(keepServicesAccessible));
-
-        String blockLocator = "7df44272090cee6c0732382bba415ee9";
-        String signedBlockLocator = blockLocator + "+70+A189a93acda6e1fba18a9dffd42b6591cbd36d55d@5a1c17b6";
-        for (int i = 0; i < 4; i++) {
-            server.enqueue(new MockResponse().setBody(signedBlockLocator));
-        }
+        // First response: get current user (called by CollectionFactory when projectUuid is null)
         server.enqueue(getResponse("users-get"));
+
+        // Second response: create collection
+        server.enqueue(getResponse("collections-create-manifest"));
+
+        // Third response: upload file to KeepWeb (it returns empty response)
+        server.enqueue(new MockResponse().setBody(""));
+
+        // Fourth response: get the updated collection
         server.enqueue(getResponse("collections-create-manifest"));
 
         FileTestUtils.generateFile(TEST_FILE, FileTestUtils.ONE_FOURTH_GB);
@@ -103,23 +104,17 @@ public class ArvadosFacadeTest extends ArvadosClientMockedWebServerTest {
         String collectionUuid = "ardev-4zz18-jk5vo4uo9u5vj52";
         server.enqueue(getResponse("collections-download-file"));
 
-        String keepServicesAccessible = setMockedServerPortToKeepServices("keep-services-accessible");
-        server.enqueue(new MockResponse().setBody(keepServicesAccessible));
-        File collectionDestination = new File(FILE_DOWNLOAD_TEST_DIR + Characters.SLASH + collectionUuid);
-
+        // Mock KeepWeb API responses for each file
         List<File> files = generatePredefinedFiles();
-        List<byte[]> fileData = new ArrayList<>();
         for (File f : files) {
-            fileData.add(Files.readAllBytes(f.toPath()));
+            server.enqueue(new MockResponse().setBody(new Buffer().write(Files.readAllBytes(f.toPath()))));
         }
-        byte[] filesDataChunk = fileData.stream().reduce(new byte[0], this::addAll);
-
-        server.enqueue(new MockResponse().setBody(new Buffer().write(filesDataChunk)));
 
         //when
         List<File> downloadedFiles = facade.downloadCollectionFiles(collectionUuid, FILE_DOWNLOAD_TEST_DIR, false);
 
         //then
+        File collectionDestination = new File(FILE_DOWNLOAD_TEST_DIR + Characters.SLASH + collectionUuid);
         assertEquals(3, downloadedFiles.size());
         assertTrue(collectionDestination.exists());
         assertThat(downloadedFiles).allMatch(File::exists);

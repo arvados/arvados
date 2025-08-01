@@ -21,7 +21,6 @@ import org.arvados.client.logic.collection.FileToken;
 import org.arvados.client.logic.collection.ManifestDecoder;
 import org.arvados.client.logic.keep.FileDownloader;
 import org.arvados.client.logic.keep.FileUploader;
-import org.arvados.client.logic.keep.KeepClient;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -56,11 +55,10 @@ public class ArvadosFacade {
         collectionsApiClient = new CollectionsApiClient(config);
         groupsApiClient = new GroupsApiClient(config);
         usersApiClient = new UsersApiClient(config);
-        KeepClient keepClient = new KeepClient(config);
         ManifestDecoder manifestDecoder = new ManifestDecoder();
         KeepWebApiClient keepWebApiClient = new KeepWebApiClient(config);
-        fileDownloader = new FileDownloader(keepClient, manifestDecoder, collectionsApiClient, keepWebApiClient);
-        fileUploader = new FileUploader(keepClient, collectionsApiClient, config);
+        fileDownloader = new FileDownloader(manifestDecoder, collectionsApiClient, keepWebApiClient);
+        fileUploader = new FileUploader(keepWebApiClient, collectionsApiClient, config);
     }
 
     /**

@@ -16,7 +16,6 @@ import org.arvados.client.logic.collection.FileToken;
 import org.arvados.client.logic.collection.ManifestDecoder;
 import org.arvados.client.logic.collection.ManifestStream;
 import org.arvados.client.test.utils.FileTestUtils;
-import org.arvados.client.utils.FileMerge;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -30,11 +29,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import static org.arvados.client.test.utils.FileTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,8 +52,6 @@ public class FileDownloaderTest {
 
     @Mock
     private CollectionsApiClient collectionsApiClient;
-    @Mock
-    private KeepClient keepClient;
     @Mock
     private KeepWebApiClient keepWebApiClient;
     @Mock
@@ -75,12 +72,15 @@ public class FileDownloaderTest {
     public void downloadingAllFilesFromCollectionWorksProperly() throws Exception {
         // given
         List<File> files = generatePredefinedFiles();
-        byte[] dataChunk = prepareDataChunk(files);
 
         //having
         when(collectionsApiClient.get(collectionToDownload.getUuid())).thenReturn(collectionToDownload);
         when(manifestDecoder.decode(collectionToDownload.getManifestText())).thenReturn(Arrays.asList(manifestStream));
-        when(keepClient.getDataChunk(manifestStream.getKeepLocators().get(0))).thenReturn(dataChunk);
+
+        // Mock download responses for all three files based on the file tokens
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), "test-file1")).thenReturn(FileUtils.readFileToByteArray(files.get(0)));
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), "test-file2")).thenReturn(FileUtils.readFileToByteArray(files.get(1)));
+        when(keepWebApiClient.download(collectionToDownload.getUuid(), "test-file 3")).thenReturn(FileUtils.readFileToByteArray(files.get(2)));
 
         //when
         List<File> downloadedFiles = fileDownloader.downloadFilesFromCollection(collectionToDownload.getUuid(), FILE_DOWNLOAD_TEST_DIR);
@@ -94,10 +94,14 @@ public class FileDownloaderTest {
         // 3 files correctly saved
         assertThat(downloadedFiles).allMatch(File::exists);
 
-        for(int i = 0; i < downloadedFiles.size(); i ++) {
-            File downloaded = new File(collectionDir + Characters.SLASH + files.get(i).getName());
-            assertArrayEquals(FileUtils.readFileToByteArray(downloaded), FileUtils.readFileToByteArray(files.get(i)));
-        }
+        // Verify file contents match
+        File downloaded1 = new File(collectionDir + Characters.SLASH + "test-file1");
+        File downloaded2 = new File(collectionDir + Characters.SLASH + "test-file2");
+        File downloaded3 = new File(collectionDir + Characters.SLASH + "test-file 3");
+
+        assertArrayEquals(FileUtils.readFileToByteArray(downloaded1), FileUtils.readFileToByteArray(files.get(0)));
+        assertArrayEquals(FileUtils.readFileToByteArray(downloaded2), FileUtils.readFileToByteArray(files.get(1)));
+        assertArrayEquals(FileUtils.readFileToByteArray(downloaded3), FileUtils.readFileToByteArray(files.get(2)));
     }
 
     @Test
@@ -166,9 +170,4 @@ public class FileDownloaderTest {
         return new ManifestStream(".", Arrays.asList(keepLocator), fileTokens);
     }
 
-    private byte[] prepareDataChunk(List<File> files) throws IOException {
-        File combinedFile = new File(FILE_SPLIT_TEST_DIR + Characters.SLASH + UUID.randomUUID());
-        FileMerge.merge(files, combinedFile);
-        return FileUtils.readFileToByteArray(combinedFile);
-    }
 }
