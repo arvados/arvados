@@ -24,11 +24,6 @@ import yaml
 from urllib.parse import urlparse
 
 MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
-if __name__ == '__main__' and os.path.exists(
-      os.path.join(MY_DIRNAME, '..', 'arvados', '__init__.py')):
-    # We're being launched to support another test suite.
-    # Add the Python SDK source to the library path.
-    sys.path.insert(1, os.path.dirname(MY_DIRNAME))
 
 import arvados
 import arvados.config
