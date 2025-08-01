@@ -674,6 +674,7 @@ def run_nginx():
     nginxconf['UPSTREAMHOST'] = '127.0.0.1'
     nginxconf['LISTENHOST'] = '127.0.0.1'
     nginxconf['CONTROLLERPORT'] = internal_port_from_config("Controller")
+    nginxconf['CONTROLLERLISTENEXTRA'] = ''
     nginxconf['ARVADOS_API_HOST'] = "0.0.0.0:" + str(external_port_from_config("Controller"))
     nginxconf['CONTROLLERSSLPORT'] = external_port_from_config("Controller")
     nginxconf['KEEPWEBPORT'] = internal_port_from_config("WebDAV")

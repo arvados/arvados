@@ -83,8 +83,8 @@ var ErrNotImplemented = errors.New("not implemented")
 
 // An ExecutorTarget is a remote command execution service.
 type ExecutorTarget interface {
-	// SSH server hostname or IP address, or empty string if
-	// unknown while instance is booting.
+	// SSH server hostname or IP address with optional :port, or
+	// empty string if unknown while instance is booting.
 	Address() string
 
 	// Remote username to send during SSH authentication.

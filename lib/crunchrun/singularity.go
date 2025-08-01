@@ -40,9 +40,11 @@ func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExec
 	if err != nil {
 		return nil, err
 	}
+	sudo := os.Getenv("ARVADOS_TEST_PRIVESC") == "sudo" && strings.Contains(os.Args[0], "crunch-run~")
 	return &singularityExecutor{
 		logf:   logf,
 		tmpdir: tmpdir,
+		sudo:   sudo,
 	}, nil
 }
 

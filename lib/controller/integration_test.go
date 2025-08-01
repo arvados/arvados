@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/boot"
@@ -40,6 +41,11 @@ type IntegrationSuite struct {
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
+	if output, err := exec.Command("docker", "info").CombinedOutput(); err != nil {
+		// See TestContainerHTTPProxy for details about why we
+		// depend on docker instead of singularity.
+		c.Fatalf("this test suite depends on docker, which does not appear to be working. `docker info` reports:\n\n%s", output)
+	}
 	s.oidcprovider = arvadostest.NewOIDCProvider(c)
 	s.oidcprovider.AuthEmail = "user@example.com"
 	s.oidcprovider.AuthEmailVerified = true
@@ -69,6 +75,10 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
     Services:
       Controller:
         ExternalURL: https://` + hostport[id] + `
+      ContainerWebServices:
+        ExternalURL: https://` + hostport[id] + `
+        ExternalPortMin: 2000
+        ExternalPortMax: 2099
     TLS:
       Insecure: true
     SystemLogs:
@@ -85,7 +95,9 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         SyncInterval: 10s
         TimeoutIdle: 1s
         TimeoutBooting: 2s
-      RuntimeEngine: singularity
+      # Note RuntimeEngine: singularity would almost work, except see
+      # comment on TestContainerHTTPProxy()
+      RuntimeEngine: docker
       CrunchRunArgumentsList: ["--broken-node-hook", "true"]
     RemoteClusters:
       z1111:
@@ -1197,11 +1209,88 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1, KeepCacheRAM: 1 << 26},
 		"priority":            1,
 		"state":               arvados.ContainerRequestStateCommitted,
-	}, 0)
+	}, 0, nil)
 	c.Check(outcoll.ManifestText, check.Matches, `\. d41d8.* 0:0:hello\\040world 0:0:ohai\n`)
 	c.Check(outcoll.PortableDataHash, check.Equals, "8fa5dee9231a724d7cf377c5a2f4907c+65")
 }
 
+// Note that unlike the rest of the suite, this test requires
+// {RuntimeEngine: docker} because:
+//
+//   - the singularity driver relies on ARVADOS_TEST_PRIVESC=sudo to
+//     connect to ports inside the container
+//
+//   - non-passwordless sudo does not work in crunch-run running under
+//     the loopback driver
+func (s *IntegrationSuite) TestContainerHTTPProxy(c *check.C) {
+	ctrport := "12345"
+	var success bool
+	var done atomic.Bool
+	var ctrLatest atomic.Value
+	defer func() { done.Store(true) }()
+	go func() {
+		for range time.NewTicker(time.Second).C {
+			if done.Load() {
+				break
+			}
+			ctr, ok := ctrLatest.Load().(arvados.Container)
+			if !ok {
+				c.Log("waiting for onStateUpdate...")
+				continue
+			}
+			if ctr.State != arvados.ContainerStateRunning {
+				continue
+			}
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+			defer cancel()
+			exturl := ctr.PublishedPorts[ctrport].InitialURL + "test-path"
+			c.Logf("poll: %s", exturl)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, exturl, nil)
+			c.Assert(err, check.IsNil)
+			resp, err := arvados.InsecureHTTPClient.Do(req)
+			if err != nil {
+				c.Logf("poll: Do: %v", err)
+				continue
+			}
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				c.Logf("poll: error reading response body: %v", err)
+				continue
+			}
+			if resp.StatusCode != http.StatusOK {
+				c.Logf("poll: resp.Status %q body %q", resp.Status, body)
+				continue
+			}
+			if len(body) == 0 {
+				c.Log("poll: empty response body")
+				continue
+			}
+			success = true
+			c.Logf("poll: %s, resp.Body %q", resp.Status, body)
+			break
+		}
+	}()
+	outcoll, _ := s.runContainer(c, "z1111", "", map[string]interface{}{
+		// Note "$req" and "$hdr" each have a trailing \r here
+		"command":             []string{"sh", "-c", `nc -l -p ` + ctrport + ` -w 30 -e sh -c 'read req; echo >&2 "$req"; hdr=zzz; while [ "${#hdr}" -gt 1 ]; do read hdr; echo >&2 "${hdr}"; done; printf "HTTP/1.0 200 OK\\r\\n\\r\\n%s\\n" "$req"' && touch /out/OK`},
+		"container_image":     "busybox:uclibc",
+		"cwd":                 "/tmp",
+		"environment":         map[string]string{},
+		"mounts":              map[string]arvados.Mount{"/out": {Kind: "tmp", Capacity: 10000}},
+		"output_path":         "/out",
+		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1, KeepCacheRAM: 1 << 26, API: true},
+		"priority":            1,
+		"state":               arvados.ContainerRequestStateCommitted,
+		"published_ports": map[string]arvados.RequestPublishedPort{
+			ctrport: arvados.RequestPublishedPort{
+				Access: arvados.PublishedPortAccessPublic,
+				Label:  "testport",
+			}},
+	}, 0, func(ctr arvados.Container) { ctrLatest.Store(ctr) })
+	c.Check(outcoll.ManifestText, check.Matches, `\. d41d8.* 0:0:OK\n`)
+	c.Check(outcoll.PortableDataHash, check.Equals, "c1c354b852802ee13ad87da784b9c28c+44")
+	c.Check(success, check.Equals, true)
+}
 func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
 	conn := s.super.Conn("z1111")
 	rootctx, _, _ := s.super.RootClients("z1111")
@@ -1225,7 +1314,7 @@ func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
 		"priority":            1,
 		"state":               arvados.ContainerRequestStateCommitted,
 		"container_count_max": 1,
-	}, -1)
+	}, -1, nil)
 	if outcoll.UUID == "" {
 		arvmountlog, err := fs.ReadFile(arvados.FS(logcfs), "/arv-mount.txt")
 		c.Check(err, check.IsNil)
@@ -1237,7 +1326,7 @@ func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
 	c.Check(string(stdout), check.Equals, "ocelot\n")
 }
 
-func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token string, ctrSpec map[string]interface{}, expectExitCode int) (outcoll arvados.Collection, logcfs arvados.CollectionFileSystem) {
+func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token string, ctrSpec map[string]interface{}, expectExitCode int, onStateUpdate func(arvados.Container)) (outcoll arvados.Collection, logcfs arvados.CollectionFileSystem) {
 	conn := s.super.Conn(clusterID)
 	rootctx, _, _ := s.super.RootClients(clusterID)
 	if token == "" {
@@ -1320,6 +1409,9 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		} else if ctr.State != lastState {
 			c.Logf("container state changed to %q", ctr.State)
 			lastState = ctr.State
+			if onStateUpdate != nil {
+				onStateUpdate(ctr)
+			}
 		} else {
 			if time.Now().After(deadline) {
 				c.Errorf("timed out, container state is %q", cr.State)

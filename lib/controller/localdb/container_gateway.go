@@ -689,10 +689,14 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: "arvados_container_uuid", Value: ctr.UUID})
+		var proxyErr error
 		gatewayProxy(dial, w, http.Header{
 			"X-Arvados-Container-Gateway-Uuid": {targetUUID},
 			"X-Arvados-Container-Target-Port":  {strconv.Itoa(targetPort)},
-		}, nil).ServeHTTP(w, opts.Request)
+		}, &proxyErr).ServeHTTP(w, opts.Request)
+		if proxyErr != nil {
+			httpserver.Error(w, "proxy error: "+proxyErr.Error(), http.StatusBadGateway)
+		}
 	}), nil
 }
 
@@ -813,9 +817,12 @@ func (conn *Conn) findGateway(ctx context.Context, ctr arvados.Container, noForw
 
 	myURL, _ := service.URLFromContext(ctx)
 
-	if host, _, splitErr := net.SplitHostPort(ctr.GatewayAddress); splitErr == nil && host != "" && host != "127.0.0.1" {
+	if host, _, _ := net.SplitHostPort(ctr.GatewayAddress); host != "" &&
+		(host != "127.0.0.1" || conn.cluster.Containers.CloudVMs.Driver == "loopback") {
 		// If crunch-run provided a GatewayAddress like
-		// "ipaddr:port", that means "ipaddr" is one of the
+		// host:port or [host]:port, and host is realistic
+		// (127.0.0.1 is realistic only if we're running the
+		// loopback driver), that means "ipaddr" is one of the
 		// external interfaces where the gateway is
 		// listening. In that case, it's the most
 		// reliable/direct option, so we use it even if a
