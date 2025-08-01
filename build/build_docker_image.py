@@ -154,6 +154,7 @@ class ClusterActivityImage(PythonVenvImage):
         'sdk/python',
         'tools/cluster-activity',
     ]
+    _TEST_COMMAND = ['arv-cluster-activity', '--version']
 
 
 @DockerImage.register
