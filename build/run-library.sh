@@ -88,11 +88,6 @@ timestamp_from_git() {
     format_last_commit_here "%ct" "$subdir"
 }
 
-calculate_python_sdk_cwl_package_versions() {
-  python_sdk_version=$(cd sdk/python && python3 arvados_version.py)
-  cwl_runner_version=$(cd sdk/cwl && python3 arvados_version.py)
-}
-
 # Usage: get_native_arch
 get_native_arch() {
   # Only amd64 and aarch64 are supported at the moment
