@@ -3,17 +3,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import sys
-import re
-
 from pathlib import Path
 from setuptools import Command, setup, find_packages
 from setuptools.command.build import build as BuildCommand
 
 import arvados_version
-version = arvados_version.get_version()
-README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 class BuildDiscoveryPydoc(Command):
     """Generate Arvados API documentation
@@ -69,56 +63,30 @@ class BuildDiscoveryPydoc(Command):
         }
 
 
-class ArvadosBuild(BuildCommand):
+class ArvadosBuild(arvados_version.ArvadosBuildCommand):
     sub_commands = [
-        *BuildCommand.sub_commands,
+        *arvados_version.ArvadosBuildCommand.sub_commands,
         ('build_discovery_pydoc', None),
     ]
 
 
-setup(name='arvados-python-client',
-      version=version,
-      description='Arvados client library',
-      long_description=open(README).read(),
-      author='Arvados',
-      author_email='info@arvados.org',
-      url="https://arvados.org",
-      download_url="https://github.com/arvados/arvados.git",
-      license='Apache 2.0',
-      cmdclass={
-          'build': ArvadosBuild,
-          'build_discovery_pydoc': BuildDiscoveryPydoc,
-      },
-      packages=find_packages(),
-      scripts=[
-          'bin/arv-copy',
-          'bin/arv-get',
-          'bin/arv-keepdocker',
-          'bin/arv-ls',
-          'bin/arv-federation-migrate',
-          'bin/arv-normalize',
-          'bin/arv-put',
-          'bin/arv-ws'
-      ],
-      data_files=[
-          ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
-      ],
-      install_requires=[
-          *arvados_version.iter_dependencies(version),
-          'ciso8601 >=2.0.0',
-          'google-api-python-client >=2.1.0',
-          'google-auth',
-          'httplib2 >=0.9.2',
-          'pycurl >=7.19.5.1',
-          'setuptools >=40.3.0',
-          'websockets >=11.0',
-          'boto3',
-      ],
-      python_requires="~=3.8",
-      classifiers=[
-          'Programming Language :: Python :: 3',
-      ],
-      test_suite='tests',
-      tests_require=['PyYAML', 'parameterized'],
-      zip_safe=False
-      )
+arv_mod = arvados_version.ARVADOS_PYTHON_MODULES['arvados-python-client']
+version = arv_mod.get_version()
+setup(
+    version=version,
+    cmdclass={
+        'build': ArvadosBuild,
+        'build_arvados_version': arvados_version.BuildArvadosVersion,
+        'build_discovery_pydoc': BuildDiscoveryPydoc,
+    },
+    install_requires=[
+        *arv_mod.iter_dependencies(version=version),
+        'boto3',
+        'ciso8601 >= 2.0.0',
+        'google-api-python-client >= 2.1.0',
+        'google-auth',
+        'httplib2 >= 0.9.2',
+        'pycurl >= 7.19.5.1',
+        'websockets >= 11.0',
+    ],
+)

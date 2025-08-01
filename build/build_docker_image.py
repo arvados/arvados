@@ -100,9 +100,13 @@ class PythonVenvImage(DockerImage):
     _EXTRAS = {}
     _TEST_COMMAND = None
 
+    def __init__(self, args):
+        arv_vars = runpy.run_path(args.workspace / 'sdk/python/arvados_version.py')
+        self.arv_pymod = arv_vars['ARVADOS_PYTHON_MODULES'][self._PACKAGE_NAME]
+        super().__init__(args)
+
     def dev_version(self):
-        ver_mod = runpy.run_path(self.workspace / self._SOURCE_PATHS[-1] / 'arvados_version.py')
-        return ver_mod['get_version']()
+        return self.arv_pymod.get_version(self.workspace / self.arv_pymod.src_path)
 
     def build_python_wheel(self, src_dir):
         logger.info("building Python wheel at %s", src_dir)
@@ -128,8 +132,9 @@ class PythonVenvImage(DockerImage):
     def build_docker_image(self):
         for path in self.extra_args:
             self.build_python_wheel(path)
-        for subdir in self._SOURCE_PATHS:
-            self.build_python_wheel(self.workspace / subdir)
+        for dep in self.arv_pymod.dependencies:
+            self.build_python_wheel(self.workspace / dep.src_path)
+        self.build_python_wheel(self.workspace / self.arv_pymod.src_path)
         self.build_requirements()
         result = super().build_docker_image()
         if self.tag and self._TEST_COMMAND:
@@ -150,10 +155,7 @@ class ClusterActivityImage(PythonVenvImage):
     _EXTRAS = {
         'arvados_cluster_activity': 'prometheus',
     }
-    _SOURCE_PATHS = [
-        'sdk/python',
-        'tools/cluster-activity',
-    ]
+    _PACKAGE_NAME = 'arvados-cluster-activity'
     _TEST_COMMAND = ['arv-cluster-activity', '--version']
 
 
@@ -164,11 +166,7 @@ class JobsImage(PythonVenvImage):
         'APT_PKGLIST': 'libcurl4 nodejs',
         'OLD_PKGNAME': 'python3-arvados-cwl-runner',
     }
-    _SOURCE_PATHS = [
-        'sdk/python',
-        'tools/crunchstat-summary',
-        'sdk/cwl',
-    ]
+    _PACKAGE_NAME = 'arvados-cwl-runner'
     _TEST_COMMAND = ['arvados-cwl-runner', '--version']
 
 

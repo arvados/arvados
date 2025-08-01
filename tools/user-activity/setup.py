@@ -3,18 +3,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import os
-import sys
-import re
-
 from setuptools import setup, find_packages
 
 import arvados_version
-version = arvados_version.get_version()
-README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
-
-setup(name='arvados-user-activity',
+arv_mod = arvados_version.ARVADOS_PYTHON_MODULES['arvados-user-activity']
+version = arv_mod.get_version()
+setup(name=arv_mod.package_name,
       version=version,
+      cmdclass=arvados_version.CMDCLASS,
       description='Summarize user activity from Arvados audit logs',
       author='Arvados',
       author_email='info@arvados.org',
@@ -28,7 +24,7 @@ setup(name='arvados-user-activity',
           ('share/doc/arvados_user_activity', ['agpl-3.0.txt']),
       ],
       install_requires=[
-          *arvados_version.iter_dependencies(version),
+          *arv_mod.iter_dependencies(version=version),
       ],
       python_requires="~=3.8",
       zip_safe=True,

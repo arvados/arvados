@@ -506,10 +506,11 @@ go_ldflags() {
 do_test_once() {
     unset result
 
-    if [[ "$2" == pip ]]; then
-        # We need to install the module before testing to ensure all the
-        # dependencies are satisfied. We need to do this before we start
-        # the test header+timer.
+    if [[ "$2" == pip && -n "$interactive" ]]; then
+        # We test out of the virtualenv to test with full build artifacts.
+        # We do this by setting --import-mode=append in pytest.ini.
+        # Install the developer's latest changes to the virtualenv.
+        # We need to do this before we start the test header+timer.
         do_install_once "$1" "$2" || return
     fi
 
@@ -566,7 +567,7 @@ do_test_once() {
         while :
         do
             tries=$((${tries}+1))
-            env -C "$WORKSPACE/$1" python3 -m pytest "${targs[@]}"
+            env -C "$WORKSPACE/$1" pytest "${targs[@]}"
             result=$?
             # pytest uses exit code 2 to mean "test collection failed."
             # See discussion in FUSE's IntegrationTest and MountTestBase.
@@ -629,9 +630,7 @@ do_install_once() {
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
-        # Generate _version.py before installing.
-        python3 "$WORKSPACE/$1/arvados_version.py" >/dev/null &&
-            pip install "$WORKSPACE/$1"
+        pip install "$WORKSPACE/$1"
     elif [[ "$2" != "" ]]
     then
         "install_$2"

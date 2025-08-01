@@ -3,25 +3,24 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import os
-import sys
-import re
-
 from setuptools import setup, find_packages
 
 import arvados_version
-version = arvados_version.get_version()
-README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
-
-setup(name="arvados-docker-cleaner",
+arv_mod = arvados_version.ARVADOS_PYTHON_MODULES['arvados-docker-cleaner']
+version = arv_mod.get_version()
+setup(name=arv_mod.package_name,
       version=version,
+      cmdclass=arvados_version.CMDCLASS,
       description="Arvados Docker cleaner",
       author="Arvados",
       author_email="info@arvados.org",
       url="https://arvados.org",
       download_url="https://github.com/arvados/arvados.git",
       license="GNU Affero General Public License version 3.0",
-      packages=find_packages(),
+      packages=find_packages(include=[
+          arv_mod.module_name,
+          f'{arv_mod.module_name}.*',
+      ]),
       entry_points={
           'console_scripts': ['arvados-docker-cleaner=arvados_docker.cleaner:main'],
       },
@@ -29,7 +28,7 @@ setup(name="arvados-docker-cleaner",
           ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt', 'arvados-docker-cleaner.service']),
       ],
       install_requires=[
-          *arvados_version.iter_dependencies(version),
+          *arv_mod.iter_dependencies(version=version),
           'docker>=6.1.0',
           'setuptools',
       ],

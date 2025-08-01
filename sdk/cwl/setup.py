@@ -3,31 +3,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import sys
-
 from setuptools import setup, find_packages
 
 import arvados_version
-version = arvados_version.get_version()
-README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
-
-setup(name='arvados-cwl-runner',
+arv_mod = arvados_version.ARVADOS_PYTHON_MODULES['arvados-cwl-runner']
+version = arv_mod.get_version()
+setup(name=arv_mod.package_name,
       version=version,
       description='Arvados Common Workflow Language runner',
-      long_description=open(README).read(),
+      long_description=(arvados_version.SETUP_DIR / 'README.rst').read_text(),
+      cmdclass=arvados_version.CMDCLASS,
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
       download_url="https://github.com/arvados/arvados.git",
       license='Apache 2.0',
-      packages=find_packages(),
+      packages=find_packages(include=[
+          arv_mod.module_name,
+          f'{arv_mod.module_name}.*',
+      ]),
       package_data={'arvados_cwl': ['arv-cwl-schema-v1.0.yml', 'arv-cwl-schema-v1.1.yml', 'arv-cwl-schema-v1.2.yml']},
       entry_points={"console_scripts": ["cwl-runner=arvados_cwl:main",
                                         "arvados-cwl-runner=arvados_cwl:main"],
                     "cwltest.fsaccess": ["fsaccess=arvados_cwl.fsaccess:get_fsaccess"]},
       install_requires=[
-          *arvados_version.iter_dependencies(version),
+          *arv_mod.iter_dependencies(version=version),
           'cwltool==3.1.20240508115724',
           'schema-salad==8.5.20240503091721',
           'ciso8601 >= 2.0.0',

@@ -3,20 +3,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import os
-import sys
-import re
-
 from setuptools import setup, find_packages
 
-SETUP_DIR = os.path.dirname(__file__) or '.'
-README = os.path.join(SETUP_DIR, 'README.rst')
-
 import arvados_version
-version = arvados_version.get_version(SETUP_DIR, "arvados_cluster_activity")
-
-setup(name='arvados-cluster-activity',
+arv_mod = arvados_version.ARVADOS_PYTHON_MODULES['arvados-cluster-activity']
+version = arv_mod.get_version()
+setup(name=arv_mod.package_name,
       version=version,
+      cmdclass=arvados_version.CMDCLASS,
       description='Summarize cluster activity from Arvados audit logs and Prometheus metrics',
       author='Arvados',
       author_email='info@arvados.org',
@@ -30,7 +24,7 @@ setup(name='arvados-cluster-activity',
           ('share/doc/arvados_cluster_activity', ['agpl-3.0.txt']),
       ],
       install_requires=[
-          *arvados_version.iter_dependencies(version),
+          *arv_mod.iter_dependencies(version=version),
       ],
       extras_require={"prometheus": ["prometheus-api-client"]},
       zip_safe=True,
