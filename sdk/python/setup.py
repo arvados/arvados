@@ -1,15 +1,15 @@
-#!/usr/bin/env python3
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import setuptools
+import runpy
+
 from pathlib import Path
-from setuptools import Command, setup, find_packages
-from setuptools.command.build import build as BuildCommand
 
-import arvados_version
+arvados_version = runpy.run_path(Path(__file__).with_name('arvados_version.py'))
 
-class BuildDiscoveryPydoc(Command):
+class BuildDiscoveryPydoc(setuptools.Command):
     """Generate Arvados API documentation
 
     This class implements a setuptools subcommand, so it follows
@@ -45,9 +45,9 @@ class BuildDiscoveryPydoc(Command):
         )
 
     def run(self):
-        import discovery2pydoc
+        discovery2pydoc = runpy.run_path(Path(__file__).with_name('discovery2pydoc.py'))
         arglist = ['--output-file', str(self.out_path), str(self.json_path)]
-        returncode = discovery2pydoc.main(arglist)
+        returncode = discovery2pydoc['main'](arglist)
         if returncode != 0:
             raise Exception(f"discovery2pydoc exited {returncode}")
 
@@ -63,20 +63,20 @@ class BuildDiscoveryPydoc(Command):
         }
 
 
-class ArvadosBuild(arvados_version.ArvadosBuildCommand):
+class ArvadosBuild(arvados_version['ArvadosBuildCommand']):
     sub_commands = [
-        *arvados_version.ArvadosBuildCommand.sub_commands,
+        *arvados_version['ArvadosBuildCommand'].sub_commands,
         ('build_discovery_pydoc', None),
     ]
 
 
-arv_mod = arvados_version.ARVADOS_PYTHON_MODULES['arvados-python-client']
+arv_mod = arvados_version['ARVADOS_PYTHON_MODULES']['arvados-python-client']
 version = arv_mod.get_version()
-setup(
+setuptools.setup(
     version=version,
     cmdclass={
         'build': ArvadosBuild,
-        'build_arvados_version': arvados_version.BuildArvadosVersion,
+        'build_arvados_version': arvados_version['BuildArvadosVersion'],
         'build_discovery_pydoc': BuildDiscoveryPydoc,
     },
     install_requires=[
