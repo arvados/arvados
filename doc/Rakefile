@@ -143,8 +143,8 @@ end
 
 file "sdk/python/arvados.html" do |t|
   next unless $build_sdks.include?(PythonSDK)
-  raise unless system("python3", "setup.py", "build",
-                      chdir: "../sdk/python", out: :err)
+  raise unless system("pip", "install", "../sdk/python",
+                      out: :err)
   raise unless system("python3", "pysdk_pdoc.py",
                       out: :err)
 end

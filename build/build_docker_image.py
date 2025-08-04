@@ -110,12 +110,7 @@ class PythonVenvImage(DockerImage):
 
     def build_python_wheel(self, src_dir):
         logger.info("building Python wheel at %s", src_dir)
-        if (src_dir / 'pyproject.toml').exists():
-            cmd = [sys.executable, '-m', 'build',
-                   '--outdir', str(self.context_dir)]
-        else:
-            cmd = [sys.executable, 'setup.py', 'bdist_wheel',
-                   '--dist-dir', str(self.context_dir)]
+        cmd = [sys.executable, '-m', 'build', '--outdir', str(self.context_dir)]
         return _log_and_run(cmd, cwd=src_dir, umask=0o022)
 
     def build_requirements(self):

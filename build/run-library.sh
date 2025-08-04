@@ -698,11 +698,7 @@ fpm_build_virtualenv_worker () {
   else
       # Make PKG_DIR absolute.
       PKG_DIR="$(env -C "$WORKSPACE" readlink -e "$PKG_DIR")"
-      if [[ -e "$PKG_DIR/pyproject.toml" ]]; then
-          "$PYTHON_BUILDROOT/venv/bin/python" -m build --outdir="$PYTHON_BUILDROOT/wheelhouse" "$PKG_DIR"
-      else
-          env -C "$PKG_DIR" "$PYTHON_BUILDROOT/venv/bin/python" setup.py bdist_wheel --dist-dir="$PYTHON_BUILDROOT/wheelhouse"
-      fi
+      "$PYTHON_BUILDROOT/venv/bin/python" -m build --outdir="$PYTHON_BUILDROOT/wheelhouse" "$PKG_DIR"
   fi
   if [[ $? -ne 0 ]]; then
     printf "Error, unable to download/build wheel for %s @ %s\n" "$PKG" "$PKG_DIR"
@@ -892,9 +888,9 @@ fpm_build() {
 
   declare -a COMMAND_ARR=("fpm" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
   if [ python = "$PACKAGE_TYPE" ] && [ deb = "$FORMAT" ]; then
-      # Dependencies are built from setup.py.  Since setup.py will never
-      # refer to Debian package iterations, it doesn't make sense to
-      # enforce those in the .deb dependencies.
+      # Dependencies are built from Python package metadata.  Since that
+      # will never refer to Debian package iterations, it doesn't make sense
+      # to enforce those in the .deb dependencies.
       COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
   fi
 
