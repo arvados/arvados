@@ -10,6 +10,8 @@
     owner: root
     group: docker
     mode: 0640
+  notify:
+    - stop docker
 
 - name: Install Docker cleaner
   become: yes
