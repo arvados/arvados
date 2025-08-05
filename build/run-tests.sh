@@ -469,7 +469,6 @@ do_test() {
             ;;
         gofmt \
             | arvados_version.py \
-            | cmd/arvados-package \
             | doc \
             | lib/boot \
             | lib/cli \
@@ -535,9 +534,6 @@ do_test_once() {
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
         testflags=()
-        if [[ "$1" == "cmd/arvados-package" ]]; then
-            testflags+=("-timeout" "20m")
-        fi
         # We do "go install" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
