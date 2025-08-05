@@ -10,8 +10,6 @@
 
 ### POSTGRESQL
 postgres:
-  pkgs_extra:
-    - postgresql-contrib
   use_upstream_repo: true
   version: {{ pg_version }}
   postgresconf: |-
