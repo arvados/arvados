@@ -642,26 +642,13 @@ ln -sfv /var/lib/arvados/node-v`+inst.NodejsVersion+`-linux-`+njsArch+`/bin/{yar
 
 		// Install python SDK and arv-mount in
 		// /var/lib/arvados/lib/python.
-		//
-		// setup.py writes a file in the source directory in
-		// order to include the version number in the package
-		// itself.  We don't want to write to the source tree
-		// (in "arvados-package" context it's mounted
-		// readonly) so we run setup.py in a temporary copy of
-		// the source dir.
 		if err = inst.runBash(`
 v=/var/lib/arvados/lib/python
-tmp=/var/lib/arvados/tmp/python
 python3 -m venv "$v"
 . "$v/bin/activate"
-pip3 install --no-cache-dir 'setuptools>=68' 'pip>=20'
+pip install --no-cache-dir build 'pip>=20.3' 'setuptools>=75.0' wheel
 export ARVADOS_BUILDING_VERSION="`+inst.PackageVersion+`"
-for src in "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"; do
-  rsync -a --delete-after "$src/" "$tmp/"
-  env -C "$tmp" python3 setup.py build
-  pip3 install "$tmp"
-  rm -rf "$tmp"
-done
+pip install --no-cache-dir "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"
 `, stdout, stderr); err != nil {
 			return 1
 		}
