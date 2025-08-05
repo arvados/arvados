@@ -517,6 +517,10 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_Curl_Patch(c *check.C) {
 	c.Check(body, check.Matches, `handled PATCH /foobar with Host `+s.ctrUUID+`.*`)
 }
 
+// Note there is no particular reason this test needs to use curl.  It
+// would make sense to rewrite it to use stdlib instead, as we did
+// with other tests in commit
+// 16f957acf378cd3384d4b9c6ce844fe3cefa600b.
 func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcIdx int, cookietoken, method, path string) string {
 	_, svcPort, err := net.SplitHostPort(s.containerServices[svcIdx].Addr)
 	c.Assert(err, check.IsNil)
