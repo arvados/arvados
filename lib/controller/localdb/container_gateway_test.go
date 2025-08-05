@@ -556,13 +556,13 @@ func (s *ContainerGatewaySuite) testContainerHTTPProxyUsingCurl(c *check.C, svcI
 }
 
 // See testContainerHTTPProxy_ReusedPort_FollowRedirs().  These
-// integration tests use curl to check the redirect-with-cookie
-// behavior when a request arrives on a dynamically-assigned port and
-// it has cookies indicating that the client has previously accessed a
-// different container's web services on this same port, i.e., it is
-// susceptible to leaking cache/cookie/localstorage data from the
-// previous container's service to the current container's service.
-type testReusedPortCurl struct {
+// integration tests check the redirect-with-cookie behavior when a
+// request arrives on a dynamically-assigned port and it has cookies
+// indicating that the client has previously accessed a different
+// container's web services on this same port, i.e., it is susceptible
+// to leaking cache/cookie/localstorage data from the previous
+// container's service to the current container's service.
+type testReusedPortFollowRedirs struct {
 	svcIdx      int
 	method      string
 	querytoken  string
@@ -574,7 +574,7 @@ type testReusedPortCurl struct {
 // container's web application), delivering the request to the new
 // container would surely not be the intended behavior.
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_FollowRedirs_RejectPOST(c *check.C) {
-	code, body, redirs := s.testContainerHTTPProxy_ReusedPort_FollowRedirs(c, testReusedPortCurl{
+	code, body, redirs := s.testContainerHTTPProxy_ReusedPort_FollowRedirs(c, testReusedPortFollowRedirs{
 		method:      "POST",
 		cookietoken: arvadostest.ActiveTokenV2,
 	})
@@ -584,7 +584,7 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_FollowRedirs_R
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_FollowRedirs_WithoutToken_ClearApplicationCookie(c *check.C) {
-	code, body, redirs := s.testContainerHTTPProxy_ReusedPort_FollowRedirs(c, testReusedPortCurl{
+	code, body, redirs := s.testContainerHTTPProxy_ReusedPort_FollowRedirs(c, testReusedPortFollowRedirs{
 		svcIdx:      1,
 		method:      "GET",
 		cookietoken: arvadostest.ActiveTokenV2,
@@ -595,7 +595,7 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_FollowRedirs_W
 }
 
 func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_FollowRedirs_WithToken_ClearApplicationCookie(c *check.C) {
-	code, body, redirs := s.testContainerHTTPProxy_ReusedPort_FollowRedirs(c, testReusedPortCurl{
+	code, body, redirs := s.testContainerHTTPProxy_ReusedPort_FollowRedirs(c, testReusedPortFollowRedirs{
 		method:     "GET",
 		querytoken: arvadostest.ActiveTokenV2,
 	})
@@ -606,7 +606,7 @@ func (s *ContainerGatewaySuite) TestContainerHTTPProxy_ReusedPort_FollowRedirs_W
 	}
 }
 
-func (s *ContainerGatewaySuite) testContainerHTTPProxy_ReusedPort_FollowRedirs(c *check.C, t testReusedPortCurl) (responseCode int, responseBody string, redirectsFollowed []string) {
+func (s *ContainerGatewaySuite) testContainerHTTPProxy_ReusedPort_FollowRedirs(c *check.C, t testReusedPortFollowRedirs) (responseCode int, responseBody string, redirectsFollowed []string) {
 	_, svcPort, err := net.SplitHostPort(s.containerServices[t.svcIdx].Addr)
 	c.Assert(err, check.IsNil)
 
