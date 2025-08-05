@@ -13,7 +13,7 @@ Containers can expose web services.  These can be interactive web applications s
 
 To accept requests, the container should listen on 0.0.0.0 (listening on localhost or 127.0.0.1 will _not_ work) and handle plain text HTTP/1.1 requests.
 
-The @published_ports@ field of the container request record advertises which ports on the container should be available to external clients.
+The @published_ports@ attribute of the container request record advertises which ports on the container should be available to external clients.
 
 The value @published_ports@ is a hash.  Each key in the hash is a port number that the container is listening on.  Each entry in the hash has three keys described here:
 
@@ -23,7 +23,7 @@ table(table table-bordered table-condensed).
 |label|string|A string that will be displayed to the user on Workbench describing the service.  Cannot be empty.|
 |initial_path|string|The relative path that should be included when constructing the URL that will be presented in Workbench and in the @initial_url@ field described below.  May include any or none of path, fragment and query parameter parts of the URL, or be blank.  Leading slash is optional.|
 
-The @published_ports@ field of the container record is a copy of the corresponding container request field, with the following entries added for each exposed port when the container enters @Running@ state:
+The @published_ports@ attribute of the container record is a copy of the corresponding container request attribute, with the following entries added for each exposed port when the container enters @Running@ state:
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Examples|
@@ -34,7 +34,7 @@ table(table table-bordered table-condensed).
 |external_port|integer|The dynamically assigned external port if applicable, otherwise null.|@2000@
 @null@|
 
-Example (container request):
+Example @published_ports@ attribute for a container request:
 
 <pre>
 {
@@ -48,7 +48,7 @@ Example (container request):
 }
 </pre>
 
-Example (container):
+Example @published_ports@ attribute for a running container:
 
 <pre>
 {
