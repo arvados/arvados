@@ -17,6 +17,8 @@ import functools
 import os
 import sys
 
+from pathlib import Path
+
 try:
     import pdoc.__main__
     import pdoc.markdown2
@@ -29,14 +31,20 @@ except ImportError as err:
 else:
     _imp_err = None
 
-DEFAULT_ARGLIST = [
-    '--output-directory=sdk/python',
-    '../sdk/python/build/lib/arvados/',
-    # Because the module is prviate, pdoc does not build documentation for any
-    # of it. The exclusion below additionally prevents pdoc from hyperlinking
-    # references under arvados._internal that appear in method signatures, etc.
-    '!arvados._internal',
-]
+try:
+    import arvados
+except ImportError:
+    DEFAULT_ARGLIST = []
+else:
+    DEFAULT_ARGLIST = [
+        '--output-directory=sdk/python',
+        str(Path(arvados.__file__).parent),
+        # Because the module is prviate, pdoc does not build documentation for any
+        # of it. The exclusion below additionally prevents pdoc from hyperlinking
+        # references under arvados._internal that appear in method signatures, etc.
+        '!arvados._internal',
+    ]
+
 MD_EXTENSIONS = {
     'admonitions': None,
     'smarty-pants': None,

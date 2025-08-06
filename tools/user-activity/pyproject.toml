@@ -1,0 +1,57 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+[build-system]
+requires = ["setuptools >= 75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["dependencies", "version"]
+name = "arvados-user-activity"
+description = "Summarize user activity on an Arvados cluster from audit logs"
+authors = [
+  {name = "Arvados", email = "info@arvados.org"},
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+readme = "README.rst"
+requires-python = "~= 3.8"
+
+[project.scripts]
+arv-user-activity = "arvados_user_activity.main:main"
+
+[project.urls]
+Homepage = "https://arvados.org"
+Documentation = "https://doc.arvados.org"
+Repository = "https://git.arvados.org/arvados.git"
+Issues = "https://dev.arvados.org/projects/arvados/issues"
+Changelog = "https://arvados.org/releases/"
+
+[tool.setuptools]
+# TODO: After we drop Python 3.8 and use setuptools >= 77.0,
+# specify license (a SPDX string) and license-files under [project].
+license-files = [
+  "agpl-3.0.txt",
+]
+
+[tool.setuptools.data-files]
+"share/doc/arvados-user-activity" = [
+  "agpl-3.0.txt",
+  "README.rst",
+]
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]

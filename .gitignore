@@ -45,7 +45,6 @@ tmp/
 .DS_Store/
 .vscode
 .Rproj.user
-_version.py
 *.bak
 *.log
 arvados-snakeoil-ca.pem

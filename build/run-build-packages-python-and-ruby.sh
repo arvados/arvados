@@ -49,23 +49,6 @@ gem_wrapper() {
   title "End of $gem_name gem build (`timer`)"
 }
 
-handle_python_package () {
-  # This function assumes the current working directory is the python package directory
-  local -a pkg_fmts=()
-  local version="$(nohash_version_from_git)"
-  if [[ -z "$(find dist -name "*-$version.tar.gz" -print -quit)" ]]; then
-    pkg_fmts+=(sdist)
-  fi
-  if [[ -z "$(find dist -name "*-$version-py*.whl" -print -quit)" ]]; then
-    pkg_fmts+=(bdist_wheel)
-  fi
-  if [[ "${#pkg_fmts[@]}" -eq 0 ]]; then
-    echo "This package doesn't need rebuilding."
-  else
-    python3 setup.py $DASHQ_UNLESS_DEBUG "${pkg_fmts[@]}"
-  fi
-}
-
 python_wrapper() {
   local package_name="$1"; shift
   local package_directory="$1"; shift
@@ -73,11 +56,7 @@ python_wrapper() {
   title "Start $package_name python package build"
   timer_reset
 
-  cd "$package_directory"
-  if [[ $DEBUG > 0 ]]; then
-    echo `pwd`
-  fi
-  handle_python_package
+  python3 -m build "$package_directory"
 
   checkexit $? "$package_name python package build"
   title "End of $package_name python package build (`timer`)"

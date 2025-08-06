@@ -1,140 +1,211 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
-#
-# This file runs in one of three modes:
-#
-# 1. If the ARVADOS_BUILDING_VERSION environment variable is set, it writes
-#    _version.py and generates dependencies based on that value.
-# 2. If running from an arvados Git checkout, it writes _version.py
-#    and generates dependencies from Git.
-# 3. Otherwise, we expect this is source previously generated from Git, and
-#    it reads _version.py and generates dependencies from it.
 
+import dataclasses
 import os
 import re
 import runpy
 import subprocess
-import sys
+import typing as t
 
-from pathlib import Path
+from pathlib import Path, PurePath, PurePosixPath
 
-# These maps explain the relationships between different Python modules in
-# the arvados repository. We use these to help generate setup.py.
-PACKAGE_DEPENDENCY_MAP = {
-    'arvados-cwl-runner': ['arvados-python-client', 'crunchstat_summary'],
-    'arvados-user-activity': ['arvados-python-client'],
-    'arvados_fuse': ['arvados-python-client'],
-    'crunchstat_summary': ['arvados-python-client'],
-    'arvados_cluster_activity': ['arvados-python-client'],
-}
-PACKAGE_MODULE_MAP = {
-    'arvados-cwl-runner': 'arvados_cwl',
-    'arvados-docker-cleaner': 'arvados_docker',
-    'arvados-python-client': 'arvados',
-    'arvados-user-activity': 'arvados_user_activity',
-    'arvados_fuse': 'arvados_fuse',
-    'crunchstat_summary': 'crunchstat_summary',
-    'arvados_cluster_activity': 'arvados_cluster_activity',
-}
-PACKAGE_SRCPATH_MAP = {
-    'arvados-cwl-runner': Path('sdk', 'cwl'),
-    'arvados-docker-cleaner': Path('services', 'dockercleaner'),
-    'arvados-python-client': Path('sdk', 'python'),
-    'arvados-user-activity': Path('tools', 'user-activity'),
-    'arvados_fuse': Path('services', 'fuse'),
-    'crunchstat_summary': Path('tools', 'crunchstat-summary'),
-    'arvados_cluster_activity': Path('tools', 'cluster-activity'),
-}
+import setuptools
+import setuptools.command.build
 
-ENV_VERSION = os.environ.get("ARVADOS_BUILDING_VERSION")
 SETUP_DIR = Path(__file__).absolute().parent
-try:
-    REPO_PATH = Path(subprocess.check_output(
-        ['git', '-C', str(SETUP_DIR), 'rev-parse', '--show-toplevel'],
-        stderr=subprocess.DEVNULL,
-        text=True,
-    ).rstrip('\n'))
-except (subprocess.CalledProcessError, OSError):
-    REPO_PATH = None
-else:
-    # Verify this is the arvados monorepo
-    if all((REPO_PATH / path).exists() for path in PACKAGE_SRCPATH_MAP.values()):
-        PACKAGE_NAME, = (
-            pkg_name for pkg_name, path in PACKAGE_SRCPATH_MAP.items()
-            if (REPO_PATH / path) == SETUP_DIR
+VERSION_SCRIPT_PATH = PurePath('build', 'version-at-commit.sh')
+
+### Metadata generation
+
+@dataclasses.dataclass
+class ArvadosPythonPackage:
+    package_name: str
+    module_name: str
+    src_path: PurePath
+    dependencies: t.Sequence['ArvadosPythonPackage']
+
+    _VERSION_SUBS = {
+        'development-': '',
+        '~dev': '.dev',
+        '~rc': 'rc',
+    }
+
+    def version_file_path(self):
+        return PurePath(self.module_name, '_version.py')
+
+    def _workspace_path(self, workdir):
+        try:
+            workspace = Path(os.environ['WORKSPACE'])
+            # This will raise ValueError if they're not related,
+            # in which case we don't want to use this $WORKSPACE.
+            workdir.relative_to(workspace)
+        except (KeyError, ValueError):
+            return None
+        if (workspace / VERSION_SCRIPT_PATH).exists():
+            return workspace
+        else:
+            return None
+
+    def _git_version(self, workdir):
+        workspace = self._workspace_path(workdir)
+        if workspace is None:
+            return None
+        git_log_cmd = [
+            'git', 'log', '-n1', '--format=%H', '--',
+            str(VERSION_SCRIPT_PATH), str(self.src_path),
+        ]
+        git_log_cmd.extend(str(dep.src_path) for dep in self.dependencies)
+        git_log_proc = subprocess.run(
+            git_log_cmd,
+            check=True,
+            cwd=workspace,
+            stdout=subprocess.PIPE,
+            text=True,
         )
-        MODULE_NAME = PACKAGE_MODULE_MAP[PACKAGE_NAME]
-        VERSION_SCRIPT_PATH = Path(REPO_PATH, 'build', 'version-at-commit.sh')
-    else:
-        REPO_PATH = None
-if REPO_PATH is None:
-    (PACKAGE_NAME, MODULE_NAME), = (
-        (pkg_name, mod_name)
-        for pkg_name, mod_name in PACKAGE_MODULE_MAP.items()
-        if (SETUP_DIR / mod_name).is_dir()
-    )
+        version_proc = subprocess.run(
+            [str(VERSION_SCRIPT_PATH), git_log_proc.stdout.rstrip('\n')],
+            check=True,
+            cwd=workspace,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        return version_proc.stdout.rstrip('\n')
 
-def git_log_output(path, *args):
-    return subprocess.check_output(
-        ['git', '-C', str(REPO_PATH),
-         'log', '--first-parent', '--max-count=1',
-         *args, str(path)],
-        text=True,
-    ).rstrip('\n')
+    def _sdist_version(self, workdir):
+        try:
+            pkg_info = (workdir / 'PKG-INFO').open()
+        except FileNotFoundError:
+            return None
+        with pkg_info:
+            for line in pkg_info:
+                key, _, val = line.partition(': ')
+                if key == 'Version':
+                    return val.rstrip('\n')
+        raise Exception("found PKG-INFO file but not Version metadata in it")
 
-def choose_version_from():
-    ver_paths = [SETUP_DIR, VERSION_SCRIPT_PATH, *(
-        PACKAGE_SRCPATH_MAP[pkg]
-        for pkg in PACKAGE_DEPENDENCY_MAP.get(PACKAGE_NAME, ())
-    )]
-    getver = max(ver_paths, key=lambda path: git_log_output(path, '--format=format:%ct'))
-    print(f"Using {getver} for version number calculation of {SETUP_DIR}", file=sys.stderr)
-    return getver
+    def get_version(self, workdir=SETUP_DIR):
+        version = (
+            # If we're building out of a distribution, we should pass that
+            # version through unchanged.
+            self._sdist_version(workdir)
+            # Otherwise follow the usual Arvados versioning rules.
+            or os.environ.get('ARVADOS_BUILDING_VERSION')
+            or self._git_version(workdir)
+        )
+        if not version:
+            raise Exception(f"no version information available for {self.package_name}")
+        else:
+            return re.sub(
+                r'(^development-|~dev|~rc)',
+                lambda match: self._VERSION_SUBS[match.group(0)],
+                version,
+            )
 
-def git_version_at_commit():
-    curdir = choose_version_from()
-    myhash = git_log_output(curdir, '--format=%H')
-    return subprocess.check_output(
-        [str(VERSION_SCRIPT_PATH), myhash],
-        text=True,
-    ).rstrip('\n')
+    def get_dependencies_version(self, workdir=SETUP_DIR, version=None):
+        if version is None:
+            version = self.get_version(workdir)
+        # A packaged development release should be installed with other
+        # development packages built from the same source, but those
+        # dependencies may have earlier "dev" versions (read: less recent
+        # Git commit timestamps). This compatible version dependency
+        # expresses that as closely as possible. Allowing versions
+        # compatible with .dev0 allows any development release.
+        # Regular expression borrowed partially from
+        # <https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers-regex>
+        dep_ver, match_count = re.subn(r'\.dev(0|[1-9][0-9]*)$', '.dev0', version, 1)
+        return ('~=' if match_count else '==', dep_ver)
 
-def save_version(setup_dir, module, v):
-    with Path(setup_dir, module, '_version.py').open('w') as fp:
-        print(f"__version__ = {v!r}", file=fp)
+    def iter_dependencies(self, workdir=SETUP_DIR, version=None):
+        dep_op, dep_ver = self.get_dependencies_version(workdir, version)
+        for dep in self.dependencies:
+            yield f'{dep.package_name} {dep_op} {dep_ver}'
 
-def read_version(setup_dir, module):
-    file_vars = runpy.run_path(Path(setup_dir, module, '_version.py'))
-    return file_vars['__version__']
 
-def get_version(setup_dir=SETUP_DIR, module=MODULE_NAME):
-    if ENV_VERSION:
-        version = ENV_VERSION
-    elif REPO_PATH is None:
-        return read_version(setup_dir, module)
-    else:
-        version = git_version_at_commit()
-    version = version.replace("~dev", ".dev").replace("~rc", "rc").lstrip("development-")
-    save_version(setup_dir, module, version)
-    return version
+### Package database
 
-def iter_dependencies(version=None):
-    if version is None:
-        version = get_version()
-    # A packaged development release should be installed with other
-    # development packages built from the same source, but those
-    # dependencies may have earlier "dev" versions (read: less recent
-    # Git commit timestamps). This compatible version dependency
-    # expresses that as closely as possible. Allowing versions
-    # compatible with .dev0 allows any development release.
-    # Regular expression borrowed partially from
-    # <https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers-regex>
-    dep_ver, match_count = re.subn(r'\.dev(0|[1-9][0-9]*)$', '.dev0', version, 1)
-    dep_op = '~=' if match_count else '=='
-    for dep_pkg in PACKAGE_DEPENDENCY_MAP.get(PACKAGE_NAME, ()):
-        yield f'{dep_pkg}{dep_op}{dep_ver}'
+_PYSDK = ArvadosPythonPackage(
+    'arvados-python-client',
+    'arvados',
+    PurePath('sdk', 'python'),
+    [],
+)
+_CRUNCHSTAT_SUMMARY = ArvadosPythonPackage(
+    'crunchstat_summary',
+    'crunchstat_summary',
+    PurePath('tools', 'crunchstat-summary'),
+    [_PYSDK],
+)
+ARVADOS_PYTHON_MODULES = {mod.package_name: mod for mod in [
+    _PYSDK,
+    _CRUNCHSTAT_SUMMARY,
+    ArvadosPythonPackage(
+        'arvados-cluster-activity',
+        'arvados_cluster_activity',
+        PurePath('tools', 'cluster-activity'),
+        [_PYSDK],
+    ),
+    ArvadosPythonPackage(
+        'arvados-cwl-runner',
+        'arvados_cwl',
+        PurePath('sdk', 'cwl'),
+        [_PYSDK, _CRUNCHSTAT_SUMMARY],
+    ),
+    ArvadosPythonPackage(
+        'arvados-docker-cleaner',
+        'arvados_docker',
+        PurePath('services', 'dockercleaner'),
+        [],
+    ),
+    ArvadosPythonPackage(
+        'arvados_fuse',
+        'arvados_fuse',
+        PurePath('services', 'fuse'),
+        [_PYSDK],
+    ),
+    ArvadosPythonPackage(
+        'arvados-user-activity',
+        'arvados_user_activity',
+        PurePath('tools', 'user-activity'),
+        [_PYSDK],
+    ),
+]}
 
-# Called from calculate_python_sdk_cwl_package_versions() in run-library.sh
-if __name__ == '__main__':
-    print(get_version())
+### setuptools integration
+
+class BuildArvadosVersion(setuptools.Command):
+    """Write _version.py for an Arvados module"""
+    def initialize_options(self):
+        self.build_lib = None
+
+    def finalize_options(self):
+        self.set_undefined_options("build_py", ("build_lib", "build_lib"))
+        arv_mod = ARVADOS_PYTHON_MODULES[self.distribution.get_name()]
+        self.out_path = Path(self.build_lib, arv_mod.version_file_path())
+
+    def run(self):
+        with self.out_path.open('w') as out_file:
+            print(f'__version__ = {self.distribution.get_version()!r}', file=out_file)
+
+    def get_outputs(self):
+        return [str(self.out_path)]
+
+    def get_source_files(self):
+        return []
+
+    def get_output_mapping(self):
+        return {}
+
+
+class ArvadosBuildCommand(setuptools.command.build.build):
+    sub_commands = [
+        *setuptools.command.build.build.sub_commands,
+        ('build_arvados_version', None),
+    ]
+
+
+CMDCLASS = {
+    'build': ArvadosBuildCommand,
+    'build_arvados_version': BuildArvadosVersion,
+}
