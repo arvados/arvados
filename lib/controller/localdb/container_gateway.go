@@ -508,6 +508,19 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	// the supplied token.
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 
+	needTokenCookie := false
+	if queryToken := opts.Request.URL.Query().Get("arvados_api_token"); queryToken != "" {
+		// If there's a token in the query, use it when
+		// looking up the container/container request.  This
+		// lets us reliably determine needClearSiteData, even
+		// if the container UUID is not explicitly given in
+		// the request.
+		ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{queryToken}})
+		// Ensure we ultimately send a redirect response to
+		// move the token from query to cookie.
+		needTokenCookie = true
+	}
+
 	var targetUUID string
 	var targetPort int
 	if strings.HasPrefix(opts.Target, ":") {
@@ -555,7 +568,8 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		}
 	}
 
-	needClearSiteData := false
+	var ctr arvados.Container
+
 	// A redirect might be needed for one or two reasons: (1) to
 	// avoid letting the container web service access it via
 	// document.location, or showing the token in the browser's
@@ -569,7 +583,17 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	// suitable values for the main function to return: either
 	// (nil, err), or (h, nil) where h implements a redirect.
 	maybeRedirect := func(err error) (http.Handler, error) {
-		if opts.Request.URL.Query().Get("arvados_api_token") == "" && !needClearSiteData {
+		needClearSiteData := false
+		for _, cookie := range opts.Request.CookiesNamed("arvados_container_uuid") {
+			if cookie.Value != ctr.UUID && ctr.UUID != "" {
+				// The user agent might have
+				// client-side state left over from a
+				// different container that was
+				// previously available on this port.
+				needClearSiteData = true
+			}
+		}
+		if !needClearSiteData && !needTokenCookie {
 			// Redirect not needed
 			return nil, err
 		}
@@ -580,7 +604,6 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 	// record as root, so we can check whether the requested port
 	// is marked public in published_ports.  This needs to work
 	// even if the request did not provide a token at all.
-	var ctr arvados.Container
 	var isPublic bool
 	if len(targetUUID) == 27 && targetUUID[6:11] == "xvhdp" {
 		// Look up specified container request
@@ -662,15 +685,6 @@ func (conn *Conn) ContainerHTTPProxy(ctx context.Context, opts arvados.Container
 		return arpc.ContainerHTTPProxy(ctx, opts)
 	}
 
-	// Check for an "arvados_container_uuid" cookie indicating
-	// that the user agent might have client-side state left over
-	// from a different container that was previously available on
-	// this port.
-	for _, cookie := range opts.Request.CookiesNamed("arvados_container_uuid") {
-		if cookie.Value != ctr.UUID {
-			needClearSiteData = true
-		}
-	}
 	// Redirect if needed to clear site data and/or move the token
 	// from the query to a cookie.
 	if h, err := maybeRedirect(nil); h != nil || err != nil {
