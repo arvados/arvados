@@ -17,6 +17,7 @@
       - "{{ ansible_distribution_release }}"
       - "{{ ansible_distribution_release }}-updates"
     components: "{{ distro_apt[ansible_distribution].components }}"
+    signed_by: "{{ distro_apt[ansible_distribution].signed_by }}"
   notify:
     - apt update
 
@@ -29,6 +30,7 @@
     suites:
       - "{{ ansible_distribution_release }}-security"
     components: "{{ distro_apt[ansible_distribution].components }}"
+    signed_by: "{{ distro_apt[ansible_distribution].signed_by }}"
   notify:
     - apt update
 
