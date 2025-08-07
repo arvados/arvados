@@ -27,6 +27,7 @@ import { isUserResource } from 'models/user';
 import { getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
 import { AuthState } from 'store/auth/auth-reducer';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { getPropertyChips } from 'views-components/property-chips/get-property-chips';
 
 type CssRules = 'root' | 'tag';
 
@@ -125,18 +126,7 @@ const PropertiesElement = ({auth, resource, classes}: { auth: AuthState, resourc
         </section>;
     }
     if (typeof resource.properties === 'object' && Object.keys(resource.properties).length > 0) {
-        // remove cwl_input and cwl_output which are displayed in their own tabs
-        const properties = {...resource.properties};
-        delete properties['cwl_input'];
-        delete properties['cwl_output'];
-
-        return <section data-cy='resource-properties'>
-            {Object.keys(properties).map((k) =>
-                Array.isArray(properties[k])
-                ? properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                : getPropertyChip(k, properties[k], undefined, classes.tag)
-            )}
-        </section>;
+        return getPropertyChips(resource, classes);
     }
     return null;
 }
