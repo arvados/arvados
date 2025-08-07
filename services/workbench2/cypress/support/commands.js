@@ -878,3 +878,21 @@ Cypress.Commands.add("doContextMenuAction", (name) => {
     cy.get("[data-cy=context-menu]", { timeout: 5000 }).contains(name).click();
     cy.waitForDom();
 });
+
+
+/**
+ * Asserts the presence of a property tag
+ * If shouldExist is false, only the property name is checked, as the value doesn't matter.
+ *
+ * @param propertyName name of the property
+ * @param propertyValue value of the property
+ * @param shouldExist whether the property tag should exist or not
+ */
+Cypress.Commands.add("assertPropertyTag", (propertyName, propertyValue, shouldExist = true) => {
+    cy.get("[data-cy=resource-properties]").within(() => {
+        cy.get('span').contains(propertyName).should(shouldExist ? 'exist' : 'not.exist');
+        if (shouldExist) {
+            cy.get('span').contains(propertyName).contains(propertyValue).should('exist');
+        }
+    });
+});

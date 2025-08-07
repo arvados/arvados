@@ -20,7 +20,6 @@ import { ContainerResource } from "models/container";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
-import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 import { ContainerRequestResource } from "models/container-request";
 import { filterResources } from "store/resources/resources";
 import { JSONMount, MountType } from 'models/mount-types';
@@ -29,6 +28,7 @@ import { Link } from "react-router-dom";
 import { getResourceUrl } from "routes/routes";
 import WarningIcon from '@mui/icons-material/Warning';
 import { ResourcesState } from "store/resources/resources";
+import { getPropertyChips } from "views-components/property-chips/get-property-chips";
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -87,8 +87,6 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
             const { workflowCollection, workflowPath } = parseMounts(mounts);
-            const filteredPropertyKeys = Object.keys(containerRequest?.properties)
-                                            .filter(k => (typeof containerRequest?.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
             const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
@@ -216,13 +214,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
               */}
             <Grid item xs={12} md={12}>
                 <DetailsAttribute label='Properties' />
-                {filteredPropertyKeys.length > 0
-                                             ? filteredPropertyKeys.map(k =>
-                                                 Array.isArray(containerRequest.properties[k])
-                                                 ? containerRequest.properties[k].map((v: string) =>
-                                                     getPropertyChip(k, v, undefined, classes.propertyTag))
-                                                 : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
-                                             : <div>No properties</div>}
+                {getPropertyChips(containerRequest, classes)}
             </Grid>
             </Grid>;
         }

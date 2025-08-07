@@ -18,7 +18,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Dispatch } from 'redux';
-import { getPropertyChip } from '../resource-properties-form/property-chip';
+import { getPropertyChips } from 'views-components/property-chips/get-property-chips';
 import { ResourceWithName } from '../data-explorer/renderers';
 import { GroupClass } from "models/group";
 import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/projects/project-update-actions';
@@ -114,13 +114,6 @@ export const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToPro
                 }
             </DetailsAttribute>
             <DetailsAttribute label='Properties' />
-            {
-                Object.keys(project.properties).map(k =>
-                    Array.isArray(project.properties[k])
-                    ? project.properties[k].map((v: string) =>
-                        getPropertyChip(k, v, undefined, classes.tag))
-                    : getPropertyChip(k, project.properties[k], undefined, classes.tag)
-                )
-            }
+            {getPropertyChips(project, classes)}
         </div>
 ));

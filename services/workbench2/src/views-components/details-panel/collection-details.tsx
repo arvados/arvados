@@ -21,7 +21,7 @@ import { openContextMenuAndSelect } from 'store/context-menu/context-menu-action
 import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
-import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
+import { getPropertyChips } from 'views-components/property-chips/get-property-chips';
 import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 
@@ -313,13 +313,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />
-            {item.properties && Object.keys(item.properties).length > 0
-                ? Object.keys(item.properties).map(k =>
-                    Array.isArray(item.properties[k])
-                        ? item.properties[k].map((v: string) =>
-                            getPropertyChip(k, v, undefined, classes.tag))
-                        : getPropertyChip(k, item.properties[k], undefined, classes.tag))
-                : <div className={classes.value}>No properties</div>}
+                {getPropertyChips(item, classes)}
         </Grid>
     </Grid>;
 };

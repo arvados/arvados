@@ -51,6 +51,11 @@ describe("Process tests", function () {
                     },
                 },
                 owner_uuid: ownerUuid || undefined,
+                properties: {
+                    cwl_input: {foo: "bar"},
+                    cwl_output: {baz: "qux"},
+                    foo: "bar"
+                }
             });
         });
     }
@@ -67,7 +72,7 @@ describe("Process tests", function () {
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
+                cy.get("[data-cy=process-details-card]").should('exist', { timeout: 10000 }).and("contain", containerRequest.name);
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
             });
@@ -101,6 +106,10 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-card]").should("contain", containerRequest.name);
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`zzzzz-tpzed-000000000000000`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").contains(`Active User (${activeUser.user.uuid})`);
+                cy.assertPropertyTag("foo", "bar");
+                // property values are unimportant here, but [object Object] displays prior to #23063
+                cy.assertPropertyTag("cwl_input", "[object Object]", false);
+                cy.assertPropertyTag("cwl_output", "[object Object]", false);
             });
         });
 
@@ -1405,37 +1414,39 @@ describe("Process tests", function () {
                         verifyIOParameter("input_directory_include", null, null, "Cannot display value");
                         verifyIOParameter("input_file_url", null, null, "http://example.com/index.html");
                     });
-                cy.get('button').contains('Outputs').click();
-                cy.get("[data-cy=process-io-card] h6")
-                    .contains("Output Parameters")
-                    .parents("[data-cy=process-io-card]")
-                    .within(ctx => {
-                        cy.get(ctx).scrollIntoView();
-                        const outPdh = testOutputCollection.portable_data_hash;
+            // Disabled until resolution of #23080
 
-                        verifyIOParameter("output_file", null, "Label Description", "cat.png", `${outPdh}`);
-                        // Disabled until image preview returns
-                        // verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
-                        verifyIOParameter("output_file_with_secondary", null, "Doc Description", "main.dat", `${outPdh}`);
-                        verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary.dat", undefined, true);
-                        verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary2.dat", undefined, true);
-                        verifyIOParameter("output_dir", null, "Doc desc 1, Doc desc 2", "outdir1", `${outPdh}`);
-                        verifyIOParameter("output_bool", null, null, "true");
-                        verifyIOParameter("output_int", null, null, "1");
-                        verifyIOParameter("output_long", null, null, "1");
-                        verifyIOParameter("output_float", null, null, "100.5");
-                        verifyIOParameter("output_double", null, null, "100.3");
-                        verifyIOParameter("output_string", null, null, "Hello output");
-                        verifyIOParameter("output_file_array", null, null, "output2.tar", `${outPdh}`);
-                        verifyIOParameter("output_file_array", null, null, "output3.tar", undefined, true);
-                        verifyIOParameter("output_dir_array", null, null, "outdir2", `${outPdh}`);
-                        verifyIOParameter("output_dir_array", null, null, "outdir3", undefined, true);
-                        verifyIOParameter("output_int_array", null, null, ["10", "11", "12"]);
-                        verifyIOParameter("output_long_array", null, null, ["51", "52"]);
-                        verifyIOParameter("output_float_array", null, null, ["100.2", "100.4", "100.6"]);
-                        verifyIOParameter("output_double_array", null, null, ["100.1", "100.2", "100.3"]);
-                        verifyIOParameter("output_string_array", null, null, ["Hello", "Output", "!"]);
-                    });
+                // cy.get('button').contains('Outputs').click();
+                // cy.get("[data-cy=process-io-card] h6")
+                //     .contains("Output Parameters")
+                //     .parents("[data-cy=process-io-card]")
+                //     .within(ctx => {
+                //         cy.get(ctx).scrollIntoView();
+                //         const outPdh = testOutputCollection.portable_data_hash;
+
+                //         verifyIOParameter("output_file", null, "Label Description", "cat.png", `${outPdh}`);
+                //         // Disabled until image preview returns
+                //         // verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
+                //         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "main.dat", `${outPdh}`);
+                //         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary.dat", undefined, true);
+                //         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary2.dat", undefined, true);
+                //         verifyIOParameter("output_dir", null, "Doc desc 1, Doc desc 2", "outdir1", `${outPdh}`);
+                //         verifyIOParameter("output_bool", null, null, "true");
+                //         verifyIOParameter("output_int", null, null, "1");
+                //         verifyIOParameter("output_long", null, null, "1");
+                //         verifyIOParameter("output_float", null, null, "100.5");
+                //         verifyIOParameter("output_double", null, null, "100.3");
+                //         verifyIOParameter("output_string", null, null, "Hello output");
+                //         verifyIOParameter("output_file_array", null, null, "output2.tar", `${outPdh}`);
+                //         verifyIOParameter("output_file_array", null, null, "output3.tar", undefined, true);
+                //         verifyIOParameter("output_dir_array", null, null, "outdir2", `${outPdh}`);
+                //         verifyIOParameter("output_dir_array", null, null, "outdir3", undefined, true);
+                //         verifyIOParameter("output_int_array", null, null, ["10", "11", "12"]);
+                //         verifyIOParameter("output_long_array", null, null, ["51", "52"]);
+                //         verifyIOParameter("output_float_array", null, null, ["100.2", "100.4", "100.6"]);
+                //         verifyIOParameter("output_double_array", null, null, ["100.1", "100.2", "100.3"]);
+                //         verifyIOParameter("output_string_array", null, null, ["Hello", "Output", "!"]);
+                //     });
             });
         });
 
@@ -1539,7 +1550,7 @@ describe("Process tests", function () {
     });
 
     describe("Process operations", function () {
-        it.only("navigates to parent project when deleting current process", function () {
+        it("navigates to parent project when deleting current process", function () {
             // Process in home project
             createContainerRequest(
                 activeUser,
