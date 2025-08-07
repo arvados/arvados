@@ -13,9 +13,7 @@
     name: "{{ ansible_distribution|lower }}"
     types: deb
     uris: "{{ distro_apt[ansible_distribution].aws_mirror if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].mirror }}"
-    suites:
-      - "{{ ansible_distribution_release }}"
-      - "{{ ansible_distribution_release }}-updates"
+    suites: "{{ distro_apt[ansible_distribution].main_suites }}"
     components: "{{ distro_apt[ansible_distribution].components }}"
     signed_by: "{{ distro_apt[ansible_distribution].gpg_key }}"
   notify:
