@@ -1539,7 +1539,7 @@ describe("Process tests", function () {
     });
 
     describe("Process operations", function () {
-        it.only("navigates to parent project when deleting current process", function () {
+        it("navigates to parent project when deleting current process", function () {
             // Process in home project
             createContainerRequest(
                 activeUser,

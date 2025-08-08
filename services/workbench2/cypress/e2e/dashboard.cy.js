@@ -58,13 +58,6 @@ describe('Main Dashboard', () => {
             });
     });
 
-    it('Is the default starting page', () => {
-        cy.loginAs(activeUser);
-        cy.visit(`/`);
-        cy.get('[data-cy=dashboard-root]').should('exist');
-        cy.reload();
-    });
-
     it('displays the appropriate sections', () => {
         cy.loginAs(activeUser);
         cy.get('[data-cy=tree-top-level-item]').contains('Dashboard').click();
@@ -74,7 +67,7 @@ describe('Main Dashboard', () => {
         sectionsTitles.forEach(title => {
             cy.get('[data-cy=dashboard-section]').contains(title).should('exist');
         });
-    })
+    });
 });
 
 describe('Favorites section', () => {

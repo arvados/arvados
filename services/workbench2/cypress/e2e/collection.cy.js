@@ -726,7 +726,7 @@ describe("Collection panel tests", function () {
                         cy.get("[data-cy=form-submit-btn]").click();
                     });
                 cy.get("[data-cy=snackbar]").contains("Collection has been copied.");
-                cy.get("[data-cy=snackbar-goto-action]").click();
+                cy.get("[data-cy=tree-li]").contains("Home Projects").click();
                 cy.get('button').contains('Data').click();
                 cy.get("[data-cy=project-panel]").contains(copyName).click();
                 cy.get('button').contains('Files').click();
