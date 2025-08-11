@@ -679,6 +679,7 @@ fpm_build_virtualenv_worker () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
+  PACKAGE="$PKG_DIR"
   PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
   if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
