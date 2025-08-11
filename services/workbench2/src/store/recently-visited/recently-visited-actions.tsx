@@ -12,7 +12,7 @@ import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-actio
 import { RecentUuid } from "models/user";
 
 export const RECENTLY_VISITED_PANEL_ID = "recentlyVisitedPanel";
-const GENERIC_LOAD_ERROR = "Could not load user profile";
+const RECENTS_LOAD_ERROR = "Could not load recently visited";
 const SAVE_RECENT_UUIDS_ERROR = "Could not save recent uuids";
 
 const recentlyVisitedPanelActions = bindDataExplorerActions(RECENTLY_VISITED_PANEL_ID);
@@ -44,7 +44,7 @@ export const saveRecentlyVisited = (uuid: string) => async (dispatch: Dispatch<a
             }
         }
     } else {
-        dispatch(showErrorSnackbar(GENERIC_LOAD_ERROR));
+        dispatch(showErrorSnackbar(RECENTS_LOAD_ERROR));
     }
 };
 

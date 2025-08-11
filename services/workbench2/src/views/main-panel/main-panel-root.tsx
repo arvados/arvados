@@ -68,7 +68,7 @@ export const MainPanelRoot = withStyles(styles)(
                 const uuid = splitRoute[splitRoute.length - 1];
                 if(Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
-                    saveRecentlyVisited(uuid);
+                    if(user) saveRecentlyVisited(uuid);
                 } else {
                     setCurrentRouteUuid(null);
                 }
