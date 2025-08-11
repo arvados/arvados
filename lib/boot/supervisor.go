@@ -309,6 +309,9 @@ func (super *Supervisor) runCluster() error {
 
 	super.environ = os.Environ()
 	super.cleanEnv([]string{"ARVADOS_"})
+	if super.ClusterType == "test" {
+		super.setEnv("ARVADOS_TEST_PRIVESC", os.Getenv("ARVADOS_TEST_PRIVESC"))
+	}
 	super.setEnv("ARVADOS_CONFIG", super.configfile)
 	super.setEnv("RAILS_ENV", super.ClusterType)
 	super.setEnv("TMPDIR", super.tempdir)

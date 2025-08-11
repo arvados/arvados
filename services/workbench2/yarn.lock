@@ -5246,15 +5246,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dropzone@npm:4.2.2":
-  version: 4.2.2
-  resolution: "@types/react-dropzone@npm:4.2.2"
-  dependencies:
-    "@types/react": "*"
-  checksum: 6cc84edf0badd31db5a869131486793aa648319b628087418994f556a66ae56a3cc2a78d730960551d1d0d0ad7d33b9481b91a1e37e3d71ce0796c3fc266341f
-  languageName: node
-  linkType: hard
-
 "@types/react-highlight-words@npm:0.12.0":
   version: 0.12.0
   resolution: "@types/react-highlight-words@npm:0.12.0"
@@ -6357,7 +6348,6 @@ __metadata:
     "@types/react": 17.0.11
     "@types/react-copy-to-clipboard": ^5.0.7
     "@types/react-dom": 17.0.8
-    "@types/react-dropzone": 4.2.2
     "@types/react-highlight-words": 0.12.0
     "@types/react-redux": 6.0.9
     "@types/react-router": 4.0.31
@@ -6433,7 +6423,6 @@ __metadata:
     react-dnd: 5.0.0
     react-dnd-html5-backend: 5.0.1
     react-dom: 16.14.0
-    react-dropzone: 5.1.1
     react-highlight-words: 0.14.0
     react-idle-timer: 4.3.6
     react-loading-skeleton: ^3.5.0
@@ -6559,15 +6548,6 @@ __metadata:
   version: 1.0.0
   resolution: "at-least-node@npm:1.0.0"
   checksum: 463e2f8e43384f1afb54bc68485c436d7622acec08b6fad269b421cb1d29cebb5af751426793d0961ed243146fe4dc983402f6d5a51b720b277818dbf6f2e49e
-  languageName: node
-  linkType: hard
-
-"attr-accept@npm:^1.1.3":
-  version: 1.1.3
-  resolution: "attr-accept@npm:1.1.3"
-  dependencies:
-    core-js: ^2.5.0
-  checksum: 836c0e863719c0355e8ad4214e4c81f24dd9e724233153200189732da691f73e6f13316b8ac456d75749a89780f0da67e44387e46dfc3fd9a517a84a0e45acbc
   languageName: node
   linkType: hard
 
@@ -7645,7 +7625,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^2.4.0, core-js@npm:^2.5.0, core-js@npm:^2.6.12":
+"core-js@npm:^2.4.0, core-js@npm:^2.6.12":
   version: 2.6.12
   resolution: "core-js@npm:2.6.12"
   checksum: 44fa9934a85f8c78d61e0c8b7b22436330471ffe59ec5076fe7f324d6e8cf7f824b14b1c81ca73608b13bdb0fef035bd820989bf059767ad6fa13123bb8bd016
@@ -14927,18 +14907,6 @@ __metadata:
   peerDependencies:
     react: ^16.14.0
   checksum: 5a5c49da0f106b2655a69f96c622c347febcd10532db391c262b26aec225b235357d9da1834103457683482ab1b229af7a50f6927a6b70e53150275e31785544
-  languageName: node
-  linkType: hard
-
-"react-dropzone@npm:5.1.1":
-  version: 5.1.1
-  resolution: "react-dropzone@npm:5.1.1"
-  dependencies:
-    attr-accept: ^1.1.3
-    prop-types: ^15.6.2
-  peerDependencies:
-    react: ">=0.14.0"
-  checksum: 95e4caafc05e5c1c1f53b5f2b394c1795e2955db07b5c0cf71580355d38beab17463879cfd3eb2c63a76b317ff9f261cbb1554d801a7ebeab1ed23afb07630a6
   languageName: node
   linkType: hard
 

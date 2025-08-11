@@ -11,6 +11,7 @@
     name: python3-psycopg2
 
 - name: Create database user
+  no_log: yes
   become: "{{ arvados_database_login_host is falsy }}"
   become_user: "{{ arvados_database_login_user }}"
   community.postgresql.postgresql_user:
@@ -23,6 +24,7 @@
     login_user: "{{ arvados_database_login_user }}"
 
 - name: Create database
+  no_log: yes
   become: "{{ arvados_database_login_host is falsy }}"
   become_user: "{{ arvados_database_login_user }}"
   community.postgresql.postgresql_db:
@@ -36,6 +38,7 @@
     login_user: "{{ arvados_database_login_user }}"
 
 - name: Create pg_trgm extension
+  no_log: yes
   become: "{{ arvados_database_login_host is falsy }}"
   become_user: "{{ arvados_database_login_user }}"
   community.postgresql.postgresql_ext:

@@ -443,12 +443,36 @@ Cypress.Commands.add(
             const blob = binaryMode ? b64toBlob(file, "", 512) : new Blob([file], { type: "text/plain" });
             const testFile = new window.File([blob], fileName);
 
-            cy.wrap(subject).trigger("drop", {
-                dataTransfer: { files: [testFile] },
+            const dataTransferFile = new File([testFile], testFile.name, {
+                type: 'text/plain',
             });
-        });
-    }
-);
+
+            const data = {
+                dataTransfer: {
+                    files: [dataTransferFile],
+                    items: [
+                        {
+                            kind: 'dataFile',
+                            type: dataTransferFile.type,
+                            getAsFile: () => dataTransferFile,
+                            webkitGetAsEntry: () => ({
+                                isFile: true,
+                                isDirectory: false,
+                                file: (cb) => cb(dataTransferFile),
+                            }),
+                        },
+                    ],
+                    types: ['Files'],
+                },
+            };
+
+            cy.wrap(subject)
+                .trigger('dragenter', data)
+                .trigger('dragover', data)
+                .trigger('drop', data)
+            });
+        }
+    );
 
 function b64toBlob(b64Data, contentType = "", sliceSize = 512) {
     const byteCharacters = atob(b64Data);
@@ -747,7 +771,16 @@ Cypress.Commands.add("doToolbarAction", (name) => {
 Cypress.Commands.add("doDataExplorerContextAction", (name, action) => {
     cy.waitForDom();
     cy.get('[data-cy=data-table]', { timeout: 10000 }).contains(name, { timeout: 10000 }).rightclick();
-    cy.get('[data-cy=context-menu]', { timeout: 5000 }).contains(action).click();
+    cy.doContextMenuAction(action);
+});
+
+/**
+ * Perform a collections panel options menu action (the top-right menu, not right click)
+ */
+Cypress.Commands.add("doCollectionPanelOptionsAction", (action) => {
+    cy.waitForDom();
+    cy.get("[data-cy=collection-files-panel-options-btn]", { timeout: 10000 }).click();
+    cy.doContextMenuAction(action);
 });
 
 /**
@@ -765,6 +798,45 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 });
 
 /**
+ * Selects all visible data explorer items using the select all checkbox
+ */
+Cypress.Commands.add("doDataExplorerSelectAll", () => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table] [data-cy=data-table-multiselect-popover]', { timeout: 10000 })
+        .parent()
+        .find('> input[type=checkbox]')
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
+ * Selects data explorer rows in the collection files panel
+ *
+ * @param name Name of file to select
+ */
+Cypress.Commands.add("doCollectionFileSelect", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=collection-files-right-panel]', { timeout: 10000 })
+        .contains(name)
+        .parents('[data-item=true]')
+        .find('input[type=checkbox]')
+        .first()
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
+ * Navigates to data explorer item by name
+ */
+Cypress.Commands.add("doDataExplorerNavigate", (name) => {
+    cy.waitForDom();
+    cy.get('[data-cy=data-table]', { timeout: 10000 })
+        .contains(name)
+        .click()
+        .then(() => cy.waitForDom());
+});
+
+/**
  * Inputs value into data explorer search
  *
  * Useful for when there are too many items in a data explorer for the item of interest to be on the first page
@@ -772,6 +844,15 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 Cypress.Commands.add("doDataExplorerSearch", (value) => {
     cy.waitForDom();
     cy.get('[data-cy=search-input]').clear().type(value);
+    cy.waitForDom();
+});
+
+/**
+ * Changes MPV panel tabs
+ */
+Cypress.Commands.add("doMPVTabSelect", (tabName) => {
+    cy.waitForDom();
+    cy.get('[data-cy=mpv-tabs] button').contains(tabName).click();
     cy.waitForDom();
 });
 
@@ -800,5 +881,32 @@ Cypress.Commands.add("assertToolbarButtons", (tooltips) => {
 Cypress.Commands.add("assertCheckboxes", (uuids, shouldBeChecked) => {
     uuids.forEach(uuid => {
         cy.get(`input[data-cy="multiselect-checkbox-${uuid}"]`).should(shouldBeChecked ? 'be.checked' : 'not.be.checked');
+    });
+});
+
+/**
+ * Reusable perform context menu action - assumes menu is already open
+ */
+Cypress.Commands.add("doContextMenuAction", (name) => {
+    cy.waitForDom();
+    cy.get("[data-cy=context-menu]", { timeout: 5000 }).contains(name).click();
+    cy.waitForDom();
+});
+
+
+/**
+ * Asserts the presence of a property tag
+ * If shouldExist is false, only the property name is checked, as the value doesn't matter.
+ *
+ * @param propertyName name of the property
+ * @param propertyValue value of the property
+ * @param shouldExist whether the property tag should exist or not
+ */
+Cypress.Commands.add("assertPropertyTag", (propertyName, propertyValue, shouldExist = true) => {
+    cy.get("[data-cy=resource-properties]").within(() => {
+        cy.get('span').contains(propertyName).should(shouldExist ? 'exist' : 'not.exist');
+        if (shouldExist) {
+            cy.get('span').contains(propertyName).contains(propertyValue).should('exist');
+        }
     });
 });

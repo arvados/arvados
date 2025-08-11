@@ -6,8 +6,6 @@
 ### POSTGRESQL
 postgres:
   use_upstream_repo: false
-  pkgs_extra:
-    - postgresql-contrib
   postgresconf: |-
     listen_addresses = '*'  # listen on all interfaces
     # If you want to enable communications' encryption to the DB server,

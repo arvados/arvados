@@ -7,7 +7,7 @@
 # This playbook installs all services necessary for an Arvados cluster. It is
 # still in early development, so it does not support all configurations or
 # integrate with third-party services. Refer to
-# `files/example-cluster-inventory.yml` for information about how to write
+# `examples/full-cluster-inventory.yml` for information about how to write
 # configuration for this playbook.
 
 - name: Bootstrap nodes
@@ -15,11 +15,13 @@
   gather_facts: no
   tasks:
     - name: Load Arvados configuration file
+      no_log: yes
       delegate_to: localhost
       ansible.builtin.include_vars:
         name: arvados_config
         file: "{{ arvados_config_file }}"
     - name: Load Arvados cluster configuration
+      no_log: yes
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
       failed_when: arvados_cluster is undefined

@@ -1,0 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: stop docker
+  become: yes
+  ansible.builtin.systemd_service:
+    name: docker.service
+    # We only stop the service because docker.socket can start it again.
+    state: stopped

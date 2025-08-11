@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuAction, ContextMenuActionSet, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
+import { collectionPanelFilesAction, openDownloadZipDialog, openMultipleFilesRemoveDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import {
     openCollectionPartialCopyMultipleToNewCollectionDialog,
     openCollectionPartialCopyMultipleToExistingCollectionDialog,
     openCollectionPartialCopyToSeparateCollectionsDialog
 } from 'store/collections/collection-partial-copy-actions';
 import { openCollectionPartialMoveMultipleToExistingCollectionDialog, openCollectionPartialMoveMultipleToNewCollectionDialog, openCollectionPartialMoveToSeparateCollectionsDialog } from "store/collections/collection-partial-move-actions";
-import { FileCopyIcon, FileMoveIcon, RemoveIcon, SelectAllIcon, SelectNoneIcon } from "components/icon/icon";
+import { DownloadIcon, FileCopyIcon, FileMoveIcon, RemoveIcon, SelectAllIcon, SelectNoneIcon } from "components/icon/icon";
 
 const copyActions: ContextMenuAction[] = [
     {
@@ -93,23 +93,33 @@ const removeAction: ContextMenuAction = {
     }
 };
 
+const downloadZipAction: ContextMenuAction = {
+    name: ContextMenuActionNames.DOWNLOAD_SELECTED,
+    icon: DownloadIcon,
+    execute: dispatch => {
+        dispatch<any>(openDownloadZipDialog());
+    }
+};
+
 // These action sets are used on the multi-select actions button.
 export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [
     selectActions,
+    [downloadZipAction],
     copyActions,
 ];
 
 export const readOnlyCollectionFilesMultipleActionSet: ContextMenuActionSet = [
     selectActions,
+    [downloadZipAction],
     copyActionsMultiple,
 ];
 
 export const collectionFilesActionSet: ContextMenuActionSet = readOnlyCollectionFilesActionSet.concat([[
     removeAction,
-    ...moveActions
+    ...moveActions,
 ]]);
 
 export const collectionFilesMultipleActionSet: ContextMenuActionSet = readOnlyCollectionFilesMultipleActionSet.concat([[
     removeAction,
-    ...moveActionsMultiple
+    ...moveActionsMultiple,
 ]]);

@@ -27,6 +27,7 @@
     version: "{{ arvados_pin_version or omit }}"
 
 - name: Query virtual machine record
+  no_log: yes
   vars:
     filters: [["hostname", "=", "{{ arvados_shell_hostname }}"]]
     order: [["created_at", "desc"], ["uuid", "desc"]]
@@ -44,6 +45,7 @@
   register: arvados_virtual_machine_list
 
 - name: Create virtual machine record
+  no_log: yes
   when: "(arvados_virtual_machine_list.stdout|from_json)['items'] is falsy"
   vars:
     virtual_machine:

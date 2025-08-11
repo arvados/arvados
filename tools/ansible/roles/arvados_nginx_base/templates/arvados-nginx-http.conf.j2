@@ -1,0 +1,19 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #
+ # Note this file gets included in an `http` context.
+ # Any directives here need to work there.
+ #}
+
+{# Justify to 45 characters - the longest IPv6 address+netmask is 43 #}
+{% set geo_fmt = "{:<45s}" %}
+geo $external_client {
+  {{ geo_fmt.format('default') }} 1;
+  {{ geo_fmt.format('127.0.0.0/24') }} 0;
+  {{ geo_fmt.format('::1/128') }} 0;
+{% for netblock, val in arvados_nginx_internal_networks.items() %}
+  {{ geo_fmt.format(netblock) }} {{ 1 if val is false else 0 }};
+{% endfor %}
+}

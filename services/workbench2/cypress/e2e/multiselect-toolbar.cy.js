@@ -399,6 +399,48 @@ describe('For project resources', () => {
             }
         );
     });
+
+    it('should select all after selecting in filtering view', () => {
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'RedFish',
+        }).as('redfish');
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'BlueFish',
+        }).as('bluefish');
+
+        cy.getAll('@redfish', '@bluefish').then(
+            ([redfish, bluefish]) => {
+                cy.loginAs(activeUser);
+                cy.doMPVTabSelect('Data');
+
+                // Verify both projects present
+                cy.assertDataExplorerContains(redfish.name);
+                cy.assertDataExplorerContains(bluefish.name);
+
+                // Search redfish
+                cy.doDataExplorerSearch(redfish.name);
+                cy.assertDataExplorerContains(redfish.name);
+                cy.assertDataExplorerContains(bluefish.name, false);
+
+                // Select redfish
+                cy.doDataExplorerSelect(redfish.name);
+                cy.assertCheckboxes([redfish.uuid], true);
+
+                // Clear search
+                cy.doDataExplorerSearch('{selectall}{backspace}');
+                cy.assertDataExplorerContains(redfish.name);
+                cy.assertDataExplorerContains(bluefish.name);
+                // Verify unchecked
+                cy.assertCheckboxes([redfish.uuid], false);
+                cy.assertCheckboxes([bluefish.uuid], false);
+
+                // Check all and verify all checked
+                cy.doDataExplorerSelectAll();
+                cy.assertCheckboxes([redfish.uuid, bluefish.uuid], true);
+            });
+    });
 });
 
 describe('For collection resources', () => {

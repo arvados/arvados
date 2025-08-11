@@ -319,37 +319,24 @@ export const DataTable = withStyles(styles)(
         ];
 
         initializeCheckedList = (uuids: any[]): void => {
-            const newCheckedList = { ...this.props.checkedList };
-
-            if(Object.keys(newCheckedList).length === 0){
-                for(const uuid of uuids){
-                    newCheckedList[uuid] = false
-                }
-            }
-
-            for (const key in newCheckedList) {
-                if (!uuids.includes(key)) {
-                    delete newCheckedList[key];
-                }
-            }
+            const newCheckedList = uuids
+                .reduce((acc, curr) => ({
+                    ...acc,
+                    [curr]: false
+                }), {} as TCheckedList);
             this.props.setCheckedListOnStore(newCheckedList);
         };
 
         isAllSelected = (list: TCheckedList): boolean => {
-            for (const key in list) {
-                if (list[key] === false) return false;
-            }
-            return true;
+            return Object.keys(list)
+                .every((key) => list[key] === true);
         };
 
         isAnySelected = (): boolean => {
             const { checkedList } = this.props;
-            if (!checkedList) return false;
-            if (!Object.keys(checkedList).length) return false;
-            for (const key in checkedList) {
-                if (checkedList[key] === true) return true;
-            }
-            return false;
+            return !!checkedList
+                && !!Object.keys(checkedList).length
+                && Object.keys(checkedList).some((key) => checkedList[key] === true);
         };
 
         handleSelectOne = (uuid: string): void => {
@@ -368,10 +355,11 @@ export const DataTable = withStyles(styles)(
 
         handleSelectAll = (list: TCheckedList): void => {
             if (Object.keys(list).length) {
-                const newCheckedList = { ...list };
-                for (const key in newCheckedList) {
-                    newCheckedList[key] = true;
-                }
+                const newCheckedList = Object.keys(list)
+                    .reduce((acc, curr) => ({
+                        ...acc,
+                        [curr]: true
+                    }), {} as TCheckedList);
                 this.setState({ isSelected: true });
                 this.props.setCheckedListOnStore(newCheckedList);
             }

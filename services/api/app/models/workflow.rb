@@ -30,6 +30,17 @@ class Workflow < ArvadosModel
   def validate_collection_uuid
     return if !collection_uuid_changed?
 
+    # This block, and all references to
+    # $enable_workflow_collection_linking_for_tests, will be removed
+    # in 23057 when workflow->collection linking is enabled
+    # permanently.
+    if !$enable_workflow_collection_linking_for_tests
+      if !collection_uuid.nil?
+        errors.add :collection_uuid, "must be null"
+      end
+      return
+    end
+
     c = Collection.
           readable_by(current_user).
           find_by_uuid(collection_uuid)

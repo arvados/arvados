@@ -8,15 +8,18 @@
   gather_facts: no
   tasks:
     - name: Load Arvados configuration file
+      no_log: yes
       delegate_to: localhost
       ansible.builtin.include_vars:
         name: arvados_config
         file: "{{ arvados_config_file }}"
     - name: Load Arvados cluster configuration
+      no_log: yes
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
       failed_when: arvados_cluster is undefined
     - name: Get Crunch dispatch public key
+      no_log: yes
       when: arvados_cluster.Containers.DispatchPrivateKey is defined and arvados_cluster.Containers.DispatchPrivateKey is truthy
       delegate_to: localhost
       block:
@@ -118,6 +121,8 @@
     - ansible.builtin.include_role:
         name: compute_docker
       when: "arvados_cluster.Containers.RuntimeEngine == 'docker'"
+      vars:
+        arvados_docker_data_root: /tmp/docker-data
     - ansible.builtin.include_role:
         name: compute_user
 

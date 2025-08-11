@@ -5,7 +5,7 @@
 import axios from 'axios';
 import { snakeCase } from 'lodash';
 import { defaultCollectionSelectedFields } from 'models/collection';
-import { CollectionService, emptyCollectionPdh } from './collection-service';
+import { CollectionService, emptyCollectionPdh, getMinNecessaryPaths } from './collection-service';
 
 describe('collection-service', () => {
     let collectionService = {};
@@ -14,12 +14,26 @@ describe('collection-service', () => {
     let authService;
     let actions;
 
+    const fakeXhr = {
+        status: 200,
+        responseText: '<note><to>User</to><from>Client</from><body>Hello!</body></note>',
+        getResponseHeader: (header) => {
+            if (header.toLowerCase() === 'content-type') {
+                return 'application/xml';
+            }
+            return null;
+        },
+        readyState: 4,
+        responseXML: new DOMParser().parseFromString('<note><to>User</to><from>Client</from><body>Hello!</body></note>', 'application/xml'),
+    };
+
     beforeEach(() => {
         serverApi = axios.create();
         keepWebdavClient = {
             delete: cy.stub(),
             upload: cy.stub().as('upload'),
             mkdir: cy.stub(),
+            propfind: cy.stub().resolves(fakeXhr),
         };
         authService = {};
         actions = {
@@ -406,7 +420,7 @@ describe('collection-service', () => {
             for (var i = 0; i < directoryNames.length; i++) {
                 serverApi.put = cy.stub().returns(Promise.resolve({ data: {} })).as('put');
                 // when
-                await collectionService.createDirectory(collectionUuid, directoryNames[i].in);
+                await collectionService.createDirectory(collectionUuid, directoryNames.map(d => d.in));
                 // then
                 cy.get('@put').should('have.been.calledOnce');
                 cy.get('@put').should('have.been.calledWith', `/collections/${collectionUuid}`, {
@@ -418,6 +432,49 @@ describe('collection-service', () => {
                     },
                 });
             }
+        });
+    });
+
+    describe('getMinNecessaryPaths', () => {
+        const testArgs = [
+            {
+                in: [
+                    '/foo/bar/baz/qux',
+                    '/foo/bar/baz/qux/quux',
+                    '/foo/bar/baz/qux/quux/quuux',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx',
+                ],
+                out: ['/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx'],
+            },
+            {
+                in: [
+                    '/foo/bar/baz/qux',
+                    '/foo/bar/baz/quux',
+                    '/foo/bar/baz/quux/quuux',
+                    '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx',
+                ],
+                out: ['/foo/bar/baz/quux/quuux', '/foo/bar/baz/qux/quux/quuux/quuuux/quuuuxx/quuuuxxx'],
+            },
+            {
+                in: [
+                    null,
+                    undefined,
+                    17,
+                    (foo) => {},
+                    '',
+                    '/foo/bar/baz/qux',
+                    '/foo/bar/baz/quux',
+                ],
+                out: ['/foo/bar/baz/qux', '/foo/bar/baz/quux'],
+            },
+        ];
+        it('should return the minimum unique paths', () => {
+            testArgs.forEach((testArg) => {
+                const paths = getMinNecessaryPaths(testArg.in);
+                expect(paths).to.deep.equal(testArg.out);
+            });
         });
     });
 

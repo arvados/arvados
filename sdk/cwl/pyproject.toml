@@ -1,0 +1,62 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["setuptools >= 75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["dependencies", "version"]
+name = "arvados-cwl-runner"
+description = "Arvados Common Workflow Language runner"
+authors = [
+  {name = "Arvados", email = "info@arvados.org"},
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+readme = "README.rst"
+requires-python = "~= 3.8"
+
+[project.entry-points."cwltest.fsaccess"]
+fsaccess = "arvados_cwl.fsaccess:get_fsaccess"
+
+[project.scripts]
+cwl-runner = "arvados_cwl:main"
+arvados-cwl-runner = "arvados_cwl:main"
+
+[project.urls]
+Homepage = "https://arvados.org"
+Documentation = "https://doc.arvados.org"
+Repository = "https://git.arvados.org/arvados.git"
+Issues = "https://dev.arvados.org/projects/arvados/issues"
+Changelog = "https://arvados.org/releases/"
+
+[tool.setuptools]
+include-package-data = true
+# TODO: After we drop Python 3.8 and use setuptools >= 77.0,
+# specify license (a SPDX string) and license-files under [project].
+license-files = [
+  "LICENSE-2.0.txt",
+]
+
+[tool.setuptools.data-files]
+"share/doc/arvados-cwl-runner" = [
+  "LICENSE-2.0.txt",
+  "README.rst",
+]
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]

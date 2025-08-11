@@ -7,6 +7,10 @@ require 'test_helper'
 class WorkflowsApiTest < ActionDispatch::IntegrationTest
   fixtures :all
 
+  teardown do
+    $enable_workflow_collection_linking_for_tests = false
+  end
+
   def create_workflow_collection_helper
     post "/arvados/v1/collections",
          params: {:format => :json,
@@ -38,7 +42,43 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
     json_response
   end
 
+  # This test will be removed in 23057.
+  test "cannot link a workflow to a collection until #23057" do
+    collection_response = create_workflow_collection_helper
+    assert_equal(collection_response["name"], "test workflow")
+    assert_equal(collection_response["description"], "the workflow that tests linking collection and workflow records")
+    assert_equal(collection_response["owner_uuid"], users(:active).uuid)
+
+    post "/arvados/v1/workflows",
+         params: {:format => :json,
+                  :workflow => {
+                    collection_uuid: collection_response["uuid"]
+                  }
+                 },
+         headers: auth(:active)
+    assert_response 422
+    assert_match(/Collection uuid must be null/, json_response['errors'][0])
+
+    post "/arvados/v1/workflows",
+         params: {:format => :json,
+                  :workflow => {}},
+         headers: auth(:active)
+    assert_response :success
+    workflow_response = json_response
+
+    patch "/arvados/v1/workflows/#{workflow_response["uuid"]}",
+         params: {:format => :json,
+                  :workflow => {
+                    collection_uuid: collection_response["uuid"]
+                  }
+                 },
+         headers: auth(:active)
+    assert_response 422
+    assert_match(/Collection uuid must be null/, json_response['errors'][0])
+  end
+
   test "link a workflow to a collection" do
+    $enable_workflow_collection_linking_for_tests = true
 
     collection_response = create_workflow_collection_helper
     assert_equal(collection_response["name"], "test workflow")
@@ -143,6 +183,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "workflow cannot be modified after it is linked" do
+    $enable_workflow_collection_linking_for_tests = true
+
     # Now create a workflow linked to the collection.
     post "/arvados/v1/workflows",
          params: {:format => :json,
@@ -193,6 +235,7 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "trashing collection also hides workflow" do
+    $enable_workflow_collection_linking_for_tests = true
 
     collection_response = create_workflow_collection_helper
 
@@ -232,6 +275,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "collection is missing cwl_inputs" do
+    $enable_workflow_collection_linking_for_tests = true
+
     # The following is allowed, because it isn't linked.
     # This is what legacy arvados-cwl-runner instances
     # have been creating, so we want to make sure we can still
@@ -265,6 +310,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "collection cwl_inputs wrong type" do
+    $enable_workflow_collection_linking_for_tests = true
+
     post "/arvados/v1/collections",
          params: {:format => :json,
                   collection: {
@@ -307,6 +354,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "cannot change collection type as long as there is a linked workflow" do
+    $enable_workflow_collection_linking_for_tests = true
+
     collection_response = create_workflow_collection_helper
 
     # create a workflow linked to the collection.
@@ -365,6 +414,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "destroying collection destroys linked workflow" do
+    $enable_workflow_collection_linking_for_tests = true
+
     collection_response = create_workflow_collection_helper
 
     # Now create a workflow linked to the collection.
@@ -392,6 +443,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "workflow can be deleted without deleting collection" do
+    $enable_workflow_collection_linking_for_tests = true
+
     collection_response = create_workflow_collection_helper
 
     # Now create a workflow linked to the collection.
@@ -415,6 +468,8 @@ class WorkflowsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "group contents endpoint supports include=collection_uuid and query on collection.properties" do
+    $enable_workflow_collection_linking_for_tests = true
+
     collection_response = create_workflow_collection_helper
 
     # Now create a workflow linked to the collection.

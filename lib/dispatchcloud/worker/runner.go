@@ -48,12 +48,18 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 	if err := enc.Encode(wkr.instType); err != nil {
 		panic(err)
 	}
+	instanceAddr := wkr.instance.Address()
+	instanceHost, _, err := net.SplitHostPort(instanceAddr)
+	if err != nil {
+		// assume instanceAddr is a bare IPv6 host
+		instanceHost = instanceAddr
+	}
 	var configData crunchrun.ConfigData
 	configData.Env = map[string]string{
 		"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
 		"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
 		"InstanceType":      instJSON.String(),
-		"GatewayAddress":    net.JoinHostPort(wkr.instance.Address(), "0"),
+		"GatewayAddress":    net.JoinHostPort(instanceHost, "0"),
 		"GatewayAuthSecret": wkr.wp.gatewayAuthSecret(uuid),
 	}
 	if wkr.wp.arvClient.Insecure {

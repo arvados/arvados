@@ -161,6 +161,7 @@ func (h *Handler) setup() {
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
 	hs = prepend(hs, h.routeContainerEndpoints(h.router))
+	hs = prepend(hs, h.routeServiceContainerPorts(h.router))
 	hs = h.setupProxyRemoteCluster(hs)
 	hs = prepend(hs, oidcAuthorizer.Middleware)
 	mux.Handle("/", hs)
@@ -228,6 +229,18 @@ func (h *Handler) routeContainerEndpoints(rtr http.Handler) middlewareFunc {
 		if trim != req.URL.Path && (strings.Index(trim, "/log") == 27 ||
 			strings.Index(trim, "/ssh") == 27 ||
 			strings.Index(trim, "/gateway_tunnel") == 27) {
+			rtr.ServeHTTP(w, req)
+		} else {
+			next.ServeHTTP(w, req)
+		}
+	}
+}
+
+// Route ContainerWebServices requests through rtr, pass through
+// everything else.
+func (h *Handler) routeServiceContainerPorts(rtr http.Handler) middlewareFunc {
+	return func(w http.ResponseWriter, req *http.Request, next http.Handler) {
+		if router.ContainerHTTPProxyTarget(&h.Cluster.Services.ContainerWebServices, req) != "" {
 			rtr.ServeHTTP(w, req)
 		} else {
 			next.ServeHTTP(w, req)

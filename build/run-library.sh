@@ -88,11 +88,6 @@ timestamp_from_git() {
     format_last_commit_here "%ct" "$subdir"
 }
 
-calculate_python_sdk_cwl_package_versions() {
-  python_sdk_version=$(cd sdk/python && python3 arvados_version.py)
-  cwl_runner_version=$(cd sdk/cwl && python3 arvados_version.py)
-}
-
 # Usage: get_native_arch
 get_native_arch() {
   # Only amd64 and aarch64 are supported at the moment
@@ -647,7 +642,7 @@ handle_arvados_src () {
 setup_build_virtualenv() {
     PYTHON_BUILDROOT="$(mktemp --directory --tmpdir pybuild.XXXXXXXX)"
     "$PYTHON3_EXECUTABLE" -m venv "$PYTHON_BUILDROOT/venv"
-    "$PYTHON_BUILDROOT/venv/bin/pip" install --upgrade build piprepo setuptools wheel
+    "$PYTHON_BUILDROOT/venv/bin/pip" install -r "$WORKSPACE/build/requirements.build-packages.txt"
     mkdir "$PYTHON_BUILDROOT/wheelhouse"
 }
 
@@ -703,11 +698,7 @@ fpm_build_virtualenv_worker () {
   else
       # Make PKG_DIR absolute.
       PKG_DIR="$(env -C "$WORKSPACE" readlink -e "$PKG_DIR")"
-      if [[ -e "$PKG_DIR/pyproject.toml" ]]; then
-          "$PYTHON_BUILDROOT/venv/bin/python" -m build --outdir="$PYTHON_BUILDROOT/wheelhouse" "$PKG_DIR"
-      else
-          env -C "$PKG_DIR" "$PYTHON_BUILDROOT/venv/bin/python" setup.py bdist_wheel --dist-dir="$PYTHON_BUILDROOT/wheelhouse"
-      fi
+      "$PYTHON_BUILDROOT/venv/bin/python" -m build --outdir="$PYTHON_BUILDROOT/wheelhouse" "$PKG_DIR"
   fi
   if [[ $? -ne 0 ]]; then
     printf "Error, unable to download/build wheel for %s @ %s\n" "$PKG" "$PKG_DIR"
@@ -897,9 +888,9 @@ fpm_build() {
 
   declare -a COMMAND_ARR=("fpm" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
   if [ python = "$PACKAGE_TYPE" ] && [ deb = "$FORMAT" ]; then
-      # Dependencies are built from setup.py.  Since setup.py will never
-      # refer to Debian package iterations, it doesn't make sense to
-      # enforce those in the .deb dependencies.
+      # Dependencies are built from Python package metadata.  Since that
+      # will never refer to Debian package iterations, it doesn't make sense
+      # to enforce those in the .deb dependencies.
       COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
   fi
 
