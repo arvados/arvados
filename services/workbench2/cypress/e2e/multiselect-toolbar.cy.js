@@ -32,7 +32,6 @@ function createContainerRequest(user, name, docker_image, command, reuse = false
 }
 
 describe('Multiselect Toolbar Baseline Tests', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -45,15 +44,10 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
-            });
     });
 
     it('exists in DOM in neutral state', () => {
-        cy.loginAs(activeUser);
+        cy.loginAs(adminUser);
         //multiselect toolbar should exist in details card and not in data explorer
         cy.get('[data-cy=user-details-card]')
             .should('exist')
@@ -109,7 +103,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                 cy.loginAs(adminUser);
 
                 // Data tab
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect('Data');
                 cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], false);
 
                     //check that a thing can be checked
@@ -132,7 +126,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                     cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], false);
 
                 // Workflow Runs tab
-                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                cy.doMPVTabSelect('Workflow Runs');
                 cy.assertCheckboxes([testProcess1.uuid], false);
 
                     //check that a thing can be checked
@@ -186,7 +180,7 @@ describe('For project resources', () => {
         }).as('testProject');
         cy.getAll('@testProject').then(([testProject]) => {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testProject.name);
 
             // disabled until #22787 is resolved
@@ -200,7 +194,7 @@ describe('For project resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Share
@@ -233,14 +227,14 @@ describe('For project resources', () => {
             cy.assertToolbarButtons(tooltips.adminProject);
 
             //Add to favorites
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             cy.waitForDom();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProject.name)
 
             //Add to public favorites
-            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.doToolbarAction("Add to public favorites");
             cy.waitForDom();
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
@@ -335,7 +329,7 @@ describe('For project resources', () => {
 
                 // non-admin actions
                 cy.loginAs(activeUser);
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect('Data');
                 cy.assertDataExplorerContains(testProject4.name, true);
                 cy.assertDataExplorerContains(testProject5.name, true);
 
@@ -352,7 +346,7 @@ describe('For project resources', () => {
 
                 // admin actions
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect('Data');
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
                 cy.assertDataExplorerContains(testProject3.name, true);
@@ -368,11 +362,11 @@ describe('For project resources', () => {
                 cy.get('[data-cy=picker-dialog-project-search]').find('input').type(testProject3.name);
                 cy.get('[data-cy=projects-tree-search-picker]').contains(testProject3.name).click();
                 cy.get('[data-cy=form-submit-btn]').click();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect('Data');
 
                 cy.assertDataExplorerContains(testProject3.name, true).click();
                 cy.waitForDom()
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect('Data');
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
 
@@ -389,11 +383,12 @@ describe('For project resources', () => {
                 //check multi-project unTrash
                 cy.doDataExplorerSelect(testProject1.name);
                 cy.doDataExplorerSelect(testProject2.name);
-                cy.doToolbarAction('Restore');
+                cy.get(`[aria-label="Restore"]`, { timeout: 5000 }).eq(0).click();
+                cy.waitForDom();
                 cy.assertDataExplorerContains(testProject1.name, false);
                 cy.assertDataExplorerContains(testProject2.name, false);
                 cy.contains(testProject3.name).click();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect('Data');
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
             }
@@ -472,7 +467,7 @@ describe('For collection resources', () => {
         }).as("testCollection")
         cy.getAll('@testCollection').then(([testCollection]) => {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testCollection.name);
 
             // disabled until #22787 is resolved
@@ -486,7 +481,7 @@ describe('For collection resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Share
@@ -509,14 +504,14 @@ describe('For collection resources', () => {
             });
 
             //Add to favorites
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             cy.waitForDom();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testCollection.name)
 
             //Add to public favorites
-            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.doToolbarAction("Add to public favorites");
             cy.waitForDom();
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
@@ -563,7 +558,7 @@ describe('For collection resources', () => {
             .then(([testProject1, testCollection1, testCollection2, testCollection3, testCollection4]) => {
 
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
@@ -584,13 +579,14 @@ describe('For collection resources', () => {
 
                 cy.assertDataExplorerContains(testProject1.name, true).click();
                 cy.waitForDom();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
 
                 //check multi-collection trash
                 cy.contains('Home Projects').click();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
+                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 });
                 cy.doDataExplorerSelect(testCollection3.name);
                 cy.doDataExplorerSelect(testCollection4.name);
                 cy.doToolbarAction('Move to trash');
@@ -607,7 +603,7 @@ describe('For collection resources', () => {
                 cy.assertToolbarButtons(tooltips.readOnlyProject);
                 cy.get("[data-cy=data-table-row]").contains(testProject1.name).click();
                 cy.waitForDom();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.doDataExplorerSelect(testCollection1.name);
                 cy.assertToolbarButtons(tooltips.readonlyCollection);
                 cy.doDataExplorerSelect(testCollection2.name);
@@ -618,7 +614,6 @@ describe('For collection resources', () => {
 });
 
 describe('For process resources', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -630,11 +625,6 @@ describe('For process resources', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
@@ -649,7 +639,7 @@ describe('For process resources', () => {
         ).as('testProcess');
         cy.getAll('@testProcess').then(([testProcess]) => {
             cy.loginAs(adminUser);
-            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doMPVTabSelect('Workflow Runs');
 
             cy.doDataExplorerSelect(testProcess.name);
             cy.assertToolbarButtons(tooltips.adminRunningProcess);
@@ -670,46 +660,46 @@ describe('For process resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Copy and re-run process
-            cy.get('[aria-label="Copy and re-run process"]').click();
+            cy.doToolbarAction("Copy and re-run process");
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.contains("Choose location for re-run").should('be.visible');
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
 
             //edit process
-            cy.get('[aria-label="Edit process"]').click();
+            cy.doToolbarAction("Edit process");
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.contains("Edit Process").should('be.visible');
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
 
             //Outputs
-            cy.get('[aria-label="Outputs"]').click();
+            cy.doToolbarAction("Outputs");
             cy.contains('Output collection was trashed or deleted').should('exist');
 
             //Add to favorites
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
 
             //Add to public favorites
-            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.doToolbarAction("Add to public favorites");
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
 
             //API Details
-            cy.get('[aria-label="API Details"]').click()
+            cy.doToolbarAction("API Details");
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
 
             //Remove
-            cy.get('[aria-label="Remove"]').click();
+            cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -737,7 +727,7 @@ describe('For process resources', () => {
         cy.getAll('@testProcess1', '@testProcess2').then(([testProcess1, testProcess2]) => {
 
             cy.loginAs(adminUser);
-            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doMPVTabSelect('Workflow Runs');
             cy.assertDataExplorerContains(testProcess1.name, true);
             cy.assertDataExplorerContains(testProcess2.name, true);
 
@@ -748,7 +738,7 @@ describe('For process resources', () => {
             cy.assertToolbarButtons(tooltips.multiProcess);
 
             //multiprocess remove
-            cy.get('[aria-label="Remove"]').click();
+            cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -759,7 +749,6 @@ describe('For process resources', () => {
 });
 
 describe('For workflow resources', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -772,11 +761,6 @@ describe('For workflow resources', () => {
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
-            });
     });
 
     it('should behave correctly for a single workflow', () => {
@@ -787,7 +771,7 @@ describe('For workflow resources', () => {
             }).as('testWorkflow');
         cy.getAll('@testWorkflow').then(function ([testWorkflow]) {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect('Data');
             cy.assertDataExplorerContains(testWorkflow.name, true);
 
             //assert toolbar buttons
@@ -805,26 +789,26 @@ describe('For workflow resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Run workflow
-            cy.get('[aria-label="Run Workflow"]').click();
+            cy.doToolbarAction("Run Workflow");
             cy.get('[data-cy=choose-a-project-dialog]').within(() => {
                 cy.contains("Choose the project where the workflow will run").should('be.visible');
                 cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
             });
             cy.contains('Home Projects').click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testWorkflow.name);
 
             //api details
-            cy.get('[aria-label="API Details"]').click()
+            cy.doToolbarAction("API Details");
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
 
             //delete workflow
-            cy.get('[aria-label="Delete Workflow"]').click();
+            cy.doToolbarAction("Delete Workflow");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -846,7 +830,7 @@ describe('For workflow resources', () => {
             }).as('testWorkflow2');
         cy.getAll('@testWorkflow1', '@testWorkflow2').then(function ([testWorkflow1, testWorkflow2]) {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect('Data');
             cy.assertDataExplorerContains(testWorkflow1.name, true);
             cy.assertDataExplorerContains(testWorkflow2.name, true);
 
@@ -868,7 +852,6 @@ describe('For workflow resources', () => {
 });
 
 describe('For groups', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -880,11 +863,6 @@ describe('For groups', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
@@ -907,18 +885,18 @@ describe('For groups', () => {
             // cy.get('[data-cy=close-details-btn]').click();
 
             //API Details
-            cy.get('[aria-label="API Details"]').click()
+            cy.doToolbarAction("API Details");
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
 
             //rename group
-            cy.get('[aria-label="Rename"]').click();
+            cy.doToolbarAction("Rename");
             cy.get('[data-cy=form-dialog]').within(() => {
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
 
             //remove group
-            cy.get('[aria-label="Remove"]').click();
+            cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -1016,12 +994,12 @@ describe('For users', () => {
         cy.doDataExplorerSelect(otherUser.user.full_name);
 
         // API Details
-        cy.get('[aria-label="API Details"]').click()
+        cy.doToolbarAction("API Details");
         cy.get('[role=dialog]').contains('API Details')
         cy.contains('Close').click()
 
         //attributes
-        cy.get('[aria-label="Attributes"]').click()
+        cy.doToolbarAction("Attributes");   
         cy.get('[role=dialog]').contains('Attributes')
         cy.contains('Close').click()
 
@@ -1072,7 +1050,6 @@ describe('For users', () => {
 });
 
 describe('For multiple resource types', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -1084,11 +1061,6 @@ describe('For multiple resource types', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
@@ -1115,17 +1087,17 @@ describe('For multiple resource types', () => {
             .then(([testProject, testCollection,  testProcess]) => {
 
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect('Data');
             //add resources to favorites so they are all in the same table
             cy.doDataExplorerSelect(testProject.name);
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             //deselect project
             cy.doDataExplorerSelect(testProject.name);
             cy.doDataExplorerSelect(testCollection.name);
-            cy.get('[aria-label="Add to favorites"]').click();
-            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doToolbarAction("Add to favorites");
+            cy.doMPVTabSelect('Workflow Runs');
             cy.doDataExplorerSelect(testProcess.name);
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
 
             cy.contains('My Favorites').click();
 
