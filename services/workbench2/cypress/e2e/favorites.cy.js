@@ -326,7 +326,7 @@ describe('Favorites-SidePanel tests', function () {
                 //check if the correct favorites are displayed in the side panel
                 cy.get('span').contains(myFavoriteProject1.name).should('not.exist');
                 cy.get('span').contains(myFavoriteProject2.name).should('not.exist');
-                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).should('exist').click({ force: true });
                 cy.get('span').contains(myFavoriteProject1.name).should('exist');
                 cy.get('span').contains(myFavoriteProject2.name).should('exist');
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
@@ -385,6 +385,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
                 // Check removed from favorites
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').click()
+                cy.wait(1000);
                 cy.get('[data-cy=side-panel-tree]').should('not.contain', testFavoriteCollection.name);
                 // Untrash favorited collection
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
