@@ -132,7 +132,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                     cy.assertCheckboxes([testProject1.uuid, testProject2.uuid, testProject3.uuid], false);
 
                 // Workflow Runs tab
-                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                cy.doMPVTabSelect('Workflow Runs');
                 cy.assertCheckboxes([testProcess1.uuid], false);
 
                     //check that a thing can be checked
@@ -649,7 +649,7 @@ describe('For process resources', () => {
         ).as('testProcess');
         cy.getAll('@testProcess').then(([testProcess]) => {
             cy.loginAs(adminUser);
-            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doMPVTabSelect('Workflow Runs');
 
             cy.doDataExplorerSelect(testProcess.name);
             cy.assertToolbarButtons(tooltips.adminRunningProcess);
@@ -737,7 +737,7 @@ describe('For process resources', () => {
         cy.getAll('@testProcess1', '@testProcess2').then(([testProcess1, testProcess2]) => {
 
             cy.loginAs(adminUser);
-            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doMPVTabSelect('Workflow Runs');
             cy.assertDataExplorerContains(testProcess1.name, true);
             cy.assertDataExplorerContains(testProcess2.name, true);
 
@@ -1123,7 +1123,7 @@ describe('For multiple resource types', () => {
             cy.doDataExplorerSelect(testProject.name);
             cy.doDataExplorerSelect(testCollection.name);
             cy.get('[aria-label="Add to favorites"]').click();
-            cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+            cy.doMPVTabSelect('Workflow Runs');
             cy.doDataExplorerSelect(testProcess.name);
             cy.get('[aria-label="Add to favorites"]').click();
 

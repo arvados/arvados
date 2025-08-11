@@ -360,6 +360,7 @@ describe('Favorites-SidePanel tests', function () {
                 // Trash favorited project
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
+                cy.waitForDom();
                 // Check removed from favorites
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', myFavoriteProject1.name);
                 // Untrash favorited project
@@ -387,6 +388,9 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').should('not.contain', testFavoriteCollection.name);
                 // Untrash favorited collection
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
+                // collection might not be on first page
+                cy.get('[data-cy=search-input]').type('coll');
+                cy.waitForDom();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
                 cy.get('[data-cy=snackbar]').contains('Item untrashed').should('exist');
