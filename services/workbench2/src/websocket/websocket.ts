@@ -17,21 +17,45 @@ import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { allProcessesPanelActions } from "store/all-processes-panel/all-processes-panel-action";
 import { loadCollection } from "store/workbench/workbench-actions";
 import { matchAllProcessesRoute, matchProjectRoute, matchProcessRoute } from "routes/routes";
+import { throttle } from "lodash";
+
+type ThrottleSet = {
+    subProcess: () => void;
+    allProcesses: () => void;
+    project: () => void;
+};
+
+const THROTTLE_INTERVAL = 15000;
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {
         const webSocketService = WebSocketService.getInstance();
-        webSocketService.setMessageListener(messageListener(store));
+
+        // Throttles must be constructed once
+        const throttleSet: ThrottleSet = {
+            subProcess: throttle(() => {
+                store.dispatch(subprocessPanelActions.REQUEST_ITEMS(false, true));
+            }, THROTTLE_INTERVAL),
+            allProcesses: throttle(() => {
+                store.dispatch(allProcessesPanelActions.REQUEST_ITEMS(false, true));
+            }, THROTTLE_INTERVAL),
+            project: throttle(() => {
+                store.dispatch(projectPanelDataActions.REQUEST_ITEMS(false, true));
+            }, THROTTLE_INTERVAL),
+        };
+
+        webSocketService.setMessageListener(messageListener(store, throttleSet));
         webSocketService.connect(config.websocketUrl, authService);
     } else {
         console.warn("WARNING: Websocket ExternalURL is not set on the cluster config.");
     }
 };
 
-const messageListener = (store: RootStore) => (message: ResourceEventMessage) => {
+const messageListener = (store: RootStore, throttles: ThrottleSet) => (message: ResourceEventMessage) => {
     if (message.eventType === LogEventType.CREATE || message.eventType === LogEventType.UPDATE) {
         const state = store.getState();
         const location = state.router.location ? state.router.location.pathname : "";
+
         switch (message.objectKind) {
             case ResourceKind.COLLECTION:
                 const currentCollection = state.collectionPanel.item;
@@ -46,7 +70,7 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
                     }
                     const proc = getProcess(state.processPanel.containerRequestUuid)(state.resources);
                     if (proc && proc.container && proc.container.uuid === message.properties["new_attributes"]["requesting_container_uuid"]) {
-                        store.dispatch(subprocessPanelActions.REQUEST_ITEMS(false, true));
+                        throttles.subProcess();
                         return;
                     }
                 }
@@ -57,16 +81,16 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
                     const subproc = getSubprocesses(state.processPanel.containerRequestUuid)(state.resources);
                     for (const sb of subproc) {
                         if (sb.containerRequest.uuid === message.objectUuid || (sb.container && sb.container.uuid === message.objectUuid)) {
-                            store.dispatch(subprocessPanelActions.REQUEST_ITEMS(false, true));
+                            throttles.subProcess();
                             break;
                         }
                     }
                 }
                 if (matchAllProcessesRoute(location)) {
-                    store.dispatch(allProcessesPanelActions.REQUEST_ITEMS(false, true));
+                    throttles.allProcesses();
                 }
                 if (matchProjectRoute(location) && message.objectOwnerUuid === getProjectPanelCurrentUuid(state)) {
-                    store.dispatch(projectPanelDataActions.REQUEST_ITEMS(false, true));
+                    throttles.project();
                 }
                 return;
             default:
