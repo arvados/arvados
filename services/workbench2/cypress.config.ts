@@ -28,6 +28,18 @@ export default defineConfig({
     // We've imported your old cypress plugins here.
     // You may want to clean this up later by importing these.
       setupNodeEvents(on, config) {
+          on("before:browser:launch", (browser, launchOptions) => {
+            if (["chrome", "edge"].includes(browser.name)) {
+              if (browser.isHeadless) {
+                launchOptions.args.push("--no-sandbox");
+                launchOptions.args.push("--disable-gl-drawing-for-tests");
+                launchOptions.args.push("--disable-gpu");
+              }
+              launchOptions.args.push("--js-flags=--max-old-space-size=3500");
+            }
+            return launchOptions;
+          });
+
           require("cypress-fail-fast/plugin")(on, config);
           require('./cypress/plugins/index.js')(on, config)
           return config;
