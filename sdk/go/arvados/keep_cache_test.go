@@ -149,7 +149,7 @@ func (s *keepCacheSuite) TestBlockWrite(c *check.C) {
 
 func (s *keepCacheSuite) TestMaxSize(c *check.C) {
 	backend := &keepGatewayMemoryBacked{}
-	cache := DiskCache{
+	cache := &DiskCache{
 		KeepGateway: backend,
 		MaxSize:     40000000,
 		Dir:         c.MkDir(),
@@ -163,10 +163,7 @@ func (s *keepCacheSuite) TestMaxSize(c *check.C) {
 
 	// Wait for tidy to finish, check that it doesn't delete the
 	// only block.
-	time.Sleep(time.Millisecond)
-	for atomic.LoadInt32(&cache.tidying) > 0 {
-		time.Sleep(time.Millisecond)
-	}
+	waitTidy(cache)
 	c.Check(atomic.LoadInt64(&cache.sizeMeasured), check.Equals, int64(44000000))
 
 	resp2, err := cache.BlockWrite(ctx, BlockWriteOptions{
@@ -178,10 +175,7 @@ func (s *keepCacheSuite) TestMaxSize(c *check.C) {
 
 	// Wait for tidy to finish, check that it deleted the older
 	// block.
-	time.Sleep(time.Millisecond)
-	for atomic.LoadInt32(&cache.tidying) > 0 {
-		time.Sleep(time.Millisecond)
-	}
+	waitTidy(cache)
 	c.Check(atomic.LoadInt64(&cache.sizeMeasured), check.Equals, int64(32000000))
 
 	n, err := cache.ReadAt(resp1.Locator, make([]byte, 2), 0)
@@ -403,12 +397,42 @@ func (s *keepCacheSuite) TestStreaming(c *check.C) {
 	c.Logf("doneLate = %d", doneLate)
 }
 
+// Check that we empty out the heldopen filehandle cache when it
+// exceeds heldopenMax entries.
+func (s *keepCacheSuite) TestHeldOpen_RollCache(c *check.C) {
+	blksize := 64000
+	blkcount := 64
+	cache, locators := setupCacheWithBlocks(c, blksize, blkcount)
+	cache.maxSize = ByteSizeOrPercent(blksize*blkcount + 1)
+	cache.sharedCache.heldopenMax = blkcount + 1
+	targetsize := blkcount / 4
+
+	// Exercise the cache until we have more heldopen files than
+	// targetsize
+	for i := 0; i < 100; i++ {
+		testConcurrentReads(c, blkcount, cache, locators, blksize)
+		waitTidy(cache)
+		cache.tidy()
+		if len(cache.sharedCache.heldopen) > targetsize {
+			break
+		}
+	}
+	c.Assert(len(cache.sharedCache.heldopen) > targetsize, check.Equals, true)
+
+	// Reduce heldopenMax to make sure we roll the cache in the
+	// following ReadAt().
+	cache.sharedCache.heldopenMax = targetsize / 2
+	cache.deleteHeldopen(cache.cacheFile(locators[0][:32]), nil)
+	_, err := cache.ReadAt(locators[0], make([]byte, 1234), 0)
+	c.Assert(err, check.IsNil)
+	c.Check(len(cache.sharedCache.heldopen), check.Equals, 1)
+}
+
 var _ = check.Suite(&keepCacheBenchSuite{})
 
 type keepCacheBenchSuite struct {
 	blksize  int
 	blkcount int
-	backend  *keepGatewayMemoryBacked
 	cache    *DiskCache
 	locators []string
 }
@@ -416,42 +440,16 @@ type keepCacheBenchSuite struct {
 func (s *keepCacheBenchSuite) SetUpTest(c *check.C) {
 	s.blksize = 64000000
 	s.blkcount = 8
-	s.backend = &keepGatewayMemoryBacked{}
-	s.cache = &DiskCache{
-		KeepGateway: s.backend,
-		MaxSize:     ByteSizeOrPercent(s.blksize),
-		Dir:         c.MkDir(),
-		Logger:      ctxlog.TestLogger(c),
-	}
-	s.locators = make([]string, s.blkcount)
-	data := make([]byte, s.blksize)
-	for b := 0; b < s.blkcount; b++ {
-		for i := range data {
-			data[i] = byte(b)
-		}
-		resp, err := s.cache.BlockWrite(context.Background(), BlockWriteOptions{
-			Data: data,
-		})
-		c.Assert(err, check.IsNil)
-		s.locators[b] = resp.Locator
-	}
+	s.cache, s.locators = setupCacheWithBlocks(c, s.blksize, s.blkcount)
+}
+
+func (s *keepCacheBenchSuite) BenchmarkConcurrentReads_LowNOFiles(c *check.C) {
+	s.cache.sharedCache.heldopenMax = 4
+	s.BenchmarkConcurrentReads(c)
 }
 
 func (s *keepCacheBenchSuite) BenchmarkConcurrentReads(c *check.C) {
-	var wg sync.WaitGroup
-	for i := 0; i < c.N; i++ {
-		i := i
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			buf := make([]byte, benchReadSize)
-			_, err := s.cache.ReadAt(s.locators[i%s.blkcount], buf, int((int64(i)*1234)%int64(s.blksize-benchReadSize)))
-			if err != nil {
-				c.Fail()
-			}
-		}()
-	}
-	wg.Wait()
+	testConcurrentReads(c, c.N, s.cache, s.locators, s.blksize)
 }
 
 func (s *keepCacheBenchSuite) BenchmarkSequentialReads(c *check.C) {
@@ -526,4 +524,52 @@ func (s *fileOpsSuite) BenchmarkKeepOpen(c *check.C) {
 	}
 	wg.Wait()
 	f.Close()
+}
+
+func setupCacheWithBlocks(c *check.C, blksize, blkcount int) (cache *DiskCache, locators []string) {
+	backend := &keepGatewayMemoryBacked{}
+	cache = &DiskCache{
+		KeepGateway: backend,
+		MaxSize:     ByteSizeOrPercent(blksize),
+		Dir:         c.MkDir(),
+		Logger:      ctxlog.TestLogger(c),
+	}
+	locators = make([]string, blkcount)
+	data := make([]byte, blksize)
+	for b := 0; b < blkcount; b++ {
+		for i := range data {
+			data[i] = byte(b)
+		}
+		resp, err := cache.BlockWrite(context.Background(), BlockWriteOptions{
+			Data: data,
+		})
+		c.Assert(err, check.IsNil)
+		locators[b] = resp.Locator
+	}
+	return
+}
+
+func testConcurrentReads(c *check.C, N int, cache *DiskCache, locators []string, blksize int) {
+	blkcount := len(locators)
+	var wg sync.WaitGroup
+	for i := 0; i < N; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			buf := make([]byte, benchReadSize)
+			_, err := cache.ReadAt(locators[i%blkcount], buf, int((int64(i)*1234)%int64(blksize-benchReadSize)))
+			if err != nil {
+				c.Fail()
+			}
+		}()
+	}
+	wg.Wait()
+}
+
+func waitTidy(cache *DiskCache) {
+	time.Sleep(time.Millisecond)
+	for atomic.LoadInt32(&cache.tidying) > 0 {
+		time.Sleep(time.Millisecond)
+	}
 }
