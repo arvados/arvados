@@ -182,11 +182,15 @@ func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []strin
 
 	disk := dispatchcloud.EstimateScratchSpace(&container)
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
-	return []string{
+	args := []string{
 		fmt.Sprintf("--mem=%d", mem),
 		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
 		fmt.Sprintf("--tmp=%d", disk),
 	}
+	if gpus := container.RuntimeConstraints.GPU.DeviceCount; gpus > 0 {
+		args = append(args, fmt.Sprintf("--gpus=%d", gpus))
+	}
+	return args
 }
 
 func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {

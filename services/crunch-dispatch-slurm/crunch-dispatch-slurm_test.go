@@ -325,6 +325,24 @@ func (s *StubbedSuite) TestSbatchArgs(c *C) {
 	}
 }
 
+func (s *StubbedSuite) TestSbatchArgs_GPU(c *C) {
+	container := arvados.Container{
+		UUID: "123",
+		RuntimeConstraints: arvados.RuntimeConstraints{
+			RAM:   250000000,
+			VCPUs: 2,
+			GPU: arvados.GPURuntimeConstraints{
+				DeviceCount: 3,
+			},
+		},
+		Priority: 1,
+	}
+	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = nil
+	args, err := s.disp.sbatchArgs(container)
+	c.Check(args, DeepEquals, []string{"--job-name=123", "--nice=10000", "--no-requeue", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--gpus=3"})
+	c.Check(err, IsNil)
+}
+
 func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 	container := arvados.Container{
 		UUID:               "123",
