@@ -481,7 +481,7 @@ func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int
 					}
 				}
 			}(cache.heldopen)
-			cache.heldopen = nil
+			cache.heldopen = make(map[string]*openFileEnt, cache.heldopenMax)
 		}
 		cache.heldopen[cachefilename] = heldopen
 		heldopen.Lock()
