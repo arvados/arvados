@@ -36,6 +36,14 @@ export class WebSocketService {
     }
 
     /**
+     * Testing method to access the WS instance
+     * @returns The internal WebSocket instance. Used for testing purposes.
+     */
+    public internal_getWsInstance() {
+        return this.ws;
+    }
+
+    /**
      * Sets connection params, starts WS connection, and attaches handlers
      * @param url WS url
      * @param authService Auth service containing API token

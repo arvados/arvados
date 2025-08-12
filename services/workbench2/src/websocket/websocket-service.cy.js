@@ -2,6 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import Axios from "axios";
+import { mockConfig } from "common/config";
+import { createBrowserHistory } from "history";
+import { configureStore } from "store/store";
+import { createServices } from "services/services";
+import { initWebSocket } from "./websocket"
+import { ResourceKind } from "models/resource";
 import { WebSocketService } from "./websocket-service";
 
 describe('WebSocketService', () => {
@@ -19,6 +26,12 @@ describe('WebSocketService', () => {
                 url,
                 readyState,
                 send: cy.stub().as('send'),
+                // Receive method for testing, triggers message event listeners
+                receive: (data) => {
+                    eventListeners['message'].forEach(callback => callback({
+                        data: JSON.stringify(data)
+                    }));
+                },
                 close: cy.stub().callsFake(() => {
                     readyState = WebSocket.CLOSED;
                 }),
@@ -87,5 +100,53 @@ describe('WebSocketService', () => {
 
         // Check that the service sent a subscribe request after open
         cy.get('@send').should('have.been.calledWith', '{"method":"subscribe"}');
+    });
+
+    it('throttles calls to DE', () => {
+        // For real store and services
+        const storeConfig = {};
+        const actions = {
+            progressFn: (id, working) => { },
+            errorFn: (id, message) => { }
+        };
+
+        // Create real store
+        let axiosInst = Axios.create({ headers: {} });
+        let services = createServices(mockConfig({}), actions, axiosInst);
+        let store = configureStore(createBrowserHistory(), services, storeConfig);
+        cy.stub(store, 'getState').callsFake(() => {
+            return {
+                // Rest of store is not really needed
+                // also calling store.getState here infinite loops
+                router: {
+                    location: {
+                        // Fake all processes page so that container WS updates trigger DE refresh
+                        pathname: '/all_processes',
+                    },
+                },
+            };
+        });
+
+        const wsConfig = { websocketUrl: "wss://mockurl" };
+        const fakeDispatch = cy.stub(store, 'dispatch');
+
+        initWebSocket(wsConfig, mockAuthService, store);
+        const webSocketService = WebSocketService.getInstance();
+
+        // Verify isActive is true
+        expect(webSocketService.isActive()).to.be.true;
+        // Expect no calls so far
+        expect(fakeDispatch.callCount).to.equal(0);
+
+        // Send 5 WS messages
+        for (let i = 0; i < 5; i++) {
+            webSocketService.internal_getWsInstance().receive({
+                event_type: "update",
+                objectKind: ResourceKind.CONTAINER,
+            });
+        }
+
+        // Expect only 1 dispatch call to refresh the DE
+        expect(fakeDispatch.callCount).to.equal(1);
     });
 });
