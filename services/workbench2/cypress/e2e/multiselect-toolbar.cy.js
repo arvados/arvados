@@ -194,7 +194,7 @@ describe('For project resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Share
@@ -227,14 +227,14 @@ describe('For project resources', () => {
             cy.assertToolbarButtons(tooltips.adminProject);
 
             //Add to favorites
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             cy.waitForDom();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProject.name)
 
             //Add to public favorites
-            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.doToolbarAction("Add to public favorites");
             cy.waitForDom();
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
@@ -480,7 +480,7 @@ describe('For collection resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Share
@@ -503,14 +503,14 @@ describe('For collection resources', () => {
             });
 
             //Add to favorites
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             cy.waitForDom();
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testCollection.name)
 
             //Add to public favorites
-            cy.get('[aria-label="Add to public favorites"]').click()
+            cy.doToolbarAction("Add to public favorites");
             cy.waitForDom();
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
@@ -658,48 +658,46 @@ describe('For process resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Copy and re-run process
-            cy.get('[aria-label="Copy and re-run process"]').click();
+            cy.doToolbarAction("Copy and re-run process");
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.contains("Choose location for re-run").should('be.visible');
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
 
             //edit process
-            cy.get('[aria-label="Edit process"]').click();
+            cy.doToolbarAction("Edit process");
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.contains("Edit Process").should('be.visible');
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
 
             //Outputs
-            cy.get('[aria-label="Outputs"]').click();
+            cy.doToolbarAction("Outputs");
             cy.contains('Output collection was trashed or deleted').should('exist');
 
             //Add to favorites
-            cy.get('[aria-label="Add to favorites"]').click();
-            cy.wait(500);
+            cy.doToolbarAction("Add to favorites");
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
 
             //Add to public favorites
-            cy.get('[aria-label="Add to public favorites"]').click()
-            cy.wait(500);
+            cy.doToolbarAction("Add to public favorites");
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
 
             //API Details
-            cy.get('[aria-label="API Details"]').click()
+            cy.doToolbarAction("API Details");
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
 
             //Remove
-            cy.get('[aria-label="Remove"]').click();
+            cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -738,7 +736,7 @@ describe('For process resources', () => {
             cy.assertToolbarButtons(tooltips.multiProcess);
 
             //multiprocess remove
-            cy.get('[aria-label="Remove"]').click();
+            cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -789,11 +787,11 @@ describe('For workflow resources', () => {
             });
 
             // Open in new tab
-            cy.get('[aria-label="Open in new tab"]').click();
+            cy.doToolbarAction("Open in new tab");
             cy.get('@windowOpen').should('be.called');
 
             //Run workflow
-            cy.get('[aria-label="Run Workflow"]').click();
+            cy.doToolbarAction("Run Workflow");
             cy.get('[data-cy=choose-a-project-dialog]').within(() => {
                 cy.contains("Choose the project where the workflow will run").should('be.visible');
                 cy.get('[data-cy=run-wf-project-picker-ok-button]').click();
@@ -803,12 +801,12 @@ describe('For workflow resources', () => {
             cy.doDataExplorerSelect(testWorkflow.name);
 
             //api details
-            cy.get('[aria-label="API Details"]').click()
+            cy.doToolbarAction("API Details");
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
 
             //delete workflow
-            cy.get('[aria-label="Delete Workflow"]').click();
+            cy.doToolbarAction("Delete Workflow");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -885,18 +883,18 @@ describe('For groups', () => {
             // cy.get('[data-cy=close-details-btn]').click();
 
             //API Details
-            cy.get('[aria-label="API Details"]').click()
+            cy.doToolbarAction("API Details");
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
 
             //rename group
-            cy.get('[aria-label="Rename"]').click();
+            cy.doToolbarAction("Rename");
             cy.get('[data-cy=form-dialog]').within(() => {
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
 
             //remove group
-            cy.get('[aria-label="Remove"]').click();
+            cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog]').within(() => {
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             });
@@ -994,12 +992,12 @@ describe('For users', () => {
         cy.doDataExplorerSelect(otherUser.user.full_name);
 
         // API Details
-        cy.get('[aria-label="API Details"]').click()
+        cy.doToolbarAction("API Details");
         cy.get('[role=dialog]').contains('API Details')
         cy.contains('Close').click()
 
         //attributes
-        cy.get('[aria-label="Attributes"]').click()
+        cy.doToolbarAction("Attributes");   
         cy.get('[role=dialog]').contains('Attributes')
         cy.contains('Close').click()
 
@@ -1090,14 +1088,14 @@ describe('For multiple resource types', () => {
             cy.get('button').contains('Data').click();
             //add resources to favorites so they are all in the same table
             cy.doDataExplorerSelect(testProject.name);
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             //deselect project
             cy.doDataExplorerSelect(testProject.name);
             cy.doDataExplorerSelect(testCollection.name);
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
             cy.doMPVTabSelect('Workflow Runs');
             cy.doDataExplorerSelect(testProcess.name);
-            cy.get('[aria-label="Add to favorites"]').click();
+            cy.doToolbarAction("Add to favorites");
 
             cy.contains('My Favorites').click();
 
