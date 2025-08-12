@@ -681,12 +681,14 @@ describe('For process resources', () => {
 
             //Add to favorites
             cy.get('[aria-label="Add to favorites"]').click();
+            cy.wait(500);
             cy.get('[data-cy=favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
 
             //Add to public favorites
             cy.get('[aria-label="Add to public favorites"]').click()
+            cy.wait(500);
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
