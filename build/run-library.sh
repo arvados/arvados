@@ -11,6 +11,11 @@
 LICENSE_PACKAGE_TS=20151208015500
 RAILS_PACKAGE_ITERATION="${ARVADOS_BUILDING_ITERATION:-1}"
 
+declare -A LICENSE_FILE_NAME_MAP=(
+    [agpl-3.0.txt]="GNU Affero General Public License version 3.0"
+    [LICENSE-2.0.txt]="Apache 2.0"
+)
+
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
 }
@@ -748,6 +753,12 @@ fpm_build_virtualenv_worker () {
   fi
   echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
 
+  local lic_key="$("$venv_dir/bin/python3" "$WORKSPACE/build/pypkg_info.py" metadata "$PKG" License-File)"
+  local lic_desc="${LICENSE_FILE_NAME_MAP[$lic_key]}"
+  if [[ -z "$lic_desc" ]]; then
+      echo "Error, unable to determine license metadata for $PKG" >&2
+      exit 1
+  fi
   # Using `env -C` sets the directory where the package is built.
   # Using `fpm --chdir` sets the root directory for source arguments.
   declare -a COMMAND_ARR=(
@@ -761,12 +772,13 @@ fpm_build_virtualenv_worker () {
       --iteration="$ARVADOS_BUILDING_ITERATION"
       --replaces="python-$PKG"
       --url="https://arvados.org"
+      --license="$lic_desc"
   )
   # Append fpm flags corresponding to Python package metadata.
   readarray -d "" -O "${#COMMAND_ARR[@]}" -t COMMAND_ARR < \
             <("$venv_dir/bin/python3" "$WORKSPACE/build/pypkg_info.py" \
                                       --delimiter=\\0 --format=fpm \
-                                      metadata "$PKG" License Summary)
+                                      metadata "$PKG" Summary)
 
   if [[ -n "$target_arch" ]] && [[ "$target_arch" != "amd64" ]]; then
     COMMAND_ARR+=("-a$target_arch")
