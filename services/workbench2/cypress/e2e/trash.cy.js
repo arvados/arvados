@@ -61,7 +61,8 @@ describe('Trash tests', function () {
                 cy.assertBreadcrumbs(["Trash"]);
                 cy.doDataExplorerSearch(testProject.name);
                 cy.doDataExplorerSelect(testProject.name);
-                cy.doToolbarAction("Restore");
+                cy.get(`[aria-label="Restore"]`, { timeout: 5000 }).eq(0).click();
+                cy.waitForDom();
 
                 // Verify navigated to project
                 cy.assertBreadcrumbs(["Home Projects", testProject.name]);
@@ -120,7 +121,8 @@ describe('Trash tests', function () {
                 cy.assertBreadcrumbs(["Trash"]);
                 cy.doDataExplorerSearch(testCollection.name);
                 cy.doDataExplorerSelect(testCollection.name);
-                cy.doToolbarAction("Restore");
+                cy.get(`[aria-label="Restore"]`, { timeout: 5000 }).eq(0).click();
+                cy.waitForDom();
 
                 // Verify not in trash and in home project
                 cy.assertDataExplorerContains(testCollection.name, false);

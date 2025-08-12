@@ -558,7 +558,7 @@ describe('For collection resources', () => {
             .then(([testProject1, testCollection1, testCollection2, testCollection3, testCollection4]) => {
 
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
@@ -579,13 +579,14 @@ describe('For collection resources', () => {
 
                 cy.assertDataExplorerContains(testProject1.name, true).click();
                 cy.waitForDom();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.assertDataExplorerContains(testCollection1.name, true);
                 cy.assertDataExplorerContains(testCollection2.name, true);
 
                 //check multi-collection trash
                 cy.contains('Home Projects').click();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
+                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 });
                 cy.doDataExplorerSelect(testCollection3.name);
                 cy.doDataExplorerSelect(testCollection4.name);
                 cy.doToolbarAction('Move to trash');
@@ -602,7 +603,7 @@ describe('For collection resources', () => {
                 cy.assertToolbarButtons(tooltips.readOnlyProject);
                 cy.get("[data-cy=data-table-row]").contains(testProject1.name).click();
                 cy.waitForDom();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.doDataExplorerSelect(testCollection1.name);
                 cy.assertToolbarButtons(tooltips.readonlyCollection);
                 cy.doDataExplorerSelect(testCollection2.name);
