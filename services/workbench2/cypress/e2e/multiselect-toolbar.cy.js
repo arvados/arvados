@@ -32,7 +32,6 @@ function createContainerRequest(user, name, docker_image, command, reuse = false
 }
 
 describe('Multiselect Toolbar Baseline Tests', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -45,15 +44,10 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
-            });
     });
 
     it('exists in DOM in neutral state', () => {
-        cy.loginAs(activeUser);
+        cy.loginAs(adminUser);
         //multiselect toolbar should exist in details card and not in data explorer
         cy.get('[data-cy=user-details-card]')
             .should('exist')
@@ -618,7 +612,6 @@ describe('For collection resources', () => {
 });
 
 describe('For process resources', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -630,11 +623,6 @@ describe('For process resources', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
@@ -759,7 +747,6 @@ describe('For process resources', () => {
 });
 
 describe('For workflow resources', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -771,11 +758,6 @@ describe('For workflow resources', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
@@ -868,7 +850,6 @@ describe('For workflow resources', () => {
 });
 
 describe('For groups', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -880,11 +861,6 @@ describe('For groups', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
@@ -1072,7 +1048,6 @@ describe('For users', () => {
 });
 
 describe('For multiple resource types', () => {
-    let activeUser;
     let adminUser;
 
     before(function () {
@@ -1084,11 +1059,6 @@ describe('For multiple resource types', () => {
             .as('adminUser')
             .then(function () {
                 adminUser = this.adminUser;
-            });
-        cy.getUser('user', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
             });
     });
 
