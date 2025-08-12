@@ -383,7 +383,8 @@ describe('For project resources', () => {
                 //check multi-project unTrash
                 cy.doDataExplorerSelect(testProject1.name);
                 cy.doDataExplorerSelect(testProject2.name);
-                cy.doToolbarAction('Restore');
+                cy.get(`[aria-label="Restore"]`, { timeout: 5000 }).eq(0).click();
+                cy.waitForDom();
                 cy.assertDataExplorerContains(testProject1.name, false);
                 cy.assertDataExplorerContains(testProject2.name, false);
                 cy.contains(testProject3.name).click();
