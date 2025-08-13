@@ -110,11 +110,16 @@ export const dataExplorerMiddleware =
                                             break;
                                         case DataTableRequestState.PENDING:
                                             // State is PENDING, move it to NEED_REFRESH so that when the current request finishes it starts a new one.
-                                            dispatch(
-                                                actions.SET_REQUEST_STATE({
-                                                    requestState: DataTableRequestState.NEED_REFRESH,
-                                                })
-                                            );
+                                            if (!background) {
+                                                // Background refreshes are exempt from this behavior
+                                                // because the data will already be up to date when the current request finishes
+                                                // and to prevent refreshes from prolonging loading indicators of a non-background refresh
+                                                dispatch(
+                                                    actions.SET_REQUEST_STATE({
+                                                        requestState: DataTableRequestState.NEED_REFRESH,
+                                                    })
+                                                );
+                                            }
                                             return;
                                         case DataTableRequestState.NEED_REFRESH:
                                             // Nothing to do right now.
