@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM node:18.20.8-bookworm
+# Node lts/iron due to node-sass v9 only supporting node
+# This gets overridden by defaultNodejsVersion in deps.go
+FROM node:20.19.4-bookworm
 LABEL maintainer="Arvados Package Maintainers <packaging@arvados.org>"
 
 RUN echo deb http://deb.debian.org/debian bookworm-backports main >> /etc/apt/sources.list.d/backports.list
