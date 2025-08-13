@@ -301,7 +301,7 @@ describe('For project resources', () => {
         });
     });
 
-    it.only('should behave correctly for multiple projects', () => {
+    it('should behave correctly for multiple projects', () => {
         cy.createProject({
             owningUser: adminUser,
             projectName: 'TestProject1',
