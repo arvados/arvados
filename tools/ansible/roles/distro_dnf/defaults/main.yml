@@ -9,7 +9,6 @@ arvados_dnf_command: "dnf --quiet --assumeyes"
 arvados_dnf_modules_map:
   "8":
     postgresql: "postgresql:10"
-    python: "python39:3.9"
     ruby: "ruby:3.1"
   "9":
     ruby: "ruby:3.1"
