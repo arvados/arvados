@@ -1,8 +1,7 @@
 ### This file is managed by Ansible ###
-{# Copyright (C) The Arvados Authors. All rights reserved.
- #
- # SPDX-License-Identifier: Apache-2.0
- #}
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 Package: cuda
 Pin: version 12.6.*
