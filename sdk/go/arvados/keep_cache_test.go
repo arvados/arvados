@@ -428,6 +428,40 @@ func (s *keepCacheSuite) TestHeldOpen_RollCache(c *check.C) {
 	c.Check(len(cache.sharedCache.heldopen), check.Equals, 1)
 }
 
+// Check that we close our helpdopen files when they are deleted by
+// another process.
+func (s *keepCacheSuite) TestHeldOpen_CloseDeletedFiles(c *check.C) {
+	blksize := 64000
+	blkcount := 64
+	cache, locators := setupCacheWithBlocks(c, blksize, blkcount)
+	cache.maxSize = ByteSizeOrPercent(blksize*blkcount + 1)
+	cache.sharedCache.heldopenMax = blkcount + 1
+	targetsize := blkcount / 4
+
+	// Exercise the cache until we have more heldopen files than
+	// targetsize
+	for i := 0; i < 100; i++ {
+		testConcurrentReads(c, blkcount, cache, locators, blksize)
+		waitTidy(cache)
+		cache.tidy()
+		if len(cache.sharedCache.heldopen) > targetsize {
+			break
+		}
+	}
+
+	c.Logf("len(cache.sharedCache.heldopen) == %d, targetsize == %d", len(cache.sharedCache.heldopen), targetsize)
+	c.Check(len(cache.sharedCache.heldopen) > targetsize, check.Equals, true)
+
+	for i := targetsize; i < blkcount; i++ {
+		os.Remove(cache.cacheFile(locators[i][:32]))
+	}
+	waitTidy(cache)
+	cache.tidy()
+
+	c.Logf("len(cache.sharedCache.heldopen) == %d, targetsize == %d", len(cache.sharedCache.heldopen), targetsize)
+	c.Check(len(cache.sharedCache.heldopen) <= targetsize, check.Equals, true)
+}
+
 var _ = check.Suite(&keepCacheBenchSuite{})
 
 type keepCacheBenchSuite struct {

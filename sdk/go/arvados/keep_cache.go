@@ -672,6 +672,16 @@ func (cache *DiskCache) tidy() {
 		return
 	}
 
+	missing := func() map[string]struct{} {
+		cache.heldopenLock.Lock()
+		defer cache.heldopenLock.Unlock()
+		m := make(map[string]struct{}, len(cache.heldopen))
+		for path := range cache.heldopen {
+			m[path] = struct{}{}
+		}
+		return m
+	}()
+
 	type entT struct {
 		path  string
 		atime time.Time
@@ -690,6 +700,7 @@ func (cache *DiskCache) tidy() {
 		if !strings.HasSuffix(path, cacheFileSuffix) && !strings.HasSuffix(path, tmpFileSuffix) {
 			return nil
 		}
+		delete(missing, path)
 		var atime time.Time
 		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 			// Access time is available (hopefully the
@@ -709,6 +720,16 @@ func (cache *DiskCache) tidy() {
 			"totalsize": totalsize,
 			"maxsize":   maxsize,
 		}).Debugf("DiskCache: checked current cache usage")
+	}
+
+	// Drop heldopen entries (and close their filehandles) if the
+	// files have been deleted by another process, or are
+	// unreachable via Walk() for any other reason.
+	for path := range missing {
+		if cache.Logger != nil {
+			cache.Logger.WithField("path", path).Debug("cache file is missing, closing my handle")
+		}
+		cache.deleteHeldopen(path, nil)
 	}
 
 	// If MaxSize wasn't specified and we failed to come up with a
