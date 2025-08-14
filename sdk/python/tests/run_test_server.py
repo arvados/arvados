@@ -188,6 +188,42 @@ def find_available_port():
             _already_used_port[port] = True
             return port
 
+def _wait_until_logs_appear(f, size, *, timeout=300, pid=None):
+    """Wait for logs to appear on f.
+
+    Give up if pid exits before logs appear.
+
+    Also check that pid doesn't immediately exit.
+    """
+    deadline = time.time() + timeout
+    logged = False
+    slept = 0
+    while time.time() < deadline:
+        if f.tell() > size:
+            time.sleep(0.1)
+            if pid and not os.path.exists('/proc/{}/stat'.format(pid)):
+                raise Exception("process {} exited after writing logs"
+                                .format(pid))
+            return True
+        if pid and not os.path.exists('/proc/{}/stat'.format(pid)):
+            raise Exception("process {} does not exist"
+                            " -- giving up on log file {}".format(
+                                pid or '', f.name))
+        if slept > 5 and not logged:
+            print("waiting for logs in {}...".format(f.name),
+                  file=sys.stderr)
+            logged = True
+        time.sleep(0.1)
+        slept += 1
+    if pid:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    raise Exception("process {} never wrote to log file {}".format(
+        pid or '', f.name))
+
+
 def _wait_until_port_listens(port, *, timeout=300, pid=None,
                              listener_must_be_pid=True):
     """Wait for a process to start listening on the given port.
@@ -489,6 +525,33 @@ def stop_controller():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
     kill_server_pid(_pidfile('controller'))
+
+def run_dispatch():
+    stop_dispatch()
+    subprocess.check_output(
+        ["go", "build", "-o", os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-run"), "."],
+        cwd=os.path.join(ARVADOS_DIR, "cmd", "arvados-server"),
+        stdin=subprocess.DEVNULL)
+    logf = open(_logfilename('dispatch'), WRITE_MODE)
+    logfsize = logf.tell()
+    dispatch = subprocess.Popen(
+        ["go", "run", "."],
+        cwd=os.path.join(SERVICES_SRC_DIR, "crunch-dispatch-local"),
+        env=_service_environ(),
+        stdin=subprocess.DEVNULL,
+        stdout=logf,
+        stderr=logf,
+        close_fds=True)
+    _detachedSubprocesses.append(dispatch)
+    with open(_pidfile('dispatch'), 'w') as f:
+        f.write(str(dispatch.pid))
+    # crunch-dispatch-local doesn't listen on a port, so we just wait
+    # for it to log something without immediately exiting.
+    _wait_until_logs_appear(logf, logfsize, pid=dispatch.pid)
+    print('dispatch pid is {}'.format(dispatch.pid), file=sys.stderr)
+
+def stop_dispatch():
+    kill_server_pid(_pidfile('dispatch'))
 
 def run_ws():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -997,6 +1060,7 @@ if __name__ == "__main__":
         'start', 'stop',
         'start_ws', 'stop_ws',
         'start_controller', 'stop_controller',
+        'start_dispatch', 'stop_dispatch',
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
@@ -1039,6 +1103,10 @@ if __name__ == "__main__":
         run_controller()
     elif args.action == 'stop_controller':
         stop_controller()
+    elif args.action == 'start_dispatch':
+        run_dispatch()
+    elif args.action == 'stop_dispatch':
+        stop_dispatch()
     elif args.action == 'start_keep':
         run_keep(blob_signing=args.keep_blob_signing, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':

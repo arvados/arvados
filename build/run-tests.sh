@@ -520,6 +520,14 @@ do_test_once() {
             # minutes. Before July 2025 they were outside the standard test
             # suite, so we deselect them by default for consistency.
             targs+=(-m "not integration")
+
+            # The CWL conformance/integration tests expect keep
+            # servers and crunch-dispatch-local.
+            if ! ( env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py start_keep \
+                      && env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py start_dispatch); then
+                checkexit 1 "$1 tests"
+                return 1
+            fi
             ;;
     esac
     # Append the user's arguments to targs, respecting quoted strings.
@@ -584,6 +592,10 @@ do_test_once() {
     result=${result:-$?}
     checkexit $result "$1 tests"
     title "test $1 -- `timer`"
+    if [[ "$1" == "sdk/cwl" ]]; then
+        env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py stop_keep
+        env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py stop_dispatch
+    fi
     return $result
 }
 
