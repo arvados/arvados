@@ -370,10 +370,15 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
 
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%v", os.Getenv("PATH")))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("TMPDIR=%v", os.Getenv("TMPDIR")))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("ARVADOS_API_HOST=%v", os.Getenv("ARVADOS_API_HOST")))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("ARVADOS_API_TOKEN=%v", os.Getenv("ARVADOS_API_TOKEN")))
+		for _, envvar := range []string{
+			"PATH",
+			"TMPDIR",
+			"ARVADOS_API_HOST",
+			"ARVADOS_API_HOST_INSECURE",
+			"ARVADOS_API_TOKEN",
+		} {
+			cmd.Env = append(cmd.Env, envvar+"="+os.Getenv(envvar))
+		}
 
 		h := hmac.New(sha256.New, []byte(lr.cluster.SystemRootToken))
 		fmt.Fprint(h, container.UUID)
