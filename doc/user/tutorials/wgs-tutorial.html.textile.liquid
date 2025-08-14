@@ -92,13 +92,11 @@ Let’s start working with collections by copying the existing collection that s
 
 First, you must find the collection you are interested in copying over to your project.  There are several ways to search for a collection: by collection name, by UUID or by portable data hash.  In this case, let’s search for our collection by name.
 
-In this case it is called “PGP UK FASTQs (ten genomes)” and by searching for it in the “Search” box.  It will come up and you can navigate to it.  You would do similarly if you would want to search by UUID or portable data hash.
+In this case it is called “PGP UK FASTQs (ten genomes)”.  Searching for that text in the “Search” box.  The collection will come up in the search results and you can navigate to it by clicking on the name.  You would do similarly if you would want to search by UUID or portable data hash.
 
 Now that you have found the collection of FASTQs you want to copy to your project, you can simply click the three dots in the right corner and click "Make a copy" and select your new project to copy the collection there.  You can rename your collection whatever you wish, or use the default name on copy and add whatever description you would like.
 
-
-
-We want to do the same thing for the other inputs to our WGS workflow. Similar to the “PGP UK FASTQs” collection there is a collection of inputs entitled “WGS Processing reference data” and that collection can be copied over in a similar fashion.
+We want to do the same thing for the other inputs to our WGS workflow. Similar to the “PGP UK FASTQs (ten genomes)” collection there is a collection of inputs entitled “WGS Processing reference data” and that collection can be copied over in a similar fashion.
 
 Now that we are a bit more familiar with the Arvados Workbench, projects and collections.  Let’s move onto running a workflow.
 
@@ -117,8 +115,8 @@ Let’s find the registered WGS Processing Workflow and run it interactively in 
 # To find the registered workflow, in the left-hand navigation bar, select "Public Favorites". That listing will include the "WGS Processing Workflow" project. Open that project, and it will include the workflow "WGS processing workflow scattered over samples". Open that workflow.
 # Once you have found the registered workflow, you can run it your project by using the "Run Workflow" button and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a, under *Project where the workflow will run*.
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image8.png!
-<figcaption> _*Figure 7*: This is the page that pops up when you hit "Run Workflow", the input that needs selected is highlighted in yellow._ </figcaption> </figure>
-# Default inputs to the registered workflow will be automatically filled in.  These inputs will still work.  You can verify this by checking the addresses of the collections you copied over to your new project.
+<figcaption> _*Figure 7*: This is the dialog that pops up when you press "Run Workflow". The project that you should select is highlighted in yellow._ </figcaption> </figure>
+# Default inputs to the registered workflow will be automatically filled in.  These inputs will work as-is, but can be edited.  You can verify that they match the portable data hashes of the collections you copied over to your new project.
 # Now, you can submit your workflow by selecting the "Run Workflow" button.
 
 Congratulations! You have now submitted your workflow to run. You can move to Section 5 to learn how to check the state of your submitted workflow and Section 6 to learn how to examine the results of and logs from your workflow.
@@ -204,14 +202,14 @@ Once you have found your workflow, you can clearly see the state of the overall 
 
 Common states you will see are as follows:
 
-* "Queued"  -  Workflow or step is waiting to run
-* "Running" or "Active"- Workflow is currently running
+* "Queued" - Workflow or step is waiting to run
+* "Running" or "Active" - Workflow is currently running
 * "Complete" - Workflow or step has successfully completed
 * "Failing"- Workflow is running but has steps that have failed
 * "Failed"- Workflow or step did not complete successfully
-* "Cancelled"  - Workflow or step was either manually cancelled or was canceled by Arvados due to a system error
+* "Cancelled" - Workflow or step was either manually cancelled or was cancelled by Arvados due to a system error
 
-Since Arvados Crunch reuses steps and workflows if possible, this workflow should run relatively quickly since this workflow has been run before and you have access to those previously run steps.  You may notice an initial period where the top level job shows the option of canceling while the other steps are filled in with already finished steps.
+Since Arvados Crunch reuses steps and workflows if possible, this workflow should run relatively quickly since this workflow has been run before and you have access to those previously run steps.  You may notice an initial period where the top level job shows the option of cancelling while the other steps are filled in with already finished steps.
 
 h2. 6.  Examining a Finished Workflow
 
