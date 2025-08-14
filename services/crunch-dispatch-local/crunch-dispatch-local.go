@@ -91,7 +91,10 @@ func main() {
 		crunchRunCommand = cluster.Containers.CrunchRunCommand
 	}
 
-	logger := baseLogger.WithField("ClusterID", cluster.ClusterID)
+	logger := baseLogger.WithFields(logrus.Fields{
+		"PID":       os.Getpid(),
+		"ClusterID": cluster.ClusterID,
+	})
 	logger.Printf("crunch-dispatch-local %s started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
