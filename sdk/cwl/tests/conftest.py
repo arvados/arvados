@@ -134,6 +134,7 @@ def jobs_docker_image(arv_session):
         build_proc = subprocess.run([
             sys.executable,
             str(workspace / 'build/build_docker_image.py'),
+            '--environment', 'development',
             '--tag', image_fullname,
             image_name,
         ], env=build_env)
