@@ -531,12 +531,20 @@ def run_dispatch():
     subprocess.check_output(
         ["go", "build", "-o", os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-run"), "."],
         cwd=os.path.join(ARVADOS_DIR, "cmd", "arvados-server"),
-        stdin=subprocess.DEVNULL)
+        stdin=subprocess.DEVNULL,
+        stderr=sys.stderr,
+    )
+    subprocess.check_output(
+        ["go", "build", "-o", os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-dispatch-local"), "."],
+        cwd=os.path.join(ARVADOS_DIR, "services", "crunch-dispatch-local"),
+        stdin=subprocess.DEVNULL,
+        stderr=sys.stderr,
+    )
     logf = open(_logfilename('dispatch'), WRITE_MODE)
     logfsize = logf.tell()
     dispatch = subprocess.Popen(
-        ["go", "run", "."],
-        cwd=os.path.join(SERVICES_SRC_DIR, "crunch-dispatch-local"),
+        ["crunch-dispatch-local"],
+        cwd=TEST_TMPDIR,
         env=_service_environ(),
         stdin=subprocess.DEVNULL,
         stdout=logf,
