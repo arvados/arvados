@@ -36,8 +36,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         '&:hover': {
-            background: 'lightgray',
+            background: theme.palette.grey[200],
         },
+        cursor: 'pointer',
     },
     columns: {
         display: 'flex',
