@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 Package: cuda
-Pin: version 12.6.*
+Pin: version 13.0.*
 Pin-Priority: 995
 
 Package: src:libnvidia-container src:nvidia-container-toolkit
@@ -12,5 +12,5 @@ Pin: version 1.17.*
 Pin-Priority: 995
 
 Package: cuda-drivers nvidia-modprobe nvidia-open src:nvidia-graphics-drivers src:nvidia-kmod-open src:nvidia-settings
-Pin: version 570.*
+Pin: version 580.*
 Pin-Priority: 995
