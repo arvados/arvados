@@ -276,7 +276,7 @@ def parse_arguments(arguments):
 
     # Turn on --progress by default if stderr is a tty.
     if (not (args.batch_progress or args.no_progress or args.silent)
-        and os.isatty(sys.stderr.fileno())):
+        and sys.stderr.isatty()):
         args.progress = True
 
     # Turn off --resume (default) if --no-cache is used.
