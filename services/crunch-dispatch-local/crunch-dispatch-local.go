@@ -415,24 +415,31 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 				if _, err := cmd.Process.Wait(); err != nil {
 					dispatcher.Logger.Warnf("error while waiting for crunch job to finish for %v: %q", uuid, err)
 				}
-				dispatcher.Logger.Debugf("sending done")
-				done <- struct{}{}
+				dispatcher.Logger.Debugf("crunch-run exited")
+				close(done)
 			}()
 
+			// Let the child process run until either
+			// priority changes to 0 or the status channel
+			// closes (sdk/go/dispatch.DispatchFunc: "When
+			// the channel closes, the DispatchFunc should
+			// stop the container if it's still running,
+			// and return.")
 		Loop:
 			for {
 				select {
 				case <-done:
 					break Loop
-				case c := <-status:
-					// Interrupt the child process if priority changes to 0
-					if (c.State == dispatch.Locked || c.State == dispatch.Running) && c.Priority == 0 {
+				case c, running := <-status:
+					if !running || (c.State == dispatch.Locked || c.State == dispatch.Running) && c.Priority == 0 {
 						dispatcher.Logger.Printf("sending SIGINT to pid %d to cancel container %v", cmd.Process.Pid, uuid)
 						cmd.Process.Signal(os.Interrupt)
 					}
+					if !running {
+						break Loop
+					}
 				}
 			}
-			close(done)
 
 			dispatcher.Logger.Printf("finished container run for %v", uuid)
 
