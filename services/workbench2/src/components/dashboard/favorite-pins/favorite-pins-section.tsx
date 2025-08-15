@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { isEqual } from 'lodash';
-import { Collapse } from '@mui/material';
+import { Collapse, Grid } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -35,10 +35,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     list: {
         marginTop: '0.5rem',
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        width: '100%',
+        paddingLeft: '1rem',
+        width: '98.5%',
     },
 });
 
@@ -90,12 +88,21 @@ export const FavePinsSection = connect(
                     </div>
                     <Collapse in={isOpen}>
                         <div className={classes.list}>
-                            {items.map((item) => (
-                                <FavePinItem
-                                    key={item.uuid}
-                                    item={item}
-                                />
-                            ))}
+                            <Grid
+                                container
+                                spacing={2}
+                                direction='row'
+                                justifyContent='flex-start'
+                                alignItems='flex-start'
+                                >
+                                {items.map((item) => (
+                                    <Grid item xs={12} sm={6} md={5} lg={4} xl={3} key={item.uuid}>
+                                        <FavePinItem
+                                            item={item}
+                                        />
+                                    </Grid>
+                                ))}
+                            </Grid>
                         </div>
                     </Collapse>
                 </div>

@@ -22,9 +22,7 @@ type CssRules = 'item' | 'name' | 'icon' | 'namePlate' | 'star';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
-        width: '18rem',
         height: '3.5rem',
-        margin: theme.spacing(2),
         marginTop: '0',
         padding: theme.spacing(1),
         background: '#fafafa',
