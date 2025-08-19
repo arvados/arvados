@@ -13,6 +13,7 @@ import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getProcess, isProcessCancelable } from 'store/processes/process';
 import { isCollectionResource } from 'models/collection';
 import { ResourcesState } from 'store/resources/resources';
+import { matchGroupDetailsRoute } from 'routes/routes';
 
 type ProjectToMenuArgs = {
     isAdmin: boolean;
@@ -65,7 +66,7 @@ type ProcessMenuKind = ContextMenuKind.PROCESS_RESOURCE
 
 export const resourceToMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState): ContextMenuKind | undefined => {
-        const { auth, resources } = getState();
+        const { auth, resources, router } = getState();
         const resource = getResource<Resource>(uuid)(resources);
         if (!resource) return;
         const isAdmin = auth.user?.isAdmin || false;
@@ -97,6 +98,7 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
             case ResourceKind.USER:
                 return ContextMenuKind.USER_DETAILS;
             case ResourceKind.LINK:
+                if (matchGroupDetailsRoute(router?.location?.pathname || '')) return ContextMenuKind.GROUP_MEMBER;
                 return ContextMenuKind.LINK;
             case ResourceKind.WORKFLOW:
                 return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;
