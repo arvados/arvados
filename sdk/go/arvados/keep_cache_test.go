@@ -428,7 +428,7 @@ func (s *keepCacheSuite) TestHeldOpen_RollCache(c *check.C) {
 	c.Check(len(cache.sharedCache.heldopen), check.Equals, 1)
 }
 
-// Check that we close our helpdopen files when they are deleted by
+// Check that we close our heldopen files when they are deleted by
 // another process.
 func (s *keepCacheSuite) TestHeldOpen_CloseDeletedFiles(c *check.C) {
 	blksize := 64000
