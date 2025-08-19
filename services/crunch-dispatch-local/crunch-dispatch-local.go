@@ -217,9 +217,7 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 	availableVcpus := maxVcpus
 	availableRam := maxRam
 
-	pending := []ResourceRequest{}
-
-NextEvent:
+	var pending []ResourceRequest
 	for {
 		select {
 		case rr := <-lr.requestResources:
@@ -244,33 +242,42 @@ NextEvent:
 			rr := pending[0]
 			if rr.vcpus < 1 || rr.vcpus > maxVcpus {
 				logger.Infof("%v requested vcpus %v but maxVcpus is %v", rr.uuid, rr.vcpus, maxVcpus)
-				// resource request can never be fulfilled,
-				// return a zero struct
-				rr.ready <- ResourceAlloc{}
+				// resource request can never be
+				// fulfilled, close the channel and
+				// remove from pending
+				close(rr.ready)
+				pending = pending[1:]
 				continue
 			}
 			if rr.ram < 1 || rr.ram > maxRam {
 				logger.Infof("%v requested ram %v but maxRam is %v", rr.uuid, rr.ram, maxRam)
-				// resource request can never be fulfilled,
-				// return a zero struct
-				rr.ready <- ResourceAlloc{}
+				// resource request can never be
+				// fulfilled, close the channel and
+				// remove from pending
+				close(rr.ready)
+				pending = pending[1:]
 				continue
 			}
 			if rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
 				logger.Infof("%v requested %v gpus with stack %v but maxGpus is %v and gpuStack is %q", rr.uuid, rr.gpus, rr.gpuStack, maxGpus, gpuStack)
-				// resource request can never be fulfilled,
-				// return a zero struct
-				rr.ready <- ResourceAlloc{}
+				// resource request can never be
+				// fulfilled, close the channel and
+				// remove from pending
+				close(rr.ready)
+				pending = pending[1:]
 				continue
 			}
 
 			if rr.vcpus > availableVcpus || rr.ram > availableRam || rr.gpus > len(availableGpus) {
 				logger.Infof("Insufficient resources to start %v, waiting for next event", rr.uuid)
-				// can't be scheduled yet, go up to
-				// the top and wait for the next event
-				continue NextEvent
+				// can't be scheduled yet, and we
+				// don't want to schedule something
+				// lower-priority, so just wait for
+				// resources to be released
+				break
 			}
 
+			pending = pending[1:]
 			alloc := ResourceAlloc{uuid: rr.uuid, vcpus: rr.vcpus, ram: rr.ram}
 
 			availableVcpus -= rr.vcpus
@@ -286,14 +293,7 @@ NextEvent:
 			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
 				availableVcpus, availableRam, availableGpus)
-
-			// shift array down
-			for i := 0; i < len(pending)-1; i++ {
-				pending[i] = pending[i+1]
-			}
-			pending = pending[0 : len(pending)-1]
 		}
-
 	}
 }
 
@@ -324,7 +324,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 				int64(lr.cluster.Containers.ReserveExtraRAM)),
 			gpuStack: gpuStack,
 			gpus:     gpus,
-			ready:    make(chan ResourceAlloc)}
+			ready:    make(chan ResourceAlloc, 1)}
 
 		select {
 		case lr.requestResources <- resourceRequest:
@@ -335,15 +335,16 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 		var resourceAlloc ResourceAlloc
 		select {
-		case resourceAlloc = <-resourceRequest.ready:
+		case alloc, ok := <-resourceRequest.ready:
+			if ok {
+				resourceAlloc = alloc
+			} else {
+				dispatcher.Logger.Warnf("Container resource request %v cannot be fulfilled.", uuid)
+				dispatcher.UpdateState(uuid, dispatch.Cancelled)
+				return nil
+			}
 		case <-lr.ctx.Done():
 			return lr.ctx.Err()
-		}
-
-		if resourceAlloc.vcpus == 0 {
-			dispatcher.Logger.Warnf("Container resource request %v cannot be fulfilled.", uuid)
-			dispatcher.UpdateState(uuid, dispatch.Cancelled)
-			return nil
 		}
 
 		defer func() {
