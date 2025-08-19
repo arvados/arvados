@@ -410,7 +410,7 @@ func (s *keepCacheSuite) TestHeldOpen_RollCache(c *check.C) {
 	// Exercise the cache until we have more heldopen files than
 	// targetsize
 	for i := 0; i < 100; i++ {
-		testConcurrentReads(c, blkcount, cache, locators, blksize)
+		doConcurrentReads(c, blkcount, cache, locators, blksize)
 		waitTidy(cache)
 		cache.tidy()
 		if len(cache.sharedCache.heldopen) > targetsize {
@@ -441,7 +441,7 @@ func (s *keepCacheSuite) TestHeldOpen_CloseDeletedFiles(c *check.C) {
 	// Exercise the cache until we have more heldopen files than
 	// targetsize
 	for i := 0; i < 100; i++ {
-		testConcurrentReads(c, blkcount, cache, locators, blksize)
+		doConcurrentReads(c, blkcount, cache, locators, blksize)
 		waitTidy(cache)
 		cache.tidy()
 		if len(cache.sharedCache.heldopen) > targetsize {
@@ -483,7 +483,7 @@ func (s *keepCacheBenchSuite) BenchmarkConcurrentReads_LowNOFiles(c *check.C) {
 }
 
 func (s *keepCacheBenchSuite) BenchmarkConcurrentReads(c *check.C) {
-	testConcurrentReads(c, c.N, s.cache, s.locators, s.blksize)
+	doConcurrentReads(c, c.N, s.cache, s.locators, s.blksize)
 }
 
 func (s *keepCacheBenchSuite) BenchmarkSequentialReads(c *check.C) {
@@ -583,7 +583,7 @@ func setupCacheWithBlocks(c *check.C, blksize, blkcount int) (cache *DiskCache, 
 	return
 }
 
-func testConcurrentReads(c *check.C, N int, cache *DiskCache, locators []string, blksize int) {
+func doConcurrentReads(c *check.C, N int, cache *DiskCache, locators []string, blksize int) {
 	blkcount := len(locators)
 	var wg sync.WaitGroup
 	for i := 0; i < N; i++ {
