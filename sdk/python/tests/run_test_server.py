@@ -943,6 +943,11 @@ def setup_config():
                     "TrashSweepInterval": "-1s", # disable, otherwise test cases can't acquire dblock
                 },
                 "Containers": {
+                    # sdk/cwl integration tests need containers to
+                    # connect to controller, which listens on
+                    # 127.0.0.1. This is only possible with "host"
+                    # networking mode.
+                    "CrunchRunArgumentsList": ["--container-network-mode", "host"],
                     "LocalKeepBlobBuffersPerVCPU": 0,
                     "SupportedDockerImageFormats": {"v1": {}},
                     "ShellAccess": {
