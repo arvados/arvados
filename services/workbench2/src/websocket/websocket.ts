@@ -23,6 +23,8 @@ type ThrottleSet = {
     subProcess: () => void;
     allProcesses: () => void;
     project: () => void;
+    process: (uuid: string) => void;
+    collection: (uuid: string) => void;
 };
 
 const THROTTLE_INTERVAL = 15000;
@@ -42,6 +44,12 @@ export const initWebSocket = (config: Config, authService: AuthService, store: R
             project: throttle(() => {
                 store.dispatch(projectPanelDataActions.REQUEST_ITEMS(false, true));
             }, THROTTLE_INTERVAL),
+            process: throttle((uuid: string) => {
+                store.dispatch(loadProcess(uuid));
+            }, THROTTLE_INTERVAL),
+            collection: throttle((uuid: string) => {
+                store.dispatch(loadCollection(uuid));
+            }, THROTTLE_INTERVAL),
         };
 
         webSocketService.setMessageListener(messageListener(store, throttleSet));
@@ -60,14 +68,16 @@ const messageListener = (store: RootStore, throttles: ThrottleSet) => (message: 
             case ResourceKind.COLLECTION:
                 const currentCollection = state.collectionPanel.item;
                 if (currentCollection && currentCollection.uuid === message.objectUuid) {
-                    store.dispatch(loadCollection(message.objectUuid));
+                    throttles.collection(message.objectUuid);
                 }
                 return;
             case ResourceKind.CONTAINER_REQUEST:
                 if (matchProcessRoute(location)) {
+                    // Currently viewing updated process
                     if (state.processPanel.containerRequestUuid === message.objectUuid) {
-                        store.dispatch(loadProcess(message.objectUuid));
+                        throttles.process(message.objectUuid);
                     }
+                    // New child process
                     const proc = getProcess(state.processPanel.containerRequestUuid)(state.resources);
                     if (proc && proc.container && proc.container.uuid === message.properties["new_attributes"]["requesting_container_uuid"]) {
                         throttles.subProcess();
