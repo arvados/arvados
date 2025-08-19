@@ -450,7 +450,7 @@ func (s *keepCacheSuite) TestHeldOpen_CloseDeletedFiles(c *check.C) {
 	}
 
 	c.Logf("len(cache.sharedCache.heldopen) == %d, targetsize == %d", len(cache.sharedCache.heldopen), targetsize)
-	c.Check(len(cache.sharedCache.heldopen) > targetsize, check.Equals, true)
+	c.Assert(len(cache.sharedCache.heldopen) > targetsize, check.Equals, true)
 
 	for i := targetsize; i < blkcount; i++ {
 		os.Remove(cache.cacheFile(locators[i][:32]))
