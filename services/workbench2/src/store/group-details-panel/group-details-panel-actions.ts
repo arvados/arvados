@@ -17,11 +17,13 @@ import { LinkResource } from 'models/link';
 import { deleteResources, updateResources } from 'store/resources/resources-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { UserProfileGroupsActions } from 'store/user-profile/user-profile-actions';
+import { getCheckedListUuids } from 'store/multiselect/multiselect-actions';
 
 export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
 export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
 export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
 export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
+export const MULTIPLE_MEMBER_REMOVE_DIALOG = 'multipleMemberRemoveDialog';
 
 export const GroupMembersPanelActions = bindDataExplorerActions(GROUP_DETAILS_MEMBERS_PANEL_ID);
 export const GroupPermissionsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PERMISSIONS_PANEL_ID);
@@ -81,7 +83,6 @@ export const openRemoveGroupMemberDialog = (uuid: string) =>
     };
 
 export const removeGroupMember = (uuid: string) =>
-
     async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await deleteGroupMember({
@@ -92,6 +93,41 @@ export const removeGroupMember = (uuid: string) =>
             dispatch,
         });
         dispatch<any>(deleteResources([uuid]));
+        dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+        dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
+
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+    };
+
+export const openRemoveMultipleGroupMembersDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const uuidsToRemove = getCheckedListUuids(getState());
+
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: MULTIPLE_MEMBER_REMOVE_DIALOG,
+            data: {
+                title: 'Remove members',
+                text: 'Are you sure you want to remove these members from this group?',
+                confirmButtonLabel: 'Remove',
+                uuidsToRemove
+            }
+        }));
+    };
+
+export const removeMultipleGroupMembers = () =>
+    async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+        const uuidsToRemove = getCheckedListUuids(getState());
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
+        for (const uuid of uuidsToRemove) {
+            await deleteGroupMember({
+                link: {
+                    uuid,
+                },
+                permissionService,
+                dispatch,
+            });
+        }
+        dispatch<any>(deleteResources(uuidsToRemove));
         dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
         dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
