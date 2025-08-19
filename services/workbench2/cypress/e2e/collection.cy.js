@@ -669,6 +669,7 @@ describe("Collection panel tests", function () {
 
     it("automatically updates the collection UI contents without using the Refresh button", function () {
         const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        cy.clock();
 
         cy.createCollection(adminUser.token, {
             name: collName,
@@ -691,6 +692,10 @@ describe("Collection panel tests", function () {
                     name: `${collName + " updated"}`,
                     manifest_text: fileName ? `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n` : "",
                 }).as("updatedCollection");
+
+                // Fast forward 15 seconds for the websocket throttle
+                cy.tick(15000);
+
                 cy.getAll("@updatedCollection").then(function ([updatedCollection]) {
                     expect(updatedCollection.name).to.equal(`${collName + " updated"}`);
                     cy.get("[data-cy=collection-details-card]").should("contain", updatedCollection.name);
