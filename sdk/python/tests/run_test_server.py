@@ -1070,6 +1070,7 @@ class TestCaseWithServers(unittest.TestCase):
 
 if __name__ == "__main__":
     actions = [
+        'database_reset',
         'start', 'stop',
         'start_ws', 'stop_ws',
         'start_controller', 'stop_controller',
@@ -1094,7 +1095,9 @@ if __name__ == "__main__":
     # Create a new process group so our child processes don't exit on
     # ^C in run-tests.sh interactive mode.
     os.setpgid(0, 0)
-    if args.action == 'start':
+    if args.action == 'database_reset':
+        reset()
+    elif args.action == 'start':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
         run(leave_running_atexit=True)
         host = os.environ['ARVADOS_API_HOST']

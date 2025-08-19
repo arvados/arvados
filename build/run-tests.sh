@@ -595,6 +595,8 @@ do_test_once() {
     if [[ "$1" == "sdk/cwl" ]]; then
         env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py stop_keep
         env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py stop_dispatch
+        # Also reset test fixtures that were modified by the dispatcher
+        env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py database_reset
     fi
     return $result
 }
