@@ -149,7 +149,9 @@ export const tooltips = {
         'Remove',
     ],
     //users
-    multiUser: [],
+    multiUser: [
+        'Remove',
+    ],
     nonAdminUser: [
         'API Details',
         'Attributes',
