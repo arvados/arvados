@@ -494,19 +494,19 @@ def run_dispatch():
     stop_dispatch()
     crbin = os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-run")
     print('building {} ...'.format(crbin), file=sys.stderr)
-    subprocess.check_output(
+    subprocess.run(
         ["go", "build", "-o", crbin, "."],
         cwd=os.path.join(ARVADOS_DIR, "cmd", "arvados-server"),
         stdin=subprocess.DEVNULL,
-        stderr=sys.stderr,
+        check=True,
     )
     cdlbin = os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-dispatch-local")
     print('building {} ...'.format(cdlbin), file=sys.stderr)
-    subprocess.check_output(
+    subprocess.run(
         ["go", "build", "-o", cdlbin, "."],
         cwd=os.path.join(ARVADOS_DIR, "services", "crunch-dispatch-local"),
         stdin=subprocess.DEVNULL,
-        stderr=sys.stderr,
+        check=True,
     )
     print('starting crunch-dispatch-local ...', file=sys.stderr)
     logf = open(_logfilename('dispatch'), WRITE_MODE)
