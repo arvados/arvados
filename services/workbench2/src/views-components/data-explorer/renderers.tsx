@@ -600,12 +600,15 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
 };
 
 export const ResourceLinkDelete = connect((state: RootState, props: { uuid: string }) => {
+    const parentResource = getResource(state.selectedResource.selectedResourceUuid)(state.resources);
     const link = getResource<LinkResource>(props.uuid)(state.resources);
     const isBuiltin = isBuiltinGroup(link?.headUuid || "") || isBuiltinGroup(link?.tailUuid || "");
+    // If viewing a user, only allow delete if target group is not a builtin group.
+    const canManage = link && getResourceLinkCanManage(state, link) && (parentResource?.kind === ResourceKind.USER ? !isBuiltin : true);
 
     return {
         item: link || { uuid: "", kind: ResourceKind.NONE },
-        canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        canManage
     };
 })((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.dispatch, props.item, props.canManage));
 
