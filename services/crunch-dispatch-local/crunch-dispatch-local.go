@@ -12,6 +12,8 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -26,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/pbnjay/memory"
 	"github.com/sirupsen/logrus"
 )
@@ -49,27 +52,14 @@ func main() {
 	}
 
 	flags := flag.NewFlagSet("crunch-dispatch-local", flag.ExitOnError)
-
-	pollInterval := flags.Int(
-		"poll-interval",
-		10,
-		"Interval in seconds to poll for queued containers")
-
-	flags.StringVar(&crunchRunCommand,
-		"crunch-run-command",
-		"",
-		"Crunch command to run container")
-
-	getVersion := flags.Bool(
-		"version",
-		false,
-		"Print version information and exit.")
+	pollInterval := flags.Int("poll-interval", 10, "Interval in seconds to poll for queued containers")
+	flags.StringVar(&crunchRunCommand, "crunch-run-command", "", "Crunch command to run container")
+	getVersion := flags.Bool("version", false, "Print version information and exit.")
+	pprofAddr := flags.String("pprof", "", "Serve Go profile data at `[addr]:port`")
 
 	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "", os.Stderr); !ok {
 		os.Exit(code)
 	}
-
-	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("crunch-dispatch-local %s\n", version)
 		return
@@ -96,6 +86,18 @@ func main() {
 		"ClusterID": cluster.ClusterID,
 	})
 	logger.Printf("crunch-dispatch-local %s started", version)
+
+	// Listening on pprofAddr is how we tell run_test_server.py
+	// that startup was successful.  That's why we didn't start
+	// the debug server until after loading config.
+	if *pprofAddr != "" {
+		go func() {
+			logger.Info(http.ListenAndServe(*pprofAddr, nil))
+		}()
+	}
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
+		logger.WithError(err).Errorf("error notifying init daemon")
+	}
 
 	runningCmds = make(map[string]*exec.Cmd)
 

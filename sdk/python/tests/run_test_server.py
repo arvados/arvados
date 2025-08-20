@@ -188,42 +188,6 @@ def find_available_port():
             _already_used_port[port] = True
             return port
 
-def _wait_until_logs_appear(f, size, *, timeout=300, pid=None):
-    """Wait for logs to appear on f.
-
-    Give up if pid exits before logs appear.
-
-    Also check that pid doesn't immediately exit.
-    """
-    deadline = time.time() + timeout
-    logged = False
-    slept = 0
-    while time.time() < deadline:
-        if f.tell() > size:
-            time.sleep(0.1)
-            if pid and not os.path.exists('/proc/{}/stat'.format(pid)):
-                raise Exception("process {} exited after writing logs"
-                                .format(pid))
-            return True
-        if pid and not os.path.exists('/proc/{}/stat'.format(pid)):
-            raise Exception("process {} does not exist"
-                            " -- giving up on log file {}".format(
-                                pid or '', f.name))
-        if slept > 5 and not logged:
-            print("waiting for logs in {}...".format(f.name),
-                  file=sys.stderr)
-            logged = True
-        time.sleep(0.1)
-        slept += 1
-    if pid:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-    raise Exception("process {} never wrote to log file {}".format(
-        pid or '', f.name))
-
-
 def _wait_until_port_listens(port, *, timeout=300, pid=None,
                              listener_must_be_pid=True):
     """Wait for a process to start listening on the given port.
@@ -528,22 +492,28 @@ def stop_controller():
 
 def run_dispatch():
     stop_dispatch()
+    crbin = os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-run")
+    print('building {} ...'.format(crbin), file=sys.stderr)
     subprocess.check_output(
-        ["go", "build", "-o", os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-run"), "."],
+        ["go", "build", "-o", crbin, "."],
         cwd=os.path.join(ARVADOS_DIR, "cmd", "arvados-server"),
         stdin=subprocess.DEVNULL,
         stderr=sys.stderr,
     )
+    cdlbin = os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-dispatch-local")
+    print('building {} ...'.format(cdlbin), file=sys.stderr)
     subprocess.check_output(
-        ["go", "build", "-o", os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-dispatch-local"), "."],
+        ["go", "build", "-o", cdlbin, "."],
         cwd=os.path.join(ARVADOS_DIR, "services", "crunch-dispatch-local"),
         stdin=subprocess.DEVNULL,
         stderr=sys.stderr,
     )
+    print('starting crunch-dispatch-local ...', file=sys.stderr)
     logf = open(_logfilename('dispatch'), WRITE_MODE)
     logfsize = logf.tell()
+    debugport = find_available_port()
     dispatch = subprocess.Popen(
-        ["crunch-dispatch-local"],
+        ["crunch-dispatch-local", "-pprof", "localhost:{}".format(debugport)],
         cwd=TEST_TMPDIR,
         env=_service_environ(),
         stdin=subprocess.DEVNULL,
@@ -553,9 +523,7 @@ def run_dispatch():
     _detachedSubprocesses.append(dispatch)
     with open(_pidfile('dispatch'), 'w') as f:
         f.write(str(dispatch.pid))
-    # crunch-dispatch-local doesn't listen on a port, so we just wait
-    # for it to log something without immediately exiting.
-    _wait_until_logs_appear(logf, logfsize, pid=dispatch.pid)
+    _wait_until_port_listens(debugport, pid=dispatch.pid)
     print('dispatch pid is {}'.format(dispatch.pid), file=sys.stderr)
 
 def stop_dispatch():
