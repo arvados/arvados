@@ -119,6 +119,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     checkBoxCell: {
         padding: "0",
         backgroundColor: theme.palette.background.paper,
+        cursor: "pointer",
     },
     clickBox: {
         display: 'flex',
@@ -127,7 +128,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: '0.35rem',
         paddingTop: '0.1rem',
         marginLeft: '0.5rem',
-        cursor: "pointer",
     },
     checkBox: {
         cursor: "pointer",
@@ -551,9 +551,9 @@ export const DataTable = withStyles(styles)(
         };
 
         renderBodyRow = (item: any, index: number, dataTableContentType: DataTableContentType) => {
-            const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
+            const { onRowClick, onRowDoubleClick, extractKey, classes, currentRoute, checkedList } = this.props;
             const { hoveredIndex } = this.state;
-            const isRowSelected = item === selectedResourceUuid;
+            const isRowSelected = checkedList[item] === true;
             const getCellClassnames = (colIndex: number) => {
                 let cellClasses: string[] = [];
                 if (dataTableContentType === DataTableContentType.LOADING) cellClasses.push(classes.hiddenCell);
