@@ -65,7 +65,7 @@ gem 'webrick'
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
 # Enforce Ruby 2.7 compatibility for indirect dependencies.
-gem 'nokogiri', '~> 1.15.7'
+gem 'nokogiri', '~> 1.18.9'
 gem 'net-imap', '~> 0.3.8'
 gem 'securerandom', '~> 0.3.2'
 
