@@ -265,6 +265,9 @@ export const DataTable = withStyles(styles)(
                 if (!singleSelected && this.isAnySelected()) {
                     this.props.setSelectedUuid(null);
                 }
+                if (this.isAnySelected()) {
+                    this.setState({ isSelected: true })
+                }
             }
             if(prevProps.working === false && this.props.working === true) {
                 this.setState({ isLoaded: false });
