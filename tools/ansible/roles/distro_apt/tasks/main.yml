@@ -10,25 +10,27 @@
 - name: Set up distribution apt repository
   become: yes
   ansible.builtin.deb822_repository:
-    name: "{{ ansible_distribution|lower }}"
+    name: arvados-distro
     types: deb
     uris: "{{ distro_apt[ansible_distribution].aws_mirror if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].mirror }}"
     suites:
       - "{{ ansible_distribution_release }}"
       - "{{ ansible_distribution_release }}-updates"
     components: "{{ distro_apt[ansible_distribution].components }}"
+    signed_by: "{{ distro_apt[ansible_distribution].signed_by }}"
   notify:
     - apt update
 
 - name: Set up distribution's security apt repository
   become: yes
   ansible.builtin.deb822_repository:
-    name: "{{ ansible_distribution|lower }}-security"
+    name: arvados-distro-security
     types: deb
     uris: "{{ distro_apt[ansible_distribution].aws_security if ansible_system_vendor == 'Amazon EC2' else distro_apt[ansible_distribution].security }}"
     suites:
       - "{{ ansible_distribution_release }}-security"
     components: "{{ distro_apt[ansible_distribution].components }}"
+    signed_by: "{{ distro_apt[ansible_distribution].signed_by }}"
   notify:
     - apt update
 
