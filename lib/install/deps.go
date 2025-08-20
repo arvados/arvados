@@ -41,7 +41,7 @@ const (
 	pjsversion                = "1.9.8"
 	geckoversion              = "0.24.0"
 	gradleversion             = "5.3.1"
-	defaultNodejsVersion      = "14.21.3"
+	defaultNodejsVersion      = "20.19.4"
 	devtestDatabasePassword   = "insecure_arvados_test"
 )
 
