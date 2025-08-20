@@ -553,7 +553,7 @@ export const DataTable = withStyles(styles)(
         renderBodyRow = (item: any, index: number, dataTableContentType: DataTableContentType) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentRoute, checkedList } = this.props;
             const { hoveredIndex } = this.state;
-            const isRowSelected = checkedList[item] === true;
+            const isRowSelected = checkedList && checkedList[item] === true;
             const getCellClassnames = (colIndex: number) => {
                 let cellClasses: string[] = [];
                 if (dataTableContentType === DataTableContentType.LOADING) cellClasses.push(classes.hiddenCell);
