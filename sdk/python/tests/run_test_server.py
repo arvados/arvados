@@ -492,7 +492,7 @@ def stop_controller():
 
 def run_dispatch():
     stop_dispatch()
-    crbin = os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-run")
+    crbin = os.path.join(TEST_TMPDIR, "crunch-run")
     print('building {} ...'.format(crbin), file=sys.stderr)
     subprocess.run(
         ["go", "build", "-o", crbin, "."],
@@ -500,7 +500,7 @@ def run_dispatch():
         stdin=subprocess.DEVNULL,
         check=True,
     )
-    cdlbin = os.path.join(TEST_TMPDIR, "GOPATH", "bin", "crunch-dispatch-local")
+    cdlbin = os.path.join(TEST_TMPDIR, "crunch-dispatch-local")
     print('building {} ...'.format(cdlbin), file=sys.stderr)
     subprocess.run(
         ["go", "build", "-o", cdlbin, "."],
@@ -513,7 +513,11 @@ def run_dispatch():
     logfsize = logf.tell()
     debugport = find_available_port()
     dispatch = subprocess.Popen(
-        ["crunch-dispatch-local", "-pprof", "localhost:{}".format(debugport)],
+        [
+            cdlbin,
+            "-crunch-run-command", crbin,
+            "-pprof", "localhost:{}".format(debugport),
+        ],
         cwd=TEST_TMPDIR,
         env=_service_environ(),
         stdin=subprocess.DEVNULL,
