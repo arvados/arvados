@@ -6,14 +6,13 @@ import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { navigateTo } from 'store/navigation/navigation-action';
 import { openSearchResultsContextMenu } from 'store/context-menu/context-menu-actions';
-import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { SearchResultsPanelView } from 'views/search-results-panel/search-results-panel-view';
 import { RootState } from 'store/store';
 import { SearchBarAdvancedFormData } from 'models/search-bar';
 import { User } from "models/user";
 import { Config } from 'common/config';
 import { Session } from "models/session";
-import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
+import { toggleOne } from "store/multiselect/multiselect-actions";
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;
@@ -48,8 +47,6 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (resourceUuid: string) => {
         dispatch<any>(toggleOne(resourceUuid))
-        dispatch<any>(deselectAllOthers(resourceUuid))
-        dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));

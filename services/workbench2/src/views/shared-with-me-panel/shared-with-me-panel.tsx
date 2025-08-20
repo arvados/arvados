@@ -19,7 +19,7 @@ import { SHARED_WITH_ME_PANEL_ID } from 'store/shared-with-me-panel/shared-with-
 import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 import { ContainerRequestState } from 'models/container-request';
 import { resourceToMenuKind } from 'common/resource-to-menu-kind';
 
@@ -96,8 +96,6 @@ export const SharedWithMePanel = withStyles(styles)(
 
             handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
-                this.props.dispatch<any>(deselectAllOthers(uuid))
-                this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
         }
     )

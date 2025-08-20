@@ -22,8 +22,7 @@ import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
-import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
-import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 
 type CssRules = "root";
 
@@ -77,8 +76,6 @@ const mapDispatchToProps = (dispatch: any) => {
         onNewGroup: () => dispatch(openCreateGroupDialog()),
         handleRowClick: (uuid: string) => {
             dispatch(toggleOne(uuid))
-            dispatch(deselectAllOthers(uuid))
-            dispatch(loadDetailsPanel(uuid));
         }
     };
 };
