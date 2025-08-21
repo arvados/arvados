@@ -1315,7 +1315,15 @@ Clusters:
 
       SLURM:
         PrioritySpread: 0
+
+        # Arguments to sbatch when submitting Arvados containers as
+        # SLURM jobs.
         SbatchArgumentsList: []
+
+        # Additional arguments to sbatch when submitting containers
+        # that have runtime_constraints.gpu.device_count > 0
+        SbatchGPUArgumentsList: []
+
         SbatchEnvironmentVariables:
           SAMPLE: ""
 
