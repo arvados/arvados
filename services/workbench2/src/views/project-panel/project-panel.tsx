@@ -19,7 +19,7 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProjectPanelData } from './project-panel-data';
@@ -179,8 +179,6 @@ export const ProjectPanel = withStyles(styles)(
 
             handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
-                this.props.dispatch<any>(deselectAllOthers(uuid))
-                this.props.dispatch<any>(loadDetailsPanel(uuid));
             };
         }
     )
