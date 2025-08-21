@@ -25,7 +25,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '3.5rem',
         marginTop: '0',
         padding: theme.spacing(1),
-        background: '#fafafa',
+        backgroundColor: theme.palette.background.paper,
         borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',

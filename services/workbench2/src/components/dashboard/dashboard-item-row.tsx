@@ -29,7 +29,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: '8px',
         margin: '4px 0',
         width: '100%',
-        background: '#fafafa',
+        backgroundColor: theme.palette.background.paper,
         borderRadius: '8px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
         display: 'flex',
