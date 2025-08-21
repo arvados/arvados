@@ -1025,14 +1025,13 @@ describe('For users', () => {
         cy.get('[role=dialog]').contains('Attributes')
         cy.contains('Close').click()
 
-        //disabled until #22814 is resolved
         //remove
-        // cy.get('[aria-label="Remove"]').click();
-        // cy.get('[data-cy=confirmation-dialog]').within(() => {
-        //     cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-        // });
-        // cy.contains('Removed').should('be.visible');
-        // cy.assertDataExplorerContains(groupName, false);
+        cy.get('[aria-label="Remove"]').click();
+        cy.get('[data-cy=confirmation-dialog]').within(() => {
+            cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        });
+        cy.contains('Removed').should('be.visible');
+        cy.assertDataExplorerContains(groupName, false);
     });
 
     it('should behave correctly for multiple users', () => {
