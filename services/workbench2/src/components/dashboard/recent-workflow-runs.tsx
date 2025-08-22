@@ -35,10 +35,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
     },
     startedAtHead: {
-        minWidth: '12rem',
         fontSize: '0.875rem',
-        marginRight: '1rem',
-        textAlign: 'right',
     },
     lastModDate: {
         marginLeft: '2rem',

@@ -16,8 +16,9 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { RecentUuid } from 'models/user';
 import { ResourceName } from 'views-components/data-explorer/renderers';
+import { formatDate } from 'common/formatters';
 
-type CssRules = 'root' | 'subHeader' | 'titleBar' | 'lastModHead' | 'hr' | 'list';
+type CssRules = 'root' | 'subHeader' | 'titleBar' | 'lastVisHead' | 'hr' | 'list';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -32,9 +33,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: 'space-between',
         cursor: 'pointer',
     },
-    lastModHead: {
+    lastVisHead: {
         fontSize: '0.875rem',
-        marginRight: '1rem',
     },
     hr: {
         marginTop: '0',
@@ -91,7 +91,7 @@ export const RecentlyVisitedSection = connect(mapStateToProps)
                                 <span>Recently Visited</span>
                                 <ExpandChevronRight expanded={isOpen} />
                             </span>
-                            {isOpen &&<span className={classes.lastModHead}>last visited</span>}
+                            {isOpen &&<span className={classes.lastVisHead}>last visited</span>}
                         </span>
                         <hr className={classes.hr} />
                     </div>
@@ -119,7 +119,7 @@ export const RecentlyVisitedSection = connect(mapStateToProps)
 const getLastVisitedDate = (targetUuid: string, recents: RecentUuid[]) => {
     const targetRecent = recents.find(recent => recent.uuid === targetUuid);
     if (targetRecent) {
-        return new Date(targetRecent.lastVisited).toLocaleString();
+        return formatDate(targetRecent.lastVisited.toLocaleString());
     }
     return '';
 }
