@@ -89,6 +89,7 @@ import { RecentlyVisitedMiddlewareService } from "./recently-visited/recently-vi
 import { RECENTLY_VISITED_PANEL_ID } from "./recently-visited/recently-visited-actions";
 import { RecentWorkflowsMiddlewareService } from "./recent-wf-runs/recent-wf-runs-middleware-sevice";
 import { RECENT_WF_RUNS_ID } from "./recent-wf-runs/recent-wf-runs-action";
+import { FavoritePinsMiddlewareService, FAVORITE_PINS_ID } from "./favorite-pins/favorite-pins-middleware-service";
 
 declare global {
     interface Window {
@@ -132,6 +133,7 @@ export function configureStore(history: History, services: ServiceRepository, co
     const subprocessMiddleware = dataExplorerMiddleware(new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID));
     const recentlyVisitedMiddleware = dataExplorerMiddleware(new RecentlyVisitedMiddlewareService(services, RECENTLY_VISITED_PANEL_ID));
     const recentWorkflowsMiddleware = dataExplorerMiddleware(new RecentWorkflowsMiddlewareService(services, RECENT_WF_RUNS_ID));
+    const favoritePinsMiddleware = dataExplorerMiddleware(new FavoritePinsMiddlewareService(services, FAVORITE_PINS_ID));
 
     const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
         const state = store.getState();
@@ -174,6 +176,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         workflowProcessessPanelMiddleware,
         recentlyVisitedMiddleware,
         recentWorkflowsMiddleware,
+        favoritePinsMiddleware,
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[], b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);
