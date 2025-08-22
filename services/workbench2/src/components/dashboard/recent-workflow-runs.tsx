@@ -2,20 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { Collapse } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { connect } from 'react-redux';
-import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { ResourceStatus } from 'views-components/data-explorer/renderers';
-import { loadRecentWorkflows } from 'store/recent-wf-runs/recent-wf-runs-action';
 import { ProcessResource } from 'models/process';
 
 type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'startedAtHead' | 'lastModDate' | 'hr' | 'list' | 'item';
@@ -97,20 +95,12 @@ const mapStateToProps = (state: RootState): Pick<RecentWorkflowRunsProps, 'items
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentWorkflowRunsProps, 'loadRecentWorkflows'> => ({
-    loadRecentWorkflows: () => dispatch<any>(loadRecentWorkflows()),
-});
-
 type RecentWorkflowRunsProps = {
     items: ProcessResource[];
-    loadRecentWorkflows: () => void;
 };
 
-export const RecentWorkflowRunsSection = connect(mapStateToProps, mapDispatchToProps)(
-    withStyles(styles)(({items, loadRecentWorkflows, classes}: RecentWorkflowRunsProps & WithStyles<CssRules>) => {
-        useEffect(() => {
-            loadRecentWorkflows();
-        }, [loadRecentWorkflows]);
+export const RecentWorkflowRunsSection = connect(mapStateToProps)(
+    withStyles(styles)(({items, classes}: RecentWorkflowRunsProps & WithStyles<CssRules>) => {
 
         const [isOpen, setIsOpen] = useState(true);
 

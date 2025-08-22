@@ -21,6 +21,7 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
 
+    const dashboardMatch = Routes.matchDashboardRoute(pathname);
     const rootMatch = Routes.matchRootRoute(pathname);
     const projectMatch = Routes.matchProjectRoute(pathname);
     const collectionMatch = Routes.matchCollectionRoute(pathname);
@@ -124,5 +125,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadAllProcesses());
     } else if (registeredWorkflowMatch) {
         store.dispatch(WorkbenchActions.loadRegisteredWorkflow(registeredWorkflowMatch.params.id));
+    } else if (dashboardMatch) {
+        store.dispatch(WorkbenchActions.loadDashboard());
     }
 };

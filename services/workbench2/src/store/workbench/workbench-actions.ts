@@ -110,6 +110,8 @@ import { projectPanelDataColumns } from "views/project-panel/project-panel-data"
 import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
 import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
 import { loadUserPreferencesPanel } from "store/user-preferences/user-preferences-actions";
+import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action";
+import { loadRecentlyVisitedPanel } from "store/recently-visited/recently-visited-actions";
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -212,6 +214,14 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
         dispatch(userIsNotAuthenticated);
     }
 };
+
+export const loadDashboard = () => handleFirstTimeLoad((dispatch: Dispatch) => {
+    dispatch<any>(loadRecentWorkflows());
+    dispatch<any>(loadRecentlyVisitedPanel());
+    dispatch<any>(loadFavoritePanel());
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.DASHBOARD));
+    dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.DASHBOARD));
+});
 
 export const loadFavorites = () =>
     handleFirstTimeLoad((dispatch: Dispatch) => {

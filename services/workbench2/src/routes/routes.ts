@@ -116,6 +116,9 @@ export interface ResourceRouteParams {
     id: string;
 }
 
+export const matchDashboardRoute = (route: string) =>
+    matchPath(route, { path: Routes.DASHBOARD });
+
 export const matchRootRoute = (route: string) =>
     matchPath(route, { path: Routes.ROOT, exact: true });
 

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState, useEffect } from 'react';
-import { Dispatch } from 'redux';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { Collapse } from '@mui/material';
@@ -14,7 +13,6 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { ResourcesState, getPopulatedResources } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { loadRecentlyVisitedPanel } from 'store/recently-visited/recently-visited-actions';
 import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { RecentUuid } from 'models/user';
 import { ResourceName } from 'views-components/data-explorer/renderers';
@@ -67,27 +65,17 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<RecentlyVisitedProps, 'loadRecentlyVisitedPanel'> => ({
-    loadRecentlyVisitedPanel: () => dispatch<any>(loadRecentlyVisitedPanel()),
-});
-
 type RecentlyVisitedProps = {
     recents: RecentUuid[],
     resources: ResourcesState
-    loadRecentlyVisitedPanel: () => void;
 };
 
-export const RecentlyVisitedSection = connect(mapStateToProps, mapDispatchToProps)
+export const RecentlyVisitedSection = connect(mapStateToProps)
     (withStyles(styles)(
-        ({recents, resources, loadRecentlyVisitedPanel, classes}: RecentlyVisitedProps & WithStyles<CssRules>) => {
+        ({recents, resources, classes}: RecentlyVisitedProps & WithStyles<CssRules>) => {
 
             const [items, setItems] = useState<GroupContentsResource[]>([]);
             const [isOpen, setIsOpen] = useState(true);
-
-            useEffect(() => {
-                loadRecentlyVisitedPanel();
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, []);
 
             useEffect(() => {
                 const recentUuids = recents.map(recent => recent.uuid);

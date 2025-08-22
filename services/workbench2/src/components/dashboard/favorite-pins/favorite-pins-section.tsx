@@ -9,10 +9,8 @@ import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { connect } from 'react-redux';
-import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
-import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { FavePinItem } from './favorite-pins-item';
@@ -47,22 +45,16 @@ const mapStateToProps = (state: RootState): Pick<FavePinsSectionProps, 'faves' |
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<FavePinsSectionProps, 'loadFavoritePanel' > => ({
-    loadFavoritePanel: () => dispatch<any>(loadFavoritePanel()),
-});
-
 type FavePinsSectionProps = {
     faves: LinkResource[];
     resources: ResourcesState;
-    loadFavoritePanel: () => void;
 };
 
 export const FavePinsSection = connect(
-    mapStateToProps,
-    mapDispatchToProps
+    mapStateToProps
 )(
     withStyles(styles)(
-        React.memo(({ faves, resources, loadFavoritePanel, classes }: FavePinsSectionProps & WithStyles<CssRules>) => {
+        React.memo(({ faves, resources, classes }: FavePinsSectionProps & WithStyles<CssRules>) => {
             const [items, setItems] = useState<GroupContentsResource[]>([]);
             const [isOpen, setIsOpen] = useState(true);
 
@@ -70,11 +62,6 @@ export const FavePinsSection = connect(
                 const sortedFaves = faves.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12); //max 12 items
                 setItems(getPopulatedResources(sortedFaves.map(item => item.headUuid), resources));
             }, [faves, resources]);
-
-            useEffect(() => {
-                loadFavoritePanel();
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, []);
 
             return (
                 <div className={classes.root}>
