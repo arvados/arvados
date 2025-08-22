@@ -1323,8 +1323,8 @@ Clusters:
         #
         # %U uuid
         # %C number of VCPUs
-        # %M memory in MB
-        # %T tmp in MB
+        # %M memory in MiB
+        # %T tmp in MiB
         # %G number of GPU devices (runtime_constraints.gpu.device_count)
         # %W maximum run time in minutes
         # %P comma separated partitions (scheduling_parameters.partitions)
@@ -1354,8 +1354,8 @@ Clusters:
         #
         # %U uuid
         # %C number of VCPUs
-        # %M memory in MB
-        # %T tmp in MB
+        # %M memory in MiB
+        # %T tmp in MiB
         # %G number of GPU devices (runtime_constraints.gpu.device_count)
         # %W maximum run time in minutes (see MaxRunTimeOverhead and
         #    MaxRunTimeDefault below)
