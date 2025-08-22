@@ -7,7 +7,6 @@ import subprocess
 
 from pathlib import Path
 
-INSIDE_ARVBOX = 'ARVADOS_CONTAINER_PATH' in os.environ
 TESTS_DIR = Path(__file__).parent
 
 def run_cwltest(
@@ -35,7 +34,5 @@ def run_cwltest(
         '--disable-reuse',
         '--enable-dev',
     ])
-    if INSIDE_ARVBOX:
-        cmd.append('--submit-runner-image=arvados/jobs:3.1.2')
     cmd.extend(tool_args)
     return subprocess.run(cmd)

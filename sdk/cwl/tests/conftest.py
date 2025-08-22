@@ -14,7 +14,7 @@ import arvados
 import arvados_cwl._version as acr_version
 import pytest
 
-from . import INSIDE_ARVBOX, TESTS_DIR
+from . import TESTS_DIR
 from arvados.collection import Collection
 from arvados.commands import keepdocker
 
@@ -110,8 +110,6 @@ def coll_testdir(arv_session):
 
 @pytest.fixture(scope='session')
 def jobs_docker_image(arv_session):
-    if INSIDE_ARVBOX:
-        return 'arvados/jobs:3.1.2'
     image_name = 'arvados/jobs'
     image_tag = acr_version.__version__
     image_fullname = f'{image_name}:{image_tag}'
@@ -134,6 +132,7 @@ def jobs_docker_image(arv_session):
         build_proc = subprocess.run([
             sys.executable,
             str(workspace / 'build/build_docker_image.py'),
+            '--environment', 'development',
             '--tag', image_fullname,
             image_name,
         ], env=build_env)
