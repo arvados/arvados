@@ -258,7 +258,7 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<DataExplorerState>, snapshot?: any ): void {
-            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer, setSelectedUuid } = this.props;
+            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard, setIsSelectedResourceInDataExplorer } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 setIsSelectedResourceInDataExplorer(this.isSelectedResourceInTable(selectedResourceUuid));
                 this.setState({
