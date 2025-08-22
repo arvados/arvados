@@ -762,7 +762,9 @@ Cypress.Commands.add("assertDataExplorerContains", (name, contains = true) => {
  * Does not currently handle specifying which toolbar (DE or details card) or handling collapsed toolbar
  */
 Cypress.Commands.add("doToolbarAction", (name) => {
-    cy.get(`[data-cy=multiselect-toolbar] [data-cy=multiselect-button][aria-label="${name}"]`, { timeout: 5000 }).click();
+    // Toolbars have mixed aria-label locations (button vs span) so this is kept generic
+    // and only searches for the aria-label within the toolbar
+    cy.get(`[data-cy=multiselect-toolbar] [aria-label="${name}"]`, { timeout: 5000 }).click();
 });
 
 /**
