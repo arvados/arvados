@@ -265,9 +265,6 @@ export const DataExplorer = withStyles(styles)(
                     hideToolbar: usesDetailsCard(path || '') ? selectedResourceUuid === this.props.currentRouteUuid : false,
                 })
             }
-            if (this.props.isDetailsPanelOpen !== prevProps.isDetailsPanelOpen && this.props.isDetailsPanelOpen === false) {
-                setSelectedUuid(currentRouteUuid);
-            }
             if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
                 this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
             }
