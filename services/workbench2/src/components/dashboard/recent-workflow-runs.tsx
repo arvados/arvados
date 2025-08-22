@@ -16,7 +16,7 @@ import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from '
 import { ResourceStatus } from 'views-components/data-explorer/renderers';
 import { ProcessResource } from 'models/process';
 
-type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'startedAtHead' | 'lastModDate' | 'hr' | 'list' | 'item';
+type CssRules = 'root' | 'subHeader' | 'titleBar' | 'headers' | 'startedAtHead' | 'hr' | 'list' | 'item';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -36,12 +36,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     startedAtHead: {
         fontSize: '0.875rem',
-    },
-    lastModDate: {
-        marginLeft: '2rem',
-        width: '12rem',
-        display: 'flex',
-        justifyContent: 'flex-end'
     },
     hr: {
         marginTop: '0',

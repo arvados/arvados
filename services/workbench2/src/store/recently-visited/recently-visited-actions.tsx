@@ -11,14 +11,14 @@ import { authActions } from "store/auth/auth-action";
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { RecentUuid } from "models/user";
 
-export const RECENTLY_VISITED_PANEL_ID = "recentlyVisitedPanel";
+export const RECENTLY_VISITED_PANEL_ID = "recentlyVisited";
 const RECENTS_LOAD_ERROR = "Could not load recently visited";
 const SAVE_RECENT_UUIDS_ERROR = "Could not save recent uuids";
 
-const recentlyVisitedPanelActions = bindDataExplorerActions(RECENTLY_VISITED_PANEL_ID);
+const recentlyVisitedActions = bindDataExplorerActions(RECENTLY_VISITED_PANEL_ID);
 
-export const loadRecentlyVisitedPanel = () => (dispatch: Dispatch) => {
-    dispatch(recentlyVisitedPanelActions.REQUEST_ITEMS());
+export const loadRecentlyVisited = () => (dispatch: Dispatch) => {
+    dispatch(recentlyVisitedActions.REQUEST_ITEMS());
 };
 
 export const saveRecentlyVisited = (uuid: string) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
