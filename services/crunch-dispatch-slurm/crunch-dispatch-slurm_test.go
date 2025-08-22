@@ -428,6 +428,13 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 	c.Check(err, IsNil)
 }
 
+func (s *StubbedSuite) TestSbatchArgumentsError(c *C) {
+	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = []string{"--bad% template"}
+	container := arvados.Container{}
+	_, err := s.disp.sbatchArgs(container)
+	c.Check(err, ErrorMatches, `Unknown substitution parameter %  in .*`)
+}
+
 func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {
 	log := ctxlog.TestLogger(c)
 	content := []byte(`
