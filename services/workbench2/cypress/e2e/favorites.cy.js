@@ -390,7 +390,7 @@ describe('Favorites-SidePanel tests', function () {
                 // Untrash favorited collection
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 // collection might not be on first page
-                cy.get('[data-cy=search-input]').type('coll');
+                cy.get('[data-cy=search-input]').type(testFavoriteCollection.name);
                 cy.waitForDom();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
