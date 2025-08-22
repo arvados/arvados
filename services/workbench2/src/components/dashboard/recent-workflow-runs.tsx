@@ -29,6 +29,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleBar: {
         display: 'flex',
         justifyContent: 'space-between',
+        cursor: 'pointer',
     },
     headers: {
         display: 'flex',

@@ -30,6 +30,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleBar: {
         display: 'flex',
         justifyContent: 'space-between',
+        cursor: 'pointer',
     },
     lastModHead: {
         fontSize: '0.875rem',

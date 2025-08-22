@@ -26,6 +26,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     title: {
         margin: '0 1rem',
         padding: '4px',
+        cursor: 'pointer',
     },
     hr: {
         marginTop: '0',
