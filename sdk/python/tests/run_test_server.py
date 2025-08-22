@@ -492,25 +492,20 @@ def stop_controller():
 
 def run_dispatch():
     stop_dispatch()
+    arvados_server_bin = os.path.join(os.environ["GOPATH"], "bin", "arvados-server")
     crbin = os.path.join(TEST_TMPDIR, "crunch-run")
-    print('building {} ...'.format(crbin), file=sys.stderr)
-    subprocess.run(
-        ["go", "build", "-o", crbin, "."],
-        cwd=os.path.join(ARVADOS_DIR, "cmd", "arvados-server"),
-        stdin=subprocess.DEVNULL,
-        check=True,
-    )
-    cdlbin = os.path.join(TEST_TMPDIR, "crunch-dispatch-local")
-    print('building {} ...'.format(cdlbin), file=sys.stderr)
-    subprocess.run(
-        ["go", "build", "-o", cdlbin, "."],
-        cwd=os.path.join(ARVADOS_DIR, "services", "crunch-dispatch-local"),
-        stdin=subprocess.DEVNULL,
-        check=True,
-    )
+    # Symlinking crunch-run -> arvados-server allows us to use it in a
+    # -crunch-run-command="/path/to/crunch-run" argument -- because
+    # -crunch-run-command="/path/to/arvados-server crunch-run" doesn't
+    # do what we want.
+    try:
+        os.remove(crbin)
+    except FileNotFoundError:
+        pass
+    os.symlink(arvados_server_bin, crbin)
+    cdlbin = os.path.join(os.environ["GOPATH"], "bin", "crunch-dispatch-local")
     print('starting crunch-dispatch-local ...', file=sys.stderr)
     logf = open(_logfilename('dispatch'), WRITE_MODE)
-    logfsize = logf.tell()
     debugport = find_available_port()
     dispatch = subprocess.Popen(
         [
