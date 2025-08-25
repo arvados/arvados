@@ -37,16 +37,14 @@ h3. SbatchArgumentsList (SLURM) configuration semantics have changed
 @Containers.SLURM.SbatchArgumentsList@ must now specify arguments that were previously added implicitly. Also, the @%@ character invokes template behavior. If your current configuration looks like this:
 
 <notextile>
-<pre><code>
-SbatchArgumentsList: ["--clusters=all"]
+<pre><code>SbatchArgumentsList: ["--clusters=all"]
 </code></pre>
 </notextile>
 
 You must update it to add the arguments that were previously added implicitly:
 
 <notextile>
-<pre><code>
-SbatchArgumentsList: ["--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--constraint=instancetype=%I", "--partition=%P", "--clusters=all"]
+<pre><code>SbatchArgumentsList: ["--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--constraint=instancetype=%I", "--partition=%P", "--clusters=all"]
 </code></pre>
 </notextile>
 
