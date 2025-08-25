@@ -294,7 +294,7 @@
       community.general.gem:
         name: bundler
         user_install: no
-        version: "~> 2.4.22"
+        version: "~> 2.5.23"
 
 ### Distribution package dependencies
 # These are ordered here because they depend on the core language
