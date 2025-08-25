@@ -1318,11 +1318,31 @@ Clusters:
 
         # Arguments to sbatch when submitting Arvados containers as
         # SLURM jobs.
-        SbatchArgumentsList: []
+        #
+        # Template variables starting with % will be substituted as follows:
+        #
+        # %U uuid
+        # %C number of VCPUs
+        # %M memory in MiB
+        # %T tmp in MiB
+        # %G number of GPU devices (runtime_constraints.gpu.device_count)
+        # %W maximum run time in minutes
+        # %P comma separated partitions (scheduling_parameters.partitions)
+        # %I optimal instance type (if instance types are configured)
+        # %% a single % character
+        #
+        # Any argument containing %P or %W will be omitted if the
+        # corresponding parameter is empty, e.g., with the default
+        # configuration, "--partition=%P" will be omitted for
+        # containers that have no scheduling_parameters.partitions.
+        #
+        # Arvados prepends some additional non-configurable sbatch
+        # arguments, including "--no-requeue" and "--nice=...".
+        SbatchArgumentsList: ["--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--partition=%P"]
 
         # Additional arguments to sbatch when submitting containers
         # that have runtime_constraints.gpu.device_count > 0
-        SbatchGPUArgumentsList: []
+        SbatchGPUArgumentsList: ["--gpus=%G"]
 
         SbatchEnvironmentVariables:
           SAMPLE: ""
@@ -1334,8 +1354,8 @@ Clusters:
         #
         # %U uuid
         # %C number of VCPUs
-        # %M memory in MB
-        # %T tmp in MB
+        # %M memory in MiB
+        # %T tmp in MiB
         # %G number of GPU devices (runtime_constraints.gpu.device_count)
         # %W maximum run time in minutes (see MaxRunTimeOverhead and
         #    MaxRunTimeDefault below)
