@@ -34,7 +34,7 @@ export class FavoritePinsMiddlewareService extends DataExplorerMiddlewareService
     }
 
     // Since FavoritePins does not use a data table, we can't get these types from the data table columns like we do normally
-    favoriteTypes = [ResourceKind.COLLECTION, ResourceKind.CONTAINER_REQUEST, ResourceKind.WORKFLOW];
+    favoriteTypes = [ResourceKind.GROUP, ResourceKind.COLLECTION, ResourceKind.CONTAINER_REQUEST, ResourceKind.WORKFLOW];
 
     getLinkFilters(dataExplorer: DataExplorer, uuid: string): string {
         return new FilterBuilder()
@@ -64,15 +64,15 @@ export class FavoritePinsMiddlewareService extends DataExplorerMiddlewareService
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
-        const uuid = getUserUuid(api.getState());
-        if (!uuid || !uuid.length) {
+        const userUuid = getUserUuid(api.getState());
+        if (!userUuid || !userUuid.length) {
             userNotAvailable();
         } else {
             try {
                 if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
 
                 // Get favorite links
-                const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, uuid));
+                const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, userUuid));
                 const uuids = responseLinks.items.map(it => it.headUuid);
 
                 // Get resources from links
