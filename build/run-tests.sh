@@ -746,6 +746,16 @@ install_services/workbench2() {
         && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
 }
 
+do_bundle() {
+    timer_reset
+    (
+        set -x
+        env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+            "$BUNDLE" ${@}
+    )
+    checkexit "$?" "services/api bundle ${@}"
+}
+
 do_migrate() {
     timer_reset
     local task="db:migrate"
@@ -952,6 +962,7 @@ help_interactive() {
     echo "install TARGET"
     echo "install env              (go/python libs)"
     echo "install deps             (go/python libs + arvados components needed for integration tests)"
+    echo "bundle ...               (run arbitrary bundler command)"
     echo "migrate                  (run outstanding migrations)"
     echo "migrate rollback         (revert most recent migration)"
     echo "migrate <dir> VERSION=n  (revert and/or run a single migration; <dir> is up|down|redo)"
@@ -1127,6 +1138,9 @@ else
                 ;;
             "migrate")
                 do_migrate ${target} ${opts}
+                ;;
+            "bundle")
+                do_bundle ${target} ${opts}
                 ;;
             "test" | "install")
                 case "$target" in
