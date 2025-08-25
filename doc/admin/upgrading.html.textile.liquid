@@ -44,7 +44,7 @@ h3. SbatchArgumentsList (SLURM) configuration semantics have changed
 You must update it to add the arguments that were previously added implicitly:
 
 <notextile>
-<pre><code>SbatchArgumentsList: ["--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--constraint=instancetype=%I", "--partition=%P", "--clusters=all"]
+<pre><code>SbatchArgumentsList: [<span class="userinput">"--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--constraint=instancetype=%I", "--partition=%P", </span>"--clusters=all"]
 </code></pre>
 </notextile>
 
