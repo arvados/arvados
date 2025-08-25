@@ -337,9 +337,10 @@ func (s *StubbedSuite) TestSbatchArgs_GPU(c *C) {
 		},
 		Priority: 1,
 	}
-	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = nil
+	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = []string{"--account=accountname"}
+	s.disp.cluster.Containers.SLURM.SbatchGPUArgumentsList = []string{"--partition=gpupartition"}
 	args, err := s.disp.sbatchArgs(container)
-	c.Check(args, DeepEquals, []string{"--job-name=123", "--nice=10000", "--no-requeue", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--gpus=3"})
+	c.Check(args, DeepEquals, []string{"--account=accountname", "--partition=gpupartition", "--job-name=123", "--nice=10000", "--no-requeue", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--gpus=3"})
 	c.Check(err, IsNil)
 }
 
