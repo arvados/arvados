@@ -100,6 +100,7 @@ import { PublicFavoritePanel } from "views/public-favorites-panel/public-favorit
 import { LinkAccountPanel } from "views/link-account-panel/link-account-panel";
 import { CollectionsContentAddressPanel } from "views/collection-content-address-panel/collection-content-address-panel";
 import { AllProcessesPanel } from "../all-processes-panel/all-processes-panel";
+import { ExternalCredentialsPanel } from "views/external-credentials-panel/external-credentials-panel";
 import { NotFoundPanel } from "../not-found-panel/not-found-panel";
 import { AutoLogout } from "views-components/auto-logout/auto-logout";
 import { RestoreCollectionVersionDialog } from "views-components/collections-dialog/restore-version-dialog";
@@ -296,6 +297,10 @@ let routes = (
         <Route
             path={Routes.COLLECTIONS_CONTENT_ADDRESS}
             component={CollectionsContentAddressPanel}
+        />
+        <Route
+            path={Routes.EXTERNAL_CREDENTIALS}
+            component={ExternalCredentialsPanel}
         />
     </>
 );

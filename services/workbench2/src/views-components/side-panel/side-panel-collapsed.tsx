@@ -4,7 +4,16 @@
 
 import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
-import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, ResourceIcon } from 'components/icon/icon'
+import { ProjectsIcon,
+    ProcessIcon,
+    FavoriteIcon,
+    ShareMeIcon,
+    TrashIcon,
+    PublicFavoriteIcon,
+    GroupsIcon,
+    ResourceIcon,
+    FolderKeyIcon,
+ } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
 import { IconButton, List, ListItem, Tooltip } from '@mui/material'
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -21,6 +30,7 @@ import {
     navigateToGroups,
     navigateToAllProcesses,
     navigateToTrash,
+    navigateToExternalCredentials,
 } from 'store/navigation/navigation-action'
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
@@ -52,6 +62,7 @@ enum SidePanelCollapsedCategory {
     ALL_PROCESSES = 'All Processes',
     INSTANCE_TYPES = 'Instance Types',
     SHELL_ACCESS = 'Shell Access',
+    EXTERNAL_CREDENTIALS = 'External Credentials',
     GROUPS = 'Groups',
     TRASH = 'Trash',
 }
@@ -97,6 +108,11 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
         name: SidePanelCollapsedCategory.SHELL_ACCESS,
         icon: <TerminalIcon />,
         navTarget: navigateToUserVirtualMachines,
+    },
+    {
+        name: SidePanelCollapsedCategory.EXTERNAL_CREDENTIALS,
+        icon: <FolderKeyIcon />,
+        navTarget: navigateToExternalCredentials,
     },
     {
         name: SidePanelCollapsedCategory.GROUPS,
