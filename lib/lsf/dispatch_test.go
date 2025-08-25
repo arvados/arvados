@@ -38,6 +38,7 @@ type suite struct {
 }
 
 func (s *suite) TearDownTest(c *check.C) {
+	s.disp.Close()
 	arvadostest.ResetDB(c)
 }
 
@@ -362,6 +363,9 @@ func (s *suite) TestSubmit(c *check.C) {
 }
 
 func (s *suite) TestBsubArgs(c *check.C) {
+	s.disp.lsfcli.stubCommand = lsfstub{}.stubCommand(s, c)
+	s.disp.Start()
+
 	s.disp.Cluster.Containers.LSF.BsubArgumentsList = []string{"--zebra", "%Z"}
 	_, err := s.disp.bsubArgs(arvados.Container{})
 	c.Check(err, check.ErrorMatches, `Unknown substitution parameter %Z in BsubArgumentsList`)
