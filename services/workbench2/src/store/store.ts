@@ -82,6 +82,7 @@ import { bannerReducer } from "./banner/banner-reducer";
 import { multiselectReducer } from "./multiselect/multiselect-reducer";
 import { composeWithDevTools } from "redux-devtools-extension";
 import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
+import { externalCredentialsReducer } from "./external-credentials/external-credentials-reducer";
 import createSagaMiddleware from 'redux-saga';
 import { rootSaga } from "./redux-saga";
 
@@ -217,4 +218,5 @@ const createRootReducer = (services: ServiceRepository) =>
         linkAccountPanel: linkAccountPanelReducer,
         sidePanel: sidePanelReducer,
         multiselect: multiselectReducer,
+        externalCredentials: externalCredentialsReducer,
     });

@@ -51,6 +51,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const collectionsContentAddressMatch = Routes.matchCollectionsContentAddressRoute(pathname);
     const allProcessesMatch = Routes.matchAllProcessesRoute(pathname);
     const registeredWorkflowMatch = Routes.matchRegisteredWorkflowRoute(pathname);
+    const externalCredentialsMatch = Routes.matchExternalCredentialsRoute(pathname);
 
     store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
     store.dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
@@ -124,5 +125,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadAllProcesses());
     } else if (registeredWorkflowMatch) {
         store.dispatch(WorkbenchActions.loadRegisteredWorkflow(registeredWorkflowMatch.params.id));
+    } else if (externalCredentialsMatch) {
+        store.dispatch(WorkbenchActions.loadExternalCredentialsPanel());
     }
 };

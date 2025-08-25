@@ -89,6 +89,9 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
         case REPOSITORIES_PANEL_LABEL:
             dispatch(navigateToRepositories);
             return;
+        case SidePanelTreeCategory.EXTERNAL_CREDENTIALS:
+            dispatch(navigateToExternalCredentials);
+            return;
     }
 
     dispatch(navigationNotAvailable(uuid));

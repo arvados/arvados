@@ -214,3 +214,6 @@ export const matchPublicFavoritesRoute = (route: string) =>
 
 export const matchCollectionsContentAddressRoute = (route: string) =>
     matchPath(route, { path: Routes.COLLECTIONS_CONTENT_ADDRESS });
+
+export const matchExternalCredentialsRoute = (route: string) =>
+    matchPath(route, { path: Routes.EXTERNAL_CREDENTIALS });
