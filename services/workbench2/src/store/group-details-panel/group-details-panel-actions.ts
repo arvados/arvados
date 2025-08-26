@@ -99,15 +99,17 @@ export const removeGroupMember = (uuid: string) =>
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
 
-export const openRemoveMultipleGroupMembersDialog = () =>
+export const openRemoveCheckedGroupMembersDialog = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuidsToRemove = getCheckedListUuids(getState());
 
         dispatch(dialogActions.OPEN_DIALOG({
             id: MULTIPLE_MEMBER_REMOVE_DIALOG,
             data: {
-                title: 'Remove members',
-                text: 'Are you sure you want to remove these members from this group?',
+                title: uuidsToRemove.length > 1 ? 'Remove members' : 'Remove member',
+                text: uuidsToRemove.length > 1
+                    ? 'Are you sure you want to remove these members from this group?'
+                    : 'Are you sure you want to remove this member from this group?',
                 confirmButtonLabel: 'Remove',
                 uuidsToRemove
             }

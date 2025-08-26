@@ -23,6 +23,7 @@ export enum ContextMenuKind {
     FROZEN_PROJECT = "FrozenProject",
     FROZEN_PROJECT_ADMIN = "FrozenProjectAdmin",
     GROUPS = "Group",
+    BUILT_IN_GROUP = "BuiltInGroup",
     GROUP_MEMBER = "GroupMember",
     KEEP_SERVICE = "KeepService",
     LINK = "Link",
@@ -106,6 +107,11 @@ const groupOrder = [
     ContextMenuActionNames.MOVE_TO_TRASH,
 ];
 
+const builtInGroupOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.API_DETAILS,
+];
+
 export const collectionOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
@@ -182,6 +188,7 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 
     [ContextMenuKind.GROUPS]: groupOrder,
+    [ContextMenuKind.BUILT_IN_GROUP]: builtInGroupOrder,
 
     [ContextMenuKind.FILTER_GROUP]: projectOrder,
     [ContextMenuKind.FILTER_GROUP_ADMIN]: projectOrder,

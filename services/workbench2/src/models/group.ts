@@ -10,6 +10,7 @@ import {
     ResourceObjectType,
     TrashableResource
 } from "./resource";
+import { LinkResource, LinkClass } from "./link";
 
 export interface GroupResource extends TrashableResource, ResourceWithProperties {
     kind: ResourceKind.GROUP;
@@ -51,6 +52,15 @@ export const isUserGroup = (resource: any): resource is GroupResource => {
 
 export const isGroupResource = (resource: Resource): resource is GroupResource => {
     return resource && resource.kind === ResourceKind.GROUP;
+};
+
+type GroupMemberResource = LinkResource;
+
+export const isGroupMember = (resource: LinkResource): resource is GroupMemberResource => {
+    return resource
+        && resource.kind === ResourceKind.LINK
+        && resource.linkClass === LinkClass.PERMISSION
+        && resource.headKind === ResourceKind.GROUP
 };
 
 export const selectedFieldsOfGroup = [

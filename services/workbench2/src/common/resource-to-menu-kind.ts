@@ -8,12 +8,12 @@ import { AuthState } from 'store/auth/auth-reducer';
 import { getResource } from 'store/resources/resources';
 import { Resource, ResourceKind } from 'models/resource';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { GroupResource, GroupClass, isGroupResource, isUserGroup } from 'models/group';
+import { GroupResource, GroupClass, isGroupResource, isUserGroup, isGroupMember, isBuiltinGroup } from 'models/group';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getProcess, isProcessCancelable } from 'store/processes/process';
 import { isCollectionResource } from 'models/collection';
 import { ResourcesState } from 'store/resources/resources';
-import { matchGroupDetailsRoute } from 'routes/routes';
+import { LinkResource } from 'models/link';
 
 type ProjectToMenuArgs = {
     isAdmin: boolean;
@@ -66,7 +66,7 @@ type ProcessMenuKind = ContextMenuKind.PROCESS_RESOURCE
 
 export const resourceToMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState): ContextMenuKind | undefined => {
-        const { auth, resources, router } = getState();
+        const { auth, resources } = getState();
         const resource = getResource<Resource>(uuid)(resources);
         if (!resource) return;
         const isAdmin = auth.user?.isAdmin || false;
@@ -74,6 +74,9 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
         const isEditable = getIsEditable(isAdmin, resource, resources, readonly, isFrozen);
 
         if (isUserGroup(resource)) {
+            if (isBuiltinGroup(resource.uuid)) {
+                return ContextMenuKind.BUILT_IN_GROUP
+            }
             return ContextMenuKind.GROUPS
         }
         if (isGroupResource(resource)) {
@@ -98,7 +101,7 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
             case ResourceKind.USER:
                 return ContextMenuKind.USER_DETAILS;
             case ResourceKind.LINK:
-                if (matchGroupDetailsRoute(router?.location?.pathname || '')) return ContextMenuKind.GROUP_MEMBER;
+                if (isGroupMember(resource as LinkResource)) return ContextMenuKind.GROUP_MEMBER;
                 return ContextMenuKind.LINK;
             case ResourceKind.WORKFLOW:
                 return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;

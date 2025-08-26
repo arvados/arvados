@@ -18,7 +18,7 @@ import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/group
 import { noop } from 'lodash/fp';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getResource, ResourcesState } from 'store/resources/resources';
-import { GroupResource } from 'models/group';
+import { GroupResource, isBuiltinGroup } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenuAndSelect } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -130,7 +130,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                     description: resource.description,
                     ownerUuid: resource.ownerUuid,
                     kind: resource.kind,
-                    menuKind: ContextMenuKind.GROUPS
+                    menuKind: isBuiltinGroup(resource.uuid) ? ContextMenuKind.BUILT_IN_GROUP : ContextMenuKind.GROUPS,
                 });
             }
         }
