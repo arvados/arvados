@@ -601,7 +601,19 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
 
 export const ResourceLinkDelete = connect((state: RootState, props: { uuid: string }) => {
     const link = getResource<LinkResource>(props.uuid)(state.resources);
-    const canManage = link && getResourceLinkCanManage(state, link) ? true : false;
+    const isBuiltin = isBuiltinGroup(link?.headUuid || "");
+    const canManage = link && getResourceLinkCanManage(state, link) && !isBuiltin;
+
+    return {
+        item: link || { uuid: "", kind: ResourceKind.NONE },
+        canManage
+    };
+})((props: { item: LinkResource; canManage: boolean } & DispatchProp<any>) => renderLinkDelete(props.dispatch, props.item, props.canManage));
+
+export const ResourcePermissionsDelete = connect((state: RootState, props: { uuid: string }) => {
+    const link = getResource<LinkResource>(props.uuid)(state.resources);
+    const isBuiltin = isBuiltinGroup(link?.tailUuid || "");
+    const canManage = link && getResourceLinkCanManage(state, link) && !isBuiltin;
 
     return {
         item: link || { uuid: "", kind: ResourceKind.NONE },
