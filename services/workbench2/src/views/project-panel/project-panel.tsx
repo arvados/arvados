@@ -118,7 +118,7 @@ export const ProjectPanel = withStyles(styles)(
                             forwardProps
                             xs="auto"
                             item
-                            data-cy="process-data"
+                            data-cy="project-data"
                             className={classes.dataExplorer}>
                             <ProjectPanelData
                                 onRowClick={this.handleRowClick}
@@ -130,7 +130,7 @@ export const ProjectPanel = withStyles(styles)(
                             forwardProps
                             xs="auto"
                             item
-                            data-cy="process-run"
+                            data-cy="project-run"
                             className={classes.dataExplorer}>
                             <ProjectPanelRun
                                 onRowClick={this.handleRowClick}

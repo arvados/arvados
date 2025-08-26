@@ -156,6 +156,79 @@ describe('Multiselect Toolbar Baseline Tests', () => {
 
         });
     });
+
+    it('retains selection and toolbar state when toggling details panel', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+
+        cy.getAll('@testProject1')
+            .then(([testProject1]) => {
+                cy.loginAs(adminUser);
+
+                // Toolbar in user details card
+                cy.get('[data-cy=user-details-card]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('[data-cy=multiselect-toolbar]').should('exist');
+                    });
+                // Toolbar not in DE
+                cy.get('[data-cy=project-data]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('[data-cy=multiselect-toolbar]').should('not.exist');
+                    });
+
+                // Select project1
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.assertCheckboxes([testProject1.uuid], true);
+
+                // Toolbar not in user card
+                cy.get('[data-cy=user-details-card]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('[data-cy=multiselect-toolbar]').should('not.exist');
+                    });
+                // Toolbar in DE
+                cy.get('[data-cy=project-data]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('[data-cy=multiselect-toolbar]').should('exist');
+                    });
+
+                // Open details panel
+                cy.doToolbarAction("View details");
+
+                // Verify still checked
+                cy.assertCheckboxes([testProject1.uuid], true);
+
+                // Details panel contains project name
+                cy.get('[data-cy=details-panel]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('h6').contains(testProject1.name);
+                    });
+
+                // Close details panel
+                cy.get('[data-cy=details-panel] button[data-cy=close-details-btn]').click();
+
+                // Verify still checked
+                cy.assertCheckboxes([testProject1.uuid], true);
+
+                // Toolbar still in DE, not user card
+                cy.get('[data-cy=user-details-card]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('[data-cy=multiselect-toolbar]').should('not.exist');
+                    });
+                cy.get('[data-cy=project-data]')
+                    .should('exist')
+                    .within(() => {
+                        cy.get('[data-cy=multiselect-toolbar]').should('exist');
+                    });
+            });
+    });
 });
 
 describe('For project resources', () => {
