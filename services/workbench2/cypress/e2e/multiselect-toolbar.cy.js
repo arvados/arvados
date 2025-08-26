@@ -927,6 +927,17 @@ describe('For groups', () => {
         });
     });
 
+    it('should behave correctly for built in group', () => {
+            cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Groups');
+
+            cy.doDataExplorerSelect('All users');
+            cy.assertToolbarButtons(tooltips.builtInGroup);
+
+            cy.doDataExplorerSelect('System group');
+            cy.assertToolbarButtons(tooltips.multiBuiltInGroup);
+    });
+
     it('should behave correctly for multiple groups', () => {
         cy.createGroup(adminUser.token, {
             group_class: "role",
