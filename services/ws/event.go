@@ -62,10 +62,14 @@ func (e *event) Detail() *arvados.Log {
 		e.Logger.WithField("LogID", e.LogID).WithError(e.err).Error("QueryRow failed")
 		return nil
 	}
-	e.err = yaml.Unmarshal(propYAML, &logRow.Properties)
-	if e.err != nil {
-		e.Logger.WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
-		return nil
+	if len(propYAML) == 0 {
+		logRow.Properties = map[string]interface{}{}
+	} else {
+		e.err = yaml.Unmarshal(propYAML, &logRow.Properties)
+		if e.err != nil {
+			e.Logger.WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
+			return nil
+		}
 	}
 	e.logRow = &logRow
 	return e.logRow

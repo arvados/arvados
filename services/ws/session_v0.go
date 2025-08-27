@@ -146,7 +146,7 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 		"event_type":        detail.EventType,
 		"event_at":          detail.EventAt,
 	}
-	if detail.Properties != nil && detail.Properties["text"] != nil {
+	if detail.Properties["text"] != nil {
 		msg["properties"] = detail.Properties
 	} else {
 		msgProps := map[string]map[string]interface{}{}
