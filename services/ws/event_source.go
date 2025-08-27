@@ -310,8 +310,8 @@ func (ps *pgEventSource) Run() {
 				LogID:    logID,
 				Received: time.Now(),
 				Serial:   serial,
-				db:       ps.db,
-				logger:   ps.Logger,
+				DB:       ps.db,
+				Logger:   ps.Logger,
 			}
 			ps.Logger.WithField("event", e).Debug("incoming")
 			ps.eventsIn.Inc()
