@@ -4,7 +4,10 @@
 
 package ws
 
-import check "gopkg.in/check.v1"
+import (
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	check "gopkg.in/check.v1"
+)
 
 var _ = check.Suite(&eventSuite{})
 
@@ -12,8 +15,9 @@ type eventSuite struct{}
 
 func (*eventSuite) TestDetail(c *check.C) {
 	e := &event{
-		LogID: 17,
-		db:    testDB(),
+		LogID:  17,
+		DB:     testDB(),
+		Logger: ctxlog.TestLogger(c),
 	}
 	logRow := e.Detail()
 	c.Assert(logRow, check.NotNil)

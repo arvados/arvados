@@ -236,7 +236,8 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 			LogID:    id,
 			Received: now,
 			Ready:    now,
-			db:       sess.db,
+			DB:       sess.db,
+			Logger:   sess.log,
 		}
 		if sub.match(sess, e) {
 			select {

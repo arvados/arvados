@@ -30,9 +30,9 @@ type event struct {
 	Received time.Time
 	Ready    time.Time
 	Serial   uint64
+	DB       *sql.DB
+	Logger   logrus.FieldLogger
 
-	db     *sql.DB
-	logger logrus.FieldLogger
 	logRow *arvados.Log
 	err    error
 	mtx    sync.Mutex
@@ -49,7 +49,7 @@ func (e *event) Detail() *arvados.Log {
 	}
 	var logRow arvados.Log
 	var propYAML []byte
-	e.err = e.db.QueryRow(`SELECT id, uuid, object_uuid, COALESCE(object_owner_uuid,''), COALESCE(event_type,''), event_at, created_at, properties FROM logs WHERE id = $1`, e.LogID).Scan(
+	e.err = e.DB.QueryRow(`SELECT id, uuid, object_uuid, COALESCE(object_owner_uuid,''), COALESCE(event_type,''), event_at, created_at, properties FROM logs WHERE id = $1`, e.LogID).Scan(
 		&logRow.ID,
 		&logRow.UUID,
 		&logRow.ObjectUUID,
@@ -59,12 +59,12 @@ func (e *event) Detail() *arvados.Log {
 		&logRow.CreatedAt,
 		&propYAML)
 	if e.err != nil {
-		e.logger.WithField("LogID", e.LogID).WithError(e.err).Error("QueryRow failed")
+		e.Logger.WithField("LogID", e.LogID).WithError(e.err).Error("QueryRow failed")
 		return nil
 	}
 	e.err = yaml.Unmarshal(propYAML, &logRow.Properties)
 	if e.err != nil {
-		e.logger.WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
+		e.Logger.WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
 		return nil
 	}
 	e.logRow = &logRow
