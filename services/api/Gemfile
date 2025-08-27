@@ -14,11 +14,14 @@ gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
-  # Enforce Ruby 2.7 compatibility for an indirect dependency.
-  # Can't use ~> because 6.4.6 changes the minimum Ruby (!).
-  gem 'factory_bot', '6.4.5'
-  # This version pin enforces Ruby 2.7 compatibility for a direct dependency.
-  gem 'ruby-prof', '~> 1.6.3'
+  # Ensure Ruby 3.0 compatibility for an indirect dependency.  v6.5.5
+  # is the latest version, but Ruby 2.7 compatibility was dropped at
+  # version v6.4.6, so Ruby 3.0 compatibility might also be dropped at
+  # a patchlevel release.
+  gem 'factory_bot', '6.5.5'
+  # ruby-prof bumped its minor version (1.7.0) when dropping Ruby 2.7,
+  # so avoiding 1.8 might avoid unexpectedly losing Ruby 3.0 support.
+  gem 'ruby-prof', '~> 1.7.0'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -32,8 +35,6 @@ end
 
 gem 'pg', '~> 1.0'
 
-# multi_json stopped supporting Ruby 2.7 in 1.16.0.
-gem 'multi_json', '~> 1.15.0'
 gem 'oj'
 
 gem 'jquery-rails'
@@ -42,8 +43,7 @@ gem 'acts_as_api'
 
 gem 'passenger', '~> 6.0.26'
 
-# Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
-gem 'minitest', '5.10.3'
+gem 'minitest', '~> 5.0'
 
 gem 'andand'
 
@@ -64,10 +64,19 @@ gem 'webrick'
 
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
-# Enforce Ruby 2.7 compatibility for indirect dependencies.
-gem 'nokogiri', '~> 1.15.7'
-gem 'net-imap', '~> 0.3.8'
+# Enforce Ruby 3.0 compatibility for indirect dependencies.
+
+# nokogiri 1.18 dropped Ruby
+# 3.0. https://nokogiri.org/CHANGELOG.html#v1180-2024-12-25
+gem 'nokogiri', '~> 1.17.0'
+# net-imap v0.5.0 dropped Ruby 3.0.
+# https://github.com/ruby/net-imap/releases/tag/v0.5.0
+gem 'net-imap', '~> 0.4.0'
+# securerandom v0.4.0 dropped Ruby 2.7 and Ruby 3.0.
 gem 'securerandom', '~> 0.3.2'
+# multi_json 2.0 will drop Ruby 3.0.
+# https://github.com/sferik/multi_json/pull/16#issue-3237521157
+gem 'multi_json', '~> 1.0'
 
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
