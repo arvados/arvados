@@ -120,8 +120,8 @@ GEM
     drb (2.2.1)
     erubi (1.13.1)
     extlib (0.9.16)
-    factory_bot (6.4.5)
-      activesupport (>= 5.0.0)
+    factory_bot (6.5.5)
+      activesupport (>= 6.1.0)
     factory_bot_rails (6.4.3)
       factory_bot (~> 6.4)
       railties (>= 5.0.0)
@@ -184,13 +184,13 @@ GEM
     memoist (0.16.2)
     mini_mime (1.1.5)
     mini_portile2 (2.8.9)
-    minitest (5.10.3)
+    minitest (5.25.5)
     mocha (2.7.1)
       ruby2_keywords (>= 0.0.5)
     multi_json (1.15.0)
     multipart-post (2.4.1)
     mutex_m (0.3.0)
-    net-imap (0.3.9)
+    net-imap (0.4.22)
       date
       net-protocol
     net-pop (0.1.2)
@@ -200,7 +200,7 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.4)
-    nokogiri (1.15.7)
+    nokogiri (1.17.2)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     oj (3.16.9)
@@ -281,7 +281,8 @@ GEM
       actionpack (>= 5.2)
       railties (>= 5.2)
     retriable (1.4.1)
-    ruby-prof (1.6.3)
+    ruby-prof (1.7.2)
+      base64
     ruby2_keywords (0.0.5)
     securerandom (0.3.2)
     signet (0.16.1)
@@ -327,7 +328,7 @@ DEPENDENCIES
   andand
   arvados (~> 3.1.2)
   byebug
-  factory_bot (= 6.4.5)
+  factory_bot (= 6.5.5)
   factory_bot_rails
   httpclient
   i18n
@@ -336,11 +337,11 @@ DEPENDENCIES
   lograge
   logstash-event
   mini_portile2 (~> 2.8, >= 2.8.1)
-  minitest (= 5.10.3)
+  minitest (~> 5.0)
   mocha
-  multi_json (~> 1.15.0)
-  net-imap (~> 0.3.8)
-  nokogiri (~> 1.15.7)
+  multi_json (~> 1.0)
+  net-imap (~> 0.4.0)
+  nokogiri (~> 1.17.0)
   oj
   optimist
   passenger (~> 6.0.26)
@@ -350,7 +351,7 @@ DEPENDENCIES
   rails-observers
   rails-perftest
   responders
-  ruby-prof (~> 1.6.3)
+  ruby-prof (~> 1.7.0)
   securerandom (~> 0.3.2)
   simplecov
   simplecov-rcov
@@ -359,4 +360,4 @@ DEPENDENCIES
   webrick
 
 BUNDLED WITH
-   2.4.22
+   2.5.23
