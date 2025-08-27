@@ -46,7 +46,7 @@ expect_grep() {
 
 # This code is basically copy-pasted from build/rails-package-scripts/postinst.sh.
 ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+BUNDLE="$(gem contents --version '~> 2.5.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
 if ! [ -x "$BUNDLE" ]; then
     # Some distros (at least Ubuntu 24.04) append the Ruby version to the
     # executable name, but that isn't reflected in the output of

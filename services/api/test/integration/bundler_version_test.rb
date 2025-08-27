@@ -9,7 +9,7 @@ class BundlerVersionTest < ActionDispatch::IntegrationTest
     # The expected version range should be the latest that supports all the
     # versions of Ruby we intend to support. This test checks that a developer
     # doesn't accidentally update Bundler past that point.
-    expected = Gem::Dependency.new("", "~> 2.4.22")
+    expected = Gem::Dependency.new("", "~> 2.5.23")
     actual = Bundler.gem_version
     assert(
       expected.match?("", actual),

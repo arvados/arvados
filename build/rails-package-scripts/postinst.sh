@@ -173,9 +173,9 @@ if [ ! -e $SHARED_PATH/log/production.log ]; then touch $SHARED_PATH/log/product
 cd "$RELEASE_PATH"
 export RAILS_ENV=production
 
-run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
+run_and_report "Installing bundler" gem install --conservative --version '~> 2.5.0' bundler
 ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+BUNDLE="$(gem contents --version '~> 2.5.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
 if ! [ -x "$BUNDLE" ]; then
     # Some distros (at least Ubuntu 24.04) append the Ruby version to the
     # executable name, but that isn't reflected in the output of
