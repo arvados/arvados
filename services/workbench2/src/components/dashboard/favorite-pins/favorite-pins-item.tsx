@@ -12,7 +12,6 @@ import { Dispatch } from 'redux';
 import { ArvadosTheme } from 'common/custom-theme';
 import StarIcon from '@mui/icons-material/Star';
 import { renderIcon } from 'views-components/data-explorer/renderers';
-import { loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
 import { openContextMenuOnlyFromUuid } from 'store/context-menu/context-menu-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -70,7 +69,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapDispatchToProps = (dispatch: Dispatch): Omit<FavePinItemProps, 'item'> => ({
     navTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
-    toggleFavorite: (item: GroupContentsResource) => dispatch<any>(toggleFavorite({ uuid: item.uuid, name: item.name })).then(() => dispatch<any>(loadFavoritePanel())),
+    toggleFavorite: (item: GroupContentsResource) => dispatch<any>(toggleFavorite({ uuid: item.uuid, name: item.name })),
     openContextMenu: (ev: React.MouseEvent<HTMLElement>, uuid: string) => dispatch<any>(openContextMenuOnlyFromUuid(ev, uuid)),
 });
 

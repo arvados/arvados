@@ -15,7 +15,7 @@ import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevr
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { FavePinItem } from './favorite-pins-item';
 import { LinkResource } from 'models/link';
-import { ResourcesState, getPopulatedResources } from 'store/resources/resources';
+import { ResourcesState, getPopulatedResources, getResource } from 'store/resources/resources';
 
 type CssRules = 'root' | 'title' | 'hr' | 'list';
 
@@ -41,13 +41,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapStateToProps = (state: RootState): Pick<FavePinsSectionProps, 'faves' | 'resources'> => {
     return {
-        faves: state.favoritesLinks,
+        faves: state.dataExplorer.favoritePins.items,
         resources: state.resources,
     };
 };
 
 type FavePinsSectionProps = {
-    faves: LinkResource[];
+    faves: string[];
     resources: ResourcesState;
 };
 
@@ -60,7 +60,12 @@ export const FavePinsSection = connect(
             const [isOpen, setIsOpen] = useState(true);
 
             useEffect(() => {
-                const sortedFaves = faves.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12); //max 12 items
+                const faveLinks = faves.reduce((acc: LinkResource[], fave: string): LinkResource[] => {
+                        const faveLink = getResource<LinkResource>(fave)(resources)
+                        if (faveLink) acc.push(faveLink);
+                        return acc;
+                    }, []);
+                const sortedFaves = faveLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
                 setItems(getPopulatedResources(sortedFaves.map(item => item.headUuid), resources));
             }, [faves, resources]);
 

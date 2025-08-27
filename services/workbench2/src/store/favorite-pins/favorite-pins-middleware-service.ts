@@ -16,12 +16,10 @@ import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer
 import { ResourceKind } from "models/resource";
 import { LinkClass } from "models/link";
 import { ListArguments } from "services/common-service/common-service";
-import { favoritesLinksActions } from "store/favorites/favorites-links-reducer";
-import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { bindDataExplorerActions } from "../data-explorer/data-explorer-action";
 
 export const FAVORITE_PINS_ID = "favoritePins";
-const favoritePinsActions = bindDataExplorerActions(FAVORITE_PINS_ID);
+export const favoritePinsActions = bindDataExplorerActions(FAVORITE_PINS_ID);
 
 export const loadFavoritePins = () => (dispatch: Dispatch) => {
     dispatch(favoritePinsActions.RESET_EXPLORER_SEARCH_VALUE());
@@ -81,16 +79,16 @@ export class FavoritePinsMiddlewareService extends DataExplorerMiddlewareService
                     include: ["owner_uuid", "container_uuid"],
                 });
 
-                api.dispatch(favoritesLinksActions.setFavoritesLinks(responseLinks.items));
+                api.dispatch(resourcesActions.SET_RESOURCES(responseLinks.items));
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.items));
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
-                api.dispatch(favoritePanelActions.SET_ITEMS({
+                api.dispatch(favoritePinsActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(responseLinks),
-                    items: orderedItems.items.map((resource: any) => resource.uuid),
+                    items: responseLinks.items.map((resource: any) => resource.uuid),
                 }));
                 api.dispatch<any>(updateFavorites(uuids));
             } catch (e) {
-                api.dispatch(favoritePanelActions.SET_ITEMS({
+                api.dispatch(favoritePinsActions.SET_ITEMS({
                     items: [],
                     itemsAvailable: 0,
                     page: 0,
