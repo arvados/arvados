@@ -751,6 +751,7 @@ Cypress.Commands.add("assertBreadcrumbs", (names) => {
  */
 Cypress.Commands.add("assertDataExplorerContains", (name, contains = true) => {
     cy.waitForDom();
+    cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 })
     contains
         ? cy.get('[data-cy=data-table]').contains(name).should('exist')
         : cy.get('[data-cy=data-table]').contains(name).should('not.exist');
