@@ -162,6 +162,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
         cy.getAll('@testProject1')
             .then(([testProject1]) => {
                 cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
 
                 // Toolbar in user details card
                 cy.get('[data-cy=user-details-card]')
