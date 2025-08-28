@@ -60,6 +60,7 @@ describe('Create workflow tests', function () {
 
         cy.get('@testWorkflow').then(() => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
 
             cy.get('[data-cy=side-panel-button]').click();
             cy.get('[data-cy=side-panel-run-process]').click();
@@ -322,6 +323,7 @@ describe('Create workflow tests', function () {
 
         cy.getAll('@project1', '@project2', '@testWorkflow').then(([project1, project2, testWorkflow]) => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
 
             cy.get('[data-cy=side-panel-button]').click();
             cy.get('[data-cy=side-panel-run-process]').click();
@@ -395,8 +397,9 @@ describe('Create workflow tests', function () {
 
         cy.getAll('@project1', '@project2', '@testWorkflow').then(([project1, project2, testWorkflow]) => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
 
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get('.layout-pane').contains(this.testWorkflow.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Run Workflow').click();
@@ -440,6 +443,7 @@ describe('Create workflow tests', function () {
 
     it('respects write permissions in the project picker', function () {
         cy.loginAs(adminUser);
+        cy.doSidePanelNavigation('Home Projects');
 
         cy.createGroup(adminUser.token, {
             name: `my-shared-writable-project ${Math.floor(Math.random() * 999999)}`,
@@ -451,7 +455,7 @@ describe('Create workflow tests', function () {
                 owner_uuid: mySharedWritableProject.uuid,
                 }).as('parentWritableWF');
             cy.contains('Refresh').click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get('main').contains(mySharedWritableProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Share').click({ waitForAnimations: false });
@@ -496,6 +500,7 @@ describe('Create workflow tests', function () {
         });
 
         cy.loginAs(activeUser);
+        cy.doSidePanelNavigation('Home Projects');
         cy.createGroup(activeUser.token, {
             name: `non-admin-readonly-project ${Math.floor(Math.random() * 999999)}`,
             group_class: 'project',
@@ -506,7 +511,7 @@ describe('Create workflow tests', function () {
                 owner_uuid: nonAdminReadonlyProject.uuid,
                 }).as('nonAdminReadonlyWF');
             cy.contains('Refresh').click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get('main').contains(nonAdminReadonlyProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Share').click({ waitForAnimations: false });
@@ -530,7 +535,7 @@ describe('Create workflow tests', function () {
             cy.contains('Shared with me').click();
             cy.contains(mySharedWritableProject.name).click();
             cy.waitForDom();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get('[data-cy=data-table]').should('exist');
             cy.contains(parentWritableWF.name).click();
             cy.get('[data-title="Run Workflow"]').click();
@@ -541,7 +546,7 @@ describe('Create workflow tests', function () {
             // a non-admin cannot run a wf in a non-writable project, it defaults to the user's root project instead
             cy.contains('Shared with me').click();
             cy.contains(mySharedReadonlyProject.name).click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.contains(parentReadonlyWF.name).click();
             cy.get('[data-title="Run Workflow"]').click();
             cy.get('[data-cy=project-picker-details]').contains("Active User (root project)");
@@ -614,7 +619,9 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(activeUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+
+                cy.doMPVTabSelect("Data");
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -706,7 +713,8 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(activeUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -781,7 +789,9 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(activeUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+
+                cy.doMPVTabSelect("Data");
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -805,7 +815,7 @@ describe('Create workflow tests', function () {
                     });
             cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
 
-            cy.get('button').contains('Inputs').click();
+            cy.doMPVTabSelect("Inputs");
             cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
             cy.get('[data-cy=process-io-card]').should('contain', 'Cannot display secret');
             cy.get('[data-cy=process-io-card]').should('not.contain', 'secret_value_xyz');
@@ -855,7 +865,9 @@ describe('Create workflow tests', function () {
                 });
 
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+
+                cy.doMPVTabSelect("Data");
 
                 cy.get('main').contains(myProject1.name).click();
 

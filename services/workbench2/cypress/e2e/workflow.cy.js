@@ -28,7 +28,7 @@ describe('Registered workflow panel tests', function() {
             .then(function(workflowResource) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/workflows/${workflowResource.uuid}`);
-                cy.get('button').contains('Overview').click();
+                cy.doMPVTabSelect("Overview");;
                 cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
                 cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
             });
@@ -39,7 +39,7 @@ describe('Registered workflow panel tests', function() {
             .then(function(workflowResource) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/workflows/${workflowResource.uuid}`);
-                cy.get('button').contains('Overview').click();
+                cy.doMPVTabSelect("Overview");;
                 cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
                 cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
             });
@@ -89,7 +89,7 @@ describe('Registered workflow panel tests', function() {
         }}).then(function(workflowResource) {
             cy.loginAs(activeUser);
             cy.goToPath(`/workflows/${workflowResource.uuid}`);
-            cy.get('button').contains('Overview').click();
+            cy.doMPVTabSelect("Overview");;
             cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
             cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
         });
@@ -215,13 +215,13 @@ describe('Registered workflow panel tests', function() {
                 }}).then(function(workflowResource) {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/workflows/${workflowResource.uuid}`);
-                    cy.get('button').contains('Overview').click();
+                    cy.doMPVTabSelect("Overview");;
                     cy.get('[data-cy=workflow-details-card]').should('contain', workflowResource.name);
                     cy.get('[data-cy=workflow-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
                     cy.get('[data-cy=registered-workflow-info-panel')
                         .should('contain', 'gitCommit: 9b091ed7e0bef98b3312e9478c52b89ba25792de')
 
-                    cy.get('button').contains('Inputs').click();
+                    cy.doMPVTabSelect("Inputs");
                     cy.get('[data-cy=process-io-card] h6').contains('Input Parameters')
                         .parents('[data-cy=process-io-card]').within(() => {
                             verifyIOParameter('file1', null, '', '', '');
@@ -247,7 +247,7 @@ describe('Registered workflow panel tests', function() {
             .then(function(workflowResource) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/projects/${activeUser.user.uuid}`);
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
                 cy.get('[data-cy=context-menu]').should('exist', { timeout: 10000})
                 cy.get('[data-cy="Delete Workflow"]').click();
@@ -265,6 +265,7 @@ describe('Registered workflow panel tests', function() {
         });
 
         cy.loginAs(activeUser);
+        cy.doSidePanelNavigation('Home Projects');
 
         wfNames.forEach((wfName) => {
             cy.get('tr').contains('td', wfName).should('exist', { timeout: 10000 }).parent('tr').find('input[type="checkbox"]').click();
@@ -296,7 +297,7 @@ describe('Registered workflow panel tests', function() {
                         cy.loginAs(activeUser);
                         cy.goToPath(`/shared-with-me`);
                         cy.contains("mySharedReadonlyProject").click();
-                        cy.get('button').contains('Data').click();
+                        cy.doMPVTabSelect("Data");
                         cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
                         cy.get('[data-cy=context-menu]').should("not.contain", 'Delete Workflow');
                     });

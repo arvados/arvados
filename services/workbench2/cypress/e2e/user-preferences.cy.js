@@ -22,6 +22,7 @@ describe('User profile tests', function() {
         });
 
         cy.loginAs(activeUser);
+        cy.doSidePanelNavigation('Home Projects');
 
         // Verify default tab on load
         cy.get('[data-cy=process-data]').should('exist');

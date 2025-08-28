@@ -32,7 +32,7 @@ describe('Banner / tooltip tests', function () {
 
             cy.goToPath(`/collections/${bannerCollection.uuid}`);
 
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.waitForDom();
             cy.get('[data-cy=upload-button]').click();
 

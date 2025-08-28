@@ -28,7 +28,7 @@ describe('Multi-file deletion tests', function () {
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
 
                 cy.get('[data-cy=collection-files-panel]').within(() => {
                     cy.get('[type="checkbox"]').first().check();
@@ -80,7 +80,7 @@ describe('Multi-file deletion tests', function () {
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
 
                 cy.get('[data-cy=collection-files-panel]').contains('subdir').click();
                 cy.wait(1000);

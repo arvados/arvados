@@ -28,7 +28,8 @@ describe('Sharing tests', function () {
             owner_uuid: adminUser.uuid,
         }).as('sharedCollection').then(function (sharedCollection) {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doSidePanelNavigation('Home Projects');
+            cy.doMPVTabSelect("Data");
 
             cy.get('main').contains(sharedCollection.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
@@ -56,7 +57,8 @@ describe('Sharing tests', function () {
 
     it('can share projects to other users', () => {
         cy.loginAs(adminUser);
-        cy.get('button').contains('Data').click();
+        cy.doSidePanelNavigation('Home Projects');
+        cy.doMPVTabSelect("Data");
 
         cy.createGroup(adminUser.token, {
             name: `my-shared-writable-project ${Math.floor(Math.random() * 999999)}`,
@@ -166,7 +168,8 @@ describe('Sharing tests', function () {
         cy.getAll('@mySharedCollectionForUsers')
             .then(function ([]) {
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
                 cy.get('[data-cy=project-panel]').contains(collName).rightclick();
                 cy.get('[data-cy=context-menu]').within(() => {
                     cy.get('[data-cy=Share]').click();

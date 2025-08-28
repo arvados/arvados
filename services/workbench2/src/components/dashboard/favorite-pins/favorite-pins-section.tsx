@@ -41,7 +41,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapStateToProps = (state: RootState): Pick<FavePinsSectionProps, 'faves' | 'resources'> => {
     return {
-        faves: state.dataExplorer.favoritePins.items,
+        faves: state.dataExplorer.favoritePins?.items || [],
         resources: state.resources,
     };
 };

@@ -77,7 +77,7 @@ describe('Collection details panel', () => {
       cy.waitForDom();
 
       // Wait for the data table to load
-      cy.get('button').contains('Data').click();
+      cy.doMPVTabSelect("Data");
       cy.get('[data-cy=data-table]').should('be.visible');
 
       // Find and check the checkbox for the test collection
@@ -141,7 +141,7 @@ describe('Collection details panel', () => {
         cy.waitForDom();
   
         // Wait for the data table to load
-        cy.get('button').contains('Data').click();
+        cy.doMPVTabSelect("Data");
         cy.get('[data-cy=data-table]').should('be.visible');
   
         // Find and open the test collection

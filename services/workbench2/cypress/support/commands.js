@@ -345,7 +345,7 @@ Cypress.Commands.add("loginAs", (user, preserveLocalStorage = false) => {
     // Use waitUntil to avoid permafail race conditions with window.location being undefined
     cy.waitUntil(() => cy.window().then(win =>
         win?.location?.href &&
-        win.location.href.includes("/projects/")
+        win.location.href.includes("/dashboard")
     ), { timeout: 15000 });
     // Wait for page to settle before getting elements
     cy.waitForDom();

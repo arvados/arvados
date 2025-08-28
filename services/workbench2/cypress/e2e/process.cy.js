@@ -414,18 +414,18 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details-card]").should("contain", crName);
-                cy.get('button').contains('Logs').click();
+                cy.doMPVTabSelect("Logs");
                 cy.get("[data-cy=process-logs]").should("contain", "No logs yet").and("not.contain", "hello world");
 
                 // Append a log line
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", ["2023-07-18T20:14:48.128642814Z hello world"]).then(() => {
-                    cy.get('button').contains('Logs').click();
+                    cy.doMPVTabSelect("Logs");
                     cy.get("[data-cy=process-logs]", { timeout: 7000 }).should("not.contain", "No logs yet").and("contain", "hello world");
                 });
 
                 // Append new log line to different file
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stderr.txt", ["2023-07-18T20:14:49.128642814Z hello new line"]).then(() => {
-                    cy.get('button').contains('Logs').click();
+                    cy.doMPVTabSelect("Logs");
                     cy.get("[data-cy=process-logs]", { timeout: 7000 }).should("not.contain", "No logs yet").and("contain", "hello new line");
                 });
             });
@@ -481,7 +481,7 @@ describe("Process tests", function () {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/processes/${containerRequest.uuid}`);
                     cy.waitForDom();
-                    cy.get('button').contains('Logs').click();
+                    cy.doMPVTabSelect("Logs");
                     // Should show main logs by default
                     cy.get("[data-cy=process-logs-filter]", { timeout: 7000 }).should("contain", "Main logs");
                     cy.get("[data-cy=process-logs]")
@@ -534,7 +534,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details-card]").should("contain", crName);
-                cy.get('button').contains('Logs').click();
+                cy.doMPVTabSelect("Logs");
 
                 cy.getAll("@node-info", "@stdout", "@stderr").then(() => {
                     // Verify sorted main logs
@@ -585,7 +585,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details-card]").should("contain", crName);
-                cy.get('button').contains('Logs').click();
+                cy.doMPVTabSelect("Logs");
 
                 cy.getAll("@stdout", "@stderr").then(() => {
                     // Switch to All logs
@@ -617,7 +617,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details-card]").should("contain", crName);
-                cy.get('button').contains('Logs').click();
+                cy.doMPVTabSelect("Logs");
 
                 // Switch to stdout since lines are unsortable (no timestamp)
                 cy.get("[data-cy=process-logs-filter]").click();
@@ -663,7 +663,7 @@ describe("Process tests", function () {
                 cy.getAll("@stdoutLogs").then(function () {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/processes/${containerRequest.uuid}`);
-                    cy.get('button').contains('Logs').click();
+                    cy.doMPVTabSelect("Logs");
                     // Select 'stdout' log filter
                     cy.get("[data-cy=process-logs-filter]").click();
                     cy.get("body").contains("li", "stdout").click();
@@ -1296,7 +1296,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
 
                 cy.goToPath(`/collections/${testOutputCollection.uuid}`);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
 
                 cy.get("[data-cy=upload-button]").click();
 
@@ -1377,7 +1377,7 @@ describe("Process tests", function () {
 
             cy.getAll("@containerRequest", "@testOutputCollection").then(function ([containerRequest, testOutputCollection]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get('button').contains('Inputs').click();
+                cy.doMPVTabSelect("Inputs");
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
@@ -1521,7 +1521,7 @@ describe("Process tests", function () {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
 
-                cy.get('button').contains('Inputs').click();
+                cy.doMPVTabSelect("Inputs");
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
@@ -1602,7 +1602,8 @@ describe("Process tests", function () {
                     subproject.uuid,
                 ).then(function (containerRequest) {
                     cy.loginAs(activeUser);
-                    cy.get('button').contains('Data').click();
+                    cy.doSidePanelNavigation('Home Projects');
+                    cy.doMPVTabSelect("Data");
                     cy.waitForDom();
                     // Navigate to process through subproject
                     cy.get('[data-cy=data-table-row]').contains(subproject.name).should('exist').click();
@@ -1619,7 +1620,7 @@ describe("Process tests", function () {
                     });
 
                     // Verify we are in subproject
-                    cy.get('button').contains('Data').click();
+                    cy.doMPVTabSelect("Data");
                     cy.get("[data-cy=project-panel]").should('exist');
                     cy.url().should("contain", `/projects/${subproject.uuid}`);
                 });
@@ -1648,6 +1649,7 @@ describe("Process tests", function () {
 
             cy.getAll("@firstCr", "@secondCr").then(function ([firstCr, secondCr]) {
                 cy.loginAs(activeUser);
+                cy.doSidePanelNavigation('Home Projects');
                 cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
 
                 // Delete firstCr

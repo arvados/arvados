@@ -131,8 +131,11 @@ describe('Favorites section', () => {
                 cy.get('[data-cy=favorite-pin]').contains('TestProject1').should('not.exist');
 
                 //add favorite pin
-                cy.get('[data-cy=side-panel-tree]').contains('TestProject1').rightclick();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
+                cy.get('[data-cy=data-table-row]').contains('TestProject1').rightclick();
                 cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
+                cy.doSidePanelNavigation('Dashboard');
                 cy.get('[data-cy=favorite-pin]').should('have.length', 3);
                 cy.get('[data-cy=favorite-pin]').contains('TestProject1');
 
@@ -198,6 +201,7 @@ describe('Recently Visited section', () => {
                 cy.loginAs(adminUser);
 
                 // visit some projects
+                cy.doSidePanelNavigation('Home Projects');
                 cy.get('[data-cy=side-panel-tree]').contains(testProject1.name).click();
                 cy.get('[data-cy=project-details-card]').contains(testProject1.name).should('exist');
                 cy.get('[data-cy=side-panel-tree]').contains(testProject2.name).click();

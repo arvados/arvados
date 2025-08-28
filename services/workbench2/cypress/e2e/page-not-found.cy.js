@@ -36,7 +36,7 @@ describe('Page not found tests', function() {
 
             // when
             cy.goToPath(path);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.waitForDom();
 
             // then
@@ -61,9 +61,10 @@ describe('Page not found tests', function() {
             projectName: 'test-project',
         })
         cy.loginAs(adminUser);
+        cy.doSidePanelNavigation('Home Projects');
         cy.waitForDom();
 
-        cy.get('button').contains('Data').click();
+        cy.doMPVTabSelect("Data");
         cy.get('[data-cy=project-panel]').contains("test-project").click();
 
         cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();

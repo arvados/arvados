@@ -301,7 +301,7 @@ describe("Collection panel tests", function () {
                                 .and("not.contain", "anotherKey: anotherValue");
                             // Check that the file listing show both read & write operations
                             cy.waitForDom()
-                            cy.get('button').contains('Files').click();
+                            cy.doMPVTabSelect("Files");
                             cy.get("[data-cy=collection-files-right-panel]", { timeout: 5000 }).should("contain", fileName);
                             if (isWritable) {
                                 cy.get("[data-cy=upload-button]").should(`${isWritable ? "" : "not."}contain`, "Upload data");
@@ -380,7 +380,7 @@ describe("Collection panel tests", function () {
                     "bar", // make sure we can go back to the original name as a last step
                 ];
                 cy.intercept({ method: "PUT", url: "**/arvados/v1/collections/*" }).as("renameRequest");
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 eachPair(names, (from, to) => {
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains(`${from}`).rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
@@ -409,7 +409,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 ["subdir", "G%C3%BCnter's%20file", "table%&?*2"].forEach(subdir => {
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains("bar").rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
@@ -488,7 +488,7 @@ describe("Collection panel tests", function () {
                     ["foo ", "Leading/trailing whitespaces not allowed"],
                     ["//foo", "Empty dir name not allowed"],
                 ];
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 illegalNamesFromUI.forEach(([name, errMsg]) => {
                     cy.get("[data-cy=collection-files-panel]").contains("bar").rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
@@ -559,7 +559,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=details-element]").should("contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("exist");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
             });
     });
@@ -644,7 +644,7 @@ describe("Collection panel tests", function () {
         cy.getAll("@testCollection", "@testProject").then(function ([testCollection, testProject]) {
             cy.loginAs(activeUser);
             cy.goToPath(`/collections/${testCollection.uuid}`);
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
             cy.get("[data-cy=collection-details-card]").should("not.contain", projName).and("not.contain", testProject.uuid);
             cy.get('[data-title="Move to"]').click();
@@ -662,7 +662,7 @@ describe("Collection panel tests", function () {
             cy.get("button").contains(projName);
             // Double check that the collection is in the project
             cy.goToPath(`/projects/${testProject.uuid}`);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.waitForDom().get("[data-cy=project-panel]").should("contain", collName);
         });
     });
@@ -681,7 +681,7 @@ describe("Collection panel tests", function () {
             const files = ["foobar", "anotherFile", "", "finalName"];
 
             cy.goToPath(`/collections/${testCollection.uuid}`);
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").should("contain", "This collection is empty");
             cy.get("[data-cy=collection-files-panel]").should("not.contain", files[0]);
             cy.get("[data-cy=collection-details-card]").should("contain", collName);
@@ -715,7 +715,7 @@ describe("Collection panel tests", function () {
             .then(function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.collection.uuid}`);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
                 cy.get('[data-title="Make a copy"]').click();
                 cy.get("[data-cy=form-dialog]")
@@ -726,9 +726,9 @@ describe("Collection panel tests", function () {
                     });
                 cy.get("[data-cy=snackbar]").contains("Collection has been copied.");
                 cy.get("[data-cy=tree-li]").contains("Home Projects").click();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.get("[data-cy=project-panel]").contains(copyName).click();
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
             });
     });
@@ -754,7 +754,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "1");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
                 // Modify collection, expect version number change
@@ -763,7 +763,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=confirmation-dialog]").should("contain", "Removing file");
                 cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
                 cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
-                cy.get('button').contains('Overview').click();
+                cy.doMPVTabSelect("Overview");;
                 cy.get("[data-cy=collection-version-number]").should("contain", "2");
 
                 // Click on version number, check version browser. Click on past version.
@@ -791,7 +791,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=read-only-icon]").should("exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "1");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
                 // Check that only old collection action are available on toolbar
@@ -799,13 +799,13 @@ describe("Collection panel tests", function () {
                 cy.get('[data-title="Add to favorites"]').should('not.exist');
 
                 // Click on "head version" link, confirm that it's the latest version.
-                cy.get('button').contains('Overview').click();
+                cy.doMPVTabSelect("Overview");;
                 cy.get("[data-cy=details-element]").contains("head version").click();
                 cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "2");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
 
                 // Check that old collection action isn't available on context menu
@@ -820,13 +820,13 @@ describe("Collection panel tests", function () {
                         cy.get("input").first().type(" renamed");
                     });
                 cy.get("[data-cy=form-submit-btn]").click();
-                cy.get('button').contains('Overview').click();
+                cy.doMPVTabSelect("Overview");;
                 cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "3");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName + " renamed");
                 cy.get("[data-cy=collection-version-browser-select-3]").should("contain", "3").and("contain", "3 B");
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
 
                 // Check context menus on version browser
@@ -857,7 +857,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=collection-version-number]").should("contain", "4");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
             });
     });
@@ -875,7 +875,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.collection.uuid}`);
 
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").within(() => {
                     cy.get("input[type=checkbox]").first().click();
                 });
@@ -889,9 +889,9 @@ describe("Collection panel tests", function () {
 
                 cy.waitForDom().get(".layout-pane-primary", { timeout: 12000 }).contains("Projects").click();
 
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.waitForDom().get("main").contains(`Files extracted from: ${this.collection.name}`).click();
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
             });
     });
@@ -916,7 +916,7 @@ describe("Collection panel tests", function () {
             cy.loginAs(activeUser);
             cy.goToPath(`/collections/${sourceCollection.uuid}`);
 
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").within(() => {
                 cy.get("input[type=checkbox]").first().click();
             });
@@ -931,9 +931,9 @@ describe("Collection panel tests", function () {
 
             cy.goToPath(`/collections/${destinationCollection.uuid}`);
 
-            cy.get('button').contains('Overview').click();
+            cy.doMPVTabSelect("Overview");;
             cy.get("main").contains(destinationCollection.name).should("exist");
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
         });
     });
@@ -953,7 +953,7 @@ describe("Collection panel tests", function () {
 
             // Select both files
             cy.waitForDom()
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]")
                 .within(() => {
                     cy.get("input[type=checkbox]").first().click();
@@ -968,20 +968,20 @@ describe("Collection panel tests", function () {
 
             // Verify created collections
             cy.waitForDom().get(".layout-pane-primary", { timeout: 12000 }).contains("Projects").click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get("main").contains(`File copied from collection ${sourceCollection.name}/foo`).click();
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").and("contain", "foo");
             cy.get(".layout-pane-primary").contains("Projects").click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get("main").contains(`File copied from collection ${sourceCollection.name}/bar`).click();
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
 
             // Verify separate collection menu items not present when single file selected
             // Wait for dom for collection to re-render
             cy.waitForDom()
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]")
                 .within(() => {
                     cy.get("input[type=checkbox]").first().click();
@@ -1005,7 +1005,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.collection.uuid}`);
 
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").within(() => {
                     cy.get("input[type=checkbox]").first().click();
                 });
@@ -1019,9 +1019,9 @@ describe("Collection panel tests", function () {
 
                 cy.waitForDom().get(".layout-pane-primary", { timeout: 12000 }).contains("Projects").click();
 
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.get("main").contains(`Files moved from: ${this.collection.name}`).click();
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
             });
     });
@@ -1046,7 +1046,7 @@ describe("Collection panel tests", function () {
             cy.loginAs(activeUser);
             cy.goToPath(`/collections/${sourceCollection.uuid}`);
 
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").within(() => {
                 cy.get("input[type=checkbox]").first().click();
             });
@@ -1062,7 +1062,7 @@ describe("Collection panel tests", function () {
             cy.goToPath(`/collections/${destinationCollection.uuid}`);
 
             cy.get("main").contains(destinationCollection.name).should("exist");
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
         });
     });
@@ -1079,7 +1079,7 @@ describe("Collection panel tests", function () {
             // Visit collection, check basic information
             cy.loginAs(activeUser);
             cy.goToPath(`/collections/${sourceCollection.uuid}`);
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
 
             // Select both files
             cy.get("[data-cy=collection-files-panel]").within(() => {
@@ -1096,14 +1096,14 @@ describe("Collection panel tests", function () {
 
             // Verify created collections
             cy.waitForDom().get(".layout-pane-primary", { timeout: 12000 }).contains("Projects").click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get("main").contains(`File moved from collection ${sourceCollection.name}/foo`).click();
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").and("contain", "foo");
             cy.get(".layout-pane-primary").contains("Projects").click();
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get("main").contains(`File moved from collection ${sourceCollection.name}/bar`).click();
-            cy.get('button').contains('Files').click();
+            cy.doMPVTabSelect("Files");
             cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
         });
     });
@@ -1222,7 +1222,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testCollection1.uuid}`);
                 cy.get("[data-cy=collection-file-count]").should("contain", "2");
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=upload-button]").click();
                 cy.get("[data-cy=collection-files-panel]").contains("5mb_a.bin").should("not.exist");
                 cy.fixture("files/5mb.bin", "base64").then(content => {
@@ -1230,10 +1230,10 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=form-submit-btn]").click();
                     cy.get("[data-cy=form-submit-btn]").should("not.exist");
                     cy.get("[data-cy=collection-files-panel]").contains("5mb_a.bin").should("exist");
-                    cy.get('button').contains('Overview').click();
+                    cy.doMPVTabSelect("Overview");;
                     cy.get("[data-cy=collection-file-count]").should("contain", "3");
 
-                    cy.get('button').contains('Files').click();
+                    cy.doMPVTabSelect("Files");
                     cy.get("[data-cy=collection-files-panel]").contains("subdir").click();
                     cy.get("[data-cy=upload-button]").click();
                     cy.fixture("files/5mb.bin", "base64").then(content => {
@@ -1253,7 +1253,7 @@ describe("Collection panel tests", function () {
             cy.getAll('@testCollection1').then(function ([testCollection1]) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testCollection1.uuid}`);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get('[data-cy=upload-button]').click();
                 cy.fixture('files/5mb.bin', 'base64').then((content) => {
                     cy.get('[data-cy=drag-and-drop]').upload(content, 'foo/bar/baz/qux');
@@ -1272,7 +1272,7 @@ describe("Collection panel tests", function () {
 
                 cy.goToPath(`/collections/${testCollection1.uuid}`);
 
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=upload-button]").click();
 
                 cy.fixture("files/5mb.bin", "base64").then(content => {
@@ -1294,7 +1294,7 @@ describe("Collection panel tests", function () {
 
                 cy.goToPath(`/collections/${testCollection1.uuid}`);
 
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
                 cy.get("[data-cy=upload-button]").click();
 
                 cy.fixture("files/5mb.bin", "base64").then(content => {
@@ -1317,7 +1317,7 @@ describe("Collection panel tests", function () {
                 cy.loginAs(activeUser);
 
                 cy.goToPath(`/collections/${testCollection1.uuid}`);
-                cy.get('button').contains('Files').click();
+                cy.doMPVTabSelect("Files");
 
                 // Confirm initial collection state.
                 cy.get("[data-cy=collection-files-panel]").contains("bar").should("exist");
@@ -1354,6 +1354,7 @@ describe("Collection panel tests", function () {
         it('displays the correct breadcrumbs after moving a collection to trash', () => {
             const breadcrumbTestCollectionName = `Breadcrumb Test Collection ${Math.floor(Math.random() * 999999)}`;
             cy.loginAs(activeUser);
+            cy.goToPath(`/projects/${activeUser.user.uuid}`);
 
             cy.get("[data-cy=side-panel-button]").click();
             cy.get("[data-cy=side-panel-new-collection]").click();
@@ -1403,6 +1404,7 @@ describe("Collection panel tests", function () {
                 }).as('downloadQuery');
 
                 cy.loginAs(activeUser);
+                cy.goToPath(`/projects/${activeUser.user.uuid}`);
 
                 // Navigate to collection files
                 cy.doDataExplorerNavigate(testCollection1.name);
@@ -1442,6 +1444,7 @@ describe("Collection panel tests", function () {
                 }).as('downloadQuery');
 
                 cy.loginAs(activeUser);
+                cy.goToPath(`/projects/${activeUser.user.uuid}`);
 
                 // Navigate to collection files
                 cy.doDataExplorerNavigate(testCollection1.name);
@@ -1484,6 +1487,7 @@ describe("Collection panel tests", function () {
                 }).as('downloadQuery');
 
                 cy.loginAs(activeUser);
+                cy.goToPath(`/projects/${activeUser.user.uuid}`);
 
                 // Navigate to collection files
                 cy.doDataExplorerNavigate(testCollection1.name);

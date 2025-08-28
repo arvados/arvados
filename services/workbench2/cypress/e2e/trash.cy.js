@@ -22,7 +22,8 @@ describe('Trash tests', function () {
         cy.getAll('@testProject')
             .then(function ([testProject]) {
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
 
                 // Project Trash Tests
 
@@ -45,7 +46,7 @@ describe('Trash tests', function () {
                 // Verify present in home project
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
                 cy.assertBreadcrumbs(["Home Projects"]);
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.assertDataExplorerContains(testProject.name, true);
 
                 // Test delete from toolbar
@@ -84,7 +85,8 @@ describe('Trash tests', function () {
         cy.getAll('@testCollection')
             .then(function ([testCollection]) {
                 cy.loginAs(adminUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
 
                 // Collection Trash Tests
 

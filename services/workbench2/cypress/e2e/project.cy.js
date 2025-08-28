@@ -26,6 +26,7 @@ describe("Project tests", function () {
     it("creates a new project with multiple properties", function () {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get("[data-cy=side-panel-button]").click();
         cy.get("[data-cy=side-panel-new-project]").click();
         cy.get("[data-cy=form-dialog]")
@@ -125,6 +126,7 @@ describe("Project tests", function () {
     it("creates a project without and with description", function () {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
 
         // Create project
         cy.get("[data-cy=side-panel-button]").click();
@@ -188,6 +190,7 @@ describe("Project tests", function () {
         const parentProjName = `Test project (${Math.floor(999999 * Math.random())})`;
         const childProjName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
 
         // Create project
         cy.get("[data-cy=side-panel-button]").click();
@@ -362,6 +365,7 @@ describe("Project tests", function () {
         });
 
         cy.loginAs(activeUser);
+        cy.doSidePanelNavigation('Home Projects');
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("contain", barProjectNameA);
 
         cy.get("[data-cy=search-input]").type("foo");
@@ -436,9 +440,11 @@ describe("Project tests", function () {
 
         cy.getAll("@testProject1").then(function ([testProject1]) {
             cy.loginAs(activeUser);
+            cy.doSidePanelNavigation('Home Projects');
 
             cy.get("[data-cy=side-panel-tree]").contains(testProject1.name).click();
-            cy.get('[data-cy=mpv-tabs]').contains("Data").click();
+            cy.waitForDom();
+            cy.doMPVTabSelect("Data");
 
             cy.get("[data-cy=search-input] input").type("test123");
 
@@ -528,6 +534,7 @@ describe("Project tests", function () {
         it("should be able to freeze own project", () => {
             cy.getAll("@mainProject").then(([mainProject]) => {
                 cy.loginAs(activeUser);
+                cy.doSidePanelNavigation('Home Projects');
 
                 cy.get("[data-cy=project-panel]").contains(mainProject.name).rightclick();
 
@@ -542,6 +549,7 @@ describe("Project tests", function () {
         it("should not be able to modify items within the frozen project", () => {
             cy.getAll("@mainProject", "@mainCollection").then(([mainProject, mainCollection]) => {
                 cy.loginAs(activeUser);
+                cy.doSidePanelNavigation('Home Projects');
 
                 cy.get("[data-cy=project-panel]").contains(mainProject.name).rightclick();
 
@@ -573,6 +581,7 @@ describe("Project tests", function () {
         it("should be able to unfreeze project if user is an admin", () => {
             cy.getAll("@adminProject").then(([adminProject]) => {
                 cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
 
                 cy.get("main").contains(adminProject.name).rightclick();
 
@@ -597,6 +606,7 @@ describe("Project tests", function () {
         const projectName = `Test project (${Math.floor(999999 * Math.random())})`;
 
         cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get("[data-cy=side-panel-button]").click();
         cy.get("[data-cy=side-panel-new-project]").click();
         cy.get("[data-cy=form-dialog]")
@@ -625,6 +635,7 @@ describe("Project tests", function () {
 
     it("sorts displayed items correctly", () => {
         cy.loginAs(activeUser);
+        cy.doSidePanelNavigation('Home Projects');
 
         cy.get('[data-cy=project-panel] button[aria-label="Select columns"]').click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Date Created").click();

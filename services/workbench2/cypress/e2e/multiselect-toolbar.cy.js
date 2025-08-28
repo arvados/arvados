@@ -48,6 +48,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
 
     it('exists in DOM in neutral state', () => {
         cy.loginAs(adminUser);
+        cy.doSidePanelNavigation('Home Projects');
         //multiselect toolbar should exist in details card and not in data explorer
         cy.get('[data-cy=user-details-card]')
             .should('exist')
@@ -101,6 +102,7 @@ describe('Multiselect Toolbar Baseline Tests', () => {
         cy.getAll('@testProject1', '@testProject2', '@testProject3', '@testProcess1', '@testProcess2', '@testWorkflow3')
             .then(([testProject1, testProject2, testProject3, testProcess1, testProcess2, testWorkflow3]) => {
                 cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
 
                 // Data tab
                 cy.doMPVTabSelect('Data');
@@ -180,6 +182,8 @@ describe('For project resources', () => {
         }).as('testProject');
         cy.getAll('@testProject').then(([testProject]) => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testProject.name);
 
@@ -262,7 +266,9 @@ describe('For project resources', () => {
         }).as('clipboardTestProject');
         cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doSidePanelNavigation('Home Projects');
+
+            cy.doMPVTabSelect("Data");
             cy.doDataExplorerSelect(clipboardTestProject.name);
 
             // Copy UUID
@@ -286,7 +292,7 @@ describe('For project resources', () => {
         }).as('clipboardTestProject');
         cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
             cy.loginAs(adminUser);
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.doDataExplorerSelect(clipboardTestProject.name);
 
             // Copy link to clipboard
@@ -329,6 +335,8 @@ describe('For project resources', () => {
 
                 // non-admin actions
                 cy.loginAs(activeUser);
+                cy.doSidePanelNavigation('Home Projects');
+
                 cy.doMPVTabSelect('Data');
                 cy.assertDataExplorerContains(testProject4.name, true);
                 cy.assertDataExplorerContains(testProject5.name, true);
@@ -346,6 +354,8 @@ describe('For project resources', () => {
 
                 // admin actions
                 cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
+
                 cy.doMPVTabSelect('Data');
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testProject2.name, true);
@@ -408,6 +418,8 @@ describe('For project resources', () => {
         cy.getAll('@redfish', '@bluefish').then(
             ([redfish, bluefish]) => {
                 cy.loginAs(activeUser);
+                cy.doSidePanelNavigation('Home Projects');
+
                 cy.doMPVTabSelect('Data');
 
                 // Verify both projects present
@@ -467,6 +479,8 @@ describe('For collection resources', () => {
         }).as("testCollection")
         cy.getAll('@testCollection').then(([testCollection]) => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testCollection.name);
 
@@ -558,6 +572,8 @@ describe('For collection resources', () => {
             .then(([testProject1, testCollection1, testCollection2, testCollection3, testCollection4]) => {
 
                 cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
+
                 cy.doMPVTabSelect("Data");
                 cy.assertDataExplorerContains(testProject1.name, true);
                 cy.assertDataExplorerContains(testCollection1.name, true);
@@ -598,6 +614,7 @@ describe('For collection resources', () => {
 
                 //check read only project toolbar buttons
                 cy.loginAs(activeUser);
+
                 cy.contains('Shared with me').click();
                 cy.doDataExplorerSelect(testProject1.name);
                 cy.assertToolbarButtons(tooltips.readOnlyProject);
@@ -639,6 +656,8 @@ describe('For process resources', () => {
         ).as('testProcess');
         cy.getAll('@testProcess').then(([testProcess]) => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Workflow Runs');
 
             cy.doDataExplorerSelect(testProcess.name);
@@ -727,6 +746,8 @@ describe('For process resources', () => {
         cy.getAll('@testProcess1', '@testProcess2').then(([testProcess1, testProcess2]) => {
 
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Workflow Runs');
             cy.assertDataExplorerContains(testProcess1.name, true);
             cy.assertDataExplorerContains(testProcess2.name, true);
@@ -771,6 +792,8 @@ describe('For workflow resources', () => {
             }).as('testWorkflow');
         cy.getAll('@testWorkflow').then(function ([testWorkflow]) {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Data');
             cy.assertDataExplorerContains(testWorkflow.name, true);
 
@@ -830,6 +853,8 @@ describe('For workflow resources', () => {
             }).as('testWorkflow2');
         cy.getAll('@testWorkflow1', '@testWorkflow2').then(function ([testWorkflow1, testWorkflow2]) {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Data');
             cy.assertDataExplorerContains(testWorkflow1.name, true);
             cy.assertDataExplorerContains(testWorkflow2.name, true);
@@ -999,7 +1024,7 @@ describe('For users', () => {
         cy.contains('Close').click()
 
         //attributes
-        cy.doToolbarAction("Attributes");   
+        cy.doToolbarAction("Attributes");
         cy.get('[role=dialog]').contains('Attributes')
         cy.contains('Close').click()
 
@@ -1087,6 +1112,8 @@ describe('For multiple resource types', () => {
             .then(([testProject, testCollection,  testProcess]) => {
 
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
+
             cy.doMPVTabSelect('Data');
             //add resources to favorites so they are all in the same table
             cy.doDataExplorerSelect(testProject.name);
