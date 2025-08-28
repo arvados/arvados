@@ -366,6 +366,7 @@ describe('For project resources', () => {
         }).as('clipboardTestProject');
         cy.getAll('@clipboardTestProject').then(([clipboardTestProject]) => {
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
             cy.doMPVTabSelect("Data");
             cy.doDataExplorerSelect(clipboardTestProject.name);
 
