@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM node:12.22.12-bullseye
+FROM debian:bookworm
 LABEL maintainer="Arvados Package Maintainers <packaging@arvados.org>"
 
-RUN echo deb http://deb.debian.org/debian bullseye-backports main >> /etc/apt/sources.list.d/backports.list
+RUN echo deb http://deb.debian.org/debian bookworm-backports main >> /etc/apt/sources.list.d/backports.list
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     libsecret-1-0 libsecret-1-dev rpm ruby ruby-dev rubygems build-essential \
-    libpam0g-dev libgbm1 git && \
+    libpam0g-dev libgbm1 git wget && \
     apt-get clean
 
 RUN /usr/bin/gem install --no-document fpm
@@ -33,6 +33,8 @@ RUN cd /usr/src/arvados && \
 RUN cd /usr/src/arvados && \
     apt-get update && \
     go mod download && \
+    # arvados‑server install uses Node LTS/iron 20.19.4 – the newest Node.js that node‑sass v9 supports
+    # This is set by defaultNodejsVersion in deps.go.
     go run ./cmd/arvados-server install -type test && \
     # Installing WB2 deps persists cypress to the home folder
     # This is convenient to running cypress locally where yarn is run outside the container

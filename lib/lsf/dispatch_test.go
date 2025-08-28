@@ -38,6 +38,7 @@ type suite struct {
 }
 
 func (s *suite) TearDownTest(c *check.C) {
+	s.disp.Close()
 	arvadostest.ResetDB(c)
 }
 
@@ -359,4 +360,18 @@ func (s *suite) TestSubmit(c *check.C) {
 		c.Log("reached desired state")
 		break
 	}
+}
+
+func (s *suite) TestBsubArgs(c *check.C) {
+	s.disp.lsfcli.stubCommand = lsfstub{}.stubCommand(s, c)
+	s.disp.Start()
+
+	s.disp.Cluster.Containers.LSF.BsubArgumentsList = []string{"--zebra", "%Z"}
+	_, err := s.disp.bsubArgs(arvados.Container{})
+	c.Check(err, check.ErrorMatches, `Unknown substitution parameter %Z in BsubArgumentsList`)
+
+	s.disp.Cluster.Containers.LSF.BsubArgumentsList = []string{"--example", "%U"}
+	args, err := s.disp.bsubArgs(arvados.Container{UUID: "zzzzz-dz642-asdfasdfasdfasd"})
+	c.Check(err, check.IsNil)
+	c.Check(args, check.DeepEquals, []string{"sudo", "-E", "-u", "crunch", "bsub", "--example", "zzzzz-dz642-asdfasdfasdfasd"})
 }

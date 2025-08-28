@@ -516,6 +516,7 @@ type ContainersConfig struct {
 	SLURM struct {
 		PrioritySpread             int64
 		SbatchArgumentsList        []string
+		SbatchGPUArgumentsList     []string
 		SbatchEnvironmentVariables map[string]string
 	}
 	LSF struct {

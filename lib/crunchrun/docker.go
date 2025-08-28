@@ -327,9 +327,14 @@ func (e *dockerExecutor) Wait(ctx context.Context) (int, error) {
 		select {
 		case waitBody := <-waitOk:
 			// wait for stdout/stderr to complete
-			<-e.doneIO
-			return int(waitBody.StatusCode), nil
-
+			select {
+			case <-e.doneIO:
+				return int(waitBody.StatusCode), nil
+			case <-time.After(5 * time.Minute):
+				return -1, fmt.Errorf("container finished, but stdout/stderr did not complete: timed out")
+			case <-ctx.Done():
+				return -1, fmt.Errorf("container finished, but stdout/stderr did not complete: %w", ctx.Err())
+			}
 		case err := <-waitErr:
 			return -1, fmt.Errorf("container wait: %v", err)
 

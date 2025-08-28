@@ -372,7 +372,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).should('not.exist');
+                cy.assertDataExplorerContains(myFavoriteProject1.name, false);
                 // Check project restored to favorites
                 cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
@@ -399,7 +399,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.waitForDom();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                cy.get('[data-cy=snackbar]').contains('Item untrashed').should('exist');
+                cy.assertDataExplorerContains(testFavoriteCollection.name, false);
                 // Check collection restored to favorites
                 cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testFavoriteCollection.name);

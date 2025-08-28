@@ -11,6 +11,7 @@ distro_apt:
     security: http://security.debian.org/debian-security
     aws_mirror: http://cdn-aws.deb.debian.org/debian
     aws_security: http://cdn-aws.deb.debian.org/debian-security
+    signed_by: /usr/share/keyrings/debian-archive-keyring.gpg
   Ubuntu:
     components:
       - main
@@ -19,6 +20,7 @@ distro_apt:
     security: http://security.ubuntu.com/ubuntu
     aws_mirror: http://cdn-aws.archive.ubuntu.com/ubuntu
     aws_security: http://cdn-aws.archive.ubuntu.com/ubuntu
+    signed_by: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 # This dictionary is used to generate an apt configuration file of
 # APT::Periodic settings. null values will fall back to the value of

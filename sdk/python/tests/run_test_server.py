@@ -490,6 +490,44 @@ def stop_controller():
         return
     kill_server_pid(_pidfile('controller'))
 
+def run_dispatch():
+    stop_dispatch()
+    arvados_server_bin = os.path.join(os.environ["GOPATH"], "bin", "arvados-server")
+    crbin = os.path.join(TEST_TMPDIR, "crunch-run")
+    # Symlinking crunch-run -> arvados-server allows us to use it in a
+    # -crunch-run-command="/path/to/crunch-run" argument -- because
+    # -crunch-run-command="/path/to/arvados-server crunch-run" doesn't
+    # do what we want.
+    try:
+        os.remove(crbin)
+    except FileNotFoundError:
+        pass
+    os.symlink(arvados_server_bin, crbin)
+    cdlbin = os.path.join(os.environ["GOPATH"], "bin", "crunch-dispatch-local")
+    print('starting crunch-dispatch-local ...', file=sys.stderr)
+    logf = open(_logfilename('dispatch'), WRITE_MODE)
+    debugport = find_available_port()
+    dispatch = subprocess.Popen(
+        [
+            cdlbin,
+            "-crunch-run-command", crbin,
+            "-pprof", "localhost:{}".format(debugport),
+        ],
+        cwd=TEST_TMPDIR,
+        env=_service_environ(),
+        stdin=subprocess.DEVNULL,
+        stdout=logf,
+        stderr=logf,
+        close_fds=True)
+    _detachedSubprocesses.append(dispatch)
+    with open(_pidfile('dispatch'), 'w') as f:
+        f.write(str(dispatch.pid))
+    _wait_until_port_listens(debugport, pid=dispatch.pid)
+    print('dispatch pid is {}'.format(dispatch.pid), file=sys.stderr)
+
+def stop_dispatch():
+    kill_server_pid(_pidfile('dispatch'))
+
 def run_ws():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
@@ -872,6 +910,11 @@ def setup_config():
                     "TrashSweepInterval": "-1s", # disable, otherwise test cases can't acquire dblock
                 },
                 "Containers": {
+                    # sdk/cwl integration tests need containers to
+                    # connect to controller, which listens on
+                    # 127.0.0.1. This is only possible with "host"
+                    # networking mode.
+                    "CrunchRunArgumentsList": ["--container-network-mode", "host"],
                     "LocalKeepBlobBuffersPerVCPU": 0,
                     "SupportedDockerImageFormats": {"v1": {}},
                     "ShellAccess": {
@@ -994,9 +1037,11 @@ class TestCaseWithServers(unittest.TestCase):
 
 if __name__ == "__main__":
     actions = [
+        'database_reset',
         'start', 'stop',
         'start_ws', 'stop_ws',
         'start_controller', 'stop_controller',
+        'start_dispatch', 'stop_dispatch',
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
@@ -1017,7 +1062,9 @@ if __name__ == "__main__":
     # Create a new process group so our child processes don't exit on
     # ^C in run-tests.sh interactive mode.
     os.setpgid(0, 0)
-    if args.action == 'start':
+    if args.action == 'database_reset':
+        reset()
+    elif args.action == 'start':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
         run(leave_running_atexit=True)
         host = os.environ['ARVADOS_API_HOST']
@@ -1039,6 +1086,10 @@ if __name__ == "__main__":
         run_controller()
     elif args.action == 'stop_controller':
         stop_controller()
+    elif args.action == 'start_dispatch':
+        run_dispatch()
+    elif args.action == 'stop_dispatch':
+        stop_dispatch()
     elif args.action == 'start_keep':
         run_keep(blob_signing=args.keep_blob_signing, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':

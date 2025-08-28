@@ -434,15 +434,16 @@ func (cache *DiskCache) deleteHeldopen(cachefilename string, expect *openFileEnt
 	}
 }
 
-// quickReadAt attempts to use a cached-filehandle approach to read
-// from the indicated file. The expectation is that the caller
-// (ReadAt) will try a more robust approach when this fails, so
-// quickReadAt doesn't try especially hard to ensure success in
-// races. In particular, when there are concurrent calls, and one
-// fails, that can cause others to fail too.
-func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int) (int, error) {
-	isnew := false
+// heldopenEnt returns a new or existing *openFileEnt entry from
+// cache.heldopen.
+func (cache *DiskCache) heldopenEnt(cachefilename string) *openFileEnt {
 	cache.heldopenLock.Lock()
+	locked := true
+	defer func() {
+		if locked {
+			cache.heldopenLock.Unlock()
+		}
+	}()
 	if cache.heldopenMax == 0 {
 		// Choose a reasonable limit on open cache files based
 		// on RLIMIT_NOFILE. Note Go automatically raises
@@ -458,56 +459,68 @@ func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int
 			cache.heldopenMax = int(lim.Cur / 40)
 		}
 	}
-	heldopen := cache.heldopen[cachefilename]
-	if heldopen == nil {
-		isnew = true
-		heldopen = &openFileEnt{}
-		if cache.heldopen == nil {
-			cache.heldopen = make(map[string]*openFileEnt, cache.heldopenMax)
-		} else if len(cache.heldopen) > cache.heldopenMax {
-			// Rather than go to the trouble of tracking
-			// last access time, just close all files, and
-			// open again as needed. Even in the worst
-			// pathological case, this causes one extra
-			// open+close per read, which is not
-			// especially bad (see benchmarks).
-			go func(m map[string]*openFileEnt) {
-				for _, heldopen := range m {
-					heldopen.Lock()
-					defer heldopen.Unlock()
-					if heldopen.f != nil {
-						heldopen.f.Close()
-						heldopen.f = nil
-					}
+	if heldopen, ok := cache.heldopen[cachefilename]; ok {
+		return heldopen
+	}
+	if len(cache.heldopen) >= cache.heldopenMax {
+		// Rather than go to the trouble of tracking last
+		// access time, just close all files, and open again
+		// as needed. Even in the worst pathological case,
+		// this causes one extra open+close per read, which is
+		// not especially bad (see benchmarks).
+		go func(m map[string]*openFileEnt) {
+			for _, heldopen := range m {
+				heldopen.Lock()
+				defer heldopen.Unlock()
+				if heldopen.f != nil {
+					heldopen.f.Close()
+					heldopen.f = nil
 				}
-			}(cache.heldopen)
-			cache.heldopen = nil
-		}
-		cache.heldopen[cachefilename] = heldopen
-		heldopen.Lock()
-	}
-	cache.heldopenLock.Unlock()
-
-	if isnew {
-		// Open and flock the file, save the filehandle (or
-		// error) in heldopen.f, and release the write lock so
-		// other goroutines waiting at heldopen.RLock() below
-		// can use the shared filehandle (or shared error).
-		f, err := os.Open(cachefilename)
-		if err == nil {
-			err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
-			if err == nil {
-				heldopen.f = f
-			} else {
-				f.Close()
 			}
-		}
-		if err != nil {
-			heldopen.err = err
-			go cache.deleteHeldopen(cachefilename, heldopen)
-		}
-		heldopen.Unlock()
+		}(cache.heldopen)
+		cache.heldopen = nil
 	}
+	if cache.heldopen == nil {
+		cache.heldopen = make(map[string]*openFileEnt, cache.heldopenMax)
+	}
+	heldopen := &openFileEnt{}
+	heldopen.Lock()
+	defer heldopen.Unlock()
+	cache.heldopen[cachefilename] = heldopen
+
+	// Unlock the cache-wide lock early (and skip the deferred
+	// Unlock) to avoid holding it while opening and flocking the
+	// file.
+	cache.heldopenLock.Unlock()
+	locked = false
+
+	// Open and flock the file, and save the filehandle in
+	// heldopen.f (or an error in heldopen.err).
+	f, err := os.Open(cachefilename)
+	if err != nil {
+		go cache.deleteHeldopen(cachefilename, heldopen)
+		heldopen.err = err
+		return heldopen
+	}
+	err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
+	if err != nil {
+		f.Close()
+		go cache.deleteHeldopen(cachefilename, heldopen)
+		heldopen.err = err
+		return heldopen
+	}
+	heldopen.f = f
+	return heldopen
+}
+
+// quickReadAt attempts to use a cached-filehandle approach to read
+// from the indicated file. The expectation is that the caller
+// (ReadAt) will try a more robust approach when this fails, so
+// quickReadAt doesn't try especially hard to ensure success in
+// races. In particular, when there are concurrent calls, and one
+// fails, that can cause others to fail too.
+func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int) (int, error) {
+	heldopen := cache.heldopenEnt(cachefilename)
 	// Acquire read lock to ensure (1) initialization is complete,
 	// if it's done by a different goroutine, and (2) any "delete
 	// old/unused entries" waits for our read to finish before
@@ -659,6 +672,16 @@ func (cache *DiskCache) tidy() {
 		return
 	}
 
+	missing := func() map[string]struct{} {
+		cache.heldopenLock.Lock()
+		defer cache.heldopenLock.Unlock()
+		m := make(map[string]struct{}, len(cache.heldopen))
+		for path := range cache.heldopen {
+			m[path] = struct{}{}
+		}
+		return m
+	}()
+
 	type entT struct {
 		path  string
 		atime time.Time
@@ -677,6 +700,7 @@ func (cache *DiskCache) tidy() {
 		if !strings.HasSuffix(path, cacheFileSuffix) && !strings.HasSuffix(path, tmpFileSuffix) {
 			return nil
 		}
+		delete(missing, path)
 		var atime time.Time
 		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 			// Access time is available (hopefully the
@@ -696,6 +720,16 @@ func (cache *DiskCache) tidy() {
 			"totalsize": totalsize,
 			"maxsize":   maxsize,
 		}).Debugf("DiskCache: checked current cache usage")
+	}
+
+	// Drop heldopen entries (and close their filehandles) if the
+	// files have been deleted by another process, or are
+	// unreachable via Walk() for any other reason.
+	for path := range missing {
+		if cache.Logger != nil {
+			cache.Logger.WithField("path", path).Debug("cache file is missing, closing my handle")
+		}
+		cache.deleteHeldopen(path, nil)
 	}
 
 	// If MaxSize wasn't specified and we failed to come up with a

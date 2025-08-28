@@ -12,6 +12,8 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -26,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/pbnjay/memory"
 	"github.com/sirupsen/logrus"
 )
@@ -49,27 +52,14 @@ func main() {
 	}
 
 	flags := flag.NewFlagSet("crunch-dispatch-local", flag.ExitOnError)
-
-	pollInterval := flags.Int(
-		"poll-interval",
-		10,
-		"Interval in seconds to poll for queued containers")
-
-	flags.StringVar(&crunchRunCommand,
-		"crunch-run-command",
-		"",
-		"Crunch command to run container")
-
-	getVersion := flags.Bool(
-		"version",
-		false,
-		"Print version information and exit.")
+	pollInterval := flags.Int("poll-interval", 10, "Interval in seconds to poll for queued containers")
+	flags.StringVar(&crunchRunCommand, "crunch-run-command", "", "Crunch command to run container")
+	getVersion := flags.Bool("version", false, "Print version information and exit.")
+	pprofAddr := flags.String("pprof", "", "Serve Go profile data at `[addr]:port`")
 
 	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "", os.Stderr); !ok {
 		os.Exit(code)
 	}
-
-	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("crunch-dispatch-local %s\n", version)
 		return
@@ -91,8 +81,23 @@ func main() {
 		crunchRunCommand = cluster.Containers.CrunchRunCommand
 	}
 
-	logger := baseLogger.WithField("ClusterID", cluster.ClusterID)
+	logger := baseLogger.WithFields(logrus.Fields{
+		"PID":       os.Getpid(),
+		"ClusterID": cluster.ClusterID,
+	})
 	logger.Printf("crunch-dispatch-local %s started", version)
+
+	// Listening on pprofAddr is how we tell run_test_server.py
+	// that startup was successful.  That's why we didn't start
+	// the debug server until after loading config.
+	if *pprofAddr != "" {
+		go func() {
+			logger.Info(http.ListenAndServe(*pprofAddr, nil))
+		}()
+	}
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
+		logger.WithError(err).Errorf("error notifying init daemon")
+	}
 
 	runningCmds = make(map[string]*exec.Cmd)
 
@@ -214,9 +219,7 @@ func (lr *LocalRun) throttle(logger logrus.FieldLogger) {
 	availableVcpus := maxVcpus
 	availableRam := maxRam
 
-	pending := []ResourceRequest{}
-
-NextEvent:
+	var pending []ResourceRequest
 	for {
 		select {
 		case rr := <-lr.requestResources:
@@ -241,33 +244,42 @@ NextEvent:
 			rr := pending[0]
 			if rr.vcpus < 1 || rr.vcpus > maxVcpus {
 				logger.Infof("%v requested vcpus %v but maxVcpus is %v", rr.uuid, rr.vcpus, maxVcpus)
-				// resource request can never be fulfilled,
-				// return a zero struct
-				rr.ready <- ResourceAlloc{}
+				// resource request can never be
+				// fulfilled, close the channel and
+				// remove from pending
+				close(rr.ready)
+				pending = pending[1:]
 				continue
 			}
 			if rr.ram < 1 || rr.ram > maxRam {
 				logger.Infof("%v requested ram %v but maxRam is %v", rr.uuid, rr.ram, maxRam)
-				// resource request can never be fulfilled,
-				// return a zero struct
-				rr.ready <- ResourceAlloc{}
+				// resource request can never be
+				// fulfilled, close the channel and
+				// remove from pending
+				close(rr.ready)
+				pending = pending[1:]
 				continue
 			}
 			if rr.gpus > maxGpus || (rr.gpus > 0 && rr.gpuStack != gpuStack) {
 				logger.Infof("%v requested %v gpus with stack %v but maxGpus is %v and gpuStack is %q", rr.uuid, rr.gpus, rr.gpuStack, maxGpus, gpuStack)
-				// resource request can never be fulfilled,
-				// return a zero struct
-				rr.ready <- ResourceAlloc{}
+				// resource request can never be
+				// fulfilled, close the channel and
+				// remove from pending
+				close(rr.ready)
+				pending = pending[1:]
 				continue
 			}
 
 			if rr.vcpus > availableVcpus || rr.ram > availableRam || rr.gpus > len(availableGpus) {
 				logger.Infof("Insufficient resources to start %v, waiting for next event", rr.uuid)
-				// can't be scheduled yet, go up to
-				// the top and wait for the next event
-				continue NextEvent
+				// can't be scheduled yet, and we
+				// don't want to schedule something
+				// lower-priority, so just wait for
+				// resources to be released
+				break
 			}
 
+			pending = pending[1:]
 			alloc := ResourceAlloc{uuid: rr.uuid, vcpus: rr.vcpus, ram: rr.ram}
 
 			availableVcpus -= rr.vcpus
@@ -283,14 +295,7 @@ NextEvent:
 			logger.Infof("%v added allocation (cpus: %v ram: %v gpus: %v); now available (cpus: %v ram: %v gpus: %v)",
 				rr.uuid, rr.vcpus, rr.ram, rr.gpus,
 				availableVcpus, availableRam, availableGpus)
-
-			// shift array down
-			for i := 0; i < len(pending)-1; i++ {
-				pending[i] = pending[i+1]
-			}
-			pending = pending[0 : len(pending)-1]
 		}
-
 	}
 }
 
@@ -321,7 +326,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 				int64(lr.cluster.Containers.ReserveExtraRAM)),
 			gpuStack: gpuStack,
 			gpus:     gpus,
-			ready:    make(chan ResourceAlloc)}
+			ready:    make(chan ResourceAlloc, 1)}
 
 		select {
 		case lr.requestResources <- resourceRequest:
@@ -332,15 +337,16 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 
 		var resourceAlloc ResourceAlloc
 		select {
-		case resourceAlloc = <-resourceRequest.ready:
+		case alloc, ok := <-resourceRequest.ready:
+			if ok {
+				resourceAlloc = alloc
+			} else {
+				dispatcher.Logger.Warnf("Container resource request %v cannot be fulfilled.", uuid)
+				dispatcher.UpdateState(uuid, dispatch.Cancelled)
+				return nil
+			}
 		case <-lr.ctx.Done():
 			return lr.ctx.Err()
-		}
-
-		if resourceAlloc.vcpus == 0 {
-			dispatcher.Logger.Warnf("Container resource request %v cannot be fulfilled.", uuid)
-			dispatcher.UpdateState(uuid, dispatch.Cancelled)
-			return nil
 		}
 
 		defer func() {
@@ -370,10 +376,15 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
 
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%v", os.Getenv("PATH")))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("TMPDIR=%v", os.Getenv("TMPDIR")))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("ARVADOS_API_HOST=%v", os.Getenv("ARVADOS_API_HOST")))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("ARVADOS_API_TOKEN=%v", os.Getenv("ARVADOS_API_TOKEN")))
+		for _, envvar := range []string{
+			"PATH",
+			"TMPDIR",
+			"ARVADOS_API_HOST",
+			"ARVADOS_API_HOST_INSECURE",
+			"ARVADOS_API_TOKEN",
+		} {
+			cmd.Env = append(cmd.Env, envvar+"="+os.Getenv(envvar))
+		}
 
 		h := hmac.New(sha256.New, []byte(lr.cluster.SystemRootToken))
 		fmt.Fprint(h, container.UUID)
@@ -407,24 +418,31 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 				if _, err := cmd.Process.Wait(); err != nil {
 					dispatcher.Logger.Warnf("error while waiting for crunch job to finish for %v: %q", uuid, err)
 				}
-				dispatcher.Logger.Debugf("sending done")
-				done <- struct{}{}
+				dispatcher.Logger.Debugf("crunch-run exited")
+				close(done)
 			}()
 
+			// Let the child process run until either
+			// priority changes to 0 or the status channel
+			// closes (sdk/go/dispatch.DispatchFunc: "When
+			// the channel closes, the DispatchFunc should
+			// stop the container if it's still running,
+			// and return.")
 		Loop:
 			for {
 				select {
 				case <-done:
 					break Loop
-				case c := <-status:
-					// Interrupt the child process if priority changes to 0
-					if (c.State == dispatch.Locked || c.State == dispatch.Running) && c.Priority == 0 {
+				case c, running := <-status:
+					if !running || (c.State == dispatch.Locked || c.State == dispatch.Running) && c.Priority == 0 {
 						dispatcher.Logger.Printf("sending SIGINT to pid %d to cancel container %v", cmd.Process.Pid, uuid)
 						cmd.Process.Signal(os.Interrupt)
 					}
+					if !running {
+						break Loop
+					}
 				}
 			}
-			close(done)
 
 			dispatcher.Logger.Printf("finished container run for %v", uuid)
 

@@ -35,7 +35,7 @@ import {
     getTrashPanelTypeFilters
 } from 'store/resource-type-filters/resource-type-filters';
 import { CollectionResource } from 'models/collection';
-import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -179,8 +179,6 @@ export const TrashPanel = withStyles(styles)(
 
             handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
-                this.props.dispatch<any>(deselectAllOthers(uuid))
-                this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
         }
     )

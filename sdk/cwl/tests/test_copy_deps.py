@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from . import INSIDE_ARVBOX, TESTS_DIR, run_cwltest
+from . import TESTS_DIR, run_cwltest
 from arvados.collection import Collection
 
 WORKFLOW_PATH = TESTS_DIR / '19070-copy-deps.cwl'
@@ -103,9 +103,7 @@ def test_execute_without_deps(arv_session, cmd_19070, tmp_project, integration_c
     assert run_proc.returncode == os.EX_OK
     contents = arv_session.groups().contents(uuid=tmp_project['uuid']).execute()
     # container request+log+container log+step output+final output == 5 items
-    # If we're inside arvbox, it *might* have uploaded the Docker image here
-    # depending on test ordering, so allow for a possible sixth item.
-    assert 5 <= len(contents['items']) <= (6 if INSIDE_ARVBOX else 5)
+    assert len(contents['items']) == 5
     assert not any(item['kind'] == 'arvados#workflow' for item in contents['items'])
 
 

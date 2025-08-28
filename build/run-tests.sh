@@ -336,9 +336,9 @@ setup_ruby_environment() {
     echo "Will install dependencies to $(gem env gemdir)"
     echo "Will install bundler and arvados gems to $tmpdir_gem_home"
     echo "Gem search path is GEM_PATH=$GEM_PATH"
-    gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
+    gem install --user --no-document --conservative --version '~> 2.5.0' bundler \
         || fatal 'install bundler'
-    BUNDLE="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
+    BUNDLE="$(gem contents --version '~> 2.5.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
     if [[ ! -x "$BUNDLE" ]]; then
         BUNDLE=false
         fatal "could not find 'bundle' executable after installation"
@@ -520,6 +520,14 @@ do_test_once() {
             # minutes. Before July 2025 they were outside the standard test
             # suite, so we deselect them by default for consistency.
             targs+=(-m "not integration")
+
+            # The CWL conformance/integration tests expect keep
+            # servers and crunch-dispatch-local.
+            if ! ( env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py start_keep \
+                      && env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py start_dispatch); then
+                checkexit 1 "$1 tests"
+                return 1
+            fi
             ;;
     esac
     # Append the user's arguments to targs, respecting quoted strings.
@@ -584,6 +592,12 @@ do_test_once() {
     result=${result:-$?}
     checkexit $result "$1 tests"
     title "test $1 -- `timer`"
+    if [[ "$1" == "sdk/cwl" ]]; then
+        env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py stop_keep
+        env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py stop_dispatch
+        # Also reset test fixtures that were modified by the dispatcher
+        env -C "$WORKSPACE" python3 sdk/python/tests/run_test_server.py database_reset
+    fi
     return $result
 }
 
@@ -730,6 +744,16 @@ install_services/api() {
 install_services/workbench2() {
     cd "$WORKSPACE/services/workbench2" \
         && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
+}
+
+do_bundle() {
+    timer_reset
+    (
+        set -x
+        env -C "$WORKSPACE/services/api" RAILS_ENV=test \
+            "$BUNDLE" ${@}
+    )
+    checkexit "$?" "services/api bundle ${@}"
 }
 
 do_migrate() {
@@ -938,6 +962,7 @@ help_interactive() {
     echo "install TARGET"
     echo "install env              (go/python libs)"
     echo "install deps             (go/python libs + arvados components needed for integration tests)"
+    echo "bundle ...               (run arbitrary bundler command)"
     echo "migrate                  (run outstanding migrations)"
     echo "migrate rollback         (revert most recent migration)"
     echo "migrate <dir> VERSION=n  (revert and/or run a single migration; <dir> is up|down|redo)"
@@ -1113,6 +1138,9 @@ else
                 ;;
             "migrate")
                 do_migrate ${target} ${opts}
+                ;;
+            "bundle")
+                do_bundle ${target} ${opts}
                 ;;
             "test" | "install")
                 case "$target" in

@@ -27,8 +27,7 @@ const uncheckAllOthers = (inputList: TCheckedList, uuid: string) => {
 
 const toggleOneCheck = (inputList: TCheckedList, uuid: string)=>{
     const checkedlist = { ...inputList };
-    const isOnlyOneSelected = Object.values(checkedlist).filter(x => x === true).length === 1;
-    return { ...inputList, [uuid]: (checkedlist[uuid] && checkedlist[uuid] === true) && isOnlyOneSelected ? false : true };
+    return { ...inputList, [uuid]: !checkedlist[uuid]};
 }
 
 const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, SELECT_ONE, DESELECT_ONE, DESELECT_ALL_OTHERS, TOGGLE_ONE, ADD_DISABLED, REMOVE_DISABLED } = multiselectActionConstants;

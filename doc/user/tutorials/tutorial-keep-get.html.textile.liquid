@@ -19,15 +19,15 @@ h2(#download-using-workbench). Download using Workbench
 
 You can also download Arvados data collections using the Workbench.
 
-When you visit a project in Workbench (for instance, the <i class="fa fa-fw fa-folder"></i> *Home Projects* or any projects under it), the collections will show up on the project details page, with "_Data collection_" in the *Type* column.
+When you visit a project in Workbench (for instance, the <i class="fa fa-fw fa-folder"></i> *Home Projects* or any projects under it), the collections will show up on the Data tab, with "_Data collection_" in the *Type* column.
 
-Clicking on a collection will bring you to its details page. There, the lower panel acts like a file manager where you can navigate to or search for files, select them for actions, and download them.
+Clicking on a collection will bring you to its details page. There, the Files tab contains a file manager where you can navigate to or search for files, select them for actions, and download them.
 
 To download a file, simply click on the file, or bring up the context menu using right-click or the triple-dot button on its row, and then select the menu item *Download*.
 
 h2(#download-shared-collection). Creating a special download URL for a collection
 
-To share a collection with users that do not have an account on your Arvados cluster, locate the collection and then go to the *Sharing settings* dialog box as described above. There, select the *SHARING URLS* tab.
+To share a collection with users that do not have an account on your Arvados cluster, locate the collection and then select *Share* in the the right-click menu. There, select the *SHARING URLS* tab.
 
 You can then generate a new sharing URL using the <span class="btn btn-sm btn-primary">CREATE SHARING URL</span> button, with the option to set an expiration time for the URL. You can then copy the URL to the clipboard for sharing with others. To revoke (that is, delete) a sharing URL, click on the cross icon beside it.
 
@@ -55,7 +55,7 @@ Use @arv-ls@ to view the contents of a collection:
 ./HWI-ST1027_129_D0THKACXX.1_2.fastq
 </code></pre>
 
-Use @-s@ to print file sizes, in kilobytes, rounded up:
+Use <code>-s</code> to print file sizes, in kilobytes, rounded up:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-ls -s ae480c5099b81e17267b7445e35b4bc7+180</span>
