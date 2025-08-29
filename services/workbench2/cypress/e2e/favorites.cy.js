@@ -29,16 +29,17 @@ describe('Favorites tests', function () {
         cy.createGroup(adminUser.token, {
             name: `my-favorite-project`,
             group_class: 'project',
-        }).as('myFavoriteProject').then(function () {
+        }).as('myFavoriteProject')
+        cy.get('@myFavoriteProject').then(function (myFavoriteProject) {
             cy.contains('Refresh').click();
             cy.doSidePanelNavigation('Home Projects');
             cy.doMPVTabSelect("Data");
-            cy.get('main').contains('my-favorite-project').rightclick();
+            cy.get('main').contains(myFavoriteProject.name).rightclick();
             cy.contains('Add to public favorites').click();
             cy.contains('Public Favorites').click();
-            cy.get('main').contains('my-favorite-project').rightclick();
+            cy.get('main').contains(myFavoriteProject.name).rightclick();
             cy.contains('Remove from public favorites').click();
-            cy.get('main').contains('my-favorite-project').should('not.exist');
+            cy.get('main').contains(myFavoriteProject.name).should('not.exist');
             cy.trashGroup(adminUser.token, this.myFavoriteProject.uuid);
         });
     });
@@ -372,7 +373,9 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                cy.assertDataExplorerContains(myFavoriteProject1.name, false);
+                //navigates to restored project
+                cy.assertDetailsCardTitle(myFavoriteProject1.name);
+                cy.assertBreadcrumbs(["Home Projects", myFavoriteProject1.name]);
                 // Check project restored to favorites
                 cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
@@ -399,6 +402,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.waitForDom();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 })
                 cy.assertDataExplorerContains(testFavoriteCollection.name, false);
                 // Check collection restored to favorites
                 cy.wait(1000);

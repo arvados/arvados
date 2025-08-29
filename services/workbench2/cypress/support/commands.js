@@ -751,7 +751,6 @@ Cypress.Commands.add("assertBreadcrumbs", (names) => {
  */
 Cypress.Commands.add("assertDataExplorerContains", (name, contains = true) => {
     cy.waitForDom();
-    cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 })
     contains
         ? cy.get('[data-cy=data-table]').contains(name).should('exist')
         : cy.get('[data-cy=data-table]').contains(name).should('not.exist');
@@ -912,4 +911,22 @@ Cypress.Commands.add("assertPropertyTag", (propertyName, propertyValue, shouldEx
             cy.get('span').contains(propertyName).contains(propertyValue).should('exist');
         }
     });
+});
+
+/**
+ * Asserts the presence of a details card and its name
+ *
+ * @param resourceName name of the resource
+ * @param shouldExist whether the resource card should exist or not
+ */
+
+Cypress.Commands.add("assertDetailsCardTitle", (resourceName, shouldExist = true) => {
+    cy.get(`[data-cy=user-details-card],
+            [data-cy=project-details-card],
+            [data-cy=collection-details-card],
+            [data-cy=workflow-details-card],
+            [data-cy=process-details-card]`)
+        .contains(resourceName)
+        .should(shouldExist ? 'exist' : 'not.exist')
+
 });
