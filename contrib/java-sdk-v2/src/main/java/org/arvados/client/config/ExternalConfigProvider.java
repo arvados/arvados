@@ -7,33 +7,36 @@
 
 package org.arvados.client.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 
 public class ExternalConfigProvider implements ConfigProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(ExternalConfigProvider.class);
     private static final int DEFAULT_CONNECTION_TIMEOUT = 60000;
     private static final int DEFAULT_READ_TIMEOUT = 60000;
     private static final int DEFAULT_WRITE_TIMEOUT = 60000;
 
-    private boolean apiHostInsecure;
-    private String keepWebHost;
-    private int keepWebPort;
-    private String apiHost;
-    private int apiPort;
-    private String apiToken;
-    private String apiProtocol;
-    private int fileSplitSize;
-    private File fileSplitDirectory;
-    private int numberOfCopies;
-    private int numberOfRetries;
-    private int connectTimeout;
-    private int readTimeout;
-    private int writeTimeout;
+    private final boolean apiHostInsecure;
+    private final String keepWebHost;
+    private final int keepWebPort;
+    private final String apiHost;
+    private final int apiPort;
+    private final String apiToken;
+    private final String apiProtocol;
+    private final int fileSplitSize;
+    private final File fileSplitDirectory;
+    private final int numberOfCopies;
+    private final int numberOfRetries;
+    private final int connectTimeout;
+    private final int readTimeout;
+    private final int writeTimeout;
 
     ExternalConfigProvider(boolean apiHostInsecure, String keepWebHost, int keepWebPort, String apiHost, int apiPort,
-			   String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory,
-			   int numberOfCopies, int numberOfRetries)
-    {
+                           String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory,
+                           int numberOfCopies, int numberOfRetries) {
         this.apiHostInsecure = apiHostInsecure;
         this.keepWebHost = keepWebHost;
         this.keepWebPort = keepWebPort;
@@ -45,16 +48,15 @@ public class ExternalConfigProvider implements ConfigProvider {
         this.fileSplitDirectory = fileSplitDirectory;
         this.numberOfCopies = numberOfCopies;
         this.numberOfRetries = numberOfRetries;
-	this.connectTimeout = DEFAULT_CONNECTION_TIMEOUT;
-	this.readTimeout = DEFAULT_READ_TIMEOUT;
-	this.writeTimeout = DEFAULT_WRITE_TIMEOUT;
+        this.connectTimeout = DEFAULT_CONNECTION_TIMEOUT;
+        this.readTimeout = DEFAULT_READ_TIMEOUT;
+        this.writeTimeout = DEFAULT_WRITE_TIMEOUT;
     }
 
     ExternalConfigProvider(boolean apiHostInsecure, String keepWebHost, int keepWebPort, String apiHost, int apiPort,
-			   String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory,
-			   int numberOfCopies, int numberOfRetries,
-			   int connectTimeout, int readTimeout, int writeTimeout)
-    {
+                           String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory,
+                           int numberOfCopies, int numberOfRetries,
+                           int connectTimeout, int readTimeout, int writeTimeout) {
         this.apiHostInsecure = apiHostInsecure;
         this.keepWebHost = keepWebHost;
         this.keepWebPort = keepWebPort;
@@ -66,9 +68,9 @@ public class ExternalConfigProvider implements ConfigProvider {
         this.fileSplitDirectory = fileSplitDirectory;
         this.numberOfCopies = numberOfCopies;
         this.numberOfRetries = numberOfRetries;
-	this.connectTimeout = connectTimeout;
-	this.readTimeout = readTimeout;
-	this.writeTimeout = writeTimeout;
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
+        this.writeTimeout = writeTimeout;
     }
 
     public static ExternalConfigProviderBuilder builder() {
@@ -78,18 +80,18 @@ public class ExternalConfigProvider implements ConfigProvider {
     @Override
     public String toString() {
         return "ExternalConfigProvider{" +
-                "apiHostInsecure=" + apiHostInsecure +
-                ", keepWebHost='" + keepWebHost + '\'' +
-                ", keepWebPort=" + keepWebPort +
-                ", apiHost='" + apiHost + '\'' +
-                ", apiPort=" + apiPort +
-                ", apiToken='" + apiToken + '\'' +
-                ", apiProtocol='" + apiProtocol + '\'' +
-                ", fileSplitSize=" + fileSplitSize +
-                ", fileSplitDirectory=" + fileSplitDirectory +
-                ", numberOfCopies=" + numberOfCopies +
-                ", numberOfRetries=" + numberOfRetries +
-                '}';
+               "apiHostInsecure=" + apiHostInsecure +
+               ", keepWebHost='" + keepWebHost + '\'' +
+               ", keepWebPort=" + keepWebPort +
+               ", apiHost='" + apiHost + '\'' +
+               ", apiPort=" + apiPort +
+               ", apiToken='" + apiToken + '\'' +
+               ", apiProtocol='" + apiProtocol + '\'' +
+               ", fileSplitSize=" + fileSplitSize +
+               ", fileSplitDirectory=" + fileSplitDirectory +
+               ", numberOfCopies=" + numberOfCopies +
+               ", numberOfRetries=" + numberOfRetries +
+               '}';
     }
 
     public boolean isApiHostInsecure() {
@@ -163,6 +165,7 @@ public class ExternalConfigProvider implements ConfigProvider {
         private int connectTimeout = DEFAULT_CONNECTION_TIMEOUT;
         private int readTimeout = DEFAULT_READ_TIMEOUT;
         private int writeTimeout = DEFAULT_WRITE_TIMEOUT;
+        private boolean autoFetchWebDAV = true;
 
         ExternalConfigProviderBuilder() {
         }
@@ -237,8 +240,47 @@ public class ExternalConfigProvider implements ConfigProvider {
             return this;
         }
 
+        public ExternalConfigProvider.ExternalConfigProviderBuilder autoFetchWebDAV(boolean autoFetchWebDAV) {
+            this.autoFetchWebDAV = autoFetchWebDAV;
+            return this;
+        }
+
         public ExternalConfigProvider build() {
-            return new ExternalConfigProvider(apiHostInsecure, keepWebHost, keepWebPort, apiHost, apiPort, apiToken, apiProtocol, fileSplitSize, fileSplitDirectory, numberOfCopies, numberOfRetries, connectTimeout, readTimeout, writeTimeout);
+            if (shouldAutoFetchWebDAV()) {
+                autoFetchWebDAVConfiguration();
+            }
+
+            validateWebDAVConfiguration();
+
+            return new ExternalConfigProvider(
+                    apiHostInsecure, keepWebHost, keepWebPort, apiHost,
+                    apiPort, apiToken, apiProtocol, fileSplitSize, fileSplitDirectory,
+                    numberOfCopies, numberOfRetries, connectTimeout, readTimeout, writeTimeout
+            );
+        }
+
+        private boolean shouldAutoFetchWebDAV() {
+            return autoFetchWebDAV &&
+                   (keepWebHost == null || keepWebHost.isEmpty());
+        }
+
+        private void autoFetchWebDAVConfiguration() {
+            WebDAVConfigFetcher fetcher = new WebDAVConfigFetcher(
+                    apiProtocol, apiHost, apiPort, apiHostInsecure
+            );
+
+            WebDAVConfigFetcher.WebDAVConfig config = fetcher.fetch();
+
+            if (config != null) {
+                keepWebHost = config.getHost();
+                keepWebPort = config.getPort();
+            }
+        }
+
+        private void validateWebDAVConfiguration() {
+            if (keepWebHost == null || keepWebHost.isEmpty()) {
+                log.warn("WebDAV host is not configured. File operations may not work properly. Consider providing keepWebHost/keepWebPort or ensuring the Arvados API config endpoint is accessible.");
+            }
         }
 
     }
