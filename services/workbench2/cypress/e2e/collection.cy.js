@@ -419,6 +419,8 @@ describe("Collection panel tests", function () {
                             cy.get("input").type(`{selectall}{backspace}${subdir}/foo`);
                         });
                     cy.get("[data-cy=form-submit-btn]").click();
+                    cy.waitForDom();
+                    cy.get("[data-cy=form-dialog]").should("not.exist");
                     cy.get("[data-cy=collection-files-panel]").should("not.contain", "bar").and("contain", subdir);
                     cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
 
@@ -431,7 +433,7 @@ describe("Collection panel tests", function () {
                         .within(() => {
                             cy.get("input").should("have.value", `${subdir}/foo`).type(`{selectall}{backspace}bar`);
                         });
-                    cy.get("[data-cy=form-submit-btn]").click();
+                    cy.get("[data-cy=form-submit-btn]").click({ force: true });
 
                     // need to wait for dialog to dismiss
                     cy.get("[data-cy=form-dialog]").should("not.exist");
