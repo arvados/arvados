@@ -9,30 +9,24 @@ import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from "react-router";
-import { DataTableFilterItem } from "components/data-table-filters/data-table-filters";
 import { DataColumns, SortDirection } from "components/data-table/data-column";
-import { ResourceKind } from "models/resource";
 import { ArvadosTheme } from "common/custom-theme";
-import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
+import { EXTERNAL_CREDENTIALS_PANEL } from "store/external-credentials/external-credentials-actions";
 import {
-    ProcessStatus,
     ResourceName,
-    ResourceOwnerWithName,
-    ResourceType,
-    ContainerRunTime,
-    ResourceCreatedAtDate,
+    RenderCredentialID,
+    ResourceExpiresAtDate,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { navigateTo } from "store/navigation/navigation-action";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 import { RootState } from "store/store";
 import { createTree } from "models/tree";
-import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getProcess } from "store/processes/process";
 import { ResourcesState } from "store/resources/resources";
 import { toggleOne } from "store/multiselect/multiselect-actions";
+import { ExternalCredential } from "models/external-credential";
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -52,18 +46,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export enum ExternalCredentialsPanelColumnNames {
     NAME = "Name",
-    STATUS = "Status",
-    TYPE = "Type",
-    OWNER = "Owner",
-    CREATED_AT = "Created at",
-    RUNTIME = "Run Time",
+    CREDENTIAL_ID = "Credential ID",
+    EXPIRES_AT = "Expires at",
 }
 
-export interface ExternalCredentialsPanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ContainerRequestState;
-}
-
-export const ExternalCredentialsPanelColumns: DataColumns<string, ContainerRequestResource> = [
+export const externalCredentialsPanelColumns: DataColumns<string, ExternalCredential> = [
     {
         name: ExternalCredentialsPanelColumnNames.NAME,
         selected: true,
@@ -73,41 +60,18 @@ export const ExternalCredentialsPanelColumns: DataColumns<string, ContainerReque
         render: uuid => <ResourceName uuid={uuid} />,
     },
     {
-        name: ExternalCredentialsPanelColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        mutuallyExclusiveFilters: true,
-        filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.TYPE,
-        selected: true,
-        configurable: true,
-        filters: getInitialProcessTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.OWNER,
+        name: ExternalCredentialsPanelColumnNames.CREDENTIAL_ID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />,
+        render: uuid => <RenderCredentialID uuid={uuid} />,
     },
     {
-        name: ExternalCredentialsPanelColumnNames.CREATED_AT,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.DESC, field: "createdAt" },
-        filters: createTree(),
-        render: uuid => <ResourceCreatedAtDate uuid={uuid} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.RUNTIME,
+        name: ExternalCredentialsPanelColumnNames.EXPIRES_AT,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid} />,
+        render: uuid => <ResourceExpiresAtDate uuid={uuid} />,
     },
 ];
 
@@ -153,13 +117,13 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                 return (
                     <div className={this.props.classes.root}>
                         <DataExplorer
-                            id={ALL_PROCESSES_PANEL_ID}
+                            id={EXTERNAL_CREDENTIALS_PANEL}
                             onRowClick={this.handleRowClick}
                             onRowDoubleClick={this.handleRowDoubleClick}
                             onContextMenu={this.handleContextMenu}
                             contextMenuColumn={false}
                             defaultViewIcon={ProcessIcon}
-                            defaultViewMessages={["Processes list empty."]}
+                            defaultViewMessages={["External credentials list empty."]}
                         />
                     </div>
                 );

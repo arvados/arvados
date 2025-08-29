@@ -55,6 +55,7 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
+import { ExternalCredential } from "models/external-credential";
 import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
@@ -795,6 +796,18 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
     return { date: resource ? resource.deleteAt : "" };
 })((props: { date: string }) => renderDate(props.date));
+
+export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
+    return { date: resource ? resource.expiresAt : "" };
+})((props: { date: string }) => renderDate(props.date));
+
+export const RenderCredentialID = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
+    return { externalId: resource ? resource.externalId : "" };
+})((props: { externalId: string }) => renderString(props.externalId));
+
+const renderString = (data: string) => <Typography noWrap>{data}</Typography>;
 
 export const renderFileSize = (fileSize?: number) => (
     <Typography

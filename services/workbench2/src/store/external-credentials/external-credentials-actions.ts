@@ -2,12 +2,32 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "common/unionize";
+import { Dispatch } from "redux";
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
+import { navigateToRootProject } from "store/navigation/navigation-action";
+import { snackbarActions } from "store/snackbar/snackbar-actions";
 
 export const EXTERNAL_CREDENTIALS_PANEL = 'externalCredentialsPanel';
 
-export const externalCredentialsActions = unionize({
-});
+export const externalCredentialsActions = bindDataExplorerActions(EXTERNAL_CREDENTIALS_PANEL);
 
-export type ExternalCredentialsAction = UnionOf<typeof externalCredentialsActions>;
+export type ExternalCredentialsAction = any;
+
+export const loadExternalCredentials = () =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+            const user = getState().auth.user;
+            if (user) {
+                try {
+                    dispatch(externalCredentialsActions.REQUEST_ITEMS());
+                } catch (e) {
+                    return;
+                }
+            } else {
+                dispatch(navigateToRootProject);
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+            }
+        };
+
 

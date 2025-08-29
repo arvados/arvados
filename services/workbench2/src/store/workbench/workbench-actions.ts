@@ -35,6 +35,7 @@ import {
     setVirtualMachinesAdminBreadcrumbs,
     setRepositoriesBreadcrumbs,
     setUserPreferencesBreadcrumbs,
+    setExternalCredentialsBreadcrumbs,
 } from "store/breadcrumbs/breadcrumbs-actions";
 import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
@@ -110,6 +111,9 @@ import { projectPanelDataColumns } from "views/project-panel/project-panel-data"
 import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
 import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
 import { loadUserPreferencesPanel } from "store/user-preferences/user-preferences-actions";
+import { loadExternalCredentials } from "store/external-credentials/external-credentials-actions";
+import { externalCredentialsActions } from "store/external-credentials/external-credentials-actions";
+import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel";
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -196,6 +200,7 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
         if (services.linkAccountService.getAccountToLink()) {
             dispatch(linkAccountPanelActions.HAS_SESSION_DATA());
         }
+        dispatch<any>(externalCredentialsActions.SET_COLUMNS({ columns: externalCredentialsPanelColumns }));
 
         dispatch<any>(initSidePanelTree());
         if (router.location) {
@@ -821,6 +826,12 @@ export const loadGroupDetailsPanel = (groupUuid: string) =>
     handleFirstTimeLoad((dispatch: Dispatch<any>) => {
         dispatch(setGroupDetailsBreadcrumbs(groupUuid));
         dispatch(groupDetailsPanelActions.loadGroupDetailsPanel(groupUuid));
+    });
+
+export const loadExternalCredentialsPanel = () =>
+    handleFirstTimeLoad((dispatch: Dispatch<any>) => {
+        dispatch(setExternalCredentialsBreadcrumbs());
+        dispatch<any>(loadExternalCredentials());
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) => async (dispatch: Dispatch<any>) => {

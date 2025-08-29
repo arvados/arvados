@@ -82,7 +82,8 @@ import { bannerReducer } from "./banner/banner-reducer";
 import { multiselectReducer } from "./multiselect/multiselect-reducer";
 import { composeWithDevTools } from "redux-devtools-extension";
 import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
-import { externalCredentialsReducer } from "./external-credentials/external-credentials-reducer";
+import { ExternalCredentialsMiddlewareService } from "./external-credentials/external-credentials-middleware-service";
+import { EXTERNAL_CREDENTIALS_PANEL } from "./external-credentials/external-credentials-actions";
 import createSagaMiddleware from 'redux-saga';
 import { rootSaga } from "./redux-saga";
 
@@ -126,6 +127,9 @@ export function configureStore(history: History, services: ServiceRepository, co
         new CollectionsWithSameContentAddressMiddlewareService(services, COLLECTIONS_CONTENT_ADDRESS_PANEL_ID)
     );
     const subprocessMiddleware = dataExplorerMiddleware(new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID));
+    const externalCredentialsMiddleware = dataExplorerMiddleware(
+        new ExternalCredentialsMiddlewareService(services, EXTERNAL_CREDENTIALS_PANEL)
+    );
 
     const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
         const state = store.getState();
@@ -165,7 +169,8 @@ export function configureStore(history: History, services: ServiceRepository, co
         publicFavoritesMiddleware,
         collectionsContentAddress,
         subprocessMiddleware,
-        workflowProcessessPanelMiddleware
+        workflowProcessessPanelMiddleware,
+        externalCredentialsMiddleware,
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[], b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);
@@ -218,5 +223,4 @@ const createRootReducer = (services: ServiceRepository) =>
         linkAccountPanel: linkAccountPanelReducer,
         sidePanel: sidePanelReducer,
         multiselect: multiselectReducer,
-        externalCredentials: externalCredentialsReducer,
     });
