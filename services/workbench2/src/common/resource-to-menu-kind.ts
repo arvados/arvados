@@ -8,7 +8,7 @@ import { AuthState } from 'store/auth/auth-reducer';
 import { getResource } from 'store/resources/resources';
 import { Resource, ResourceKind } from 'models/resource';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { GroupResource, GroupClass, isGroupResource, isUserGroup } from 'models/group';
+import { GroupResource, GroupClass, isGroupResource, isUserGroup, isGroupMemberLink, isBuiltinGroup } from 'models/group';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getProcess, isProcessCancelable } from 'store/processes/process';
 import { isCollectionResource } from 'models/collection';
@@ -73,6 +73,9 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
         const isEditable = getIsEditable(isAdmin, resource, resources, readonly, isFrozen);
 
         if (isUserGroup(resource)) {
+            if (isBuiltinGroup(resource.uuid)) {
+                return ContextMenuKind.BUILT_IN_GROUP
+            }
             return ContextMenuKind.GROUPS
         }
         if (isGroupResource(resource)) {
@@ -97,6 +100,7 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
             case ResourceKind.USER:
                 return ContextMenuKind.USER_DETAILS;
             case ResourceKind.LINK:
+                if (isGroupMemberLink(resource)) return ContextMenuKind.GROUP_MEMBER;
                 return ContextMenuKind.LINK;
             case ResourceKind.WORKFLOW:
                 return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;
