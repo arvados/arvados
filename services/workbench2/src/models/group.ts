@@ -56,7 +56,7 @@ export const isGroupResource = (resource: Resource): resource is GroupResource =
 
 type GroupMemberLink = LinkResource & { linkClass: LinkClass.PERMISSION, headKind: ResourceKind.GROUP };
 
-export const isGroupMemberLink = (resource: any): resource is GroupMemberLink => {
+export const isGroupMemberLink = (resource: Resource | LinkResource): resource is GroupMemberLink => {
     return resource
         && resource.kind === ResourceKind.LINK
         && 'linkClass' in resource
