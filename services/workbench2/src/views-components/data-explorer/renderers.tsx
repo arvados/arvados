@@ -806,12 +806,23 @@ export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: s
     return { date: resource ? resource.expiresAt : "" };
 })((props: { date: string }) => renderDate(props.date));
 
-export const RenderCredentialID = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
-    return { externalId: resource ? resource.externalId : "" };
-})((props: { externalId: string }) => renderString(props.externalId));
+export const RenderResourceStringField = <T extends Resource>(props: { uuid: string, field: keyof T }) => {
+    const ConnectedComponent = connect((state: RootState) => {
+        const resource = getResource<T>(props.uuid)(state.resources);
+        return { [props.field]: resource ? resource[props.field] : "" };
+    })((renderProps: { [key: string]: string }) =>
+        renderString(renderProps[props.field as keyof typeof renderProps]));
+    return <ConnectedComponent />;
+};
 
 const renderString = (data: string) => <Typography noWrap>{data}</Typography>;
+
+export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
+    return { scopes: resource ? resource.scopes : [] };
+})((props: { scopes: string[] }) => renderStringArray(props.scopes));
+
+const renderStringArray = (data: string[]) => <Typography noWrap>{data.length ? data.join(', ') : '-'}</Typography>;
 
 export const renderFileSize = (fileSize?: number) => (
     <Typography

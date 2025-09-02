@@ -6,6 +6,7 @@ import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
+import { camelCase } from "lodash";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from "react-router";
@@ -14,8 +15,9 @@ import { ArvadosTheme } from "common/custom-theme";
 import { EXTERNAL_CREDENTIALS_PANEL } from "store/external-credentials/external-credentials-actions";
 import {
     ResourceName,
-    RenderCredentialID,
     ResourceExpiresAtDate,
+    RenderResourceStringField,
+    RenderScopes,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -46,8 +48,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export enum ExternalCredentialsPanelColumnNames {
     NAME = "Name",
-    CREDENTIAL_ID = "Credential ID",
+    DESCRIPTION = "Description",
+    EXTERNAL_ID = "External ID",
+    CREDENTIAL_CLASS = "Credential class",
     EXPIRES_AT = "Expires at",
+    SCOPES = "Scopes",
 }
 
 export const externalCredentialsPanelColumns: DataColumns<string, ExternalCredential> = [
@@ -60,11 +65,34 @@ export const externalCredentialsPanelColumns: DataColumns<string, ExternalCreden
         render: uuid => <ResourceName uuid={uuid} />,
     },
     {
-        name: ExternalCredentialsPanelColumnNames.CREDENTIAL_ID,
+        name: ExternalCredentialsPanelColumnNames.DESCRIPTION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <RenderCredentialID uuid={uuid} />,
+        render: uuid =>
+            <RenderResourceStringField<ExternalCredential>
+                uuid={uuid}
+                field={camelCase(ExternalCredentialsPanelColumnNames.DESCRIPTION) as keyof ExternalCredential} />,
+    },
+    {
+        name: ExternalCredentialsPanelColumnNames.CREDENTIAL_CLASS,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =>
+            <RenderResourceStringField<ExternalCredential>
+                uuid={uuid}
+                field={camelCase(ExternalCredentialsPanelColumnNames.CREDENTIAL_CLASS) as keyof ExternalCredential} />,
+    },
+    {
+        name: ExternalCredentialsPanelColumnNames.EXTERNAL_ID,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =>
+            <RenderResourceStringField<ExternalCredential>
+                uuid={uuid}
+                field={camelCase(ExternalCredentialsPanelColumnNames.EXTERNAL_ID) as keyof ExternalCredential} />,
     },
     {
         name: ExternalCredentialsPanelColumnNames.EXPIRES_AT,
@@ -72,6 +100,13 @@ export const externalCredentialsPanelColumns: DataColumns<string, ExternalCreden
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceExpiresAtDate uuid={uuid} />,
+    },
+    {
+        name: ExternalCredentialsPanelColumnNames.SCOPES,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <RenderScopes uuid={uuid} />,
     },
 ];
 
