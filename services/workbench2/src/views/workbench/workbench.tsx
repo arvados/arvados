@@ -94,7 +94,7 @@ import { GroupsPanel } from "views/groups-panel/groups-panel";
 import { RemoveGroupDialog } from "views-components/groups-dialog/remove-dialog";
 import { GroupAttributesDialog } from "views-components/groups-dialog/attributes-dialog";
 import { GroupDetailsPanel } from "views/group-details-panel/group-details-panel";
-import { RemoveGroupMemberDialog } from "views-components/groups-dialog/member-remove-dialog";
+import { RemoveGroupMemberDialog, RemoveMultipleGroupMembersDialog } from "views-components/groups-dialog/member-remove-dialog";
 import { GroupMemberAttributesDialog } from "views-components/groups-dialog/member-attributes-dialog";
 import { PublicFavoritePanel } from "views/public-favorites-panel/public-favorites-panel";
 import { LinkAccountPanel } from "views/link-account-panel/link-account-panel";
@@ -503,6 +503,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveApiClientAuthorizationDialog />
             <RemoveGroupDialog />
             <RemoveGroupMemberDialog />
+            <RemoveMultipleGroupMembersDialog />
             <RemoveKeepServiceDialog />
             <RemoveLinkDialog />
             <RemoveProcessDialog />

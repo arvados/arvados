@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 import { getResource } from 'store/resources/resources';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-column';
-import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
+import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourcePermissionsDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
@@ -126,7 +126,7 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string, Permission
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
+        render: uuid => <ResourcePermissionsDelete uuid={uuid} />
     },
 ];
 

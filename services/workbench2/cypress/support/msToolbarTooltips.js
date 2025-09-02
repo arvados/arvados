@@ -148,8 +148,15 @@ export const tooltips = {
         'Rename',
         'Remove',
     ],
+    builtInGroup: [
+        'View details',
+        'API Details',
+    ],
+    multiBuiltInGroup: [],
     //users
-    multiUser: [],
+    multiUser: [
+        'Remove',
+    ],
     nonAdminUser: [
         'API Details',
         'Attributes',

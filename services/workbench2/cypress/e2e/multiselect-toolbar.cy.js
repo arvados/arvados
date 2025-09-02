@@ -1005,6 +1005,17 @@ describe('For groups', () => {
         });
     });
 
+    it('should behave correctly for built in group', () => {
+            cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Groups');
+
+            cy.doDataExplorerSelect('All users');
+            cy.assertToolbarButtons(tooltips.builtInGroup);
+
+            cy.doDataExplorerSelect('System group');
+            cy.assertToolbarButtons(tooltips.multiBuiltInGroup);
+    });
+
     it('should behave correctly for multiple groups', () => {
         cy.createGroup(adminUser.token, {
             group_class: "role",
@@ -1103,14 +1114,13 @@ describe('For users', () => {
         cy.get('[role=dialog]').contains('Attributes')
         cy.contains('Close').click()
 
-        //disabled until #22814 is resolved
         //remove
-        // cy.get('[aria-label="Remove"]').click();
-        // cy.get('[data-cy=confirmation-dialog]').within(() => {
-        //     cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-        // });
-        // cy.contains('Removed').should('be.visible');
-        // cy.assertDataExplorerContains(groupName, false);
+        cy.get('[aria-label="Remove"]').click();
+        cy.get('[data-cy=confirmation-dialog]').within(() => {
+            cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        });
+        cy.contains('Removed').should('be.visible');
+        cy.assertDataExplorerContains(groupName, false);
     });
 
     it('should behave correctly for multiple users', () => {
