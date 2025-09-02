@@ -49,7 +49,7 @@ export const saveRecentlyVisited = (uuid: string) => async (dispatch: Dispatch<a
 };
 
 function updateRecentUuids(prevRecents: RecentUuid[], newUuid: string, maxLength = 12): RecentUuid[] {
-    const newRecentUuid: RecentUuid = { uuid: newUuid, lastVisited: new Date() };
+    const newRecentUuid: RecentUuid = { uuid: newUuid, lastVisited: new Date().toISOString() };
 
     if (!prevRecents) {
         return [newRecentUuid];
