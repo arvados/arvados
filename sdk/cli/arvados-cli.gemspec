@@ -46,20 +46,17 @@ Gem::Specification.new do |s|
   s.files       = ["bin/arv", "bin/arv-tag", "LICENSE-2.0.txt"]
   s.executables << "arv"
   s.executables << "arv-tag"
-  s.required_ruby_version = '>= 2.7.0'
+  s.required_ruby_version = '>= 2.7.3'
   s.add_runtime_dependency 'arvados', arv_dep_version
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../ruby-google-api-client/
   s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
-  # Rails 7.1.3.x is the last version to support Ruby 2.7.0 in Ubuntu 20.04.
-  # Later 7.1.x releases require Ruby >= 2.7.3:
-  #   <https://github.com/rails/rails/issues/54276>
-  s.add_runtime_dependency 'activesupport', '~> 7.1.3.4'
+   # Rails 7.2.x releases require Ruby >= 3.1.0.
+  s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
   s.add_runtime_dependency 'json', '>= 1.7.7', '<3'
   s.add_runtime_dependency 'optimist', '~> 3.0'
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
-  # oj 3.10.9 requires ruby >= 2.4 and arvbox doesn't currently have it because of SSO
-  s.add_runtime_dependency 'oj', '< 3.10.9'
+  s.add_runtime_dependency 'oj'
   s.add_runtime_dependency 'curb', '~> 0.8'
   s.add_runtime_dependency 'launchy', '< 2.5'
   s.homepage    =
