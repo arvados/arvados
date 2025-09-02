@@ -25,6 +25,7 @@ describe('Side panel tests', function() {
 
     it('enables the +NEW side panel button on users home project', function() {
         cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get('[data-cy=side-panel-button]')
             .should('exist')
             .and('not.be.disabled');
@@ -59,6 +60,10 @@ describe('Side panel tests', function() {
             {url: '/favorites', label: 'My Favorites'},
             {url: '/all_processes', label: 'All Processes'},
             {url: '/trash', label: 'Trash'},
+            {url: '/virtual-machines-user', label: 'Shell Access'},
+            {url: 'instance-types', label: 'Instance Types'},
+            {url: '/groups', label: 'Groups'},
+            {url: 'dashboard', label: 'Dashboard'},
         ].map(function(section) {
             cy.waitForDom().goToPath(section.url);
             cy.get('[data-cy=breadcrumb-first]')

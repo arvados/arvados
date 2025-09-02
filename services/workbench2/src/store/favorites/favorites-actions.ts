@@ -13,6 +13,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { SidePanelTreeCategory, loadSidePanelTreeProjects} from "store/side-panel-tree/side-panel-tree-actions";
+import { favoritePinsActions } from "store/favorite-pins/favorite-pins-middleware-service";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -54,6 +55,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
+                dispatch<any>(favoritePinsActions.REQUEST_ITEMS());
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_FAVORITES))
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
                 dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES));

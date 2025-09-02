@@ -4,12 +4,13 @@
 
 import { RouteProps } from "react-router";
 import React from "react";
+import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { connect, DispatchProp } from "react-redux";
 import { saveApiToken } from "store/auth/auth-action";
 import { getUrlParameter } from "common/url";
 import { AuthService } from "services/auth-service/auth-service";
-import { navigateToRootProject, navigateToLinkAccount } from "store/navigation/navigation-action";
+import { navigateToLinkAccount, navigateToDashboard } from "store/navigation/navigation-action";
 import { Config } from "common/config";
 import { getAccountLinkData } from "store/link-account-panel/link-account-panel-actions";
 import { replace } from "react-router-redux";
@@ -37,14 +38,13 @@ export const ApiToken = connect((state: RootState) => ({
 
             if (this.props.loadMainApp && this.props.user) {
                 if (redirectURL) {
-                    this.props.authService.removeTargetURL();
-                    this.props.dispatch(replace(redirectURL));
+                    asyncReplaceURL(redirectURL, this.props.authService, this.props.dispatch);
                 }
                 else if (this.props.dispatch(getAccountLinkData())) {
                     this.props.dispatch(navigateToLinkAccount);
                 }
                 else {
-                    this.props.dispatch(navigateToRootProject);
+                    this.props.dispatch(navigateToDashboard);
                 }
             }
         }
@@ -54,3 +54,8 @@ export const ApiToken = connect((state: RootState) => ({
         }
     }
 );
+
+async function asyncReplaceURL(url: string, authService: AuthService, dispatch: Dispatch) {
+    await authService.removeTargetURL();
+    dispatch(replace(url));
+}

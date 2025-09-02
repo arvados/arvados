@@ -7,6 +7,7 @@ import { connect } from 'react-redux';
 import { MainPanelRoot, MainPanelRootDataProps } from 'views/main-panel/main-panel-root';
 import { toggleSidePanel } from "store/side-panel/side-panel-action";
 import { propertiesActions } from 'store/properties/properties-actions';
+import { saveRecentlyVisited } from "store/recently-visited/recently-visited-actions";
 
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {
@@ -28,7 +29,11 @@ const mapDispatchToProps = (dispatch) => {
             return dispatch(toggleSidePanel(collapsedState))
         },
         setCurrentRouteUuid: (uuid: string) => {
-            return dispatch(propertiesActions.SET_PROPERTY({key: 'currentRouteUuid', value: uuid}))}
+            return dispatch(propertiesActions.SET_PROPERTY({key: 'currentRouteUuid', value: uuid}))
+        },
+        saveRecentlyVisited: (uuid: string) => {
+            return dispatch(saveRecentlyVisited(uuid))
+        },
     }
 };
 

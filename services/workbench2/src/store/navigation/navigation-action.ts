@@ -44,6 +44,9 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
     }
 
     switch (uuid) {
+        case SidePanelTreeCategory.DASHBOARD:
+            dispatch<any>(navigateToDashboard);
+            return;
         case SidePanelTreeCategory.PROJECTS:
             const usr = getState().auth.user;
             if (usr) {
@@ -170,3 +173,5 @@ export const navigateToLinks = push(Routes.LINKS);
 export const navigateToCollectionsContentAddress = push(Routes.COLLECTIONS_CONTENT_ADDRESS);
 
 export const navigateToAllProcesses = push(Routes.ALL_PROCESSES);
+
+export const navigateToDashboard = push(Routes.DASHBOARD);

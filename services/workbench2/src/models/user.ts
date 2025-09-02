@@ -4,6 +4,11 @@
 
 import { Resource, ResourceKind, RESOURCE_UUID_REGEX } from 'models/resource';
 
+export type RecentUuid = {
+    uuid: string;
+    lastVisited: string;
+}
+
 export type UserPrefs = {
     profile?: {
         organization?: string,
@@ -14,6 +19,7 @@ export type UserPrefs = {
     },
     wb?: {
         default_project_tab?: string,
+        recentUuids?: RecentUuid[],
     },
 };
 

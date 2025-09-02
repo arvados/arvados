@@ -29,15 +29,17 @@ describe('Favorites tests', function () {
         cy.createGroup(adminUser.token, {
             name: `my-favorite-project`,
             group_class: 'project',
-        }).as('myFavoriteProject').then(function () {
+        }).as('myFavoriteProject')
+        cy.get('@myFavoriteProject').then(function (myFavoriteProject) {
             cy.contains('Refresh').click();
-            cy.get('button').contains('Data').click();
-            cy.get('main').contains('my-favorite-project').rightclick();
+            cy.doSidePanelNavigation('Home Projects');
+            cy.doMPVTabSelect("Data");
+            cy.get('main').contains(myFavoriteProject.name).rightclick();
             cy.contains('Add to public favorites').click();
             cy.contains('Public Favorites').click();
-            cy.get('main').contains('my-favorite-project').rightclick();
+            cy.get('main').contains(myFavoriteProject.name).rightclick();
             cy.contains('Remove from public favorites').click();
-            cy.get('main').contains('my-favorite-project').should('not.exist');
+            cy.get('main').contains(myFavoriteProject.name).should('not.exist');
             cy.trashGroup(adminUser.token, this.myFavoriteProject.uuid);
         });
     });
@@ -110,10 +112,12 @@ describe('Favorites tests', function () {
         cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject', '@myProject1', '@testCollection')
             .then(function ([mySharedWritableProject, mySharedReadonlyProject, myProject1, testCollection]) {
                 cy.loginAs(activeUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
 
                 cy.contains(testCollection.name).rightclick();
                 cy.get('[data-cy="Move to"]').click();
+                cy.waitForDom();
 
                 cy.get('[data-cy=form-dialog]').within(function () {
                     // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
@@ -129,7 +133,7 @@ describe('Favorites tests', function () {
                 });
 
                 cy.visit(`/projects/${mySharedWritableProject.uuid}`).then(() => {
-                    cy.get('button').contains('Data').click();
+                    cy.doMPVTabSelect("Data");
                     cy.get('main').contains(testCollection.name);
                 });
             });
@@ -216,7 +220,8 @@ describe('Favorites tests', function () {
                     .as('testWorkflow2');
 
                 cy.loginAs(activeUser);
-                cy.get('button').contains('Data').click();
+                cy.doSidePanelNavigation('Home Projects');
+                cy.doMPVTabSelect("Data");
 
                 cy.get('main').contains(myProject1.name).click();
 
@@ -305,6 +310,7 @@ describe('Favorites-SidePanel tests', function () {
         cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2')
         .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2, ]) {
                 cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
 
                 //add two projects and collection to favorites
                 cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject1.name).rightclick();
@@ -312,7 +318,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject2.name).rightclick();
                 cy.contains('Add to favorites').click();
 
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
 
                 //add two projects to public favorites
                 cy.get('[data-cy=data-table]').contains(myPublicFavoriteProject1.name).rightclick();
@@ -326,7 +332,7 @@ describe('Favorites-SidePanel tests', function () {
                 //check if the correct favorites are displayed in the side panel
                 cy.get('span').contains(myFavoriteProject1.name).should('not.exist');
                 cy.get('span').contains(myFavoriteProject2.name).should('not.exist');
-                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).should('exist').click({ force: true });
                 cy.get('span').contains(myFavoriteProject1.name).should('exist');
                 cy.get('span').contains(myFavoriteProject2.name).should('exist');
                 cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
@@ -360,13 +366,16 @@ describe('Favorites-SidePanel tests', function () {
                 // Trash favorited project
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
+                cy.waitForDom();
                 // Check removed from favorites
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', myFavoriteProject1.name);
                 // Untrash favorited project
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                cy.assertDataExplorerContains(myFavoriteProject1.name, false);
+                //navigates to restored project
+                cy.assertDetailsCardTitle(myFavoriteProject1.name);
+                cy.assertBreadcrumbs(["Home Projects", myFavoriteProject1.name]);
                 // Check project restored to favorites
                 cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
@@ -376,19 +385,24 @@ describe('Favorites-SidePanel tests', function () {
             .then(function ([testFavoriteCollection]) {
                 cy.loginAs(adminUser);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
-                cy.get('button').contains('Data').click();
+                cy.doMPVTabSelect("Data");
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
                 cy.waitForDom()
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
                 // Check removed from favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').click()
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').click({ force: true })
+                cy.wait(1000);
                 cy.get('[data-cy=side-panel-tree]').should('not.contain', testFavoriteCollection.name);
                 // Untrash favorited collection
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
+                // collection might not be on first page
+                cy.get('[data-cy=search-input]').type(testFavoriteCollection.name);
+                cy.waitForDom();
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 })
                 cy.assertDataExplorerContains(testFavoriteCollection.name, false);
                 // Check collection restored to favorites
                 cy.wait(1000);

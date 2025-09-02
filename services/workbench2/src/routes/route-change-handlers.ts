@@ -6,7 +6,7 @@ import { History, Location } from 'history';
 import { RootStore } from 'store/store';
 import * as Routes from 'routes/routes';
 import * as WorkbenchActions from 'store/workbench/workbench-actions';
-import { navigateToRootProject } from 'store/navigation/navigation-action';
+import { navigateToDashboard } from 'store/navigation/navigation-action';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { contextMenuActions } from 'store/context-menu/context-menu-actions';
 import { searchBarActions } from 'store/search-bar/search-bar-actions';
@@ -21,6 +21,7 @@ export const addRouteChangeHandlers = (history: History, store: RootStore) => {
 
 const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
 
+    const dashboardMatch = Routes.matchDashboardRoute(pathname);
     const rootMatch = Routes.matchRootRoute(pathname);
     const projectMatch = Routes.matchProjectRoute(pathname);
     const collectionMatch = Routes.matchCollectionRoute(pathname);
@@ -77,7 +78,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     } else if (processMatch) {
         store.dispatch(WorkbenchActions.loadProcess(processMatch.params.id));
     } else if (rootMatch) {
-        store.dispatch(navigateToRootProject);
+        store.dispatch(WorkbenchActions.loadDashboard());
+        store.dispatch(navigateToDashboard);
     } else if (sharedWithMeMatch) {
         store.dispatch(WorkbenchActions.loadSharedWithMe);
     } else if (runProcessMatch) {
@@ -124,5 +126,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadAllProcesses());
     } else if (registeredWorkflowMatch) {
         store.dispatch(WorkbenchActions.loadRegisteredWorkflow(registeredWorkflowMatch.params.id));
+    } else if (dashboardMatch) {
+        store.dispatch(WorkbenchActions.loadDashboard());
     }
 };

@@ -345,7 +345,7 @@ Cypress.Commands.add("loginAs", (user, preserveLocalStorage = false) => {
     // Use waitUntil to avoid permafail race conditions with window.location being undefined
     cy.waitUntil(() => cy.window().then(win =>
         win?.location?.href &&
-        win.location.href.includes("/projects/")
+        win.location.href.includes("/dashboard")
     ), { timeout: 15000 });
     // Wait for page to settle before getting elements
     cy.waitForDom();
@@ -911,4 +911,22 @@ Cypress.Commands.add("assertPropertyTag", (propertyName, propertyValue, shouldEx
             cy.get('span').contains(propertyName).contains(propertyValue).should('exist');
         }
     });
+});
+
+/**
+ * Asserts the presence of a details card and its name
+ *
+ * @param resourceName name of the resource
+ * @param shouldExist whether the resource card should exist or not
+ */
+
+Cypress.Commands.add("assertDetailsCardTitle", (resourceName, shouldExist = true) => {
+    cy.get(`[data-cy=user-details-card],
+            [data-cy=project-details-card],
+            [data-cy=collection-details-card],
+            [data-cy=workflow-details-card],
+            [data-cy=process-details-card]`)
+        .contains(resourceName)
+        .should(shouldExist ? 'exist' : 'not.exist')
+
 });
