@@ -40,7 +40,7 @@ Gem::Specification.new do |s|
   s.files       = ["lib/arvados.rb", "lib/arvados/google_api_client.rb",
                    "lib/arvados/collection.rb", "lib/arvados/keep.rb",
                    "README", "LICENSE-2.0.txt"]
-  s.required_ruby_version = '>= 2.7.3'
+  s.required_ruby_version = '>= 3.0.0'
   # Rails 7.2.x releases require Ruby >= 3.1.0.
   s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
