@@ -830,6 +830,7 @@ export const loadGroupDetailsPanel = (groupUuid: string) =>
 
 export const loadExternalCredentialsPanel = () =>
     handleFirstTimeLoad((dispatch: Dispatch<any>) => {
+        dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.EXTERNAL_CREDENTIALS));
         dispatch(setExternalCredentialsBreadcrumbs());
         dispatch<any>(loadExternalCredentials());
     });

@@ -196,8 +196,8 @@ export const DeleteForever: IconType = (props: any) => (
 
 //https://pictogrammers.com/library/mdi/icon/folder-key-outline/
 export const FolderKeyIcon: IconType = (props: any) => (
-    <SvgIcon {...props} style={{ width: 'calc(1em + 2px)', height: 'calc(1em + 2px)', marginRight: '-2px',  ...(props.style || {}) }}>
-        <path d="M4 4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4M11 10C12.3 10 13.4 10.8 13.8 12H20V14H18V16H16V14H13.8C13.4 15.2 12.3 16 11 16C9.3 16 8 14.7 8 13S9.3 10 11 10M11 12C10.4 12 10 12.4 10 13C10 13.6 10.4 14 11 14C11.6 14 12 13.6 12 13S11.6 12 11 12Z" />
+    <SvgIcon {...props}>
+        <path d="M20 18H4V8H20M20 6H12L10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6M12.8 12C12.4 10.8 11.3 10 10 10C8.3 10 7 11.3 7 13S8.3 16 10 16C11.3 16 12.4 15.2 12.8 14H15V16H17V14H19V12H12.8M10 14C9.4 14 9 13.6 9 13C9 12.4 9.4 12 10 12S11 12.4 11 13 10.6 14 10 14Z" />
     </SvgIcon>
 )
 

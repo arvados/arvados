@@ -14,3 +14,13 @@ export interface ExternalCredential extends Resource {
     secret: string;
     expiresAt: string;
 };
+
+export const isExternalCredential = (obj: any): obj is ExternalCredential => {
+    return obj
+        && obj.uuid
+        && obj.name
+        && obj.description
+        && obj.credentialClass
+        && obj.externalId
+        && obj.expiresAt;
+};

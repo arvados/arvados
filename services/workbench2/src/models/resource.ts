@@ -31,6 +31,7 @@ export enum ResourceKind {
     COLLECTION = "arvados#collection",
     CONTAINER = "arvados#container",
     CONTAINER_REQUEST = "arvados#containerRequest",
+    EXTERNAL_CREDENTIAL = "arvados#credential",
     GROUP = "arvados#group",
     LINK = "arvados#link",
     LOG = "arvados#log",

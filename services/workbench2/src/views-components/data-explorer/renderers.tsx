@@ -24,6 +24,7 @@ import {
     SetupIcon,
     InactiveIcon,
     ErrorIcon,
+    FolderKeyIcon,
 } from "components/icon/icon";
 import { formatDate, formatFileSize, formatTime } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -55,7 +56,7 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
-import { ExternalCredential } from "models/external-credential";
+import { ExternalCredential, isExternalCredential } from "models/external-credential";
 import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
@@ -137,6 +138,9 @@ export const ResourceName = connect((state: RootState, props: { uuid: string }) 
 })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
 const renderIcon = (item: GroupContentsResource) => {
+    if (isExternalCredential(item)) {
+        return <FolderKeyIcon />;
+    }
     switch (item.kind) {
         case ResourceKind.PROJECT:
             if (item.groupClass === GroupClass.FILTER) {
