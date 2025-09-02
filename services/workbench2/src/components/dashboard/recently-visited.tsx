@@ -119,7 +119,7 @@ export const RecentlyVisitedSection = connect(mapStateToProps)
 const getLastVisitedDate = (targetUuid: string, recents: RecentUuid[]) => {
     const targetRecent = recents.find(recent => recent.uuid === targetUuid);
     if (targetRecent) {
-        return formatDate(new Date(targetRecent.lastVisited).toISOString());
+        return formatDate(targetRecent.lastVisited);
     }
     return '';
 }
