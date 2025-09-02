@@ -52,7 +52,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'launchy', '< 2.5'
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../../sdk/ruby-google-api-client/
-  s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
+  s.add_runtime_dependency('arvados-google-api-client', '~> 0.8.7.5')
   s.homepage    =
     'https://arvados.org'
 end

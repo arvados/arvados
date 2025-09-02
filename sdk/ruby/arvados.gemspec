@@ -46,7 +46,7 @@ Gem::Specification.new do |s|
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../ruby-google-api-client/
-  s.add_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.8')
+  s.add_dependency('arvados-google-api-client', '~> 0.8.7.5')
   s.add_dependency('json', '>= 1.7.7', '<3')
   s.add_runtime_dependency('jwt', '<2', '>= 0.1.5')
   s.homepage    =
