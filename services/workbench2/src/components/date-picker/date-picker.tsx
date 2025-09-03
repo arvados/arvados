@@ -8,15 +8,25 @@ import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import moment, { Moment } from 'moment';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 
-export function DatePicker(label: string) {
-    const [value, setValue] = React.useState<Moment | null>(moment().add(1, 'year'));
+type MomentProps = {
+        num: number;
+        unit: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
+    }
+
+type DatePickerProps = {
+    label: string;
+    minDate?: MomentProps;
+}
+
+export function DatePicker({label, minDate}: DatePickerProps) {
+    const [value, setValue] = React.useState<Moment | null>(minDate ? moment().add(minDate.num, minDate.unit) : moment());
 
     return (
         <LocalizationProvider dateAdapter={AdapterMoment}>
             <DesktopDatePicker
                 label={label}
                 value={value}
-                minDate={moment().add(1, 'year')}
+                minDate={minDate ? moment().add(minDate.num, minDate.unit) : moment()}
                 onChange={(newValue) => {
                     setValue(newValue);
                 }}

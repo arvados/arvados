@@ -13,7 +13,7 @@ export const ExternalCredentialNameField = () =>
         name='name'
         component={TextField as any}
         validate={REQUIRED_VALIDNAME_LENGTH255_VALIDATION}
-        label={"Credential Name"}
+        label={"Credential Name *"}
         autoFocus={true} />;
 
 export const ExternalCredentialDescriptionField = () =>
@@ -35,18 +35,19 @@ export const ExternalCredentialExternalIdField = () =>
         name='externalId'
         component={TextField as any}
         validate={REQUIRED_LENGTH255_VALIDATION}
-        label="External ID" />;
+        label="External ID *" />;
 
 export const ExternalCredentialExpiresAtField = () =>
     <Field
         name='expiresAt'
-        component={()=>DatePicker('Expires at')} />;
+        component={()=>DatePicker({label: 'Expires at', minDate: {num: 1, unit: 'week'}})} />;
 
 export const ExternalCredentialScopesField = () =>
     <Field
         name='scopes'
         component={TextField as any}
         validate={LENGTH255_VALIDATION}
+        helperText="Comma separated list of scopes"
         label="Scopes" />;
 
 
