@@ -55,7 +55,7 @@ Gem::Specification.new do |s|
   # google-cloud-env 2.3.0 dropped Ruby 3.0.
   s.add_runtime_dependency 'google-cloud-env', '~> 2.2.0'
   # public_suffix 6.0.0 dropped Ruby 2.7.
-  s.add_runtime_dependency 'public_suffix', '~> 5.0'
+  s.add_runtime_dependency 'public_suffix', '~> 6.0'
   # securerandom 0.4.0 dropped Ruby 2.6, 2.7, 3.0 without mentioning
   # anything in the changelog / release notes.
   s.add_runtime_dependency 'securerandom', '~> 0.3.2'
