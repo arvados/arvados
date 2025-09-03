@@ -41,7 +41,7 @@ Gem::Specification.new do |s|
                    "lib/arvados/collection.rb", "lib/arvados/keep.rb",
                    "README", "LICENSE-2.0.txt"]
   s.required_ruby_version = '>= 3.0.0'
-  # Rails 7.2.x releases require Ruby >= 3.1.0.
+  # activesupport 7.2.0 dropped Ruby 3.0.
   s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
   # arvados fork of google-api-client gem with old API and new

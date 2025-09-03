@@ -27,8 +27,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'addressable', '~> 2.3'
   # signet 0.20.0 dropped Ruby 3.0.
   s.add_runtime_dependency 'signet', '~> 0.19.0'
-  # faraday 2.13.4 supported Ruby 3.0. Support for Ruby 2.7 was
-  # dropped in a minor version (2.9.0).
+  # faraday 2.13.4 supported Ruby 3.0.
+  # faraday 2.9.0 dropped Ruby 2.7.
   s.add_runtime_dependency 'faraday', '~> 2.13.0'
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
   # faraday-gzip 3.0.0 dropped Ruby 2.
@@ -47,7 +47,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'launchy', '~> 3.0.1'
   # retriable 2 is not API compatible with retriable 1.
   s.add_runtime_dependency 'retriable', '~> 1.4'
-  # Rails 7.2.x releases require Ruby >= 3.1.0.
+  # activesupport 7.2.0 dropped Ruby 3.0.
   s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
 
   # These are indirect dependencies of the above where we force a resolution

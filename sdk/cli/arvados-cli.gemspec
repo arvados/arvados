@@ -51,7 +51,7 @@ Gem::Specification.new do |s|
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../ruby-google-api-client/
   s.add_runtime_dependency('arvados-google-api-client', '~> 0.8.7.5')
-   # Rails 7.2.x releases require Ruby >= 3.1.0.
+  # activesupport 7.2.0 dropped Ruby 3.0.
   s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
   s.add_runtime_dependency 'json', '>= 1.7.7', '<3'
   s.add_runtime_dependency 'optimist', '~> 3.0'
