@@ -93,6 +93,7 @@ import { SetupDialog } from "views-components/user-dialog/setup-dialog";
 import { GroupsPanel } from "views/groups-panel/groups-panel";
 import { RemoveGroupDialog } from "views-components/groups-dialog/remove-dialog";
 import { GroupAttributesDialog } from "views-components/groups-dialog/attributes-dialog";
+import { CreateExternalCredentialDialog } from "views-components/dialog-create/create-external-credential-dialog";
 import { GroupDetailsPanel } from "views/group-details-panel/group-details-panel";
 import { RemoveGroupMemberDialog } from "views-components/groups-dialog/member-remove-dialog";
 import { GroupMemberAttributesDialog } from "views-components/groups-dialog/member-attributes-dialog";
@@ -481,6 +482,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
             <CreateUserDialog />
+            <CreateExternalCredentialDialog />
             <TokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />

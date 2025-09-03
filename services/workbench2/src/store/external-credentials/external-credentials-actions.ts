@@ -8,8 +8,11 @@ import { ServiceRepository } from "services/services";
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { navigateToRootProject } from "store/navigation/navigation-action";
 import { snackbarActions } from "store/snackbar/snackbar-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { initialize } from "redux-form";
 
 export const EXTERNAL_CREDENTIALS_PANEL = 'externalCredentialsPanel';
+export const NEW_EXTERNAL_CREDENTIAL_FORM_NAME = 'newExternalCredentialFormName';
 
 export const externalCredentialsActions = bindDataExplorerActions(EXTERNAL_CREDENTIALS_PANEL);
 
@@ -30,4 +33,12 @@ export const loadExternalCredentials = () =>
             }
         };
 
+export const openNewExternalCredentialDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(initialize(NEW_EXTERNAL_CREDENTIAL_FORM_NAME, {}));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: NEW_EXTERNAL_CREDENTIAL_FORM_NAME,
+            data: {},
+        }));
+    };
 

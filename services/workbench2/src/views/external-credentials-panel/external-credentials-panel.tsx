@@ -6,20 +6,22 @@ import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
+import { Grid, Button } from "@mui/material";
 import { camelCase } from "lodash";
-import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from "react-router";
+import { Dispatch } from "redux";
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { ArvadosTheme } from "common/custom-theme";
-import { EXTERNAL_CREDENTIALS_PANEL } from "store/external-credentials/external-credentials-actions";
+import { EXTERNAL_CREDENTIALS_PANEL, openNewExternalCredentialDialog } from "store/external-credentials/external-credentials-actions";
 import {
     ResourceName,
     ResourceExpiresAtDate,
     RenderResourceStringField,
     RenderScopes,
 } from "views-components/data-explorer/renderers";
-import { ProcessIcon } from "components/icon/icon";
+import { FolderKeyIcon, AddIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { navigateTo } from "store/navigation/navigation-action";
@@ -118,9 +120,14 @@ interface ExternalCredentialsPanelActionProps {
     onItemClick: (item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
+    onNewCredential: () => void;
 }
 const mapStateToProps = (state: RootState): ExternalCredentialsPanelDataProps => ({
     resources: state.resources,
+});
+
+const mapDispatchToProps = (dispatch: Dispatch): Pick<ExternalCredentialsPanelActionProps, 'onNewCredential'> => ({
+    onNewCredential: () => dispatch<any>(openNewExternalCredentialDialog()),
 });
 
 type ExternalCredentialsPanelProps = ExternalCredentialsPanelDataProps &
@@ -130,7 +137,7 @@ type ExternalCredentialsPanelProps = ExternalCredentialsPanelDataProps &
     RouteComponentProps<{ id: string }>;
 
 export const ExternalCredentialsPanel = withStyles(styles)(
-    connect(mapStateToProps)(
+    connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<ExternalCredentialsPanelProps> {
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const process = getProcess(resourceUuid)(this.props.resources);
@@ -157,8 +164,20 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                             onRowDoubleClick={this.handleRowDoubleClick}
                             onContextMenu={this.handleContextMenu}
                             contextMenuColumn={false}
-                            defaultViewIcon={ProcessIcon}
+                            defaultViewIcon={FolderKeyIcon}
                             defaultViewMessages={["External credentials list empty."]}
+                            hideColumnSelector
+                            actions={
+                                <Grid container justifyContent='flex-end'>
+                                    <Button
+                                        data-cy="groups-panel-new-group"
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={this.props.onNewCredential}>
+                                        <AddIcon /> New External Credential
+                                    </Button>
+                                </Grid>
+                            }
                         />
                     </div>
                 );
