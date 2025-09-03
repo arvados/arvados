@@ -45,8 +45,8 @@ Gem::Specification.new do |s|
   # launchy 3.0.0 dropped Ruby 2.
   # launchy 3.1.0 stopped testing against Ruby 3.0.
   s.add_runtime_dependency 'launchy', '~> 3.0.1'
-  # retriable 3.0 dropped Ruby 1.
-  s.add_runtime_dependency 'retriable', '~> 3'
+  # retriable 2 is not API compatible with retriable 1.
+  s.add_runtime_dependency 'retriable', '~> 1.4'
   # Rails 7.2.x releases require Ruby >= 3.1.0.
   s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
 
