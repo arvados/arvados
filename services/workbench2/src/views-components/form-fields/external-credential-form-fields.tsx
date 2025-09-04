@@ -20,15 +20,15 @@ export const ExternalCredentialDescriptionField = () =>
     <Field
         name='description'
         component={RichEditorTextField as any}
-        validate={LENGTH255_VALIDATION}
-        label="Description" />;
+        validate={REQUIRED_LENGTH255_VALIDATION}
+        label="Description *" />;
 
 export const ExternalCredentialClassField = () =>
     <Field
         name='credentialClass'
         component={TextField as any}
-        validate={LENGTH255_VALIDATION}
-        label="Credential Class" />;
+        validate={REQUIRED_LENGTH255_VALIDATION}
+        label="Credential Class *" />;
 
 export const ExternalCredentialExternalIdField = () =>
     <Field

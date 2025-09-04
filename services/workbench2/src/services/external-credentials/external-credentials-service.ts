@@ -7,6 +7,7 @@ import { AxiosInstance } from "axios";
 import { ApiActions } from "services/api/api-actions";
 import { ListResults } from "services/common-service/common-service";
 import { ExternalCredential } from "models/external-credential";
+import { ExternalCredentialCreateFormDialogData } from "store/external-credentials/external-credential-create-actions";
 
 export class ExternalCredentialsService extends CommonService<ExternalCredential> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
@@ -17,7 +18,7 @@ export class ExternalCredentialsService extends CommonService<ExternalCredential
             return super.list(args, showErrors);
         }
 
-        create(data: ExternalCredential, showErrors?: boolean): Promise<ExternalCredential> {
+        create(data: ExternalCredentialCreateFormDialogData, showErrors?: boolean): Promise<ExternalCredential> {
             return super.create(data, showErrors);
         }
 }

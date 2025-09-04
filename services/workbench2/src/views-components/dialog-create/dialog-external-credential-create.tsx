@@ -6,9 +6,9 @@ import React from 'react';
 import { InjectedFormProps } from 'redux-form';
 import { Grid } from "@mui/material";
 import { WithDialogProps } from 'store/dialog/with-dialog';
-import { ProjectCreateFormDialogData } from 'store/projects/project-create-actions';
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { ExternalCredentialNameField, ExternalCredentialDescriptionField, ExternalCredentialClassField, ExternalCredentialExternalIdField, ExternalCredentialExpiresAtField, ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
+import { ExternalCredentialCreateFormDialogData } from 'store/external-credentials/external-credential-create-actions';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -27,15 +27,14 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
 });
 
-type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass}> & InjectedFormProps<ProjectCreateFormDialogData>;
+type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass}> & InjectedFormProps<ExternalCredentialCreateFormDialogData>;
 
 export const DialogExternalCredentialCreate = (props: DialogProjectProps) => {
     const title = 'New External Credential';
-    const fields = NewExternalCredentialFields;
 
     return <FormDialog
         dialogTitle={title}
-        formFields={fields as any}
+        formFields={NewExternalCredentialFields as any}
         submitLabel='Create'
         {...props}
     />;
