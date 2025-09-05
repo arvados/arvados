@@ -23,15 +23,15 @@ import {
     RenderDescription,
 } from "views-components/data-explorer/renderers";
 import { FolderKeyIcon, AddIcon } from "components/icon/icon";
-import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { navigateTo } from "store/navigation/navigation-action";
 import { RootState } from "store/store";
 import { createTree } from "models/tree";
-import { getProcess } from "store/processes/process";
-import { ResourcesState } from "store/resources/resources";
+import { ResourcesState, getResource } from "store/resources/resources";
 import { toggleOne } from "store/multiselect/multiselect-actions";
 import { ExternalCredential } from "models/external-credential";
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { openContextMenuAndSelect } from "store/context-menu/context-menu-actions";
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -115,17 +115,22 @@ interface ExternalCredentialsPanelDataProps {
 }
 
 interface ExternalCredentialsPanelActionProps {
-    onItemClick: (item: string) => void;
-    onDialogOpen: (ownerUuid: string) => void;
-    onItemDoubleClick: (item: string) => void;
     onNewCredential: () => void;
+    openContextMenuAndSelect: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => void;
+    loadDetailsPanel: (resourceUuid: string) => void;
+    toggleOne: (uuid: string) => void;
+    navigateTo: (uuid: string) => void;
 }
 const mapStateToProps = (state: RootState): ExternalCredentialsPanelDataProps => ({
     resources: state.resources,
 });
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<ExternalCredentialsPanelActionProps, 'onNewCredential'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): ExternalCredentialsPanelActionProps => ({
     onNewCredential: () => dispatch<any>(openNewExternalCredentialDialog()),
+    openContextMenuAndSelect: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => dispatch<any>(openContextMenuAndSelect(event, resource)),
+    loadDetailsPanel: (resourceUuid: string) => dispatch<any>(loadDetailsPanel(resourceUuid)),
+    toggleOne: (uuid: string) => dispatch<any>(toggleOne(uuid)),
+    navigateTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
 });
 
 type ExternalCredentialsPanelProps = ExternalCredentialsPanelDataProps &
@@ -138,19 +143,25 @@ export const ExternalCredentialsPanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<ExternalCredentialsPanelProps> {
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const process = getProcess(resourceUuid)(this.props.resources);
-                if (process) {
-                    this.props.dispatch<any>(openProcessContextMenu(event, process));
+                const externalCredential = getResource<ExternalCredential>(resourceUuid)(this.props.resources);
+                if (externalCredential) {
+                    openContextMenuAndSelect(event, {
+                        name: externalCredential.name,
+                        uuid: externalCredential.uuid,
+                        ownerUuid: externalCredential.ownerUuid,
+                        kind: externalCredential.kind,
+                        menuKind: externalCredential.kind
+                    });
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                loadDetailsPanel(resourceUuid);
             };
 
             handleRowDoubleClick = (uuid: string) => {
-                this.props.dispatch<any>(navigateTo(uuid));
+                navigateTo(uuid);
             };
 
             handleRowClick = (uuid: string) => {
-                this.props.dispatch<any>(toggleOne(uuid))
+                toggleOne(uuid);
             };
 
             render() {
