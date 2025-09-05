@@ -16,7 +16,13 @@ export const CreateExternalCredentialDialog = compose(
         form: NEW_EXTERNAL_CREDENTIAL_FORM_NAME,
         onSubmit: (data, dispatch) => {
             if (data.scopes && typeof data.scopes === 'string') {
-                data.scopes = data.scopes.split(',').map((s: string) => s.trim());
+                data.scopes = data.scopes.split(',').reduce((acc: string[], s: string) => {
+                    const trimmed = s.trim();
+                    if (trimmed) {
+                        acc.push(trimmed);
+                    }
+                    return acc;
+                }, []);
             }
             dispatch(createExternalCredential(data));
             return;
