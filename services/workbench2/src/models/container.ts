@@ -20,13 +20,14 @@ export enum ContainerState {
 /**
  * Schema for published service ports
  * camelcase is not used due to canonical mapKeys behavior with certain nested structures
+ * base_url, initial_url, and external_port are observed to not always be present
  */
 export type PublishedPort = {
     access: 'public' | 'private';
     label: string;
-    base_url: string;
+    base_url?: string;
     initial_path: string;
-    initial_url: string;
+    initial_url?: string;
     external_port?: number;
 };
 
