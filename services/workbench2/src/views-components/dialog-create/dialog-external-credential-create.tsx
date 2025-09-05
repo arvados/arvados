@@ -7,7 +7,13 @@ import { InjectedFormProps } from 'redux-form';
 import { Grid } from "@mui/material";
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { FormDialog } from 'components/form-dialog/form-dialog';
-import { ExternalCredentialNameField, ExternalCredentialDescriptionField, ExternalCredentialClassField, ExternalCredentialExternalIdField, ExternalCredentialExpiresAtField, ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
+import { ExternalCredentialNameField,
+    ExternalCredentialDescriptionField,
+    ExternalCredentialClassField,
+    ExternalCredentialExternalIdField,
+    ExternalCredentialExpiresAtField,
+    ExternalCredentialSecretField,
+    ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
 import { ExternalCredentialCreateFormDialogData } from 'store/external-credentials/external-credential-create-actions';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
@@ -50,7 +56,8 @@ const NewExternalCredentialFields = withStyles(styles)(
             <Grid item xs={6}><ExternalCredentialClassField /></Grid>
             <Grid item xs={6}><ExternalCredentialExternalIdField /></Grid>
             <Grid item xs={6}><ExternalCredentialExpiresAtField /></Grid>
-            <Grid item xs={6}><ExternalCredentialScopesField /></Grid>
+            <Grid item xs={6}><ExternalCredentialSecretField /></Grid>
+            <Grid item xs={12}><ExternalCredentialScopesField /></Grid>
         </Grid>
     </span>);
 

@@ -47,6 +47,8 @@ export const MY_ACCOUNT_VALIDATION = [fieldRequire];
 
 export const CHOOSE_VM_VALIDATION = [fieldRequire];
 
+export const REQUIRED_VALIDATION = [fieldRequire];
+
 export const LENGTH255_VALIDATION = [maxLength(255)];
 export const REQUIRED_LENGTH255_VALIDATION = [fieldRequire, maxLength(255)];
 export const REQUIRED_VALIDNAME_LENGTH255_VALIDATION = [fieldRequire, validName, maxLength(255)];
