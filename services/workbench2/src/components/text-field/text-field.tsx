@@ -4,14 +4,16 @@
 
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
+import { Typography } from '@mui/material';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { TextField as MaterialTextField, FormControlOwnProps } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import RichTextEditor from 'react-rte';
+import classNames from 'classnames';
 
-type CssRules = 'textField' | 'rte';
+type CssRules = 'textField' | 'rte' | 'errorMessage' | 'redBorder';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     textField: {
@@ -27,7 +29,15 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 textDecoration: 'underline'
             }
         }
-    }
+    },
+    errorMessage: {
+        color: theme.palette.error.main,
+        fontSize: '0.75rem',
+        marginTop: '0.25rem',
+    },
+    redBorder: {
+        border: `1px solid ${theme.palette.error.main}`,
+    },
 });
 
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
@@ -64,7 +74,9 @@ type RichEditorTextFieldProps = RichEditorTextFieldData & TextFieldProps;
 export const RichEditorTextField = withStyles(styles)(
     class RichEditorTextField extends React.Component<RichEditorTextFieldProps> {
         state = {
-            value: RichTextEditor.createValueFromString(this.props.input.value, 'html')
+            value: RichTextEditor.createValueFromString(this.props.input.value, 'html'),
+            hasBlurred: false,
+            isFocused: false,
         };
 
         onChange = (value: any) => {
@@ -76,12 +88,33 @@ export const RichEditorTextField = withStyles(styles)(
             );
         }
 
+        onFocus = () => {
+            this.setState({ isFocused: true });
+        }
+
+        onBlur = () => {
+            this.setState({ hasBlurred: true });
+        }
+
+        fieldRequiredError = () => this.props.meta.error === "This field is required.";
+        showError = () => this.fieldRequiredError()
+                ? this.state.hasBlurred
+                : this.state.isFocused && this.props.meta.error;
+
         render() {
-            return <RichTextEditor
-                className={this.props.classes.rte}
-                value={this.state.value}
-                onChange={this.onChange}
-                placeholder={this.props.label} />;
+            return <div>
+                <RichTextEditor
+                    className={classNames(this.props.classes.rte, this.showError() && this.props.classes.redBorder)}
+                    value={this.state.value}
+                    onChange={this.onChange}
+                    onBlur={this.onBlur}
+                    onFocus={this.onFocus}
+                    placeholder={this.props.label} />
+                    {this.showError() &&
+                        <Typography className={this.props.classes.errorMessage}>
+                            {this.props.meta.error}
+                        </Typography>}
+                </div>;
         }
     }
 );
