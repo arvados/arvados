@@ -9,7 +9,7 @@ import {
     getTagValueLabel,
 } from 'models/vocabulary';
 
-export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
+export const formatDateTime = (isoDate?: string | null, utc: boolean = false) => {
     if (isoDate) {
         const date = new Date(isoDate);
         let text: string;
@@ -19,6 +19,18 @@ export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
             text = date.toLocaleString();
         }
         return text === 'Invalid Date' ? '(none)' : text;
+    }
+    return '-';
+};
+
+export const formatDateOnly = (isoDate?: string | null) => {
+    if (isoDate) {
+        const date = new Date(isoDate);
+        if (date) {
+            const text = date.toLocaleDateString();
+            return text === 'Invalid Date' ? '(none)' : text;
+        }
+        return '-';
     }
     return '-';
 };

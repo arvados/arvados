@@ -20,6 +20,7 @@ import {
     ResourceExpiresAtDate,
     RenderResourceStringField,
     RenderScopes,
+    RenderDescription,
 } from "views-components/data-explorer/renderers";
 import { FolderKeyIcon, AddIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
@@ -71,10 +72,7 @@ export const externalCredentialsPanelColumns: DataColumns<string, ExternalCreden
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid =>
-            <RenderResourceStringField<ExternalCredential>
-                uuid={uuid}
-                field={camelCase(ExternalCredentialsPanelColumnNames.DESCRIPTION) as keyof ExternalCredential} />,
+        render: uuid => <RenderDescription uuid={uuid} />,
     },
     {
         name: ExternalCredentialsPanelColumnNames.CREDENTIAL_CLASS,

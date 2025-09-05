@@ -11,7 +11,7 @@ import {
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
-import { formatDate } from "common/formatters";
+import { formatDateTime } from "common/formatters";
 import { Grid } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
@@ -131,10 +131,10 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
                 <Grid item xs={12}>
-                    <DetailsAttribute label='Created at' value={formatDate(workflow?.createdAt)} />
+                    <DetailsAttribute label='Created at' value={formatDateTime(workflow?.createdAt)} />
                 </Grid>
                 <Grid item xs={12}>
-                    <DetailsAttribute label='Last modified' value={formatDate(workflow?.modifiedAt)} />
+                    <DetailsAttribute label='Last modified' value={formatDateTime(workflow?.modifiedAt)} />
                 </Grid>
                 <Grid item xs={12} data-cy="workflow-details-attributes-modifiedby-user">
                     <DetailsAttribute

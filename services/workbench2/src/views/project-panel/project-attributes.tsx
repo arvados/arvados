@@ -16,7 +16,7 @@ import { resourceLabel } from 'common/labels';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { GroupClass } from 'models/group';
-import { formatDate } from 'common/formatters';
+import { formatDateTime } from 'common/formatters';
 
 type CssRules = 'root' | 'tag';
 
@@ -69,13 +69,13 @@ export const ProjectAttributes = connect(mapStateToProps)(withStyles(styles)((({
             <Grid item xs={12} md={6}>
                 <DetailsAttribute
                     label='Created at'
-                    value={formatDate(project.createdAt)}
+                    value={formatDateTime(project.createdAt)}
                 />
             </Grid>
             <Grid item xs={12} md={6}>
                 <DetailsAttribute
                     label='Last modified'
-                    value={formatDate(project.modifiedAt)}
+                    value={formatDateTime(project.modifiedAt)}
                 />
             </Grid>
             <Grid item xs={12} md={6}>

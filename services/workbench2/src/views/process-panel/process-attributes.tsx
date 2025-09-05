@@ -7,7 +7,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid } from "@mui/material";
 import withStyles from '@mui/styles/withStyles';
 import { Dispatch } from 'redux';
-import { formatCost, formatDate } from "common/formatters";
+import { formatCost, formatDateTime } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
@@ -135,13 +135,13 @@ export const ProcessAttributes = withStyles(styles, { withTheme: true })(
                 <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
             </Grid>}
             <Grid item xs={12} md={mdSize}>
-                <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
+                <DetailsAttribute label='Created at' value={formatDateTime(containerRequest.createdAt)} />
             </Grid>
             <Grid item xs={12} md={mdSize}>
-                <DetailsAttribute label='Started at' value={container ? formatDate(container.startedAt) : "(none)"} />
+                <DetailsAttribute label='Started at' value={container ? formatDateTime(container.startedAt) : "(none)"} />
             </Grid>
             <Grid item xs={12} md={mdSize}>
-                <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
+                <DetailsAttribute label='Finished at' value={container ? formatDateTime(container.finishedAt) : "(none)"} />
             </Grid>
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Container run time'>

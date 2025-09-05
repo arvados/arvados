@@ -5,7 +5,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { ProjectsIcon } from 'components/icon/icon';
-import { formatDate } from 'common/formatters';
+import { formatDateTime } from 'common/formatters';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -70,7 +70,7 @@ export const RootProjectDetailsComponent = connect(mapStateToProps, mapDispatchT
             <DetailsAttribute label='Type' value="Root Project" />
             <DetailsAttribute label='User' />
             <UserResourceFullName uuid={rootProject.uuid} link={true} />
-            <DetailsAttribute label='Created at' value={formatDate(rootProject.createdAt)} />
+            <DetailsAttribute label='Created at' value={formatDateTime(rootProject.createdAt)} />
             <DetailsAttribute label='UUID' linkToUuid={rootProject.uuid} value={rootProject.uuid} />
         </div>
     ));

@@ -26,7 +26,7 @@ import {
     ErrorIcon,
     FolderKeyIcon,
 } from "components/icon/icon";
-import { formatDate, formatFileSize, formatTime } from "common/formatters";
+import { formatDateTime, formatFileSize, formatTime, formatDateOnly } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { connect, DispatchProp } from "react-redux";
 import { RootState } from "store/store";
@@ -161,13 +161,24 @@ const renderIcon = (item: GroupContentsResource) => {
     }
 };
 
-const renderDate = (date?: string) => {
+const renderDateTime = (date?: string) => {
     return (
         <Typography
             noWrap
             style={{ minWidth: "100px" }}
         >
-            {formatDate(date)}
+            {formatDateTime(date)}
+        </Typography>
+    );
+};
+
+const renderDateOnly = (date?: string) => {
+    return (
+        <Typography
+            noWrap
+            style={{ minWidth: "100px" }}
+        >
+            {formatDateOnly(date)}
         </Typography>
     );
 };
@@ -460,7 +471,7 @@ export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid:
 // Common methods
 const renderCommonData = (data: string) => <Typography noWrap>{data}</Typography>;
 
-const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
+const renderCommonDate = (date: string) => <Typography noWrap>{formatDateTime(date)}</Typography>;
 
 export const CommonUuid = withResourceData("uuid", renderCommonData);
 
@@ -784,27 +795,27 @@ export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uu
 export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { date: resource ? resource.createdAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { date: resource ? resource.modifiedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
     return { date: resource ? resource.trashAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
     return { date: resource ? resource.deleteAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
     return { date: resource ? resource.expiresAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateOnly(props.date));
 
 export const RenderResourceStringField = <T extends Resource>(props: { uuid: string, field: keyof T }) => {
     const ConnectedComponent = connect((state: RootState) => {
@@ -816,6 +827,11 @@ export const RenderResourceStringField = <T extends Resource>(props: { uuid: str
 };
 
 const renderString = (data: string) => <Typography noWrap>{data}</Typography>;
+
+export const RenderDescription = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+    return { description: resource ? resource.description : "" };
+})((props: { description: string }) => <Typography component='div' dangerouslySetInnerHTML={{ __html: props.description }} />);
 
 export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
@@ -1145,7 +1161,7 @@ export const ProcessStatus = compose(
 export const ProcessStartDate = connect((state: RootState, props: { uuid: string }) => {
     const process = getProcess(props.uuid)(state.resources);
     return { date: process && process.container ? process.container.startedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const renderRunTime = (time: number) => (
     <Typography
