@@ -5,7 +5,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, Typography, Grid, Button } from '@mui/material';
+import { Card, CardHeader, Typography, Grid, Button, Menu, MenuItem } from '@mui/material';
 import { StartIcon, StopIcon } from 'components/icon/icon';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -17,11 +17,12 @@ import { Dispatch } from 'redux';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
-import { isProcessCancelable, isProcessRunnable, isProcessResumable } from 'store/processes/process';
+import { isProcessCancelable, isProcessRunnable, isProcessResumable, isProcessRunning } from 'store/processes/process';
 import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from 'store/processes/processes-actions';
 import { Process } from 'store/processes/process';
 import { getProcess } from 'store/processes/process';
+import { PublishedPort } from 'models/container';
 
 type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'actionButton' | 'cancelButton' | 'toolbarStyles';
 
@@ -116,6 +117,12 @@ export const ProcessCard = connect(
     withStyles(styles)((props: ProcessCardProps) => {
         const { classes, currentResource, handleCardClick, isSelected , cancelProcess, startProcess, resumeOnHoldWorkflow } = props;
         const { name, uuid } = currentResource.containerRequest;
+        let publishedPorts: PublishedPort[] = [];
+
+        if (currentResource.container && currentResource.container.publishedPorts) {
+            const ports = currentResource.container.publishedPorts;
+            publishedPorts = Object.keys(ports).map((port: string) => (ports[port]));
+        }
 
         let runAction;
         if (isProcessRunnable(currentResource)) {
@@ -145,6 +152,7 @@ export const ProcessCard = connect(
                                     {name}
                                 </Typography>
                                 <section className={classes.buttonContainer}>
+                                    {isProcessRunning(currentResource) && <ServiceMenu buttonClass={classes.actionButton} services={publishedPorts} />}
                                     {runAction !== undefined &&
                                         <Button
                                             data-cy="process-run-button"
@@ -156,7 +164,7 @@ export const ProcessCard = connect(
                                             <StartIcon />
                                             Run
                                         </Button>}
-                                        {isProcessCancelable(currentResource) &&
+                                    {isProcessCancelable(currentResource) &&
                                         <Button
                                             data-cy="process-cancel-button"
                                             variant="contained"
@@ -178,3 +186,76 @@ export const ProcessCard = connect(
         );
     })
 );
+
+type ServiceMenuProps = {
+    services: PublishedPort[];
+    buttonClass?: string;
+};
+
+const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+    const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+      setAnchorEl(event.currentTarget);
+    };
+    const handleClose = () => {
+      setAnchorEl(null);
+    };
+    const handleClick = (service: PublishedPort) => () => {
+        handleClose();
+        window.open(service.initial_url, "_blank", "noopener");
+    };
+
+    if (services.length) {
+        if (services.length === 1) {
+            const service = services[0];
+
+            return (
+                <Button
+                    className={buttonClass}
+                    variant="contained"
+                    size="small"
+                    color="primary"
+                    id="service-button"
+                    onClick={handleClick(service)}
+                >
+                    &nbsp;Connect to {service.label || "service"}
+                </Button>
+            );
+        } else if (services.length > 1) {
+            return <>
+                <Button
+                    className={buttonClass}
+                    variant="contained"
+                    size="small"
+                    color="primary"
+                    id="service-button"
+                    aria-controls={open ? 'basic-menu' : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={open ? 'true' : undefined}
+                    onClick={handleOpen}
+                >
+                    &nbsp;Connect to...
+                </Button>
+                <Menu
+                    id="basic-menu"
+                    anchorEl={anchorEl}
+                    open={open}
+                    onClose={handleClose}
+                    MenuListProps={{
+                        'aria-labelledby': 'service-button',
+                    }}
+                >
+                    {services.map((service: PublishedPort) => (
+                        <MenuItem onClick={handleClick(service)}>
+                            {service.label}
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </>;
+        }
+    }
+
+    // Return empty fragment when no services
+    return <></>;
+  }
