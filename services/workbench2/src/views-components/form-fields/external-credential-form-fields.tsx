@@ -4,6 +4,7 @@
 
 import React from "react";
 import { Field } from "redux-form";
+import moment from "moment";
 import { TextField, RichEditorTextField } from "components/text-field/text-field";
 import { REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION, LENGTH255_VALIDATION } from "validators/validators";
 import { DatePicker } from "components/date-picker/date-picker";
@@ -40,7 +41,9 @@ export const ExternalCredentialExternalIdField = () =>
 export const ExternalCredentialExpiresAtField = () =>
     <Field
         name='expiresAt'
-        component={()=>DatePicker({label: 'Expires at', minDate: {num: 1, unit: 'week'}})} />;
+        component={DatePicker as any}
+        startValue={moment().add(1, 'year')}
+        label="Expires at" />;
 
 export const ExternalCredentialScopesField = () =>
     <Field
