@@ -17,6 +17,19 @@ export enum ContainerState {
     UNCOMMITTED = 'Uncommitted',
 }
 
+/**
+ * Schema for published service ports
+ * camelcase is not used due to canonical mapKeys behavior with certain nested structures
+ */
+export type PublishedPort = {
+    access: 'public' | 'private';
+    label: string;
+    base_url: string;
+    initial_path: string;
+    initial_url: string;
+    external_port?: number;
+};
+
 export interface ContainerResource extends Resource {
     kind: ResourceKind.CONTAINER;
     state: string;
@@ -37,6 +50,7 @@ export interface ContainerResource extends Resource {
     containerImage: string;
     progress: number;
     priority: number;
+    publishedPorts: Record<string, PublishedPort>;
     exitCode: number | null;
     authUuid: string | null;
     lockedByUuid: string | null;
