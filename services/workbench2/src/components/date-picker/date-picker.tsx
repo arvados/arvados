@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React, { useEffect } from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { FormControl } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -16,6 +16,14 @@ type DatePickerProps = {
 }
 
 export function DatePicker({label, startValue, input}: DatePickerProps & WrappedFieldProps) {
+
+    // initial value doesn't automatically get passed to redux-form,
+    // so we need to set it manually on mount
+    useEffect(() => {
+            input.onChange(getInitialValue(startValue, input.value));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <FormControl variant="standard" fullWidth>
             <LocalizationProvider dateAdapter={AdapterMoment}>
