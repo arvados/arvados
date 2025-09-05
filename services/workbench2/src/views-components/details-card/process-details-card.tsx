@@ -60,15 +60,17 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: "0px 5px 0 0",
         marginRight: "5px",
         fontSize: '0.78rem',
+        // Set icon size for all buttons
+        '& svg': {
+            fontSize: '22px',
+        },
+        whiteSpace: 'nowrap',
     },
     cancelButton: {
         color: theme.palette.common.white,
         backgroundColor: theme.customs.colors.red900,
         '&:hover': {
             backgroundColor: theme.customs.colors.red900,
-        },
-        '& svg': {
-            fontSize: '22px',
         },
     },
     toolbarStyles: {
