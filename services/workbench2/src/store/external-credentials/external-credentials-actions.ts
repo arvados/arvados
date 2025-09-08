@@ -3,14 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
+import { initialize } from "redux-form";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { navigateToRootProject } from "store/navigation/navigation-action";
 import { snackbarActions } from "store/snackbar/snackbar-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
-import { initialize } from "redux-form";
 import { ExternalCredentialCreateFormDialogData } from "store/external-credentials/external-credential-create-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { getCheckedListUuids } from "store/multiselect/multiselect-actions";
 
 export const EXTERNAL_CREDENTIALS_PANEL = 'externalCredentialsPanel';
 export const NEW_EXTERNAL_CREDENTIAL_FORM_NAME = 'newExternalCredentialFormName';
@@ -51,3 +53,30 @@ export const createExternalCredential = (data: ExternalCredentialCreateFormDialo
         return newExternalCredential;
     };
 
+export const REMOVE_EXTERNAL_CREDENTIAL_DIALOG = "removeExternalCredentialDialog";
+
+export const openRemoveExternalCredentialDialog = (resource: ContextMenuResource) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const numOfCredentials = getCheckedListUuids(getState()).length;
+        dispatch(
+            dialogActions.OPEN_DIALOG({
+                id: REMOVE_EXTERNAL_CREDENTIAL_DIALOG,
+                data: {
+                    title: "Remove Credentials",
+                    text: numOfCredentials === 1 ? "Are you sure you want to remove this credential?" : `Are you sure you want to remove these ${numOfCredentials} credentials?`,
+                    confirmButtonLabel: "Remove",
+                    uuid: resource.uuid,
+                    resource,
+                },
+            })
+        );
+    };
+
+export const removeExternalCredentialPermanently = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const credentialsToRemove = getCheckedListUuids(getState());
+        Promise.all(credentialsToRemove.map(credential => services.externalCredentialsService.delete(credential))).then(() => {
+            dispatch(dialogActions.CLOSE_DIALOG({ id: REMOVE_EXTERNAL_CREDENTIAL_DIALOG }));
+            dispatch<any>(loadExternalCredentials());
+        });
+    };

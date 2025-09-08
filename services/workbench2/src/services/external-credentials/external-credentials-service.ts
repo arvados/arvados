@@ -21,4 +21,8 @@ export class ExternalCredentialsService extends CommonService<ExternalCredential
         create(data: ExternalCredentialCreateFormDialogData, showErrors?: boolean): Promise<ExternalCredential> {
             return super.create(data, showErrors);
         }
+
+        delete( uuid: string, showErrors?: boolean ): Promise<ExternalCredential> {
+            return super.delete(uuid, showErrors);
+        }
 }
