@@ -24,7 +24,6 @@ import {
 } from "views-components/data-explorer/renderers";
 import { FolderKeyIcon, AddIcon } from "components/icon/icon";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
-import { navigateTo } from "store/navigation/navigation-action";
 import { RootState } from "store/store";
 import { createTree } from "models/tree";
 import { ResourcesState, getResource } from "store/resources/resources";
@@ -119,7 +118,6 @@ interface ExternalCredentialsPanelActionProps {
     openContextMenuAndSelect: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => void;
     loadDetailsPanel: (resourceUuid: string) => void;
     toggleOne: (uuid: string) => void;
-    navigateTo: (uuid: string) => void;
 }
 const mapStateToProps = (state: RootState): ExternalCredentialsPanelDataProps => ({
     resources: state.resources,
@@ -130,7 +128,6 @@ const mapDispatchToProps = (dispatch: Dispatch): ExternalCredentialsPanelActionP
     openContextMenuAndSelect: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => dispatch<any>(openContextMenuAndSelect(event, resource)),
     loadDetailsPanel: (resourceUuid: string) => dispatch<any>(loadDetailsPanel(resourceUuid)),
     toggleOne: (uuid: string) => dispatch<any>(toggleOne(uuid)),
-    navigateTo: (uuid: string) => dispatch<any>(navigateTo(uuid)),
 });
 
 type ExternalCredentialsPanelProps = ExternalCredentialsPanelDataProps &
@@ -145,7 +142,7 @@ export const ExternalCredentialsPanel = withStyles(styles)(
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const externalCredential = getResource<ExternalCredential>(resourceUuid)(this.props.resources);
                 if (externalCredential) {
-                    openContextMenuAndSelect(event, {
+                    this.props.openContextMenuAndSelect(event, {
                         name: externalCredential.name,
                         uuid: externalCredential.uuid,
                         ownerUuid: externalCredential.ownerUuid,
@@ -153,11 +150,11 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                         menuKind: externalCredential.kind
                     });
                 }
-                loadDetailsPanel(resourceUuid);
+                this.props.loadDetailsPanel(resourceUuid);
             };
 
             handleRowClick = (uuid: string) => {
-                toggleOne(uuid);
+                this.props.toggleOne(uuid);
             };
 
             render() {
