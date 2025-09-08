@@ -10,3 +10,12 @@ export interface ExternalCredentialCreateFormDialogData {
     expiresAt: string;
     scopes: string[];
 }
+
+export interface ExternalCredentialUpdateFormDialogData {
+    name: string;
+    description: string;
+    credentialClass: string;
+    externalId: string;
+    expiresAt: string;
+    scopes: string[];
+}

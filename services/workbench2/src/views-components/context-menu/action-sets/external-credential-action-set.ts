@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { RenameIcon, AdvancedIcon, DeleteForever } from "components/icon/icon";
-import { openProjectUpdateDialog } from "store/projects/project-update-actions";
+import { openRemoveExternalCredentialDialog, openExternalCredentialUpdateDialog } from "store/external-credentials/external-credentials-actions";
 import { ShareIcon } from "components/icon/icon";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
@@ -21,7 +21,7 @@ export const editExternalCredentialAction = {
     icon: RenameIcon,
     name: ContextMenuActionNames.EDIT_CREDENTIAL,
     execute: (dispatch, resources) => {
-        // dispatch(openProjectUpdateDialog(resources[0]));
+        dispatch(openExternalCredentialUpdateDialog(resources[0]));
     },
 };
 
@@ -38,7 +38,7 @@ export const deleteAction = {
     icon: DeleteForever,
     isForMulti: true,
     execute: (dispatch, resources) => {
-        // dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
+        dispatch(openRemoveExternalCredentialDialog(resources[0]));
     },
 };
 

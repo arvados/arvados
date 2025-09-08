@@ -7,6 +7,10 @@ import { InjectedFormProps } from 'redux-form';
 import { Grid } from "@mui/material";
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { FormDialog } from 'components/form-dialog/form-dialog';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { ExternalCredentialUpdateFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
 import { ExternalCredentialNameField,
     ExternalCredentialDescriptionField,
     ExternalCredentialClassField,
@@ -14,39 +18,30 @@ import { ExternalCredentialNameField,
     ExternalCredentialExpiresAtField,
     ExternalCredentialSecretField,
     ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
-import { ExternalCredentialCreateFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
-import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles } from '@mui/styles';
-import withStyles from '@mui/styles/withStyles';
-import { GroupClass } from 'models/group';
 
-type CssRules = 'propertiesForm' | 'description';
+type CssRules = 'description';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
-    propertiesForm: {
-        marginTop: theme.spacing(2),
-        marginBottom: theme.spacing(2),
-    },
     description: {
         marginTop: theme.spacing(2),
         marginBottom: theme.spacing(2),
     },
 });
 
-type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass}> & InjectedFormProps<ExternalCredentialCreateFormDialogData>;
+type DialogExternalCredentialProps = WithDialogProps<{}> & InjectedFormProps<ExternalCredentialUpdateFormDialogData>;
 
-export const DialogExternalCredentialCreate = (props: DialogProjectProps) => {
-    const title = 'New External Credential';
+export const DialogExternalCredentialUpdate = (props: DialogExternalCredentialProps) => {
+    let title = 'Edit External Credential';
 
     return <FormDialog
         dialogTitle={title}
-        formFields={NewExternalCredentialFields as any}
-        submitLabel='Create'
+        formFields={ExternalCredentialEditFields as any}
+        submitLabel='Save'
         {...props}
     />;
 };
 
-const NewExternalCredentialFields = withStyles(styles)(
+const ExternalCredentialEditFields = withStyles(styles)(
     ({ classes }: WithStyles<CssRules>) => <span>
         <ExternalCredentialNameField />
         <div className={classes.description}>
@@ -60,5 +55,3 @@ const NewExternalCredentialFields = withStyles(styles)(
             <Grid item xs={12}><ExternalCredentialScopesField /></Grid>
         </Grid>
     </span>);
-
-
