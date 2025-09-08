@@ -96,6 +96,7 @@ import { permissionEditActionSet } from "views-components/context-menu/action-se
 import { workflowActionSet, readOnlyWorkflowActionSet } from "views-components/context-menu/action-sets/workflow-action-set";
 import { storeRedirects } from "./common/redirect-to";
 import { searchResultsActionSet } from "views-components/context-menu/action-sets/search-results-action-set";
+import { externalCredentialActionSet } from "views-components/context-menu/action-sets/external-credential-action-set";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@coreui/coreui/dist/css/coreui.min.css';
@@ -158,6 +159,7 @@ addMenuActionSet(ContextMenuKind.WRITEABLE_PROJECT, writeableProjectActionSet);
 addMenuActionSet(ContextMenuKind.WRITEABLE_COLLECTION, writeableCollectionSet);
 addMenuActionSet(ContextMenuKind.MANAGEABLE_PROJECT, manageableProjectActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_MANAGEABLE_PROJECT, frozenManageableProjectActionSet);
+addMenuActionSet(ContextMenuKind.EXTERNAL_CREDENTIAL, externalCredentialActionSet);
 
 storeRedirects();
 

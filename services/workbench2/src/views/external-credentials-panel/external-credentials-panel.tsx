@@ -31,6 +31,7 @@ import { toggleOne } from "store/multiselect/multiselect-actions";
 import { ExternalCredential } from "models/external-credential";
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 import { openContextMenuAndSelect } from "store/context-menu/context-menu-actions";
+import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -147,7 +148,7 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                         uuid: externalCredential.uuid,
                         ownerUuid: externalCredential.ownerUuid,
                         kind: externalCredential.kind,
-                        menuKind: externalCredential.kind
+                        menuKind: ContextMenuKind.EXTERNAL_CREDENTIAL
                     });
                 }
                 this.props.loadDetailsPanel(resourceUuid);

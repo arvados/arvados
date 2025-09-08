@@ -100,6 +100,8 @@ export const resourceToMenuKind = (uuid: string, readonly = false) =>
                 return ContextMenuKind.LINK;
             case ResourceKind.WORKFLOW:
                 return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;
+            case ResourceKind.EXTERNAL_CREDENTIAL:
+                return ContextMenuKind.EXTERNAL_CREDENTIAL;
             default:
                 return;
         }

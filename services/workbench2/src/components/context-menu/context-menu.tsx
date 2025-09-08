@@ -10,7 +10,6 @@ import { IconType } from "../icon/icon";
 import { RootState } from "store/store";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
-import { sortMenuItems, ContextMenuKind, menuDirection } from "views-components/context-menu/menu-item-sort";
 import { ContextMenuState } from "store/context-menu/context-menu-reducer";
 import { ArvadosTheme } from "common/custom-theme";
 import { CustomStyleRulesCallback } from "common/custom-theme";
@@ -99,14 +98,3 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
         this.props.onClose();
     }
 }
-
-const menuActionSets = new Map<string, ContextMenuActionSet>();
-
-export const addMenuActionSet = (name: ContextMenuKind, itemSet: ContextMenuActionSet) => {
-    const sorted = itemSet.map(items => sortMenuItems(name, items, menuDirection.VERTICAL));
-    menuActionSets.set(name, sorted);
-};
-const emptyActionSet: ContextMenuActionSet = [];
-
-export const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
-    resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
