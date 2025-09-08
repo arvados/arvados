@@ -44,15 +44,17 @@ Gem::Specification.new do |s|
   s.licenses    = ['AGPL-3.0']
   s.files       = ["bin/arvados-login-sync", "agpl-3.0.txt"]
   s.executables << "arvados-login-sync"
-  s.required_ruby_version = '>= 2.5.0'
+  s.required_ruby_version = '>= 3.0.0'
   # The minimum version's 'a' suffix is necessary to enable bundler
   # to consider 'pre-release' versions.  See:
   # https://github.com/rubygems/bundler/issues/4340
   s.add_runtime_dependency 'arvados', arv_dep_version
-  s.add_runtime_dependency 'launchy', '< 2.5'
+  # launchy 3.0.0 dropped Ruby 2.
+  # launchy 3.1.0 stopped testing against Ruby 3.0.
+  s.add_runtime_dependency 'launchy', '>= 2.5', '< 3.1'
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../../sdk/ruby-google-api-client/
-  s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
+  s.add_runtime_dependency('arvados-google-api-client', '~> 0.8.7.5')
   s.homepage    =
     'https://arvados.org'
 end

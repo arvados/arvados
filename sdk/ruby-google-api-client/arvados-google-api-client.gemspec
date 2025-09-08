@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.name = "arvados-google-api-client"
   s.version = Google::APIClient::VERSION::STRING
 
-  s.required_ruby_version = '>= 2.7.0'
+  s.required_ruby_version = '>= 3.0.0'
   s.required_rubygems_version = ">= 1.3.5"
   s.require_paths = ["lib"]
   s.authors = ["Bob Aman", "Steven Bazyl"]
@@ -24,36 +24,69 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--main", "README.md"]
   s.summary = "Fork of google-api-client used by Ruby-based Arvados components."
 
-  s.add_runtime_dependency 'addressable', '~> 2.3'
-  s.add_runtime_dependency 'signet', '~> 0.16.0'
-  # faraday stopped supporting Ruby 2.7 with its 2.9.0 release.
-  # Force a resolution that supports all our Rubies:
-  s.add_runtime_dependency 'faraday', '~> 2.8.0'
+  # Dependencies below are pinned to a minor version in cases where
+  # the currently support Ruby 3.0 but they have previously dropped
+  # support for a Ruby version without incrementing the major version.
+
+  # addressable 2.8.0 dropped Ruby 2.1.
+  # addressable 2.8.1 updated metadata to require Ruby >= 2.2.
+  # addressable 2.8 is the highest minor version we've tested.
+  s.add_runtime_dependency 'addressable', '>= 2.3', '< 2.9'
+  # signet 0.20.0 dropped Ruby 3.0.
+  s.add_runtime_dependency 'signet', '~> 0.19.0'
+  # faraday 2.9.0 dropped Ruby 2.7.
+  # faraday 2.13.4 is the highest minor version we've tested.
+  s.add_runtime_dependency 'faraday', '~> 2.13.0'
+  # faraday-multipart 1.0.1 dropped Ruby 2.4, but 1.0.2 added it back.
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
-  s.add_runtime_dependency 'faraday-gzip', '~> 2.0'
-  # googleauth stopped supporting Ruby 2.7 in 1.2.0 (due to a new dependency).
-  s.add_runtime_dependency 'googleauth', '~> 1.1.0'
-  # multi_json stopped supporting Ruby 2.7 in 1.16.0.
-  s.add_runtime_dependency 'multi_json', '~> 1.15.0'
+  # faraday-gzip 3.0.0 dropped Ruby 2.
+  s.add_runtime_dependency 'faraday-gzip', '~> 3.0'
+  # googleauth 1.14.0 dropped Ruby 2.
+  # googleauth 1.15 is the highest minor version we've tested.
+  s.add_runtime_dependency 'googleauth', '~> 1.15.0'
+  # multi_json 2.0 will drop Ruby 3.0.
+  # https://github.com/sferik/multi_json/pull/16#issue-3237521157
+  # multi_json 1 is the highest major version we've tested.
+  s.add_runtime_dependency 'multi_json', '~> 1.15'
+  # autoparse was archived 2022-07-27 at 0.3.3.
   s.add_runtime_dependency 'autoparse', '~> 0.3'
+  # extlib had no release between 2014 and 2025.
   s.add_runtime_dependency 'extlib', '~> 0.9'
-  s.add_runtime_dependency 'launchy', '~> 2.4'
+  # launchy 3.0.0 dropped Ruby 2.
+  # launchy 3.1.0 stopped testing against Ruby 3.0.
+  # launchy 3.0 is the higest minor version we've tested.
+  s.add_runtime_dependency 'launchy', '~> 3.0.1'
+  # retriable 2 is not API compatible with retriable 1.
   s.add_runtime_dependency 'retriable', '~> 1.4'
-  # Rails 7.1.3.x is the last version to support Ruby 2.7.0 in Ubuntu 20.04.
-  # Later 7.1.x releases require Ruby >= 2.7.3:
-  #   <https://github.com/rails/rails/issues/54276>
-  s.add_runtime_dependency 'activesupport', '~> 7.1.3.4'
+  # activesupport 7.2.0 dropped Ruby 3.0.
+  s.add_dependency('activesupport', '~> 7.1.3', '>= 7.1.3.4')
 
   # These are indirect dependencies of the above where we force a resolution
   # that supports all our Rubies.
-  s.add_runtime_dependency 'google-cloud-env', '~> 2.1.0'
-  s.add_runtime_dependency 'public_suffix', '~> 5.0'
+  # google-cloud-env 2.3.0 dropped Ruby 3.0.
+  s.add_runtime_dependency 'google-cloud-env', '~> 2.2.0'
+  # public_suffix 6.0.0 dropped Ruby 2.7.
+  s.add_runtime_dependency 'public_suffix', '~> 6.0'
+  # securerandom 0.4.0 dropped Ruby 3.0 (and 2.6 and 2.7) without
+  # mentioning anything in the changelog / release notes.
   s.add_runtime_dependency 'securerandom', '~> 0.3.2'
 
-  s.add_development_dependency 'rake', '~> 10.0'
-  s.add_development_dependency 'yard', '~> 0.8'
+  # rake 12.3.0 dropped Ruby 1.
+  # rake 12 is the highest major version we've tested.
+  s.add_development_dependency 'rake', '>= 10', '< 13'
+  # yard 0.9.37 (2024) metadata still claims to support Ruby 1.
+  s.add_development_dependency 'yard', '>= 0.8', '< 0.10'
+  # rspec 3.13.1 (2025) metadata still claims to support Ruby 1.
+  # rspec 3.0 is the highest minor version we've tested.
   s.add_development_dependency 'rspec', '~> 3.1'
-  s.add_development_dependency 'kramdown', '~> 1.5'
-  s.add_development_dependency 'simplecov', '~> 0.9.2'
-  s.add_development_dependency 'coveralls', '~> 0.7.11'
+  # kramdown 2.5.0 dropped Ruby 2.4.
+  # kramdown 2.5 is the highest minor version we've tested.
+  s.add_development_dependency 'kramdown', '>= 1.5', '< 2.6'
+  # simplecov 0.19.0 (2020) dropped Ruby 2.4.
+  # simplecov 0.21 is the highest minor version we've tested.
+  s.add_development_dependency 'simplecov', '>= 0.9.2', '< 0.22.0'
+  # coveralls hasn't had a release since 0.8.23 (2019) whose metadata
+  # claims to support Ruby 1.8.7.
+  # coveralls 0.8 is the highest minor version we've tested.
+  s.add_development_dependency 'coveralls', '>= 0.7.11', '< 0.9'
 end
