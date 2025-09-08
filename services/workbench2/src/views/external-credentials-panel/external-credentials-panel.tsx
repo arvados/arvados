@@ -7,7 +7,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { Grid, Button } from "@mui/material";
-import { camelCase } from "lodash";
+import { camelCase, noop } from "lodash";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from "react-router";
 import { Dispatch } from "redux";
@@ -16,7 +16,7 @@ import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { ArvadosTheme } from "common/custom-theme";
 import { EXTERNAL_CREDENTIALS_PANEL, openNewExternalCredentialDialog } from "store/external-credentials/external-credentials-actions";
 import {
-    ResourceName,
+    ResourceNameNoLink,
     ResourceExpiresAtDate,
     RenderResourceStringField,
     RenderScopes,
@@ -65,7 +65,7 @@ export const externalCredentialsPanelColumns: DataColumns<string, ExternalCreden
         configurable: true,
         sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />,
+        render: uuid => <ResourceNameNoLink uuid={uuid} />,
     },
     {
         name: ExternalCredentialsPanelColumnNames.DESCRIPTION,
@@ -156,10 +156,6 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                 loadDetailsPanel(resourceUuid);
             };
 
-            handleRowDoubleClick = (uuid: string) => {
-                navigateTo(uuid);
-            };
-
             handleRowClick = (uuid: string) => {
                 toggleOne(uuid);
             };
@@ -170,7 +166,7 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                         <DataExplorer
                             id={EXTERNAL_CREDENTIALS_PANEL}
                             onRowClick={this.handleRowClick}
-                            onRowDoubleClick={this.handleRowDoubleClick}
+                            onRowDoubleClick={noop}
                             onContextMenu={this.handleContextMenu}
                             contextMenuColumn={false}
                             defaultViewIcon={FolderKeyIcon}

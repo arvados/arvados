@@ -75,7 +75,7 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
+const renderName = (dispatch: Dispatch, item: GroupContentsResource, isLink: boolean = true) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
         <Grid
@@ -87,11 +87,11 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(item)}</Grid>
             <Grid item>
                 <Typography
-                    color="primary"
-                    style={{ width: "auto", cursor: "pointer" }}
+                    color={isLink ? "primary" : "textPrimary"}
+                    style={{ width: "auto", cursor: isLink ? "pointer" : "default" }}
                     onClick={(ev) => {
                         ev.stopPropagation()
-                        dispatch<any>(navFunc(item.uuid))
+                        if (isLink) dispatch<any>(navFunc(item.uuid))
                     }}
                 >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
@@ -135,7 +135,12 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
 export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
+})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource, true));
+
+export const ResourceNameNoLink = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+    return resource;
+})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource, false));
 
 const renderIcon = (item: GroupContentsResource) => {
     if (isExternalCredential(item)) {
