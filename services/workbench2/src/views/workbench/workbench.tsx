@@ -42,6 +42,7 @@ import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-f
 import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
+import { RemoveExternalCredentialDialog } from "views-components/dialog-remove/external-credential-remove-dialog";
 import { MainContentBar } from "views-components/main-content-bar/main-content-bar";
 import { Grid } from "@mui/material";
 import { TrashPanel } from "views/trash-panel/trash-panel";
@@ -513,6 +514,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />
             <RemoveVirtualMachineLoginDialog />
+            <RemoveExternalCredentialDialog />
             <VirtualMachineAddLoginDialog />
             <RenameFileDialog />
             <DownloadFilesAsZipDialog />

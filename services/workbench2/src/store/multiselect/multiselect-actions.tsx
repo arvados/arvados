@@ -110,3 +110,7 @@ export const removeDisabledButton = (buttonName: string) => {
     };
 };
 
+export const getCheckedListUuids = (state: RootState): string[] => {
+    const checkedList = state.multiselect.checkedList;
+    return Object.keys(checkedList).filter(uuid => checkedList[uuid] === true);
+};
