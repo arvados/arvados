@@ -51,6 +51,7 @@ export enum ResourceObjectType {
     COLLECTION = '4zz18',
     CONTAINER = 'dz642',
     CONTAINER_REQUEST = 'xvhdp',
+    EXTERNAL_CREDENTIAL = 'oss07',
     GROUP = 'j7d0g',
     LINK = 'o0j2j',
     LOG = '57u5n',
@@ -107,6 +108,8 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.API_CLIENT_AUTHORIZATION;
         case ResourceObjectType.LINK:
             return ResourceKind.LINK;
+        case ResourceObjectType.EXTERNAL_CREDENTIAL:
+            return ResourceKind.EXTERNAL_CREDENTIAL;
         default:
             const match = COLLECTION_PDH_REGEX.exec(uuid);
             return match ? ResourceKind.COLLECTION : undefined;

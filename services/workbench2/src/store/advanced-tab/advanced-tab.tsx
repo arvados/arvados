@@ -24,6 +24,7 @@ import { WorkflowResource } from 'models/workflow';
 import { KeepServiceResource } from 'models/keep-services';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 import React from 'react';
+import { ExternalCredential } from 'models/external-credential';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
@@ -79,7 +80,8 @@ enum ResourcePrefix {
     KEEP_SERVICES = 'keep_services',
     USERS = 'users',
     API_CLIENT_AUTHORIZATIONS = 'api_client_authorizations',
-    LINKS = 'links'
+    LINKS = 'links',
+    EXTERNAL_CREDENTIALS = 'external_credentials',
 }
 
 enum KeepServiceData {
@@ -107,9 +109,14 @@ enum WorkflowData {
     CREATED_AT = 'created_at'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ApiClientAuthorizationsData | UserData | LinkData | WorkflowData;
+enum ExternalCredentialData {
+    EXTERNAL_CREDENTIAL = 'external_credential',
+    CREATED_AT = 'created_at'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ApiClientAuthorizationsData | UserData | LinkData | WorkflowData | ExternalCredentialData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | ApiClientAuthorization | UserResource | LinkResource | WorkflowResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | ApiClientAuthorization | UserResource | LinkResource | WorkflowResource | ExternalCredential | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -288,6 +295,22 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     property: dataWf!.createdAt
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataWf));
+                break;
+            case ResourceKind.EXTERNAL_CREDENTIAL:
+                const { resources: ecResources } = getState();
+                const dataExtCred = getResource<ExternalCredential>(uuid)(ecResources);
+                const advanceDataExtCred = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: extCredApiResponse,
+                    data: dataExtCred,
+                    resourceKind: ExternalCredentialData.EXTERNAL_CREDENTIAL,
+                    resourcePrefix: ResourcePrefix.EXTERNAL_CREDENTIALS,
+                    resourceKindProperty: ExternalCredentialData.CREATED_AT,
+                    property: dataExtCred!.createdAt
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataExtCred));
                 break;
 
             default:
@@ -629,6 +652,24 @@ const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
 "modified_at": ${stringify(modifiedAt)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)}
 "description": ${stringify(description)}`;
+
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
+};
+
+const extCredApiResponse = (apiResponse: ExternalCredential): JSX.Element => {
+    const {
+        uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, scopes, expiresAt
+    } = apiResponse;
+    const response = `
+"uuid": "${uuid}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${stringify(createdAt)}",
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
+"modified_at": ${stringify(modifiedAt)},
+"name": ${stringify(name)},
+"description": ${stringify(description)},
+"scopes": ${JSON.stringify(scopes, null, 2)},
+"expires_at": "${stringify(expiresAt)}"`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
