@@ -16,7 +16,6 @@ import { ExternalCredentialNameField,
     ExternalCredentialClassField,
     ExternalCredentialExternalIdField,
     ExternalCredentialExpiresAtField,
-    ExternalCredentialSecretField,
     ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
 
 type CssRules = 'description';
@@ -51,7 +50,6 @@ const ExternalCredentialEditFields = withStyles(styles)(
             <Grid item xs={6}><ExternalCredentialClassField /></Grid>
             <Grid item xs={6}><ExternalCredentialExternalIdField /></Grid>
             <Grid item xs={6}><ExternalCredentialExpiresAtField /></Grid>
-            <Grid item xs={6}><ExternalCredentialSecretField /></Grid>
             <Grid item xs={12}><ExternalCredentialScopesField /></Grid>
         </Grid>
     </span>);

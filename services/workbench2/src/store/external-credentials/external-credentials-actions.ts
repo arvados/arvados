@@ -17,6 +17,8 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "servi
 import { getResource } from "store/resources/resources";
 import { ProjectResource } from "models/project";
 import { ExternalCredential } from "models/external-credential";
+import { showGroupedCommonResourceResultSnackbars } from "store/resources/resources-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const EXTERNAL_CREDENTIALS_PANEL = 'externalCredentialsPanel';
 export const NEW_EXTERNAL_CREDENTIAL_FORM_NAME = 'newExternalCredentialFormName';
@@ -53,10 +55,33 @@ export const openNewExternalCredentialDialog = () =>
 
 export const createExternalCredential = (data: ExternalCredentialCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const newExternalCredential = await services.externalCredentialsService.create(data);
-        dispatch(dialogActions.CLOSE_DIALOG({ id: NEW_EXTERNAL_CREDENTIAL_FORM_NAME }));
-        dispatch<any>(loadExternalCredentials());
-        return newExternalCredential;
+        dispatch(startSubmit(NEW_EXTERNAL_CREDENTIAL_FORM_NAME));
+        try {
+            dispatch(progressIndicatorActions.START_WORKING(NEW_EXTERNAL_CREDENTIAL_FORM_NAME));
+            const newExternalCredential = await services.externalCredentialsService.create(data);
+            dispatch(externalCredentialsActions.REQUEST_ITEMS());
+            dispatch(dialogActions.CLOSE_DIALOG({ id: NEW_EXTERNAL_CREDENTIAL_FORM_NAME }));
+            dispatch(progressIndicatorActions.STOP_WORKING(NEW_EXTERNAL_CREDENTIAL_FORM_NAME));
+            return newExternalCredential;
+        } catch (e) {
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                dispatch(stopSubmit(NEW_EXTERNAL_CREDENTIAL_FORM_NAME, { name: "Credential with the same name already exists." } as FormErrors));
+            } else {
+                dispatch(dialogActions.CLOSE_DIALOG({ id: NEW_EXTERNAL_CREDENTIAL_FORM_NAME }));
+                const errMsg = e.errors ? e.errors.join("") : "Could not create the credential";
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: errMsg,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            }
+            return;
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(NEW_EXTERNAL_CREDENTIAL_FORM_NAME));
+        }
     };
 
 export const openRemoveExternalCredentialDialog = (resource: ContextMenuResource) =>
@@ -79,9 +104,17 @@ export const openRemoveExternalCredentialDialog = (resource: ContextMenuResource
 export const removeExternalCredentialPermanently = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const credentialsToRemove = getCheckedListUuids(getState());
-        Promise.all(credentialsToRemove.map(credential => services.externalCredentialsService.delete(credential))).then(() => {
-            dispatch(dialogActions.CLOSE_DIALOG({ id: REMOVE_EXTERNAL_CREDENTIAL_DIALOG }));
-            dispatch<any>(loadExternalCredentials());
+
+    const messageFuncMap = {
+        [CommonResourceServiceError.NONE]: (count: number) => count > 1 ? `Removed ${count} items` : `Item removed`,
+        [CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN]: (count: number) => count > 1 ? `Remove ${count} items failed: Access Denied` : `Remove failed: Access Denied`,
+        [CommonResourceServiceError.UNKNOWN]: (count: number) => count > 1 ? `Remove ${count} items failed` : `Remove failed`,
+    };
+        Promise.allSettled(credentialsToRemove.map(credential => services.externalCredentialsService.delete(credential))).then((promises) => {
+            const { success } = showGroupedCommonResourceResultSnackbars(dispatch, promises, messageFuncMap);
+            if (success.length) {
+                dispatch<any>(loadExternalCredentials());
+            }
         });
     };
 
@@ -98,6 +131,7 @@ export const updateExternalCredential =
         const uuid = credential.uuid || "";
         dispatch(startSubmit(EXTERNAL_CREDENTIAL_UPDATE_FORM_NAME));
         try {
+            dispatch(progressIndicatorActions.START_WORKING(EXTERNAL_CREDENTIAL_UPDATE_FORM_NAME));
             const updatedCredential = await services.externalCredentialsService.update(
                 uuid,
                 {
@@ -113,6 +147,7 @@ export const updateExternalCredential =
             dispatch(externalCredentialsActions.REQUEST_ITEMS());
             dispatch(reset(EXTERNAL_CREDENTIAL_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: EXTERNAL_CREDENTIAL_UPDATE_FORM_NAME }));
+            dispatch(progressIndicatorActions.STOP_WORKING(EXTERNAL_CREDENTIAL_UPDATE_FORM_NAME));
             return updatedCredential;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -130,5 +165,7 @@ export const updateExternalCredential =
                 );
             }
             return;
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(EXTERNAL_CREDENTIAL_UPDATE_FORM_NAME));
         }
     };
