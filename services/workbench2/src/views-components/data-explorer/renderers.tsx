@@ -840,7 +840,16 @@ export const RenderDescription = connect((state: RootState, props: { uuid: strin
 
 export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
-    return { scopes: resource ? resource.scopes : [] };
+    // account for https://dev.arvados.org/issues/23152
+    let scopes: string[] = [];
+    if (resource) {
+        if (Array.isArray(resource.scopes)) {
+            scopes = resource.scopes;
+        } else if (typeof resource.scopes === 'string') {
+            scopes = (resource.scopes as string).split(",").map(s => s.trim()).filter(Boolean);;
+        }
+    }
+    return { scopes };
 })((props: { scopes: string[] }) => renderStringArray(props.scopes));
 
 const renderStringArray = (data: string[]) => <Typography noWrap>{data.length ? data.join(', ') : '-'}</Typography>;
