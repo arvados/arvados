@@ -848,7 +848,11 @@ const renderString = (data: string) => <Typography noWrap>{data}</Typography>;
 export const RenderDescription = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { description: resource ? resource.description : "" };
-})((props: { description: string }) => <Typography component='div' dangerouslySetInnerHTML={{ __html: props.description }} />);
+})((props: { description: string }) =>
+    <Typography
+        component='div'
+        // Remove <p> tags from description so they don't affect table display
+        dangerouslySetInnerHTML={{ __html: props.description.replace(/<\/?p>/g, "") }} />);
 
 export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
