@@ -44,7 +44,7 @@ type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const TextField = withStyles(styles)((props: TextFieldProps & {
     label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: FormControlOwnProps["margin"], placeholder?: string,
-    helperText?: string, type?: string,
+    helperText?: string, type?: string, autoComplete?: string,
 }) =>
     <MaterialTextField
         variant="standard"
@@ -53,7 +53,7 @@ export const TextField = withStyles(styles)((props: TextFieldProps & {
         label={props.label}
         disabled={props.disabled || props.meta.submitting}
         error={props.meta.touched && !!props.meta.error}
-        autoComplete='off'
+        autoComplete={props.autoComplete || 'off'}
         autoFocus={props.autoFocus}
         fullWidth={true}
         required={props.required}

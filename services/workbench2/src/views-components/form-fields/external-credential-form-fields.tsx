@@ -51,6 +51,7 @@ export const ExternalCredentialSecretField = () =>
         name='secret'
         component={TextField as any}
         type='password'
+        autoComplete="new-password"
         validate={REQUIRED_VALIDATION}
         label="Secret *" />;
 
