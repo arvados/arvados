@@ -6,7 +6,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Card, CardHeader, Typography, Grid, Button, Menu, MenuItem } from '@mui/material';
-import { StartIcon, StopIcon } from 'components/icon/icon';
+import { StartIcon, StopIcon, ExpandIcon } from 'components/icon/icon';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -24,7 +24,7 @@ import { Process } from 'store/processes/process';
 import { getProcess } from 'store/processes/process';
 import { PublishedPort } from 'models/container';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'actionButton' | 'cancelButton' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton' | 'toolbarStyles';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -38,6 +38,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         alignItems: 'center',
         minHeight: '2.7rem',
+        gap: '2rem',
     },
     cardHeaderContainer: {
         width: '100%',
@@ -49,17 +50,33 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardHeader: {
         minWidth: '30rem',
         padding: '0.2rem 0.4rem 0.2rem 1rem',
+        '& > div': {
+            overflow: "hidden",
+        },
     },
     buttonContainer: {
+        overflow: 'hidden',
         display: 'flex',
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginLeft: '2rem',
+        rowGap: '5px',
+        flexWrap: 'wrap',
+        flexGrow: 0,
+        flexBasis: '200px',
+        minWidth: '200px',
+    },
+    runStatusContainer: {
+        width: '100%',
+        display: 'flex',
+        columnGap: '5px',
+        '& > *': {
+            // Allow run/cancel status to share space
+            flexGrow: 1,
+            flexShrink: 1,
+        },
     },
     actionButton: {
         padding: "0px 5px 0 0",
-        marginRight: "5px",
         fontSize: '0.78rem',
         // Set icon size for all buttons
         '& svg': {
@@ -67,11 +84,26 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
         whiteSpace: 'nowrap',
     },
+    runButton: {
+        flexShrink: 0,
+    },
     cancelButton: {
+        flexShrink: 0,
         color: theme.palette.common.white,
         backgroundColor: theme.customs.colors.red900,
         '&:hover': {
             backgroundColor: theme.customs.colors.red900,
+        },
+    },
+    serviceButton: {
+        width: '100%',
+        // Add padding to account for no icon
+        paddingLeft: '5px',
+        justifyContent: 'center',
+        '& span': {
+            // Ellipse button text
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
         },
     },
     toolbarStyles: {
@@ -152,30 +184,32 @@ export const ProcessCard = connect(
                                     {name}
                                 </Typography>
                                 <section className={classes.buttonContainer}>
-                                    {isProcessRunning(currentResource) && <ServiceMenu buttonClass={classes.actionButton} services={publishedPorts} />}
-                                    {runAction !== undefined &&
-                                        <Button
-                                            data-cy="process-run-button"
-                                            variant="contained"
-                                            size="small"
-                                            color="primary"
-                                            className={classes.actionButton}
-                                            onClick={() => runAction && runAction(currentResource.containerRequest.uuid)}>
-                                            <StartIcon />
-                                            Run
-                                        </Button>}
-                                    {isProcessCancelable(currentResource) &&
-                                        <Button
-                                            data-cy="process-cancel-button"
-                                            variant="contained"
-                                            size="small"
-                                            color="primary"
-                                            className={classNames(classes.actionButton, classes.cancelButton)}
-                                            onClick={() => cancelProcess(currentResource.containerRequest.uuid)}>
-                                            <StopIcon />
-                                            Cancel
-                                        </Button>}
-                                    <ProcessStatus uuid={currentResource.containerRequest.uuid} />
+                                    {isProcessRunning(currentResource) && <ServiceMenu buttonClass={classNames(classes.actionButton, classes.serviceButton)} services={publishedPorts} />}
+                                    <div className={classes.runStatusContainer}>
+                                        {runAction !== undefined &&
+                                            <Button
+                                                data-cy="process-run-button"
+                                                variant="contained"
+                                                size="small"
+                                                color="primary"
+                                                className={classNames(classes.actionButton, classes.runButton)}
+                                                onClick={() => runAction && runAction(currentResource.containerRequest.uuid)}>
+                                                <StartIcon />
+                                                Run
+                                            </Button>}
+                                        {isProcessCancelable(currentResource) &&
+                                            <Button
+                                                data-cy="process-cancel-button"
+                                                variant="contained"
+                                                size="small"
+                                                color="primary"
+                                                className={classNames(classes.actionButton, classes.cancelButton)}
+                                                onClick={() => cancelProcess(currentResource.containerRequest.uuid)}>
+                                                <StopIcon />
+                                                Cancel
+                                            </Button>}
+                                        <ProcessStatus uuid={currentResource.containerRequest.uuid} />
+                                    </div>
                                 </section>
                             </section>
                         }
@@ -219,7 +253,7 @@ const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
                     id="service-button"
                     onClick={handleClick(service)}
                 >
-                    &nbsp;Connect to {service.label || "service"}
+                    <span>Connect to {service.label || "service"}</span>
                 </Button>
             );
         } else if (services.length > 1) {
@@ -234,8 +268,9 @@ const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
                     aria-haspopup="true"
                     aria-expanded={open ? 'true' : undefined}
                     onClick={handleOpen}
+                    endIcon={<ExpandIcon />}
                 >
-                    &nbsp;Connect to...
+                    <span>Connect to service</span>
                 </Button>
                 <Menu
                     id="basic-menu"
@@ -248,7 +283,7 @@ const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
                 >
                     {services.map((service: PublishedPort) => (
                         <MenuItem onClick={handleClick(service)}>
-                            {service.label}
+                            <span>{service.label}</span>
                         </MenuItem>
                     ))}
                 </Menu>
