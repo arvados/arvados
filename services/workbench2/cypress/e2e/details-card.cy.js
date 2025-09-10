@@ -47,6 +47,7 @@ describe('Base Details Card tests', function () {
 
             createResource();
             cy.loginAs(adminUser);
+            cy.doSidePanelNavigation('Home Projects');
             navToResource();
 
             cy.get(`[data-cy=${resourceKind}-details-card]`).should('be.visible');
@@ -77,7 +78,7 @@ const getCardTestParams = (activeUser, adminUser, resourceKind) => {
                 name,
                 createResource: () => cy.createProject({ owningUser: adminUser, projectName: name }),
                 navToResource: () => {
-                    cy.get('button').contains('Data').click();
+                    cy.doMPVTabSelect("Data");
                     cy.get('main').contains(name).click()
                 },
             };
@@ -92,7 +93,7 @@ const getCardTestParams = (activeUser, adminUser, resourceKind) => {
                         definition: testWFDefinition,
                     }),
                 navToResource: () => {
-                    cy.get('button').contains('Data').click();
+                    cy.doMPVTabSelect("Data");
                     cy.get('main').contains(name).click();
                 },
             };
@@ -108,7 +109,7 @@ const getCardTestParams = (activeUser, adminUser, resourceKind) => {
                         manifest_text: '. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n',
                     }),
                 navToResource: () => {
-                    cy.get('button').contains('Data').click();
+                    cy.doMPVTabSelect("Data");
                     cy.get('main').contains(name).click();
                 },
             };
@@ -119,7 +120,7 @@ const getCardTestParams = (activeUser, adminUser, resourceKind) => {
                 name,
                 createResource: () => createContainerRequest(adminUser, name, 'arvados/jobs', ['echo', 'hello world'], false, 'Committed'),
                 navToResource: () => {
-                    cy.get('button').contains('Workflow Runs').click();
+                    cy.doMPVTabSelect("Workflow Runs");
                     cy.get('main').contains(name).click();
                 },
                 extraAssertions: () => {

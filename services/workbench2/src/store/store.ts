@@ -15,6 +15,7 @@ import { detailsPanelReducer } from "./details-panel/details-panel-reducer";
 import { contextMenuReducer } from "./context-menu/context-menu-reducer";
 import { reducer as formReducer } from "redux-form";
 import { favoritesReducer } from "./favorites/favorites-reducer";
+import { favoritesLinksReducer } from "./favorites/favorites-links-reducer";
 import { snackbarReducer } from "./snackbar/snackbar-reducer";
 import { collectionPanelFilesReducer } from "./collection-panel/collection-panel-files/collection-panel-files-reducer";
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
@@ -86,6 +87,11 @@ import { ExternalCredentialsMiddlewareService } from "./external-credentials/ext
 import { EXTERNAL_CREDENTIALS_PANEL } from "./external-credentials/external-credentials-actions";
 import createSagaMiddleware from 'redux-saga';
 import { rootSaga } from "./redux-saga";
+import { RecentlyVisitedMiddlewareService } from "./recently-visited/recently-visited-middleware-services";
+import { RECENTLY_VISITED_PANEL_ID } from "./recently-visited/recently-visited-actions";
+import { RecentWorkflowsMiddlewareService } from "./recent-wf-runs/recent-wf-runs-middleware-sevice";
+import { RECENT_WF_RUNS_ID } from "./recent-wf-runs/recent-wf-runs-action";
+import { FavoritePinsMiddlewareService, FAVORITE_PINS_ID } from "./favorite-pins/favorite-pins-middleware-service";
 
 declare global {
     interface Window {
@@ -130,6 +136,9 @@ export function configureStore(history: History, services: ServiceRepository, co
     const externalCredentialsMiddleware = dataExplorerMiddleware(
         new ExternalCredentialsMiddlewareService(services, EXTERNAL_CREDENTIALS_PANEL)
     );
+    const recentlyVisitedMiddleware = dataExplorerMiddleware(new RecentlyVisitedMiddlewareService(services, RECENTLY_VISITED_PANEL_ID));
+    const recentWorkflowsMiddleware = dataExplorerMiddleware(new RecentWorkflowsMiddlewareService(services, RECENT_WF_RUNS_ID));
+    const favoritePinsMiddleware = dataExplorerMiddleware(new FavoritePinsMiddlewareService(services, FAVORITE_PINS_ID));
 
     const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
         const state = store.getState();
@@ -171,6 +180,9 @@ export function configureStore(history: History, services: ServiceRepository, co
         subprocessMiddleware,
         workflowProcessessPanelMiddleware,
         externalCredentialsMiddleware,
+        recentlyVisitedMiddleware,
+        recentWorkflowsMiddleware,
+        favoritePinsMiddleware,
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[], b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);
@@ -200,6 +212,7 @@ const createRootReducer = (services: ServiceRepository) =>
         detailsPanel: detailsPanelReducer,
         dialog: dialogReducer,
         favorites: favoritesReducer,
+        favoritesLinks: favoritesLinksReducer,
         ownerName: ownerNameReducer,
         publicFavorites: publicFavoritesReducer,
         form: formReducer,

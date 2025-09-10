@@ -20,7 +20,7 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, TerminalIcon, WorkflowIcon, FolderKeyIcon } from 'components/icon/icon';
+import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, TerminalIcon, WorkflowIcon, FolderKeyIcon, WheelIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'store/side-panel-tree/side-panel-tree-actions';
 import { WorkflowResource } from 'models/workflow';
@@ -349,5 +349,12 @@ export const setExternalCredentialsBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
             { label: SidePanelTreeCategory.EXTERNAL_CREDENTIALS, uuid: SidePanelTreeCategory.EXTERNAL_CREDENTIALS, icon: FolderKeyIcon },
+            ]));
+    };
+
+    export const setDashboardBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: SidePanelTreeCategory.DASHBOARD, uuid: SidePanelTreeCategory.DASHBOARD, icon: WheelIcon },
         ]));
     };

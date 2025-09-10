@@ -11,6 +11,8 @@ import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { getResource } from 'store/resources/resources';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 
 export const multiselectActionConstants = {
     TOGGLE_VISIBLITY: "TOGGLE_VISIBLITY",
@@ -108,6 +110,12 @@ export const removeDisabledButton = (buttonName: string) => {
     return dispatch => {
         dispatch({ type: multiselectActionConstants.REMOVE_DISABLED, payload: buttonName });
     };
+};
+
+export const getResourcesFromCheckedList = (state: RootState) => {
+    const checkedList = getCheckedListUuids(state);
+    const resources = checkedList.map(uuid => getResource<GroupContentsResource>(uuid)(state.resources));
+    return resources;
 };
 
 export const getCheckedListUuids = (state: RootState): string[] => {

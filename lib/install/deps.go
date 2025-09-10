@@ -36,7 +36,7 @@ const goversion = "1.24.1"
 
 const (
 	defaultRubyVersion        = "3.2.2"
-	defaultBundlerVersion     = "~> 2.4.0"
+	defaultBundlerVersion     = "~> 2.5.0"
 	defaultSingularityVersion = "3.10.4"
 	pjsversion                = "1.9.8"
 	geckoversion              = "0.24.0"

@@ -13,6 +13,7 @@ import { ProjectsIcon,
     GroupsIcon,
     ResourceIcon,
     FolderKeyIcon,
+    WheelIcon,
  } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
 import { IconButton, List, ListItem, Tooltip } from '@mui/material'
@@ -31,6 +32,7 @@ import {
     navigateToAllProcesses,
     navigateToTrash,
     navigateToExternalCredentials,
+    navigateToDashboard,
 } from 'store/navigation/navigation-action'
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
@@ -55,6 +57,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 })
 
 enum SidePanelCollapsedCategory {
+    DASHBOARD = 'Dashboard',
     PROJECTS = 'Home Projects',
     FAVORITES = 'My Favorites',
     PUBLIC_FAVORITES = 'Public Favorites',
@@ -74,6 +77,10 @@ type TCollapsedCategory = {
 }
 
 const sidePanelCollapsedCategories: TCollapsedCategory[] = [
+    { name: SidePanelCollapsedCategory.DASHBOARD,
+        icon: <WheelIcon />,
+        navTarget: navigateToDashboard,
+    },
     {
         name: SidePanelCollapsedCategory.PROJECTS,
         icon: <ProjectsIcon />,

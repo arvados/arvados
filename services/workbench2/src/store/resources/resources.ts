@@ -12,6 +12,14 @@ export const getResource = memoize(<T extends Resource = Resource>(id: string | 
     (state: ResourcesState): T | undefined =>
         id ? state[id] as T : undefined);
 
+export const getPopulatedResources = <T extends Resource>(uuids: string[], resources: ResourcesState) => {
+    return uuids.reduce((acc: T[], uuid: string) => {
+        const res = getResource<T>(uuid)(resources);
+        if (res) acc.push(res);
+        return acc;
+    }, []);
+};
+
 export const setResource = <T extends Resource>(id: string, data: T) =>
     (state: ResourcesState) => ({
         ...state,

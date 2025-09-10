@@ -49,8 +49,15 @@ func (s *IntegrationSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
 	arvadostest.ResetDB(c)
 	os.Setenv("ARVADOS_API_TOKEN", arvadostest.SystemRootToken)
-	s.disp = Dispatcher{}
-	s.disp.cluster = &arvados.Cluster{}
+
+	ldr := config.NewLoader(nil, ctxlog.TestLogger(c))
+	cfg, err := ldr.Load()
+	c.Assert(err, IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, IsNil)
+	cluster.Containers.ReserveExtraRAM = 550 << 20
+
+	s.disp = Dispatcher{cluster: cluster}
 	s.disp.setup()
 	s.slurm = slurmFake{}
 }
@@ -210,10 +217,10 @@ func (s *IntegrationSuite) TestCancel(c *C) {
 func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 	container, _ := s.integrationTest(c,
 		[][]string{{
-			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 			fmt.Sprintf("--nice=%d", 10000),
 			"--no-requeue",
-			fmt.Sprintf("--mem=%d", 11445),
+			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
+			fmt.Sprintf("--mem=%d", 11995),
 			fmt.Sprintf("--cpus-per-task=%d", 4),
 			fmt.Sprintf("--tmp=%d", 45777),
 		}},
@@ -228,7 +235,7 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 func (s *IntegrationSuite) TestSbatchFail(c *C) {
 	s.slurm = slurmFake{errBatch: errors.New("something terrible happened")}
 	container, err := s.integrationTest(c,
-		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--nice=10000", "--no-requeue", "--mem=11445", "--cpus-per-task=4", "--tmp=45777"}},
+		[][]string{{"--nice=10000", "--no-requeue", "--job-name=zzzzz-dz642-queuedcontainer", "--mem=11995", "--cpus-per-task=4", "--tmp=45777"}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
@@ -242,8 +249,14 @@ type StubbedSuite struct {
 }
 
 func (s *StubbedSuite) SetUpTest(c *C) {
-	s.disp = Dispatcher{}
-	s.disp.cluster = &arvados.Cluster{}
+	ldr := config.NewLoader(nil, ctxlog.TestLogger(c))
+	cfg, err := ldr.Load()
+	c.Assert(err, IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, IsNil)
+	cluster.Containers.ReserveExtraRAM = 550 << 20
+
+	s.disp = Dispatcher{cluster: cluster}
 	s.disp.setup()
 }
 
@@ -320,7 +333,7 @@ func (s *StubbedSuite) TestSbatchArgs(c *C) {
 		s.disp.cluster.Containers.SLURM.SbatchArgumentsList = defaults
 
 		args, err := s.disp.sbatchArgs(container)
-		c.Check(args, DeepEquals, append(defaults, "--job-name=123", "--nice=10000", "--no-requeue", "--mem=239", "--cpus-per-task=2", "--tmp=0"))
+		c.Check(args, DeepEquals, append([]string{"--nice=10000", "--no-requeue"}, defaults...))
 		c.Check(err, IsNil)
 	}
 }
@@ -337,9 +350,10 @@ func (s *StubbedSuite) TestSbatchArgs_GPU(c *C) {
 		},
 		Priority: 1,
 	}
-	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = nil
+	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = append([]string{"--account=accountname"}, s.disp.cluster.Containers.SLURM.SbatchArgumentsList...)
+	s.disp.cluster.Containers.SLURM.SbatchGPUArgumentsList = []string{"--gpus=%G", "--partition=gpupartition"}
 	args, err := s.disp.sbatchArgs(container)
-	c.Check(args, DeepEquals, []string{"--job-name=123", "--nice=10000", "--no-requeue", "--mem=239", "--cpus-per-task=2", "--tmp=0", "--gpus=3"})
+	c.Check(args, DeepEquals, []string{"--nice=10000", "--no-requeue", "--account=accountname", "--job-name=123", "--mem=789", "--cpus-per-task=2", "--tmp=0", "--gpus=3", "--partition=gpupartition"})
 	c.Check(err, IsNil)
 }
 
@@ -352,7 +366,8 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 
 	for _, trial := range []struct {
 		types      map[string]arvados.InstanceType
-		sbatchArgs []string
+		configArgs []string
+		expectArgs []string
 		err        error
 	}{
 		// Choose node type => use --constraint arg
@@ -363,12 +378,14 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 				"a1.medium": {Name: "a1.medium", Price: 0.08, RAM: 512000000, VCPUs: 4},
 				"a1.large":  {Name: "a1.large", Price: 0.16, RAM: 1024000000, VCPUs: 8},
 			},
-			sbatchArgs: []string{"--constraint=instancetype=a1.medium"},
+			configArgs: []string{"--constraint=instancetype=%I"},
+			expectArgs: []string{"--constraint=instancetype=a1.medium"},
 		},
-		// No node types configured => no slurm constraint
+		// No node types configured => empty %I value
 		{
 			types:      nil,
-			sbatchArgs: []string{"--mem=239", "--cpus-per-task=2", "--tmp=0"},
+			configArgs: []string{"--constraint=instancetype=%I"},
+			expectArgs: []string{"--constraint=instancetype="},
 		},
 		// No node type is big enough => error
 		{
@@ -380,11 +397,13 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 	} {
 		c.Logf("%#v", trial)
 		s.disp.cluster = &arvados.Cluster{InstanceTypes: trial.types}
+		s.disp.cluster.Containers.SLURM.SbatchArgumentsList = []string{"--constraint=instancetype=%I"}
+		s.disp.cluster.Containers.SLURM.SbatchGPUArgumentsList = []string{"--gpus=%G"}
 
 		args, err := s.disp.sbatchArgs(container)
 		c.Check(err == nil, Equals, trial.err == nil)
 		if trial.err == nil {
-			c.Check(args, DeepEquals, append([]string{"--job-name=123", "--nice=10000", "--no-requeue"}, trial.sbatchArgs...))
+			c.Check(args, DeepEquals, append([]string{"--nice=10000", "--no-requeue"}, trial.expectArgs...))
 		} else {
 			c.Check(len(err.(dispatchcloud.ConstraintsNotSatisfiableError).AvailableTypes), Equals, len(trial.types))
 		}
@@ -401,11 +420,19 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 
 	args, err := s.disp.sbatchArgs(container)
 	c.Check(args, DeepEquals, []string{
-		"--job-name=123", "--nice=10000", "--no-requeue",
-		"--mem=239", "--cpus-per-task=1", "--tmp=0",
+		"--nice=10000", "--no-requeue",
+		"--job-name=123",
+		"--mem=789", "--cpus-per-task=1", "--tmp=0",
 		"--partition=blurb,b2",
 	})
 	c.Check(err, IsNil)
+}
+
+func (s *StubbedSuite) TestSbatchArgumentsError(c *C) {
+	s.disp.cluster.Containers.SLURM.SbatchArgumentsList = []string{"--bad% template"}
+	container := arvados.Container{}
+	_, err := s.disp.sbatchArgs(container)
+	c.Check(err, ErrorMatches, `Unknown substitution parameter %  in .*`)
 }
 
 func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {

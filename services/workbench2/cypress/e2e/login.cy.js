@@ -58,7 +58,8 @@ describe('Login tests', function() {
 
     it('logs in successfully with valid user token', function() {
         cy.visit(`/token/?api_token=${activeUser.token}`);
-        cy.url().should('contain', '/projects/');
+        cy.url().should('contain', '/dashboard');
+        cy.doSidePanelNavigation('Home Projects');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
         cy.get('button[aria-label="Account Management"]').click();
@@ -74,6 +75,7 @@ describe('Login tests', function() {
         }).as('testProject1');
         // Log in
         cy.visit(`/token/?api_token=${activeUser.token}`);
+        cy.doSidePanelNavigation('Home Projects');
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
@@ -90,7 +92,7 @@ describe('Login tests', function() {
         // Should log the user out.
 
         cy.getAll('@testProject1').then(([testProject1]) => {
-            cy.get('button').contains('Data').click();
+            cy.doMPVTabSelect("Data");
             cy.get('main').contains(testProject1.name).click();
             cy.get('div#root').should('contain', 'Please log in');
             // Should retain last visited url when auth is invalidated
@@ -100,6 +102,7 @@ describe('Login tests', function() {
 
 it('logs in successfully with valid admin token', function() {
         cy.visit(`/token/?api_token=${adminUser.token}`);
+        cy.doSidePanelNavigation('Home Projects');
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
@@ -126,7 +129,7 @@ it('logs in successfully with valid admin token', function() {
         cy.get('#username').type(randomUser.username);
         cy.get('#password').type(randomUser.password);
         cy.contains('button', 'Log in').click();
-        cy.url().should('contain', '/projects/');
+        cy.url().should('contain', '/dashboard');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('contain', 'Your account is inactive');
         cy.get('button[aria-label="Account Management"]').click();

@@ -29,9 +29,11 @@ import { ProcessIcon,
     TerminalIcon,
     ResourceIcon,
     FolderKeyIcon,
+    WheelIcon,
 } from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
+    DASHBOARD = 'Dashboard',
     PROJECTS = 'Home Projects',
     FAVORITES = 'My Favorites',
     PUBLIC_FAVORITES = 'Public Favorites',
@@ -63,6 +65,7 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 };
 
 let SIDE_PANEL_CATEGORIES: string[] = [
+    SidePanelTreeCategory.DASHBOARD,
     SidePanelTreeCategory.PROJECTS,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.PUBLIC_FAVORITES,
@@ -355,6 +358,8 @@ export const getSidePanelIcon = (category: string) => {
             return TerminalIcon
         case SidePanelTreeCategory.EXTERNAL_CREDENTIALS:
             return FolderKeyIcon
+        case SidePanelTreeCategory.DASHBOARD:
+            return WheelIcon
         default:
             return ProjectIcon;
     }

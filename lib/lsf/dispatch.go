@@ -41,12 +41,14 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 	if err != nil {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
 	}
+	ctx, cancel := context.WithCancel(ctx)
 	d := &dispatcher{
 		Cluster:   cluster,
 		Context:   ctx,
 		ArvClient: ac,
 		AuthToken: token,
 		Registry:  reg,
+		cancel:    cancel,
 	}
 	go d.Start()
 	return d
@@ -67,8 +69,8 @@ type dispatcher struct {
 	httpHandler   http.Handler
 
 	initOnce sync.Once
-	stop     chan struct{}
 	stopped  chan struct{}
+	cancel   context.CancelFunc
 }
 
 // Start starts the dispatcher. Start can be called multiple times
@@ -78,12 +80,13 @@ func (disp *dispatcher) Start() {
 		disp.init()
 		dblock.Dispatch.Lock(context.Background(), disp.dbConnector.GetDB)
 		go func() {
+			disp.stopped = make(chan struct{})
+			defer close(disp.stopped)
 			defer dblock.Dispatch.Unlock()
 			disp.checkLsfQueueForOrphans()
 			err := disp.arvDispatcher.Run(disp.Context)
 			if err != nil {
 				disp.logger.Error(err)
-				disp.Close()
 			}
 		}()
 	})
@@ -114,10 +117,7 @@ func (disp *dispatcher) Done() <-chan struct{} {
 // Stop dispatching containers and release resources. Used by tests.
 func (disp *dispatcher) Close() {
 	disp.Start()
-	select {
-	case disp.stop <- struct{}{}:
-	default:
-	}
+	disp.cancel()
 	<-disp.stopped
 }
 
@@ -131,8 +131,6 @@ func (disp *dispatcher) init() {
 	}
 	disp.ArvClient.AuthToken = disp.AuthToken
 	disp.dbConnector = ctrlctx.DBConnector{PostgreSQL: disp.Cluster.PostgreSQL}
-	disp.stop = make(chan struct{}, 1)
-	disp.stopped = make(chan struct{})
 
 	arv, err := arvadosclient.New(disp.ArvClient)
 	if err != nil {

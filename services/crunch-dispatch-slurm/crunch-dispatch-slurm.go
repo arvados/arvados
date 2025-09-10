@@ -175,48 +175,65 @@ func (disp *Dispatcher) checkSqueueForOrphans() {
 	}
 }
 
-func (disp *Dispatcher) slurmConstraintArgs(container arvados.Container) []string {
-	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
-		container.RuntimeConstraints.KeepCacheRAM+
-		int64(disp.cluster.Containers.ReserveExtraRAM)) / float64(1048576)))
-
-	disk := dispatchcloud.EstimateScratchSpace(&container)
-	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
-	args := []string{
-		fmt.Sprintf("--mem=%d", mem),
-		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
-		fmt.Sprintf("--tmp=%d", disk),
-	}
-	if gpus := container.RuntimeConstraints.GPU.DeviceCount; gpus > 0 {
-		args = append(args, fmt.Sprintf("--gpus=%d", gpus))
-	}
-	return args
-}
+var rePercentAny = regexp.MustCompile(`%.`)
 
 func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
-	var args []string
-	args = append(args, disp.cluster.Containers.SLURM.SbatchArgumentsList...)
-	args = append(args, "--job-name="+container.UUID, fmt.Sprintf("--nice=%d", initialNiceValue), "--no-requeue")
-
+	instancetype := ""
 	if disp.cluster == nil {
 		// no instance types configured
-		args = append(args, disp.slurmConstraintArgs(container)...)
 	} else if types, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
 		// ditto
-		args = append(args, disp.slurmConstraintArgs(container)...)
 	} else if err != nil {
 		return nil, err
 	} else {
-		// use instancetype constraint instead of slurm
-		// mem/cpu/tmp specs (note types[0] is the lowest-cost
-		// suitable instance type)
-		args = append(args, "--constraint=instancetype="+types[0].Name)
+		// Note types[0] is the lowest-cost suitable instance type.
+		instancetype = types[0].Name
 	}
-
-	if len(container.SchedulingParameters.Partitions) > 0 {
-		args = append(args, "--partition="+strings.Join(container.SchedulingParameters.Partitions, ","))
+	maxrunminutes := int64(math.Ceil(float64(container.SchedulingParameters.MaxRunTime) / 60))
+	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
+		container.RuntimeConstraints.KeepCacheRAM+
+		int64(disp.cluster.Containers.ReserveExtraRAM)) / float64(1048576)))
+	tmp := dispatchcloud.EstimateScratchSpace(&container)
+	tmp = int64(math.Ceil(float64(tmp) / float64(1048576)))
+	repl := map[string]string{
+		"%%": "%",
+		"%C": fmt.Sprintf("%d", container.RuntimeConstraints.VCPUs),
+		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.GPU.DeviceCount),
+		"%I": fmt.Sprintf("%s", instancetype),
+		"%M": fmt.Sprintf("%d", mem),
+		"%P": strings.Join(container.SchedulingParameters.Partitions, ","),
+		"%T": fmt.Sprintf("%d", tmp),
+		"%U": container.UUID,
+		"%W": fmt.Sprintf("%d", maxrunminutes),
 	}
-
+	argtmpl := disp.cluster.Containers.SLURM.SbatchArgumentsList
+	if container.RuntimeConstraints.GPU.DeviceCount > 0 {
+		argtmpl = append(argtmpl, disp.cluster.Containers.SLURM.SbatchGPUArgumentsList...)
+	}
+	args := []string{fmt.Sprintf("--nice=%d", initialNiceValue), "--no-requeue"}
+	for _, arg := range argtmpl {
+		var err error
+		var skip bool
+		arg = rePercentAny.ReplaceAllStringFunc(arg, func(s string) string {
+			subst, ok := repl[s]
+			if !ok {
+				err = fmt.Errorf("Unknown substitution parameter %s in SbatchArgumentsList or SbatchGPUArgumentsList", s)
+			}
+			if s == "%W" && subst == "0" ||
+				s == "%P" && subst == "" {
+				skip = true
+				return ""
+			}
+			return subst
+		})
+		if err != nil {
+			return nil, err
+		}
+		if skip {
+			continue
+		}
+		args = append(args, arg)
+	}
 	return args, nil
 }
 

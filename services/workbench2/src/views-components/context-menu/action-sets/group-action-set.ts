@@ -41,3 +41,22 @@ export const groupActionSet: ContextMenuActionSet = [
         }
     ],
 ];
+
+export const builtInGroupActionSet: ContextMenuActionSet = [
+    [
+        {
+            name: ContextMenuActionNames.API_DETAILS,
+            icon: AdvancedIcon,
+            execute: (dispatch, resources) => {
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
+            },
+        },
+        {
+            name: ContextMenuActionNames.VIEW_DETAILS,
+            icon: DetailsIcon,
+            execute: (dispatch, resources) => {
+                dispatch<any>(toggleDetailsPanel(resources[0].uuid));
+            },
+        }
+    ]
+];

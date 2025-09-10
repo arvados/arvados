@@ -61,7 +61,7 @@ else
 fi
 
 run_bundler() {
-    flock $GEMLOCK /var/lib/arvados/bin/gem install --conservative --no-document --user --version '~> 2.4.0' bundler
+    flock $GEMLOCK /var/lib/arvados/bin/gem install --conservative --no-document --user --version '~> 2.5.0' bundler
 
     BUNDLER=bundle
     if test -x $PWD/bin/bundle ; then

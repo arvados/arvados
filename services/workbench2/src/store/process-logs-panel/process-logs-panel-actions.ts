@@ -116,10 +116,14 @@ export const pollProcessLogs = (processUuid: string) =>
 
                 if (process?.container?.state === ContainerState.QUEUED || process?.container?.state === ContainerState.LOCKED) {
                     const containerStatus: ContainerStatus = await containerRequestService.containerStatus(process?.containerRequest?.uuid, false);
-                    logFragments.push({
-                        logType: LogEventType.SCHEDULING,
-                        contents: [`${new Date().toISOString()} ${containerStatus.schedulingStatus}`],
-                    });
+
+                    if (containerStatus.schedulingStatus.trim().length) {
+                        // If schedulingStatus is not just whitespace, add it to the log view
+                        logFragments.push({
+                            logType: LogEventType.SCHEDULING,
+                            contents: [`${new Date().toISOString()} ${containerStatus.schedulingStatus}`],
+                        });
+                    }
                 }
 
                 if (logFragments.length) {

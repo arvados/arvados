@@ -97,7 +97,7 @@ import { GroupAttributesDialog } from "views-components/groups-dialog/attributes
 import { CreateExternalCredentialDialog } from "views-components/dialog-create/create-external-credential-dialog";
 import { UpdateExternalCredentialDialog } from "views-components/dialog-forms/update-external-credential-dialog";
 import { GroupDetailsPanel } from "views/group-details-panel/group-details-panel";
-import { RemoveGroupMemberDialog } from "views-components/groups-dialog/member-remove-dialog";
+import { RemoveGroupMemberDialog, RemoveMultipleGroupMembersDialog } from "views-components/groups-dialog/member-remove-dialog";
 import { GroupMemberAttributesDialog } from "views-components/groups-dialog/member-attributes-dialog";
 import { PublicFavoritePanel } from "views/public-favorites-panel/public-favorites-panel";
 import { LinkAccountPanel } from "views/link-account-panel/link-account-panel";
@@ -114,6 +114,7 @@ import { Banner } from "views-components/baner/banner";
 import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 import classNames from "classnames";
 import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferences-panel";
+import { Dashboard } from "components/dashboard/dashboard";
 import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
@@ -181,6 +182,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 let routes = (
     <>
+        <Route
+            path={Routes.DASHBOARD}
+            component={Dashboard}
+        />
         <Route
             path={Routes.PROJECTS}
             component={ProjectPanel}
@@ -507,6 +512,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveApiClientAuthorizationDialog />
             <RemoveGroupDialog />
             <RemoveGroupMemberDialog />
+            <RemoveMultipleGroupMembersDialog />
             <RemoveKeepServiceDialog />
             <RemoveLinkDialog />
             <RemoveProcessDialog />

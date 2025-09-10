@@ -83,7 +83,7 @@ import { virtualMachineActionSet } from "views-components/context-menu/action-se
 import { userActionSet } from "views-components/context-menu/action-sets/user-action-set";
 import { UserDetailsActionSet } from "views-components/context-menu/action-sets/user-details-action-set";
 import { apiClientAuthorizationActionSet } from "views-components/context-menu/action-sets/api-client-authorization-action-set";
-import { groupActionSet } from "views-components/context-menu/action-sets/group-action-set";
+import { groupActionSet, builtInGroupActionSet } from "views-components/context-menu/action-sets/group-action-set";
 import { groupMemberActionSet } from "views-components/context-menu/action-sets/group-member-action-set";
 import { linkActionSet } from "views-components/context-menu/action-sets/link-action-set";
 import { loadFileViewersConfig } from "store/file-viewers/file-viewers-actions";
@@ -143,6 +143,7 @@ addMenuActionSet(ContextMenuKind.USER_DETAILS, UserDetailsActionSet);
 addMenuActionSet(ContextMenuKind.LINK, linkActionSet);
 addMenuActionSet(ContextMenuKind.API_CLIENT_AUTHORIZATION, apiClientAuthorizationActionSet);
 addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);
+addMenuActionSet(ContextMenuKind.BUILT_IN_GROUP, builtInGroupActionSet);
 addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);

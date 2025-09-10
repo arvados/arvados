@@ -9,7 +9,7 @@ export interface LinkResource extends Resource, ResourceWithProperties {
     headKind: ResourceKind;
     tailUuid: string;
     tailKind: string;
-    linkClass: string;
+    linkClass: LinkClass;
     name: string;
     kind: ResourceKind.LINK;
 }

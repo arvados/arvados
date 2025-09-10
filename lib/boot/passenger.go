@@ -84,7 +84,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, appdir, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "--version", "~> 2.4.0", "bundler")
+	err = super.RunProgram(ctx, appdir, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "--version", "~> 2.5.0", "bundler")
 	if err != nil {
 		return err
 	}

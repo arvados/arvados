@@ -13,7 +13,7 @@ import { green } from '@mui/material/colors';
 import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
 import { saveApiToken } from 'store/auth/auth-action';
-import { navigateToRootProject } from 'store/navigation/navigation-action';
+import { navigateToDashboard } from 'store/navigation/navigation-action';
 import { replace } from 'react-router-redux';
 import { PasswordLoginResponse } from 'views/login-panel/login-panel';
 
@@ -96,7 +96,7 @@ export const LoginForm = withStyles(styles)(
                         dispatch<any>(saveApiToken(apiToken)).finally(
                             () => {
                                 if ((new URL(window.location.href).pathname) !== '/my-account') {
-                                    rdUrl === '/' ? dispatch(navigateToRootProject) : dispatch(replace(rdUrl))
+                                    rdUrl === '/' ? dispatch(navigateToDashboard) : dispatch(replace(rdUrl))
                                 }
                             }
                         );

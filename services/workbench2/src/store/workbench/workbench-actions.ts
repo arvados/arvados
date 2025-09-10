@@ -37,7 +37,7 @@ import {
     setUserPreferencesBreadcrumbs,
     setExternalCredentialsBreadcrumbs,
 } from "store/breadcrumbs/breadcrumbs-actions";
-import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
+import { navigateTo, navigateToDashboard } from "store/navigation/navigation-action";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { ServiceRepository } from "services/services";
 import { getResource } from "store/resources/resources";
@@ -114,6 +114,9 @@ import { loadUserPreferencesPanel } from "store/user-preferences/user-preference
 import { loadExternalCredentials } from "store/external-credentials/external-credentials-actions";
 import { externalCredentialsActions } from "store/external-credentials/external-credentials-actions";
 import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel";
+import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action";
+import { loadRecentlyVisited } from "store/recently-visited/recently-visited-actions";
+import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service"
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -206,13 +209,25 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
         if (router.location) {
             const match = matchRootRoute(router.location.pathname);
             if (match) {
-                dispatch<any>(navigateToRootProject);
+                dispatch<any>(navigateToDashboard);
+                if (getState().progressIndicator.includes(WORKBENCH_LOADING_SCREEN)) {
+                    dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+                }
+
             }
         }
     } else {
         dispatch(userIsNotAuthenticated);
     }
 };
+
+export const loadDashboard = () => handleFirstTimeLoad((dispatch: Dispatch) => {
+    dispatch<any>(loadRecentWorkflows());
+    dispatch<any>(loadRecentlyVisited());
+    dispatch<any>(loadFavoritePins());
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.DASHBOARD));
+    dispatch<any>(setSidePanelBreadcrumbs(SidePanelTreeCategory.DASHBOARD));
+});
 
 export const loadFavorites = () =>
     handleFirstTimeLoad((dispatch: Dispatch) => {

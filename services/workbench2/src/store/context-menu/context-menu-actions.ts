@@ -82,6 +82,22 @@ const openContextMenuOnly = (event: React.MouseEvent<HTMLElement>, resource: Con
     );
 };
 
+export const openContextMenuOnlyFromUuid = (event: React.MouseEvent<HTMLElement>, uuid: string) => (dispatch: Dispatch, getState: () => RootState) => {
+    const resource = getResource<GroupContentsResource>(uuid)(getState().resources);
+    const menuKind = dispatch<any>(resourceToMenuKind(uuid));
+    if (resource) {
+        dispatch<any>(
+            openContextMenuOnly(event, {
+                name: resource.name,
+                uuid: resource.uuid,
+                ownerUuid: resource.ownerUuid,
+                kind: resource.kind,
+                menuKind: menuKind,
+            })
+        );
+    }
+};
+
 export const openCollectionFilesContextMenu =
     (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => (dispatch: Dispatch, getState: () => RootState) => {
         const selectedCount = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).length;

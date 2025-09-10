@@ -9,6 +9,7 @@ import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { GroupClass } from 'models/group';
+import { LinkClass } from 'models/link';
 
 describe('context-menu-actions', () => {
     describe('resourceToMenuKind', () => {
@@ -21,6 +22,7 @@ describe('context-menu-actions', () => {
         const projectUuid = 'zzzzz-j7d0g-ccccccccccccccc';
         const filterGroupUuid = 'zzzzz-j7d0g-ccccccccccccccd';
         const linkUuid = 'zzzzz-o0j2j-0123456789abcde';
+        const groupMemberLinkUuid = 'zzzzz-o0j2j-groupmemberlink';
         const containerRequestUuid = 'zzzzz-xvhdp-0123456789abcde';
 
         it('should return the correct menu kind', () => {
@@ -66,6 +68,7 @@ describe('context-menu-actions', () => {
                 [linkUuid, true, true, false, false, ContextMenuKind.LINK],
                 [linkUuid, true, false, true, false, ContextMenuKind.LINK],
                 [linkUuid, true, false, false, false, ContextMenuKind.LINK],
+                [groupMemberLinkUuid, false, true, true, false, ContextMenuKind.GROUP_MEMBER],
 
                 [userUuid, false, true, true, false, ContextMenuKind.USER_DETAILS],
                 [userUuid, false, true, false, false, ContextMenuKind.USER_DETAILS],
@@ -124,6 +127,12 @@ describe('context-menu-actions', () => {
                         [linkUuid]: {
                             uuid: linkUuid,
                             kind: ResourceKind.LINK,
+                        },
+                        [groupMemberLinkUuid]: {
+                            uuid: groupMemberLinkUuid,
+                            kind: ResourceKind.LINK,
+                            linkClass: LinkClass.PERMISSION,
+                            headKind: ResourceKind.GROUP,
                         },
                         [userUuid]: {
                             uuid: userUuid,

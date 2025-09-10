@@ -23,6 +23,7 @@ import { LinkClass, LinkResource } from "models/link";
 import { GroupContentsResource } from "services/groups-service/groups-service";
 import { ListArguments, ListResults } from "services/common-service/common-service";
 import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
+import { favoritesLinksActions } from "store/favorites/favorites-links-reducer";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -87,6 +88,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     include: ["owner_uuid", "container_uuid"],
                 });
 
+                api.dispatch(favoritesLinksActions.setFavoritesLinks(responseLinks.items));
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.items));
                 api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
                 api.dispatch(favoritePanelActions.SET_ITEMS({

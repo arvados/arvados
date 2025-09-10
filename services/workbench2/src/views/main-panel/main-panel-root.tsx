@@ -46,13 +46,14 @@ export interface MainPanelRootDataProps {
 interface MainPanelRootDispatchProps {
     toggleSidePanel: () => void,
     setCurrentRouteUuid: (uuid: string | null) => void;
+    saveRecentlyVisited: (uuid: string) => void;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, progressIndicator, user, buildInfo, uuidPrefix, config, linkAccountPanel,
-        sidePanelIsCollapsed, isDetailsPanelOpen, setCurrentRouteUuid, router}: MainPanelRootProps) =>{
+        sidePanelIsCollapsed, isDetailsPanelOpen, setCurrentRouteUuid, saveRecentlyVisited, router}: MainPanelRootProps) =>{
 
             const working = progressIndicator.length > 0;
             const loading = progressIndicator.includes(WORKBENCH_LOADING_SCREEN);
@@ -67,6 +68,7 @@ export const MainPanelRoot = withStyles(styles)(
                 const uuid = splitRoute[splitRoute.length - 1];
                 if(Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
+                    if(user) saveRecentlyVisited(uuid);
                 } else {
                     setCurrentRouteUuid(null);
                 }
