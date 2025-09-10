@@ -55,8 +55,8 @@ const NewExternalCredentialFields = withStyles(styles)(
         <Grid container direction={'row'} xs={12} spacing={2}>
             <Grid item xs={6}><ExternalCredentialClassField /></Grid>
             <Grid item xs={6}><ExternalCredentialExternalIdField /></Grid>
-            <Grid item xs={6}><ExternalCredentialExpiresAtField /></Grid>
             <Grid item xs={6}><ExternalCredentialSecretField /></Grid>
+            <Grid item xs={6}><ExternalCredentialExpiresAtField /></Grid>
             <Grid item xs={12}><ExternalCredentialScopesField /></Grid>
         </Grid>
     </span>);

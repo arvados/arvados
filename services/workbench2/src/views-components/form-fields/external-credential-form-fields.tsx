@@ -6,8 +6,9 @@ import React from "react";
 import { Field } from "redux-form";
 import moment from "moment";
 import { TextField, RichEditorTextField } from "components/text-field/text-field";
-import { REQUIRED_VALIDATION, REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION, LENGTH255_VALIDATION } from "validators/validators";
+import { REQUIRED_VALIDATION, REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION } from "validators/validators";
 import { DatePicker } from "components/date-picker/date-picker";
+import { StringArrayInput } from "components/string-array-input/string-array-input";
 
 export const ExternalCredentialNameField = () =>
     <Field
@@ -54,11 +55,8 @@ export const ExternalCredentialSecretField = () =>
         label="Secret *" />;
 
 export const ExternalCredentialScopesField = () =>
-    <Field
-        name='scopes'
-        component={TextField as any}
-        validate={LENGTH255_VALIDATION}
-        helperText="Comma separated list of scopes"
-        label="Scopes" />;
-
-
+        <Field
+            name="scopes"
+            component={StringArrayInput as any}
+            label="Applicable scopes"
+        />
