@@ -5,7 +5,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, Typography, Grid, Button, Menu, MenuItem } from '@mui/material';
+import { Card, CardHeader, Typography, Grid, Button, Menu, MenuItem, Tooltip } from '@mui/material';
 import { StartIcon, StopIcon, ExpandIcon } from 'components/icon/icon';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -251,16 +251,18 @@ const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
             const service = services[0];
 
             return (
-                <Button
-                    className={buttonClass}
-                    variant="contained"
-                    size="small"
-                    color="primary"
-                    id="service-button"
-                    onClick={handleClick(service)}
-                >
-                    <span>Connect to {service.label || "service"}</span>
-                </Button>
+                <Tooltip arrow disableInteractive title={`Connect to ${service.label || "service"}`}>
+                    <Button
+                        className={buttonClass}
+                        variant="contained"
+                        size="small"
+                        color="primary"
+                        id="service-button"
+                        onClick={handleClick(service)}
+                    >
+                        <span>Connect to {service.label || "service"}</span>
+                    </Button>
+                </Tooltip>
             );
         } else if (services.length > 1) {
             return <>
