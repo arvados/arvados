@@ -2,20 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export interface ExternalCredentialCreateFormDialogData {
+export interface CreateExternalCredentialFormDialogData {
     name: string;
     description: string;
     credentialClass: string;
     externalId: string;
     expiresAt: string;
-    scopes: string[];
+    secret: string;
+    scopes?: string[];
 }
 
-export interface ExternalCredentialUpdateFormDialogData {
+export interface UpdateExternalCredentialFormDialogData {
     name: string;
     description: string;
     credentialClass: string;
     externalId: string;
     expiresAt: string;
-    scopes: string[];
+    scopes?: string[];
 }

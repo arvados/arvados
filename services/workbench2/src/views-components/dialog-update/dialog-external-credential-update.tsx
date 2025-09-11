@@ -10,7 +10,7 @@ import { FormDialog } from 'components/form-dialog/form-dialog';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { ExternalCredentialUpdateFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
+import { UpdateExternalCredentialFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
 import { ExternalCredentialNameField,
     ExternalCredentialDescriptionField,
     ExternalCredentialClassField,
@@ -27,7 +27,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
 });
 
-type DialogExternalCredentialProps = WithDialogProps<{}> & InjectedFormProps<ExternalCredentialUpdateFormDialogData>;
+type DialogExternalCredentialProps = WithDialogProps<{}> & InjectedFormProps<UpdateExternalCredentialFormDialogData>;
 
 export const DialogExternalCredentialUpdate = (props: DialogExternalCredentialProps) => {
     let title = 'Edit External Credential';

@@ -27,7 +27,7 @@ export class ExternalCredentialsMiddlewareService extends DataExplorerMiddleware
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch {
-            api.dispatch(couldNotFetchLinks());
+            api.dispatch(couldNotFetchExternalCredentials());
         }
     }
 
@@ -63,8 +63,8 @@ export const setItems = (listResults: ListResults<ExternalCredential>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const couldNotFetchLinks = () =>
+const couldNotFetchExternalCredentials = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch api client authorizations.',
+        message: 'Could not fetch external credentials.',
         kind: SnackbarKind.ERROR
     });

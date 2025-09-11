@@ -178,4 +178,5 @@ export const navigateToCollectionsContentAddress = push(Routes.COLLECTIONS_CONTE
 export const navigateToAllProcesses = push(Routes.ALL_PROCESSES);
 
 export const navigateToExternalCredentials = push(Routes.EXTERNAL_CREDENTIALS);
+
 export const navigateToDashboard = push(Routes.DASHBOARD);

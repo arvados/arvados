@@ -14,26 +14,22 @@ import { ExternalCredentialNameField,
     ExternalCredentialExpiresAtField,
     ExternalCredentialSecretField,
     ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
-import { ExternalCredentialCreateFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
+import { CreateExternalCredentialFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { GroupClass } from 'models/group';
 
-type CssRules = 'propertiesForm' | 'description';
+type CssRules = 'description';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
-    propertiesForm: {
-        marginTop: theme.spacing(2),
-        marginBottom: theme.spacing(2),
-    },
     description: {
         marginTop: theme.spacing(2),
         marginBottom: theme.spacing(2),
     },
 });
 
-type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass}> & InjectedFormProps<ExternalCredentialCreateFormDialogData>;
+type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass}> & InjectedFormProps<CreateExternalCredentialFormDialogData>;
 
 export const DialogExternalCredentialCreate = (props: DialogProjectProps) => {
     const title = 'New External Credential';

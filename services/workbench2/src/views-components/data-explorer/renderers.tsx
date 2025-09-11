@@ -862,7 +862,7 @@ export const RenderResourceStringField = <T extends Resource>(props: { uuid: str
 
 const renderString = (data: string) => <Typography noWrap>{data}</Typography>;
 
-export const RenderDescription = connect((state: RootState, props: { uuid: string }) => {
+export const RenderDescriptionInTD = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { description: resource ? resource.description : "" };
 })((props: { description: string }) =>
@@ -883,9 +883,9 @@ export const RenderScopes = connect((state: RootState, props: { uuid: string }) 
         }
     }
     return { scopes };
-})((props: { scopes: string[] }) => renderStringArray(props.scopes));
+})((props: { scopes: string[] }) => renderStringArray(props.scopes, false));
 
-const renderStringArray = (data: string[]) => <Typography noWrap>{data.length ? data.join(', ') : '-'}</Typography>;
+const renderStringArray = (data: string[], noWrap: boolean = true) => <Typography noWrap={!!noWrap}>{data.length ? data.join(', ') : '-'}</Typography>;
 
 export const renderFileSize = (fileSize?: number) => (
     <Typography

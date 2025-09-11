@@ -7,18 +7,18 @@ import { AxiosInstance } from "axios";
 import { ApiActions } from "services/api/api-actions";
 import { ListResults } from "services/common-service/common-service";
 import { ExternalCredential } from "models/external-credential";
-import { ExternalCredentialCreateFormDialogData, ExternalCredentialUpdateFormDialogData } from "store/external-credentials/external-credential-dialog-data";
+import { CreateExternalCredentialFormDialogData, UpdateExternalCredentialFormDialogData } from "store/external-credentials/external-credential-dialog-data";
 
 export class ExternalCredentialsService extends CommonService<ExternalCredential> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
             super(serverApi, "credentials", actions);
         }
 
-        async list( args?: ListArguments, showErrors?: boolean ): Promise<ListResults<ExternalCredential>> {
+        list( args?: ListArguments, showErrors?: boolean ): Promise<ListResults<ExternalCredential>> {
             return super.list(args, showErrors);
         }
 
-        create(data: ExternalCredentialCreateFormDialogData, showErrors?: boolean): Promise<ExternalCredential> {
+        create(data: CreateExternalCredentialFormDialogData, showErrors?: boolean): Promise<ExternalCredential> {
             return super.create(data, showErrors);
         }
 
@@ -26,7 +26,7 @@ export class ExternalCredentialsService extends CommonService<ExternalCredential
             return super.delete(uuid, showErrors);
         }
 
-        update(uuid: string, data: ExternalCredentialUpdateFormDialogData, showErrors?: boolean): Promise<ExternalCredential> {
+        update(uuid: string, data: UpdateExternalCredentialFormDialogData, showErrors?: boolean): Promise<ExternalCredential> {
             return super.update(uuid, data, showErrors);
         }
 }

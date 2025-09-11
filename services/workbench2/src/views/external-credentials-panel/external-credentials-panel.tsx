@@ -8,8 +8,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { Grid, Button } from "@mui/material";
 import { camelCase, noop } from "lodash";
-import { connect, DispatchProp } from "react-redux";
-import { RouteComponentProps } from "react-router";
+import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns, SortDirection } from "components/data-table/data-column";
@@ -20,7 +19,7 @@ import {
     ResourceExpiresAtDate,
     RenderResourceStringField,
     RenderScopes,
-    RenderDescription,
+    RenderDescriptionInTD,
 } from "views-components/data-explorer/renderers";
 import { FolderKeyIcon, AddIcon } from "components/icon/icon";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -72,7 +71,7 @@ export const externalCredentialsPanelColumns: DataColumns<string, ExternalCreden
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <RenderDescription uuid={uuid} />,
+        render: uuid => <RenderDescriptionInTD uuid={uuid} />,
     },
     {
         name: ExternalCredentialsPanelColumnNames.CREDENTIAL_CLASS,
@@ -133,9 +132,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ExternalCredentialsPanelActionP
 
 type ExternalCredentialsPanelProps = ExternalCredentialsPanelDataProps &
     ExternalCredentialsPanelActionProps &
-    DispatchProp &
-    WithStyles<CssRules> &
-    RouteComponentProps<{ id: string }>;
+    WithStyles<CssRules>
 
 export const ExternalCredentialsPanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
@@ -173,7 +170,7 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                             actions={
                                 <Grid container justifyContent='flex-end'>
                                     <Button
-                                        data-cy="groups-panel-new-group"
+                                        data-cy="groups-panel-new-credential"
                                         variant="contained"
                                         color="primary"
                                         onClick={this.props.onNewCredential}>

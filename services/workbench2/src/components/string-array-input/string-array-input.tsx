@@ -52,7 +52,7 @@ export const StringArrayInput = ({ input, label, meta }: StringArrayInputProps) 
 
     const duplicateValueError = (currentValues: string[], newValue: string) => {
         if (currentValues.includes(newValue)) {
-            const errorMsg = `Value ${newValue} already exists`;
+            const errorMsg = `Value "${newValue}" already exists`;
             setError(errorMsg);
             setTouched(true);
             return true;
