@@ -24,7 +24,7 @@ import { Process } from 'store/processes/process';
 import { getProcess } from 'store/processes/process';
 import { PublishedPort } from 'models/container';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'runStatusContainerWithServiceButton' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton' | 'toolbarStyles';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -58,7 +58,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         rowGap: '5px',
         flexWrap: 'wrap',
         flexGrow: 0,
@@ -69,6 +69,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         display: 'flex',
         columnGap: '5px',
+
+    },
+    // Only active when service button is shown
+    runStatusContainerWithServiceButton: {
         '& > *': {
             // Allow run/cancel status to share space
             flexGrow: 1,
@@ -156,6 +160,8 @@ export const ProcessCard = connect(
             publishedPorts = Object.keys(ports).map((port: string) => (ports[port]));
         }
 
+        const showServiceMenu: boolean = isProcessRunning(currentResource) && !!publishedPorts.length;
+
         let runAction;
         if (isProcessRunnable(currentResource)) {
             runAction = startProcess;
@@ -184,8 +190,8 @@ export const ProcessCard = connect(
                                     {name}
                                 </Typography>
                                 <section className={classes.buttonContainer}>
-                                    {isProcessRunning(currentResource) && <ServiceMenu buttonClass={classNames(classes.actionButton, classes.serviceButton)} services={publishedPorts} />}
-                                    <div className={classes.runStatusContainer}>
+                                    {showServiceMenu && <ServiceMenu buttonClass={classNames(classes.actionButton, classes.serviceButton)} services={publishedPorts} />}
+                                    <div className={classNames(classes.runStatusContainer, showServiceMenu ? classes.runStatusContainerWithServiceButton : undefined)}>
                                         {runAction !== undefined &&
                                             <Button
                                                 data-cy="process-run-button"
