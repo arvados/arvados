@@ -8,6 +8,7 @@ import {
     getTagKeyLabel,
     getTagValueLabel,
 } from 'models/vocabulary';
+import moment from 'moment';
 
 export const formatDateTime = (isoDate?: string | null, utc: boolean = false) => {
     if (isoDate) {
@@ -23,16 +24,38 @@ export const formatDateTime = (isoDate?: string | null, utc: boolean = false) =>
     return '-';
 };
 
-export const formatDateOnly = (isoDate?: string | null) => {
+export const formatDateOnly = (isoDate?: string | null, withTimeRemaining?: boolean) => {
     if (isoDate) {
         const date = new Date(isoDate);
         if (date) {
-            const text = date.toLocaleDateString();
+            const text = withTimeRemaining ? `${date.toLocaleDateString()} (${timeRemaining(isoDate)})` : date.toLocaleDateString();
             return text === 'Invalid Date' ? '(none)' : text;
         }
         return '-';
     }
     return '-';
+};
+
+export const timeRemaining = (targetDate: string | Date): string => {
+    const now = moment();
+    const end = moment(targetDate);
+
+    if (end.isBefore(now)) return 'date is in the past';
+
+    const years = end.diff(now, 'years');
+    now.add(years, 'years');
+
+    const months = end.diff(now, 'months');
+    now.add(months, 'months');
+
+    const days = end.diff(now, 'days');
+
+    const parts: string[] = [];
+    if (years > 0) parts.push(`in ${years} year${years > 1 ? 's' : ''}`);
+    if (months > 0) parts.push(`${years > 0 ? '' : 'in '}${months} month${months > 1 ? 's' : ''}`);
+    if (days > 0) parts.push(`${months > 0 ? '' : 'in '}${days} day${days > 1 ? 's' : ''}`);
+
+    return parts.join(', ');
 };
 
 export const formatFileSize = (size?: number | string) => {

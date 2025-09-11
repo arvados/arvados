@@ -177,13 +177,13 @@ const renderDateTime = (date?: string) => {
     );
 };
 
-const renderDateOnly = (date?: string) => {
+const renderDateOnly = (date?: string, withTimeRemaining: boolean = false) => {
     return (
         <Typography
             noWrap
             style={{ minWidth: "100px" }}
         >
-            {formatDateOnly(date)}
+            {formatDateOnly(date, withTimeRemaining)}
         </Typography>
     );
 };
@@ -832,7 +832,7 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
 export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
     return { date: resource ? resource.expiresAt : "" };
-})((props: { date: string }) => renderDateOnly(props.date));
+})((props: { date: string }) => renderDateOnly(props.date, true));
 
 export const RenderResourceStringField = <T extends Resource>(props: { uuid: string, field: keyof T }) => {
     const ConnectedComponent = connect((state: RootState) => {
