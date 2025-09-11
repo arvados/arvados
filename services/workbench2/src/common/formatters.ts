@@ -28,8 +28,7 @@ export const formatDateOnly = (isoDate?: string | null, withTimeRemaining?: bool
     if (isoDate) {
         const date = new Date(isoDate);
         if (date) {
-            const text = withTimeRemaining ? `${date.toLocaleDateString()} (${timeRemaining(isoDate)})` : date.toLocaleDateString();
-            return text === 'Invalid Date' ? '(none)' : text;
+            return withTimeRemaining ? `${date.toLocaleDateString()} (${timeRemaining(isoDate)})` : date.toLocaleDateString();
         }
         return '-';
     }
@@ -56,6 +55,10 @@ export const timeRemaining = (targetDate: string | Date): string => {
     if (days > 0) parts.push(`${months > 0 ? '' : 'in '}${days} day${days > 1 ? 's' : ''}`);
 
     return parts.join(', ');
+};
+
+export const isElapsed = (isoString: string): boolean => {
+    return moment(isoString).isBefore(moment());
 };
 
 export const formatFileSize = (size?: number | string) => {

@@ -26,7 +26,7 @@ import {
     ErrorIcon,
     FolderKeyIcon,
 } from "components/icon/icon";
-import { formatDateTime, formatFileSize, formatTime, formatDateOnly } from "common/formatters";
+import { formatDateTime, formatFileSize, formatTime, formatDateOnly, isElapsed } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { connect, DispatchProp } from "react-redux";
 import { RootState } from "store/store";
@@ -180,13 +180,30 @@ const renderDateTime = (date?: string) => {
 const renderDateOnly = (date?: string, withTimeRemaining: boolean = false) => {
     return (
         <Typography
-            noWrap
             style={{ minWidth: "100px" }}
         >
             {formatDateOnly(date, withTimeRemaining)}
         </Typography>
     );
 };
+
+const renderExpiredDate = (date?: string) =>
+    <Typography noWrap>
+        <span>{formatDateOnly(date)}  {renderExpiredBadge()}</span>
+    </Typography>
+
+const renderExpiredBadge = () =>
+    <span
+        data-cy="expired-badge"
+        style={{
+            backgroundColor: (CustomTheme as any).customs.colors.red900,
+            color: 'white',
+            fontSize: "0.75rem",
+            padding: "0px 7px",
+            borderRadius: 3,
+        }}>
+            Expired
+    </span>
 
 const renderWorkflowName = (item: WorkflowResource) => (
     <Grid
@@ -832,7 +849,7 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
 export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
     return { date: resource ? resource.expiresAt : "" };
-})((props: { date: string }) => renderDateOnly(props.date, true));
+})((props: { date: string }) => isElapsed(props.date) ? renderExpiredDate(props.date) : renderDateOnly(props.date, true));
 
 export const RenderResourceStringField = <T extends Resource>(props: { uuid: string, field: keyof T }) => {
     const ConnectedComponent = connect((state: RootState) => {
