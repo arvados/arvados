@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-
 import React, { useState, KeyboardEvent, ChangeEvent, useEffect } from 'react';
 import { TextField, Chip, Box, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
