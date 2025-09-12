@@ -5,8 +5,8 @@
 import React from 'react';
 import classNames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, Typography, Grid, Button, Menu, MenuItem, Tooltip } from '@mui/material';
-import { StartIcon, StopIcon, ExpandIcon } from 'components/icon/icon';
+import { Card, CardHeader, Typography, Grid, Button } from '@mui/material';
+import { StartIcon, StopIcon } from 'components/icon/icon';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -23,6 +23,7 @@ import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from 'stor
 import { Process } from 'store/processes/process';
 import { getProcess } from 'store/processes/process';
 import { PublishedPort } from 'models/container';
+import { ServiceMenu } from './service-menu';
 
 type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'runStatusContainerWithServiceButton' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton' | 'toolbarStyles';
 
@@ -226,79 +227,3 @@ export const ProcessCard = connect(
         );
     })
 );
-
-type ServiceMenuProps = {
-    services: PublishedPort[];
-    buttonClass?: string;
-};
-
-const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-    const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-      setAnchorEl(event.currentTarget);
-    };
-    const handleClose = () => {
-      setAnchorEl(null);
-    };
-    const handleClick = (service: PublishedPort) => () => {
-        handleClose();
-        window.open(service.initial_url, "_blank", "noopener");
-    };
-
-    if (services.length) {
-        if (services.length === 1) {
-            const service = services[0];
-
-            return (
-                <Tooltip arrow disableInteractive title={`Connect to ${service.label || "service"}`}>
-                    <Button
-                        className={buttonClass}
-                        variant="contained"
-                        size="small"
-                        color="primary"
-                        id="service-button"
-                        onClick={handleClick(service)}
-                    >
-                        <span>Connect to {service.label || "service"}</span>
-                    </Button>
-                </Tooltip>
-            );
-        } else if (services.length > 1) {
-            return <>
-                <Button
-                    className={buttonClass}
-                    variant="contained"
-                    size="small"
-                    color="primary"
-                    id="service-button"
-                    aria-controls={open ? 'basic-menu' : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={open ? 'true' : undefined}
-                    onClick={handleOpen}
-                    endIcon={<ExpandIcon />}
-                >
-                    <span>Connect to service</span>
-                </Button>
-                <Menu
-                    id="basic-menu"
-                    anchorEl={anchorEl}
-                    open={open}
-                    onClose={handleClose}
-                    MenuListProps={{
-                        'aria-labelledby': 'service-button',
-                    }}
-                >
-                    {services.map((service: PublishedPort) => (
-                        <MenuItem onClick={handleClick(service)}>
-                            <span>{service.label}</span>
-                        </MenuItem>
-                    ))}
-                </Menu>
-            </>;
-        }
-    }
-
-    // Return empty fragment when no services
-    return <></>;
-  }
