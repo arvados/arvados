@@ -2,28 +2,45 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import React from 'react';
+import { connect } from 'react-redux';
+import { Dispatch } from 'redux';
 import { Button, Menu, MenuItem, Tooltip } from '@mui/material';
 import { ExpandIcon } from 'components/icon/icon';
 import { PublishedPort } from 'models/container';
-import React from 'react';
+import { showErrorSnackbar } from 'store/snackbar/snackbar-actions';
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    showErrorSnackbar: (message: string) => dispatch<any>(showErrorSnackbar(message)),
+});
 
 type ServiceMenuProps = {
     services: PublishedPort[];
     buttonClass?: string;
+    showErrorSnackbar: (message: string) => void;
 };
 
-export const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
+export const ServiceMenu = connect(
+    null,
+    mapDispatchToProps
+)(({ services, buttonClass, showErrorSnackbar }: ServiceMenuProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-      setAnchorEl(event.currentTarget);
+        setAnchorEl(event.currentTarget);
     };
     const handleClose = () => {
-      setAnchorEl(null);
+        setAnchorEl(null);
     };
     const handleClick = (service: PublishedPort) => () => {
         handleClose();
-        window.open(service.initial_url, "_blank", "noopener");
+        if (service.access === 'public') {
+            window.open(service.initial_url, "_blank", "noopener");
+        } else if (service.access === 'private') {
+            // TODO Open initial_url with token
+        } else {
+            showErrorSnackbar("Published port access value not valid");
+        }
     };
 
     if (services.length) {
@@ -81,4 +98,4 @@ export const ServiceMenu = ({ services, buttonClass }: ServiceMenuProps) => {
 
     // Return empty fragment when no services
     return <></>;
-  }
+});
