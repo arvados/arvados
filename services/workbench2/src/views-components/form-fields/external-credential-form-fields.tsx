@@ -5,7 +5,7 @@
 import React from "react";
 import { Field } from "redux-form";
 import moment from "moment";
-import { TextField, RichEditorTextField } from "components/text-field/text-field";
+import { TextField, RichEditorTextField, TextFieldWithStartValue } from "components/text-field/text-field";
 import { REQUIRED_VALIDATION, REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION } from "validators/validators";
 import { DatePicker } from "components/date-picker/date-picker";
 import { StringArrayInput } from "components/string-array-input/string-array-input";
@@ -28,7 +28,8 @@ export const ExternalCredentialDescriptionField = () =>
 export const ExternalCredentialClassField = () =>
     <Field
         name='credentialClass'
-        component={TextField as any}
+        component={TextFieldWithStartValue as any}
+        startValue={'aws_access_key'}
         validate={REQUIRED_LENGTH255_VALIDATION}
         label="Credential Class *" />;
 

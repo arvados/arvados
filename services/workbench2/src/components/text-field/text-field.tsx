@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { Typography } from '@mui/material';
+import { Typography, FormControl } from '@mui/material';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { TextField as MaterialTextField, FormControlOwnProps } from '@mui/material';
@@ -135,3 +135,33 @@ export const DateTextField = withStyles(styles)
             onChange={props.input.onChange}
             value={props.input.value} />
     );
+
+interface TextFieldWithStartValueProps extends WrappedFieldProps {
+    startValue: string;
+    label?: string;
+    children?: React.ReactNode;
+}
+
+export const TextFieldWithStartValue = (props: TextFieldWithStartValueProps) => {
+    const [hasBeenTouched, setHasBeenTouched] = useState(false);
+
+    useEffect(() => {
+        props.input.onChange(props.startValue);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return (
+        <FormControl variant='standard' fullWidth>
+            <TextField
+                {...props}
+                input={{
+                    ...props.input,
+                    onFocus: () => setHasBeenTouched(true),
+                    value: hasBeenTouched ? props.input.value : props.startValue,
+                }}
+                label={props.label}
+                children={props.children}
+            />
+        </FormControl>
+    );
+};
