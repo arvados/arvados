@@ -33,7 +33,7 @@
     "@types/react-window": "1.8.2",
     "@types/redux-form": "7.4.12",
     "@types/shell-escape": "^0.2.0",
-    "axios": "^1.8.3",
+    "axios": "^1.12.2",
     "babel-loader": "^8.2.3",
     "babel-plugin-named-asset-import": "^0.3.8",
     "babel-preset-react-app": "^10.0.1",
