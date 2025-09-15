@@ -26,7 +26,7 @@ import {
     ErrorIcon,
     FolderKeyIcon,
 } from "components/icon/icon";
-import { formatDateTime, formatFileSize, formatTime, formatDateOnly, isElapsed } from "common/formatters";
+import { formatDateTime, formatFileSize, formatTime, formatDateOnly, isElapsed, isWithinExpiration, daysRemaining } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { connect, DispatchProp } from "react-redux";
 import { RootState } from "store/store";
@@ -187,9 +187,42 @@ const renderDateOnly = (date?: string, withTimeRemaining: boolean = false) => {
     );
 };
 
-const renderExpiredDate = (date?: string) =>
+const renderExpiring = (date?: string) =>
+    <Typography noWrap style={{minHeight: '1.55rem'}}>
+        <Grid container alignItems="center" wrap="nowrap">
+            <Grid item style={{ width: '80px' }}>
+                {formatDateOnly(date)}
+            </Grid>
+            <Grid item>
+                {renderExpiringBadge(date)}
+            </Grid>
+        </Grid>
+    </Typography>
+
+const renderExpiringBadge = (date?: string) =>
+    <span
+        data-cy="expiring-badge"
+        style={{
+            border: `1px solid ${(CustomTheme as any).customs.colors.red900}`,
+            color: (CustomTheme as any).customs.colors.red900,
+            fontSize: "0.75rem",
+            padding: "0px 7px",
+            borderRadius: 3,
+            boxSizing: 'border-box',
+        }}>
+            {date ? daysRemaining(date) : 'Expiring soon'}
+    </span>
+
+const renderExpired = (date?: string) =>
     <Typography noWrap>
-        <span>{formatDateOnly(date)}  {renderExpiredBadge()}</span>
+        <Grid container alignItems="center" wrap="nowrap">
+            <Grid item style={{ width: '80px' }}>
+                {formatDateOnly(date)}
+            </Grid>
+            <Grid item>
+                {renderExpiredBadge()}
+            </Grid>
+        </Grid>
     </Typography>
 
 const renderExpiredBadge = () =>
@@ -849,7 +882,20 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
 export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
     return { date: resource ? resource.expiresAt : "" };
-})((props: { date: string }) => isElapsed(props.date) ? renderExpiredDate(props.date) : renderDateOnly(props.date, true));
+})((props: { date: string }): JSX.Element => renderExpiresAtDate(props.date));
+
+const renderExpiresAtDate = (date?: string) => {
+    if (date) {
+        if (isElapsed(date)) {
+            return renderExpired(date);
+        } else if (isWithinExpiration(date, 100)) {
+            return renderExpiring(date);
+        } else {
+            return renderDateOnly(date);
+        }
+    }
+    return <>-</>;
+}
 
 export const RenderResourceStringField = <T extends Resource>(props: { uuid: string, field: keyof T }) => {
     const ConnectedComponent = connect((state: RootState) => {
