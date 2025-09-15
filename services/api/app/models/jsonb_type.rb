@@ -38,12 +38,20 @@ class JsonbType
   end
 
   class Hash < JsonbType::WithDefault
+    def type
+      :jsonbHash
+    end
+
     def default_value
       {}
     end
   end
 
   class Array < JsonbType::WithDefault
+    def type
+      :jsonbArray
+    end
+
     def default_value
       []
     end
