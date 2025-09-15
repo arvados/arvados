@@ -40,7 +40,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: "right",
     },
     button: {
-        marginLeft: theme.spacing(1),
+        marginLeft: theme.spacing(2),
     },
     root: {
         width: "100%",
@@ -170,7 +170,8 @@ export const ExternalCredentialsPanel = withStyles(styles)(
                             actions={
                                 <Grid container justifyContent='flex-end'>
                                     <Button
-                                        data-cy="groups-panel-new-credential"
+                                        className={this.props.classes.button}
+                                        data-cy="new-credential-button"
                                         variant="contained"
                                         color="primary"
                                         onClick={this.props.onNewCredential}>
