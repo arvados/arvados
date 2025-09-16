@@ -9,7 +9,7 @@ import { WithDialogProps } from 'store/dialog/with-dialog';
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { ExternalCredentialNameField,
     ExternalCredentialDescriptionField,
-    ExternalCredentialClassField,
+    ExternalCredentialClassCreateField,
     ExternalCredentialExternalIdField,
     ExternalCredentialExpiresAtField,
     ExternalCredentialSecretField,
@@ -49,7 +49,7 @@ const NewExternalCredentialFields = withStyles(styles)(
             <ExternalCredentialDescriptionField />
         </div>
         <Grid container direction={'row'} xs={12} spacing={2}>
-            <Grid item xs={6}><ExternalCredentialClassField /></Grid>
+            <Grid item xs={6}><ExternalCredentialClassCreateField /></Grid>
             <Grid item xs={6}><ExternalCredentialExternalIdField /></Grid>
             <Grid item xs={6}><ExternalCredentialSecretField /></Grid>
             <Grid item xs={6}><ExternalCredentialExpiresAtField /></Grid>

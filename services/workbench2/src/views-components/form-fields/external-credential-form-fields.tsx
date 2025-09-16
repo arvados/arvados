@@ -25,11 +25,18 @@ export const ExternalCredentialDescriptionField = () =>
         validate={REQUIRED_LENGTH255_VALIDATION}
         label="Description *" />;
 
-export const ExternalCredentialClassField = () =>
+export const ExternalCredentialClassCreateField = () =>
     <Field
         name='credentialClass'
         component={TextFieldWithStartValue as any}
         startValue={'aws_access_key'}
+        validate={REQUIRED_LENGTH255_VALIDATION}
+        label="Credential Class *" />;
+
+export const ExternalCredentialClassUpdateField = () =>
+    <Field
+        name='credentialClass'
+        component={TextField as any}
         validate={REQUIRED_LENGTH255_VALIDATION}
         label="Credential Class *" />;
 

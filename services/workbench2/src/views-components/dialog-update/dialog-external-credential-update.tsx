@@ -13,7 +13,7 @@ import withStyles from '@mui/styles/withStyles';
 import { UpdateExternalCredentialFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
 import { ExternalCredentialNameField,
     ExternalCredentialDescriptionField,
-    ExternalCredentialClassField,
+    ExternalCredentialClassUpdateField,
     ExternalCredentialExternalIdField,
     ExternalCredentialExpiresAtField,
     ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
@@ -47,7 +47,7 @@ const ExternalCredentialEditFields = withStyles(styles)(
             <ExternalCredentialDescriptionField />
         </div>
         <Grid container direction={'row'} xs={12} spacing={2}>
-            <Grid item xs={4}><ExternalCredentialClassField /></Grid>
+            <Grid item xs={4}><ExternalCredentialClassUpdateField /></Grid>
             <Grid item xs={4}><ExternalCredentialExternalIdField /></Grid>
             <Grid item xs={4}><ExternalCredentialExpiresAtField /></Grid>
             <Grid item xs={12}><ExternalCredentialScopesField /></Grid>
