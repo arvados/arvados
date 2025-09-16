@@ -159,7 +159,7 @@ describe('External Credentials panel tests', function () {
     });
 });
 
-const generateExternalCredential = (
+export const generateExternalCredential = (
     name,
     expiresAt,
     description = `Test Description ${Math.floor(Math.random() * 999999)}`,
