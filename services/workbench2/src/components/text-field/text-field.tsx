@@ -153,6 +153,7 @@ export const TextFieldWithStartValue = (props: TextFieldWithStartValueProps) => 
     return (
         <FormControl variant='standard' fullWidth>
             <TextField
+                data-cy='text-field-input'
                 {...props}
                 input={{
                     ...props.input,

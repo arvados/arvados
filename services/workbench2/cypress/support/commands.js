@@ -678,6 +678,15 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
     });
 });
 
+Cypress.Commands.add('createExternalCredential', (token, credentialData) => {
+    try {
+        const response = cy.createResource(token, 'credentials', credentialData, false)
+        return response;
+    } catch (error) {
+        console.error(error);
+    }
+});
+
 /**
  * Asserts the url path exactly matches (ignores host and hash)
  *

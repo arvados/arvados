@@ -62,6 +62,7 @@ export const StringArrayInput = ({ input, label, meta }: StringArrayInputProps) 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <TextField
+                name='string-array-input'
                 label={label}
                 value={currentValue}
                 onFocus={() => setTouched(true)}
