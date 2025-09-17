@@ -680,8 +680,7 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
 
 Cypress.Commands.add('createExternalCredential', (token, credentialData) => {
     try {
-        const response = cy.createResource(token, 'credentials', credentialData, false)
-        return response;
+        return cy.createResource(token, 'credentials', credentialData)
     } catch (error) {
         console.error(error);
     }

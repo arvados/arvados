@@ -185,7 +185,8 @@
       "react-app"
     ],
     "ignorePatterns": [
-      "**/*.cy.js"
+      "**/*.cy.js",
+      "**/commands.js"
     ]
   },
   "babel": {

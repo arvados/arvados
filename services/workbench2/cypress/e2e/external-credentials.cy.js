@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// cypress/e2e/external-credentials.cy.js
-
 import moment from 'moment';
 
 describe('External Credentials panel tests', function () {
@@ -92,7 +90,7 @@ describe('External Credentials panel tests', function () {
 
         // verify default values
         cy.get('input[name=credentialClass]').should('have.value', 'aws_access_key');
-        cy.get('#mui-86').should('have.value', moment().add(1, 'year').format('MM/D/YYYY'));
+        cy.get('[data-cy=date-picker-input]').should('have.value', moment().add(1, 'year').format('MM/D/YYYY'));
 
         cy.get('input[name=name]').type(newCredentialName);
         cy.get('div[role=textbox]').type('Test Description');
@@ -103,7 +101,7 @@ describe('External Credentials panel tests', function () {
 
         // modify default values
         cy.get('input[name=credentialClass]').type('_foo');
-        cy.get('#mui-86').type('12/25/2099');
+        cy.get('[data-cy=date-picker-input]').type('12/25/2099');
 
         cy.get('[data-cy=form-submit-btn]').click();
 
@@ -113,7 +111,7 @@ describe('External Credentials panel tests', function () {
         cy.contains('Test External ID').should('be.visible');
         cy.contains('scope1').should('be.visible');
         cy.contains('scope2').should('be.visible');
-        cy.get('#mui-86').should('have.value', moment('12/25/2099', 'MM/D/YYYY').format('MM/D/YYYY'));
+        cy.get('[data-cy=date-picker-input]').should('have.value', moment('12/25/2099', 'MM/D/YYYY').format('MM/D/YYYY'));
 
         // remove credential
         cy.contains(newCredentialName).rightclick();
@@ -135,7 +133,8 @@ describe('External Credentials panel tests', function () {
             cy.get('div[role=textbox]').clear().type('Edited Description');
             cy.get('input[name=credentialClass]').clear().type('Edited Credential Class');
             cy.get('input[name=externalId]').clear().type('Edited External ID');
-            cy.get('#mui-90').type('01/01/2100');
+            cy.get('[data-cy=date-picker-input]').type('01/01/2100');
+            cy.get('input[name=secret]').should('have.value', '');
             cy.get('input[name=string-array-input]').type('new scope{enter}');
             //remove the first scope
             cy.get('svg[data-testid="CancelIcon"]').eq(0).click();

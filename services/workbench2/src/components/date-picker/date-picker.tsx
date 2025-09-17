@@ -32,6 +32,13 @@ export function DatePicker({label, startValue, input}: DatePickerProps & Wrapped
                     label={label}
                     value={getInitialValue(startValue, input.value)}
                     onChange={input.onChange}
+                    slotProps={{
+                    textField: {
+                        inputProps: {
+                            'data-cy': 'date-picker-input'  // or data-test
+                        }
+                    }
+                }}
                 />
             </LocalizationProvider>
         </FormControl>
