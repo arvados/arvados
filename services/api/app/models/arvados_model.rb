@@ -960,30 +960,40 @@ class ArvadosModel < ApplicationRecord
   # value in the database to an implicit zero/false value in an update
   # request.
   def fill_container_defaults
-    # Make sure this is correctly sorted by key, because we merge in
-    # whatever is in the database on top of it, this will be the order
-    # that gets used downstream rather than the order the keys appear
-    # in the database.
-    self.runtime_constraints = {
-      'API' => false,
-      'gpu' => {
-        'device_count' => 0,
-        'driver_version' => '',
-        'hardware_target' => [],
-        'stack' => '',
-        'vram' => 0,
-      },
-      'keep_cache_disk' => 0,
-      'keep_cache_ram' => 0,
-      'ram' => 0,
-      'vcpus' => 0,
-    }.merge(attributes['runtime_constraints'] || {})
-    self.scheduling_parameters = {
-      'max_run_time' => 0,
-      'partitions' => [],
-      'preemptible' => false,
-      'supervisor' => false,
-    }.merge(attributes['scheduling_parameters'] || {})
+    # Make sure these hashes are correctly sorted by key.  We merge in
+    # whatever is in the database on top of them, this will be the
+    # order that gets used downstream rather than the order the keys
+    # appear in the database.
+    rc = attributes['runtime_constraints']
+    if rc.is_a?(Hash)
+      # If it's not loaded, do nothing.
+      # If it's not a hash, leave it alone so it can fail validation.
+      self.runtime_constraints = {
+        'API' => false,
+        'gpu' => {
+          'device_count' => 0,
+          'driver_version' => '',
+          'hardware_target' => [],
+          'stack' => '',
+          'vram' => 0,
+        },
+        'keep_cache_disk' => 0,
+        'keep_cache_ram' => 0,
+        'ram' => 0,
+        'vcpus' => 0,
+      }.merge(rc)
+    end
+    sp = attributes['scheduling_parameters']
+    if sp.is_a?(Hash)
+      # If it's not loaded, do nothing.
+      # If it's not a hash, leave it alone so it can fail validation.
+      self.scheduling_parameters = {
+        'max_run_time' => 0,
+        'partitions' => [],
+        'preemptible' => false,
+        'supervisor' => false,
+      }.merge(sp)
+    end
   end
 
   # ArvadosModel.find_by_uuid needs extra magic to allow it to return

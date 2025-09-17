@@ -350,7 +350,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.translate_cuda_to_gpu rc
-    if rc['cuda'] && rc['cuda']['device_count'] > 0
+    if rc.is_a?(Hash) && rc['cuda'] && rc['cuda']['device_count'] > 0
       # Legacy API to request Nvidia GPUs, convert it so downstream
       # code only has to handle generic GPU requests.
       rc['gpu'] = {
@@ -441,6 +441,11 @@ class ContainerRequest < ArvadosModel
   end
 
   def validate_runtime_constraints
+    if errors[:runtime_constraints].any?
+      # If runtime_constraints is not even a hash, don't raise other
+      # confusing errors by trying to do more validation.
+      return false
+    end
     case self.state
     when Committed
       ['vcpus', 'ram'].each do |k|

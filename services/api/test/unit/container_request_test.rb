@@ -133,16 +133,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     {"output_glob" => "bad"},
     {"output_glob" => ["nope", -1]},
   ].each do |value|
-    # Most of these raise ActiveRecord::RecordInvalid with a message
-    # indicating which attribute is invalid.  Unfortunately the
-    # mismatched data types raise Serializer::TypeMismatch with a
-    # message like "cannot serialize String as Array", because
-    # log_start_state invokes serializers before validation.
     test "Create with invalid #{value}" do
       set_user_from_auth :active
-      err = assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
+      err = assert_raises(ActiveRecord::RecordInvalid) do
         cr = create_minimal_req!({state: "Committed", priority: 1}.merge(value))
       end
+      assert_match /Validation failed: /, err.message
     end
 
     test "Update with invalid #{value}" do
@@ -150,9 +146,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
       cr = ContainerRequest.find_by_uuid cr.uuid
-      err = assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
+      err = assert_raises(ActiveRecord::RecordInvalid) do
         cr.update!({state: "Committed", priority: 1}.merge(value))
       end
+      assert_match /Validation failed: /, err.message
     end
   end
 
