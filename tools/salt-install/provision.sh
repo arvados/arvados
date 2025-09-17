@@ -217,8 +217,6 @@ apply_var_substitutions() {
        s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']:-}#g;
        s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']:-}#g;
        s#__PROMETHEUS_DATA_RETENTION_TIME__#${PROMETHEUS_DATA_RETENTION_TIME:-15d}#g;
-       s#__LOKI_AWS_S3_ACCESS_KEY_ID__#${LOKI_AWS_S3_ACCESS_KEY_ID:-}#g;
-       s#__LOKI_AWS_S3_SECRET_ACCESS_KEY__#${LOKI_AWS_S3_SECRET_ACCESS_KEY:-}#g;
        s#__LOKI_AWS_S3_BUCKET__#${LOKI_AWS_S3_BUCKET:-}#g;
        s#__LOKI_LOG_RETENTION_TIME__#${LOKI_LOG_RETENTION_TIME:-15d}#g;
        s#__LOKI_AWS_REGION__#${LOKI_AWS_REGION:-}#g;
