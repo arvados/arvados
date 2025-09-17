@@ -568,21 +568,28 @@ class ContainerRequest < ArvadosModel
   end
 
   def validate_datatypes
-    environment.each do |k,v|
-      if !k.is_a?(String) || !v.is_a?(String)
-        errors.add(:environment, "must be a map of String to String but has entry #{k.class} to #{v.class}")
+    if !errors[:environment].any?
+      environment.each do |k, v|
+        if !v.is_a?(String)
+          errors.add(:environment, "[#{k}] has non-string value #{v.inspect}")
+        end
       end
     end
     [:mounts, :secret_mounts].each do |m|
+      if errors[m].any?
+        # Validation is already failing in a way that could make the
+        # following validations fail (e.g., non-string keys).
+        next
+      end
       self[m].each do |k, v|
-        if !k.is_a?(String) || !v.is_a?(Hash)
-          errors.add(m, "must be a map of String to Hash but has entry #{k.class} to #{v.class}")
-          next
-        end
         if !k.in?(["stdin", "stdout", "stderr"]) && !k.start_with?("/")
           errors.add(m, "[#{k}]: invalid target: must be stdin, stdout, stderr, or an absolute path")
         end
-        validate_mount_hash(m, k, v)
+        if !v.is_a?(Hash)
+          errors.add(m, "[#{k}]: invalid mount specification: must be a hash, not a #{k.class.to_s.downcase}")
+        else
+          validate_mount_hash(m, k, v)
+        end
       end
     end
   end

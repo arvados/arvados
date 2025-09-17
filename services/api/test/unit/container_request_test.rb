@@ -1884,6 +1884,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [false, {"9000" => {"initial_path" => "", "access" => "public"}}],
     [false, {"9000" => {"initial_path" => "", "access" => "public", "label" => ""}}],
     [false, {"9000" => {"label" => "stuff", "access" => "public"}}],
+    # non-string key: (note non-string keys are all converted to
+    # strings before they hit our validations, so we can't actually
+    # test a numeric key here)
+    [false, {["9000"] => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {nil => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {false => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
   ].each do |ok, pp_spec|
     test "published_ports validation for #{pp_spec}" do
       set_user_from_auth :active
