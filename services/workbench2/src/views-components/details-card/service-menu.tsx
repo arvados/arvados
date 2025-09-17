@@ -92,7 +92,7 @@ export const ServiceMenu = connect(
                     size="small"
                     color="primary"
                     id="service-button"
-                    aria-controls={open ? 'basic-menu' : undefined}
+                    aria-controls={open ? 'service-menu' : undefined}
                     aria-haspopup="true"
                     aria-expanded={open ? 'true' : undefined}
                     onClick={handleOpen}
@@ -101,7 +101,7 @@ export const ServiceMenu = connect(
                     <span>Connect to service</span>
                 </Button>
                 <Menu
-                    id="basic-menu"
+                    id="service-menu"
                     anchorEl={anchorEl}
                     open={open}
                     onClose={handleClose}
