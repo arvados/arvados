@@ -54,7 +54,7 @@ export const ExternalCredentialExpiresAtField = () =>
         startValue={moment().add(1, 'year')}
         label="Expires at" />;
 
-export const ExternalCredentialSecretField = () =>
+export const ExternalCredentialSecretCreateField = () =>
     <Field
         name='secret'
         component={TextField as any}
@@ -62,6 +62,15 @@ export const ExternalCredentialSecretField = () =>
         autoComplete="new-password"
         validate={REQUIRED_VALIDATION}
         label="Secret *" />;
+
+export const ExternalCredentialSecretUpdateField = () =>
+    <Field
+        name='secret'
+        component={TextField as any}
+        type='password'
+        autoComplete="new-password"
+        helperText="Leave blank to keep the same secret"
+        label="Secret" />;
 
 export const ExternalCredentialScopesField = () =>
         <Field

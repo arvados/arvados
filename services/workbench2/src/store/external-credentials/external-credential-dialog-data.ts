@@ -18,5 +18,6 @@ export interface UpdateExternalCredentialFormDialogData {
     credentialClass: string;
     externalId: string;
     expiresAt: string;
+    secret?: string;
     scopes?: string[];
 }

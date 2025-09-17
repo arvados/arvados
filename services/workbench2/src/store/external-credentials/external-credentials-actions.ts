@@ -22,7 +22,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 export const EXTERNAL_CREDENTIALS_PANEL = 'externalCredentialsPanel';
 export const CREATE_EXTERNAL_CREDENTIAL_FORM_NAME = 'newExternalCredentialFormName';
 export const REMOVE_EXTERNAL_CREDENTIAL_DIALOG = "removeExternalCredentialDialog";
-export const UPDATE_EXTERNAL_CREDENTIAL_FORM_NAME = "externalCredentialUpdateFormName";
+export const UPDATE_EXTERNAL_CREDENTIAL_FORM_NAME = "updateExternalCredentialFormName";
 
 export const externalCredentialsActions = bindDataExplorerActions(EXTERNAL_CREDENTIALS_PANEL);
 
@@ -140,6 +140,8 @@ export const updateExternalCredential =
                     credentialClass: credential.credentialClass,
                     externalId: credential.externalId,
                     expiresAt: credential.expiresAt,
+                    // if no secret, don't include the field at all
+                    ...(credential.secret && credential.secret.length > 0 ? { secret: credential.secret } : {}),
                     scopes: credential.scopes || [],
                 },
                 false

@@ -12,7 +12,7 @@ import { ExternalCredentialNameField,
     ExternalCredentialClassCreateField,
     ExternalCredentialExternalIdField,
     ExternalCredentialExpiresAtField,
-    ExternalCredentialSecretField,
+    ExternalCredentialSecretCreateField,
     ExternalCredentialScopesField } from 'views-components/form-fields/external-credential-form-fields';
 import { CreateExternalCredentialFormDialogData } from 'store/external-credentials/external-credential-dialog-data';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
@@ -51,7 +51,7 @@ const NewExternalCredentialFields = withStyles(styles)(
         <Grid container direction={'row'} xs={12} spacing={2}>
             <Grid item xs={6}><ExternalCredentialClassCreateField /></Grid>
             <Grid item xs={6}><ExternalCredentialExternalIdField /></Grid>
-            <Grid item xs={6}><ExternalCredentialSecretField /></Grid>
+            <Grid item xs={6}><ExternalCredentialSecretCreateField /></Grid>
             <Grid item xs={6}><ExternalCredentialExpiresAtField /></Grid>
             <Grid item xs={12}><ExternalCredentialScopesField /></Grid>
         </Grid>
