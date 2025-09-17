@@ -570,6 +570,12 @@ class ContainerRequest < ArvadosModel
   def validate_datatypes
     if !errors[:environment].any?
       environment.each do |k, v|
+        if k.include?("\0") || k.include?("=")
+          errors.add(:environment, "key #{k.inspect} contains an invalid character NUL or '='")
+        end
+        if k == ""
+          errors.add(:environment, "key cannot be empty")
+        end
         if !v.is_a?(String)
           errors.add(:environment, "[#{k}] has non-string value #{v.inspect}")
         end
