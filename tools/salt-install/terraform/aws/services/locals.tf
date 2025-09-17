@@ -39,4 +39,5 @@ locals {
   rds_backup_before_deletion = var.rds_backup_before_deletion
   rds_final_backup_name = var.rds_final_backup_name != "" ? var.rds_final_backup_name : "arvados-${local.cluster_name}-db-final-snapshot"
   rds_postgresql_version = var.rds_postgresql_version
+  loki_iam_policy_arn = data.terraform_remote_state.data-storage.outputs.loki_iam_policy_arn
 }
