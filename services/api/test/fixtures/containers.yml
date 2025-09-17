@@ -473,10 +473,10 @@ legacy_cuda_container:
   started_at: 2016-01-11 11:11:11.111111111 Z
   finished_at: 2016-01-12 11:12:13.111111111 Z
   container_image: fa3c1a9cb6783f85f2ecda037e07b8c3+167
-  cwd: test
+  cwd: /test
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /test
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   runtime_constraints:
     cuda:

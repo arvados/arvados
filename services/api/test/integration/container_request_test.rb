@@ -21,7 +21,7 @@ class ContainerRequestIntegrationTest < ActionDispatch::IntegrationTest
           :priority => 1,
           :runtime_constraints => {"vcpus" => 1, "ram" => 1},
           :mounts => {
-            :foo => {
+            "/foo" => {
               :kind => "json",
               :content => JSON.parse(SafeJSON.dump(val)),
             }
@@ -34,6 +34,6 @@ class ContainerRequestIntegrationTest < ActionDispatch::IntegrationTest
       }
     assert_response :success
     assert_equal "arvados#containerRequest", json_response['kind']
-    assert_equal val, json_response['mounts']['foo']['content']
+    assert_equal val, json_response['mounts']['/foo']['content']
   end
 end

@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'whitelist_update'
 require 'arvados/collection'
+require 'validate_serialized'
+require 'whitelist_update'
 
 class ContainerRequest < ArvadosModel
   include ArvadosModelUpdates
@@ -45,6 +46,17 @@ class ContainerRequest < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validates :command, array_of_strings: {allow_empty_strings: true}
+  validates :environment, hash_attr: true
+  validates :mounts, hash_attr: true
+  validates :output_glob, array_of_strings: true
+  validates :output_properties, hash_attr: true
+  validates :output_storage_classes, array_of_strings: true
+  validates :published_ports, hash_attr: true
+  validates :properties, hash_attr: true
+  validates :runtime_constraints, hash_attr: true
+  validates :scheduling_parameters, hash_attr: true
+  validates :secret_mounts, hash_attr: true
   validate :validate_datatypes
   validate :validate_runtime_constraints
   validate :validate_scheduling_parameters
@@ -352,6 +364,10 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_container
+    if !errors.empty?
+      # Validation failed, record won't be saved anyway.
+      return false
+    end
     if (container_uuid_changed? and
         not current_user.andand.is_admin and
         not container_uuid.nil?)
@@ -493,44 +509,75 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def validate_datatypes
-    command.each do |c|
-      if !c.is_a? String
-        errors.add(:command, "must be an array of strings but has entry #{c.class}")
+  MountKindFields = {
+    "collection" => ["uuid", "portable_data_hash", "writable", "path", "exclude_from_output"],
+    "tmp" => ["capacity", "device_type", "exclude_from_output"],
+    "keep" => ["exclude_from_output"],
+    "file" => ["path", "exclude_from_output"],
+    "json" => ["content", "exclude_from_output"],
+    "text" => ["content", "exclude_from_output"],
+  }
+
+  MountSchema = {
+    "kind" => "string",
+    "uuid" => "string",
+    "portable_data_hash" => "string",
+    "writable" => "boolean",
+    "path" => "string",
+    "capacity" => "integer",
+    "device_type" => ["ram", "ssd", "disk", "network", ""],
+    "exclude_from_output" => "boolean",
+  }
+
+  def validate_mount_hash(attr, mountpoint, mountspec)
+    kind = mountspec["kind"]
+    allowed_fields = MountKindFields[kind]
+    if !allowed_fields
+      errors.add(attr, "[#{mountpoint}][kind]: unsupported value #{kind.inspect}")
+      return
+    end
+    # Validate value types for the keys that are present, but don't
+    # complain about keys that are not.
+    schema = MountSchema.select { |k, v| mountspec.has_key?(k) }
+    if kind == "text"
+      schema["content"] = "string"
+    elsif kind == "json"
+      # content can be anything, so no validation
+    end
+    validator = HashValidator.validate(mountspec, schema)
+    if !validator.valid?
+      validator.errors.each do |key, err|
+        errors.add(attr, "[#{mountpoint}][#{key}]: incompatible value type: #{err}")
       end
     end
+    mountspec.each do |key, value|
+      # Keys that do not apply to a given mount kind need to be
+      # accepted as long as they have empty/zero values, because
+      # that's how Go code (e.g., controller) serializes the Mount
+      # struct that's used for all mount kinds.  But inapplicable keys
+      # with non-empty values are not allowed.
+      if key != "kind" && !allowed_fields.include?(key) && ![0, "", false, nil].include?(value)
+        errors.add(attr, "[#{mountpoint}][#{key}]: parameter is not supported for a #{mountspec["kind"]} mount")
+      end
+    end
+  end
+
+  def validate_datatypes
     environment.each do |k,v|
       if !k.is_a?(String) || !v.is_a?(String)
-        errors.add(:environment, "must be an map of String to String but has entry #{k.class} to #{v.class}")
-      end
-    end
-    output_glob.each do |g|
-      if !g.is_a? String
-        errors.add(:output_glob, "must be an array of strings but has entry #{g.class}")
+        errors.add(:environment, "must be a map of String to String but has entry #{k.class} to #{v.class}")
       end
     end
     [:mounts, :secret_mounts].each do |m|
       self[m].each do |k, v|
         if !k.is_a?(String) || !v.is_a?(Hash)
-          errors.add(m, "must be an map of String to Hash but is has entry #{k.class} to #{v.class}")
+          errors.add(m, "must be a map of String to Hash but has entry #{k.class} to #{v.class}")
+          next
         end
-        if v["kind"].nil?
-          errors.add(m, "each item must have a 'kind' field")
+        if !k.in?(["stdin", "stdout", "stderr"]) && !k.start_with?("/")
+          errors.add(m, "[#{k}]: invalid target: must be stdin, stdout, stderr, or an absolute path")
         end
-        [[String, ["kind", "portable_data_hash", "uuid", "device_type",
-                   "path", "commit", "repository_name", "git_url"]],
-         [Integer, ["capacity"]]].each do |t, fields|
-          fields.each do |f|
-            if !v[f].nil? && !v[f].is_a?(t)
-              errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
-            end
-          end
-        end
-        ["writable", "exclude_from_output"].each do |f|
-          if !v[f].nil? && !v[f].is_a?(TrueClass) && !v[f].is_a?(FalseClass)
-            errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
-          end
-        end
+        validate_mount_hash(m, k, v)
       end
     end
   end

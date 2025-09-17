@@ -44,10 +44,14 @@ Can be used for "stdin" and "stdout" targets.|<pre><code>{
  "kind":"file",
  "path":"/mounted_tmp/a.out"
 }</code></pre>|
-|JSON document|@json@|A JSON-encoded string, array, or object.|<pre>{
+|JSON document|@json@|A JSON-encoded string, array, or object.|<pre><code>{
  "kind":"json",
  "content":{"foo":"bar"}
-}</pre>|
+}</code></pre>|
+|Plain text|@text@|A plain text string.|<pre><code>{
+ "kind":"text",
+ "content":"foo bar\n"}
+}</code></pre>|
 
 h2(#pre-populate-output). Pre-populate output using Mount points
 
@@ -57,7 +61,7 @@ When a container's output_path is a tmp mount backed by local disk, this output 
 
 2. Mount points underneath output_path which have @"writable":true@ are copied into output_path during container initialization and may be updated, renamed, or deleted by the running container.  The original collection is not modified.  On container completion, files remaining in the output are saved to the output collection.   The mount at output_path must be big enough to accommodate copies of the inner writable mounts.
 
-3. If any such mount points are configured as @exclude_from_output":true@, they will be excluded from the output.
+3. If any such mount points are configured as @"exclude_from_output":true@, they will be excluded from the output.
 
 If any process in the container tries to modify, remove, or rename these mount points or anything underneath them, the operation will fail and the container output and the underlying collections used to pre-populate are unaffected.
 

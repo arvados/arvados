@@ -89,7 +89,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.container_image = "img3"
     cr.cwd = "/tmp3"
     cr.environment = {"BUP" => "BOP"}
-    cr.mounts = {"BAR" => {"kind" => "BAZ"}}
+    cr.mounts = {"/BAR" => {"kind" => "tmp"}}
     cr.output_path = "/tmp4"
     cr.priority = 2
     cr.runtime_constraints = {"vcpus" => 4}
@@ -102,25 +102,46 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   [
     {"runtime_constraints" => {"vcpus" => 1}},
+    {"runtime_constraints" => {"vcpus" => 1, "ram" => "1234567"}},
     {"runtime_constraints" => {"vcpus" => 1, "ram" => nil}},
-    {"runtime_constraints" => {"vcpus" => 0, "ram" => 123}},
-    {"runtime_constraints" => {"vcpus" => "1", "ram" => -1}},
-    {"mounts" => {"FOO" => "BAR"}},
-    {"mounts" => {"FOO" => {}}},
-    {"mounts" => {"FOO" => {"kind" => "tmp", "capacity" => 42.222}}},
+    {"runtime_constraints" => {"vcpus" => 0, "ram" => 1234567}},
+    {"runtime_constraints" => {"vcpus" => 1, "ram" => -1}},
+    {"runtime_constraints" => {"vcpus" => "1", "ram" => 1234567}},
+    {"runtime_constraints" => ["bad"]},
+    {"runtime_constraints" => "bad"},
+    {"mounts" => {"/foo" => "BAR"}},
+    {"mounts" => {"/foo" => {}}},
+    {"mounts" => {"foo" => {"kind" => "tmp"}}},
+    {"mounts" => {"/foo" => {"kind" => ""}}},
+    {"mounts" => {"/foo" => {"kind" => "badkind", "content" => {}}}},
+    {"mounts" => {"/foo" => {"kind" => "tmp", "capacity" => 42.222}}},
+    {"mounts" => {"/foo" => {"kind" => "collection", "content" => {"foo" => "bar"}}}},
+    {"mounts" => {"/foo" => {"kind" => "collection", "bad" => "bad"}}},
+    {"mounts" => {"/foo" => {"kind" => "json", "path" => "bad"}}},
+    {"mounts" => {"/foo" => {"kind" => "json", "device_type" => "ram"}}},
+    {"mounts" => {"/foo" => {"kind" => "text", "content" => {"bad" => "bad"}}}},
+    {"mounts" => {"/foo" => {"kind" => "tmp", "portable_data_hash" => "d41d8cd98f00b204e9800998ecf8427e+0"}}},
+    {"mounts" => {"/foo" => {"kind" => "keep", "uuid" => "zzzzz-tpzed-badbadbadbadbad"}}},
+    {"mounts" => {"/foo" => {"kind" => "file", "uuid" => "zzzzz-tpzed-badbadbadbadbad"}}},
+    {"mounts" => {"/foo" => {"kind" => "file", "content" => "bad"}}},
     {"command" => ["echo", 55]},
     {"environment" => {"FOO" => 55}},
     {"output_glob" => [false]},
     {"output_glob" => [["bad"]]},
+    {"output_glob" => ["cannot","contain","empty",""]},
+    {"output_glob" => [{bad:"bad"}]},
     {"output_glob" => "bad"},
     {"output_glob" => ["nope", -1]},
   ].each do |value|
+    # Most of these raise ActiveRecord::RecordInvalid with a message
+    # indicating which attribute is invalid.  Unfortunately the
+    # mismatched data types raise Serializer::TypeMismatch with a
+    # message like "cannot serialize String as Array", because
+    # log_start_state invokes serializers before validation.
     test "Create with invalid #{value}" do
       set_user_from_auth :active
-      assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
-        cr = create_minimal_req!({state: "Committed",
-               priority: 1}.merge(value))
-        cr.save!
+      err = assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
+        cr = create_minimal_req!({state: "Committed", priority: 1}.merge(value))
       end
     end
 
@@ -128,10 +149,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
-      assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
-        cr = ContainerRequest.find_by_uuid cr.uuid
-        cr.update!({state: "Committed",
-                               priority: 1}.merge(value))
+      cr = ContainerRequest.find_by_uuid cr.uuid
+      err = assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
+        cr.update!({state: "Committed", priority: 1}.merge(value))
       end
     end
   end
@@ -776,13 +796,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [{"var" => "value1"}, {"var" => "value2"}, nil],
   ].each do |env1, env2, use_existing|
     test "Container request #{((env1 == env2) and (use_existing.nil? or use_existing == true)) ? 'does' : 'does not'} reuse container when committed#{use_existing.nil? ? '' : use_existing ? ' and use_existing == true' : ' and use_existing == false'}" do
-      common_attrs = {cwd: "test",
+      common_attrs = {cwd: "/test",
                       priority: 1,
                       command: ["echo", "hello"],
-                      output_path: "test",
+                      output_path: "/test",
                       runtime_constraints: {"vcpus" => 4,
                                             "ram" => 12000000000},
-                      mounts: {"test" => {"kind" => "json"}}}
+                      mounts: {"/test" => {"kind" => "json"}}}
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
                                                     environment: env1}))
@@ -1243,12 +1263,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
         configure_preemptible_instance_type
       end
       common_attrs = {
-        cwd: "test",
+        cwd: "/test",
         priority: 1,
         command: ["echo", "hello"],
-        output_path: "test",
+        output_path: "/test",
         scheduling_parameters: {"preemptible" => ask},
-        mounts: {"test" => {"kind" => "json"}},
+        mounts: {"/test" => {"kind" => "json"}},
       }
       set_user_from_auth :active
 
@@ -1348,12 +1368,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [{"max_run_time" => 86400}, ContainerRequest::Committed],
   ].each do |sp, state, expected|
     test "create container request with scheduling_parameters #{sp} in state #{state} and verify #{expected}" do
-      common_attrs = {cwd: "test",
+      common_attrs = {cwd: "/test",
                       priority: 1,
                       command: ["echo", "hello"],
-                      output_path: "test",
+                      output_path: "/test",
                       scheduling_parameters: sp,
-                      mounts: {"test" => {"kind" => "json"}}}
+                      mounts: {"/test" => {"kind" => "json"}}}
       set_user_from_auth :active
 
       if expected == ActiveRecord::RecordInvalid
@@ -1374,12 +1394,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "AlwaysUsePreemptibleInstances makes child containers preemptible" do
     Rails.configuration.Containers.AlwaysUsePreemptibleInstances = true
-    common_attrs = {cwd: "test",
+    common_attrs = {cwd: "/test",
                     priority: 1,
                     command: ["echo", "hello"],
-                    output_path: "test",
+                    output_path: "/test",
                     state: ContainerRequest::Committed,
-                    mounts: {"test" => {"kind" => "json"}}}
+                    mounts: {"/test" => {"kind" => "json"}}}
     set_user_from_auth :active
     configure_preemptible_instance_type
 
@@ -1651,10 +1671,11 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "invalid runtime_token" do
     set_user_from_auth :active
     spec = api_client_authorizations(:spectator)
-    assert_raises(ArgumentError) do
+    err = assert_raises(ActiveRecord::RecordInvalid) do
       cr = create_minimal_req!(state: "Committed", runtime_token: "#{spec.token}xx")
       cr.save!
     end
+    assert_match /Runtime token failed validation/, err.message
   end
 
   test "default output_storage_classes" do
@@ -1691,13 +1712,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "reusing container with different container_request.output_storage_classes" do
-    common_attrs = {cwd: "test",
+    common_attrs = {cwd: "/test",
                     priority: 1,
                     command: ["echo", "hello"],
-                    output_path: "test",
+                    output_path: "/test",
                     runtime_constraints: {"vcpus" => 4,
                                           "ram" => 12000000000},
-                    mounts: {"test" => {"kind" => "json"}},
+                    mounts: {"/test" => {"kind" => "json"}},
                     environment: {"var" => "value1"},
                     output_storage_classes: ["foo_storage_class"]}
     set_user_from_auth :active

@@ -28,7 +28,7 @@ class Collection < ArvadosModel
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   before_validation :name_null_if_empty
-  validates :properties, hash: true
+  validates :properties, hash_attr: true
   validates :storage_classes_desired, array_of_strings: true
   validates :storage_classes_confirmed, array_of_strings: true
   validate :ensure_filesystem_compatible_name

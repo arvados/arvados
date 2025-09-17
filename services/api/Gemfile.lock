@@ -160,6 +160,7 @@ GEM
       multi_json (~> 1.11)
       os (>= 0.9, < 2.0)
       signet (>= 0.16, < 2.a)
+    hash_validator (2.0.1)
     httpclient (2.9.0)
       mutex_m
     i18n (1.14.7)
@@ -350,6 +351,7 @@ DEPENDENCIES
   byebug
   factory_bot (= 6.5.5)
   factory_bot_rails
+  hash_validator (~> 2.0)
   httpclient
   i18n
   jquery-rails
