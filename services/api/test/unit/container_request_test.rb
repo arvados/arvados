@@ -1857,107 +1857,48 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  test "published_ports validation" do
-    set_user_from_auth :active
-    cr = create_minimal_req!
-    cr.use_existing = false
-
-    # Bad port number
-    cr.service = true
-    cr.published_ports = {
-      "9000000" => {
-        "access" => "public",
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
+  [
+    [true, {"1" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [true, {"9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [true, {"65535" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    # invalid ports:
+    [false, {"" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"0" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"1e4" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"-1" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"bad" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"0x101f" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {":9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"0.0.0.0:9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"localhost:9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"9000000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"65536" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    # not a hash:
+    [false, {"9000" => nil}],
+    [false, {"9000" => ""}],
+    [false, {"9000" => []}],
+    # missing/invalid arguments:
+    [false, {"9000" => {}}],
+    [false, {"9000" => {"label" => "stuff", "initial_path" => ""}}],
+    [false, {"9000" => {"label" => "stuff", "initial_path" => "", "access" => "invalid"}}],
+    [false, {"9000" => {"initial_path" => "", "access" => "public"}}],
+    [false, {"9000" => {"initial_path" => "", "access" => "public", "label" => ""}}],
+    [false, {"9000" => {"label" => "stuff", "access" => "public"}}],
+  ].each do |ok, pp_spec|
+    test "published_ports validation for #{pp_spec}" do
+      set_user_from_auth :active
+      cr = create_minimal_req!
+      cr.use_existing = false
+      cr.service = true
+      cr.published_ports = pp_spec
+      if ok
+        assert cr.save!
+      else
+        assert_raises(ActiveRecord::RecordInvalid) do
+          cr.save!
+        end
+      end
     end
-
-    # Not a hash
-    cr.published_ports = {
-      "9000" => ""
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # empty hash
-    cr.published_ports = {
-      "9000" => {
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # missing access
-    cr.published_ports = {
-      "9000" => {
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # invalid access
-    cr.published_ports = {
-      "9000" => {
-        "access" => "peanuts",
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # missing label
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # empty label
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # Missing initial_path
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "stuff",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # All good!
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    cr.save!
   end
 
   test "container request in a project with trash_at in the future" do
