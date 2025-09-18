@@ -39,6 +39,7 @@ import httplib2.error
 import googleapiclient
 
 import arvados
+import arvados.api
 import arvados.config
 import arvados.keep
 import arvados.util
@@ -259,6 +260,7 @@ def api_for_instance(instance_name, num_retries):
             dirs = basedirs.BaseDirectories('CONFIG')
             config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
+        arvados.api._reset_googleapiclient_logging()
         try:
             cfg = arvados.config.load(config_file)
 
@@ -288,6 +290,7 @@ def api_for_instance(instance_name, num_retries):
         except (httplib2.error.HttpLib2Error, googleapiclient.errors.Error) as e:
             msg.append("Failed to connect to instance {} at {}, error was {}".format(instance_name, cfg['ARVADOS_API_HOST'], e))
 
+    arvados.api._reset_googleapiclient_logging()
     default_api = None
     default_instance = None
     try:
