@@ -670,8 +670,8 @@ def copy_collection(obj_uuid, src, dst, args):
     # Copy each block from src_keep to dst_keep.
     # Use the newly signed locators returned from dst_keep to build
     # a new manifest as we go.
-    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=args.retries)
-    dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=args.retries)
+    src_keep = src.keep
+    dst_keep = dst.keep
     dst_manifest = io.StringIO()
     dst_locators = {}
     bytes_written = 0
