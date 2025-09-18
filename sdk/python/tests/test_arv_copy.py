@@ -112,6 +112,12 @@ class TestApiForInstance:
     @pytest.fixture
     def patch_api(self, monkeypatch):
         monkeypatch.setattr(arvados, 'api', self.api_config)
+        monkeypatch.setattr(
+            arvados.api,
+            '_reset_googleapiclient_logging',
+            lambda: None,
+            raising=False,
+        )
 
     @pytest.fixture
     def config_file(self, tmp_path):
