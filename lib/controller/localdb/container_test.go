@@ -42,7 +42,7 @@ func (s *containerSuite) crAttrs(c *C) map[string]interface{} {
 			VCPUs: 1,
 		},
 		"mounts": map[string]arvados.Mount{
-			"/out": arvados.Mount{},
+			"/out": arvados.Mount{Kind: "tmp", Capacity: 1000000},
 		},
 	}
 }
