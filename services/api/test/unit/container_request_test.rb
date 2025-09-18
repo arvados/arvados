@@ -131,6 +131,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     {"mounts" => {"/foo" => {"kind" => "file", "uuid" => "zzzzz-tpzed-badbadbadbadbad"}}},
     {"mounts" => {"/foo" => {"kind" => "file", "content" => "bad"}}},
     {"mounts" => {"/foo" => {"kind" => "json", "content" => "ok", "badkey" => "value"}}},
+    {"secret_mounts" => {"/foo" => {"kind" => "tmp", "capacity" => 1234567}}},
+    {"secret_mounts" => {"/foo" => {"kind" => "text", "content" => {"bad" => "bad"}}}},
     {"command" => ["echo", 55]},
     {"environment" => {"FOO" => 55}},
     {"environment" => {"FOO\0" => "baz"}},

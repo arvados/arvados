@@ -538,6 +538,11 @@ class ContainerRequest < ArvadosModel
     "text" => ["content", "exclude_from_output"],
   }
 
+  SecretMountKindFields = {
+    "json" => MountKindFields["json"],
+    "text" => MountKindFields["text"],
+  }
+
   MountSchema = {
     "kind" => "string",
     "uuid" => "string",
@@ -551,7 +556,15 @@ class ContainerRequest < ArvadosModel
 
   def validate_mount_hash(attr, mountpoint, mountspec)
     kind = mountspec["kind"]
-    allowed_fields = MountKindFields[kind]
+    allowed_fields =
+      case attr
+      when :mounts
+        MountKindFields[kind]
+      when :secret_mounts
+        SecretMountKindFields[kind]
+      else
+        raise ArgumentError.new("validate_mount_hash called with unexpected attr #{attr}")
+      end
     if !allowed_fields
       errors.add(attr, "[#{mountpoint}][kind]: unsupported value #{kind.inspect}")
       return
