@@ -970,18 +970,23 @@ class ArvadosModel < ApplicationRecord
       # If it's not a hash, leave it alone so it can fail validation.
       self.runtime_constraints = {
         'API' => false,
-        'gpu' => {
-          'device_count' => 0,
-          'driver_version' => '',
-          'hardware_target' => [],
-          'stack' => '',
-          'vram' => 0,
-        },
+        'gpu' => {},
         'keep_cache_disk' => 0,
         'keep_cache_ram' => 0,
         'ram' => 0,
         'vcpus' => 0,
       }.merge(rc)
+      gpu = self.runtime_constraints['gpu']
+      if gpu.is_a?(Hash)
+        # If it's not a hash, leave it alone so it can fail validation.
+        self.runtime_constraints['gpu'] = {
+          'device_count' => 0,
+          'driver_version' => '',
+          'hardware_target' => [],
+          'stack' => '',
+          'vram' => 0,
+        }.merge(gpu)
+      end
     end
     sp = attributes['scheduling_parameters']
     if sp.is_a?(Hash)

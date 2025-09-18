@@ -456,6 +456,9 @@ class ContainerRequest < ArvadosModel
         end
       end
       if runtime_constraints['cuda']
+        disallow_extra_keys(
+          :runtime_constraints, runtime_constraints['cuda'],
+          ['device_count', 'driver_version', 'hardware_capability'])
         ['device_count'].each do |k|
           v = runtime_constraints['cuda'][k]
           if !v.is_a?(Integer) || v < 0
@@ -472,7 +475,12 @@ class ContainerRequest < ArvadosModel
         end
       end
 
-      if runtime_constraints['gpu']
+      if !runtime_constraints['gpu'].is_a?(Hash)
+        errors.add(:runtime_constraints, "[gpu] must be a hash")
+      elsif runtime_constraints['gpu']
+        disallow_extra_keys(
+          :runtime_constraints, runtime_constraints['gpu'],
+          ['device_count', 'driver_version', 'hardware_target', 'stack', 'vram'])
         k = 'stack'
         v = runtime_constraints['gpu'][k]
         if not [nil, '', 'cuda', 'rocm'].include? v
@@ -512,6 +520,13 @@ class ContainerRequest < ArvadosModel
         end
       end
     end
+    disallow_extra_keys(
+      :runtime_constraints, runtime_constraints,
+      ['API', 'gpu', 'keep_cache_disk', 'keep_cache_ram', 'ram', 'vcpus',
+       # When 'cuda' is automatically converted to 'gpu', the original
+       # 'cuda' section also remains. See #21926#note-21.
+       'cuda',
+      ])
   end
 
   MountKindFields = {
@@ -619,6 +634,16 @@ class ContainerRequest < ArvadosModel
           scheduling_parameters['max_run_time'] < 0)
           errors.add :scheduling_parameters, "max_run_time must be positive integer"
       end
+    end
+    disallow_extra_keys(
+      :scheduling_parameters, scheduling_parameters,
+      ['max_run_time', 'partitions', 'preemptible', 'supervisor'])
+  end
+
+  def disallow_extra_keys(attr, h, allowed_keys)
+    extra_keys = h.keys - allowed_keys
+    if extra_keys.any?
+      errors.add(attr, "contains unexpected keys #{extra_keys}")
     end
   end
 
