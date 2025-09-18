@@ -611,6 +611,10 @@ class ContainerRequest < ArvadosModel
         end
       end
     end
+    stream_targets = {
+      mounts: ["stdin", "stdout", "stderr"],
+      secret_mounts: ["stdin"],
+    }
     [:mounts, :secret_mounts].each do |m|
       if errors[m].any?
         # Validation is already failing in a way that could make the
@@ -618,7 +622,7 @@ class ContainerRequest < ArvadosModel
         next
       end
       self[m].each do |k, v|
-        if !k.in?(["stdin", "stdout", "stderr"]) && !k.start_with?("/")
+        if !k.in?(stream_targets[m]) && !k.start_with?("/")
           errors.add(m, "[#{k}]: invalid target: must be stdin, stdout, stderr, or an absolute path")
         end
         if !v.is_a?(Hash)

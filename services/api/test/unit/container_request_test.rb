@@ -133,6 +133,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     {"mounts" => {"/foo" => {"kind" => "json", "content" => "ok", "badkey" => "value"}}},
     {"secret_mounts" => {"/foo" => {"kind" => "tmp", "capacity" => 1234567}}},
     {"secret_mounts" => {"/foo" => {"kind" => "text", "content" => {"bad" => "bad"}}}},
+    {"secret_mounts" => {"stdout" => {"kind" => "json", "content" => {}}}},
+    {"secret_mounts" => {"stderr" => {"kind" => "json", "content" => {}}}},
     {"command" => ["echo", 55]},
     {"environment" => {"FOO" => 55}},
     {"environment" => {"FOO\0" => "baz"}},
