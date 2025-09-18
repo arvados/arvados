@@ -17,7 +17,7 @@ class ContainerRequestIntegrationTest < ActionDispatch::IntegrationTest
           :state => "Committed",
           :command => ["echo"],
           :container_image => "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
-          :output_path => "/",
+          :output_path => "/foo",
           :priority => 1,
           :runtime_constraints => {"vcpus" => 1, "ram" => 1},
           :mounts => {

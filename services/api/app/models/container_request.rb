@@ -632,6 +632,9 @@ class ContainerRequest < ArvadosModel
         end
       end
     end
+    if !mounts.has_key?(output_path)
+      errors.add(:output_path, "must be a mount target")
+    end
   end
 
   def validate_scheduling_parameters

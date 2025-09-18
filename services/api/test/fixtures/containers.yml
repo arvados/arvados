@@ -445,8 +445,8 @@ runtime_token:
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   runtime_token: v2/zzzzz-gj3su-2nj68s291f50gd9/2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw
   runtime_user_uuid: zzzzz-tpzed-l3skomkti0c4vg4

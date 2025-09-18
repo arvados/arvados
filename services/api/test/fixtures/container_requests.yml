@@ -40,7 +40,7 @@ running:
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
   mounts:
@@ -546,8 +546,8 @@ running_to_be_deleted:
   modified_at: <%= 1.days.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   mounts:
     /tmp:
