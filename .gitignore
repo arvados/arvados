@@ -25,6 +25,8 @@ docker/config.yml
 /services/api/binstubs/
 /services/login-sync/binstubs/
 /services/api/config/arvados-clients.yml
+/contrib/arvados-bootstrap/build/
+/contrib/arvados-bootstrap/dist/
 /sdk/cwl/build/
 /sdk/cwl/dist/
 /sdk/python/build/

@@ -1,0 +1,49 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["setuptools ~= 80.9"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arvados-bootstrap"
+version = "3.2.0.dev20250924"
+dependencies = [
+  "arvados-python-client ~= 3.2.0.dev20250924170000",
+]
+description = "Tools to bootstrap an Arvados cluster"
+authors = [
+  {name = "Arvados", email = "info@arvados.org"},
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+license = "Apache-2.0"
+license-files = [
+  "LICENSE-2.0.txt",
+]
+readme = "README.md"
+requires-python = "~= 3.10"
+
+[project.scripts]
+arv-export = "arv_bootstrap.export_import:export_main"
+arv-import = "arv_bootstrap.export_import:import_main"
+
+[project.urls]
+Homepage = "https://arvados.org"
+Documentation = "https://doc.arvados.org"
+Repository = "https://git.arvados.org/arvados.git"
+Issues = "https://dev.arvados.org/projects/arvados/issues"
+Changelog = "https://arvados.org/releases/"
+
+[tool.setuptools.packages.find]
+where = ["src"]
