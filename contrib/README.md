@@ -10,6 +10,8 @@ This directory contains client libraries and tools that can be used with an Arva
 
 * `arvbash`: Arvados utility functions for the bash shell
 
+* `bootstrap-tools`: Python scripts to transfer Arvados records between a cluster and filesystem.
+
 * `java-sdk-v2`: Java client SDK for Arvados
 
 * `R-sdk`: R client SDK for Arvados
