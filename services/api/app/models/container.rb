@@ -560,7 +560,8 @@ class Container < ArvadosModel
   # Check that well-known runtime status keys have desired data types
   def validate_runtime_status
     [
-      'error', 'errorDetail', 'warning', 'warningDetail', 'activity'
+      'error', 'errorDetail', 'warning', 'warningDetail', 'activity',
+      'preemptionNotice',
     ].each do |k|
       if self.runtime_status.andand.include?(k) && !self.runtime_status[k].is_a?(String)
         errors.add(:runtime_status, "'#{k}' value must be a string")
