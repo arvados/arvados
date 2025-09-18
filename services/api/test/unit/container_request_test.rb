@@ -1371,14 +1371,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   [
     [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"partitions" => "fastcpu"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"partitions" => ["fastcpu","vfastcpu"]}, ContainerRequest::Committed],
     [{"max_run_time" => "one day"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"max_run_time" => "one day"}, ContainerRequest::Uncommitted],
+    [{"max_run_time" => "one day"}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"max_run_time" => -1}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"max_run_time" => -1}, ContainerRequest::Uncommitted],
+    [{"max_run_time" => -1}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"max_run_time" => 86400}, ContainerRequest::Committed],
   ].each do |sp, state, expected|
     test "create container request with scheduling_parameters #{sp} in state #{state} and verify #{expected}" do

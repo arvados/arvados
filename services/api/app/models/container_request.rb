@@ -446,6 +446,12 @@ class ContainerRequest < ArvadosModel
       # confusing errors by trying to do more validation.
       return false
     end
+    if state != Committed && !new_record?
+      # Avoid running new validations on records that are already in
+      # the database and aren't going to be submitted as a result of
+      # this update.
+      return
+    end
     case self.state
     when Committed
       ['vcpus', 'ram'].each do |k|
@@ -596,6 +602,12 @@ class ContainerRequest < ArvadosModel
   end
 
   def validate_datatypes
+    if state != Committed && !new_record?
+      # Avoid running new validations on records that are already in
+      # the database and aren't going to be submitted as a result of
+      # this update.
+      return
+    end
     if !errors[:environment].any?
       environment.each do |k, v|
         if k.include?("\0") || k.include?("=")
@@ -638,28 +650,37 @@ class ContainerRequest < ArvadosModel
   end
 
   def validate_scheduling_parameters
-    if self.state == Committed
-      if scheduling_parameters.include?('partitions') and
-        !scheduling_parameters['partitions'].nil? and
-        (!scheduling_parameters['partitions'].is_a?(Array) ||
-          scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
-            scheduling_parameters['partitions'].size)
-            errors.add :scheduling_parameters, "partitions must be an array of strings"
-      end
-      if scheduling_parameters['preemptible'] &&
-         (new_record? || state_changed?) &&
-         !self.class.any_preemptible_instances?
-        errors.add :scheduling_parameters, "preemptible instances are not configured in InstanceTypes"
-      end
-      if scheduling_parameters.include? 'max_run_time' and
-        (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
-          scheduling_parameters['max_run_time'] < 0)
-          errors.add :scheduling_parameters, "max_run_time must be positive integer"
-      end
+    if state != Committed && !new_record?
+      # Avoid running new validations on records that are already in
+      # the database and aren't going to be submitted as a result of
+      # this update.
+      return
+    end
+    if scheduling_parameters.include?('partitions') and
+      !scheduling_parameters['partitions'].nil? and
+      (!scheduling_parameters['partitions'].is_a?(Array) ||
+       scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
+       scheduling_parameters['partitions'].size)
+      errors.add :scheduling_parameters, "partitions must be an array of strings"
+    end
+    if scheduling_parameters.include? 'max_run_time' and
+      (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
+       scheduling_parameters['max_run_time'] < 0)
+      errors.add :scheduling_parameters, "max_run_time must be positive integer"
     end
     disallow_extra_keys(
       :scheduling_parameters, scheduling_parameters,
       ['max_run_time', 'partitions', 'preemptible', 'supervisor'])
+
+    # Configuration could change before state changes to Committed, so
+    # this is not flagged as an error for an Uncommitted.  We also
+    # don't want to prevent finalizing due to a config change.
+    if state == Committed &&
+       scheduling_parameters['preemptible'] &&
+       (new_record? || state_changed?) &&
+       !self.class.any_preemptible_instances?
+      errors.add :scheduling_parameters, "preemptible instances are not configured in InstanceTypes"
+    end
   end
 
   def disallow_extra_keys(attr, h, allowed_keys)
