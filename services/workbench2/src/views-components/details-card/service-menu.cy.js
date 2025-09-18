@@ -79,7 +79,7 @@ describe('ServiceMenu', () => {
         // Verify button has correct text
         cy.get('.serviceButton').should('have.text', "Connect to service");
 
-        // Open menu and verify service list contains 2 items
+        // Open menu and verify service list contains the correct items
         cy.get('.serviceButton').click();
         cy.get('#service-menu ul li')
             .should('have.length', services.length)
