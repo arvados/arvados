@@ -59,14 +59,6 @@ logger = logging.getLogger('arvados.arv-copy')
 # Set this up so connection errors get logged.
 googleapi_logger = logging.getLogger('googleapiclient.http')
 
-# local_repo_dir records which git repositories from the Arvados source
-# instance have been checked out locally during this run, and to which
-# directories.
-# e.g. if repository 'twp' from src_arv has been cloned into
-# /tmp/gitfHkV9lu44A then local_repo_dir['twp'] = '/tmp/gitfHkV9lu44A'
-#
-local_repo_dir = {}
-
 # List of collections that have been copied in this session, and their
 # destination collection UUIDs.
 collections_copied = {}
@@ -210,10 +202,6 @@ or the fallback value 2.
     except Exception as e:
         logger.error("%s", e, exc_info=args.verbose)
         exit(1)
-
-    # Clean up any outstanding temp git repositories.
-    for d in local_repo_dir.values():
-        shutil.rmtree(d, ignore_errors=True)
 
     if not result:
         exit(1)
