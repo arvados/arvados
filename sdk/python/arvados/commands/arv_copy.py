@@ -128,6 +128,20 @@ or the fallback value 2.
         '--storage-classes',
         type=arv_cmd.UniqueSplit(),
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
+    copy_opts.add_argument(
+        '--block-copy',
+        dest='keep_block_copy',
+        action='store_true',
+        help="""Copy Keep blocks when copying collections (default).""",
+    )
+    copy_opts.add_argument(
+        '--no-block-copy',
+        dest='keep_block_copy',
+        action='store_false',
+        help="""Do not copy Keep blocks when copying collections. Must have
+administrator privileges on the destination cluster to create collections.
+""")
+
     copy_opts.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
 
@@ -137,8 +151,12 @@ or the fallback value 2.
     copy_opts.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
-    copy_opts.set_defaults(progress=True)
-    copy_opts.set_defaults(recursive=True)
+
+    copy_opts.set_defaults(
+        keep_block_copy=True,
+        progress=True,
+        recursive=True,
+    )
 
     parser = argparse.ArgumentParser(
         description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
@@ -755,48 +773,50 @@ def copy_collection(obj_uuid, src, dst, args):
             finally:
                 put_queue.task_done()
 
+    if args.keep_block_copy:
+        for line in manifest.splitlines():
+            words = line.split()
+            for word in words[1:]:
+                try:
+                    loc = arvados.KeepLocator(word)
+                except ValueError:
+                    # If 'word' can't be parsed as a locator,
+                    # presume it's a filename.
+                    continue
+
+                get_queue.put(word)
+
+        for i in range(0, threadcount):
+            get_queue.put(None)
+
+        for i in range(0, threadcount):
+            threading.Thread(target=get_thread, daemon=True).start()
+
+        for i in range(0, threadcount):
+            threading.Thread(target=put_thread, daemon=True).start()
+
+        get_queue.join()
+        put_queue.join()
+
+        if len(transfer_error) > 0:
+            return {"error_token": "Failed to transfer blocks"}
+
     for line in manifest.splitlines():
-        words = line.split()
-        for word in words[1:]:
+        words = iter(line.split())
+        out_words = [next(words)]
+        for word in words:
             try:
                 loc = arvados.KeepLocator(word)
             except ValueError:
                 # If 'word' can't be parsed as a locator,
                 # presume it's a filename.
-                continue
-
-            get_queue.put(word)
-
-    for i in range(0, threadcount):
-        get_queue.put(None)
-
-    for i in range(0, threadcount):
-        threading.Thread(target=get_thread, daemon=True).start()
-
-    for i in range(0, threadcount):
-        threading.Thread(target=put_thread, daemon=True).start()
-
-    get_queue.join()
-    put_queue.join()
-
-    if len(transfer_error) > 0:
-        return {"error_token": "Failed to transfer blocks"}
-
-    for line in manifest.splitlines():
-        words = line.split()
-        dst_manifest.write(words[0])
-        for word in words[1:]:
-            try:
-                loc = arvados.KeepLocator(word)
-            except ValueError:
-                # If 'word' can't be parsed as a locator,
-                # presume it's a filename.
-                dst_manifest.write(' ')
-                dst_manifest.write(word)
-                continue
-            blockhash = loc.md5sum
-            dst_manifest.write(' ')
-            dst_manifest.write(dst_locators[blockhash])
+                out_words.append(word)
+            else:
+                if args.keep_block_copy:
+                    out_words.append(dst_locators[loc.md5sum])
+                else:
+                    out_words.append(loc.stripped())
+        dst_manifest.write(' '.join(out_words))
         dst_manifest.write("\n")
 
     if progress_writer:
