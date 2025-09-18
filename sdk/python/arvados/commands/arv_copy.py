@@ -147,12 +147,14 @@ administrator privileges on the destination cluster to create collections.
 
     copy_opts.add_argument("--prefer-cached-downloads", action="store_true", default=False,
                         help="If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).")
-
     copy_opts.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
 
     copy_opts.set_defaults(
+        # export_all_fields is used by external tools to make complete copies
+        # of Arvados records.
+        export_all_fields=False,
         keep_block_copy=True,
         progress=True,
         recursive=True,
@@ -530,17 +532,21 @@ def create_collection_from(c, src, dst, args):
     available."""
 
     collection_uuid = c['uuid']
-    body = {}
-    for d in ('description', 'manifest_text', 'name', 'portable_data_hash', 'properties'):
-        body[d] = c[d]
-
-    if not body["name"]:
-        body['name'] = "copied from " + collection_uuid
-
-    if args.storage_classes:
-        body['storage_classes_desired'] = args.storage_classes
-
-    body['owner_uuid'] = args.project_uuid
+    if args.export_all_fields:
+        body = c.copy()
+    else:
+        body = {key: c[key] for key in [
+            'description',
+            'manifest_text',
+            'name',
+            'portable_data_hash',
+            'properties',
+        ]}
+        if not body['name']:
+            body['name'] = f"copied from {collection_uuid}"
+        if args.storage_classes:
+            body['storage_classes_desired'] = args.storage_classes
+        body['owner_uuid'] = args.project_uuid
 
     dst_collection = dst.collections().create(body=body, ensure_unique_name=True).execute(num_retries=args.retries)
 
@@ -859,24 +865,29 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
     # Create/update the destination project
     existing = dst.groups().list(filters=[["owner_uuid", "=", owner_uuid],
                                           ["name", "=", src_project_record["name"]]]).execute(num_retries=args.retries)
-    if len(existing["items"]) == 0:
-        project_record = dst.groups().create(body={"group": {"group_class": "project",
-                                                             "owner_uuid": owner_uuid,
-                                                             "name": src_project_record["name"]}}).execute(num_retries=args.retries)
+    try:
+        existing_uuid = existing['items'][0]['uuid']
+    except IndexError:
+        body = src_project_record if args.export_all_fields else {'group': {
+            'description': src_project_record['description'],
+            'group_class': 'project',
+            'name': src_project_record['name'],
+            'owner_uuid': owner_uuid,
+        }}
+        project_req = dst.groups().create(body=body)
     else:
-        project_record = existing["items"][0]
+        project_req = dst.groups().update(
+            uuid=existing_uuid,
+            body={'group': {
+                'description': src_project_record['description'],
+            }},
+        )
 
-    dst.groups().update(uuid=project_record["uuid"],
-                        body={"group": {
-                            "description": src_project_record["description"]}}).execute(num_retries=args.retries)
-
+    project_record = project_req.execute(num_retries=args.retries)
     args.project_uuid = project_record["uuid"]
-
     logger.debug('Copying %s to %s', obj_uuid, project_record["uuid"])
 
-
     partial_error = ""
-
     # Copy collections
     try:
         copy_collections([col["uuid"] for col in arvados.util.keyset_list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
