@@ -135,6 +135,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     {"environment" => {"FOO" => 55}},
     {"environment" => {"FOO\0" => "baz"}},
     {"environment" => {"FOO=BAR" => "baz"}},
+    {"environment" => {"FOO" => "BAR\0BAZ"}},
     {"environment" => {"=" => "baz"}},
     {"environment" => {"" => "baz"}},
     {"output_glob" => [false]},

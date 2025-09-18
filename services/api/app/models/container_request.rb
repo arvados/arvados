@@ -593,6 +593,8 @@ class ContainerRequest < ArvadosModel
         end
         if !v.is_a?(String)
           errors.add(:environment, "[#{k}] has non-string value #{v.inspect}")
+        elsif v.include?("\0")
+          errors.add(:environment, "value for #{k.inspect} contains invalid character NUL")
         end
       end
     end
