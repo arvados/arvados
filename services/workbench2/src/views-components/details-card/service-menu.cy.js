@@ -18,7 +18,7 @@ describe('ServiceMenu', () => {
             auth: (state = initialAuthState, action) => state,
         }));
 
-        // Stub the global WebSocket
+        // Stub the global window.open
         cy.window().then((win) => {
             cy.stub(win, 'open').as('open');
         });
