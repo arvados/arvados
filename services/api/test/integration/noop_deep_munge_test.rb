@@ -27,7 +27,7 @@ class NoopDeepMungeTest < ActionDispatch::IntegrationTest
           :state => "Uncommitted",
           :command => ["echo"],
           :container_image => "arvados/jobs",
-          :output_path => "/",
+          :output_path => "/foo",
           :mounts => {
             "/foo" => {
               :kind => "json",

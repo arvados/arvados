@@ -557,7 +557,13 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 			"command":         []string{"echo"},
 			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
 			"cwd":             "/",
-			"output_path":     "/",
+			"output_path":     "/tmp",
+			"mounts": map[string]arvados.Mount{
+				"/tmp": arvados.Mount{
+					Kind:     "tmp",
+					Capacity: 1000000,
+				},
+			},
 		},
 	})
 	ac2.AuthToken = ac1.AuthToken
@@ -623,7 +629,13 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 			"command":         []string{"echo"},
 			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
 			"cwd":             "/",
-			"output_path":     "/",
+			"output_path":     "/tmp",
+			"mounts": map[string]arvados.Mount{
+				"/tmp": arvados.Mount{
+					Kind:     "tmp",
+					Capacity: 1000000,
+				},
+			},
 		},
 	})
 
@@ -757,8 +769,14 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 			"command":         []string{"echo"},
 			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
 			"cwd":             "/",
-			"output_path":     "/",
-			"runtime_token":   tt.token,
+			"output_path":     "/tmp",
+			"mounts": map[string]arvados.Mount{
+				"/tmp": arvados.Mount{
+					Kind:     "tmp",
+					Capacity: 1000000,
+				},
+			},
+			"runtime_token": tt.token,
 		}
 		cr, err := conn1.ContainerRequestCreate(userctx1, arvados.CreateOptions{Attrs: rq})
 		if tt.expectAToGetAValidCR {
@@ -805,8 +823,14 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 			"command":         []string{"echo"},
 			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
 			"cwd":             "/",
-			"output_path":     "/",
-			"runtime_token":   tt.token,
+			"output_path":     "/tmp",
+			"mounts": map[string]arvados.Mount{
+				"/tmp": arvados.Mount{
+					Kind:     "tmp",
+					Capacity: 1000000,
+				},
+			},
+			"runtime_token": tt.token,
 		}
 		cr, err := conn1.ContainerRequestCreate(uctx1, arvados.CreateOptions{ClusterID: "z2222", Attrs: rq})
 
@@ -1168,8 +1192,14 @@ func (s *IntegrationSuite) TestForwardRuntimeTokenToLoginCluster(c *check.C) {
 		"command":         []string{"echo"},
 		"container_image": imageColl.PortableDataHash,
 		"cwd":             "/",
-		"output_path":     "/",
-		"priority":        1,
+		"output_path":     "/tmp",
+		"mounts": map[string]arvados.Mount{
+			"/tmp": arvados.Mount{
+				Kind:     "tmp",
+				Capacity: 1000000,
+			},
+		},
+		"priority": 1,
 		"runtime_constraints": arvados.RuntimeConstraints{
 			VCPUs: 1,
 			RAM:   1000000000,
@@ -1457,12 +1487,17 @@ func (s *IntegrationSuite) TestCUDAContainerReuse(c *check.C) {
 
 	crInput := map[string]interface{}{
 		"command":         []string{"echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"},
-		"cwd":             "test",
+		"cwd":             "/",
 		"environment":     map[string]interface{}{},
-		"output_path":     "test",
+		"output_path":     "/tmp",
 		"output_glob":     []string{},
 		"container_image": "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
-		"mounts":          map[string]interface{}{},
+		"mounts": map[string]arvados.Mount{
+			"/tmp": arvados.Mount{
+				Kind:     "tmp",
+				Capacity: 1000000,
+			},
+		},
 		"runtime_constraints": map[string]interface{}{
 			"cuda": map[string]interface{}{
 				"device_count":        1,
@@ -1502,12 +1537,17 @@ func (s *IntegrationSuite) TestGPUContainerReuse(c *check.C) {
 
 	crInput := map[string]interface{}{
 		"command":         []string{"echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"},
-		"cwd":             "test",
+		"cwd":             "/",
 		"environment":     map[string]interface{}{},
-		"output_path":     "test",
+		"output_path":     "/tmp",
 		"output_glob":     []string{},
 		"container_image": "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
-		"mounts":          map[string]interface{}{},
+		"mounts": map[string]arvados.Mount{
+			"/tmp": arvados.Mount{
+				Kind:     "tmp",
+				Capacity: 1000000,
+			},
+		},
 		"runtime_constraints": map[string]interface{}{
 			"gpu": map[string]interface{}{
 				"stack":           "cuda",

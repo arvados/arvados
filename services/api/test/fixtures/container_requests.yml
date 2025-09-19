@@ -13,8 +13,8 @@ queued:
   modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-queuedcontainer
   runtime_constraints:
@@ -26,7 +26,10 @@ queued:
       hardware_target: []
       stack: ""
       vram: 0
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 running:
   uuid: zzzzz-xvhdp-cr4runningcntnr
@@ -39,7 +42,7 @@ running:
   modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
+  cwd: /tmp
   output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
@@ -62,8 +65,8 @@ requester_for_running:
   modified_at: <%= 2.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-logscontainer03
   requesting_container_uuid: zzzzz-dz642-runningcontainr
@@ -86,8 +89,8 @@ running_older:
   modified_at: 2016-01-12 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
   mounts:
@@ -109,12 +112,16 @@ completed:
   modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
   log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     vcpus: 1
     ram: 123
@@ -131,12 +138,16 @@ completed-older:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["arvados-cwl-runner", "echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainr2
   log_uuid: zzzzz-4zz18-logcollection02
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     vcpus: 1
     ram: 123
@@ -172,6 +183,10 @@ completed_diagnostics:
   container_uuid: zzzzz-dz642-diagcompreq0001
   log_uuid: zzzzz-4zz18-diagcompreqlog1
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 1
     ram: 1342177280
@@ -198,6 +213,10 @@ completed_diagnostics_hasher1:
   requesting_container_uuid: zzzzz-dz642-diagcompreq0001
   log_uuid: zzzzz-4zz18-dlogcollhash001
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 1
     ram: 2684354560
@@ -224,6 +243,10 @@ completed_diagnostics_hasher2:
   requesting_container_uuid: zzzzz-dz642-diagcompreq0001
   log_uuid: zzzzz-4zz18-dlogcollhash002
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 2
     ram: 2684354560
@@ -250,6 +273,10 @@ completed_diagnostics_hasher3:
   requesting_container_uuid: zzzzz-dz642-diagcompreq0001
   log_uuid: zzzzz-4zz18-dlogcollhash003
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 1
     ram: 2684354560
@@ -285,6 +312,10 @@ completed_diagnostics2:
   container_uuid: zzzzz-dz642-diagcompreq0002
   log_uuid: zzzzz-4zz18-diagcompreqlog2
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 1
     ram: 1342177280
@@ -311,6 +342,10 @@ completed_diagnostics_hasher1_reuse:
   requesting_container_uuid: zzzzz-dz642-diagcompreq0002
   log_uuid: zzzzz-4zz18-dlogcollhash001
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 1
     ram: 2684354560
@@ -337,6 +372,10 @@ completed_diagnostics_hasher2_reuse:
   requesting_container_uuid: zzzzz-dz642-diagcompreq0002
   log_uuid: zzzzz-4zz18-dlogcollhash002
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 2
     ram: 2684354560
@@ -363,6 +402,10 @@ completed_diagnostics_hasher3_reuse:
   requesting_container_uuid: zzzzz-dz642-diagcompreq0002
   log_uuid: zzzzz-4zz18-dlogcollhash003
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     vcpus: 1
     ram: 2684354560
@@ -383,6 +426,10 @@ requester:
   output_path: /output
   command: ["request-another-container", "echo", "hello"]
   container_uuid: zzzzz-dz642-requestingcntnr
+  mounts:
+    /output:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     vcpus: 1
     ram: 123
@@ -399,15 +446,18 @@ cr_for_requester:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-requestercntnr1
   requesting_container_uuid: zzzzz-dz642-requestingcntnr
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 cr_for_requester2:
   uuid: zzzzz-xvhdp-cr4requestercn2
@@ -420,14 +470,17 @@ cr_for_requester2:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   requesting_container_uuid: zzzzz-dz642-requestercntnr1
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 running_anonymous_accessible:
   uuid: zzzzz-xvhdp-runninganonaccs
@@ -440,8 +493,8 @@ running_anonymous_accessible:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
   mounts:
@@ -463,14 +516,17 @@ cr_for_failed:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-failedcontainr1
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 canceled_with_queued_container:
   uuid: zzzzz-xvhdp-canceledqueuedc
@@ -483,14 +539,17 @@ canceled_with_queued_container:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-queuedcontainer
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 canceled_with_locked_container:
   uuid: zzzzz-xvhdp-canceledlocekdc
@@ -503,14 +562,17 @@ canceled_with_locked_container:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-lockedcontainer
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 canceled_with_running_container:
   uuid: zzzzz-xvhdp-canceledrunning
@@ -523,8 +585,8 @@ canceled_with_running_container:
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
   mounts:
@@ -569,8 +631,8 @@ completed_with_input_mounts:
   modified_at: <%= 24.hour.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   runtime_constraints:
     vcpus: 1
@@ -578,8 +640,11 @@ completed_with_input_mounts:
   container_uuid: zzzzz-dz642-compltcontainer
   log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
-  mounts: {
-    "/var/lib/cwl/cwl.input.json": {
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
+    /var/lib/cwl/cwl.input.json: {
       "kind": "json",
       "content": {
         "input1": {
@@ -594,7 +659,6 @@ completed_with_input_mounts:
         }
       }
     }
-  }
 
 uncommitted:
   uuid: zzzzz-xvhdp-cr4uncommittedc
@@ -1026,8 +1090,8 @@ cr_in_trashed_project:
   modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
   log_uuid: zzzzz-4zz18-logcollection01
@@ -1035,12 +1099,15 @@ cr_in_trashed_project:
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 
 runtime_token:
   uuid: zzzzz-xvhdp-11eklkhy0n4dm86
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  name: queued
+  name: runtime token
   state: Committed
   priority: 1
   created_at: <%= 2.minute.ago.to_fs(:db) %>
@@ -1048,15 +1115,21 @@ runtime_token:
   modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-20isqbkl8xwnsao
   runtime_token: v2/zzzzz-gj3su-2nj68s291f50gd9/2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
+    /var/spool/cwl:
+      kind: tmp
+      capacity: 24000000000
 
 read_foo_write_bar:
   uuid: zzzzz-xvdhp-readfoowritebar
@@ -1082,7 +1155,7 @@ read_foo_write_bar:
   container_uuid: zzzzz-dz642-readfoowritebar
   log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-ehbhgtheo8909or
-  output_path: test
+  output_path: /mnt/out
   command: ["echo", "-n", "bar"]
   runtime_constraints:
     ram: 10000000
@@ -1100,9 +1173,12 @@ cr_<%=i%>_of_60:
   created_at: <%= ((i+5)/5).hour.ago.to_fs(:db) %>
   owner_uuid: zzzzz-j7d0g-nnncrspipelines
   name: cr-<%= i.to_s %>
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello"]
-  mounts: {}
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
 <% end %>
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

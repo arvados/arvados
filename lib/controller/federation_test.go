@@ -626,9 +626,10 @@ func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
   "container_request": {
     "name": "hello world",
     "state": "Uncommitted",
-    "output_path": "/",
+    "output_path": "/tmp",
     "container_image": "123",
-    "command": ["abc"]
+    "command": ["abc"],
+    "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}}
   }
 }
 `))
@@ -689,7 +690,8 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	    "state": "Uncommitted",
 	    "output_path": "/",
 	    "container_image": "123",
-	    "command": ["abc"]
+	    "command": ["abc"],
+            "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}}
 	  }
 	}
 	`))
@@ -746,6 +748,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c
 	    "output_path": "/",
 	    "container_image": "123",
 	    "command": ["abc"],
+            "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}},
 	    "runtime_token": "xyz"
 	  }
 	}
@@ -772,7 +775,8 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {
     "state": "Uncommitted",
     "output_path": "/",
     "container_image": "123",
-    "command": ["abc"]
+    "command": ["abc"],
+    "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}}
   }
 }
 `))

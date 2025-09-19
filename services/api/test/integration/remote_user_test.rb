@@ -624,7 +624,13 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           "container_request" => {
             "command" => ["echo"],
             "container_image" => "xyz",
-            "output_path" => "/",
+            "output_path" => "/tmp",
+            "mounts" => {
+              "/tmp" => {
+                "kind" => "tmp",
+                "capacity" => 1000000,
+              },
+            },
             "cwd" => "/",
             "runtime_token" => runtime_token
           }

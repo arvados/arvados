@@ -15,6 +15,12 @@ class ContainerTest < ActiveSupport::TestCase
     output_path: '/tmp',
     priority: 1,
     runtime_constraints: {"vcpus" => 1, "ram" => 1, "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}},
+    mounts: {
+      "/tmp" => {
+        "kind" => "tmp",
+        "capacity" => 1000000,
+      },
+    },
   }
 
   REUSABLE_COMMON_ATTRS = {
@@ -47,7 +53,12 @@ class ContainerTest < ActiveSupport::TestCase
     container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
     cwd: "/test",
     environment: {},
-    mounts: {},
+    mounts: {
+      "/test" => {
+        "kind" => "tmp",
+        "capacity" => 1000000,
+      },
+    },
     output_path: "/test",
     output_glob: [],
     runtime_auth_scopes: ["all"],
@@ -114,10 +125,10 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container create" do
     act_as_system_user do
       c, _ = minimal_new(environment: {},
-                      mounts: {"/BAR" => {"kind" => "tmp"}},
-                      output_path: "/tmp",
-                      priority: 1,
-                      runtime_constraints: {"vcpus" => 1, "ram" => 1})
+                         mounts: {"/tmp" => {"kind" => "tmp"}},
+                         output_path: "/tmp",
+                         priority: 1,
+                         runtime_constraints: {"vcpus" => 1, "ram" => 1})
 
       check_illegal_modify c
       check_bogus_states c
@@ -131,10 +142,10 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container valid priority" do
     act_as_system_user do
       c, _ = minimal_new(environment: {},
-                      mounts: {"/BAR" => {"kind" => "tmp"}},
-                      output_path: "/tmp",
-                      priority: 1,
-                      runtime_constraints: {"vcpus" => 1, "ram" => 1})
+                         mounts: {"/tmp" => {"kind" => "tmp"}},
+                         output_path: "/tmp",
+                         priority: 1,
+                         runtime_constraints: {"vcpus" => 1, "ram" => 1})
 
       assert_raises(ActiveRecord::RecordInvalid) do
         c.priority = -1
@@ -165,7 +176,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     attrs = {
       environment: {},
-      mounts: {"/BAR" => {"kind" => "tmp"}},
+      mounts: {"/tmp" => {"kind" => "tmp"}},
       output_path: "/tmp",
       priority: 1,
       runtime_constraints: {"vcpus" => 1, "ram" => 1}
@@ -201,7 +212,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     attrs = {
       environment: {},
-      mounts: {"/BAR" => {"kind" => "tmp"}},
+      mounts: {"/tmp" => {"kind" => "tmp"}},
       output_path: "/tmp",
       priority: 1,
       runtime_constraints: {"vcpus" => 1, "ram" => 1}
@@ -252,7 +263,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container serialized hash attributes sorted before save" do
     set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
-    m = {"/F" => {"kind" => "tmp"}, "/E" => {"kind" => "tmp"}, "/D" => {"kind" => "tmp"}}
+    m = DEFAULT_ATTRS[:mounts].merge({"/F" => {"kind" => "tmp"}, "/E" => {"kind" => "tmp"}, "/D" => {"kind" => "tmp"}})
     rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "keep_cache_disk" => 0, "API" => true, "gpu" => {"stack": "", "device_count":0, "driver_version": "", "hardware_target": [], "vram": 0}}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     c.reload

@@ -10,8 +10,8 @@ queued:
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   runtime_constraints:
     ram: 12000000000
@@ -88,9 +88,13 @@ locked:
   updated_at: <%= 2.minute.ago.to_fs(:db) %>
   modified_at: <%= 2.minute.ago.to_fs(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -108,11 +112,15 @@ completed:
   started_at: 2016-01-11 11:11:11.111111111 Z
   finished_at: 2016-01-12 11:12:13.111111111 Z
   container_image: test
-  cwd: test
+  cwd: /tmp
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -130,10 +138,14 @@ completed_older:
   started_at: 2016-01-13 11:11:11.111111111 Z
   finished_at: 2016-01-14 11:12:13.111111111 Z
   container_image: test
-  cwd: test
+  cwd: /tmp
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -155,6 +167,10 @@ diagnostics_completed_requester:
   log: 6129e376cb05c942f75a0c36083383e8+244
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   output_path: /var/spool/cwl
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   command: [
              "arvados-cwl-runner",
              "--local",
@@ -196,6 +212,10 @@ diagnostics_completed_hasher1:
              "md5sum",
              "/keep/9f26a86b6030a69ad222cf67d71c9502+65/hasher-input-file.txt"
            ]
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -222,6 +242,10 @@ diagnostics_completed_hasher2:
              "md5sum",
              "/keep/d3a687732e84061f3bae15dc7e313483+62/hasher1.md5sum.txt"
            ]
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -248,6 +272,10 @@ diagnostics_completed_hasher3:
              "md5sum",
              "/keep/6bd770f6cf8f83e7647c602eecfaeeb8+62/hasher2.md5sum.txt"
            ]
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -285,6 +313,10 @@ diagnostics_completed_requester2:
              "/var/lib/cwl/workflow.json#main",
              "/var/lib/cwl/cwl.input.json"
            ]
+  mounts:
+    /var/spool/cwl:
+      kind: json
+      content: {}
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -301,13 +333,17 @@ requester:
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
-  cwd: test
+  cwd: /tmp
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello"]
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   secret_mounts: {}
   secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
@@ -320,10 +356,14 @@ requester_container:
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
-  cwd: test
+  cwd: /tmp
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -339,10 +379,14 @@ failed_container:
   created_at: 2016-01-11 11:11:11.111111111 Z
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
-  cwd: test
+  cwd: /tmp
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -358,9 +402,13 @@ ancient_container_with_logs:
   created_at: <%= 2.year.ago.to_fs(:db) %>
   updated_at: <%= 2.year.ago.to_fs(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -379,9 +427,13 @@ previous_container_with_logs:
   created_at: <%= 1.month.ago.to_fs(:db) %>
   updated_at: <%= 1.month.ago.to_fs(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -399,8 +451,8 @@ running_container_with_logs:
   created_at: <%= 1.hour.ago.to_fs(:db) %>
   updated_at: <%= 1.hour.ago.to_fs(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   mounts:
     /tmp:
@@ -422,8 +474,8 @@ running_to_be_deleted:
   updated_at: <%= 1.minute.ago.to_fs(:db) %>
   started_at: <%= 1.minute.ago.to_fs(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   mounts:
     /tmp:
@@ -473,11 +525,15 @@ legacy_cuda_container:
   started_at: 2016-01-11 11:11:11.111111111 Z
   finished_at: 2016-01-12 11:12:13.111111111 Z
   container_image: fa3c1a9cb6783f85f2ecda037e07b8c3+167
-  cwd: /test
+  cwd: /tmp
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: /test
+  output_path: /tmp
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     cuda:
       device_count: 1
@@ -499,11 +555,15 @@ gpu_container:
   started_at: 2016-01-11 11:11:11.111111111 Z
   finished_at: 2016-01-12 11:12:13.111111111 Z
   container_image: test
-  cwd: test
+  cwd: /tmp
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  output_path: test
+  output_path: /tmp
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 1000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -541,7 +601,7 @@ read_foo_write_bar:
       capacity: 1000
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
-  output_path: test
+  output_path: /mnt/out
   command: ["echo", "-n", "bar"]
   runtime_constraints:
     ram: 10000000
