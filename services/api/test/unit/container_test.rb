@@ -686,17 +686,16 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable with legacy cuda" do
     set_user_from_auth :active
 
-    # has cuda
-
-    cuda_attrs = {
-      command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"],
-      cwd: "/test",
-      environment: {},
-      output_path: "/test",
-      output_glob: [],
-      container_image: "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
-      mounts: {},
-      runtime_constraints: Container.resolve_runtime_constraints({
+    fixture = containers(:legacy_cuda_container)
+    req = ContainerRequest.create!(
+      command: fixture.command,
+      cwd: fixture.cwd,
+      environment: fixture.environment,
+      output_path: fixture.output_path,
+      output_glob: fixture.output_glob,
+      container_image: fixture.container_image,
+      mounts: fixture.mounts,
+      runtime_constraints: {
         "cuda" => {
           "device_count" => 1,
           "driver_version" => "11.0",
@@ -704,17 +703,15 @@ class ContainerTest < ActiveSupport::TestCase
         },
         "ram" => 12000000000,
         "vcpus" => 4,
-      }),
-      scheduling_parameters: {},
-      secret_mounts: {},
-    }
+      },
+      scheduling_parameters: fixture.scheduling_parameters,
+      secret_mounts: fixture.secret_mounts,
+    )
 
     Rails.configuration.Containers.LogReuseDecisions = true
     # should find the gpu one
-    reused = Container.find_reusable(cuda_attrs)
-    assert_not_nil reused
-    assert_equal reused.uuid, containers(:legacy_cuda_container).uuid
-
+    ctr = Container.resolve(req)
+    assert_equal ctr.uuid, containers(:legacy_cuda_container).uuid
   end
 
   test "find_reusable method with gpu" do

@@ -535,10 +535,12 @@ legacy_cuda_container:
       capacity: 1000000
       kind: tmp
   runtime_constraints:
+    API: false
     cuda:
       device_count: 1
       driver_version: "11.0"
       hardware_capability: "9.0"
+    keep_cache_ram: 0
     ram: 12000000000
     vcpus: 4
   secret_mounts: {}
