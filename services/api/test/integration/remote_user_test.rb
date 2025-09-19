@@ -633,7 +633,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
             },
             "cwd" => "/",
             "runtime_token" => runtime_token
-          }
+          }.to_json,
+          # Without .to_json here, the mount capacity value gets
+          # serialized as a string, which does not validate.
         },
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{api_client_authorizations(:active).api_token}"}
       if label.start_with? "invalid"
