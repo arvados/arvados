@@ -24,11 +24,11 @@ queued:
       vram: 0
   mounts:
     /tmp:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
     /var/spool/cwl:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
 
 running:
   uuid: zzzzz-dz642-runningcontainr
@@ -47,12 +47,12 @@ running:
     vcpus: 4
   mounts:
     /tmp:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
   secret_mounts:
     /secret/6x9:
-      kind: text
       content: "42\n"
+      kind: text
   secret_mounts_md5: <%= Digest::MD5.hexdigest(SafeJSON.dump({'/secret/6x9' => {'content' => "42\n", 'kind' => 'text'}})) %>
   auth_uuid: zzzzz-gj3su-077z32aux8dg2s2
 
@@ -70,8 +70,8 @@ running_older:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -93,8 +93,8 @@ locked:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -119,8 +119,8 @@ completed:
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -144,8 +144,8 @@ completed_older:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -169,8 +169,8 @@ diagnostics_completed_requester:
   output_path: /var/spool/cwl
   mounts:
     /var/spool/cwl:
-      kind: json
       content: {}
+      kind: json
   command: [
              "arvados-cwl-runner",
              "--local",
@@ -214,8 +214,8 @@ diagnostics_completed_hasher1:
            ]
   mounts:
     /var/spool/cwl:
-      kind: json
       content: {}
+      kind: json
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -244,8 +244,8 @@ diagnostics_completed_hasher2:
            ]
   mounts:
     /var/spool/cwl:
-      kind: json
       content: {}
+      kind: json
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -274,8 +274,8 @@ diagnostics_completed_hasher3:
            ]
   mounts:
     /var/spool/cwl:
-      kind: json
       content: {}
+      kind: json
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -315,8 +315,8 @@ diagnostics_completed_requester2:
            ]
   mounts:
     /var/spool/cwl:
-      kind: json
       content: {}
+      kind: json
   runtime_constraints:
     API: true
     keep_cache_disk: 0
@@ -342,8 +342,8 @@ requester:
     vcpus: 4
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   secret_mounts: {}
   secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
@@ -362,8 +362,8 @@ requester_container:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -385,8 +385,8 @@ failed_container:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -407,8 +407,8 @@ ancient_container_with_logs:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -432,8 +432,8 @@ previous_container_with_logs:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -456,8 +456,8 @@ running_container_with_logs:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -479,8 +479,8 @@ running_to_be_deleted:
   command: ["echo", "hello"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -508,11 +508,11 @@ runtime_token:
     vcpus: 4
   mounts:
     /tmp:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
     /var/spool/cwl:
-      kind: tmp
       capacity: 24000000000
+      kind: tmp
 
 legacy_cuda_container:
   uuid: zzzzz-dz642-cudagpcontainer
@@ -532,8 +532,8 @@ legacy_cuda_container:
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     cuda:
       device_count: 1
@@ -562,15 +562,15 @@ gpu_container:
   command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"]
   mounts:
     /tmp:
-      kind: tmp
       capacity: 1000000
+      kind: tmp
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
     gpu:
+      device_count: 1
       driver_version: "11.0"
       hardware_target: ["9.0"]
-      device_count: 1
       stack: "cuda"
       vram: 8000000000
   secret_mounts: {}
@@ -591,14 +591,14 @@ read_foo_write_bar:
   mounts:
     stdin:
       kind: collection
-      portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
       path: /foo
+      portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
     stdout:
       kind: file
       path: /mnt/out/bar
     /mnt/out:
-      kind: tmp
       capacity: 1000
+      kind: tmp
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
   output_path: /mnt/out
