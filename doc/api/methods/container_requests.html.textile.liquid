@@ -46,7 +46,7 @@ table(table table-bordered table-condensed).
 }</code></pre>See "Scheduling parameters":#scheduling_parameters for more details.|
 |container_image|string|Portable data hash of a collection containing the docker image to run the container.|Required.|
 |environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.||
-|cwd|string|Initial working directory, given as an absolute path (in the container) or a path relative to the WORKDIR given in the image's Dockerfile.|Required.|
+|cwd|string|Initial working directory, given as an absolute path (in the container) or a path relative to the WORKDIR given in the image's Dockerfile.|Optional. If omitted or blank, @"."@ is implied.|
 |command|array of strings|Command to execute in the container.|Required. e.g., @["echo","hello"]@|
 |output_path|string|Path to a directory or file inside the container that should be preserved as container's output when it finishes. This path must be one of the mount targets. For best performance, point output_path to a writable collection mount.  See "Pre-populate output using Mount points":#pre-populate-output for details regarding optional output pre-population using mount points and "Symlinks in output":#symlinks-in-output for additional details.|Required.|
 |output_glob|array of strings|Glob patterns determining which files (of those present in the output directory when the container finishes) will be included in the output collection. If multiple patterns are given, files that match any pattern are included. If null or empty, all files will be included.|e.g., @["**/*.vcf", "**/*.vcf.gz"]@
@@ -55,7 +55,7 @@ See "Glob patterns":#glob_patterns for more details.|
 |output_ttl|integer|Desired lifetime for the output collection, in seconds. If zero, the output collection will not be deleted automatically.||
 |priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "priority below for more details.":#priority |
 |expires_at|datetime|After this time, priority is considered to be zero.|Not yet implemented.|
-|use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true|
+|use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true.|
 |log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.
 To retrieve logs in real time while the container is running, use the log API (see below).|
 |output_uuid|string|Output collection created when the container finished successfully.|Null if the container has failed or not yet completed.|
@@ -63,7 +63,7 @@ To retrieve logs in real time while the container is running, use the log API (s
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
 |runtime_user_uuid|string|The user permission that will be granted to this container.||
 |runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||
-|output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|default is ["default"]|
+|output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|Default is @["default"]@.|
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 |cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
 |service|boolean|Indicates that this container is a long-lived service rather than a once-through batch job.  Incompatible with @use_existing@||
@@ -186,7 +186,7 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|container_request|object|Container request resource.|request body||
 |cluster_id|string|The federated cluster to submit the container request.|query||
 
-The request body must include the required attributes command, container_image, cwd, and output_path. It can also inlcude other attributes such as environment, mounts, and runtime_constraints.
+The request body must include the required attributes @command@, @container_image@, @mounts@, and @output_path@. It can also include other attributes such as @environment@, @published_ports@, @runtime_constraints@, and @scheduling_parameters@.
 
 h3. delete
 
