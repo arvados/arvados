@@ -6,8 +6,17 @@
 SHELL := /bin/bash
 .ONESHELL:
 
-GOPATH?=~/go
+# IMPORTANT BACKGROUND: Because Workbench used to be a separate project, its
+# build tools usually expect $WORKSPACE to be the Workbench source.
+# $ARVADOS_DIRECTORY is the path to the full Arvados source tree.
+# When you call other Arvados build tools, you'll probably need to set
+# WORKSPACE=$(ARVADOS_DIRECTORY).
+export WORKSPACE=$(PWD)
+export ARVADOS_DIRECTORY=$(shell git rev-parse --show-toplevel)
+
 APP_NAME?=arvados-workbench2
+DOCKER_IMAGE=arvados/workbench
+DOCKER_VOLUME=arvados-workbench
 
 # Cypress test file that can be passed to the integration-test target
 SPECFILE?=ALL
@@ -19,12 +28,7 @@ VERSION?=$(shell ./version-at-commit.sh HEAD)
 BUILD_NUMBER?=0
 GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 
-GOPATH=$(shell go env GOPATH)
-export WORKSPACE?=$(shell pwd)
-
 export CYPRESS_FAIL_FAST_ENABLED?=false
-
-ARVADOS_DIRECTORY?=$(shell env -C $(WORKSPACE) git rev-parse --show-toplevel)
 
 ifndef ci
 	TI=-ti
@@ -32,7 +36,7 @@ else
 	TI=
 endif
 
-.PHONY: help clean* *-install test build integration-tests-in-docker
+.PHONY: help clean* *-install test build *-tests* workbench-docker-*
 
 help:
 	@echo >&2
@@ -48,17 +52,17 @@ help:
 clean-node-modules:
 	rm -rf $(WORKSPACE)/node_modules
 
-clean: clean-node-modules
+clean-docker-image:
+	if docker image inspect "$(DOCKER_IMAGE)" >/dev/null; \
+	then docker image rm "$(DOCKER_IMAGE)"; \
+	else :; fi
 
-arvados-server-install: check-arvados-directory
-	cd $(ARVADOS_DIRECTORY)
-	go mod download
-	cd cmd/arvados-server
-	echo GOPATH is $(GOPATH)
-	GOFLAGS=-buildvcs=false go install
-	cd -
-	ls -l $(GOPATH)/bin/arvados-server
-	$(GOPATH)/bin/arvados-server install -type test
+clean-docker-volume:
+	if docker volume inspect "$(DOCKER_VOLUME)" >/dev/null; \
+	then docker volume rm "$(DOCKER_VOLUME)"; \
+	else :; fi
+
+clean: clean-docker-image clean-docker-volume clean-node-modules
 
 yarn-install:
 	yarn install
@@ -69,53 +73,61 @@ cypress-install: yarn-install
 unit-tests: yarn-install
 	yarn test
 
-integration-tests: cypress-install check-docker-directory
+integration-tests: cypress-install
 ifeq ($(SPECFILE), ALL)
-	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY)
+	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE)
 else
-	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY) -- --spec $(SPECFILE)
+	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -- --spec $(SPECFILE)
 endif
 
-integration-tests-in-docker: workbench2-build-image check-arvados-directory
+integration-tests-in-docker: workbench-docker-volume
 	docker run $(TI) --rm \
-		--env ARVADOS_DIRECTORY=/usr/src/arvados \
-		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
-		--mount type=bind,src=$(WORKSPACE),dst=/usr/src/arvados/services/workbench2 \
-		--mount type=bind,src=$(ARVADOS_DIRECTORY),dst=/usr/src/arvados \
-		-w /usr/src/arvados/services/workbench2 \
-		workbench2-build \
-		make arvados-server-install integration-tests SPECFILE=$(SPECFILE)
+		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/home" \
+		--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
+		--workdir=/opt/arvados/services/workbench2 \
+		"$(DOCKER_IMAGE)" \
+		bash tools/run-integration-tests.sh
 
-unit-tests-in-docker: workbench2-build-image check-arvados-directory
+unit-tests-in-docker: workbench-docker-volume
 	docker run $(TI) --rm \
-		--env ARVADOS_DIRECTORY=/usr/src/arvados \
-		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
-		--mount type=bind,src=$(WORKSPACE),dst=/usr/src/arvados/services/workbench2 \
-		--mount type=bind,src=$(ARVADOS_DIRECTORY),dst=/usr/src/arvados \
-		-w /usr/src/arvados/services/workbench2 \
-		workbench2-build \
-		make arvados-server-install unit-tests
+		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/home" \
+		--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
+		--workdir=/opt/arvados/services/workbench2 \
+		"$(DOCKER_IMAGE)" \
+		yarn test
 
-tests-in-docker: workbench2-build-image check-arvados-directory
+tests-in-docker: unit-tests-in-docker integration-tests-in-docker
+
+shell-in-docker: workbench-docker-image
 	docker run $(TI) --rm \
-		--env ARVADOS_DIRECTORY=/usr/src/arvados \
-		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
-		--env ci="${ci}" \
-		--mount type=bind,src=$(WORKSPACE),dst=/usr/src/arvados/services/workbench2 \
-		--mount type=bind,src=$(ARVADOS_DIRECTORY),dst=/usr/src/arvados \
-		-w /usr/src/arvados/services/workbench2 \
-		workbench2-build \
-		make test
+		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/home" \
+		--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
+		--workdir=/opt/arvados/services/workbench2 \
+		"$(DOCKER_IMAGE)"
 
 test: unit-tests integration-tests
 
 build: yarn-install
 	VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) GIT_COMMIT=$(GIT_COMMIT) yarn build
 
-check-arvados-directory:
-	@if test "${ARVADOS_DIRECTORY}" == "unset"; then echo "the environment variable ARVADOS_DIRECTORY must be set to the path of an arvados git checkout"; exit 1; fi
-	@if ! test -d "${ARVADOS_DIRECTORY}"; then echo "the environment variable ARVADOS_DIRECTORY does not point at a directory"; exit 1; fi
+workbench-docker-image: yarn-install
+	if ! docker image inspect "$(DOCKER_IMAGE)" >/dev/null; then \
+		env -C "$(ARVADOS_DIRECTORY)/tools/ansible" \
+			WORKSPACE="$(ARVADOS_DIRECTORY)" \
+			ansible-playbook \
+			--extra-vars=arvados_build_playbook=install-dev-tools.yml \
+			--inventory=files/development-docker-images.yml \
+			--limit=arvados_workbench \
+			build-docker-image.yml; \
+	fi
 
-workbench2-build-image:
-	docker inspect workbench2-build &> /dev/null || \
-		docker build -t workbench2-build -f docker/Dockerfile ${ARVADOS_DIRECTORY}
+workbench-docker-volume: workbench-docker-image
+	if ! docker volume inspect "$(DOCKER_VOLUME)" >/dev/null; then \
+		docker volume create "$(DOCKER_VOLUME)" && \
+		docker run $(TI) --rm \
+			--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
+			--mount="type=volume,src=$(DOCKER_VOLUME),dst=/mnt" \
+			--user=root \
+			"$(DOCKER_IMAGE)" \
+			bash /opt/arvados/services/workbench2/tools/setup-docker-volume.sh; \
+	fi
