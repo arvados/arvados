@@ -122,12 +122,12 @@ workbench-docker-image: yarn-install
 	fi
 
 workbench-docker-volume: workbench-docker-image
-	if ! docker volume inspect "$(DOCKER_VOLUME)" >/dev/null; then \
-		docker volume create "$(DOCKER_VOLUME)" && \
-		docker run $(TI) --rm \
-			--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
-			--mount="type=volume,src=$(DOCKER_VOLUME),dst=/mnt" \
-			--user=root \
-			"$(DOCKER_IMAGE)" \
-			bash /opt/arvados/services/workbench2/tools/setup-docker-volume.sh; \
-	fi
+	if docker volume inspect "$(DOCKER_VOLUME)" >/dev/null; then exit; fi; \
+	docker volume create "$(DOCKER_VOLUME)" || exit; \
+	if ! docker run --interactive --rm \
+		--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
+		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/mnt" \
+		--user=root \
+		"$(DOCKER_IMAGE)" \
+		bash /opt/arvados/services/workbench2/tools/setup-docker-volume.sh </dev/null; \
+	then docker volume rm "$(DOCKER_VOLUME)"; exit 73; fi
