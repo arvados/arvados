@@ -78,4 +78,6 @@ arvados_test_workbench:
     arvados_dev_user: workbench
     arvados_docker_changes:
       - "ENV ARVADOS_DIRECTORY=/opt/arvados"
+      # VENV3DIR gets created by volume setup. The rest of PATH is standard.
+      - "ENV PATH=/usr/local/bin:/usr/bin:/usr/sbin:/home/{{ arvados_dev_user }}/VENV3DIR/bin"
       - "USER {{ arvados_dev_user }}"

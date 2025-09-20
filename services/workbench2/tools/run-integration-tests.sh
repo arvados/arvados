@@ -33,10 +33,6 @@ EOF
     exit 0
 }
 
-yq() {
-    "$HOME/VENV3DIR/bin/yq" "$@"
-}
-
 CYPRESS_MODE="run"
 while getopts "i" o; do
     case "${o}" in
