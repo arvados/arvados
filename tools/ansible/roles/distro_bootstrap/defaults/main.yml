@@ -10,6 +10,8 @@ distro_bootstrap_apt_packages:
   - python3-apt
   # Required by ansible.builtin.deb822_repository
   - python3-debian
+  # Required to use become_user.
+  - sudo
 
 distro_bootstrap_dnf_command: "dnf --quiet --assumeyes"
 distro_bootstrap_dnf_packages:
@@ -17,3 +19,5 @@ distro_bootstrap_dnf_packages:
   - acl
   # Required by ansible.builtin.dnf
   - python3-dnf
+  # Required to use become_user.
+  - sudo
