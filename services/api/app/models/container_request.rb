@@ -617,7 +617,7 @@ class ContainerRequest < ArvadosModel
           errors.add(:environment, "key cannot be empty")
         end
         if !v.is_a?(String)
-          errors.add(:environment, "[#{k}] has non-string value #{v.inspect}")
+          errors.add(:environment, "[#{k}]: incompatible value type: string required")
         elsif v.include?("\0")
           errors.add(:environment, "value for #{k.inspect} contains invalid character NUL")
         end
@@ -635,7 +635,7 @@ class ContainerRequest < ArvadosModel
       end
       self[m].each do |k, v|
         if !k.in?(stream_targets[m]) && !k.start_with?("/")
-          errors.add(m, "[#{k}]: invalid target: must be stdin, stdout, stderr, or an absolute path")
+          errors.add(m, "[#{k}]: invalid target: must be #{stream_targets[m].join(", ")} or an absolute path")
         end
         if !v.is_a?(Hash)
           errors.add(m, "[#{k}]: invalid mount specification: must be a hash, not a #{k.class.to_s.downcase}")
