@@ -172,6 +172,8 @@
           # Direct dependencies of run-tests.sh
           - bsdextrautils
           - net-tools
+          # Used by `arvados-server boot`
+          - rsync
 
     # Tests assume the underlying database uses en_US.UTF-8.
     # It must be generated before starting the PostgreSQL server.
@@ -388,8 +390,6 @@
       become: yes
       ansible.builtin.apt:
         name:
-          # lib/controller
-          - rsync
           # services/keep-web
           - cadaver
           - mime-support
