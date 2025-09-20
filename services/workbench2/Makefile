@@ -32,7 +32,7 @@ else
 	TI=
 endif
 
-.PHONY: help clean* yarn-install test build integration-tests-in-docker
+.PHONY: help clean* *-install test build integration-tests-in-docker
 
 help:
 	@echo >&2
@@ -63,11 +63,13 @@ arvados-server-install: check-arvados-directory
 yarn-install:
 	yarn install
 
+cypress-install: yarn-install
+	yarn run cypress install && yarn run cypress verify
+
 unit-tests: yarn-install
 	yarn test
 
-integration-tests: yarn-install check-arvados-directory
-	yarn run cypress install
+integration-tests: cypress-install check-docker-directory
 ifeq ($(SPECFILE), ALL)
 	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY)
 else
