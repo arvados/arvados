@@ -201,6 +201,7 @@
 
     - ansible.builtin.include_role:
         name: arvados_database
+      when: "ansible_virtualization_type != 'docker'"
       vars:
         arvados_database_login_host: ""
         # Let the test user drop and recreate the database wholesale
