@@ -63,7 +63,7 @@ To retrieve logs in real time while the container is running, use the log API (s
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
 |runtime_user_uuid|string|The user permission that will be granted to this container.||
 |runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||
-|output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|Default is @["default"]@.|
+|output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|If omitted, the cluster's configured default storage classes are used.|
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 |cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
 |service|boolean|Indicates that this container is a long-lived service rather than a once-through batch job.  Incompatible with @use_existing@||
