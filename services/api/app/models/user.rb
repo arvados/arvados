@@ -20,6 +20,7 @@ class User < ArvadosModel
             },
             uniqueness: true,
             allow_nil: true)
+  validates :prefs, hash_attr: true
   validate :must_unsetup_to_deactivate
   validate :identity_url_nil_if_empty
   before_update :prevent_privilege_escalation
