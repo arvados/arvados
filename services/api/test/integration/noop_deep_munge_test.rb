@@ -27,9 +27,9 @@ class NoopDeepMungeTest < ActionDispatch::IntegrationTest
           :state => "Uncommitted",
           :command => ["echo"],
           :container_image => "arvados/jobs",
-          :output_path => "/",
+          :output_path => "/foo",
           :mounts => {
-            :foo => {
+            "/foo" => {
               :kind => "json",
               :content => JSON.parse(SafeJSON.dump(val)),
             }
@@ -42,6 +42,6 @@ class NoopDeepMungeTest < ActionDispatch::IntegrationTest
       }
     assert_response :success
     assert_equal "arvados#containerRequest", json_response['kind']
-    assert_equal val, json_response['mounts']['foo']['content']
+    assert_equal val, json_response['mounts']['/foo']['content']
   end
 end

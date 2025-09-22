@@ -37,7 +37,6 @@ describe('ProcessCopyAction', () => {
         mounts: {
         "/var/lib/cwl/cwl.input.json": {
             capacity: 0,
-            commit: "",
             content: {
             input: {
                 basename: "logo.ai.no.whitespace.png",
@@ -49,17 +48,14 @@ describe('ProcessCopyAction', () => {
             },
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "json",
             path: "",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: false,
         },
         "/var/lib/cwl/workflow.json": {
             capacity: 0,
-            commit: "",
             content: {
             $graph: [
                 {
@@ -159,39 +155,31 @@ describe('ProcessCopyAction', () => {
             },
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "json",
             path: "",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: false,
         },
         "/var/spool/cwl": {
             capacity: 0,
-            commit: "",
             content: null,
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "collection",
             path: "",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: true,
         },
         stdout: {
             capacity: 0,
-            commit: "",
             content: null,
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "file",
             path: "/var/spool/cwl/cwl.output.json",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: false,
         },
@@ -247,7 +235,6 @@ describe('ProcessCopyAction', () => {
         mounts: {
         "/var/lib/cwl/cwl.input.json": {
             capacity: 0,
-            commit: "",
             content: {
             input: {
                 basename: "logo.ai.no.whitespace.png",
@@ -259,17 +246,14 @@ describe('ProcessCopyAction', () => {
             },
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "json",
             path: "",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: false,
         },
         "/var/lib/cwl/workflow.json": {
             capacity: 0,
-            commit: "",
             content: {
             $graph: [
                 {
@@ -376,39 +360,31 @@ describe('ProcessCopyAction', () => {
             },
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "json",
             path: "",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: false,
         },
         "/var/spool/cwl": {
             capacity: 0,
-            commit: "",
             content: null,
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "collection",
             path: "",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: true,
         },
         stdout: {
             capacity: 0,
-            commit: "",
             content: null,
             device_type: "",
             exclude_from_output: false,
-            git_url: "",
             kind: "file",
             path: "/var/spool/cwl/cwl.output.json",
             portable_data_hash: "",
-            repository_name: "",
             uuid: "",
             writable: false,
         },

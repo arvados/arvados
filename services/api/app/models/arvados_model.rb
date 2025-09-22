@@ -17,6 +17,7 @@ class ArvadosModel < ApplicationRecord
   extend RecordFilters
 
   after_find :schedule_restoring_changes
+  after_find :type_check_serialized_attributes
   after_initialize :log_start_state
   before_save :ensure_permission_to_save
   before_save :ensure_owner_uuid_is_permitted
@@ -595,6 +596,37 @@ class ArvadosModel < ApplicationRecord
 
   protected
 
+  # Fail if we loaded some serialized content from the database that
+  # doesn't match the expected type.
+  def type_check_serialized_attributes
+    # `serialized_attributes` lets us find attributes that are
+    # serialized by Rails and stored in text columns, like this one:
+    #
+    # serialize :environment, Hash
+    serialized_attributes.each do |attr, serializer|
+      if attributes.key?(attr) && !attributes[attr].is_a?(serializer.object_class)
+        raise "invalid serialized data for #{self.class.to_s} #{attr}: #{attributes[attr].to_s[0..5]} is not a #{serializer.object_class}"
+      end
+    end
+
+    # `type_for_attribute` lets us find attributes that are stored in
+    # jsonb columns, like this one:
+    #
+    # attribute :properties, :jsonbHash, default: {}
+    self.class.columns.each do |col|
+      if attributes.key?(col.name) && col.type == :jsonb
+        coltype = self.class.type_for_attribute(col.name)
+        if coltype.respond_to?(:enforce_type) && !attributes[col.name].is_a?(coltype.enforce_type)
+          raise "invalid serialized data for #{self.class.to_s} #{col.name}: '#{attributes[col.name]}'[...] is not a #{coltype.enforce_type}"
+        end
+      end
+    end
+
+    # Somehow, the above code flags the record as changed/dirty, so we
+    # need to clear that flag.
+    clear_changes_information
+  end
+
   def self.deep_sort_hash(x)
     if x.is_a? Hash
       x.sort.collect do |k, v|
@@ -960,30 +992,45 @@ class ArvadosModel < ApplicationRecord
   # value in the database to an implicit zero/false value in an update
   # request.
   def fill_container_defaults
-    # Make sure this is correctly sorted by key, because we merge in
-    # whatever is in the database on top of it, this will be the order
-    # that gets used downstream rather than the order the keys appear
-    # in the database.
-    self.runtime_constraints = {
-      'API' => false,
-      'gpu' => {
-        'device_count' => 0,
-        'driver_version' => '',
-        'hardware_target' => [],
-        'stack' => '',
-        'vram' => 0,
-      },
-      'keep_cache_disk' => 0,
-      'keep_cache_ram' => 0,
-      'ram' => 0,
-      'vcpus' => 0,
-    }.merge(attributes['runtime_constraints'] || {})
-    self.scheduling_parameters = {
-      'max_run_time' => 0,
-      'partitions' => [],
-      'preemptible' => false,
-      'supervisor' => false,
-    }.merge(attributes['scheduling_parameters'] || {})
+    # Make sure these hashes are correctly sorted by key.  We merge in
+    # whatever is in the database on top of them, this will be the
+    # order that gets used downstream rather than the order the keys
+    # appear in the database.
+    rc = attributes['runtime_constraints']
+    if rc.is_a?(Hash)
+      # If it's not loaded, do nothing.
+      # If it's not a hash, leave it alone so it can fail validation.
+      self.runtime_constraints = {
+        'API' => false,
+        'gpu' => {},
+        'keep_cache_disk' => 0,
+        'keep_cache_ram' => 0,
+        'ram' => 0,
+        'vcpus' => 0,
+      }.merge(rc)
+      gpu = self.runtime_constraints['gpu']
+      if gpu.is_a?(Hash)
+        # If it's not a hash, leave it alone so it can fail validation.
+        self.runtime_constraints['gpu'] = {
+          'device_count' => 0,
+          'driver_version' => '',
+          'hardware_target' => [],
+          'stack' => '',
+          'vram' => 0,
+        }.merge(gpu)
+      end
+    end
+    sp = attributes['scheduling_parameters']
+    if sp.is_a?(Hash)
+      # If it's not loaded, do nothing.
+      # If it's not a hash, leave it alone so it can fail validation.
+      self.scheduling_parameters = {
+        'max_run_time' => 0,
+        'partitions' => [],
+        'preemptible' => false,
+        'supervisor' => false,
+      }.merge(sp)
+    end
   end
 
   # ArvadosModel.find_by_uuid needs extra magic to allow it to return

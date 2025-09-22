@@ -315,4 +315,42 @@ class ArvadosModelTest < ActiveSupport::TestCase
       assert(tested_serialized, "did not test any models with serialized attributes")
     end
   end
+
+  [
+    # prefs column uses `serialize [...], Hash`
+    ['users(:active)', 'prefs', '"baddata"'],
+    ['users(:active)', 'prefs', '[]'],
+    # output_properties column uses `attribute ..., :jsonbHash`
+    ['container_requests(:running)', 'output_properties', '"baddata"'],
+    ['container_requests(:running)', 'output_properties', '["baddata"]'],
+    # output_storage_classes column uses `attribute ..., :jsonbArray`
+    ['container_requests(:running)', 'output_storage_classes', '"baddata"'],
+    ['container_requests(:running)', 'output_storage_classes', '{}'],
+    # environment column uses `serialize [...], Hash`
+    ['container_requests(:running)', 'environment', '"baddata"'],
+    ['container_requests(:running)', 'environment', '[]'],
+    # output_glob column uses `serialize [...], Array`
+    ['container_requests(:running)', 'output_glob', '"baddata"'],
+    ['container_requests(:running)', 'output_glob', '{}'],
+  ].each do |get_fixture, attr, bad_data|
+    test "refuse to load #{get_fixture} from database with wrong type of serialized attribute #{attr}, #{bad_data}" do
+      object = eval(get_fixture)
+      initial_value = object.attributes[attr].dup
+      ActiveRecord::Base.connection.exec_query(
+        "UPDATE #{object.class.table_name} SET #{attr}=$2 WHERE uuid=$1",
+        "",
+        [object.uuid, bad_data])
+      begin
+        e = assert_raises(RuntimeError) do
+          object.reload
+        end
+        assert_match /invalid serialized data for #{object.class.to_s} #{attr}/, e.message
+      ensure
+        ActiveRecord::Base.connection.exec_query(
+          "UPDATE #{object.class.table_name} SET #{attr}=$2 WHERE uuid=$1",
+          "",
+          [object.uuid, initial_value.to_json])
+      end
+    end
+  end
 end

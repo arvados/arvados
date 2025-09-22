@@ -36,7 +36,7 @@ describe("Process tests", function () {
                 name: name,
                 command: command,
                 container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-                output_path: "stdout.txt",
+                output_path: '/var/spool/cwl',
                 priority: 1,
                 runtime_constraints: {
                     vcpus: 1,
@@ -46,8 +46,12 @@ describe("Process tests", function () {
                 state: state,
                 mounts: {
                     '/var/lib/cwl/workflow.json': {
-                        kind: "tmp",
-                        path: "/tmp/foo",
+                        kind: 'json',
+                        content: {},
+                    },
+                    '/var/spool/cwl': {
+                        kind: 'tmp',
+                        capacity: 1000000,
                     },
                 },
                 owner_uuid: ownerUuid || undefined,
@@ -62,7 +66,7 @@ describe("Process tests", function () {
                 name: name,
                 command: command,
                 container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-                output_path: "stdout.txt",
+                output_path: '/var/spool/cwl',
                 priority: 1,
                 runtime_constraints: {
                     vcpus: 1,
@@ -72,8 +76,12 @@ describe("Process tests", function () {
                 state: state,
                 mounts: {
                     '/var/lib/cwl/workflow.json': {
-                        kind: "tmp",
-                        path: "/tmp/foo",
+                        kind: 'json',
+                        content: {},
+                    },
+                    '/var/spool/cwl': {
+                        kind: 'tmp',
+                        capacity: 1000000,
                     },
                 },
                 owner_uuid: ownerUuid || undefined,
@@ -263,6 +271,16 @@ describe("Process tests", function () {
             finished_at: null,
             locked_by_uuid: null,
             log: null,
+            mounts: {
+                '/var/lib/cwl/workflow.json': {
+                    kind: 'json',
+                    content: {},
+                },
+                '/var/spool/cwl': {
+                    kind: 'tmp',
+                    capacity: 1000000,
+                },
+            },
             output: null,
             output_path: "/var/spool/cwl",
             progress: null,

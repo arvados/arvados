@@ -746,4 +746,19 @@ class UserTest < ActiveSupport::TestCase
     u = User.find_by_uuid(uuid)
     assert_equal 333222111000, u.id
   end
+
+  test "prefs must be a hash" do
+    set_user_from_auth :active
+    u = users(:active)
+
+    assert_raises ActiveRecord::RecordInvalid do
+      u.update!(prefs: [])
+    end
+
+    u.update!(prefs: {"a" => "b"})
+    assert_equal({"a" => "b"}, u.prefs)
+
+    u.update!(prefs: nil)
+    assert_equal({}, u.prefs)
+  end
 end

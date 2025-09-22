@@ -89,7 +89,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.container_image = "img3"
     cr.cwd = "/tmp3"
     cr.environment = {"BUP" => "BOP"}
-    cr.mounts = {"BAR" => {"kind" => "BAZ"}}
+    cr.mounts = {"/BAR" => {"kind" => "tmp"}}
     cr.output_path = "/tmp4"
     cr.priority = 2
     cr.runtime_constraints = {"vcpus" => 4}
@@ -101,38 +101,72 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    {"runtime_constraints" => {"vcpus" => 1}},
-    {"runtime_constraints" => {"vcpus" => 1, "ram" => nil}},
-    {"runtime_constraints" => {"vcpus" => 0, "ram" => 123}},
-    {"runtime_constraints" => {"vcpus" => "1", "ram" => -1}},
-    {"mounts" => {"FOO" => "BAR"}},
-    {"mounts" => {"FOO" => {}}},
-    {"mounts" => {"FOO" => {"kind" => "tmp", "capacity" => 42.222}}},
-    {"command" => ["echo", 55]},
-    {"environment" => {"FOO" => 55}},
-    {"output_glob" => [false]},
-    {"output_glob" => [["bad"]]},
-    {"output_glob" => "bad"},
-    {"output_glob" => ["nope", -1]},
-  ].each do |value|
+    [/ram.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => 1}}],
+    [/ram.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => 1, "ram" => "1234567"}}],
+    [/ram.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => 1, "ram" => 0}}],
+    [/ram.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => 1, "ram" => nil}}],
+    [/ram.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => 1, "ram" => -1}}],
+    [/vcpus.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => 0, "ram" => 1234567}}],
+    [/vcpus.*must be a positive integer/, {"runtime_constraints" => {"vcpus" => "1", "ram" => 1234567}}],
+    [/Runtime constraints.*unexpected key.*badkey/, {"runtime_constraints" => {"vcpus" => 1, "ram" => 1234567, "badkey" => 2}}],
+    [/Runtime constraints.*unexpected key.*badkey/, {"runtime_constraints" => {"vcpus" => 1, "ram" => 1234567, "gpu" => {"badkey" => "badvalue"}}}],
+    [/gpu.*must be a hash/, {"runtime_constraints" => {"vcpus" => 1, "ram" => 1234567, "gpu" => []}}],
+    [/gpu.*must be a hash/, {"runtime_constraints" => {"vcpus" => 1, "ram" => 1234567, "gpu" => "bad"}}],
+    [/Runtime constraints.*must be a hash/, {"runtime_constraints" => ["bad"]}],
+    [/Runtime constraints.*must be a hash/, {"runtime_constraints" => "bad"}],
+    [/Scheduling parameters.*unexpected key.*badkey/, {"scheduling_parameters" => {"badkey" => "value"}}],
+    [/Scheduling parameters.*unexpected key.*badkey/, {"scheduling_parameters" => {"badkey" => ["value"]}}],
+    [/Mounts \[foo\].*invalid target/, {"mounts" => {"foo" => {"kind" => "tmp"}}}],
+    [/Mounts \[\/foo\].*must be a hash/, {"mounts" => {"/foo" => "BAR"}}],
+    [/Mounts \[\/foo\]\[kind\]: unsupported value/, {"mounts" => {"/foo" => {}}}],
+    [/Mounts \[\/foo\]\[kind\]: unsupported value/, {"mounts" => {"/foo" => {"kind" => ""}}}],
+    [/Mounts \[\/foo\]\[kind\]: unsupported value.*badkind/, {"mounts" => {"/foo" => {"kind" => "badkind", "content" => {}}}}],
+    [/Mounts \[\/foo\]\[capacity\]: incompatible value type: integer required/, {"mounts" => {"/foo" => {"kind" => "tmp", "capacity" => 42.222}}}],
+    [/Mounts \[\/foo\]\[content\]: parameter is not supported for a collection mount/, {"mounts" => {"/foo" => {"kind" => "collection", "content" => {"foo" => "bar"}}}}],
+    [/Mounts \[\/foo\]\[bad\]: parameter is not supported for a collection mount/, {"mounts" => {"/foo" => {"kind" => "collection", "bad" => "bad"}}}],
+    [/Mounts \[\/foo\]\[path\]: parameter is not supported for a json mount/, {"mounts" => {"/foo" => {"kind" => "json", "path" => "bad"}}}],
+    [/Mounts \[\/foo\]\[device_type\]: parameter is not supported for a json mount/, {"mounts" => {"/foo" => {"kind" => "json", "device_type" => "ram"}}}],
+    [/Mounts \[\/foo\]\[content\]: incompatible value type: string required/, {"mounts" => {"/foo" => {"kind" => "text", "content" => {"bad" => "bad"}}}}],
+    [/Mounts \[\/foo\]\[portable_data_hash\]: parameter is not supported for a tmp mount/, {"mounts" => {"/foo" => {"kind" => "tmp", "portable_data_hash" => "d41d8cd98f00b204e9800998ecf8427e+0"}}}],
+    [/Mounts \[\/foo\]\[uuid\]: parameter is not supported for a keep mount/, {"mounts" => {"/foo" => {"kind" => "keep", "uuid" => "zzzzz-tpzed-badbadbadbadbad"}}}],
+    [/Mounts \[\/foo\]\[uuid\]: parameter is not supported for a file mount/, {"mounts" => {"/foo" => {"kind" => "file", "uuid" => "zzzzz-tpzed-badbadbadbadbad"}}}],
+    [/Mounts \[\/foo\]\[content\]: parameter is not supported for a file mount/, {"mounts" => {"/foo" => {"kind" => "file", "content" => "bad"}}}],
+    [/Mounts \[\/foo\]\[badkey\]: parameter is not supported for a json mount/, {"mounts" => {"/foo" => {"kind" => "json", "content" => "ok", "badkey" => "value"}}}],
+    [/Secret mounts \[\/foo\]\[kind\]: unsupported value \"tmp\"/, {"secret_mounts" => {"/foo" => {"kind" => "tmp", "capacity" => 1234567}}}],
+    [/Secret mounts \[\/foo\]\[content\]: incompatible value type: string required/, {"secret_mounts" => {"/foo" => {"kind" => "text", "content" => {"bad" => "bad"}}}}],
+    [/Secret mounts \[stdout\]: invalid target: must be stdin or an absolute path/, {"secret_mounts" => {"stdout" => {"kind" => "json", "content" => {}}}}],
+    [/Secret mounts \[stderr\]: invalid target: must be stdin or an absolute path/, {"secret_mounts" => {"stderr" => {"kind" => "json", "content" => {}}}}],
+    [/Command must be an array of strings/, {"command" => ["echo", 55]}],
+    [/Environment key cannot be empty/, {"environment" => {"" => "baz"}}],
+    [/Environment \[FOO\]: incompatible value type: string required/, {"environment" => {"FOO" => 55}}],
+    [/Environment key.*contains.*invalid character/, {"environment" => {"FOO\0" => "baz"}}],
+    [/Environment key.*contains.*invalid character/, {"environment" => {"FOO=BAR" => "baz"}}],
+    [/Environment key.*contains.*invalid character/, {"environment" => {"=" => "baz"}}],
+    [/Environment value.*contains.*invalid character/, {"environment" => {"FOO" => "BAR\0BAZ"}}],
+    [/Output glob must be an array of non-empty strings/, {"output_glob" => [false]}],
+    [/Output glob must be an array of non-empty strings/, {"output_glob" => [["bad"]]}],
+    [/Output glob must be an array of non-empty strings/, {"output_glob" => ["cannot","contain","empty",""]}],
+    [/Output glob must be an array of non-empty strings/, {"output_glob" => [{bad:"bad"}]}],
+    [/Output glob must be an array of non-empty strings/, {"output_glob" => "bad"}],
+    [/Output glob must be an array of non-empty strings/, {"output_glob" => ["nope", -1]}],
+  ].each do |error_regexp, value|
     test "Create with invalid #{value}" do
       set_user_from_auth :active
-      assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
-        cr = create_minimal_req!({state: "Committed",
-               priority: 1}.merge(value))
-        cr.save!
+      err = assert_raises(ActiveRecord::RecordInvalid) do
+        cr = create_minimal_req!({state: "Committed", priority: 1}.merge(value))
       end
+      assert_match /Validation failed: /, err.message
     end
 
     test "Update with invalid #{value}" do
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
-      assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
-        cr = ContainerRequest.find_by_uuid cr.uuid
-        cr.update!({state: "Committed",
-                               priority: 1}.merge(value))
+      cr = ContainerRequest.find_by_uuid cr.uuid
+      err = assert_raises(ActiveRecord::RecordInvalid) do
+        cr.update!({state: "Committed", priority: 1}.merge(value))
       end
+      assert_match error_regexp, err.message
     end
   end
 
@@ -552,7 +586,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "create as container_runtime_token and expect requesting_container_uuid to be zzzzz-dz642-20isqbkl8xwnsao" do
     set_user_from_auth :container_runtime_token
     Thread.current[:token] = "#{Thread.current[:token]}/zzzzz-dz642-20isqbkl8xwnsao"
-    cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
+    cr = create_minimal_req!
     assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
     assert_equal 'zzzzz-dz642-20isqbkl8xwnsao', cr.requesting_container_uuid
     assert_equal 1, cr.priority
@@ -776,13 +810,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [{"var" => "value1"}, {"var" => "value2"}, nil],
   ].each do |env1, env2, use_existing|
     test "Container request #{((env1 == env2) and (use_existing.nil? or use_existing == true)) ? 'does' : 'does not'} reuse container when committed#{use_existing.nil? ? '' : use_existing ? ' and use_existing == true' : ' and use_existing == false'}" do
-      common_attrs = {cwd: "test",
+      common_attrs = {cwd: "/test",
                       priority: 1,
                       command: ["echo", "hello"],
-                      output_path: "test",
+                      output_path: "/test",
                       runtime_constraints: {"vcpus" => 4,
                                             "ram" => 12000000000},
-                      mounts: {"test" => {"kind" => "json"}}}
+                      mounts: {"/test" => {"kind" => "json"}}}
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
                                                     environment: env1}))
@@ -1243,12 +1277,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
         configure_preemptible_instance_type
       end
       common_attrs = {
-        cwd: "test",
+        state: ContainerRequest::Uncommitted,
+        cwd: "/test",
         priority: 1,
         command: ["echo", "hello"],
-        output_path: "test",
+        output_path: "/test",
         scheduling_parameters: {"preemptible" => ask},
-        mounts: {"test" => {"kind" => "json"}},
+        mounts: {"/test" => {"kind" => "json"}},
       }
       set_user_from_auth :active
 
@@ -1337,23 +1372,23 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   [
     [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"partitions" => "fastcpu"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"partitions" => ["fastcpu","vfastcpu"]}, ContainerRequest::Committed],
     [{"max_run_time" => "one day"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"max_run_time" => "one day"}, ContainerRequest::Uncommitted],
+    [{"max_run_time" => "one day"}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"max_run_time" => -1}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"max_run_time" => -1}, ContainerRequest::Uncommitted],
+    [{"max_run_time" => -1}, ContainerRequest::Uncommitted, ActiveRecord::RecordInvalid],
     [{"max_run_time" => 86400}, ContainerRequest::Committed],
   ].each do |sp, state, expected|
     test "create container request with scheduling_parameters #{sp} in state #{state} and verify #{expected}" do
-      common_attrs = {cwd: "test",
+      common_attrs = {cwd: "/test",
                       priority: 1,
                       command: ["echo", "hello"],
-                      output_path: "test",
+                      output_path: "/test",
                       scheduling_parameters: sp,
-                      mounts: {"test" => {"kind" => "json"}}}
+                      mounts: {"/test" => {"kind" => "json"}}}
       set_user_from_auth :active
 
       if expected == ActiveRecord::RecordInvalid
@@ -1374,12 +1409,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "AlwaysUsePreemptibleInstances makes child containers preemptible" do
     Rails.configuration.Containers.AlwaysUsePreemptibleInstances = true
-    common_attrs = {cwd: "test",
+    common_attrs = {cwd: "/test",
                     priority: 1,
                     command: ["echo", "hello"],
-                    output_path: "test",
+                    output_path: "/test",
                     state: ContainerRequest::Committed,
-                    mounts: {"test" => {"kind" => "json"}}}
+                    mounts: {"/test" => {"kind" => "json"}}}
     set_user_from_auth :active
     configure_preemptible_instance_type
 
@@ -1651,10 +1686,11 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "invalid runtime_token" do
     set_user_from_auth :active
     spec = api_client_authorizations(:spectator)
-    assert_raises(ArgumentError) do
+    err = assert_raises(ActiveRecord::RecordInvalid) do
       cr = create_minimal_req!(state: "Committed", runtime_token: "#{spec.token}xx")
       cr.save!
     end
+    assert_match /Runtime token failed validation/, err.message
   end
 
   test "default output_storage_classes" do
@@ -1691,13 +1727,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "reusing container with different container_request.output_storage_classes" do
-    common_attrs = {cwd: "test",
+    common_attrs = {cwd: "/test",
                     priority: 1,
                     command: ["echo", "hello"],
-                    output_path: "test",
+                    output_path: "/test",
                     runtime_constraints: {"vcpus" => 4,
                                           "ram" => 12000000000},
-                    mounts: {"test" => {"kind" => "json"}},
+                    mounts: {"/test" => {"kind" => "json"}},
                     environment: {"var" => "value1"},
                     output_storage_classes: ["foo_storage_class"]}
     set_user_from_auth :active
@@ -1839,107 +1875,54 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  test "published_ports validation" do
-    set_user_from_auth :active
-    cr = create_minimal_req!
-    cr.use_existing = false
-
-    # Bad port number
-    cr.service = true
-    cr.published_ports = {
-      "9000000" => {
-        "access" => "public",
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
+  [
+    [true, {"1" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [true, {"9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [true, {"65535" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    # invalid ports:
+    [false, {"" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"0" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"1e4" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"-1" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"bad" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"0x101f" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {":9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"0.0.0.0:9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"localhost:9000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"9000000" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {"65536" => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    # not a hash:
+    [false, {"9000" => nil}],
+    [false, {"9000" => ""}],
+    [false, {"9000" => []}],
+    # missing/invalid arguments:
+    [false, {"9000" => {}}],
+    [false, {"9000" => {"label" => "stuff", "initial_path" => ""}}],
+    [false, {"9000" => {"label" => "stuff", "initial_path" => "", "access" => "invalid"}}],
+    [false, {"9000" => {"initial_path" => "", "access" => "public"}}],
+    [false, {"9000" => {"initial_path" => "", "access" => "public", "label" => ""}}],
+    [false, {"9000" => {"label" => "stuff", "access" => "public"}}],
+    # non-string key: (note non-string keys are all converted to
+    # strings before they hit our validations, so we can't actually
+    # test a numeric key here)
+    [false, {["9000"] => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {nil => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+    [false, {false => {"access" => "public", "label" => "stuff", "initial_path" => ""}}],
+  ].each do |ok, pp_spec|
+    test "published_ports validation for #{pp_spec}" do
+      set_user_from_auth :active
+      cr = create_minimal_req!
+      cr.use_existing = false
+      cr.service = true
+      cr.published_ports = pp_spec
+      if ok
+        assert cr.save!
+      else
+        assert_raises(ActiveRecord::RecordInvalid) do
+          cr.save!
+        end
+      end
     end
-
-    # Not a hash
-    cr.published_ports = {
-      "9000" => ""
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # empty hash
-    cr.published_ports = {
-      "9000" => {
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # missing access
-    cr.published_ports = {
-      "9000" => {
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # invalid access
-    cr.published_ports = {
-      "9000" => {
-        "access" => "peanuts",
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # missing label
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # empty label
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "",
-        "initial_path" => "",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # Missing initial_path
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "stuff",
-      }
-    }
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.save!
-    end
-
-    # All good!
-    cr.published_ports = {
-      "9000" => {
-        "access" => "public",
-        "label" => "stuff",
-        "initial_path" => "",
-      }
-    }
-    cr.save!
   end
 
   test "container request in a project with trash_at in the future" do
