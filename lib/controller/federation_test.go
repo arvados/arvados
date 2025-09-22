@@ -691,7 +691,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	    "output_path": "/",
 	    "container_image": "123",
 	    "command": ["abc"],
-            "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}}
+	    "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}}
 	  }
 	}
 	`))
@@ -748,7 +748,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c
 	    "output_path": "/",
 	    "container_image": "123",
 	    "command": ["abc"],
-            "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}},
+	    "mounts": {"/tmp": {"kind": "tmp", "capacity": 1000000}},
 	    "runtime_token": "xyz"
 	  }
 	}
