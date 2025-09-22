@@ -242,6 +242,12 @@ resource "aws_iam_policy_attachment" "cloud_dispatcher_ec2_access_attachment" {
   policy_arn = aws_iam_policy.cloud_dispatcher_ec2_access.arn
 }
 
+resource "aws_iam_policy_attachment" "loki_s3_full_access_attachment" {
+  name = "${local.cluster_name}_cloud_dispatcher_ec2_access_attachment"
+  roles = [ aws_iam_role.cloud_dispatcher_iam_role.name ]
+  policy_arn = local.loki_iam_policy_arn
+}
+
 resource "aws_eip_association" "eip_assoc" {
   for_each = local.private_only ? [] : toset(local.public_hosts)
   instance_id = aws_instance.arvados_service[each.value].id

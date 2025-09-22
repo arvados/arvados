@@ -14,12 +14,6 @@ output "use_external_db" {
   value = var.use_external_db
 }
 
-output "loki_iam_access_key_id" {
-  value = aws_iam_access_key.loki.id
-  sensitive = true
-}
-
-output "loki_iam_secret_access_key" {
-  value = aws_iam_access_key.loki.secret
-  sensitive = true
+output "loki_iam_policy_arn" {
+  value = aws_iam_policy.loki_s3_full_access.arn
 }
