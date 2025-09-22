@@ -8,13 +8,26 @@ SPDX-License-Identifier: Apache-2.0
 
 ## Introduction
 
-This package provides scripts to initialize an Arvados cluster with data, built on top of the Python SDK. From inside this directory, you can install it by running:
+This package provides scripts to initialize an Arvados cluster with data, built on top of the Python SDK.
 
-      pipx install .
+## Installation
 
-or if you're managing your own virtualenvs and have one activated:
+The package currently requires the recent developmental version of the Arvados Python SDK. To install it, first check out the Arvados source repository:
 
-      pip install .
+      git clone git://git.arvados.org/arvados.git
+
+Then install the Python SDK in a virtual environment:
+
+      mkdir -p "$HOME/python-venvs/arvados-bootstrap"
+      python3 -m venv "$HOME/python-venvs/arvados-bootstrap"
+      . "$HOME/python-venvs/arvados-bootstrap/bin/.activate"
+      cd arvados
+      WORKDIR="$PWD" pip3 install sdk/python
+
+Finally, you can install this tool by running:
+
+      cd contrib/bootstrap-tools
+      pip3 install .
 
 ## arv-export
 
