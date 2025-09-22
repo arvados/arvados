@@ -17,6 +17,7 @@ class ArvadosModel < ApplicationRecord
   extend RecordFilters
 
   after_find :schedule_restoring_changes
+  after_find :type_check_serialized_attributes
   after_initialize :log_start_state
   before_save :ensure_permission_to_save
   before_save :ensure_owner_uuid_is_permitted
@@ -594,6 +595,37 @@ class ArvadosModel < ApplicationRecord
   end
 
   protected
+
+  # Fail if we loaded some serialized content from the database that
+  # doesn't match the expected type.
+  def type_check_serialized_attributes
+    # `serialized_attributes` lets us find attributes that are
+    # serialized by Rails and stored in text columns, like this one:
+    #
+    # serialize :environment, Hash
+    serialized_attributes.each do |attr, serializer|
+      if attributes.key?(attr) && !attributes[attr].is_a?(serializer.object_class)
+        raise "invalid serialized data for #{self.class.to_s} #{attr}: #{attributes[attr].to_s[0..5]} is not a #{serializer.object_class}"
+      end
+    end
+
+    # `type_for_attribute` lets us find attributes that are stored in
+    # jsonb columns, like this one:
+    #
+    # attribute :properties, :jsonbHash, default: {}
+    self.class.columns.each do |col|
+      if attributes.key?(col.name) && col.type == :jsonb
+        coltype = self.class.type_for_attribute(col.name)
+        if coltype.respond_to?(:enforce_type) && !attributes[col.name].is_a?(coltype.enforce_type)
+          raise "invalid serialized data for #{self.class.to_s} #{col.name}: '#{attributes[col.name]}'[...] is not a #{coltype.enforce_type}"
+        end
+      end
+    end
+
+    # Somehow, the above code flags the record as changed/dirty, so we
+    # need to clear that flag.
+    clear_changes_information
+  end
 
   def self.deep_sort_hash(x)
     if x.is_a? Hash

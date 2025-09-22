@@ -45,6 +45,10 @@ class JsonbType
     def default_value
       {}
     end
+
+    def enforce_type
+      ::Hash
+    end
   end
 
   class Array < JsonbType::WithDefault
@@ -54,6 +58,10 @@ class JsonbType
 
     def default_value
       []
+    end
+
+    def enforce_type
+      ::Array
     end
   end
 end
