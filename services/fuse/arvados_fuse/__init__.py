@@ -435,7 +435,11 @@ class Inodes(object):
                 self._inode_remove_queue.task_done()
 
     def wait_remove_queue_empty(self):
-        # used by tests
+        """Wait for all pending tasks related to invalidating and
+        removing inodes.
+
+        """
+
         self._inode_remove_queue.join()
 
     def _remove(self, entry):

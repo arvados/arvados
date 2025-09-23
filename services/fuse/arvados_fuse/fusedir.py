@@ -397,6 +397,9 @@ class CollectionDirectoryBase(Directory):
             while lockcount > 0:
                 self.collection.lock.acquire()
                 lockcount -= 1
+        # Flushing pending tasks to invalidate/remove inodes here
+        # avoids bug #23136.
+        self.inodes.wait_remove_queue_empty()
 
     def populate(self, mtime):
         self._mtime = mtime
