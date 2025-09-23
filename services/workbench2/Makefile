@@ -80,6 +80,16 @@ else
 	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -- --spec $(SPECFILE)
 endif
 
+interactive-tests-in-docker: workbench-docker-volume
+	docker run --interactive --tty --rm \
+		--env=DISPLAY \
+		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/home" \
+		--mount="type=bind,src=$(ARVADOS_DIRECTORY),dst=/opt/arvados" \
+		--mount="type=bind,src=/tmp/.X11-unix,dst=/tmp/.X11-unix" \
+		--workdir=/opt/arvados/services/workbench2 \
+		"$(DOCKER_IMAGE)" \
+		bash tools/run-integration-tests.sh -i
+
 integration-tests-in-docker: workbench-docker-volume
 	docker run $(TI) --rm \
 		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/home" \
