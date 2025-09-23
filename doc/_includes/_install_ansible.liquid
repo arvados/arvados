@@ -27,8 +27,7 @@ If the pipx package is not found, it is not available for your distribution. Ins
 After pipx is installed, install Ansible by running:
 
 <notextile>
-<pre><code>$ <span class="userinput">cd arvados/tools/ansible</span>
-arvados/tools/ansible $ <span class="userinput">pipx install "$(grep -E '^ansible-core[^-_[:alnum:]]' requirements.txt)"</span>
+<pre><code>$ <span class="userinput">arvados/tools/ansible/install-ansible.sh</span>
   installed package ansible-core 2.15.13, installed using Python 3.11.2
   These apps are now globally available
     - ansible
@@ -44,22 +43,15 @@ arvados/tools/ansible $ <span class="userinput">pipx install "$(grep -E '^ansibl
     - ansible-vault
 done! ✨ 🌟 ✨
 
-arvados/tools/ansible $ <span class="userinput">pipx runpip ansible-core install -r requirements.txt</span>
 […]
-Successfully installed argcomplete-3.6.2 certifi-2025.6.15 charset_normalizer-3.4.2 docker-7.1.0 [… and other packages…]
 
-arvados/tools/ansible $ <span class="userinput">ansible-galaxy install -r requirements.yml</span>
-[…]
-ansible.posix:2.0.0 was installed successfully
-community.docker:4.6.1 was installed successfully
-community.general:10.7.1 was installed successfully
-community.postgresql:4.1.0 was installed successfully
+Ansible successfully installed!
 </code></pre>
 </notextile>
 
-If you complete these steps successfully, skip the next section.
+If this script reports the final success message, skip the next section.
 
-{{ header_level|default: 'h3' }}(#install-ansible-venv). Option 2. Install Ansible in a virtualenv with pip
+{{ header_level|default: 'h3' }}(#install-ansible-venv). Option 2. Install Ansible in a virtualenv
 
 This method works on all of our supported distributions, but requires you to configure a lot of paths manually. Install Python and virtualenv on Debian/Ubuntu by running:
 
@@ -78,19 +70,11 @@ Or install it on Red Hat/AlmaLinux/Rocky Linux by running:
 Next, set up a virtualenv. If you want to install this somewhere other than @~/arvados-ansible@, you may change that path each time it appears.
 
 <notextile>
-<pre><code>$ <span class="userinput">cd arvados/tools/ansible</span>
-arvados/tools/ansible $ <span class="userinput">python3 -m venv <strong>~/arvados-ansible</strong></span>
-
-arvados/tools/ansible $ <span class="userinput"><strong>~/arvados-ansible</strong>/bin/pip install -r requirements.txt</span>
+<pre><code>$ <span class="userinput">arvados/tools/ansible/install-ansible.sh <strong>~/arvados-ansible</strong></span>
+Collecting ansible-core~=2.15.13
 […]
-Successfully installed MarkupSafe-3.0.2 PyYAML-6.0.2 ansible-core-2.15.13 [… and other packages…]
 
-arvados/tools/ansible $ <span class="userinput"><strong>~/arvados-ansible</strong>/bin/ansible-galaxy install -r requirements.yml</span>
-[…]
-ansible.posix:2.0.0 was installed successfully
-community.docker:4.6.1 was installed successfully
-community.general:10.7.1 was installed successfully
-community.postgresql:4.1.0 was installed successfully
+Ansible successfully installed!
 </code></pre>
 </notextile>
 
