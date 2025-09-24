@@ -39,6 +39,7 @@ import httplib2.error
 import googleapiclient
 
 import arvados
+import arvados.api
 import arvados.config
 import arvados.keep
 import arvados.util
@@ -57,14 +58,6 @@ logger = logging.getLogger('arvados.arv-copy')
 
 # Set this up so connection errors get logged.
 googleapi_logger = logging.getLogger('googleapiclient.http')
-
-# local_repo_dir records which git repositories from the Arvados source
-# instance have been checked out locally during this run, and to which
-# directories.
-# e.g. if repository 'twp' from src_arv has been cloned into
-# /tmp/gitfHkV9lu44A then local_repo_dir['twp'] = '/tmp/gitfHkV9lu44A'
-#
-local_repo_dir = {}
 
 # List of collections that have been copied in this session, and their
 # destination collection UUIDs.
@@ -135,17 +128,37 @@ or the fallback value 2.
         '--storage-classes',
         type=arv_cmd.UniqueSplit(),
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
+    copy_opts.add_argument(
+        '--block-copy',
+        dest='keep_block_copy',
+        action='store_true',
+        help="""Copy Keep blocks when copying collections (default).""",
+    )
+    copy_opts.add_argument(
+        '--no-block-copy',
+        dest='keep_block_copy',
+        action='store_false',
+        help="""Do not copy Keep blocks when copying collections. Must have
+administrator privileges on the destination cluster to create collections.
+""")
+
     copy_opts.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
 
     copy_opts.add_argument("--prefer-cached-downloads", action="store_true", default=False,
                         help="If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).")
-
     copy_opts.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
-    copy_opts.set_defaults(progress=True)
-    copy_opts.set_defaults(recursive=True)
+
+    copy_opts.set_defaults(
+        # export_all_fields is used by external tools to make complete copies
+        # of Arvados records.
+        export_all_fields=False,
+        keep_block_copy=True,
+        progress=True,
+        recursive=True,
+    )
 
     parser = argparse.ArgumentParser(
         description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
@@ -210,10 +223,6 @@ or the fallback value 2.
         logger.error("%s", e, exc_info=args.verbose)
         exit(1)
 
-    # Clean up any outstanding temp git repositories.
-    for d in local_repo_dir.values():
-        shutil.rmtree(d, ignore_errors=True)
-
     if not result:
         exit(1)
 
@@ -259,6 +268,7 @@ def api_for_instance(instance_name, num_retries):
             dirs = basedirs.BaseDirectories('CONFIG')
             config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
+        arvados.api._reset_googleapiclient_logging()
         try:
             cfg = arvados.config.load(config_file)
 
@@ -288,6 +298,7 @@ def api_for_instance(instance_name, num_retries):
         except (httplib2.error.HttpLib2Error, googleapiclient.errors.Error) as e:
             msg.append("Failed to connect to instance {} at {}, error was {}".format(instance_name, cfg['ARVADOS_API_HOST'], e))
 
+    arvados.api._reset_googleapiclient_logging()
     default_api = None
     default_instance = None
     try:
@@ -521,17 +532,21 @@ def create_collection_from(c, src, dst, args):
     available."""
 
     collection_uuid = c['uuid']
-    body = {}
-    for d in ('description', 'manifest_text', 'name', 'portable_data_hash', 'properties'):
-        body[d] = c[d]
-
-    if not body["name"]:
-        body['name'] = "copied from " + collection_uuid
-
-    if args.storage_classes:
-        body['storage_classes_desired'] = args.storage_classes
-
-    body['owner_uuid'] = args.project_uuid
+    if args.export_all_fields:
+        body = c.copy()
+    else:
+        body = {key: c[key] for key in [
+            'description',
+            'manifest_text',
+            'name',
+            'portable_data_hash',
+            'properties',
+        ]}
+        if not body['name']:
+            body['name'] = f"copied from {collection_uuid}"
+        if args.storage_classes:
+            body['storage_classes_desired'] = args.storage_classes
+        body['owner_uuid'] = args.project_uuid
 
     dst_collection = dst.collections().create(body=body, ensure_unique_name=True).execute(num_retries=args.retries)
 
@@ -661,8 +676,8 @@ def copy_collection(obj_uuid, src, dst, args):
     # Copy each block from src_keep to dst_keep.
     # Use the newly signed locators returned from dst_keep to build
     # a new manifest as we go.
-    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=args.retries)
-    dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=args.retries)
+    src_keep = src.keep
+    dst_keep = dst.keep
     dst_manifest = io.StringIO()
     dst_locators = {}
     bytes_written = 0
@@ -764,48 +779,50 @@ def copy_collection(obj_uuid, src, dst, args):
             finally:
                 put_queue.task_done()
 
+    if args.keep_block_copy:
+        for line in manifest.splitlines():
+            words = line.split()
+            for word in words[1:]:
+                try:
+                    loc = arvados.KeepLocator(word)
+                except ValueError:
+                    # If 'word' can't be parsed as a locator,
+                    # presume it's a filename.
+                    continue
+
+                get_queue.put(word)
+
+        for i in range(0, threadcount):
+            get_queue.put(None)
+
+        for i in range(0, threadcount):
+            threading.Thread(target=get_thread, daemon=True).start()
+
+        for i in range(0, threadcount):
+            threading.Thread(target=put_thread, daemon=True).start()
+
+        get_queue.join()
+        put_queue.join()
+
+        if len(transfer_error) > 0:
+            return {"error_token": "Failed to transfer blocks"}
+
     for line in manifest.splitlines():
-        words = line.split()
-        for word in words[1:]:
+        words = iter(line.split())
+        out_words = [next(words)]
+        for word in words:
             try:
                 loc = arvados.KeepLocator(word)
             except ValueError:
                 # If 'word' can't be parsed as a locator,
                 # presume it's a filename.
-                continue
-
-            get_queue.put(word)
-
-    for i in range(0, threadcount):
-        get_queue.put(None)
-
-    for i in range(0, threadcount):
-        threading.Thread(target=get_thread, daemon=True).start()
-
-    for i in range(0, threadcount):
-        threading.Thread(target=put_thread, daemon=True).start()
-
-    get_queue.join()
-    put_queue.join()
-
-    if len(transfer_error) > 0:
-        return {"error_token": "Failed to transfer blocks"}
-
-    for line in manifest.splitlines():
-        words = line.split()
-        dst_manifest.write(words[0])
-        for word in words[1:]:
-            try:
-                loc = arvados.KeepLocator(word)
-            except ValueError:
-                # If 'word' can't be parsed as a locator,
-                # presume it's a filename.
-                dst_manifest.write(' ')
-                dst_manifest.write(word)
-                continue
-            blockhash = loc.md5sum
-            dst_manifest.write(' ')
-            dst_manifest.write(dst_locators[blockhash])
+                out_words.append(word)
+            else:
+                if args.keep_block_copy:
+                    out_words.append(dst_locators[loc.md5sum])
+                else:
+                    out_words.append(loc.stripped())
+        dst_manifest.write(' '.join(out_words))
         dst_manifest.write("\n")
 
     if progress_writer:
@@ -848,24 +865,29 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
     # Create/update the destination project
     existing = dst.groups().list(filters=[["owner_uuid", "=", owner_uuid],
                                           ["name", "=", src_project_record["name"]]]).execute(num_retries=args.retries)
-    if len(existing["items"]) == 0:
-        project_record = dst.groups().create(body={"group": {"group_class": "project",
-                                                             "owner_uuid": owner_uuid,
-                                                             "name": src_project_record["name"]}}).execute(num_retries=args.retries)
+    try:
+        existing_uuid = existing['items'][0]['uuid']
+    except IndexError:
+        body = src_project_record if args.export_all_fields else {'group': {
+            'description': src_project_record['description'],
+            'group_class': 'project',
+            'name': src_project_record['name'],
+            'owner_uuid': owner_uuid,
+        }}
+        project_req = dst.groups().create(body=body)
     else:
-        project_record = existing["items"][0]
+        project_req = dst.groups().update(
+            uuid=existing_uuid,
+            body={'group': {
+                'description': src_project_record['description'],
+            }},
+        )
 
-    dst.groups().update(uuid=project_record["uuid"],
-                        body={"group": {
-                            "description": src_project_record["description"]}}).execute(num_retries=args.retries)
-
+    project_record = project_req.execute(num_retries=args.retries)
     args.project_uuid = project_record["uuid"]
-
     logger.debug('Copying %s to %s', obj_uuid, project_record["uuid"])
 
-
     partial_error = ""
-
     # Copy collections
     try:
         copy_collections([col["uuid"] for col in arvados.util.keyset_list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
