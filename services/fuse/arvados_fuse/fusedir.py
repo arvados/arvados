@@ -393,13 +393,13 @@ class CollectionDirectoryBase(Directory):
                     if self.collection_record_file is not None:
                         self.collection_record_file.invalidate()
                         self.inodes.invalidate_inode(self.collection_record_file)
+            # Flushing pending tasks to invalidate/remove inodes here
+            # avoids bug #23136.
+            self.inodes.wait_remove_queue_empty()
         finally:
             while lockcount > 0:
                 self.collection.lock.acquire()
                 lockcount -= 1
-        # Flushing pending tasks to invalidate/remove inodes here
-        # avoids bug #23136.
-        self.inodes.wait_remove_queue_empty()
 
     def populate(self, mtime):
         self._mtime = mtime
