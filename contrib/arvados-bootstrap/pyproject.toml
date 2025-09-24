@@ -37,6 +37,7 @@ requires-python = "~= 3.10"
 [project.scripts]
 arv-export = "arv_bootstrap.export_import:export_main"
 arv-import = "arv_bootstrap.export_import:import_main"
+arv-seed = "arv_bootstrap.seed:main"
 
 [project.urls]
 Homepage = "https://arvados.org"
