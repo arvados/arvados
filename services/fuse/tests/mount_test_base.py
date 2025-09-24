@@ -81,7 +81,7 @@ class MountTestBase(unittest.TestCase):
             raise
         llfuse.close()
 
-    def make_mount(self, root_class, **root_kwargs):
+    def make_mount(self, root_class, fuse_options=[], **root_kwargs):
         enable_write = root_kwargs.pop('enable_write', True)
         self.operations = fuse.Operations(
             os.getuid(),
@@ -98,7 +98,7 @@ class MountTestBase(unittest.TestCase):
             root_kwargs.pop('filters', None),
             **root_kwargs,
         ))
-        llfuse.init(self.operations, self.mounttmp, [])
+        llfuse.init(self.operations, self.mounttmp, fuse_options)
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
         self.llfuse_thread.daemon = True
         self.llfuse_thread.start()
