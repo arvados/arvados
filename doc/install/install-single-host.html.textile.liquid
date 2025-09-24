@@ -1,0 +1,210 @@
+---
+layout: default
+navsection: installguide
+title: Single host Arvados
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Limitations of the single host install":#limitations
+# "Prerequisites and planning":#prerequisites
+# "Download the installer":#download
+# "Install Ansible":#install-ansible
+# "Set up cluster configuration":#localparams
+# "Set up cluster inventory":#inventory
+# "Run the installer playbook":#run-playbook
+# "Test the cluster":#test-install
+# "Changing your configuration":#further_customization
+# "Upgrading your Arvados cluster":#post_install
+
+h2(#limitations). Limitations of the single host install
+
+*NOTE: The single host installation is a good choice for evaluating Arvados, but it is not recommended for production use.*
+
+Using the default configuration, the single host install has scaling limitations compared to a production multi-host install:
+
+* It uses the local @/var@ partition to store all user data and logs.
+* It uses the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs.
+* Because jobs and Arvados services all run on the same machine, they will compete for CPU/RAM resources.
+
+h2(#prerequisites). Prerequisites and planning
+
+h3. Cluster ID
+
+Choose a 5-character cluster identifier that will represent the cluster. Refer to "our guidelines on choosing a cluster identifier":../architecture/federation.html#cluster_id.  Only lowercase letters and digits 0-9 are allowed.  Our documentation uses @xurid@ throughout. You should replace this each time it appears with your chosen cluster identifier.
+
+h3. Cluster host
+
+You will need a dedicated (virtual) machine for your Arvados server with at least 2 cores and 8 GiB of RAM (4+ cores / 16+ GiB recommended if you are running workflows) running a supported Linux distribution:
+
+{% include 'supportedlinux' %}
+
+The single host install stores all user data and logs under @/var@. You should ensure that this partition has adequate storage for your planned usage.  We suggest starting with at least 50GiB of free space.
+
+You must be able to connect to this host via SSH. Your account must have permission to run arbitrary commands with @sudo@.
+
+h2(#download). Download the installer
+
+The Ansible installer is only available in the Arvados source tree. Clone a copy of the Arvados source for the version of Arvados you're using in a directory convenient for you:
+
+{% include 'branchname' %}
+<notextile>
+<pre><code>~$ <span class="userinput">git clone --depth=1 --branch=<strong>{{ branchname }}</strong> git://git.arvados.org/arvados.git ~/<strong>arvados</strong></span>
+</code></pre>
+</notextile>
+
+h2(#install-ansible). Install Ansible
+
+{% include 'install_ansible' header_level: 'h3' %}
+
+h2(#localparams). Set up cluster configuration
+
+Copy the example cluster configuration from the Arvados source tree to a location outside it. We recommend you use your chosen cluster ID in the filename to help keep it unique. For example:
+
+<notextile>
+<pre>$ <code class="userinput">cp arvados/tools/ansible/examples/simple-cluster-config.yml ~/<strong>xurid-</strong>config.yml
+</code></pre>
+</notextile>
+
+Open the copy you created in your editor, and make changes following the instructions at the top of the file.
+
+h2(#inventory). Set up cluster inventory
+
+Copy the example cluster inventory from the Arvados source tree to a location outside it. We recommend you use your chosen cluster ID in the filename to help keep it unique. For example:
+
+<notextile>
+<pre>$ <code class="userinput">cp arvados/tools/ansible/examples/simple-cluster-inventory.yml ~/<strong>xurid-</strong>inventory.yml
+</code></pre>
+</notextile>
+
+Open the copy you created in your editor and make these changes noted in comments:
+
+* Under @hosts:@, change @hostname.example@ to the hostname or address of your cluster node.
+* Change @arvados_config_file@ to the path of the cluster configuration you created in the previous step.
+* Change @arvados_cluster_id@ to your chosen cluster ID.
+
+You may make other changes noted in comments, but the changes listed above are required.
+
+h2(#run-playbook). Run the installer playbook
+
+With your cluster configuration and inventory complete, you can use them to run the installer playbook:
+
+<notextile>
+<pre>$ <code class="userinput">cd arvados/tools/ansible</code>
+arvados/tools/ansible $ <code class="userinput">ansible-playbook -Ki <strong>~/xurid-inventory.yml</strong> install-arvados-cluster.yml</code>
+</pre>
+</notextile>
+
+This will prompt you for a @BECOME password:@. Enter your sudo password on the cluster node. Ansible will use this to perform privileged system configuration. You will see it start to log tasks like:
+
+<notextile>
+<pre>PLAY [Bootstrap nodes] *********************************************************
+
+TASK [Load Arvados configuration file] *****************************************
+ok: [hostname.example -> localhost]
+
+TASK [Load Arvados cluster configuration] **************************************
+ok: [hostname.example]
+
+TASK [ansible.builtin.include_role : distro_bootstrap] *************************
+
+TASK [distro_bootstrap : Get distribution IDs] *********************************
+changed: [hostname.example]
+</pre>
+</notextile>
+
+If all goes well, it will log finish with a @PLAY RECAP@ reporting @failed=0@, which indicates all tasks were successful:
+
+<notextile>
+<pre>PLAY RECAP *********************************************************************
+hostname.example : ok=161  changed=34   unreachable=0    <strong>failed=0</strong>    skipped=23   rescued=0    ignored=0
+</pre>
+</notextile>
+
+h3(#playbook-problems). Diagnosing problems with the playbook run
+
+If the @PLAY RECAP@ indicates that a task failed, that will typically be logged with a message like this:
+
+<notextile>
+<pre>TASK [arvados_controller : Start and enable arvados-controller.service] ********
+fatal: [hostname.example]: FAILED! => {"changed": false, "msg": "Unable to restart service arvados-controller.service: Job for arvados-controller.service failed because the control process exited with error code.\nSee \"systemctl status arvados-controller.service\" and \"journalctl -xeu arvados-controller.service\" for details.\n"}
+</pre>
+</notextile>
+
+The @TASK@ line gives you some context for what failed. The first part (@arvados_controller@ in this example) describes generally what Arvados service it was configuring. The rest of the line describes the specific step it was taking (starting @arvados-controller.service@ in this example). This context can suggest where you might check your configuration for problems or look on the cluster node for additional information. This example problem was caused by the Controller service in the cluster configuration trying to use an already-claimed port in one of the @InternalURLs@.
+
+h2(#test-install). Test the cluster
+
+h3. Run diagnostics
+
+The @arvados-client diagnostics@ command can check all services on a cluster to identify problems with inconsistent configuration. *On your cluster node*, install and run it like this:
+
+<notextile>
+<pre><code>$ <span class="userinput">sudo apt install arvados-client</span>
+$ <span class="userinput">sudo arvados-client sudo diagnostics -internal-client</span>
+INFO       5: running health check (same as `arvados-server check`)
+INFO      10: getting discovery document from https://hostname.example:8443/discovery/v1/apis/arvados/v1/rest
+INFO      20: getting exported config from https://hostname.example:8443/arvados/v1/config
+[…]
+INFO     160: running a container
+INFO      ... container request uuid = xurid-xvhdp-12345abcde67890
+INFO      ... container request submitted, waiting up to 10m for container to run
+INFO    9990: deleting temporary collection
+INFO    --- no errors ---
+</code></pre>
+</notextile>
+
+h3. Access Workbench
+
+The default Ansible inventory deploys Arvados with a self-signed certificate. If you deployed this way, you will have the best Workbench experience if you configure your browser to trust that certificate for it and supporting services. Follow the instructions for your specific browser below.
+
+If you configured the inventory with a different certificate that is already trusted by your browser, you can skip these steps. You should be able to open the URL from @Services.Workbench2.ExternalURL@ from your cluster configuration in your browser.
+
+h4. Trusting self-signed certificates in Chrome
+
+{% comment %}
+Last updated for Chrome v138
+{% endcomment %}
+
+# Find the @arvados_tls.Default@ setting in your Ansible inventory.
+# If those options specify @remote: true@, copy the @cert@ path from your cluster host to the host where you're running the browser. Note you _only_ need the @cert@ file, not the @key@ file.
+# In the URL bar, enter @chrome://certificate-manager/@ and open that.
+# Under the "Custom" header, open "Installed by you."
+# Next to "Trusted Cerficates," press the "Import" button.
+# In the file picker dialog, open your copy of the @arvados_tls.Default.cert@ file.
+
+Now you should be able to open the URL from @Services.Workbench2.ExternalURL@ from your cluster configuration in your browser. You can skip the next section unless you also want to set up Firefox.
+
+h4. Trusting self-signed certificates in Firefox
+
+{% comment %}
+Last updated for Firefox 140
+{% endcomment %}
+
+# Open the "Edit" menu and select "Settings."
+# Find and press the "View Certificates…" button to open the Certificate Manager.
+# Open the "Servers" tab.
+# Press the "Add Exception…" button.
+# Enter the @ExternalURL@ in your cluster configuration for the @Workbench2@ service.
+# Press the "Get Certificate" button.
+# Press the "Confirm Security Exception" button.
+# Repeat the process from step 4 with your configured URLs for the @Controller@, @Keepproxy@, @WebDAV@, and @WebDAVDownload@ services.
+
+Now you should be able to open the URL from @Services.Workbench2.ExternalURL@ from your cluster configuration in your browser.
+
+h2(#further_customization). Changing your configuration
+
+In the future, if you want to make changes to your Arvados cluster or Ansible inventory configuration, simply edit those files and "run the playbook again":#run-playbook. The playbook will deploy your changes to all the component services.
+
+h2(#post_install). Upgrading your Arvados cluster
+
+When a new version of Arvados is released, the general process to upgrade the cluster is:
+
+# In your Arvados checkout directory, @git fetch@ and then @git switch@ to the branch or tag that corresponds to the release you want to use.
+# Consult the "Arvados upgrade notes":{{site.baseurl}}/admin/upgrading.html to see if you need or want to make change to your cluster configuration file.
+# "Run the playbook again":#run-playbook with your cluster inventory.
+
+See also "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html for more information.
