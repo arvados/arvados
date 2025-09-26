@@ -8,7 +8,7 @@ import moment from "moment";
 import { TextField, RichEditorTextField, TextFieldWithStartValue } from "components/text-field/text-field";
 import { REQUIRED_VALIDATION, LENGTH255_VALIDATION, REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION, DATE_VALIDATION } from "validators/validators";
 import { DatePicker } from "components/date-picker/date-picker";
-import { StringArrayInput } from "components/string-array-input/string-array-input";
+import { StringArrayMuiInput } from "components/string-array-input/string-array-mui-input";
 
 export const ExternalCredentialNameField = () =>
     <Field
@@ -76,6 +76,6 @@ export const ExternalCredentialSecretUpdateField = () =>
 export const ExternalCredentialScopesField = () =>
         <Field
             name="scopes"
-            component={StringArrayInput as any}
+            component={StringArrayMuiInput as any}
             label="Applicable scopes"
         />

@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { StringArrayInput } from './string-array-input';
+import { StringArrayMuiInput } from './string-array-mui-input';
 
-describe('StringArrayInput Component', () => {
+describe('StringArrayMuiInput Component', () => {
     beforeEach(() => {
         // Mount the component with required props
         cy.mount(
-            <StringArrayInput
+            <StringArrayMuiInput
                 input={{
                     name: 'test',
                     value: [],

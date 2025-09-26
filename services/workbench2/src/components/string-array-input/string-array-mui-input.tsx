@@ -5,13 +5,14 @@
 import React, { useState, KeyboardEvent, ChangeEvent, useEffect } from 'react';
 import { TextField, Chip, Box, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { WrappedFieldProps } from 'redux-form';
+import { WrappedFieldProps, WrappedFieldInputProps } from 'redux-form';
 
-interface StringArrayInputProps extends WrappedFieldProps {
+interface StringArrayMuiInputProps extends WrappedFieldProps {
     label?: string;
+    input: { value: string[] } & WrappedFieldInputProps;
 }
 
-export const StringArrayInput = ({ input, label, meta }: StringArrayInputProps) => {
+export const StringArrayMuiInput = ({ input, label, meta }: StringArrayMuiInputProps) => {
     const [currentValue, setCurrentValue] = useState<string>('');
     const [error, setError] = useState<string | undefined>(undefined);
     const [touched, setTouched] = useState(false);
@@ -24,18 +25,18 @@ export const StringArrayInput = ({ input, label, meta }: StringArrayInputProps) 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && currentValue.trim()) {
             e.preventDefault();
-            addToChips((input.value as string[]), currentValue.trim());
+            addToChips((input.value), currentValue.trim());
         }
     };
 
     const handleDelete = (chipToDelete: string) => {
-        const newValues = ((input.value as string[]) || []).filter((chip) => chip !== chipToDelete);
+        const newValues = ((input.value) || []).filter((chip) => chip !== chipToDelete);
         input.onChange(newValues);
     };
 
     const handleAddClick = () => {
         if (currentValue.trim()) {
-            addToChips((input.value as string[]), currentValue.trim());
+            addToChips((input.value), currentValue.trim());
         }
     };
 
