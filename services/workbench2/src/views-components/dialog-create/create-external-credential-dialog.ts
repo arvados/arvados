@@ -15,11 +15,11 @@ export const CreateExternalCredentialDialog = compose(
     reduxForm<CreateExternalCredentialFormDialogData>({
         form: CREATE_EXTERNAL_CREDENTIAL_FORM_NAME,
         onSubmit: (data: CreateExternalCredentialFormDialogData, dispatch: Dispatch) => {
-            Object.values(data).forEach(value => {
-                if (value && typeof value === 'string') {
-                    value = value.trim();
+            for (const key in data) {
+                if (typeof data[key] === 'string') {
+                    data[key] = data[key].trim();
                 }
-            });
+            }
             dispatch<any>(createExternalCredential(data));
             return;
         }
