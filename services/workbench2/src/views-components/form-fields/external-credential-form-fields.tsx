@@ -6,7 +6,7 @@ import React from "react";
 import { Field } from "redux-form";
 import moment from "moment";
 import { TextField, RichEditorTextField, TextFieldWithStartValue } from "components/text-field/text-field";
-import { REQUIRED_VALIDATION, LENGTH255_VALIDATION, REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION } from "validators/validators";
+import { REQUIRED_VALIDATION, LENGTH255_VALIDATION, REQUIRED_LENGTH255_VALIDATION, REQUIRED_VALIDNAME_LENGTH255_VALIDATION, DATE_VALIDATION } from "validators/validators";
 import { DatePicker } from "components/date-picker/date-picker";
 import { StringArrayInput } from "components/string-array-input/string-array-input";
 
@@ -52,6 +52,7 @@ export const ExternalCredentialExpiresAtField = () =>
         name='expiresAt'
         component={DatePicker as any}
         startValue={moment().add(1, 'year')}
+        validate={DATE_VALIDATION}
         label="Expires at" />;
 
 export const ExternalCredentialSecretCreateField = () =>
