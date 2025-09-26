@@ -6,7 +6,6 @@ import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
-import { navigateToDashboard } from "store/navigation/navigation-action";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { CreateExternalCredentialFormDialogData, UpdateExternalCredentialFormDialogData } from "store/external-credentials/external-credential-dialog-data";
@@ -28,19 +27,19 @@ export const externalCredentialsActions = bindDataExplorerActions(EXTERNAL_CREDE
 
 export const loadExternalCredentials = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-            dispatch(progressIndicatorActions.START_WORKING(EXTERNAL_CREDENTIALS_PANEL));
-            const user = getState().auth.user;
-            if (user) {
-                try {
-                    dispatch(externalCredentialsActions.REQUEST_ITEMS());
-                } catch (e) {
-                    return;
-                } finally {
-                    dispatch(progressIndicatorActions.STOP_WORKING(EXTERNAL_CREDENTIALS_PANEL));
-                }
-            } else {
-                dispatch(navigateToDashboard);
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+        dispatch(progressIndicatorActions.START_WORKING(EXTERNAL_CREDENTIALS_PANEL));
+            try {
+                dispatch(externalCredentialsActions.REQUEST_ITEMS());
+            } catch (e) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            } finally {
+                dispatch(progressIndicatorActions.STOP_WORKING(EXTERNAL_CREDENTIALS_PANEL));
             }
         };
 
@@ -61,7 +60,7 @@ export const createExternalCredential = (data: CreateExternalCredentialFormDialo
             const newExternalCredential = await services.externalCredentialsService.create(data);
             dispatch(externalCredentialsActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: CREATE_EXTERNAL_CREDENTIAL_FORM_NAME }));
-            dispatch(progressIndicatorActions.STOP_WORKING(CREATE_EXTERNAL_CREDENTIAL_FORM_NAME));
+            dispatch(reset(CREATE_EXTERNAL_CREDENTIAL_FORM_NAME));
             return newExternalCredential;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -149,7 +148,6 @@ export const updateExternalCredential =
             dispatch(externalCredentialsActions.REQUEST_ITEMS());
             dispatch(reset(UPDATE_EXTERNAL_CREDENTIAL_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: UPDATE_EXTERNAL_CREDENTIAL_FORM_NAME }));
-            dispatch(progressIndicatorActions.STOP_WORKING(UPDATE_EXTERNAL_CREDENTIAL_FORM_NAME));
             return updatedCredential;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
