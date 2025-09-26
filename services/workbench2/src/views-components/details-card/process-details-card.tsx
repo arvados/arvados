@@ -191,7 +191,6 @@ export const ProcessCard = connect(
                                     {name}
                                 </Typography>
                                 <section className={classes.buttonContainer}>
-                                    {showServiceMenu && <ServiceMenu buttonClass={classNames(classes.actionButton, classes.serviceButton)} services={publishedPorts} />}
                                     <div className={classNames(classes.runStatusContainer, showServiceMenu ? classes.runStatusContainerWithServiceButton : undefined)}>
                                         {runAction !== undefined &&
                                             <Button
@@ -217,6 +216,7 @@ export const ProcessCard = connect(
                                             </Button>}
                                         <ProcessStatus uuid={currentResource.containerRequest.uuid} />
                                     </div>
+                                    {showServiceMenu && <ServiceMenu buttonClass={classNames(classes.actionButton, classes.serviceButton)} services={publishedPorts} />}
                                 </section>
                             </section>
                         }
