@@ -658,7 +658,7 @@ const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
 
 const extCredApiResponse = (apiResponse: ExternalCredential): JSX.Element => {
     const {
-        uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, scopes, expiresAt
+        uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description = null, scopes, expiresAt
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",

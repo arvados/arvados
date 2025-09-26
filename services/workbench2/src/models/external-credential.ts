@@ -2,25 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "./resource";
+import { Resource, ResourceKind } from "./resource";
 
 export interface ExternalCredential extends Resource {
     uuid: string;
     name: string;
-    description: string;
+    description?: string;
     credentialClass: string;
     scopes?: string[];
     externalId: string;
     secret: string;
     expiresAt: string;
+    kind: ResourceKind.EXTERNAL_CREDENTIAL;
 };
 
-export const isExternalCredential = (obj: any): obj is ExternalCredential => {
-    return obj
-        && obj.uuid
-        && obj.name
-        && obj.description
-        && obj.credentialClass
-        && obj.externalId
-        && obj.expiresAt;
+export const isExternalCredential = (res: Resource): res is ExternalCredential => {
+    return res.kind === ResourceKind.EXTERNAL_CREDENTIAL;
 };

@@ -95,7 +95,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource, isLink: boo
                     }}
                 >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
-                    {item.name}
+                    {item.name || '-'}
                 </Typography>
             </Grid>
             <Grid item>
@@ -906,16 +906,17 @@ export const RenderResourceStringField = <T extends Resource>(props: { uuid: str
     return <ConnectedComponent />;
 };
 
-const renderString = (data: string) => <Typography noWrap>{data}</Typography>;
+const renderString = (data?: string) => <Typography noWrap>{data || '-'}</Typography>;
 
 export const RenderDescriptionInTD = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { description: resource ? resource.description : "" };
-})((props: { description: string }) =>
-    <Typography
+})((props: { description?: string }) =>
+    props.description ? <Typography
         component='div'
         // Remove <p> tags from description so they don't affect table display
-        dangerouslySetInnerHTML={{ __html: props.description.replace(/<\/?p>/g, "") }} />);
+        dangerouslySetInnerHTML={{ __html: props.description.replace(/<\/?p>/g, "") }} />
+    : <>-</>);
 
 export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
