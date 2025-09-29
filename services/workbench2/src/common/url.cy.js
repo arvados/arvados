@@ -57,6 +57,8 @@ describe('url', () => {
 });
 
 describe('injectTokenParam', () => {
+    const apiToken = "v2/xxxxx-gj3su-000000000000000/00000000000000000000000000000000000000000000000000";
+
     it('injects tokens into valid URLs', () => {
         const testCases = [{
             // Test normal case
