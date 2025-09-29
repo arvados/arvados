@@ -29,6 +29,7 @@ describe('External Credentials panel tests', function () {
 
     it('displays empty state correctly', () => {
         cy.get('[data-cy=new-credential-button]').should('be.visible');
+        cy.pause()
         cy.contains('External credentials list empty.').should('be.visible');
     });
 
@@ -54,6 +55,7 @@ describe('External Credentials panel tests', function () {
             cy.get('[data-cy=expiring-badge]').should('not.exist');
             cy.contains(credential.scopes[0]).should('be.visible');
             cy.contains(credential.scopes[1]).should('be.visible');
+            cy.pause()
         });
     });
 
@@ -87,6 +89,7 @@ describe('External Credentials panel tests', function () {
         const newCredentialName = `Test Credential ${Math.floor(Math.random() * 999999)}`;
         cy.get('[data-cy=new-credential-button]').click();
         cy.get('[data-cy=form-dialog]').should('be.visible').and('contain', 'New External Credential');
+        cy.get('[data-cy=form-submit-btn]').should('be.disabled');
 
         // verify default values
         cy.get('input[name=credentialClass]').should('have.value', 'aws_access_key');
@@ -98,11 +101,13 @@ describe('External Credentials panel tests', function () {
         cy.get('input[name=string-array-input]').type('scope1{enter}');
         cy.get('input[name=string-array-input]').type('scope2{enter}');
         cy.get('input[name=secret]').type('test-secret');
+        cy.get('[data-cy=form-submit-btn]').should('not.be.disabled');
 
         // modify default values
         cy.get('input[name=credentialClass]').type('_foo');
         cy.get('[data-cy=date-picker-input]').type('12/25/2099');
 
+        cy.get('[data-cy=form-submit-btn]').should('not.be.disabled');
         cy.get('[data-cy=form-submit-btn]').click();
 
         cy.contains(newCredentialName).should('be.visible');
@@ -111,7 +116,7 @@ describe('External Credentials panel tests', function () {
         cy.contains('Test External ID').should('be.visible');
         cy.contains('scope1').should('be.visible');
         cy.contains('scope2').should('be.visible');
-        cy.get('[data-cy=date-picker-input]').should('have.value', moment('12/25/2099', 'MM/D/YYYY').format('MM/D/YYYY'));
+        cy.contains('12/25/2099').should('be.visible');
 
         // remove credential
         cy.contains(newCredentialName).rightclick();
