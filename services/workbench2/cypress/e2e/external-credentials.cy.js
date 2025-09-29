@@ -29,7 +29,6 @@ describe('External Credentials panel tests', function () {
 
     it('displays empty state correctly', () => {
         cy.get('[data-cy=new-credential-button]').should('be.visible');
-        cy.pause()
         cy.contains('External credentials list empty.').should('be.visible');
     });
 
@@ -55,7 +54,6 @@ describe('External Credentials panel tests', function () {
             cy.get('[data-cy=expiring-badge]').should('not.exist');
             cy.contains(credential.scopes[0]).should('be.visible');
             cy.contains(credential.scopes[1]).should('be.visible');
-            cy.pause()
         });
     });
 

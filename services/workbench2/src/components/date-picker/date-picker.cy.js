@@ -65,12 +65,12 @@ describe('DatePicker Component', () => {
     });
 
     it('calls onChange when date is selected', () => {
-        cy.get('button').click();
-
-        // Click on a future date (5 days from now)
-        const futureDate = moment().add(5, 'days');
+        // Click any future date (first day of next month)
+        const futureDate = moment().add(1, "month").startOf("month");
         const dayToSelect = futureDate.format('D');
 
+        cy.get('button').click();
+        cy.get('button[title="Next month"]').click();
         cy.get('div[role="dialog"]').contains(dayToSelect).first().click();
 
         // Verify onChange was called with the correct date
@@ -80,10 +80,11 @@ describe('DatePicker Component', () => {
     it('updates input value when date is selected', () => {
         cy.get('input').click();
 
-        const futureDate = moment().add(5, 'days');
+        const futureDate = moment().add(1, "month").startOf("month");
         const dayToSelect = futureDate.startOf('day').valueOf();
 
         cy.get('button').click();
+        cy.get('button[title="Next month"]').click();
         cy.get(`[data-timestamp="${dayToSelect}"]`).click();
 
         const expectedDate = futureDate.format('MM/DD/YYYY');
