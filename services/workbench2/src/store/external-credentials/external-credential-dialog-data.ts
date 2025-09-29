@@ -4,7 +4,7 @@
 
 export interface CreateExternalCredentialFormDialogData {
     name: string;
-    description: string;
+    description?: string;
     credentialClass: string;
     externalId: string;
     expiresAt: string;
@@ -14,7 +14,7 @@ export interface CreateExternalCredentialFormDialogData {
 
 export interface UpdateExternalCredentialFormDialogData {
     name: string;
-    description: string;
+    description?: string;
     credentialClass: string;
     externalId: string;
     expiresAt: string;
