@@ -462,7 +462,8 @@ describe("Process tests", function () {
                 });
 
                 // Click service button
-                cy.get('#service-button')
+                cy.get('[data-cy=service-button]')
+                    .should('have.length', 1)
                     .should('have.text', `Connect to ${services['80'].label}`)
                     .click();
                 // Verify correct URL opened

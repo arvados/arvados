@@ -78,6 +78,7 @@ export const ServiceMenu = connect(
                         variant="contained"
                         size="small"
                         color="primary"
+                        data-cy="service-button"
                         id="service-button"
                         onClick={handleClick(service)}
                     >
@@ -92,6 +93,7 @@ export const ServiceMenu = connect(
                     variant="contained"
                     size="small"
                     color="primary"
+                    data-cy="service-button"
                     id="service-button"
                     aria-controls={open ? 'service-menu' : undefined}
                     aria-haspopup="true"
