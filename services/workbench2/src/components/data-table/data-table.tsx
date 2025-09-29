@@ -481,6 +481,7 @@ export const DataTable = withStyles(styles)(
                     <div className={classes.checkBoxHead}>
                         <Tooltip title={this.state.isSelected ? "Deselect all" : "Select all"}>
                             <input
+                                data-cy="data-table-header-checkbox"
                                 type="checkbox"
                                 className={classes.checkBox}
                                 checked={isSelected}
