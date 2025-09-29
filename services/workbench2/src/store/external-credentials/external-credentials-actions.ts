@@ -101,20 +101,24 @@ export const openRemoveExternalCredentialDialog = (resource: ContextMenuResource
     };
 
 export const removeExternalCredentialPermanently = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(progressIndicatorActions.START_WORKING(EXTERNAL_CREDENTIALS_PANEL));
         const credentialsToRemove = getCheckedListUuids(getState());
 
-    const messageFuncMap = {
-        [CommonResourceServiceError.NONE]: (count: number) => count > 1 ? `Removed ${count} items` : `Item removed`,
-        [CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN]: (count: number) => count > 1 ? `Remove ${count} items failed: Access Denied` : `Remove failed: Access Denied`,
-        [CommonResourceServiceError.UNKNOWN]: (count: number) => count > 1 ? `Remove ${count} items failed` : `Remove failed`,
-    };
-        Promise.allSettled(credentialsToRemove.map(credential => services.externalCredentialsService.delete(credential))).then((promises) => {
+        const messageFuncMap = {
+            [CommonResourceServiceError.NONE]: (count: number) => count > 1 ? `Removed ${count} items` : `Item removed`,
+            [CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN]: (count: number) => count > 1 ? `Remove ${count} items failed: Access Denied` : `Remove failed: Access Denied`,
+            [CommonResourceServiceError.UNKNOWN]: (count: number) => count > 1 ? `Remove ${count} items failed` : `Remove failed`,
+        };
+
+        await Promise.allSettled(credentialsToRemove.map(credential => services.externalCredentialsService.delete(credential))).then((promises) => {
             const { success } = showGroupedCommonResourceResultSnackbars(dispatch, promises, messageFuncMap);
             if (success.length) {
                 dispatch<any>(loadExternalCredentials());
             }
         });
+
+        dispatch(progressIndicatorActions.STOP_WORKING(EXTERNAL_CREDENTIALS_PANEL));
     };
 
 export const openExternalCredentialUpdateDialog = (resource: ContextMenuResource) => (dispatch: Dispatch, getState: () => RootState) => {
