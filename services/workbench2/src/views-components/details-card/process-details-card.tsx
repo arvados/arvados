@@ -110,6 +110,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
         },
+        '& .MuiButton-endIcon': {
+            flexShrink: 0,
+        },
     },
     toolbarStyles: {
         paddingTop: '4px',
