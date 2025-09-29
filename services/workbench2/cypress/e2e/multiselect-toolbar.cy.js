@@ -66,6 +66,55 @@ describe('Multiselect Toolbar Baseline Tests', () => {
             });
     });
 
+    it('header checkbox checks/unchecks in response to item selection', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject2',
+        }).as('testProject2');
+        cy.getAll('@testProject1', '@testProject2')
+            .then(([testProject1, testProject2]) => {
+                cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
+
+                cy.doMPVTabSelect('Data');
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testProject2.name, true);
+
+                //check header checkbox
+                cy.get('[data-cy=data-table-header-checkbox]').click();
+                cy.assertCheckboxes([testProject1.uuid, testProject2.uuid], true);
+
+                //uncheck header checkbox
+                cy.get('[data-cy=data-table-header-checkbox]').click();
+                cy.assertCheckboxes([testProject1.uuid, testProject2.uuid], false);
+
+                //test checkbox select
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('not.be.checked');
+
+                //test onRowClick select
+                cy.get('[data-cy=data-table-row]').eq(0).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.get('[data-cy=data-table-row]').eq(1).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.get('[data-cy=data-table-row]').eq(0).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.get('[data-cy=data-table-row]').eq(1).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('not.be.checked');
+        });
+    });
+
+
     it('uses selector popover to select the correct items', () => {
         cy.createProject({
             owningUser: adminUser,

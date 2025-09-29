@@ -256,6 +256,7 @@ export const DataTable = withStyles(styles)(
                 this.initializeCheckedList([]);
             }
             if (this.state.isLoaded){
+                this.setState({ isSelected: this.isAnySelected() });
                 if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
                     this.props.setSelectedUuid(singleSelected);
                 }
@@ -264,9 +265,6 @@ export const DataTable = withStyles(styles)(
                 }
                 if (!singleSelected && this.isAnySelected()) {
                     this.props.setSelectedUuid(null);
-                }
-                if (this.isAnySelected()) {
-                    this.setState({ isSelected: true })
                 }
             }
             if(prevProps.working === false && this.props.working === true) {
@@ -483,6 +481,7 @@ export const DataTable = withStyles(styles)(
                     <div className={classes.checkBoxHead}>
                         <Tooltip title={this.state.isSelected ? "Deselect all" : "Select all"}>
                             <input
+                                data-cy="data-table-header-checkbox"
                                 type="checkbox"
                                 className={classes.checkBox}
                                 checked={isSelected}
