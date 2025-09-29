@@ -88,7 +88,7 @@ export const StringArrayMuiInput = ({ input, label, meta }: StringArrayMuiInputP
             />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {((input.value as string[]) || []).map((val, idx) => (
+                {((input.value) || []).map((val, idx) => (
                     <Chip
                         key={idx}
                         label={val}

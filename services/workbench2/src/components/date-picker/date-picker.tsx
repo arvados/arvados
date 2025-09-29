@@ -16,13 +16,13 @@ type DatePickerProps = {
 }
 
 export function DatePicker({label, startValue, input}: DatePickerProps & WrappedFieldProps) {
-
-    // initial value doesn't automatically get passed to redux-form,
-    // so we need to set it manually on mount
+    // Set initial value on mount, and when input is cleared
     useEffect(() => {
+        if (!input.value) {
             input.onChange(getInitialValue(startValue, input.value));
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [input.value]);
 
     return (
         <FormControl variant="standard" fullWidth>
@@ -33,12 +33,12 @@ export function DatePicker({label, startValue, input}: DatePickerProps & Wrapped
                     value={getInitialValue(startValue, input.value)}
                     onChange={input.onChange}
                     slotProps={{
-                    textField: {
-                        inputProps: {
-                            'data-cy': 'date-picker-input'  // or data-test
+                        textField: {
+                            inputProps: {
+                                'data-cy': 'date-picker-input'
+                            }
                         }
-                    }
-                }}
+                    }}
                 />
             </LocalizationProvider>
         </FormControl>
