@@ -112,6 +112,7 @@ import classNames from "classnames";
 import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferences-panel";
 import { Dashboard } from "components/dashboard/dashboard";
 import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
+import { CancelProcessDialog } from "views-components/process-cancel-dialog/process-cancel-dialog";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -512,6 +513,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />
             <RemoveVirtualMachineLoginDialog />
+            <CancelProcessDialog />
             <VirtualMachineAddLoginDialog />
             <RenameFileDialog />
             <DownloadFilesAsZipDialog />

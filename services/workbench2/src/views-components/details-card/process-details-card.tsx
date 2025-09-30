@@ -19,7 +19,7 @@ import { setSelectedResourceUuid } from 'store/selected-resource/selected-resour
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { isProcessCancelable, isProcessRunnable, isProcessResumable } from 'store/processes/process';
 import { ProcessStatus } from 'views-components/data-explorer/renderers';
-import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from 'store/processes/processes-actions';
+import { openCancelProcesswDialog, resumeOnHoldWorkflow, startWorkflow } from 'store/processes/processes-actions';
 import { Process } from 'store/processes/process';
 import { getProcess } from 'store/processes/process';
 
@@ -93,7 +93,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         dispatch<any>(setSelectedResourceUuid(uuid));
         dispatch<any>(deselectAllOthers(uuid));
     },
-    cancelProcess: (uuid: string) => dispatch<any>(cancelRunningWorkflow(uuid)),
+    cancelProcess: (uuid: string) => dispatch<any>(openCancelProcesswDialog(uuid)),
     startProcess: (uuid: string) => dispatch<any>(startWorkflow(uuid)),
     resumeOnHoldWorkflow: (uuid: string) => dispatch<any>(resumeOnHoldWorkflow(uuid)),
 });
