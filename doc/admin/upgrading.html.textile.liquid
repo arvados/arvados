@@ -32,6 +32,10 @@ h2(#main). development main
 
 "previous: Upgrading to 3.1.2":#v3_1_2
 
+h3. Loki credentials in @local.params.secrets@ are no longer needed
+
+Salt installer's Terraform code replaces the use of AWS access key and secret for Loki's S3 bucket with equivalent permissions through an instance profile. Once applied, the credentials in the @local.params.secrets@ file will be invalid and can be safely removed.
+
 h3. SbatchArgumentsList (SLURM) configuration semantics have changed
 
 @Containers.SLURM.SbatchArgumentsList@ must now specify arguments that were previously added implicitly. Also, the @%@ character invokes template behavior. If your current configuration looks like this:

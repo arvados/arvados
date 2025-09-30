@@ -133,7 +133,7 @@
 #  * installing the Python SDK to run `run_test_server.py`
 # So we take this as one big group, and this is the play where we set up all
 # the prerequisites to do that.
-- hosts: arvados_test_cwl:arvados_test_go:arvados_test_python:arvados_test_ruby
+- hosts: arvados_test_cwl:arvados_test_go:arvados_test_python:arvados_test_ruby:arvados_test_workbench
   tasks:
     # Most arvados ansible roles don't currently have dnf tasks, support RHEL
     # configuration paths, etc.
@@ -172,6 +172,8 @@
           # Direct dependencies of run-tests.sh
           - bsdextrautils
           - net-tools
+          # Used by `arvados-server boot`
+          - rsync
 
     # Tests assume the underlying database uses en_US.UTF-8.
     # It must be generated before starting the PostgreSQL server.
@@ -199,6 +201,7 @@
 
     - ansible.builtin.include_role:
         name: arvados_database
+      when: "ansible_virtualization_type != 'docker'"
       vars:
         arvados_database_login_host: ""
         # Let the test user drop and recreate the database wholesale
@@ -388,8 +391,6 @@
       become: yes
       ansible.builtin.apt:
         name:
-          # lib/controller
-          - rsync
           # services/keep-web
           - cadaver
           - mime-support

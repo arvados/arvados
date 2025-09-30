@@ -82,6 +82,17 @@ _RETRY_4XX_STATUS = 545
 if sys.version_info >= (3,):
     httplib2.SSLHandshakeError = None
 
+def _reset_googleapiclient_logging() -> None:
+    """Make the next API client constructor log googleapiclient retries
+
+    This function is for main-level CLI tools like arv-copy to ensure retries
+    are logged when constructing different API clients.
+    """
+    try:
+        _googleapiclient_log_lock.release()
+    except RuntimeError:
+        pass
+
 _orig_retry_request = apiclient.http._retry_request
 def _retry_request(http, num_retries, *args, **kwargs):
     try:
@@ -400,7 +411,7 @@ def api_client(
     # we have a more general story for handling googleapiclient logs (#20521).
     client_logger = logging.getLogger('googleapiclient.http')
     # "first time a client is instantiated" = thread that acquires this lock
-    # It is never released.
+    # It is only released explicitly by calling _reset_googleapiclient_logging.
     # googleapiclient sets up its own NullHandler so we detect if logging is
     # configured by looking for a real handler anywhere in the hierarchy.
     client_logger_unconfigured = _googleapiclient_log_lock.acquire(blocking=False) and all(

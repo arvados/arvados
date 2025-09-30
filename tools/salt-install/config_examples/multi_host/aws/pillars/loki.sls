@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{%- set aws_key_id = "__LOKI_AWS_S3_ACCESS_KEY_ID__" %}
-{%- set aws_secret = "__LOKI_AWS_S3_SECRET_ACCESS_KEY__" %}
 {%- set aws_region = "__LOKI_AWS_REGION__" %}
 {%- set aws_s3_bucket = "__LOKI_AWS_S3_BUCKET__" %}
 {%- set log_retention = "__LOKI_LOG_RETENTION_TIME__" %}
@@ -49,7 +47,7 @@ loki:
         cache_location: {{ data_path }}/index_cache
         cache_ttl: 24h
       aws:
-        s3: s3://{{ aws_key_id }}:{{ aws_secret | urlencode | regex_replace('/','%2F') }}@{{ aws_region }}
+        s3: s3://{{ aws_region }}
         bucketnames: {{ aws_s3_bucket }}
 
     schema_config:

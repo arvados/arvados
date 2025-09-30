@@ -9,8 +9,14 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     {
       command: ['echo', 'hello'],
       container_image: 'arvados/apitestfixture:latest',
-      output_path: 'test',
-      runtime_constraints: {vcpus: 1, ram: 1}
+      output_path: '/test',
+      runtime_constraints: {vcpus: 1, ram: 1},
+      mounts: {
+        '/test' => {
+          kind: 'tmp',
+          capacity: 1000000,
+        },
+      },
     }
   end
 

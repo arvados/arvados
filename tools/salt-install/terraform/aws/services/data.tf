@@ -16,13 +16,13 @@ data "terraform_remote_state" "data-storage" {
   }
 }
 
-# https://wiki.debian.org/Cloud/AmazonEC2Image/Bullseye
-data "aws_ami" "debian-11" {
+# https://wiki.debian.org/Cloud/AmazonEC2Image/Bookworm
+data "aws_ami" "debian-12" {
   most_recent = true
   owners = ["136693071363"]
   filter {
     name   = "name"
-    values = ["debian-11-amd64-*"]
+    values = ["debian-12-amd64-*"]
   }
   filter {
     name   = "virtualization-type"

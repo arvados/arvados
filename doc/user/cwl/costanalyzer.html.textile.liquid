@@ -33,11 +33,13 @@ First, "add the appropriate package repository for your distribution":{{ site.ba
 
 h2. Option 2: Install with pip
 
-Run @pip install arvados-cluster-activity[prometheus]@ in an appropriate installation environment, such as a virtualenv.
+Run @pip install "arvados-cluster-activity[prometheus]"@ in an appropriate installation environment, such as a virtualenv.
 
-Note:
+{% include 'notebox_begin' %}
 
-Support for fetching Prometheus metrics depends on Pandas and NumPy.  If these dependencies pose a problem, you can install the cluster activity tool without Prometheus support by omitting it from @pip install@.
+Support for fetching Prometheus metrics depends on Pandas and NumPy.  If these dependencies pose a problem, you can install the cluster activity tool without Prometheus support by simply running @pip install arvados-cluster-activity@.
+
+{% include 'notebox_end' %}
 
 The Cluster Activity report uses the Arvados Python SDK, which uses @pycurl@, which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian-based distributions you can install them by running:
 

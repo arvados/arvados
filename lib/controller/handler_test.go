@@ -690,7 +690,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
 		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     nil,
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
-		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: {"mounts": true},
 		"groups/" + arvadostest.AProjectUUID:                           nil,
 		"keep_services/" + ksUUID:                                      nil,
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,

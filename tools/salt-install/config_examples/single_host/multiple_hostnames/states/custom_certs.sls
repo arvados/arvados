@@ -27,6 +27,8 @@ extra_custom_certs_{{ cert }}_cert_file_copy:
     - unless: cmp {{ dest_cert_dir }}/{{ cert_file }} {{ orig_cert_dir }}/{{ cert_file }}
     - require:
       - file: extra_custom_certs_file_directory_certs_dir
+    - watch_in:
+      - service: extra_nginx_service_reload_on_certs_changes
 
 extra_custom_certs_{{ cert }}_key_file_copy:
   file.copy:
@@ -39,17 +41,13 @@ extra_custom_certs_{{ cert }}_key_file_copy:
     - unless: cmp {{ dest_cert_dir }}/{{ key_file }} {{ orig_cert_dir }}/{{ key_file }}
     - require:
       - file: extra_custom_certs_file_directory_certs_dir
-
-extra_nginx_service_reload_on_{{ cert }}_certs_changes:
-  cmd.run:
-    - name: systemctl reload nginx
-    - require:
-      - file: extra_custom_certs_{{ cert }}_cert_file_copy
-      - file: extra_custom_certs_{{ cert }}_key_file_copy
-    - onchanges:
-      - file: extra_custom_certs_{{ cert }}_cert_file_copy
-      - file: extra_custom_certs_{{ cert }}_key_file_copy
-    - onlyif:
-      - test $(openssl rsa -modulus -noout -in {{ dest_cert_dir }}/{{ key_file }}) == $(openssl x509 -modulus -noout -in {{ dest_cert_dir }}/{{ cert_file }})
+    - watch_in:
+      - service: extra_nginx_service_reload_on_certs_changes
   {%- endfor %}
+
+extra_nginx_service_reload_on_certs_changes:
+  service.running:
+    - name: nginx
+    - enable: True
+    - reload: True
 {%- endif %}

@@ -8,24 +8,26 @@ SPDX-License-Identifier: Apache-2.0
 
 This directory includes Ansible playbooks and supporting infrastructure to automate various aspects of Arvados deployment.
 
-## Installation
+## Installing Ansible
 
-These instructions set up a virtualenv at `~/ansible`, but you can use any path you like.
+### Install with pipx
 
-1. Create a virtualenv:
+Installing with pipx is the recommended method: it automatically manages a virtualenv for you and adds installed tools to your `$PATH`. Install `pipx` from your distribution, then run:
 
-        $ python3 -m venv ~/ansible
+      ./install-ansible.sh
 
-2. Activate the virtualenv:
+### Install to your own virtualenv
 
-        $ . ~/ansible/bin/activate
+If you need to keep this Ansible install isolated, you can install it to a virtualenv you set up. You'll need to activate this virtualenv when you want to run Arvados Ansible playbooks.
 
-3. Install required Python modules:
+Make sure you have Python and its standard `venv` module installed from your distribution. You should be able to run `python3 -m venv --help`. (On Debian/Ubuntu, `apt install python3-venv`.) Then run:
 
-        (ansible) arvados/tools/ansible $ pip install -r requirements.txt
+      ./install-ansible.sh VENV_DIR
 
-4. Install required Ansible collections:
+`VENV_DIR` can be any path you like. If you already have a virtualenv activated, you can install inside it by running:
 
-        (ansible) arvados/tools/ansible $ ansible-galaxy install -r requirements.yml
+      ./install-ansible.sh -V
 
-Now you can run `ansible-playbook` and other tools from `~/ansible/bin`.
+### Manual installation
+
+If you need to orchestrate your own install, you must install the Python packages listed in `requirements.txt`, then the Ansible collections listed in `requirements.yml`.

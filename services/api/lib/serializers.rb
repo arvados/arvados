@@ -5,13 +5,7 @@
 require 'safe_json'
 
 class Serializer
-  class TypeMismatch < ArgumentError
-  end
-
   def self.dump(val)
-    if !val.is_a?(object_class)
-      raise TypeMismatch.new("cannot serialize #{val.class} as #{object_class}")
-    end
     SafeJSON.dump(val)
   end
 
@@ -37,31 +31,21 @@ class Serializer
       s
     elsif s.nil?
       object_class.new()
-    elsif s[0] == first_json_char
-      SafeJSON.load(s)
     elsif s[0..2] == "---"
       legacy_load(s)
     else
-      raise "invalid serialized data #{s[0..5].inspect}"
+      SafeJSON.load(s)
     end
   end
 end
 
 class HashSerializer < Serializer
-  def self.first_json_char
-    "{"
-  end
-
   def self.object_class
     ::Hash
   end
 end
 
 class ArraySerializer < Serializer
-  def self.first_json_char
-    "["
-  end
-
   def self.object_class
     ::Array
   end

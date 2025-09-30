@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'whitelist_update'
 require 'arvados/collection'
+require 'validate_serialized'
+require 'whitelist_update'
 
 class ContainerRequest < ArvadosModel
   include ArvadosModelUpdates
@@ -45,6 +46,17 @@ class ContainerRequest < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validates :command, array_of_strings: {allow_empty_strings: true}
+  validates :environment, hash_attr: true
+  validates :mounts, hash_attr: true
+  validates :output_glob, array_of_strings: true
+  validates :output_properties, hash_attr: true
+  validates :output_storage_classes, array_of_strings: true
+  validates :published_ports, hash_attr: true
+  validates :properties, hash_attr: true
+  validates :runtime_constraints, hash_attr: true
+  validates :scheduling_parameters, hash_attr: true
+  validates :secret_mounts, hash_attr: true
   validate :validate_datatypes
   validate :validate_runtime_constraints
   validate :validate_scheduling_parameters
@@ -338,7 +350,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.translate_cuda_to_gpu rc
-    if rc['cuda'] && rc['cuda']['device_count'] > 0
+    if rc.is_a?(Hash) && rc['cuda'] && rc['cuda']['device_count'] > 0
       # Legacy API to request Nvidia GPUs, convert it so downstream
       # code only has to handle generic GPU requests.
       rc['gpu'] = {
@@ -352,6 +364,10 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_container
+    if !errors.empty?
+      # Validation failed, record won't be saved anyway.
+      return false
+    end
     if (container_uuid_changed? and
         not current_user.andand.is_admin and
         not container_uuid.nil?)
@@ -425,6 +441,17 @@ class ContainerRequest < ArvadosModel
   end
 
   def validate_runtime_constraints
+    if errors[:runtime_constraints].any?
+      # If runtime_constraints is not even a hash, don't raise other
+      # confusing errors by trying to do more validation.
+      return false
+    end
+    if state != Committed && !new_record?
+      # Avoid running new validations on records that are already in
+      # the database and aren't going to be submitted as a result of
+      # this update.
+      return
+    end
     case self.state
     when Committed
       ['vcpus', 'ram'].each do |k|
@@ -435,6 +462,9 @@ class ContainerRequest < ArvadosModel
         end
       end
       if runtime_constraints['cuda']
+        disallow_extra_keys(
+          :runtime_constraints, runtime_constraints['cuda'],
+          ['device_count', 'driver_version', 'hardware_capability'])
         ['device_count'].each do |k|
           v = runtime_constraints['cuda'][k]
           if !v.is_a?(Integer) || v < 0
@@ -451,7 +481,12 @@ class ContainerRequest < ArvadosModel
         end
       end
 
-      if runtime_constraints['gpu']
+      if !runtime_constraints['gpu'].is_a?(Hash)
+        errors.add(:runtime_constraints, "[gpu] must be a hash")
+      elsif runtime_constraints['gpu']
+        disallow_extra_keys(
+          :runtime_constraints, runtime_constraints['gpu'],
+          ['device_count', 'driver_version', 'hardware_target', 'stack', 'vram'])
         k = 'stack'
         v = runtime_constraints['gpu'][k]
         if not [nil, '', 'cuda', 'rocm'].include? v
@@ -491,69 +526,167 @@ class ContainerRequest < ArvadosModel
         end
       end
     end
+    disallow_extra_keys(
+      :runtime_constraints, runtime_constraints,
+      ['API', 'gpu', 'keep_cache_disk', 'keep_cache_ram', 'ram', 'vcpus',
+       # When 'cuda' is automatically converted to 'gpu', the original
+       # 'cuda' section also remains. See #21926#note-21.
+       'cuda',
+      ])
+  end
+
+  MountKindFields = {
+    "collection" => ["uuid", "portable_data_hash", "writable", "path", "exclude_from_output"],
+    "tmp" => ["capacity", "device_type", "exclude_from_output"],
+    "keep" => ["exclude_from_output"],
+    "file" => ["path", "exclude_from_output"],
+    "json" => ["content", "exclude_from_output"],
+    "text" => ["content", "exclude_from_output"],
+  }
+
+  SecretMountKindFields = {
+    "json" => MountKindFields["json"],
+    "text" => MountKindFields["text"],
+  }
+
+  MountSchema = {
+    "kind" => "string",
+    "uuid" => "string",
+    "portable_data_hash" => "string",
+    "writable" => "boolean",
+    "path" => "string",
+    "capacity" => "integer",
+    "device_type" => ["ram", "ssd", "disk", "network", ""],
+    "exclude_from_output" => "boolean",
+  }
+
+  def validate_mount_hash(attr, mountpoint, mountspec)
+    kind = mountspec["kind"]
+    allowed_fields =
+      case attr
+      when :mounts
+        MountKindFields[kind]
+      when :secret_mounts
+        SecretMountKindFields[kind]
+      else
+        raise ArgumentError.new("validate_mount_hash called with unexpected attr #{attr}")
+      end
+    if !allowed_fields
+      errors.add(attr, "[#{mountpoint}][kind]: unsupported value #{kind.inspect}")
+      return
+    end
+    # Validate value types for the keys that are present, but don't
+    # complain about keys that are not.
+    schema = MountSchema.select { |k, v| mountspec.has_key?(k) }
+    if kind == "text"
+      schema["content"] = "string"
+    elsif kind == "json"
+      # content can be anything, so no validation
+    end
+    validator = HashValidator.validate(mountspec, schema)
+    if !validator.valid?
+      validator.errors.each do |key, err|
+        errors.add(attr, "[#{mountpoint}][#{key}]: incompatible value type: #{err}")
+      end
+    end
+    mountspec.each do |key, value|
+      # Keys that do not apply to a given mount kind need to be
+      # accepted as long as they have empty/zero values, because
+      # that's how Go code (e.g., controller) serializes the Mount
+      # struct that's used for all mount kinds.  But inapplicable keys
+      # with non-empty values are not allowed.
+      if key != "kind" && !allowed_fields.include?(key) && ![0, "", false, nil].include?(value)
+        errors.add(attr, "[#{mountpoint}][#{key}]: parameter is not supported for a #{mountspec["kind"]} mount")
+      end
+    end
   end
 
   def validate_datatypes
-    command.each do |c|
-      if !c.is_a? String
-        errors.add(:command, "must be an array of strings but has entry #{c.class}")
+    if state != Committed && !new_record?
+      # Avoid running new validations on records that are already in
+      # the database and aren't going to be submitted as a result of
+      # this update.
+      return
+    end
+    if !errors[:environment].any?
+      environment.each do |k, v|
+        if k.include?("\0") || k.include?("=")
+          errors.add(:environment, "key #{k.inspect} contains an invalid character NUL or '='")
+        end
+        if k == ""
+          errors.add(:environment, "key cannot be empty")
+        end
+        if !v.is_a?(String)
+          errors.add(:environment, "[#{k}]: incompatible value type: string required")
+        elsif v.include?("\0")
+          errors.add(:environment, "value for #{k.inspect} contains invalid character NUL")
+        end
       end
     end
-    environment.each do |k,v|
-      if !k.is_a?(String) || !v.is_a?(String)
-        errors.add(:environment, "must be an map of String to String but has entry #{k.class} to #{v.class}")
-      end
-    end
-    output_glob.each do |g|
-      if !g.is_a? String
-        errors.add(:output_glob, "must be an array of strings but has entry #{g.class}")
-      end
-    end
+    stream_targets = {
+      mounts: ["stdin", "stdout", "stderr"],
+      secret_mounts: ["stdin"],
+    }
     [:mounts, :secret_mounts].each do |m|
+      if errors[m].any?
+        # Validation is already failing in a way that could make the
+        # following validations fail (e.g., non-string keys).
+        next
+      end
       self[m].each do |k, v|
-        if !k.is_a?(String) || !v.is_a?(Hash)
-          errors.add(m, "must be an map of String to Hash but is has entry #{k.class} to #{v.class}")
+        if !k.in?(stream_targets[m]) && !k.start_with?("/")
+          errors.add(m, "[#{k}]: invalid target: must be #{stream_targets[m].join(", ")} or an absolute path")
         end
-        if v["kind"].nil?
-          errors.add(m, "each item must have a 'kind' field")
-        end
-        [[String, ["kind", "portable_data_hash", "uuid", "device_type",
-                   "path", "commit", "repository_name", "git_url"]],
-         [Integer, ["capacity"]]].each do |t, fields|
-          fields.each do |f|
-            if !v[f].nil? && !v[f].is_a?(t)
-              errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
-            end
-          end
-        end
-        ["writable", "exclude_from_output"].each do |f|
-          if !v[f].nil? && !v[f].is_a?(TrueClass) && !v[f].is_a?(FalseClass)
-            errors.add(m, "#{k}: #{f} must be a #{t} but is #{v[f].class}")
-          end
+        if !v.is_a?(Hash)
+          errors.add(m, "[#{k}]: invalid mount specification: must be a hash, not a #{k.class.to_s.downcase}")
+        else
+          validate_mount_hash(m, k, v)
         end
       end
+    end
+    if !mounts.has_key?(output_path)
+      errors.add(:output_path, "must be a mount target")
     end
   end
 
   def validate_scheduling_parameters
-    if self.state == Committed
-      if scheduling_parameters.include?('partitions') and
-        !scheduling_parameters['partitions'].nil? and
-        (!scheduling_parameters['partitions'].is_a?(Array) ||
-          scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
-            scheduling_parameters['partitions'].size)
-            errors.add :scheduling_parameters, "partitions must be an array of strings"
-      end
-      if scheduling_parameters['preemptible'] &&
-         (new_record? || state_changed?) &&
-         !self.class.any_preemptible_instances?
-        errors.add :scheduling_parameters, "preemptible instances are not configured in InstanceTypes"
-      end
-      if scheduling_parameters.include? 'max_run_time' and
-        (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
-          scheduling_parameters['max_run_time'] < 0)
-          errors.add :scheduling_parameters, "max_run_time must be positive integer"
-      end
+    if state != Committed && !new_record?
+      # Avoid running new validations on records that are already in
+      # the database and aren't going to be submitted as a result of
+      # this update.
+      return
+    end
+    if scheduling_parameters.include?('partitions') and
+      !scheduling_parameters['partitions'].nil? and
+      (!scheduling_parameters['partitions'].is_a?(Array) ||
+       scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
+       scheduling_parameters['partitions'].size)
+      errors.add :scheduling_parameters, "partitions must be an array of strings"
+    end
+    if scheduling_parameters.include? 'max_run_time' and
+      (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
+       scheduling_parameters['max_run_time'] < 0)
+      errors.add :scheduling_parameters, "max_run_time must be positive integer"
+    end
+    disallow_extra_keys(
+      :scheduling_parameters, scheduling_parameters,
+      ['max_run_time', 'partitions', 'preemptible', 'supervisor'])
+
+    # Configuration could change before state changes to Committed, so
+    # this is not flagged as an error for an Uncommitted.  We also
+    # don't want to prevent finalizing due to a config change.
+    if state == Committed &&
+       scheduling_parameters['preemptible'] &&
+       (new_record? || state_changed?) &&
+       !self.class.any_preemptible_instances?
+      errors.add :scheduling_parameters, "preemptible instances are not configured in InstanceTypes"
+    end
+  end
+
+  def disallow_extra_keys(attr, h, allowed_keys)
+    extra_keys = h.keys - allowed_keys
+    if extra_keys.any?
+      errors.add(attr, "contains unexpected keys #{extra_keys}")
     end
   end
 

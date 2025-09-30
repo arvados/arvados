@@ -39,6 +39,18 @@ class Container < ArvadosModel
   before_validation :check_unlock
   validates :command, :container_image, :output_path, :cwd, :priority, { presence: true }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :command, array_of_strings: {allow_empty_strings: true}
+  validates :environment, hash_attr: true
+  validates :mounts, hash_attr: true
+  validates :output_glob, array_of_strings: true
+  validates :output_properties, hash_attr: true
+  validates :output_storage_classes, array_of_strings: true
+  validates :published_ports, hash_attr: true
+  validates :runtime_auth_scopes, array_of_strings: true
+  validates :runtime_constraints, hash_attr: true
+  validates :runtime_status, hash_attr: true
+  validates :scheduling_parameters, hash_attr: true
+  validates :secret_mounts, hash_attr: true
   validate :validate_runtime_status
   validate :validate_state_change
   validate :validate_change
@@ -548,7 +560,8 @@ class Container < ArvadosModel
   # Check that well-known runtime status keys have desired data types
   def validate_runtime_status
     [
-      'error', 'errorDetail', 'warning', 'warningDetail', 'activity'
+      'error', 'errorDetail', 'warning', 'warningDetail', 'activity',
+      'preemptionNotice',
     ].each do |k|
       if self.runtime_status.andand.include?(k) && !self.runtime_status[k].is_a?(String)
         errors.add(:runtime_status, "'#{k}' value must be a string")

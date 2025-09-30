@@ -12,7 +12,7 @@ function createContainerRequest(user, name, docker_image, command, reuse = false
             name: name,
             command: command,
             container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-            output_path: "stdout.txt",
+            output_path: '/var/spool/cwl',
             priority: 1,
             runtime_constraints: {
                 vcpus: 1,
@@ -22,8 +22,12 @@ function createContainerRequest(user, name, docker_image, command, reuse = false
             state: state,
             mounts: {
                 '/var/lib/cwl/workflow.json': {
-                    kind: "tmp",
-                    path: "/tmp/foo",
+                    kind: 'json',
+                    content: {},
+                },
+                '/var/spool/cwl': {
+                    kind: 'tmp',
+                    capacity: 1000000,
                 },
             },
             owner_uuid: ownerUuid || undefined,

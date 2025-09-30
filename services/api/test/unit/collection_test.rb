@@ -727,9 +727,8 @@ class CollectionTest < ActiveSupport::TestCase
       c = collections(:collection_owned_by_active)
       c.update storage_classes_desired: ["hot"]
       assert_equal ["hot"], c.storage_classes_desired
-      assert_raise ArvadosModel::InvalidStateTransitionError do
-        c.update storage_classes_desired: []
-      end
+      assert_equal false, c.update(storage_classes_desired: [])
+      assert_match /Storage classes desired must not be empty/, c.errors.full_messages.to_s
     end
   end
 
@@ -743,10 +742,13 @@ class CollectionTest < ActiveSupport::TestCase
         ["storage_classes_confirmed", [{the_answer: 42}]],
         ["storage_classes_desired", ["default", ""]],
         ["storage_classes_confirmed", [""]],
+        ["storage_classes_confirmed", ""],
+        ["storage_classes_confirmed", "default"],
+        ["storage_classes_confirmed", {foo: :bar}],
       ].each do |attr, val|
-        assert_raise ArvadosModel::InvalidStateTransitionError do
-          assert c.update({attr => val})
-        end
+        assert_equal false, c.update({attr => val})
+        assert_match /Storage classes .* must be an array of non-empty strings/, c.errors.full_messages.to_s
+        c.reload
       end
     end
   end

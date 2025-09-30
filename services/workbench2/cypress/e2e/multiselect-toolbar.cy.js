@@ -14,7 +14,7 @@ function createContainerRequest(user, name, docker_image, command, reuse = false
             name: name,
             command: command,
             container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-            output_path: "stdout.txt",
+            output_path: '/var/spool/cwl',
             priority: 1,
             runtime_constraints: {
                 vcpus: 1,
@@ -24,8 +24,12 @@ function createContainerRequest(user, name, docker_image, command, reuse = false
             state: state,
             mounts: {
                 '/var/lib/cwl/workflow.json': {
-                    kind: "tmp",
-                    path: "/tmp/foo",
+                    kind: 'json',
+                    content: {},
+                },
+                '/var/spool/cwl': {
+                    kind: 'tmp',
+                    capacity: 1000000,
                 },
             },
             owner_uuid: ownerUuid || undefined,
@@ -63,6 +67,55 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                 cy.get('[data-cy=multiselect-button]').should('not.exist');
             });
     });
+
+    it('header checkbox checks/unchecks in response to item selection', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject1',
+        }).as('testProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'TestProject2',
+        }).as('testProject2');
+        cy.getAll('@testProject1', '@testProject2')
+            .then(([testProject1, testProject2]) => {
+                cy.loginAs(adminUser);
+                cy.doSidePanelNavigation('Home Projects');
+
+                cy.doMPVTabSelect('Data');
+                cy.assertDataExplorerContains(testProject1.name, true);
+                cy.assertDataExplorerContains(testProject2.name, true);
+
+                //check header checkbox
+                cy.get('[data-cy=data-table-header-checkbox]').click();
+                cy.assertCheckboxes([testProject1.uuid, testProject2.uuid], true);
+
+                //uncheck header checkbox
+                cy.get('[data-cy=data-table-header-checkbox]').click();
+                cy.assertCheckboxes([testProject1.uuid, testProject2.uuid], false);
+
+                //test checkbox select
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.doDataExplorerSelect(testProject1.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.doDataExplorerSelect(testProject2.name);
+                cy.get('[data-cy=data-table-header-checkbox]').should('not.be.checked');
+
+                //test onRowClick select
+                cy.get('[data-cy=data-table-row]').eq(0).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.get('[data-cy=data-table-row]').eq(1).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.get('[data-cy=data-table-row]').eq(0).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('be.checked');
+                cy.get('[data-cy=data-table-row]').eq(1).click();
+                cy.get('[data-cy=data-table-header-checkbox]').should('not.be.checked');
+        });
+    });
+
 
     it('uses selector popover to select the correct items', () => {
         cy.createProject({

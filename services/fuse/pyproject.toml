@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [build-system]
-requires = ["setuptools >= 75.0"]
+requires = ["setuptools ~= 80.9"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -19,16 +19,18 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
+license = "AGPL-3.0-only"
+license-files = [
+  "agpl-3.0.txt",
+]
 readme = "README.rst"
-requires-python = "~= 3.8"
+requires-python = "~= 3.10"
 
 [project.urls]
 Homepage = "https://arvados.org"
@@ -38,11 +40,6 @@ Issues = "https://dev.arvados.org/projects/arvados/issues"
 Changelog = "https://arvados.org/releases/"
 
 [tool.setuptools]
-# TODO: After we drop Python 3.8 and use setuptools >= 77.0,
-# specify license (a SPDX string) and license-files under [project].
-license-files = [
-  "agpl-3.0.txt",
-]
 script-files = [
   "bin/arv-mount",
 ]

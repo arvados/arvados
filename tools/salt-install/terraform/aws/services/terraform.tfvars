@@ -44,8 +44,8 @@
 # Default: "admin"
 # deploy_user = "ubuntu"
 
-# Instance AMI to use for service nodes. Default: latest from Debian 11
-# instance_ami = "ami-0481e8ba7f486bd99"
+# Instance AMI to use for service nodes. Default: latest from Debian 12
+# instance_ami = "ami-abcdef1234567890"
 
 # Customer-managed Key to use for volume encryption.
 # cmk_arn = "arn:aws:kms:...."

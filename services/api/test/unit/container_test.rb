@@ -15,13 +15,19 @@ class ContainerTest < ActiveSupport::TestCase
     output_path: '/tmp',
     priority: 1,
     runtime_constraints: {"vcpus" => 1, "ram" => 1, "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}},
+    mounts: {
+      "/tmp" => {
+        "kind" => "tmp",
+        "capacity" => 1000000,
+      },
+    },
   }
 
   REUSABLE_COMMON_ATTRS = {
     container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
-    cwd: "test",
+    cwd: "/test",
     command: ["echo", "hello"],
-    output_path: "test",
+    output_path: "/test",
     output_glob: [],
     runtime_constraints: {
       "API" => false,
@@ -31,7 +37,7 @@ class ContainerTest < ActiveSupport::TestCase
       "vcpus" => 4
     },
     mounts: {
-      "test" => {"kind" => "json"},
+      "/test" => {"kind" => "json"},
     },
     environment: {
       "var" => "val",
@@ -45,10 +51,15 @@ class ContainerTest < ActiveSupport::TestCase
   REUSABLE_ATTRS_SLIM = {
     command: ["echo", "slim"],
     container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
-    cwd: "test",
+    cwd: "/test",
     environment: {},
-    mounts: {},
-    output_path: "test",
+    mounts: {
+      "/test" => {
+        "kind" => "tmp",
+        "capacity" => 1000000,
+      },
+    },
+    output_path: "/test",
     output_glob: [],
     runtime_auth_scopes: ["all"],
     runtime_constraints: {
@@ -89,11 +100,11 @@ class ContainerTest < ActiveSupport::TestCase
                               {container_image: "arvados/apitestfixture:june10"},
                               {cwd: "/tmp2"},
                               {environment: {"FOO" => "BAR"}},
-                              {mounts: {"FOO" => "BAR"}},
+                              {mounts: {"/FOO" => {"kind" => "tmp"}}},
                               {output_path: "/tmp3"},
                               {locked_by_uuid: api_client_authorizations(:admin).uuid},
                               {auth_uuid: api_client_authorizations(:system_user).uuid},
-                              {runtime_constraints: {"FOO" => "BAR"}}]
+                              {runtime_constraints: {"ram" => 1234567}}]
   end
 
   def check_bogus_states c
@@ -114,10 +125,10 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container create" do
     act_as_system_user do
       c, _ = minimal_new(environment: {},
-                      mounts: {"BAR" => {"kind" => "FOO"}},
-                      output_path: "/tmp",
-                      priority: 1,
-                      runtime_constraints: {"vcpus" => 1, "ram" => 1})
+                         mounts: {"/tmp" => {"kind" => "tmp"}},
+                         output_path: "/tmp",
+                         priority: 1,
+                         runtime_constraints: {"vcpus" => 1, "ram" => 1})
 
       check_illegal_modify c
       check_bogus_states c
@@ -131,10 +142,10 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container valid priority" do
     act_as_system_user do
       c, _ = minimal_new(environment: {},
-                      mounts: {"BAR" => {"kind" => "FOO"}},
-                      output_path: "/tmp",
-                      priority: 1,
-                      runtime_constraints: {"vcpus" => 1, "ram" => 1})
+                         mounts: {"/tmp" => {"kind" => "tmp"}},
+                         output_path: "/tmp",
+                         priority: 1,
+                         runtime_constraints: {"vcpus" => 1, "ram" => 1})
 
       assert_raises(ActiveRecord::RecordInvalid) do
         c.priority = -1
@@ -165,7 +176,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     attrs = {
       environment: {},
-      mounts: {"BAR" => {"kind" => "FOO"}},
+      mounts: {"/tmp" => {"kind" => "tmp"}},
       output_path: "/tmp",
       priority: 1,
       runtime_constraints: {"vcpus" => 1, "ram" => 1}
@@ -201,7 +212,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     attrs = {
       environment: {},
-      mounts: {"BAR" => {"kind" => "FOO"}},
+      mounts: {"/tmp" => {"kind" => "tmp"}},
       output_path: "/tmp",
       priority: 1,
       runtime_constraints: {"vcpus" => 1, "ram" => 1}
@@ -252,7 +263,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container serialized hash attributes sorted before save" do
     set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
-    m = {"F" => {"kind" => "3"}, "E" => {"kind" => "2"}, "D" => {"kind" => "1"}}
+    m = DEFAULT_ATTRS[:mounts].merge({"/F" => {"kind" => "tmp"}, "/E" => {"kind" => "tmp"}, "/D" => {"kind" => "tmp"}})
     rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "keep_cache_disk" => 0, "API" => true, "gpu" => {"stack": "", "device_count":0, "driver_version": "", "hardware_target": [], "vram": 0}}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     c.reload
@@ -675,17 +686,16 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable with legacy cuda" do
     set_user_from_auth :active
 
-    # has cuda
-
-    cuda_attrs = {
-      command: ["echo", "hello", "/bin/sh", "-c", "'cat' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/foobar' '/keep/fa7aeb5140e2848d39b416daeef4ffc5+45/baz' '|' 'gzip' '>' '/dev/null'"],
-      cwd: "test",
-      environment: {},
-      output_path: "test",
-      output_glob: [],
-      container_image: "fa3c1a9cb6783f85f2ecda037e07b8c3+167",
-      mounts: {},
-      runtime_constraints: Container.resolve_runtime_constraints({
+    fixture = containers(:legacy_cuda_container)
+    req = ContainerRequest.create!(
+      command: fixture.command,
+      cwd: fixture.cwd,
+      environment: fixture.environment,
+      output_path: fixture.output_path,
+      output_glob: fixture.output_glob,
+      container_image: fixture.container_image,
+      mounts: fixture.mounts,
+      runtime_constraints: {
         "cuda" => {
           "device_count" => 1,
           "driver_version" => "11.0",
@@ -693,17 +703,15 @@ class ContainerTest < ActiveSupport::TestCase
         },
         "ram" => 12000000000,
         "vcpus" => 4,
-      }),
-      scheduling_parameters: {},
-      secret_mounts: {},
-    }
+      },
+      scheduling_parameters: fixture.scheduling_parameters,
+      secret_mounts: fixture.secret_mounts,
+    )
 
     Rails.configuration.Containers.LogReuseDecisions = true
     # should find the gpu one
-    reused = Container.find_reusable(cuda_attrs)
-    assert_not_nil reused
-    assert_equal reused.uuid, containers(:legacy_cuda_container).uuid
-
+    ctr = Container.resolve(req)
+    assert_equal ctr.uuid, containers(:legacy_cuda_container).uuid
   end
 
   test "find_reusable method with gpu" do

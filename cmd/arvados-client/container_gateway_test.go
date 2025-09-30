@@ -304,9 +304,15 @@ func (s *logsSuite) TestContainerRequestLog(c *check.C) {
 		"state":           "Committed",
 		"command":         []string{"echo", fmt.Sprintf("%d", time.Now().Unix())},
 		"container_image": imageColl.PortableDataHash,
-		"cwd":             "/",
-		"output_path":     "/",
-		"priority":        1,
+		"cwd":             "/tmp",
+		"mounts": map[string]arvados.Mount{
+			"/tmp": arvados.Mount{
+				Kind:     "tmp",
+				Capacity: 1000000,
+			},
+		},
+		"output_path": "/tmp",
+		"priority":    1,
 		"runtime_constraints": arvados.RuntimeConstraints{
 			VCPUs: 1,
 			RAM:   1000000000,

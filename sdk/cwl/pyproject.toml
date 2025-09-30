@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools >= 75.0"]
+requires = ["setuptools ~= 80.9"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -19,16 +19,18 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
+license = "Apache-2.0"
+license-files = [
+  "LICENSE-2.0.txt",
+]
 readme = "README.rst"
-requires-python = "~= 3.8"
+requires-python = "~= 3.10"
 
 [project.entry-points."cwltest.fsaccess"]
 fsaccess = "arvados_cwl.fsaccess:get_fsaccess"
@@ -46,11 +48,6 @@ Changelog = "https://arvados.org/releases/"
 
 [tool.setuptools]
 include-package-data = true
-# TODO: After we drop Python 3.8 and use setuptools >= 77.0,
-# specify license (a SPDX string) and license-files under [project].
-license-files = [
-  "LICENSE-2.0.txt",
-]
 
 [tool.setuptools.data-files]
 "share/doc/arvados-cwl-runner" = [

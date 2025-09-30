@@ -74,6 +74,8 @@ gem 'securerandom', '~> 0.3.2'
 # multi_json 2.0 will drop Ruby 3.0.
 # https://github.com/sferik/multi_json/pull/16#issue-3237521157
 gem 'multi_json', '~> 1.0'
+# hash_validator 2.0 dropped Ruby 2.7.
+gem 'hash_validator', '~> 2.0'
 
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|

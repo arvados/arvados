@@ -12,6 +12,6 @@ pip >= 20.3
 # Technically this shouldn't be required: the build process should get the
 # build requirements listed in pyproject.toml. But it's nice to have it
 # cached.
-setuptools >= 75.0
+setuptools ~= 80.9
 
 wheel

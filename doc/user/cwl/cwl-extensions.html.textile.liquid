@@ -169,8 +169,6 @@ h2(#Secrets). cwltool:Secrets
 
 Indicate that one or more input parameters are "secret".  Must be applied at the top level Workflow.  Secret parameters are not stored in keep, are hidden from logs and API responses, and are wiped from the database after the workflow completes.
 
-*Note: currently, workflows with secrets must be submitted on the command line using @arvados-cwl-runner@.  Workflows with secrets submitted through Workbench will not properly obscure the secret inputs.*
-
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |secrets|array<string>|Input parameters which are considered "secret".  Must be strings.|

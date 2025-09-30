@@ -4,6 +4,7 @@
 
 require 'arvados/keep'
 require 'trashable'
+require 'validate_serialized'
 
 class Collection < ArvadosModel
   extend CurrentApiClient
@@ -27,10 +28,12 @@ class Collection < ArvadosModel
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   before_validation :name_null_if_empty
+  validates :properties, hash_attr: true
+  validates :storage_classes_desired, array_of_strings: true
+  validates :storage_classes_confirmed, array_of_strings: true
   validate :ensure_filesystem_compatible_name
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
-  validate :ensure_storage_classes_contain_non_empty_strings
   validate :versioning_metadata_updates, on: :update
   validate :past_versions_cannot_be_updated, on: :update
   validate :protected_managed_properties_updates, on: :update
@@ -758,15 +761,7 @@ class Collection < ArvadosModel
 
   def ensure_storage_classes_desired_is_not_empty
     if self.storage_classes_desired.empty?
-      raise ArvadosModel::InvalidStateTransitionError.new("storage_classes_desired shouldn't be empty")
-    end
-  end
-
-  def ensure_storage_classes_contain_non_empty_strings
-    (self.storage_classes_desired + self.storage_classes_confirmed).each do |c|
-      if !c.is_a?(String) || c == ''
-        raise ArvadosModel::InvalidStateTransitionError.new("storage classes should only be non-empty strings")
-      end
+      errors.add(:storage_classes_desired, "must not be empty")
     end
   end
 
