@@ -5,7 +5,7 @@
 import moment from "moment";
 import { Validator } from "redux-form"; // optional type hint
 
-export const isValidDate: Validator = (value) => {
+export const isValidFutureDate: Validator = (value) => {
   const momentDate = moment(value);
   return momentDate.isValid() && momentDate.isAfter(moment()) ? undefined : "Invalid date";
 };

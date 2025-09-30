@@ -8,7 +8,7 @@ import { isRsaKey } from './is-rsa-key';
 import { isRemoteHost } from "./is-remote-host";
 import { validFileName, validFilePath, validName, validNameAllowSlash } from "./valid-name";
 import { isZipFilename } from './is-zip-filename';
-import { isValidDate } from './is-valid-date';
+import { isValidFutureDate } from './is-valid-future-date';
 
 export const TAG_KEY_VALIDATION = [maxLength(255)];
 export const TAG_VALUE_VALIDATION = [maxLength(255)];
@@ -54,4 +54,4 @@ export const LENGTH255_VALIDATION = [maxLength(255)];
 export const REQUIRED_LENGTH255_VALIDATION = [fieldRequire, maxLength(255)];
 export const REQUIRED_VALIDNAME_LENGTH255_VALIDATION = [fieldRequire, validName, maxLength(255)];
 
-export const DATE_VALIDATION = [isValidDate];
+export const DATE_VALIDATION = [isValidFutureDate];
