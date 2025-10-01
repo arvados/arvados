@@ -293,7 +293,8 @@ export const openCancelProcesswDialog = (uuid: string) => (dispatch: Dispatch, g
             data: {
                 title: "Cancel process",
                 text: "Are you sure you want to cancel this process?",
-                confirmButtonLabel: "Cancel",
+                cancelButtonLabel: "Back",
+                confirmButtonLabel: "Confirm",
                 uuid,
             },
         })
