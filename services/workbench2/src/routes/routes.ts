@@ -51,6 +51,7 @@ export const Routes = {
     PUBLIC_FAVORITES: '/public-favorites',
     COLLECTIONS_CONTENT_ADDRESS: `/collections/:id(${PORTABLE_DATA_HASH_PATTERN})`,
     ALL_PROCESSES: '/all_processes',
+    EXTERNAL_CREDENTIALS: '/external_credentials',
     NO_MATCH: '*',
 };
 
@@ -217,3 +218,6 @@ export const matchPublicFavoritesRoute = (route: string) =>
 
 export const matchCollectionsContentAddressRoute = (route: string) =>
     matchPath(route, { path: Routes.COLLECTIONS_CONTENT_ADDRESS });
+
+export const matchExternalCredentialsRoute = (route: string) =>
+    matchPath(route, { path: Routes.EXTERNAL_CREDENTIALS });

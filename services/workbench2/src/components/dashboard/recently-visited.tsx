@@ -16,7 +16,7 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { DashboardItemRow, DashboardColumnNames, DashboardItemRowStyles } from 'components/dashboard/dashboard-item-row';
 import { RecentUuid } from 'models/user';
 import { ResourceName } from 'views-components/data-explorer/renderers';
-import { formatDate } from 'common/formatters';
+import { formatDateTime } from 'common/formatters';
 
 type CssRules = 'root' | 'subHeader' | 'titleBar' | 'lastVisHead' | 'hr' | 'list';
 
@@ -119,7 +119,7 @@ export const RecentlyVisitedSection = connect(mapStateToProps)
 const getLastVisitedDate = (targetUuid: string, recents: RecentUuid[]) => {
     const targetRecent = recents.find(recent => recent.uuid === targetUuid);
     if (targetRecent) {
-        return formatDate(new Date(targetRecent.lastVisited).toISOString());
+        return formatDateTime(new Date(targetRecent.lastVisited).toISOString());
     }
     return '';
 }

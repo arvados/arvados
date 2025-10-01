@@ -10,7 +10,7 @@ import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { UserResource } from "models/user";
 import { LinkAccountType } from "models/link-account";
-import { formatDate } from "common/formatters";
+import { formatDateTime } from "common/formatters";
 import { LinkAccountPanelStatus, LinkAccountPanelError } from "store/link-account-panel/link-account-panel-reducer";
 import { Config } from 'common/config';
 
@@ -52,7 +52,7 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false, showClu
         disp.push(<span> hosted on cluster <b>{homeCluster}</b> and </span>);
     }
     if (showCreatedAt) {
-        disp.push(<span> created on <b>{formatDate(user.createdAt)}</b></span>);
+        disp.push(<span> created on <b>{formatDateTime(user.createdAt)}</b></span>);
     }
     return disp;
 }

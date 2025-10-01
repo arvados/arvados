@@ -16,6 +16,7 @@ export enum ContextMenuKind {
     COLLECTION_FILES = "CollectionFiles",
     COLLECTION_FILES_MULTIPLE = "CollectionFilesMultiple",
     COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
+    EXTERNAL_CREDENTIAL = "ExternalCredential",
     FAVORITE = "Favorite",
     FILTER_GROUP = "FilterGroup",
     FILTER_GROUP_ADMIN = "FilterGroupAdmin",
@@ -153,6 +154,14 @@ const userDetailsOrder = [
     ContextMenuActionNames.API_DETAILS,
 ];
 
+const credentialOrder = [
+    ContextMenuActionNames.SHARE,
+    ContextMenuActionNames.EDIT_CREDENTIAL,
+    ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.API_DETAILS,
+];
+
 const defaultMultiOrder = [
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
@@ -197,6 +206,8 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.ROOT_PROJECT_ADMIN]: rootProjectOrder,
 
     [ContextMenuKind.USER_DETAILS]: userDetailsOrder,
+
+    [ContextMenuKind.EXTERNAL_CREDENTIAL]: credentialOrder,
 };
 
 export const menuDirection = {

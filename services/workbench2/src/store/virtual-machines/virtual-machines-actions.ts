@@ -7,7 +7,7 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from "services/services";
 import { navigateToUserVirtualMachines, navigateToAdminVirtualMachines, navigateToRootProject } from "store/navigation/navigation-action";
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
-import { formatDate } from "common/formatters";
+import { formatDateTime } from "common/formatters";
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { VirtualMachineLogins } from 'models/virtual-machines';
 import { FilterBuilder } from "services/api/filter-builder";
@@ -249,7 +249,7 @@ export const removeVirtualMachineLogin = (uuid: string) =>
 
 export const saveRequestedDate = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const date = formatDate((new Date()).toISOString());
+        const date = formatDateTime((new Date()).toISOString());
         services.virtualMachineService.saveRequestedDate(date);
         dispatch<any>(loadRequestedDate());
     };

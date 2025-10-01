@@ -24,12 +24,15 @@ import { openContextMenuAndSelect } from 'store/context-menu/context-menu-action
 import { ArvadosTheme } from 'common/custom-theme';
 import { toggleOne } from 'store/multiselect/multiselect-actions';
 
-type CssRules = "root";
+type CssRules = "root" | "button";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         boxShadow: "0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)",
+    },
+    button: {
+        marginLeft: theme.spacing(2),
     }
 });
 
@@ -106,6 +109,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                         actions={
                             <Grid container justifyContent='flex-end'>
                                 <Button
+                                    className={this.props.classes.button}
                                     data-cy="groups-panel-new-group"
                                     variant="contained"
                                     color="primary"

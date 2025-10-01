@@ -6,7 +6,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { ProjectIcon, RenameIcon, FilterGroupIcon } from 'components/icon/icon';
 import { ProjectResource } from 'models/project';
-import { formatDate } from 'common/formatters';
+import { formatDateTime } from 'common/formatters';
 import { ResourceKind } from 'models/resource';
 import { resourceLabel } from 'common/labels';
 import { DetailsData } from "./details-data";
@@ -100,8 +100,8 @@ export const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToPro
             <DetailsAttribute label='UUID' linkToUuid={project.uuid} value={project.uuid} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
                               uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-            <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
-            <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
+            <DetailsAttribute label='Created at' value={formatDateTime(project.createdAt)} />
+            <DetailsAttribute label='Last modified' value={formatDateTime(project.modifiedAt)} />
             <DetailsAttribute label='Last modified by' linkToUuid={project.modifiedByUserUuid}
                               uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
             <DetailsAttribute label='Description'>

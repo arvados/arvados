@@ -92,6 +92,9 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
         case REPOSITORIES_PANEL_LABEL:
             dispatch(navigateToRepositories);
             return;
+        case SidePanelTreeCategory.EXTERNAL_CREDENTIALS:
+            dispatch(navigateToExternalCredentials);
+            return;
     }
 
     dispatch(navigationNotAvailable(uuid));
@@ -173,5 +176,7 @@ export const navigateToLinks = push(Routes.LINKS);
 export const navigateToCollectionsContentAddress = push(Routes.COLLECTIONS_CONTENT_ADDRESS);
 
 export const navigateToAllProcesses = push(Routes.ALL_PROCESSES);
+
+export const navigateToExternalCredentials = push(Routes.EXTERNAL_CREDENTIALS);
 
 export const navigateToDashboard = push(Routes.DASHBOARD);

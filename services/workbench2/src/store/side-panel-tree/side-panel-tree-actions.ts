@@ -18,7 +18,19 @@ import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
 import { verifyAndUpdateLinks } from 'common/link-update-name';
-import { ProcessIcon, ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon, WheelIcon } from 'components/icon/icon';
+import { ProcessIcon,
+    ProjectIcon,
+    FavoriteIcon,
+    ProjectsIcon,
+    ShareMeIcon,
+    TrashIcon,
+    PublicFavoriteIcon,
+    GroupsIcon,
+    TerminalIcon,
+    ResourceIcon,
+    FolderKeyIcon,
+    WheelIcon,
+} from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
     DASHBOARD = 'Dashboard',
@@ -29,6 +41,7 @@ export enum SidePanelTreeCategory {
     ALL_PROCESSES = 'All Processes',
     INSTANCE_TYPES = 'Instance Types',
     SHELL_ACCESS = 'Shell Access',
+    EXTERNAL_CREDENTIALS = 'External Credentials',
     GROUPS = 'Groups',
     TRASH = 'Trash',
 }
@@ -60,6 +73,7 @@ let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.ALL_PROCESSES,
     SidePanelTreeCategory.INSTANCE_TYPES,
     SidePanelTreeCategory.SHELL_ACCESS,
+    SidePanelTreeCategory.EXTERNAL_CREDENTIALS,
     SidePanelTreeCategory.GROUPS,
     SidePanelTreeCategory.TRASH
 ];
@@ -342,6 +356,8 @@ export const getSidePanelIcon = (category: string) => {
             return GroupsIcon;
         case SidePanelTreeCategory.SHELL_ACCESS:
             return TerminalIcon
+        case SidePanelTreeCategory.EXTERNAL_CREDENTIALS:
+            return FolderKeyIcon
         case SidePanelTreeCategory.DASHBOARD:
             return WheelIcon
         default:

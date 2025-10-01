@@ -83,6 +83,8 @@ import { bannerReducer } from "./banner/banner-reducer";
 import { multiselectReducer } from "./multiselect/multiselect-reducer";
 import { composeWithDevTools } from "redux-devtools-extension";
 import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
+import { ExternalCredentialsMiddlewareService } from "./external-credentials/external-credentials-middleware-service";
+import { EXTERNAL_CREDENTIALS_PANEL } from "./external-credentials/external-credentials-actions";
 import createSagaMiddleware from 'redux-saga';
 import { rootSaga } from "./redux-saga";
 import { RecentlyVisitedMiddlewareService } from "./recently-visited/recently-visited-middleware-services";
@@ -131,6 +133,9 @@ export function configureStore(history: History, services: ServiceRepository, co
         new CollectionsWithSameContentAddressMiddlewareService(services, COLLECTIONS_CONTENT_ADDRESS_PANEL_ID)
     );
     const subprocessMiddleware = dataExplorerMiddleware(new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID));
+    const externalCredentialsMiddleware = dataExplorerMiddleware(
+        new ExternalCredentialsMiddlewareService(services, EXTERNAL_CREDENTIALS_PANEL)
+    );
     const recentlyVisitedMiddleware = dataExplorerMiddleware(new RecentlyVisitedMiddlewareService(services, RECENTLY_VISITED_PANEL_ID));
     const recentWorkflowsMiddleware = dataExplorerMiddleware(new RecentWorkflowsMiddlewareService(services, RECENT_WF_RUNS_ID));
     const favoritePinsMiddleware = dataExplorerMiddleware(new FavoritePinsMiddlewareService(services, FAVORITE_PINS_ID));
@@ -174,6 +179,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         collectionsContentAddress,
         subprocessMiddleware,
         workflowProcessessPanelMiddleware,
+        externalCredentialsMiddleware,
         recentlyVisitedMiddleware,
         recentWorkflowsMiddleware,
         favoritePinsMiddleware,

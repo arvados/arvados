@@ -24,8 +24,9 @@ import {
     SetupIcon,
     InactiveIcon,
     ErrorIcon,
+    FolderKeyIcon,
 } from "components/icon/icon";
-import { formatDate, formatFileSize, formatTime } from "common/formatters";
+import { formatDateTime, formatFileSize, formatTime, formatDateOnly, isElapsed, isWithinExpiration, daysRemaining } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { connect, DispatchProp } from "react-redux";
 import { RootState } from "store/store";
@@ -55,6 +56,7 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
+import { ExternalCredential, isExternalCredential } from "models/external-credential";
 import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
@@ -73,7 +75,7 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
+const renderName = (dispatch: Dispatch, item: GroupContentsResource, isLink: boolean = true) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
         <Grid
@@ -85,15 +87,15 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(item)}</Grid>
             <Grid item>
                 <Typography
-                    color="primary"
-                    style={{ width: "auto", cursor: "pointer" }}
+                    color={isLink ? "primary" : "textPrimary"}
+                    style={{ width: "auto", cursor: isLink ? "pointer" : "default" }}
                     onClick={(ev) => {
                         ev.stopPropagation()
-                        dispatch<any>(navFunc(item.uuid))
+                        if (isLink) dispatch<any>(navFunc(item.uuid))
                     }}
                 >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
-                    {item.name}
+                    {item.name || '-'}
                 </Typography>
             </Grid>
             <Grid item>
@@ -133,9 +135,17 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
 export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
+})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource, true));
+
+export const ResourceNameNoLink = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+    return resource;
+})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource, false));
 
 export const renderIcon = (item: GroupContentsResource) => {
+    if (isExternalCredential(item)) {
+        return <FolderKeyIcon />;
+    }
     switch (item.kind) {
         case ResourceKind.PROJECT:
             if (item.groupClass === GroupClass.FILTER) {
@@ -156,16 +166,77 @@ export const renderIcon = (item: GroupContentsResource) => {
     }
 };
 
-const renderDate = (date?: string) => {
+const renderDateTime = (date?: string) => {
     return (
         <Typography
             noWrap
             style={{ minWidth: "100px" }}
         >
-            {formatDate(date)}
+            {formatDateTime(date)}
         </Typography>
     );
 };
+
+const renderDateOnly = (date?: string, withTimeRemaining: boolean = false) => {
+    return (
+        <Typography
+            style={{ minWidth: "100px" }}
+        >
+            {formatDateOnly(date, withTimeRemaining)}
+        </Typography>
+    );
+};
+
+const renderExpiring = (date?: string) =>
+    <Typography noWrap style={{minHeight: '1.55rem'}}>
+        <Grid container alignItems="center" wrap="nowrap">
+            <Grid item style={{ width: '80px' }}>
+                {formatDateOnly(date)}
+            </Grid>
+            <Grid item>
+                {renderExpiringBadge(date)}
+            </Grid>
+        </Grid>
+    </Typography>
+
+const renderExpiringBadge = (date?: string) =>
+    <span
+        data-cy="expiring-badge"
+        style={{
+            border: `1px solid ${(CustomTheme as any).customs.colors.red900}`,
+            color: (CustomTheme as any).customs.colors.red900,
+            fontSize: "0.75rem",
+            padding: "0px 7px",
+            borderRadius: 3,
+            boxSizing: 'border-box',
+        }}>
+            {date ? daysRemaining(date) : 'Expiring soon'}
+    </span>
+
+const renderExpired = (date?: string) =>
+    <Typography noWrap>
+        <Grid container alignItems="center" wrap="nowrap">
+            <Grid item style={{ width: '80px' }}>
+                {formatDateOnly(date)}
+            </Grid>
+            <Grid item>
+                {renderExpiredBadge()}
+            </Grid>
+        </Grid>
+    </Typography>
+
+const renderExpiredBadge = () =>
+    <span
+        data-cy="expired-badge"
+        style={{
+            backgroundColor: (CustomTheme as any).customs.colors.red900,
+            color: 'white',
+            fontSize: "0.75rem",
+            padding: "0px 7px",
+            borderRadius: 3,
+        }}>
+            Expired
+    </span>
 
 const renderWorkflowName = (item: WorkflowResource) => (
     <Grid
@@ -455,7 +526,7 @@ export const VirtualMachineLogin = connect((state: RootState, props: { linkUuid:
 // Common methods
 const renderCommonData = (data: string) => <Typography noWrap>{data}</Typography>;
 
-const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}</Typography>;
+const renderCommonDate = (date: string) => <Typography noWrap>{formatDateTime(date)}</Typography>;
 
 export const CommonUuid = withResourceData("uuid", renderCommonData);
 
@@ -791,22 +862,77 @@ export const ResourceModifiedByUserUuid = connect((state: RootState, props: { uu
 export const ResourceCreatedAtDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { date: resource ? resource.createdAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceLastModifiedDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return { date: resource ? resource.modifiedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceTrashDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
     return { date: resource ? resource.trashAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const ResourceDeleteDate = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<TrashableResource>(props.uuid)(state.resources);
     return { date: resource ? resource.deleteAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
+
+export const ResourceExpiresAtDate = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
+    return { date: resource ? resource.expiresAt : "" };
+})((props: { date: string }): JSX.Element => renderExpiresAtDate(props.date));
+
+const renderExpiresAtDate = (date?: string) => {
+    if (date) {
+        if (isElapsed(date)) {
+            return renderExpired(date);
+        } else if (isWithinExpiration(date, 100)) {
+            return renderExpiring(date);
+        } else {
+            return renderDateOnly(date);
+        }
+    }
+    return <>-</>;
+}
+
+export const RenderResourceStringField = <T extends Resource>(props: { uuid: string, field: keyof T }) => {
+    const ConnectedComponent = connect((state: RootState) => {
+        const resource = getResource<T>(props.uuid)(state.resources);
+        return { [props.field]: resource ? resource[props.field] : "" };
+    })((renderProps: { [key: string]: string }) =>
+        renderString(renderProps[props.field as keyof typeof renderProps]));
+    return <ConnectedComponent />;
+};
+
+const renderString = (data?: string) => <Typography noWrap>{data || '-'}</Typography>;
+
+export const RenderDescriptionInTD = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+    return { description: resource ? resource.description : "" };
+})((props: { description?: string }) =>
+    props.description ? <Typography
+        component='div'
+        // Remove <p> tags from description so they don't affect table display
+        dangerouslySetInnerHTML={{ __html: props.description.replace(/<\/?p>/g, "") }} />
+    : <>-</>);
+
+export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
+    const resource = getResource<ExternalCredential>(props.uuid)(state.resources);
+    // account for https://dev.arvados.org/issues/23152
+    let scopes: string[] = [];
+    if (resource) {
+        if (Array.isArray(resource.scopes)) {
+            scopes = resource.scopes;
+        } else if (typeof resource.scopes === 'string') {
+            scopes = (resource.scopes as string).split(",").map(s => s.trim()).filter(Boolean);;
+        }
+    }
+    return { scopes };
+})((props: { scopes: string[] }) => renderStringArray(props.scopes, false));
+
+const renderStringArray = (data: string[], noWrap: boolean = true) => <Typography noWrap={!!noWrap}>{data.length ? data.join(', ') : '-'}</Typography>;
 
 export const renderFileSize = (fileSize?: number) => (
     <Typography
@@ -1129,7 +1255,7 @@ export const ProcessStatus = compose(
 export const ProcessStartDate = connect((state: RootState, props: { uuid: string }) => {
     const process = getProcess(props.uuid)(state.resources);
     return { date: process && process.container ? process.container.startedAt : "" };
-})((props: { date: string }) => renderDate(props.date));
+})((props: { date: string }) => renderDateTime(props.date));
 
 export const renderRunTime = (time: number) => (
     <Typography

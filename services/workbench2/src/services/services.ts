@@ -31,6 +31,7 @@ import { AuthorizedKeysService } from 'services/authorized-keys-service/authoriz
 import { VocabularyService } from 'services/vocabulary-service/vocabulary-service';
 import { FileViewersConfigService } from 'services/file-viewers-config-service/file-viewers-config-service';
 import { LinkAccountService } from "./link-account-service/link-account-service";
+import { ExternalCredentialsService } from "./external-credentials/external-credentials-service";
 import parse from "parse-duration";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
@@ -93,6 +94,7 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const searchService = new SearchService();
     const vocabularyService = new VocabularyService(config.vocabularyUrl);
     const fileViewersConfig = new FileViewersConfigService(config.fileViewersConfigUrl);
+    const externalCredentialsService = new ExternalCredentialsService(apiClient, actions);
 
     return {
         ancestorsService,
@@ -120,7 +122,8 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
         apiWebdavClient,
         workflowService,
         vocabularyService,
-        linkAccountService
+        linkAccountService,
+        externalCredentialsService,
     };
 };
 

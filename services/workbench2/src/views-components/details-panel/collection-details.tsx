@@ -13,7 +13,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Button, Grid, ListItem, Typography, Tooltip, Link as ButtonLink } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { formatDate, formatFileSize } from 'common/formatters';
+import { formatDateTime, formatFileSize } from 'common/formatters';
 import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -217,7 +217,7 @@ const CollectionVersionBrowser = withStyles(styles)(
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="caption" className={classes.versionBrowserField}>
-                                    {formatDate(item.modifiedAt)}
+                                    {formatDateTime(item.modifiedAt)}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
@@ -288,10 +288,10 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
             />
         </Grid>
         <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
+            <DetailsAttribute label='Created at' value={formatDateTime(item.createdAt)} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
+            <DetailsAttribute label='Last modified' value={formatDateTime(item.modifiedAt)} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}

@@ -42,6 +42,7 @@ import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-f
 import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
+import { RemoveExternalCredentialDialog } from "views-components/dialog-remove/external-credential-remove-dialog";
 import { MainContentBar } from "views-components/main-content-bar/main-content-bar";
 import { Grid } from "@mui/material";
 import { TrashPanel } from "views/trash-panel/trash-panel";
@@ -93,6 +94,8 @@ import { SetupDialog } from "views-components/user-dialog/setup-dialog";
 import { GroupsPanel } from "views/groups-panel/groups-panel";
 import { RemoveGroupDialog } from "views-components/groups-dialog/remove-dialog";
 import { GroupAttributesDialog } from "views-components/groups-dialog/attributes-dialog";
+import { CreateExternalCredentialDialog } from "views-components/dialog-create/create-external-credential-dialog";
+import { UpdateExternalCredentialDialog } from "views-components/dialog-forms/update-external-credential-dialog";
 import { GroupDetailsPanel } from "views/group-details-panel/group-details-panel";
 import { RemoveGroupMemberDialog, RemoveMultipleGroupMembersDialog } from "views-components/groups-dialog/member-remove-dialog";
 import { GroupMemberAttributesDialog } from "views-components/groups-dialog/member-attributes-dialog";
@@ -100,6 +103,7 @@ import { PublicFavoritePanel } from "views/public-favorites-panel/public-favorit
 import { LinkAccountPanel } from "views/link-account-panel/link-account-panel";
 import { CollectionsContentAddressPanel } from "views/collection-content-address-panel/collection-content-address-panel";
 import { AllProcessesPanel } from "../all-processes-panel/all-processes-panel";
+import { ExternalCredentialsPanel } from "views/external-credentials-panel/external-credentials-panel";
 import { NotFoundPanel } from "../not-found-panel/not-found-panel";
 import { AutoLogout } from "views-components/auto-logout/auto-logout";
 import { RestoreCollectionVersionDialog } from "views-components/collections-dialog/restore-version-dialog";
@@ -302,6 +306,10 @@ let routes = (
             path={Routes.COLLECTIONS_CONTENT_ADDRESS}
             component={CollectionsContentAddressPanel}
         />
+        <Route
+            path={Routes.EXTERNAL_CREDENTIALS}
+            component={ExternalCredentialsPanel}
+        />
     </>
 );
 
@@ -481,6 +489,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
             <CreateUserDialog />
+            <CreateExternalCredentialDialog />
             <TokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
@@ -512,6 +521,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />
             <RemoveVirtualMachineLoginDialog />
+            <RemoveExternalCredentialDialog />
             <VirtualMachineAddLoginDialog />
             <RenameFileDialog />
             <DownloadFilesAsZipDialog />
@@ -524,6 +534,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
+            <UpdateExternalCredentialDialog />
             <UserAttributesDialog />
             <DeactivateDialog />
             <ActivateDialog />

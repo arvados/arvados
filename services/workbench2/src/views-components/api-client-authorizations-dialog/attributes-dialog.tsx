@@ -12,7 +12,7 @@ import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
 import { API_CLIENT_AUTHORIZATION_ATTRIBUTES_DIALOG } from 'store/api-client-authorizations/api-client-authorizations-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
-import { formatDate } from 'common/formatters';
+import { formatDateTime } from 'common/formatters';
 
 type CssRules = 'root';
 
@@ -47,9 +47,9 @@ export const AttributesApiClientAuthorizationDialog = compose(
                         <Grid item xs={5}>Created by IP address</Grid>
                         <Grid item xs={7}>{data.apiClientAuthorization.createdByIpAddress || '(none)'}</Grid>
                         <Grid item xs={5}>Expires at</Grid>
-                        <Grid item xs={7}>{formatDate(data.apiClientAuthorization.expiresAt) || '(none)'}</Grid>
+                        <Grid item xs={7}>{formatDateTime(data.apiClientAuthorization.expiresAt) || '(none)'}</Grid>
                         <Grid item xs={5}>Last used at</Grid>
-                        <Grid item xs={7}>{formatDate(data.apiClientAuthorization.lastUsedAt) || '(none)'}</Grid>
+                        <Grid item xs={7}>{formatDateTime(data.apiClientAuthorization.lastUsedAt) || '(none)'}</Grid>
                         <Grid item xs={5}>Last used by IP address</Grid>
                         <Grid item xs={7}>{data.apiClientAuthorization.lastUsedByIpAddress || '(none)'}</Grid>
                         <Grid item xs={5}>Scopes</Grid>
@@ -57,9 +57,9 @@ export const AttributesApiClientAuthorizationDialog = compose(
                         <Grid item xs={5}>User ID</Grid>
                         <Grid item xs={7}>{data.apiClientAuthorization.userId || '(none)'}</Grid>
                         <Grid item xs={5}>Created at</Grid>
-                        <Grid item xs={7}>{formatDate(data.apiClientAuthorization.createdAt) || '(none)'}</Grid>
+                        <Grid item xs={7}>{formatDateTime(data.apiClientAuthorization.createdAt) || '(none)'}</Grid>
                         <Grid item xs={5}>Updated at</Grid>
-                        <Grid item xs={7}>{formatDate(data.apiClientAuthorization.updatedAt) || '(none)'}</Grid>
+                        <Grid item xs={7}>{formatDateTime(data.apiClientAuthorization.updatedAt) || '(none)'}</Grid>
                     </Grid>}
                 </DialogContent>
                 <DialogActions>

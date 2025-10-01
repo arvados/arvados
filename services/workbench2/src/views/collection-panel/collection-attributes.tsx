@@ -14,7 +14,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { getResource } from 'store/resources/resources';
-import { formatDate, formatFileSize } from "common/formatters";
+import { formatDateTime, formatFileSize } from "common/formatters";
 import { ResourceWithName, RenderResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getUserFullname, UserResource } from 'models/user';
@@ -118,10 +118,10 @@ export const CollectionAttributes = connect(mapStateToProps, mapDispatchToProps)
             />
         </Grid>
         <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
+            <DetailsAttribute label='Created at' value={formatDateTime(item.createdAt)} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
+            <DetailsAttribute label='Last modified' value={formatDateTime(item.modifiedAt)} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}

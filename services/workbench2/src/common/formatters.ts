@@ -8,8 +8,9 @@ import {
     getTagKeyLabel,
     getTagValueLabel,
 } from 'models/vocabulary';
+import moment from 'moment';
 
-export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
+export const formatDateTime = (isoDate?: string | null, utc: boolean = false) => {
     if (isoDate) {
         const date = new Date(isoDate);
         let text: string;
@@ -21,6 +22,40 @@ export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
         return text === 'Invalid Date' ? '(none)' : text;
     }
     return '-';
+};
+
+export const formatDateOnly = (isoDate?: string | null, withDaysRemaining?: boolean) => {
+    if (isoDate) {
+        const date = new Date(isoDate);
+        if (date) {
+            return withDaysRemaining ? `${date.toLocaleDateString()} (${daysRemaining(isoDate)})` : date.toLocaleDateString();
+        }
+        return '-';
+    }
+    return '-';
+};
+
+export const daysRemaining = (targetDate: string | Date): string => {
+    const now = moment();
+    const end = moment(targetDate);
+
+    if (end.isBefore(now)) return 'date is in the past';
+
+    const days = end.diff(now, 'days');
+
+    return days > 0 ? `in ${days} day${days > 1 ? 's' : ''}` : 'today';
+};
+
+export const isElapsed = (isoString: string): boolean => {
+    return moment(isoString).isBefore(moment());
+};
+
+export const isWithinExpiration = (isoString: string, limit: number): boolean => {
+    const today = moment().startOf('day');
+    const target = moment(isoString).startOf('day');
+
+    const diff = Math.abs(target.diff(today, 'days'));
+    return diff <= limit;
 };
 
 export const formatFileSize = (size?: number | string) => {

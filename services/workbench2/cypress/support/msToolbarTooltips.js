@@ -169,4 +169,14 @@ export const tooltips = {
     ],
     processAndCollection: [],
     processAndProject: [],
+    //external credentials
+    externalCredential: [
+        'Share',
+        'Edit credential',
+        'Remove',
+        'API Details',
+    ],
+    multiExternalCredential: [
+        'Remove',
+    ],
 };
