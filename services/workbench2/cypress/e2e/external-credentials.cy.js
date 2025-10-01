@@ -91,7 +91,7 @@ describe('External Credentials panel tests', function () {
 
         // verify default values
         cy.get('input[name=credentialClass]').should('have.value', 'aws_access_key');
-        cy.get('[data-cy=date-picker-input]').should('have.value', moment().add(1, 'year').format('MM/D/YYYY'));
+        cy.get('[data-cy=date-picker-input]').should('have.value', moment().add(1, 'year').format('MM/DD/YYYY'));
 
         cy.get('input[name=name]').type(newCredentialName);
         cy.get('div[role=textbox]').type('Test Description');
