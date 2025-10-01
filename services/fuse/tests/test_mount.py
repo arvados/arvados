@@ -1501,9 +1501,6 @@ class DockerRaceTest(MountTestBase):
 
     """
 
-    def setUp(self, api=None):
-        super(DockerRaceTest, self).setUp(api=api)
-
     def runTest(self):
         self.make_mount(fuse.TmpCollectionDirectory, fuse_options=["allow_other"])
         os.chmod(self.mounttmp, 0o755)
