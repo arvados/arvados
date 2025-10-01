@@ -6,7 +6,12 @@ case "$TARGET" in
     centos*|rocky*)
         fpm_depends+=(fuse-libs)
         ;;
-    debian* | ubuntu*)
+
+    debian12 | ubuntu2204 )
         fpm_depends+=(libfuse2)
+        ;;
+
+    debian* | ubuntu* )
+        fpm_depends+=(libfuse2t64)
         ;;
 esac

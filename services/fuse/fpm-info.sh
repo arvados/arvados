@@ -12,9 +12,15 @@ case "$TARGET" in
         # because rpm itself depends on it, so we can be pretty sure it's installed.
         fpm_depends+=(fuse-libs)
         ;;
-    debian* | ubuntu*)
+
+    debian12 | ubuntu2204 )
+        # See comment below for rationale.
+        fpm_depends+=(libfuse2 libcurl4)
+        ;;
+
+    debian* | ubuntu* )
         # We depend on libfuse2 for llfuse.
         # We depend on libcurl because the Python SDK does for its Keep client.
-        fpm_depends+=(libfuse2 libcurl4)
+        fpm_depends+=(libfuse2t64 libcurl4t64)
         ;;
 esac
