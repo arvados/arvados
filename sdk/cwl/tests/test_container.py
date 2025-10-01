@@ -1190,7 +1190,7 @@ class TestContainer(unittest.TestCase):
                         'vcpus': 1,
                         'ram': 268435456
                     },
-                    'use_existing': True,
+                    'use_existing': False,
                     'priority': 500,
                     'mounts': {
                         '/tmp': {'kind': 'tmp',
