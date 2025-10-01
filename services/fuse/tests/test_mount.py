@@ -1498,7 +1498,6 @@ class DockerRaceTest(MountTestBase):
     directory: unknown
 
     See #23136
-
     """
 
     def setUp(self, api=None):
