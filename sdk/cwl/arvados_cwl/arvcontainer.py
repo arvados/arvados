@@ -417,7 +417,7 @@ class ArvadosContainer(JobBase):
                 container_request["service"] = True
                 container_request["use_existing"] = False
             else:
-                raise WorkflowException("Arvados API server does not support publish_ports (requires Arvados 3.2+)")
+                raise WorkflowException("Arvados API server does not support published_ports (requires Arvados 3.2+)")
 
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
