@@ -29,7 +29,6 @@ describe("Process tests", function () {
         });
     });
 
-
     function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
         return cy.setupDockerImage(docker_image).then(function (dockerImage) {
             return cy.createContainerRequest(user.token, {
@@ -434,6 +433,59 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-card]").should("contain", crOnHold);
                 cy.get("[data-cy=process-run-button]").should("exist");
                 cy.get("[data-cy=process-cancel-button]").should("not.exist");
+            });
+        });
+
+        it("shows service button and opens URL", () => {
+            const crName = `test_container_request ${Math.floor(Math.random() * 999999)}`;
+
+            // Fake service
+            const services = {
+                "80": {
+                access: "public",
+                label: "My Service",
+                initial_url: "http://example.com/",
+                initial_path: "",
+            }};
+
+            // Fake container state and services
+            cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*` }, req => {
+                req.on('response', res => {
+                    if (!res.body.included || res.body.included.length === 0) {
+                        return;
+                    }
+                    res.body.included[0].state = ContainerState.RUNNING;
+                    res.body.included[0].published_ports = services;
+                });
+            });
+
+            // Create process
+            createContainerRequest(
+                activeUser,
+                crName,
+                "arvados/jobs",
+                ["echo", "hello world"],
+                false,
+                "Committed"
+            ).then(function (containerRequest) {
+                cy.loginAs(activeUser);
+
+                // Navigate to process and verify name
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.get("[data-cy=process-details-card]").should('exist', { timeout: 10000 }).and("contain", containerRequest.name);
+
+                // Stub the global window.open after last cy.visit to avoid being cleared
+                cy.window().then((win) => {
+                    cy.stub(win, 'open').as('open');
+                });
+
+                // Click service button
+                cy.get('[data-cy=service-button]')
+                    .should('have.length', 1)
+                    .should('have.text', `Connect to ${services['80'].label}`)
+                    .click();
+                // Verify correct URL opened
+                cy.get('@open').should("have.been.calledWith", services['80'].initial_url);
             });
         });
     });

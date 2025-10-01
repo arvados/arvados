@@ -75,6 +75,7 @@ export const containerRequestFieldsNoMounts = [
     "owner_uuid",
     "priority",
     "properties",
+    "published_ports",
     "requesting_container_uuid",
     "runtime_constraints",
     "scheduling_parameters",

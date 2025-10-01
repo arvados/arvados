@@ -33,3 +33,46 @@ export const customDecodeURI = (path: string) => {
 
     return path;
 };
+
+export const injectTokenParam = (url: string, token: string): Promise<string> => {
+    if (url.length) {
+        if (token.length) {
+            const originalUrl = new URL(url);
+
+            // Remove leading ? for easier manipulation
+            const search = originalUrl.search.replace(/^\?/, '');
+
+            // Everything after ?
+            const params = `${search}${originalUrl.hash}`;
+
+            // Since search and hash seems to not normalize anything,
+            // we should expect href to always end exactly with both.
+            // This sanity check should always pass
+            if (originalUrl.href.endsWith(params)) {
+                // It seems easier to lop off search/params and inject token
+                // instead of handling user:pass schemes
+                const baseUrl = originalUrl.href
+                    // Trim the params from the URL
+                    .substring(0, originalUrl.href.length - params.length)
+                    // Remove trailing ?
+                    .replace(/\?$/, '');
+
+                // Prepend arvados token to search and construct search string
+                const searchWithToken = [`arvados_api_token=${token}`, search]
+                    // Remove empty elements from array to prevent extra &s with empty search
+                    .filter(e => String(e).trim())
+                    .join('&');
+
+                return Promise.resolve(`${baseUrl}?${searchWithToken}${originalUrl.hash}`);
+            } else {
+                // Original url does not end with search+hash, cannot add token
+                console.error("Failed to add token to malformed URL: " + url);
+                return Promise.reject("Malformed URL");
+            }
+        } else {
+            return Promise.reject("User token required");
+        }
+    } else {
+        return Promise.reject("URL cannot be empty");
+    }
+};
