@@ -81,7 +81,9 @@ class MountTestBase(unittest.TestCase):
             raise
         llfuse.close()
 
-    def make_mount(self, root_class, fuse_options=[], **root_kwargs):
+    def make_mount(self, root_class, fuse_options=None, **root_kwargs):
+        if fuse_options is None:
+            fuse_options = []
         enable_write = root_kwargs.pop('enable_write', True)
         self.operations = fuse.Operations(
             os.getuid(),
