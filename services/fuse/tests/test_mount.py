@@ -1504,10 +1504,9 @@ class DockerRaceTest(MountTestBase):
     def runTest(self):
         self.make_mount(fuse.TmpCollectionDirectory, fuse_options=["allow_other"])
         os.chmod(self.mounttmp, 0o755)
-        scriptfile = tempfile.NamedTemporaryFile(delete=False)
-        try:
+        with tempfile.NamedTemporaryFile(suffix='.sh') as scriptfile:
             scriptfile.write(b"#!/bin/sh\necho OK\n")
-            scriptfile.close()
+            scriptfile.flush()
             os.chmod(scriptfile.name, 0o755)
             for _ in range(10):
                 dockerrun = subprocess.run(
@@ -1522,5 +1521,3 @@ class DockerRaceTest(MountTestBase):
                 self.assertEqual(dockerrun.returncode, 0)
                 self.assertEqual(dockerrun.stdout, b"OK\n")
                 os.unlink(os.path.join(self.mounttmp, "test.sh"))
-        finally:
-            os.unlink(scriptfile.name)
