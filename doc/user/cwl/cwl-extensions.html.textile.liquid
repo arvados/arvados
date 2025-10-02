@@ -38,6 +38,7 @@ For portability, most Arvados extensions should go into the @hints@ section of y
 * "UsePreemptible":#UsePreemptible
 * "PreemptionBehavior":#PreemptionBehavior
 * "OutOfMemoryRetry":#OutOfMemoryRetry
+* "PublishPorts":#PublishPorts
 
 {% codeblock as yaml %}
 hints:
@@ -107,6 +108,13 @@ hints:
   arv:OutOfMemoryRetry:
     memoryRetryMultiplier: 2
     memoryErrorRegex: "custom memory error"
+
+  arv:PublishPorts:
+    publishPorts:
+      "80":
+        initialPath: /welcome
+        label: Web Service
+        serviceAccess: public
 {% endcodeblock %}
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
@@ -273,6 +281,20 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |memoryRetryMultiplier|float|Optional, default value is 2.  The retry will multiply the base memory request by this factor to get the retry memory request.|
 |memoryErrorRegex|string|Optional, a custom regex that, if found in the stdout, stderr or crunch-run logging of a program, will trigger a retry with greater RAM.  If not provided, the default pattern matches "out of memory" (with or without spaces), "memory error" (with or without spaces), "bad_alloc" and "container using over 90% of memory".|
+
+h2(#PublishPorts). arv:PublishPorts
+
+This extension submits the container request to Arvados as a service with the specified ports exposed. Refer to the "container request published ports documentation":{{ site.baseurl }}/api/methods/container_requests.html#published_ports for background. You will usually want to apply this as a hint on specific tools, or a requirement if the step only makes sense as a service container.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|publishPorts|key-value&nbsp;map|Each key is a string that identifies a port 1–65535 (inclusive) where the container runs a service. Each value follows the schema below.|
+
+table(table table-bordered table-condensed).
+|_. Value Field |_. Type |_. Description |
+|initialPath|string|Optional. Clients like Workbench will use this path for the user's initial connection to the service.|
+|label|string|A brief descriptive name for this service. Clients like Workbench display this label in the connection interface.|
+|serviceAccess|enum|One of "public" or "private". If "private", Arvados will require clients to provide an authorized @arvados_api_token@ parameter to connect to this service port.|
 
 h2. arv:dockerCollectionPDH
 
