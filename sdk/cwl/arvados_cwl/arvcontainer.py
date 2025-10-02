@@ -417,6 +417,9 @@ class ArvadosContainer(JobBase):
                 container_request["published_ports"] = pp
                 container_request["service"] = True
                 container_request["use_existing"] = False
+                # The container needs networking to publish ports.
+                # This is how we get that as of Arvados 3.2.0:
+                runtime_constraints["API"] = True
             else:
                 raise WorkflowException("Arvados API server does not support published_ports (requires Arvados 3.2+)")
 

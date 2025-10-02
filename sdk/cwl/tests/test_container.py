@@ -1188,6 +1188,7 @@ class TestContainer(unittest.TestCase):
                     },
                     'name': 'test_run_True',
                     'runtime_constraints': {
+                        'API': True,
                         'vcpus': 1,
                         'ram': 268435456
                     },
