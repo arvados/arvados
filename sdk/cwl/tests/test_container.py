@@ -1166,7 +1166,8 @@ class TestContainer(unittest.TestCase):
                     "publishPorts": [{
                         "servicePort": "80",
                         "serviceAccess": "private",
-                        "label": "Jupyter notebook"
+                        "label": "Jupyter notebook",
+                        "initialPath": "/?token=abcdefgh",
                     }]
                 }
             ]
@@ -1214,6 +1215,7 @@ class TestContainer(unittest.TestCase):
                     'published_ports': {
                         "80": {
                             "access": "private",
+                            "initial_path": "/?token=abcdefgh",
                             "label": "Jupyter notebook",
                         }
                     },

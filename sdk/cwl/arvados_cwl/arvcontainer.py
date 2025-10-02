@@ -411,6 +411,7 @@ class ArvadosContainer(JobBase):
                 for p in publish_port_req["publishPorts"]:
                     pp[p["servicePort"]] = {
                         "access": p["serviceAccess"],
+                        "initial_path": p.get("initialPath", ""),
                         "label": p["label"],
                     }
                 container_request["published_ports"] = pp

@@ -540,6 +540,10 @@ $graph:
     - name: label
       jsonldPredicate: "rdfs:label"
       type: string
+    - name: initialPath
+      type: string
+      doc: The path to use for initial connection to the service on this port
+      default: ""
 
 - name: PublishPorts
   type: record
