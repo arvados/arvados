@@ -7,7 +7,7 @@ import { Grid, Typography, Tooltip, IconButton, Checkbox, Chip } from "@mui/mate
 import withStyles from '@mui/styles/withStyles';
 import withTheme from '@mui/styles/withTheme';
 import { FavoriteStar, PublicFavoriteStar } from "../favorite-star/favorite-star";
-import { Resource, ResourceKind, TrashableResource } from "models/resource";
+import { NamedResource, Resource, ResourceKind, TrashableResource } from "models/resource";
 import {
     FreezeIcon,
     ProjectIcon,
@@ -35,7 +35,7 @@ import { GroupContentsResource } from "services/groups-service/groups-service";
 import { getProcess, Process, getProcessStatus, getProcessStatusStyles, getProcessRuntime } from "store/processes/process";
 import { ArvadosTheme } from "common/custom-theme";
 import { compose, Dispatch } from "redux";
-import { WorkflowResource } from "models/workflow";
+import { WorkflowResource, isWorkflowResource } from "models/workflow";
 import { ResourceStatus as WorkflowStatus } from "views/workflow-panel/workflow-panel-view";
 import { getUuidPrefix, openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
@@ -43,10 +43,10 @@ import { getUserFullname, getUserDisplayName, User, UserResource } from "models/
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
 import { withResourceData } from "views-components/data-explorer/with-resources";
-import { CollectionResource } from "models/collection";
+import { CollectionResource, isCollectionResource, isCollectionResourceLatestVersion } from "models/collection";
 import { IllegalNamingWarning } from "components/warning/warning";
 import { loadResource } from "store/resources/resources-actions";
-import { BuiltinGroups, getBuiltinGroupUuid, GroupClass, GroupResource, isBuiltinGroup } from "models/group";
+import { BuiltinGroups, getBuiltinGroupUuid, GroupResource, isBuiltinGroup, isFilterGroup, isUserGroup } from "models/group";
 import { openRemoveGroupMemberDialog } from "store/group-details-panel/group-details-panel-actions";
 import { setMemberIsHidden } from "store/group-details-panel/group-details-panel-actions";
 import { formatPermissionLevel } from "views-components/sharing-dialog/permission-select";
@@ -54,7 +54,7 @@ import { PermissionLevel } from "models/permission";
 import { openPermissionEditContextMenu } from "store/context-menu/context-menu-actions";
 import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
-import { ProjectResource } from "models/project";
+import { ProjectResource, isProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
 import { ExternalCredential, isExternalCredential } from "models/external-credential";
 import { ServiceRepository } from "services/services";
@@ -64,6 +64,7 @@ import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-fil
 import { CustomTheme } from "common/custom-theme";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
+import { isContainerRequestResource } from "models/container-request";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -75,8 +76,8 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource, isLink: boolean = true) => {
-    const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
+const renderName = (dispatch: Dispatch, item: NamedResource, isLink: boolean = true) => {
+    const navFunc = isUserGroup(item) ? navigateToGroupDetails : navigateTo;
     return (
         <Grid
             container
@@ -102,7 +103,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource, isLink: boo
                 <Typography variant="caption">
                     <FavoriteStar resourceUuid={item.uuid} />
                     <PublicFavoriteStar resourceUuid={item.uuid} />
-                    {item.kind === ResourceKind.PROJECT && <FrozenProject item={item} />}
+                    {isProjectResource(item) && <FrozenProject item={item} />}
                 </Typography>
             </Grid>
         </Grid>
@@ -133,34 +134,33 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
 };
 
 export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource, true));
+    const resource = getResource<NamedResource>(props.uuid)(state.resources);
+    return { resource };
+})((props: {resource?: NamedResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, true) : null);
 
 export const ResourceNameNoLink = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource, false));
+    const resource = getResource<NamedResource>(props.uuid)(state.resources);
+    return { resource };
+})((props: {resource?: NamedResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, false) : null);
 
-export const renderIcon = (item: GroupContentsResource) => {
-    if (isExternalCredential(item)) {
-        return <FolderKeyIcon />;
-    }
-    switch (item.kind) {
-        case ResourceKind.PROJECT:
-            if (item.groupClass === GroupClass.FILTER) {
+export const renderIcon = (item: Resource) => {
+    switch (true) {
+        case isProjectResource(item):
+            if (isFilterGroup(item)) {
                 return <FilterGroupIcon />;
             }
             return <ProjectIcon />;
-        case ResourceKind.COLLECTION:
-            if (item.uuid === item.currentVersionUuid) {
+        case isCollectionResource(item):
+            if (isCollectionResourceLatestVersion(item)) {
                 return <CollectionIcon />;
             }
             return <CollectionOldVersionIcon />;
-        case ResourceKind.PROCESS:
+        case isContainerRequestResource(item):
             return <ProcessIcon />;
-        case ResourceKind.WORKFLOW:
+        case isWorkflowResource(item):
             return <WorkflowIcon />;
+        case isExternalCredential(item):
+            return <FolderKeyIcon />;
         default:
             return <DefaultIcon />;
     }
@@ -553,7 +553,7 @@ export const ResourceCluster = connect((state: RootState, props: { uuid: string 
 })(renderClusterBadge);
 
 function renderClusterBadge(badge: ClusterBadge) {
-    
+
     const style = {
         backgroundColor: badge.backgroundColor,
         color: badge.color,
