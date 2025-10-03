@@ -5,7 +5,7 @@
 import { Resource, ResourceKind } from "./resource";
 
 export interface ExternalCredential extends Resource {
-    uuid: string;
+    kind: ResourceKind.EXTERNAL_CREDENTIAL;
     name: string;
     description?: string;
     credentialClass: string;
@@ -13,7 +13,6 @@ export interface ExternalCredential extends Resource {
     externalId: string;
     secret: string;
     expiresAt: string;
-    kind: ResourceKind.EXTERNAL_CREDENTIAL;
 };
 
 export const isExternalCredential = (res: Resource): res is ExternalCredential => {
