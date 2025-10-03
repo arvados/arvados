@@ -50,6 +50,7 @@ describe('DatePicker Component', () => {
     });
 
     it('disables past dates when disablePast is true', () => {
+        cy.clock(new Date(2025, 9, 15));
         cy.mount(
             <DatePicker
                 {...defaultProps}
@@ -59,9 +60,8 @@ describe('DatePicker Component', () => {
 
         cy.get('button').click();
 
-        const yesterday = moment().subtract(1, 'day').format('D');
         // MUI uses 'disabled="disabled"' instead of 'disabled={true}'
-        cy.get('div[role="dialog"]').contains(yesterday).should('have.attr', 'disabled', 'disabled');
+        cy.get('div[role="dialog"] [role=row] [role=gridcell]').contains('14').should('have.attr', 'disabled', 'disabled');
     });
 
     it('calls onChange when date is selected', () => {
