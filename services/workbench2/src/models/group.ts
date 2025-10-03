@@ -50,14 +50,22 @@ export const isUserGroup = (resource: any): resource is GroupResource => {
     return resource && resource.kind === ResourceKind.GROUP && resource.groupClass === GroupClass.ROLE;
 };
 
-export const isGroupResource = (resource: Resource): resource is GroupResource => {
-    return resource && resource.kind === ResourceKind.GROUP;
+export const isRoleGroup = (resource?: Resource) => {
+    return isGroupResource(resource) && resource.groupClass === GroupClass.ROLE;
+};
+
+export const isFilterGroup = (resource?: Resource) => {
+    return isGroupResource(resource) && resource.groupClass === GroupClass.FILTER;
+};
+
+export const isGroupResource = (resource?: Resource): resource is GroupResource => {
+    return !!resource && resource.kind === ResourceKind.GROUP;
 };
 
 type GroupMemberLink = LinkResource & { linkClass: LinkClass.PERMISSION, headKind: ResourceKind.GROUP };
 
-export const isGroupMemberLink = (resource: Resource | LinkResource): resource is GroupMemberLink => {
-    return resource
+export const isGroupMemberLink = (resource?: Resource | LinkResource): resource is GroupMemberLink => {
+    return !!resource
         && resource.kind === ResourceKind.LINK
         && 'linkClass' in resource
         && 'headKind' in resource

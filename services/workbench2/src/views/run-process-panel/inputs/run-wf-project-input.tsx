@@ -108,7 +108,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                 });
             }
             // load user root project if not already loaded
-            if (this.props.userUuid && (!this.props.userRootProject || !isUserResource(this.props.userRootProject)  || !('firstName' in this.props.userRootProject))) {
+            if (this.props.userUuid && (!isUserResource(this.props.userRootProject) || !('firstName' in this.props.userRootProject))) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
             }
             // open dialog automatically when input mounts

@@ -15,6 +15,6 @@ export interface ExternalCredential extends Resource {
     expiresAt: string;
 };
 
-export const isExternalCredential = (res: Resource): res is ExternalCredential => {
-    return res.kind === ResourceKind.EXTERNAL_CREDENTIAL;
+export const isExternalCredential = (resource?: Resource): resource is ExternalCredential => {
+    return !!resource && resource.kind === ResourceKind.EXTERNAL_CREDENTIAL;
 };

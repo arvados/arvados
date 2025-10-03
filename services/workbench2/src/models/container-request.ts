@@ -84,6 +84,10 @@ export const containerRequestFieldsNoMounts = [
     "uuid",
 ];
 
+export const isContainerRequestResource = (resource?: Resource): resource is ContainerRequestResource => {
+    return !!resource && resource.kind === ResourceKind.CONTAINER_REQUEST;
+};
+
 export interface ContainerStatus {
     uuid: string;
     state: string;
