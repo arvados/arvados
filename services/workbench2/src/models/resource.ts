@@ -116,8 +116,8 @@ export const extractUuidKind = (uuid: string = '') => {
     }
 };
 
-export const isResourceResource = (resource: any): resource is Resource => {
-    return resource && isResourceUuid(resource.uuid) && containsAllResourceProps(resource);
+export const isResourceResource = (resource?: any): resource is Resource => {
+    return !!resource && isResourceUuid(resource.uuid) && containsAllResourceProps(resource);
 };
 
 const containsAllResourceProps = (obj: any) => {
