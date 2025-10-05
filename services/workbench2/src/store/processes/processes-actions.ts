@@ -260,6 +260,8 @@ export const getOutputParameters = (data: any): CommandOutputParameter[] => {
         : [];
 };
 
+export const REMOVE_PROCESS_DIALOG = "removeProcessDialog";
+
 export const openRemoveProcessDialog =
     (resource: ContextMenuResource, numOfProcesses: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const confirmationText =
@@ -282,7 +284,22 @@ export const openRemoveProcessDialog =
         );
     };
 
-export const REMOVE_PROCESS_DIALOG = "removeProcessDialog";
+export const CANCEL_PROCESS_DIALOG = "cancelProcessDialog";
+
+export const openCancelProcesswDialog = (uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    dispatch(
+        dialogActions.OPEN_DIALOG({
+            id: CANCEL_PROCESS_DIALOG,
+            data: {
+                title: "Cancel process",
+                text: "Are you sure you want to cancel this process?",
+                cancelButtonLabel: "Back",
+                confirmButtonLabel: "Confirm",
+                uuid,
+            },
+        })
+    );
+};
 
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const currentProcessPanelUuid = getProcessPanelCurrentUuid(getState().router);

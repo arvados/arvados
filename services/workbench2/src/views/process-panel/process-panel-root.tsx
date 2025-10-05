@@ -69,11 +69,7 @@ export interface ProcessPanelRootDataProps {
 }
 
 export interface ProcessPanelRootActionProps {
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, process: Process) => void;
     onToggle: (status: string) => void;
-    cancelProcess: (uuid: string) => void;
-    startProcess: (uuid: string) => void;
-    resumeOnHoldWorkflow: (uuid: string) => void;
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
     onCopyToClipboard: (uuid: string) => void;
@@ -110,10 +106,6 @@ export const ProcessPanelRoot = withStyles(styles)(({
     updateOutputParams,
     pollProcessLogs,
     refreshProcess,
-    onContextMenu,
-    cancelProcess,
-    startProcess,
-    resumeOnHoldWorkflow,
     ...props
 }: ProcessPanelRootProps & RouteComponentProps<{ id: string }>) => {
     const process = getProcess(props.match.params.id)(resources);

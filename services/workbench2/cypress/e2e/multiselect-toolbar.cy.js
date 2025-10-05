@@ -795,6 +795,7 @@ describe('For process resources', () => {
 
             //Cancel process first to avoid unnecessary log polling
             cy.get('[aria-label="Cancel"]').click();
+            cy.get('[data-cy="confirmation-dialog-ok-btn"]').click();
             cy.assertToolbarButtons(tooltips.adminOnHoldProcess);
 
 
