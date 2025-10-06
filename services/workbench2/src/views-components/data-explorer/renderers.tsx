@@ -143,26 +143,25 @@ export const ResourceNameNoLink = connect((state: RootState, props: { uuid: stri
     return { resource };
 })((props: {resource?: NamedResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, false) : null);
 
-export const renderIcon = (item: Resource) => {
-    switch (true) {
-        case isProjectResource(item):
-            if (isFilterGroup(item)) {
-                return <FilterGroupIcon />;
-            }
-            return <ProjectIcon />;
-        case isCollectionResource(item):
-            if (isCollectionResourceLatestVersion(item)) {
-                return <CollectionIcon />;
-            }
-            return <CollectionOldVersionIcon />;
-        case isContainerRequestResource(item):
-            return <ProcessIcon />;
-        case isWorkflowResource(item):
-            return <WorkflowIcon />;
-        case isExternalCredential(item):
-            return <FolderKeyIcon />;
-        default:
-            return <DefaultIcon />;
+export const renderIcon = (item: Resource): JSX.Element => {
+    if (isProjectResource(item)) {
+        if (isFilterGroup(item)) {
+            return <FilterGroupIcon />;
+        }
+        return <ProjectIcon />;
+    } else if (isCollectionResource(item)) {
+        if (isCollectionResourceLatestVersion(item)) {
+            return <CollectionIcon />;
+        }
+        return <CollectionOldVersionIcon />;
+    } else if (isContainerRequestResource(item)) {
+        return <ProcessIcon />;
+    } else if (isWorkflowResource(item)) {
+        return <WorkflowIcon />;
+    } else if (isExternalCredential(item)) {
+        return <FolderKeyIcon />;
+    } else {
+        return <DefaultIcon />;
     }
 };
 
