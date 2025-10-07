@@ -27,14 +27,7 @@ requirements:
       RUN pip install --no-cache-dir "arvados-cluster-activity[prometheus]"
     dockerImageId: arvados/cluster-activity
 
-  InitialWorkDirRequirement:
-    listing:
-      - entryname: prometheus.env
-        entry: |
-          PROMETHEUS_HOST=$(inputs.prometheus_host)
-          PROMETHEUS_APIKEY=$(inputs.prometheus_apikey)
-          PROMETHEUS_USER=$(inputs.prometheus_user)
-          PROMETHEUS_PASSWORD=$(inputs.prometheus_password)
+  InlineJavascriptRequirement: {}
 
   arv:APIRequirement: {}
 
@@ -43,6 +36,10 @@ requirements:
 
   EnvVarRequirement:
     envDef:
+      PROMETHEUS_APIKEY: "$(inputs.prometheus_apikey || '')"
+      PROMETHEUS_HOST: "$(inputs.prometheus_host || '')"
+      PROMETHEUS_PASSWORD: "$(inputs.prometheus_password || '')"
+      PROMETHEUS_USER: "$(inputs.prometheus_user || '')"
       REQUESTS_CA_BUNDLE: /etc/arvados/ca-certificates.crt
 
 hints:
@@ -51,7 +48,6 @@ hints:
 
 arguments:
   - arv-cluster-activity
-  - {prefix: '--prometheus-auth', valueFrom: prometheus.env}
   - {prefix: '--days', valueFrom: $(inputs.reporting_days)}
   - {prefix: '--start', valueFrom: $(inputs.reporting_start)}
   - {prefix: '--end', valueFrom: $(inputs.reporting_end)}
