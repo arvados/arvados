@@ -4,6 +4,4 @@
 
 include agpl-3.0.txt
 include arvados_version.py
-include arvados_cluster_activity/dygraphs.js
-include arvados_cluster_activity/synchronizer.js
-include arvados_cluster_activity/sortable.js
+include arvados_cluster_activity/*.js
