@@ -13,7 +13,7 @@ inputs:
   reporting_days: int?
   reporting_start: string?
   reporting_end: string?
-  prometheus_host: string
+  prometheus_host: string?
   prometheus_apikey: string?
   prometheus_user: string?
   prometheus_password: string?
