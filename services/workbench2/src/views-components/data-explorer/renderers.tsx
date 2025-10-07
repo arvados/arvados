@@ -149,20 +149,23 @@ export const renderIcon = (item: Resource): JSX.Element => {
             return <FilterGroupIcon />;
         }
         return <ProjectIcon />;
-    } else if (isCollectionResource(item)) {
+    }
+    if (isCollectionResource(item)) {
         if (isCollectionResourceLatestVersion(item)) {
             return <CollectionIcon />;
         }
         return <CollectionOldVersionIcon />;
-    } else if (isContainerRequestResource(item)) {
-        return <ProcessIcon />;
-    } else if (isWorkflowResource(item)) {
-        return <WorkflowIcon />;
-    } else if (isExternalCredential(item)) {
-        return <FolderKeyIcon />;
-    } else {
-        return <DefaultIcon />;
     }
+    if (isContainerRequestResource(item)) {
+        return <ProcessIcon />;
+    }
+    if (isWorkflowResource(item)) {
+        return <WorkflowIcon />;
+    }
+    if (isExternalCredential(item)) {
+        return <FolderKeyIcon />;
+    }
+    return <DefaultIcon />;
 };
 
 const renderDateTime = (date?: string) => {
