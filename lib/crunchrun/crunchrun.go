@@ -2222,7 +2222,12 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 	ccfg.Collections.BlobTrashConcurrency = 0
 	ccfg.Collections.BlobDeleteConcurrency = 0
 
-	localaddr := localKeepstoreAddr()
+	addrs, err := processIPs(os.Getpid())
+	if err != nil {
+		fmt.Fprintf(logbuf, "warning: could not get list of host IP addresses: %v\n", err)
+		// ...and proceed with zero IPs
+	}
+	localaddr := localKeepstoreAddr(addrs)
 	ln, err := net.Listen("tcp", net.JoinHostPort(localaddr, "0"))
 	if err != nil {
 		return nil, err
@@ -2330,10 +2335,8 @@ func currentUserAndGroups() string {
 // service. Currently this is the numerically lowest non-loopback ipv4
 // address assigned to a local interface that is not in any of the
 // link-local/vpn/loopback ranges 169.254/16, 100.64/10, or 127/8.
-func localKeepstoreAddr() string {
+func localKeepstoreAddr(addrs map[string]bool) string {
 	var ips []net.IP
-	// Ignore error (proceed with zero IPs)
-	addrs, _ := processIPs(os.Getpid())
 	for addr := range addrs {
 		ip := net.ParseIP(addr)
 		if ip == nil {
@@ -2341,7 +2344,6 @@ func localKeepstoreAddr() string {
 			continue
 		}
 		if ip.Mask(net.CIDRMask(8, 32)).Equal(net.IPv4(127, 0, 0, 0)) ||
-			ip.Mask(net.CIDRMask(10, 32)).Equal(net.IPv4(100, 64, 0, 0)) ||
 			ip.Mask(net.CIDRMask(16, 32)).Equal(net.IPv4(169, 254, 0, 0)) {
 			// unsuitable
 			continue
@@ -2354,16 +2356,30 @@ func localKeepstoreAddr() string {
 	sort.Slice(ips, func(ii, jj int) bool {
 		i, j := ips[ii], ips[jj]
 		if len(i) != len(j) {
+			// Prefer IPv4 over IPv6.
 			return len(i) < len(j)
+		}
+		if icg, jcg := isCGNAT(i), isCGNAT(j); icg != jcg {
+			// Prefer non-CGNAT over CGNAT, so that when
+			// there is a Tailscale VPN address as well as
+			// a routable address, we choose the routable
+			// address.
+			return icg == false
 		}
 		for x := range i {
 			if i[x] != j[x] {
+				// Prefer lower IP number, just to
+				// make the result predictable.
 				return i[x] < j[x]
 			}
 		}
 		return false
 	})
 	return ips[0].String()
+}
+
+func isCGNAT(ip net.IP) bool {
+	return ip.Mask(net.CIDRMask(10, 32)).Equal(net.IPv4(100, 64, 0, 0))
 }
 
 func (cr *ContainerRunner) loadPrices() {
