@@ -22,7 +22,10 @@ inputs:
 
 requirements:
   DockerRequirement:
-    dockerPull: 'arvados/cluster-activity'
+    dockerFile: |
+      FROM python:3.11-slim-bookworm
+      RUN pip install --no-cache-dir "arvados-cluster-activity[prometheus]"
+    dockerImageId: arvados/cluster-activity
 
   InitialWorkDirRequirement:
     listing:
