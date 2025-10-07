@@ -133,6 +133,7 @@ func newEC2InstanceSet(confRaw json.RawMessage, instanceSetID cloud.InstanceSetI
 		return nil, err
 	}
 	awsConfig, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRetryer(func() aws.Retryer { return aws.NopRetryer{} }),
 		config.WithRegion(instanceSet.ec2config.Region),
 		config.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
 			o.ExpiryWindow = 5 * time.Minute
