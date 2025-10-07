@@ -4,4 +4,5 @@
 
 include agpl-3.0.txt
 include arvados_version.py
+include *.cwl
 include arvados_cluster_activity/*.js
