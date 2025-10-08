@@ -2,6 +2,11 @@
 --
 -- SPDX-License-Identifier: AGPL-3.0
 
+\restrict HGO4yNUclEhxIP5CzUsu4ybDjISwsqow5FefBiuLVPEeCAw4Xcv9dPiopE6nOpS
+
+-- Dumped from database version 14.19 (Ubuntu 14.19-0ubuntu0.22.04.1)
+-- Dumped by pg_dump version 14.19 (Ubuntu 14.19-0ubuntu0.22.04.1)
+
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
@@ -691,7 +696,12 @@ CREATE TABLE public.credentials (
     scopes jsonb DEFAULT '[]'::jsonb,
     external_id character varying,
     secret text,
-    expires_at timestamp(6) without time zone NOT NULL
+    expires_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT credentials_credential_class_not_null CHECK ((credential_class IS NOT NULL)),
+    CONSTRAINT credentials_expires_at_not_null CHECK ((expires_at IS NOT NULL)),
+    CONSTRAINT credentials_external_id_not_null CHECK ((external_id IS NOT NULL)),
+    CONSTRAINT credentials_name_not_null CHECK ((name IS NOT NULL)),
+    CONSTRAINT credentials_secret_not_null CHECK ((secret IS NOT NULL))
 );
 
 
@@ -3225,9 +3235,12 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 -- PostgreSQL database dump complete
 --
 
+\unrestrict HGO4yNUclEhxIP5CzUsu4ybDjISwsqow5FefBiuLVPEeCAw4Xcv9dPiopE6nOpS
+
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251006181234'),
 ('20250527181323'),
 ('20250426201300'),
 ('20250422103000'),
