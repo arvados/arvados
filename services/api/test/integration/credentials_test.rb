@@ -300,6 +300,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
       name: "Name",
       credential_class: "Credential class",
       external_id: "External",
+      secret: "Secret",
       expires_at: "Expires at",
     }
 

@@ -7,7 +7,7 @@ class Credential < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
-  validates :name, :credential_class, :external_id, :expires_at, presence: true
+  validates :name, :credential_class, :external_id, :secret, :expires_at, presence: true
 
   attribute :scopes, :jsonbArray, default: []
 
