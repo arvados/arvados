@@ -286,20 +286,39 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_match(/RecordNotUnique/, json_response["errors"][0])
   end
 
-  test "credential expires_at must be set" do
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password"
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/NotNullViolation/, json_response["errors"][0])
+  test "credential required fields must be set" do
+    test_credential = {
+      name: "test credential",
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now + 2.weeks
+    }
+
+    field_error_msg_hash = {
+      name: "Name",
+      credential_class: "Credential class",
+      external_id: "External",
+      expires_at: "Expires at",
+    }
+
+    field_error_msg_hash.each do |field, error_msg|
+
+      post "/arvados/v1/credentials",
+        params: {
+          format: :json,
+          credential: test_credential.except(field)
+        },
+        headers: auth(:active),
+        as: :json
+
+      assert_response 422
+      assert_match(
+        /^#{error_msg} can't be blank \(req-[^)]+\)$/,
+        json_response["errors"].first,
+        "Expected validation error for missing field '#{field}'"
+      )
+    end
   end
 end
