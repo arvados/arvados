@@ -182,7 +182,11 @@ func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 // instance's ProviderType.  Use ProviderTypes like "a1", "a2", "b1",
 // "b2" to test instance quota group behaviors.
 func (sis *StubInstanceSet) InstanceQuotaGroup(it arvados.InstanceType) cloud.InstanceQuotaGroup {
-	return cloud.InstanceQuotaGroup(it.ProviderType[:1])
+	suffix := ""
+	if it.Preemptible {
+		suffix = "-p"
+	}
+	return cloud.InstanceQuotaGroup(it.ProviderType[:1] + suffix)
 }
 
 func (sis *StubInstanceSet) Stop() {
