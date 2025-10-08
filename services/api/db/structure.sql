@@ -3225,6 +3225,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 -- PostgreSQL database dump complete
 --
 
+
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
