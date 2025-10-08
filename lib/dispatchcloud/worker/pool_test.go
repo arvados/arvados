@@ -392,12 +392,24 @@ func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 	// instance families here, "a" and "b".
 	typeA1 := test.InstanceType(1)
 	typeA1.ProviderType = "a1"
+	typeA1p := test.InstanceType(1)
+	typeA1p.Name += "-p"
+	typeA1p.Preemptible = true
+	typeA1p.ProviderType = "a1"
 	typeA2 := test.InstanceType(2)
 	typeA2.ProviderType = "a2"
 	typeB3 := test.InstanceType(3)
 	typeB3.ProviderType = "b3"
+	typeB3p := test.InstanceType(3)
+	typeB3p.Name += "-p"
+	typeB3p.Preemptible = true
+	typeB3p.ProviderType = "b3"
 	typeB4 := test.InstanceType(4)
 	typeB4.ProviderType = "b4"
+	typeB4p := test.InstanceType(4)
+	typeB4p.Name += "-p"
+	typeB4p.Preemptible = true
+	typeB4p.ProviderType = "b4"
 
 	pool := &Pool{
 		logger:      suite.logger,
@@ -405,14 +417,15 @@ func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 		cluster:     suite.testCluster,
 		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
-			typeA1.Name: typeA1,
-			typeA2.Name: typeA2,
-			typeB3.Name: typeB3,
-			typeB4.Name: typeB4,
+			typeA1.Name:  typeA1,
+			typeA1p.Name: typeA1p,
+			typeA2.Name:  typeA2,
+			typeB3.Name:  typeB3,
+			typeB4.Name:  typeB4,
 		},
 	}
 
-	// Arrange for the driver to fail when the pool calls
+	// Arrange for a quota-group-specific error on next
 	// instanceSet.Create().
 	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceQuotaGroupSpecific: true} }
 	// pool.Create() returns true when it starts a goroutine to
@@ -426,20 +439,36 @@ func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 		}
 	}
 
+	// Arrange for a type-specific error on next
+	// instanceSet.Create().
+	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceTypeSpecific: true} }
+	c.Check(pool.Create(typeB4p), check.Equals, true)
+	for deadline := time.Now().Add(time.Second); !pool.AtCapacity(typeB4p); time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			c.Fatal("timed out waiting for pool to report quota")
+		}
+	}
+
 	// The pool should now report AtCapacity for the affected
-	// instance family (A1, A2) and refuse to call
-	// instanceSet.Create() for those types -- but other types
-	// (B3, B4) are still usable.
+	// instance family (A1, A2) and specific instance type B4p,
+	// and refuse to call instanceSet.Create() for those types --
+	// but types A1p, B3, B4, and B3p are still usable.
 	driver.SetupVM = func(*test.StubVM) error { return nil }
 	c.Check(pool.AtCapacity(typeA1), check.Equals, true)
+	c.Check(pool.AtCapacity(typeA1p), check.Equals, false)
 	c.Check(pool.AtCapacity(typeA2), check.Equals, true)
 	c.Check(pool.AtCapacity(typeB3), check.Equals, false)
+	c.Check(pool.AtCapacity(typeB3p), check.Equals, false)
 	c.Check(pool.AtCapacity(typeB4), check.Equals, false)
+	c.Check(pool.AtCapacity(typeB4p), check.Equals, true)
 	c.Check(pool.Create(typeA2), check.Equals, false)
 	c.Check(pool.Create(typeB3), check.Equals, true)
+	c.Check(pool.Create(typeB3p), check.Equals, true)
 	c.Check(pool.Create(typeB4), check.Equals, true)
+	c.Check(pool.Create(typeB4p), check.Equals, false)
 	c.Check(pool.Create(typeA2), check.Equals, false)
 	c.Check(pool.Create(typeA1), check.Equals, false)
+	c.Check(pool.Create(typeA1p), check.Equals, true)
 }
 
 func (suite *PoolSuite) instancesByType(pool *Pool, it arvados.InstanceType) []InstanceView {

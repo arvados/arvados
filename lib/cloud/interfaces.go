@@ -165,6 +165,10 @@ type InstanceSet interface {
 
 	// Return the instance quota group of the given instance type.
 	// See (CapacityError)IsInstanceQuotaGroupSpecific().
+	//
+	// This should return different values for preemptible and
+	// non-preemptible instance types, since they surely have
+	// separate quotas.
 	InstanceQuotaGroup(arvados.InstanceType) InstanceQuotaGroup
 
 	// Stop any background tasks and release other resources.
