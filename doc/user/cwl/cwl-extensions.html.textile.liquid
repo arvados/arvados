@@ -294,7 +294,7 @@ table(table table-bordered table-condensed).
 |_. Value Field |_. Type |_. Description |
 |initialPath|string|Optional. Clients like Workbench will use this path for the user's initial connection to the service.|
 |label|string|A brief descriptive name for this service. Clients like Workbench display this label in the connection interface.|
-|serviceAccess|enum|One of "public" or "private". If "private", Arvados will require clients to provide an authorized @arvados_api_token@ parameter to connect to this service port.|
+|serviceAccess|enum|One of "public" or "private". If "private", Arvados will require clients to provide an @arvados_api_token@ parameter from a user who submitted the workflow to connect to this service port.|
 
 h2. arv:dockerCollectionPDH
 
