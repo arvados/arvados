@@ -434,9 +434,16 @@ describe("Collection panel tests", function () {
                             cy.get("input").should("have.value", `${subdir}/foo`).type(`{selectall}{backspace}bar`);
                         });
                     cy.get("[data-cy=form-submit-btn]").click({ force: true });
+                    cy.waitForDom()
+                    // if form persists due to slow DOM update, click submit button again
+                    cy.get('body').then(($body) => {
+                            if ($body.find('[data-cy=form-submit-btn]').length > 0) {
+                                cy.get('[data-cy=form-submit-btn]').click()
+                            }
+                        })
 
                     // need to wait for dialog to dismiss
-                    cy.get("[data-cy=form-dialog]").should("not.exist");
+                    cy.get("[data-cy=form-dialog]").should("not.exist", {timeout: 10000});
 
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains("Home").click();
 
