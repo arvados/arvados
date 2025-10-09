@@ -82,6 +82,13 @@ class MountTestBase(unittest.TestCase):
         llfuse.close()
 
     def make_mount(self, root_class, fuse_options=None, **root_kwargs):
+        if True:
+            arvados.logger.setLevel(logging.DEBUG)
+            logging.getLogger('arvados.keep').setLevel(logging.DEBUG)
+            logging.getLogger('arvados.api').setLevel(logging.DEBUG)
+            logging.getLogger('arvados.collection').setLevel(logging.DEBUG)
+            logging.getLogger('arvados.arv_mount').setLevel(logging.DEBUG)
+            logger.debug("arv-mount debugging enabled")
         if fuse_options is None:
             fuse_options = []
         enable_write = root_kwargs.pop('enable_write', True)

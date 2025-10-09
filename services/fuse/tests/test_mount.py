@@ -1501,13 +1501,13 @@ class DockerRaceTest(MountTestBase):
     """
 
     def runTest(self):
-        self.make_mount(fuse.TmpCollectionDirectory, fuse_options=["allow_other"])
+        self.make_mount(fuse.TmpCollectionDirectory, fuse_options=["allow_other", "debug"])
         os.chmod(self.mounttmp, 0o755)
         with tempfile.NamedTemporaryFile(suffix='.sh') as scriptfile:
             scriptfile.write(b"#!/bin/sh\necho OK\n")
             scriptfile.flush()
             os.chmod(scriptfile.name, 0o755)
-            for _ in range(10):
+            for _ in range(500):
                 dockerrun = subprocess.run(
                     ["docker", "run",
                      "--rm",
