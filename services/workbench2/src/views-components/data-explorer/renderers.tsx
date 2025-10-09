@@ -25,6 +25,7 @@ import {
     InactiveIcon,
     ErrorIcon,
     FolderKeyIcon,
+    RootProjectIcon,
 } from "components/icon/icon";
 import { formatDateTime, formatFileSize, formatTime, formatDateOnly, isElapsed, isWithinExpiration, daysRemaining } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -39,7 +40,7 @@ import { WorkflowResource, isWorkflowResource } from "models/workflow";
 import { ResourceStatus as WorkflowStatus } from "views/workflow-panel/workflow-panel-view";
 import { getUuidPrefix, openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
-import { getUserFullname, getUserDisplayName, User, UserResource } from "models/user";
+import { getUserFullname, getUserDisplayName, User, UserResource, isUserResource } from "models/user";
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
 import { withResourceData } from "views-components/data-explorer/with-resources";
@@ -135,6 +136,9 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
 
 export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<NamedResource>(props.uuid)(state.resources);
+    if (isUserResource(resource)) {
+        resource.name = resource.firstName + ' ' + resource.lastName;
+    }
     return { resource };
 })((props: {resource?: NamedResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, true) : null);
 
@@ -164,6 +168,9 @@ export const renderIcon = (item: Resource): JSX.Element => {
     }
     if (isExternalCredential(item)) {
         return <FolderKeyIcon />;
+    }
+    if (isUserResource(item)) {
+        return <RootProjectIcon />;
     }
     return <DefaultIcon />;
 };

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { ProjectsIcon } from 'components/icon/icon';
+import { RootProjectIcon } from 'components/icon/icon';
 import { formatDateTime } from 'common/formatters';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
@@ -21,7 +21,7 @@ import { UserResourceFullName } from 'views-components/data-explorer/renderers';
 
 export class RootProjectDetails extends DetailsData<UserResource> {
     getIcon(className?: string) {
-        return <ProjectsIcon className={className} />;
+        return <RootProjectIcon className={className} />;
     }
 
     getDetails() {
