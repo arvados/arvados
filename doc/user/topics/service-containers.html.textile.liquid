@@ -29,7 +29,7 @@ Arvados 3.2.0 introduces service containers. If your container runs a web servic
 Services can have different access levels:
 
 * If you expose a public service, Arvados will let anyone connect to it.
-* If you expose a private service, Arvados will require the initial connection to provide an Arvados API token with permission to see the running container. Arvados will refuse any connections without a valid token.
+* If you expose a private service, Arvados will require the initial connection to provide an Arvados API token from a user who requested this container. Arvados will refuse any other connections.
 
 h2(#limitations). Limitations
 
@@ -278,7 +278,7 @@ If @state@ is @Committed@ but @container_uuid@ is @null@, then your request has 
 </code></pre>
 </notextile>
 
-For each service, the @initial_url@ provides the URL where you can connect to the corresponding service over HTTP. If @access@ is @private@, you should add an @arvados_api_token@ query parameter that's authorized to read this container. For example, if the container's published port above had @"access":"private"@, the full URL to connect to it would look like:
+For each service, the @initial_url@ provides the URL where you can connect to the corresponding service over HTTP. If @access@ is @private@, you should add an @arvados_api_token@ query parameter for a user who requested this container. For example, if the container's published port above had @"access":"private"@, the full URL to connect to it would look like:
 
 <notextile>
 <pre>https://zzzzz.arvados.example:8900/<span class="userinput">?arvados_api_token=v2/zzzzz-gj3su-y2tncmjag9gajm8/1234567890</span></pre>
