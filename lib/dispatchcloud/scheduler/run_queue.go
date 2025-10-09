@@ -231,10 +231,11 @@ tryrun:
 		var availableOK bool
 		var availableType arvados.InstanceType
 		for _, it := range types {
-			if atcapacity[it.ProviderType] {
+			capkey := fmt.Sprintf("%s, preemptible=%v", it.ProviderType, it.Preemptible)
+			if atcapacity[capkey] {
 				continue
 			} else if sch.pool.AtCapacity(it) {
-				atcapacity[it.ProviderType] = true
+				atcapacity[capkey] = true
 				continue
 			} else {
 				availableOK = true
