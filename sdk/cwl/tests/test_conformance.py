@@ -23,7 +23,7 @@ def _ensure_git_clone(git_dir, url, ref):
         cwd=git_dir,
         check=True,
     )
-    return git_dir
+    yield git_dir
 
 
 def _ensure_git_worktree(git_dir, work_ref):
@@ -57,9 +57,9 @@ def _ensure_git(tmp_path_factory, url, ref, remote_name=None):
         text=True,
     )
     if rev_parse.returncode == os.EX_OK:
-        return _ensure_git_worktree(git_dir, rev_parse.stdout.rstrip('\n'))
+        yield from _ensure_git_worktree(git_dir, rev_parse.stdout.rstrip('\n'))
     else:
-        return _ensure_git_clone(git_dir, url, ref)
+        yield from _ensure_git_clone(git_dir, url, ref)
 
 
 @pytest.fixture
@@ -69,7 +69,7 @@ def badges_dir(request, tmp_path):
 
 @pytest.fixture(scope='session')
 def cwl1_0git(tmp_path_factory):
-    return _ensure_git(
+    yield from _ensure_git(
         tmp_path_factory,
         'https://github.com/common-workflow-language/common-workflow-language.git',
         'tags/v1.0.2',
@@ -79,7 +79,7 @@ def cwl1_0git(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def cwl1_1git(tmp_path_factory):
-    return _ensure_git(
+    yield from _ensure_git(
         tmp_path_factory,
         'https://github.com/common-workflow-language/cwl-v1.1.git',
         '3e90671b25f7840ef2926ad2bacbf447772dda94',
@@ -88,7 +88,7 @@ def cwl1_1git(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def cwl1_2git(tmp_path_factory):
-    return _ensure_git(
+    yield from _ensure_git(
         tmp_path_factory,
         'https://github.com/common-workflow-language/cwl-v1.2.git',
         'tags/v1.2.1',
