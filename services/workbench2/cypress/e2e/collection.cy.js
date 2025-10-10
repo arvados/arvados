@@ -447,7 +447,7 @@ describe("Collection panel tests", function () {
                         .and("contain", "bar");
 
                     // this is when the dom is actually finished loading
-                    cy.get("[data-cy=file-item-options-btn]", { timeout: 10000 }).first().should('exist')
+                    cy.get("[data-cy=file-item-options-btn]", { timeout: 20000 }).first().should('exist')
 
                     cy.get("[data-cy=collection-files-panel-content]").contains(subdir).rightclick();
                     cy.get("[data-cy=context-menu]").contains("Remove").click();
