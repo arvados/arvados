@@ -52,7 +52,7 @@ def _ensure_git(tmp_path_factory, url, ref, remote_name=None):
         remote_name = PurePosixPath(url_path).stem
     git_dir = tmp_path_factory.mktemp(f'{remote_name}_{ref.replace("/", "_")}_')
     rev_parse = subprocess.run(
-        ['git', 'rev-parse', f'remotes/{remote_name}/ci-build', '--'],
+        ['git', 'rev-parse', '--verify', f'remotes/{remote_name}/ci-build'],
         capture_output=True,
         text=True,
     )
