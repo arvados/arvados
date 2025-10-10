@@ -34,13 +34,15 @@ import { sortBy } from "lodash";
 import { formatFileSize } from "common/formatters";
 import { getInlineFileUrl, sanitizeToken } from "views-components/context-menu/actions/helpers";
 import { extractUuidKind, ResourceKind } from "models/resource";
-import { CollectionFile } from "models/collection-file";
+import { CollectionFile, CollectionDirectory } from "models/collection-file";
+
+type CollectionFilesTreeItem = { id: string, data: CollectionFile | CollectionDirectory | undefined };
 
 export interface CollectionPanelFilesProps {
     isWritable: boolean;
     onUploadDataClick: (targetLocation?: string) => void;
     onSearchChange: (searchValue: string) => void;
-    onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
+    onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: CollectionFilesTreeItem, isWritable: boolean) => void;
     onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => void;
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
@@ -357,12 +359,12 @@ export const CollectionPanelFiles = withStyles(styles)(
 
                 const { id } = elem.dataset;
 
-                const item: any = {
+                const item: CollectionFilesTreeItem = {
                     id,
                     data: rightData.find(elem => elem.id === id),
                 };
 
-                if (id) {
+                if (id && item.data) {
                     onItemMenuOpen(event, item, isWritable);
                 }
             },
@@ -526,7 +528,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                         </IconButton>
                     </Tooltip>
                 </div>
-                <div className={classes.wrapper}>
+                <div className={classes.wrapper} data-cy="collection-files-panel-content">
                     <div
                         className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}
                         data-cy="collection-files-left-panel"
@@ -550,7 +552,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                             />
                         </div>
                         <div className={classes.dataWrapper}>
-                            {leftData ? (
+                            {leftData.length > 0 ? (
                                 <AutoSizer defaultWidth={0}>
                                     {({ height, width }) => {
                                         const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
