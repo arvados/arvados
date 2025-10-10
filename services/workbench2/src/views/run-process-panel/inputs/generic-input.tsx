@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { FormGroup, FormLabel, FormHelperText } from '@mui/material';
+import { FormHelperText, InputLabel, FormControl } from '@mui/material';
 import { GenericCommandInputParameter, getInputLabel, isRequiredInput } from 'models/workflow';
 
 export type GenericInputProps = WrappedFieldProps & {
@@ -16,13 +16,15 @@ type GenericInputContainerProps = GenericInputProps & {
     required?: boolean;
 };
 export const GenericInput = ({ component: Component, ...props }: GenericInputContainerProps) => {
-    return <FormGroup>
-        <FormLabel
+    return <FormControl fullWidth>
+        <InputLabel
+            shrink
+            variant={"standard"} // Filled and outlined cause a left gap
             focused={props.meta.active}
             required={props.required !== undefined ? props.required : isRequiredInput(props.commandInput)}
             error={props.meta.touched && !!props.meta.error}>
             {getInputLabel(props.commandInput)}
-        </FormLabel>
+        </InputLabel>
         <Component {...props} />
         <FormHelperText error={props.meta.touched && !!props.meta.error}>
             {
@@ -31,5 +33,5 @@ export const GenericInput = ({ component: Component, ...props }: GenericInputCon
                     : props.commandInput.doc
             }
         </FormHelperText>
-    </FormGroup>;
+    </FormControl>;
 };
