@@ -34,7 +34,7 @@ def _ensure_git_worktree(git_dir, work_ref):
     )
     yield git_dir
     subprocess.run(
-        ['git', 'worktree', 'remove', '--quiet', '--force', str(git_dir)],
+        ['git', 'worktree', 'remove', '--force', str(git_dir)],
         check=True,
     )
 
