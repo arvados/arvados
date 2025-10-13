@@ -34,8 +34,8 @@ type CssRules = "switch";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     switch: {
-        marginTop: "15px",
-        marginBottom: "-9px", // To line up hint text with GenericInput
+        marginTop: "12px",
+        marginBottom: "-6px", // To line up hint text with GenericInput
     },
 });
 
