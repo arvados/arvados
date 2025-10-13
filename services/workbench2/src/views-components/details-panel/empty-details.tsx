@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { DefaultIcon, ProjectsIcon } from 'components/icon/icon';
+import { DefaultIcon, RootProjectIcon } from 'components/icon/icon';
 import { EmptyResource } from 'models/empty';
 import { DetailsData } from "./details-data";
 import { DefaultView } from 'components/default-view/default-view';
 
 export class EmptyDetails extends DetailsData<EmptyResource> {
     getIcon(className?: string) {
-        return <ProjectsIcon className={className}/>;
+        return <RootProjectIcon className={className}/>;
     }
 
     getDetails() {

@@ -21,7 +21,7 @@ import { verifyAndUpdateLinks } from 'common/link-update-name';
 import { ProcessIcon,
     ProjectIcon,
     FavoriteIcon,
-    ProjectsIcon,
+    RootProjectIcon,
     ShareMeIcon,
     TrashIcon,
     PublicFavoriteIcon,
@@ -341,7 +341,7 @@ export const getSidePanelIcon = (category: string) => {
         case SidePanelTreeCategory.FAVORITES:
             return FavoriteIcon;
         case SidePanelTreeCategory.PROJECTS:
-            return ProjectsIcon;
+            return RootProjectIcon;
         case SidePanelTreeCategory.SHARED_WITH_ME:
             return ShareMeIcon;
         case SidePanelTreeCategory.TRASH:

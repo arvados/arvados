@@ -4,7 +4,7 @@
 
 import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
-import { ProjectsIcon,
+import { RootProjectIcon,
     ProcessIcon,
     FavoriteIcon,
     ShareMeIcon,
@@ -83,7 +83,7 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
     {
         name: SidePanelCollapsedCategory.PROJECTS,
-        icon: <ProjectsIcon />,
+        icon: <RootProjectIcon />,
         navTarget: '',
     },
     {

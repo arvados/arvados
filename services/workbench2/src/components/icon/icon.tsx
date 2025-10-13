@@ -262,7 +262,7 @@ export const PaginationRightArrowIcon: IconType = props => <ChevronRight {...pro
 export const ProcessIcon: IconType = props => <Settings {...props} />;
 export const ProjectIcon: IconType = props => <Folder {...props} />;
 export const FilterGroupIcon: IconType = props => <Pageview {...props} />;
-export const ProjectsIcon: IconType = props => <Inbox {...props} />;
+export const RootProjectIcon: IconType = props => <Inbox {...props} />;
 export const ProvenanceGraphIcon: IconType = props => <DeviceHub {...props} />;
 export const RemoveIcon: IconType = props => <Delete {...props} />;
 export const RemoveFavoriteIcon: IconType = props => <Star {...props} />;
