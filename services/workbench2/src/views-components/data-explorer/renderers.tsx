@@ -77,8 +77,9 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-const renderName = (dispatch: Dispatch, item: NamedResource, isLink: boolean = true) => {
+const renderName = (dispatch: Dispatch, item: NamedResource | UserResource, isLink: boolean = true) => {
     const navFunc = isUserGroup(item) ? navigateToGroupDetails : navigateTo;
+    const displayName = isUserResource(item) ? `${item.firstName} ${item.lastName}` : item.name;
     return (
         <Grid
             container
@@ -97,7 +98,7 @@ const renderName = (dispatch: Dispatch, item: NamedResource, isLink: boolean = t
                     }}
                 >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
-                    {item.name || '-'}
+                    {displayName}
                 </Typography>
             </Grid>
             <Grid item>
@@ -135,17 +136,14 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
 };
 
 export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<NamedResource>(props.uuid)(state.resources);
-    if (isUserResource(resource)) {
-        resource.name = resource.firstName + ' ' + resource.lastName;
-    }
+    const resource = getResource<NamedResource | UserResource>(props.uuid)(state.resources);
     return { resource };
-})((props: {resource?: NamedResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, true) : null);
+})((props: {resource?: NamedResource | UserResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, true) : null);
 
 export const ResourceNameNoLink = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<NamedResource>(props.uuid)(state.resources);
+    const resource = getResource<NamedResource | UserResource>(props.uuid)(state.resources);
     return { resource };
-})((props: {resource?: NamedResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, false) : null);
+})((props: {resource?: NamedResource | UserResource} & DispatchProp<any>) => props.resource ? renderName(props.dispatch, props.resource, false) : null);
 
 export const renderIcon = (item: Resource): JSX.Element => {
     if (isProjectResource(item)) {
