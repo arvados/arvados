@@ -8,7 +8,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import {  Grid, Typography } from '@mui/material';
 import { ProcessIcon } from "components/icon/icon";
-import { Process, getProcess, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
+import { getProcess, ProcessStatus, getProcessStatus, isProcessQueued, isProcessRunning } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
 import { ProcessIOCard, ProcessIOCardType } from "./process-io-card";
