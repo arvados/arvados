@@ -404,6 +404,25 @@ class ArvadosContainer(JobBase):
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
 
+        publish_port_req, _ = self.get_requirement("http://arvados.org/cwl#PublishPorts")
+        if publish_port_req:
+            if self.arvrunner.api._rootDesc["revision"] >= "20250327":
+                pp = {}
+                for p in publish_port_req["publishPorts"]:
+                    pp[p["servicePort"]] = {
+                        "access": p["serviceAccess"],
+                        "initial_path": p.get("initialPath", ""),
+                        "label": p["label"],
+                    }
+                container_request["published_ports"] = pp
+                container_request["service"] = True
+                container_request["use_existing"] = False
+                # The container needs networking to publish ports.
+                # This is how we get that as of Arvados 3.2.0:
+                runtime_constraints["API"] = True
+            else:
+                raise WorkflowException("Arvados API server does not support published_ports (requires Arvados 3.2+)")
+
         if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
             output_glob = []
             try:

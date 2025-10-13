@@ -1,0 +1,304 @@
+---
+layout: default
+navsection: userguide
+title: Running web services in Arvados containers
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+* "Introduction to service containers":#introduction
+* "Limitations":#limitations
+* "Example service container: nginx web server":#eg-intro
+* "Running a service container":#eg-running
+** "Running with CWL":#eg-cwl
+** "Running with an Arvados API client":#eg-api
+* "Connecting to a service container":#eg-connecting
+** "Connecting through Workbench":#eg-workbench
+** "Getting a connection URL from the Arvados API":#eg-url
+* "Stopping a service container":#eg-stopping
+* "Further reading":#further-reading
+
+h2(#introduction). Introduction to service containers
+
+Arvados 3.2.0 introduces service containers. If your container runs a web service, you can have Arvados expose that service at a dynamically assigned hostname+port combination. After you run a workflow in Arvados, you can run interactive data analysis and visualization tools as service containers to explore the results.
+
+Services can have different access levels:
+
+* If you expose a public service, Arvados will let anyone connect to it.
+* If you expose a private service, Arvados will require the initial connection to provide an Arvados API token from a user who requested this container. Arvados will refuse any other connections.
+
+h2(#limitations). Limitations
+
+Unfortunately, not every interactive container can be run as an Arvados service container. Here are some limitations you should be aware of before you start. These limitations may be lifted in a future release of Arvados.
+
+Service containers require the Arvados administrator to configure the hostname(s) and port(s) to use for service containers. If you're not sure whether your Arvados cluster supports service containers, check with your administrator.
+
+Arvados can only expose services that use plain HTTP in the container. Other protocols are currently not supported. For example, Jupyter notebooks require websockets to retrieve the results of running code. If you try to run a Jupyter notebook as an Arvados service container, you'll be able to connect and start a notebook, but you won't be able to run any code inside of it.
+
+If you run a service container as part of a larger workflow, the workflow supervisor will wait for the service container to finish before it considers the workflow finished. This is okay if the service reports progress or provides debugging for a main process that takes a limited time, but you probably don't want this if your service container waits for user input to quit or runs indefinitely. To run dedicated interactive services, consider starting them separately from your main workflow, and launching them with @arvados-cwl-runner --local@ to avoid the overhead of a separate supervisor container.
+
+h2(#eg-intro). Example service container: nginx web server
+
+This page demonstrates different ways to launch and access a service container using the "nginx web server":https://hub.docker.com/_/nginx as an example. This page assumes you are already familiar with basic "data(Arvados organizing data tutorial)":{{ site.baseurl }}/user/tutorials/tutorial-projects.html and "workflow(Arvados workflow running tutorial)":{{ site.baseurl }}/user/tutorials/tutorial-workflow-workbench.html management in Arvados.
+
+h2(#eg-running). Running a service container
+
+Users who want to start service containers on demand can do so using CWL. If you're writing automation for Arvados, you can also submit service container requests directly through the Arvados API.
+
+h3(#eg-cwl). Running with CWL
+
+This CWL runs nginx, exposes port 80 through Arvados, and takes one input with the directory of files to serve. Save this content as @nginx.cwl@:
+
+{% codeblock as yaml %}
+#!/usr/bin/env cwl-runner
+# nginx.cwl
+cwlVersion: v1.2
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
+
+class: CommandLineTool
+inputs:
+  siteFiles:
+    type: Directory
+requirements:
+  DockerRequirement:
+    dockerPull: library/nginx:1.29
+  InitialWorkDirRequirement:
+    listing:
+      - entry: "$(inputs.siteFiles)"
+        entryname: /usr/share/nginx/html
+hints:
+  ResourceRequirement:
+    # You may adjust these values as desired.
+    coresMin: 2
+    coresMax: 8
+    ramMin: 128
+    ramMax: 1024
+  arv:PublishPorts:
+    publishPorts:
+      "80":
+        serviceAccess: public
+        label: Web Server
+baseCommand: nginx
+arguments:
+  - "-g"
+  - "daemon off;"
+outputs: {}
+{% endcodeblock %}
+
+Next, you'll need a directory on your system that contains some HTML and supporting content you want to serve from the container. You can use any web content you like. If you don't have anything handy, create a new directory and save this web page as @index.html@ inside it:
+
+{% codeblock as html %}
+<!-- Example index.html -->
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <title>Test Page</title>
+  </head>
+  <body>
+    <p>Hello from inside an Arvados service workflow!</p>
+  </body>
+</html>
+{% endcodeblock %}
+
+Write an input file @nginx-in.yml@ that points @siteFiles@ to the directory with your HTML content:
+
+<notextile>
+<pre><code># nginx-in.yml
+siteFiles:
+  class: Directory
+  path: "<span class="userinput">/home/you/arvados-nginx-site</span>"
+</code></pre>
+</notextile>
+
+Launch this CWL with your input using @arvados-cwl-runner@:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner --local nginx.cwl nginx-in.yml</span>
+</code></pre>
+</notextile>
+
+The tool will upload all the dependencies to Arvados, then report:
+
+<notextile>
+<pre>INFO [container nginx.cwl] zzzzz-xvhdp-abcde12345fghij state is Committed
+</pre>
+</notextile>
+
+After Arvados launches the container, you'll be able to "connect to your web server":#eg-connecting.
+
+h3(#eg-api). Running with an Arvados API client
+
+If you are comfortable writing your own Arvados tools, you can submit service container requests directly to the Arvados API. Before you start, you must make sure the container image and data you want to use is already in Arvados.
+
+For this example, save the official nginx Docker image to Arvados using @arv-keepdocker@, then get the portable data hash of that container:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv-keepdocker library/nginx 1.29</span>
+[…]
+zzzzz-4zz18-wyfcjuvi7ankgp2
+$ <span class="userinput">arv collection get --select='["portable_data_hash"]' --uuid=<strong>zzzzz-4zz18-wyfcjuvi7ankgp2</strong></span>
+{
+ "etag":"",
+ "kind":"arvados#collection",
+ "portable_data_hash":"<strong>23a275c1761b645edb84355a91702cee+219</strong>"
+}
+</code></pre>
+</notextile>
+
+Next, create a collection that contains some HTML and supporting content you want to serve from the container. You can use any web content you like. If you don't have anything handy, create a new directory and save this web page as @index.html@ inside it:
+
+{% codeblock as html %}
+<!-- Example index.html -->
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <title>Test Page</title>
+  </head>
+  <body>
+    <p>Hello from inside an Arvados service container!</p>
+  </body>
+</html>
+{% endcodeblock %}
+
+Create a collection from your content directory:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv-put <strong>/home/you/arvados-nginx-site</strong></span>
+[…]
+<strong>zzzzz-4zz18-5jh66sx5f2xo6kd</strong>
+</code></pre>
+</notextile>
+
+Now you are ready to submit your container request. Below is a body you could use with either the command-line tool @arv container_request create --container-request=…@ or an SDK like:
+
+{% codeblock as python %}
+arv_client.container_requests().create(
+    body={'container_request': ...}
+).execute()
+{% endcodeblock %}
+
+* The value of @container_image@ is the portable data hash of the nginx Docker image you uploaded.
+* In the @mounts@ value for @/usr/share/nginx/html@, the value of @uuid@ is the UUID of your site content collection. You could alternatively specify a @portable_data_hash@.
+* The runtime constraint @API@ must be set @true@ for the container to be accessible over the network. You can adjust the other runtime constraints as you like.
+* @command@, @cwd@, and @output_path@ are based on the Docker image we're using.
+* From @state@ on, you can modify these fields as desired, or add others like @owner_uuid@.
+
+<notextile>
+<pre><code class="json">{
+  "container_image": "<strong>23a275c1761b645edb84355a91702cee+219</strong>",
+  "service": true,
+  "use_existing": false,
+  "published_ports": {
+    "80": {
+      "access": "public",
+      "label": "Web Server",
+      "initial_path": ""
+    }
+  },
+  "mounts": {
+    "/usr/share/nginx/html": {
+      "kind": "collection",
+      "uuid": "<strong>zzzzz-4zz18-5jh66sx5f2xo6kd</strong>"
+    },
+    "/run/nginx.out": {
+      "kind": "collection",
+      "writable": true
+    }
+  },
+  "runtime_constraints": {
+    <strong>"API": true</strong>,
+    "ram": 209715200,
+    "vcpus": 2
+  },
+
+  "command": [
+    "nginx",
+    "-g",
+    "daemon off;"
+  ],
+  "cwd": ".",
+  "output_path": "/run/nginx.out",
+
+  "state": "Committed",
+  "name": "nginx server",
+  "priority": 500
+}
+</code></pre>
+</notextile>
+
+h2(#eg-connecting). Connecting to a service container
+
+After Arvados starts a service container, the container record includes the URL users should use to access the service(s). You can open the service URL through Workbench or retrieve it from the Arvados API.
+
+h3(#eg-workbench). Connecting through Workbench
+
+When you view the process page for a running service container, a blue button appears next to the process name to connect to that service. If the container runs multiple services, you'll be able to select the one you want to connect to from a pulldown.
+
+!{max-width: 100%;}{{ site.baseurl }}/images/workbench-running-service-container.png(Screenshot from the top of an Arvados Workbench process page showing a running nginx service container with a "Connect to web server" button.)!
+
+h3(#eg-url). Getting a connection URL from the Arvados API
+
+This section will illustrate how to get this information from Arvados API records using the CLI tools. You can follow this same process to make analogous API calls with any SDK. After you submit your container request, get its corresponding @container_uuid@:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv container_request get --select='["container_uuid","state"]' --uuid=<strong>zzzzz-xvhdp-abcde12345fghij</strong></span>
+{
+ "container_uuid":"<strong>zzzzz-dz642-y87pdppv4afp4da</strong>",
+ "etag":"",
+ "kind":"arvados#containerRequest",
+ "state":"Committed"
+}
+</code></pre>
+</notextile>
+
+If @state@ is @Committed@ but @container_uuid@ is @null@, then your request has not been dispatched yet. Wait a little bit and try again. Once you have a @container_uuid@, request the @published_ports@ field of that container record:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv container get --select='["published_ports"]' --uuid=<strong>zzzzz-dz642-y87pdppv4afp4da</strong></span>
+{
+ "published_ports":{
+  "80":{
+   "label":"Web Server",
+   "access":"public",
+   "base_url":"https://zzzzz.arvados.example:8900/",
+   <strong>"initial_url":"https://zzzzz.arvados.example:8900/"</strong>,
+   "initial_path":"",
+   "external_port":8900
+  }
+ }
+}
+</code></pre>
+</notextile>
+
+For each service, the @initial_url@ provides the URL where you can connect to the corresponding service over HTTP. If @access@ is @private@, you should add an @arvados_api_token@ query parameter for a user who requested this container. For example, if the container's published port above had @"access":"private"@, the full URL to connect to it would look like:
+
+<notextile>
+<pre>https://zzzzz.arvados.example:8900/<span class="userinput">?arvados_api_token=v2/zzzzz-gj3su-y2tncmjag9gajm8/1234567890</span></pre>
+</notextile>
+
+h2(#eg-stopping). Stopping a service container
+
+Cancel a service container just like any other running container. You can use the red ⏹&nbsp;Cancel button that appears next to the process name in Workbench or the ⏹&nbsp;Cancel button in the action toolbar:
+
+!{max-width: 100%;}{{ site.baseurl }}/images/workbench-running-service-container.png(Screenshot from the top of an Arvados Workbench process page showing a running nginx service container with a "Cancel" button.)!
+
+Or if you're using the Arvados API directly, update your container request to set its @priority@ to 0:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv container_request update  --container-request='{"priority":0}' --uuid=<strong>zzzzz-xvhdp-abcde12345fghij</strong></span>
+</code></pre>
+</notextile>
+
+h2(#further-reading). Further reading
+
+* The "Arvados container requests API reference":{{ site.baseurl }}/api/methods/container_requests.html, especially the "published ports section":{{ site.baseurl }}/api/methods/container_requests.html#published_ports
+* The "arv:PublishPorts CWL extension reference":{{ site.baseurl }}/user/cwl/cwl-extensions.html#PublishPorts
+* If you're an Arvados administrator who wants to enable service containers, refer to the settings under @Services.ContainerWebServices@ in the "configuration reference":{{ site.baseurl }}/admin/config.html
