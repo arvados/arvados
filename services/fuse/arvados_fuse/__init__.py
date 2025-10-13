@@ -449,6 +449,7 @@ class Inodes(object):
 
         """
         try:
+            _logger.debug("InodeCache removing inode %d", entry.inode)
             if entry.inode is None:
                 # Removed already
                 return
@@ -458,7 +459,7 @@ class Inodes(object):
 
             if entry.in_use():
                 # referenced internally, stay pinned
-                #_logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
+                _logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
                 return
 
             # Tell the kernel it should forget about it
@@ -467,7 +468,7 @@ class Inodes(object):
             if entry.has_ref():
                 # has kernel reference, could still be accessed.
                 # when the kernel forgets about it, we can delete it.
-                #_logger.debug("InodeCache cannot clear inode %i, is referenced", entry.inode)
+                _logger.debug("InodeCache cannot clear inode %i, is referenced", entry.inode)
                 return
 
             # commit any pending changes
@@ -491,6 +492,7 @@ class Inodes(object):
                 self.inode_cache.unmanage(entry)
 
                 del self._entries[entry.inode]
+                _logger.debug("InodeCache removed inode %d", entry.inode)
                 entry.inode = None
 
         except Exception as e:

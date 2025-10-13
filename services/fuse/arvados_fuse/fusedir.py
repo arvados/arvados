@@ -365,13 +365,16 @@ class CollectionDirectoryBase(Directory):
             with llfuse.lock:
                 with self.collection.lock:
                     if event == arvados.collection.ADD:
+                        _logger.debug("on_event ADD name %s", name)
                         self.new_entry(name, item, self.mtime())
                     elif event == arvados.collection.DEL:
+                        _logger.debug("on_event DEL name %s", name)
                         ent = self._entries[name]
                         del self._entries[name]
                         self.inodes.invalidate_entry(self, name)
                         self.inodes.del_entry(ent)
                     elif event == arvados.collection.MOD:
+                        _logger.debug("on_event MOD name %s", name)
                         # MOD events have (modified_from, newitem)
                         newitem = item[1]
                         entry = None
@@ -386,6 +389,8 @@ class CollectionDirectoryBase(Directory):
 
                         if name in self._entries:
                             self.inodes.invalidate_entry(self, name)
+                    else:
+                        _logger.debug("on_event %s", event)
 
                     # TOK and WRITE events just invalidate the
                     # collection record file.
