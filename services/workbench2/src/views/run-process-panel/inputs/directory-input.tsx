@@ -121,7 +121,8 @@ const DirectoryInputComponent = connect(null, mapDispatchToProps)(
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
-                        onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined} />}
+                        onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined}
+                        onMouseDown={(e) => e.preventDefault()} />}
                 {...this.props} />;
         }
 
