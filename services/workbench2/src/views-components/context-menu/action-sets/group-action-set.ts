@@ -11,10 +11,10 @@ import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 export const groupActionSet: ContextMenuActionSet = [
     [
         {
-            name: ContextMenuActionNames.RENAME,
+            name: ContextMenuActionNames.EDIT_GROUP,
             icon: RenameIcon,
             execute: (dispatch, resources) => {
-                dispatch<any>(openGroupUpdateDialog(resources[0]))
+                dispatch<any>(openGroupUpdateDialog(resources[0].uuid))
             },
         },
         {
