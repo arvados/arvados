@@ -9,7 +9,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-{% include 'tutorial_expectations' %}
+h2(#introduction). Introduction
+
+This tool reports on the data and workflows in an Arvados cluster to help administrators understand growth and costs. It reports what it has access to: any Arvados user can run it to get a report of their own workflows and others they can see. An Arvados administrator can run a report on all data and workflows in the cluster. If you provide credentials for a Prometheus server in your Arvados cluster, the report includes additional information about compute use.
 
 {% include 'notebox_begin' %}
 
@@ -17,99 +19,78 @@ Cost information is generally only available when Arvados runs in a cloud enviro
 
 {% include 'notebox_end' %}
 
-The @arv-cluster-activity@ program can be used to analyze cluster usage and cost over a time period.
+{% include 'tutorial_expectations' %}
 
-h2. Installation
+h2(#workbench-workflow). Running as a workflow from Workbench
 
-The @arv-cluster-activity@ tool can be installed from a distribution package or PyPI.
+{% include 'branchname' %}
 
-h2. Option 1: Install from distribution packages
-
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/packages.html.
-
-{% assign arvados_component = 'python3-arvados-cluster-activity' %}
-
-{% include 'install_packages' %}
-
-h2. Option 2: Install with pip
-
-Run @pip install "arvados-cluster-activity[prometheus]"@ in an appropriate installation environment, such as a virtualenv.
-
-{% include 'notebox_begin' %}
-
-Support for fetching Prometheus metrics depends on Pandas and NumPy.  If these dependencies pose a problem, you can install the cluster activity tool without Prometheus support by simply running @pip install arvados-cluster-activity@.
-
-{% include 'notebox_end' %}
-
-The Cluster Activity report uses the Arvados Python SDK, which uses @pycurl@, which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian-based distributions you can install them by running:
+We provide a CWL workflow to generate this report. It's available as a "single file in the Arvados source":https://github.com/arvados/arvados/blob/{{ branchname 
+}}/tools/cluster-activity/cluster-activity.cwl. You can register the workflow on your cluster by running:
 
 <notextile>
-<pre><code># <span class="userinput">apt install git build-essential python3-dev libcurl4-openssl-dev libssl-dev</span>
+<pre><code>$ <span class="userinput">arvados-cwl-runner [--project-uuid=UUID] --create-workflow cluster-activity.cwl</span>
 </code></pre>
 </notextile>
 
-h2(#syntax). Syntax
+Then you can launch the workflow from Workbench. All inputs have documented formats and values.
 
-The @arv-cluster-activity@ tool has a number of command line arguments:
+h2(#cli-workflow). Running as a workflow from the command line
+
+Alternatively, you can run the workflow directly with @arvados-cwl-runner@. Write an input file following this YAML template:
+
+{% codeblock as yaml %}
+# Report start date as a `YYYY-MM-DD` string
+reporting_start: "YYYY-MM-DD"
+
+# Report end date as a `YYYY-MM-DD` string. Default today.
+#reporting_end: "YYYY-MM-DD"
+
+# The base URL of your Arvados cluster's Prometheus server, like
+# `https://prometheus.arvados.example/`
+#prometheus_host: ""
+
+# Prometheus API token
+#prometheus_apikey: ""
+
+# Prometheus API username
+#prometheus_user: ""
+
+# Prometheus API password
+#prometheus_password: ""
+
+# A string with a Python regular expression.
+# Workflows whose name match the expression will be excluded from the report.
+#exclude: ""
+
+# A boolean. If true, individual workflow steps will be reported alongside
+# their parent workflows.
+include_workflow_steps: false
+{% endcodeblock %}
+
+Then run "the workflow":https://github.com/arvados/arvados/blob/{{ branchname }}/tools/cluster-activity/cluster-activity.cwl like this:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-cluster-activity --help</span>
-usage: arv-cluster-activity [-h] [--start START] [--end END] [--days DAYS] [--cost-report-file COST_REPORT_FILE] [--include-workflow-steps] [--columns COLUMNS] [--exclude EXCLUDE]
-                            [--html-report-file HTML_REPORT_FILE] [--version] [--cluster CLUSTER] [--prometheus-auth PROMETHEUS_AUTH]
-
-options:
-  -h, --help            show this help message and exit
-  --start START         Start date for the report in YYYY-MM-DD format (UTC) (or use --days)
-  --end END             End date for the report in YYYY-MM-DD format (UTC), default "now"
-  --days DAYS           Number of days before "end" to start the report (or use --start)
-  --cost-report-file COST_REPORT_FILE
-                        Export cost report to specified CSV file
-  --include-workflow-steps
-                        Include individual workflow steps (optional)
-  --columns COLUMNS     Cost report columns (optional), must be comma separated with no spaces between column names. Available columns are:
-                        Project, ProjectUUID, Workflow,
-                        WorkflowUUID, Step, StepUUID, Sample, SampleUUID, User, UserUUID, Submitted, Started, Runtime, Cost
-  --exclude EXCLUDE     Exclude workflows containing this substring (may be a regular expression)
-  --html-report-file HTML_REPORT_FILE
-                        Export HTML report to specified file
-  --version             Print version and exit.
-  --cluster CLUSTER     Cluster to query for prometheus stats
-  --prometheus-auth PROMETHEUS_AUTH
-                        Authorization file with prometheus info
+<pre><code>$ <span class="userinput">arvados-cwl-runner [--project-uuid=UUID] [options ...] cluster-activity.cwl <strong>YOUR-INPUTS.yml</strong></span>
 </code></pre>
 </notextile>
 
-h2(#Credentials). Credentials
+h2(#running-cli). Running as a command line tool
 
-To access the Arvados host, the tool will read default credentials from @~/.config/aravdos/settings.conf@ or use the standard @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables.
-
-The cluster report tool will also fetch metrics from Prometheus, if available.  This can be passed in an environment file using @--prometheus-auth@, or set as environment variables.
-
-<pre>
-PROMETHEUS_HOST=https://your.prometheus.server.example.com
-PROMETHEUS_USER=admin
-PROMETHEUS_PASSWORD=password
-</pre>
-
-@PROMETHEUS_USER@ and @PROMETHEUS_PASSWORD@ will be passed in an @Authorization@ header using HTTP Basic authentication.
-
-Alternately, instead of @PROMETHEUS_USER@ and @PROMETHEUS_PASSWORD@ you can provide @PROMETHEUS_APIKEY@.  This will be passed in as a Bearer token (@Authorization: Bearer <APIKEY>@).
-
-h2(#example). Example usage
+You can install a command line tool to generate reports on your own system. Install it with "pipx":https://pipx.pypa.io/stable/ like:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-cluster-activity \
-    --days 90
-    --include-workflow-steps \
-    --prometheus-auth prometheus.env \
-    --cost-report-file report.csv \
-    --html-report-file report.html</span>
-INFO:root:Exporting workflow runs 0 - 5
-INFO:root:Getting workflow steps
-INFO:root:Got workflow steps 0 - 2
-INFO:root:Getting container hours time series
-INFO:root:Getting data usage time series
+<pre><code>$ <span class="userinput">pipx install "arvados-cluster-activity[prometheus]"</span>
 </code></pre>
 </notextile>
 
-!sample-cluster-activity-report.png!
+If you don't have a Prometheus server or don't want Prometheus support, remove @[prometheus]@ from the command line. Advanced users can install the tool to their own virtualenv or elsewhere.
+
+The command line tool provides options to control the report generation. These correspond to the workflow inputs. Run the tool with @--help@ for the full list:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv-cluster-activity --help</span>
+</code></pre>
+</notextile>
+
+The tool gets Prometheus credentials from the @PROMETHEUS_HOST@, @PROMETHEUS_APIKEY@, @PROMETHEUS_USER@, and @PROMETHEUS_PASSWORD@ environment variables. The values follow the format of the workflow inputs above. You can write these environment variables in a dedicated file and load that with the tool's @--prometheus-auth@ option.

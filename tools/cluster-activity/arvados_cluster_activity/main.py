@@ -125,17 +125,20 @@ def get_prometheus_client():
         logging.warn("Failed to import prometheus_api_client client.  Did you include the [prometheus] option when installing the package?  Error was: %s" % e)
         return None
 
-    prom_host = os.environ.get("PROMETHEUS_HOST")
-    prom_token = os.environ.get("PROMETHEUS_APIKEY")
-    prom_user = os.environ.get("PROMETHEUS_USER")
-    prom_pw = os.environ.get("PROMETHEUS_PASSWORD")
-
     headers = {}
-    if prom_token:
-        headers["Authorization"] = "Bearer %s" % prom_token
-
-    if prom_user:
-        headers["Authorization"] = "Basic %s" % str(base64.b64encode(bytes("%s:%s" % (prom_user, prom_pw), 'utf-8')), 'utf-8')
+    if not (prom_host := os.environ.get("PROMETHEUS_HOST")):
+        logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
+        return None
+    elif prom_token := os.environ.get("PROMETHEUS_APIKEY"):
+        headers["Authorization"] = f"Bearer {prom_token}"
+    elif prom_user := os.environ.get("PROMETHEUS_USER"):
+        basic_auth = base64.b64encode(
+            f"{prom_user}:{os.environ.get('PROMETHEUS_PASSWORD', '')}".encode('utf-8'),
+        ).decode('ascii')
+        headers["Authorization"] = f"Basic {auth}"
+    else:
+        logging.warn("Prometheus credentials not found, not collecting activity from Prometheus")
+        return None
 
     try:
         return PrometheusConnect(url=prom_host, headers=headers)
@@ -174,14 +177,7 @@ def main(arguments=None):
 
     logging.getLogger().setLevel(logging.INFO)
 
-    prom = None
-    if "PROMETHEUS_HOST" in os.environ:
-        prom = get_prometheus_client()
-    else:
-        logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
-
-    reporter = ClusterActivityReport(prom)
-
+    reporter = ClusterActivityReport(get_prometheus_client())
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
             reporter.csv_report(since, to, f, args.include_workflow_steps, args.columns, args.exclude)
