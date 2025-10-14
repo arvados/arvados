@@ -1,0 +1,184 @@
+---
+layout: default
+navsection: userguide
+title: Using external data sources in workflows
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+* "Introduction":#introduction
+* "Limitations":#limitations
+* "Accessing S3 data in public buckets":#public-buckets
+* "Accessing S3 data with an access key":#s3-access-key
+** "Adding an access key in Arvados Workbench":#add-access-key-workbench
+** "Adding an access key via the Arvados API":#add-access-key-api
+** "Running a workflow using a stored access key":#use-s3-access-key
+** "Troubleshooting download errors using stored access keys":#troubleshooting-access-keys
+*** "Multiple credentials found":#multiple-credentials-found
+*** "boto3 did not find any local AWS credentials to use to download from S3":#aws-credentials-not-found
+** "Running a workflow using a local access key":#local-access-key
+* "Accessing web data with varying URL parameters":#varying-url-params
+
+h2(#introduction). Introduction
+
+Many useful references and data sets are available on the web and in S3. To help you work with this data, Arvados lets you specify workflow inputs with URL paths like:
+
+{% codeblock as yaml %}
+example_web_input:
+  class: File
+  path: "https://HOST_NAME/FILE_PATH"
+example_s3_input:
+  class: File
+  path: "s3://BUCKET_NAME/FILE_PATH"
+{% endcodeblock %}
+
+When Arvados starts this workflow, before it starts any workflow steps, it will automatically download each input URL to an Arvados collection. This ensures you retain a complete record of the analysis you ran. Arvados stores details about the data source as collection metadata and can avoid re-downloading inputs it has downloaded before.
+
+If you launch a workflow with @arvados-cwl-runner@, by default this download will be done on the system where you ran @arvados-cwl-runner@. This can be useful for debugging problems with external inputs, but can be impractical for large downloads. To run the download from an Arvados compute node, run @arvados-cwl-runner@ with the @--defer-downloads@ option.
+
+h2(#limitations). Limitations
+
+External inputs have some limitations you should be aware of before you start. These limitations may be lifted in a future release of Arvados.
+
+External input URLs can only refer to a single file. You cannot specify an entire S3 bucket or subdirectory as an input. You must list each file you want to work with as a separate input.
+
+Arvados only knows how to work with one S3 access key at a time. If you need to work with data sets that require different credentials, first transfer them to Keep, then analyze them from there.
+
+h2(#public-buckets). Accessing S3 data in public buckets
+
+If your inputs refer to public S3 buckets and don't require an access key, run @arvados-cwl-runner@ with the @--s3-public-bucket@ option. For example:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--s3-public-bucket</strong> [… other options…] --submit <strong>WORKFLOW.cwl PUBLIC-S3-FILES.yml</strong>
+</code></pre>
+</notextile>
+
+h2(#s3-access-key). Accessing S3 data with an access key
+
+If you want to access data in an S3 bucket that requires an access key, you can register the access key with Arvados. Workflows will be able to find and use the correct access key automatically.
+
+h3(#add-access-key-workbench). Adding an S3 access key in Arvados Workbench
+
+In the left-hand navigation, open "External Credentials." In the upper right, use the blue ＋&nbsp;New&nbsp;External&nbsp;Credential button to add an S3 access key.
+
+!{max-width: 100%;}{{ site.baseurl }}/images/workbench-external-credentials-list.png(Screenshot of the Arvados Workbench External Credentials listing.)!
+
+Fill out the New External Credential dialog as follows for S3 credentials:
+
+* Give the credential a useful name, and optionally a description.
+* The Credential Class must be *exactly* @aws_access_key@.
+* The External ID is the access key ID (the alphanumeric string that usually starts with "AKIA").
+* The Secret is the secret access key (the random string).
+* Set the "Expires at" date to a date no later than the expiry of the underlying access key. Arvados will automatically stop using access keys after they have expired.
+* The applicable scopes identify which S3 bucket(s) this access key should be used for. Enter each scope in the format <notextile><code>s3://<strong>BUCKET_NAME</strong></code></notextile> for each bucket the access key can access. Each scope is listed under the input as you add it and can be removed if you enter a scope incorrectly.
+
+For illustration, the Example Credential being filled out below can be used to access the @arvados-example@ and @arvados-doc@ S3 buckets.
+
+!{max-width: 100%; box-shadow: 0 0 6px black;}{{ site.baseurl }}/images/workbench-external-credentials-add.png(Screenshot of the Arvados Workbench New External Credential dialog with fields filled in with sample values.)!
+
+After you create the credential, you can control who is allowed to use it by sharing it with other users and groups with at least Read access. In the left-hand navigation, open "External Credentials." Find your credential in the listing and right-click it. Select "Share" from the context menu. Use the dialog to add and remove permissions.
+
+Once you have finished setting up access keys, you can "run a workflow with S3 inputs":#use-s3-access-key.
+
+h3(#add-access-key-api). Adding an S3 access key via the Arvados API
+
+S3 access keys are stored in Arvados as "credentials":{{ site.baseurl }}/api/methods/credentials.html. Below is a body you could use with either the command-line tool @arv credential create --credential=…@ or an SDK like:
+
+{% codeblock as python %}
+arv_client.credentials().create(
+    body={'credential': ...}
+).execute()
+{% endcodeblock %}
+
+* Give the credential a useful @name@ and optionally a @description@.
+* The @credential_class@ must be *exactly* @"aws_access_key"@.
+* The @external_id@ is the access key ID (the alphanumeric string that usually starts with "AKIA").
+* The @secret@ is the secret access key (the random string).
+* Set the @expires_at@ timestamp to a date no later than the expiry of the underlying access key. Arvados will automatically stop using access keys after they have expired.
+* The @scopes@ identify which S3 bucket(s) this access key should be used for. Enter each scope in the format <notextile><code>"s3://<strong>BUCKET_NAME</strong>"</code></notextile> for each bucket the access key can access. The example credential below can be used to access the @arvados-example@ and @arvados-doc@ S3 buckets.
+
+<notextile>
+<pre><code class="json">{
+  "name": "Example Credential",
+  "description": "&lt;p&gt;This is an example credential for the Arvados documentation.&lt;/p&gt;",
+  "credential_class": "aws_access_key",
+  "external_id": "AKIAS3ABCDEFGHIJKLMN",
+  "secret": "ZYXWVUTSRQPONMLKJIHGFEDCBA",
+  "expires_at": "2038-01-19T03:14:07Z",
+  "scopes": [
+    "s3://arvados-example",
+    "s3://arvados-doc"
+  ]
+}
+</code></pre>
+</notextile>
+
+After you create the credential, you can control who is allowed to use it by creating permission links to other users and groups. For more information, refer to the "Working with permissions section of the Python SDK code cookbook":{{ site.baseurl }}/sdk/python/cookbook.html#working-with-permissions and "links API reference":{{ site.baseurl }}/api/methods/links.html.
+
+h3(#use-s3-access-key). Running a workflow using a stored access key
+
+After you register an access key for an S3 bucket, you can use an S3 URL for that bucket in the place of any workflow file input. When Arvados starts this workflow, before it starts any workflow steps, it will automatically find the right credentials to download the file from the bucket. For example, you can submit the workflow from the command line by running:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
+</code></pre>
+</notextile>
+
+h3(#troubleshooting-access-keys). Troubleshooting download errors using stored access keys
+
+h4(#multiple-credentials-found). "Multiple credentials found"
+
+If you submit a workflow to Arvados and it reports this error:
+
+<notextile>
+<pre>WARNING Download error: Multiple credentials found for bucket 's3://BUCKET_NAME' in Arvados, use --use-credential to specify which one to use.
+</pre>
+</notextile>
+
+You can run @arvados-cwl-runner@ with the @--use-credential@ option to specify the UUID of the credential to use:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--use-credential=zzzzz-oss07-abcde12345fghij</strong> [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
+</code></pre>
+</notextile>
+
+h4(#aws-credentials-not-found). "boto3 did not find any local AWS credentials to use to download from S3"
+
+If you submit a workflow to Arvados and it fails with logs like this:
+
+<notextile>
+<pre>WARNING Download error: boto3 did not find any local AWS credentials to use to download from S3. If you want to use credentials registered with Arvados, use --defer-downloads. If the bucket is public, use --s3-public-bucket.
+ERROR Workflow error, try again with --debug for more information:
+Can't handle 's3://example-bucket/example-file'
+Container exited with status code 1
+</pre>
+</notextile>
+
+This means Arvados did not find an access key to use for this bucket. Double-check:
+
+* Is the access key registered as a credential in Arvados?
+* Does the user running the workflow have permission to use that credential? Can they see it in Workbench or get it from the API?
+* Does the credential have @s3://example-bucket@ in its list of scopes? Check both the credential scope and the workflow input to make sure the bucket name matches and doesn't have any typos.
+* Is the external credential expired?
+
+h3(#local-access-key). Running a workflow using a local access key
+
+If you are running @arvados-cwl-runner@ on a system that already has credentials to access your S3 input files, you can run it with the @--enable-aws-credential-capture@ option to have Arvados download inputs with the same credentials that the @aws@ tool would use. This can be useful to run one-off workflows where you don't plan to reuse an access key. For example:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--enable-aws-credential-capture</strong> [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
+</code></pre>
+</notextile>
+
+h2(#varying-url-params). Accessing web data with varying URL parameters
+
+Some HTTP/S URLs include time-sensitive signatures or tokens in their query parameters. By default, Arvados will assume different values for these parameters refer to different resources, and download each variation to a separate collection. If you know that some input URL parameters vary without changing the underlying resource, you can identify those parameters to Arvados by running @arvados-cwl-runner@ with the @--varying-url-params@ option. This option takes a comma-separated list of parameter name(s). Arvados will ignore the values of these parameters when determining whether or not a resource has already been downloaded so you can avoid redundant downloads. For example:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--varying-url-params="NAME1,NAME2,…"</strong> [… other options…] --submit <strong>WORKFLOW.cwl WEB-FILES.yml</strong>
+</code></pre>
+</notextile>
