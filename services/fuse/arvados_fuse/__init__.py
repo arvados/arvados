@@ -1114,4 +1114,5 @@ class Operations(llfuse.Operations):
         self.inodes.touch(p)
 
         f.inc_ref()
+        time.sleep(0.2)
         return self.getattr(f.inode)
