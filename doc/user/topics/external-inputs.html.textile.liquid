@@ -21,7 +21,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 *** "Multiple credentials found":#multiple-credentials-found
 *** "boto3 did not find any local AWS credentials to use to download from S3":#aws-credentials-not-found
 ** "Running a workflow using a local access key":#local-access-key
-* "Accessing web data with varying URL parameters":#varying-url-params
+* "Controlling when Arvados downloads external data":#download-options
+** "Download data from the Arvados compute node":#defer-downloads
+** "Prioritize cached data collections":#prefer-cached-downloads
+** "Ignore varying URL parameters when caching collections":#varying-url-params
 
 h2(#introduction). Introduction
 
@@ -38,8 +41,6 @@ example_s3_input:
 
 When Arvados starts this workflow, before it starts any workflow steps, it will automatically download each input URL to an Arvados collection. This ensures you retain a complete record of the analysis you ran. Arvados stores details about the data source as collection metadata and can avoid re-downloading inputs it has downloaded before.
 
-If you launch a workflow with @arvados-cwl-runner@, by default this download will be done on the system where you ran @arvados-cwl-runner@. This can be useful for debugging problems with external inputs, but can be impractical for large downloads. To run the download from an Arvados compute node, run @arvados-cwl-runner@ with the @--defer-downloads@ option.
-
 h2(#limitations). Limitations
 
 External inputs have some limitations you should be aware of before you start. These limitations may be lifted in a future release of Arvados.
@@ -53,7 +54,7 @@ h2(#public-buckets). Accessing S3 data in public buckets
 If your inputs refer to public S3 buckets and don't require an access key, run @arvados-cwl-runner@ with the @--s3-public-bucket@ option. For example:
 
 <notextile>
-<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--s3-public-bucket</strong> [… other options…] --submit <strong>WORKFLOW.cwl PUBLIC-S3-FILES.yml</strong>
+<pre><code>$ <span class="userinput">arvados-cwl-runner <strong>--s3-public-bucket</strong> [… other options…] --submit <strong>WORKFLOW.cwl PUBLIC-S3-FILES.yml</strong>
 </code></pre>
 </notextile>
 
@@ -124,9 +125,11 @@ h3(#use-s3-access-key). Running a workflow using a stored access key
 After you register an access key for an S3 bucket, you can use an S3 URL for that bucket in the place of any workflow file input. When Arvados starts this workflow, before it starts any workflow steps, it will automatically find the right credentials to download the file from the bucket. For example, you can submit the workflow from the command line by running:
 
 <notextile>
-<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
+<pre><code>$ <span class="userinput">arvados-cwl-runner [… other options…] --defer-downloads --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
 </code></pre>
 </notextile>
+
+Note that you *must* "use @--defer-downloads@ in this case":#defer-downloads.
 
 h3(#troubleshooting-access-keys). Troubleshooting download errors using stored access keys
 
@@ -142,7 +145,7 @@ If you submit a workflow to Arvados and it reports this error:
 You can run @arvados-cwl-runner@ with the @--use-credential@ option to specify the UUID of the credential to use:
 
 <notextile>
-<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--use-credential=zzzzz-oss07-abcde12345fghij</strong> [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
+<pre><code>$ <span class="userinput">arvados-cwl-runner <strong>--use-credential=zzzzz-oss07-abcde12345fghij</strong> [… other options…] --defer-downloads --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
 </code></pre>
 </notextile>
 
@@ -170,15 +173,37 @@ h3(#local-access-key). Running a workflow using a local access key
 If you are running @arvados-cwl-runner@ on a system that already has credentials to access your S3 input files, you can run it with the @--enable-aws-credential-capture@ option to have Arvados download inputs with the same credentials that the @aws@ tool would use. This can be useful to run one-off workflows where you don't plan to reuse an access key. For example:
 
 <notextile>
-<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--enable-aws-credential-capture</strong> [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
+<pre><code>$ <span class="userinput">arvados-cwl-runner <strong>--enable-aws-credential-capture</strong> [… other options…] --submit <strong>WORKFLOW.cwl PRIVATE-S3-FILES.yml</strong>
 </code></pre>
 </notextile>
 
-h2(#varying-url-params). Accessing web data with varying URL parameters
+h2(#download-options). Controlling when Arvados downloads external data
 
-Some HTTP/S URLs include time-sensitive signatures or tokens in their query parameters. By default, Arvados will assume different values for these parameters refer to different resources, and download each variation to a separate collection. If you know that some input URL parameters vary without changing the underlying resource, you can identify those parameters to Arvados by running @arvados-cwl-runner@ with the @--varying-url-params@ option. This option takes a comma-separated list of parameter name(s). Arvados will ignore the values of these parameters when determining whether or not a resource has already been downloaded so you can avoid redundant downloads. For example:
+When Arvados downloads external input data, the default behavior is designed to prioritize the predictability and reproducibility of your workflows. Several options are available to customize this behavior.
+
+h3(#defer-downloads). Download data from the Arvados compute node
+
+By default, @arvados-cwl-runner@ downloads input data from the system where you launch it. This aims to let you know about any problems with the input sources as soon as possible. However, the system where you run @arvados-cwl-runner@ may not be the best suited to download very large input files. If you prefer to download input files from the Arvados compute node that runs your workflow, run @arvados-cwl-runner@ with the @--defer-downloads@ option.
 
 <notextile>
-<pre><code>$ <span class="userinput">arvados-cwl-runner --defer-downloads <strong>--varying-url-params="NAME1,NAME2,…"</strong> [… other options…] --submit <strong>WORKFLOW.cwl WEB-FILES.yml</strong>
+<pre><code>$ <span class="userinput">arvados-cwl-runner <strong>--defer-downloads</strong> [… other options…] --submit <strong>WORKFLOW.cwl EXTERNAL-INPUTS.yml</strong>
+</code></pre>
+</notextile>
+
+h3(#prefer-cached-downloads). Prioritize cached data collections
+
+By default, @arvados-cwl-runner@ checks the headers of every input URL to determine whether the external data has been updated and needs to be re-downloaded. These checks take a little time and will fail if the external data is no longer accessible. You can run @arvados-cwl-runner@ with the @--prefer-cached-downloads@ option to skip these checks and use any available collection caches. This will let you run the workflow even if the external data is no longer accessible, but that means the workflow may not be reproducible on Arvados clusters that don't have the collection cache.
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner <strong>--prefer-cached-downloads</strong> [… other options…] --submit <strong>WORKFLOW.cwl EXTERNAL-INPUTS.yml</strong>
+</code></pre>
+</notextile>
+
+h3(#varying-url-params). Ignore varying URL parameters when caching collections
+
+By default, @arvados-cwl-runner@ expects that every unique URL may refer to a unique resource and downloads each to a new collection cache. Some HTTP/S URLs include time-sensitive signatures or tokens in their query parameters that refer to the same underlying resource. You can identify those parameters to Arvados by running @arvados-cwl-runner@ with the @--varying-url-params@ option. This option takes a comma-separated list of parameter name(s). Arvados will ignore the values of these parameters in the URL when determining whether or not a resource has already been downloaded so you can avoid redundant downloads. For example:
+
+<notextile>
+<pre><code>$ <span class="userinput">arvados-cwl-runner <strong>--varying-url-params="NAME1,NAME2,…"</strong> [… other options…] --submit <strong>WORKFLOW.cwl WEB-FILES.yml</strong>
 </code></pre>
 </notextile>
