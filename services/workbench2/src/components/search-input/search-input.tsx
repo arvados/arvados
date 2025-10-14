@@ -12,9 +12,12 @@ import {
     Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { connect } from 'react-redux';
+import { RootState } from 'store/store';
 
 interface SearchInputDataProps {
-    value: string;
+    currentPath: string;
+    value?: string;
     label?: string;
     width?: string;
 }
@@ -26,56 +29,49 @@ interface SearchInputActionProps {
 
 type SearchInputProps = SearchInputDataProps & SearchInputActionProps;
 
-export const DEFAULT_SEARCH_DEBOUNCE = 1000;
+export const DEFAULT_SEARCH_DEBOUNCE = 750;
 
-export const SearchInput = (props: SearchInputProps) => {
-    const [timeout, setTimeout] = useState(0);
+export const SearchInput = connect((state: RootState) => ({currentPath: state.router.location?.pathname}))(
+    (props: SearchInputProps) => {
+    const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | undefined>(undefined);
     const [value, setValue] = useState("");
-    const [label, setLabel] = useState("Search");
 
     useEffect(() => {
-        if (props.value) {
-            setValue(props.value);
-        }
-        if (props.label) {
-            setLabel(props.label);
-        }
-
+        if (props.value && props.value !== value) setValue(props.value);
         return () => {
-            setValue("");
-            clearTimeout(timeout);
+            if (searchTimeout) clearTimeout(searchTimeout);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.value, props.label]);
+    }, []);
+
+    useEffect(() => {
+        setValue('')
+        if (searchTimeout) clearTimeout(searchTimeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.currentPath]);
+
+    useEffect(() => {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        setSearchTimeout(setTimeout(() => {
+            props.onSearch(value);
+        }, props.debounce || DEFAULT_SEARCH_DEBOUNCE));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
 
     const handleSubmit = (event: React.FormEvent<HTMLElement>) => {
         event.preventDefault();
-        clearTimeout(timeout);
         props.onSearch(value);
-    };
-
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { target: { value: eventValue } } = event;
-        clearTimeout(timeout);
-        setValue(eventValue);
-
-        setTimeout(window.setTimeout(
-            () => {
-                props.onSearch(eventValue);
-            },
-            props.debounce || DEFAULT_SEARCH_DEBOUNCE
-        ));
     };
 
     return (
         <form onSubmit={handleSubmit}>
             <FormControl variant="standard" style={{ width: props.width || '14rem', marginTop: '-10px'}}>
-                <InputLabel>{label}</InputLabel>
+                <InputLabel>{props.label || 'Search'}</InputLabel>
                 <Input
                     type="text"
                     data-cy="search-input"
                     value={value}
-                    onChange={handleChange}
+                    onChange={(ev) => setValue(ev.target.value)}
                     endAdornment={
                         <InputAdornment position="end" style={{marginRight: '-0.6rem'}}>
                             <Tooltip title='Search'>
@@ -88,4 +84,4 @@ export const SearchInput = (props: SearchInputProps) => {
             </FormControl>
         </form>
     );
-};
+});

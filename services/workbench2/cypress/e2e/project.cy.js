@@ -210,8 +210,8 @@ describe("Project tests", function () {
 
         // Create subproject from context menu
         cy.get("[data-cy=project-panel]").should('exist', { timeout: 10000 });
-        cy.get("[data-cy=project-panel]").contains(parentProjName).should('exist').parents('td').rightclick();
-        cy.get("[data-cy=context-menu]").contains("New project").click();
+        cy.doDataExplorerSelect(parentProjName);
+        cy.doToolbarAction("New project");
         cy.get("[data-cy=form-dialog]")
             .should("contain", "New Project")
             .within(() => {
@@ -377,7 +377,8 @@ describe("Project tests", function () {
 
         // Click to navigate to the project, search should be reset
         cy.get(`p:contains(${fooProjectNameA})`).click();
-        cy.get("[data-cy=search-input] input").should("not.have.value", "foo");
+        cy.doMPVTabSelect("Data");
+        cy.get("[data-cy=search-input] input", { timeout: 10000 }).should("not.have.value", "foo");
     });
 
     it("navigates to the root project after trashing the parent of the one being displayed", function () {
@@ -446,10 +447,11 @@ describe("Project tests", function () {
             cy.waitForDom();
             cy.doMPVTabSelect("Data");
 
+            cy.get("[data-cy=search-input] input", { timeout: 10000 }).should('not.be.disabled');
             cy.get("[data-cy=search-input] input").type("test123");
 
             cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
-            cy.get("[data-cy=search-input] input").should('exist');
+            cy.get("[data-cy=search-input] input", { timeout: 10000 }).should('exist');
             cy.get("[data-cy=search-input] input").should("not.have.value", "test123");
         });
     });
