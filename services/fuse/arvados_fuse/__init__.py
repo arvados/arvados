@@ -1114,5 +1114,12 @@ class Operations(llfuse.Operations):
         self.inodes.touch(p)
 
         f.inc_ref()
-        time.sleep(0.2)
+        with llfuse.lock_released:
+            _logger.debug("arv-mount mknod: llfuse lock released")
+            _logger.debug("arv-mount mknod: notify queue size %i", llfuse.notify_queue_size())
+            time.sleep(1)
+            _logger.debug("arv-mount mknod: slept 1 second")
+            _logger.debug("arv-mount mknod: notify queue size %i, calling join_notify_queue", llfuse.notify_queue_size())
+            llfuse.join_notify_queue()
+            _logger.debug("arv-mount mknod: join_notify_queue returned")
         return self.getattr(f.inode)
