@@ -545,7 +545,6 @@ export const CollectionPanelFiles = withStyles(styles)(
                         </Tooltip>
                         <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
                             <SearchInput
-                                selfClearProp={leftKey}
                                 label="Search"
                                 value={leftSearch}
                                 onSearch={setLeftSearch}
@@ -610,7 +609,6 @@ export const CollectionPanelFiles = withStyles(styles)(
                     >
                         <div className={classes.searchWrapper}>
                             <SearchInput
-                                selfClearProp={rightKey}
                                 label="Search"
                                 value={rightSearch}
                                 onSearch={setRightSearch}

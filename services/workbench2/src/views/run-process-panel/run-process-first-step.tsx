@@ -62,7 +62,7 @@ export const RunProcessFirstStep = withStyles(styles)(
         <Grid container spacing={2}>
             <Grid container item xs={6} className={classes.root}>
                 <Grid item xs={12} className={classes.searchGrid}>
-                    <SearchInput selfClearProp="" value='' onSearch={onSearch} />
+                    <SearchInput value='' onSearch={onSearch} />
                 </Grid>
                 <Grid item xs={12}>
                     <List className={classes.list}>

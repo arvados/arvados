@@ -271,9 +271,9 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
 
                 return <>
                     <div className={this.props.classes.searchFlex}>
-                        <span data-cy="picker-dialog-project-search"><SearchInput value="" label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  /></span>
+                        <span data-cy="picker-dialog-project-search"><SearchInput value="" label="Project search" onSearch={onProjectSearch} debounce={500} width="18rem"  /></span>
                 {this.props.includeCollections &&
-                    <span data-cy="picker-dialog-collection-search" ><SearchInput value="" label="Collection search" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" /></span>}
+                    <span data-cy="picker-dialog-collection-search" ><SearchInput value="" label="Collection search" onSearch={onCollectionFilter} debounce={500} width="18rem" /></span>}
                 </div>
 
                 <div className={this.props.classes.twoCol}>

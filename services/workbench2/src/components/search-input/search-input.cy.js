@@ -17,28 +17,26 @@ describe("<SearchInput />", () => {
         cy.clock();
         onSearch = cy.spy().as('onSearch');
         // Wrap the component to test it with props update
-        WrappedComponent = ({ selfClearProp = '', textProp }) => {
+        WrappedComponent = ({ textProp }) => {
             const [text, setText] = React.useState(textProp);
-            const [selfClear, setSelfClear] = React.useState(selfClearProp);
 
             window.updateProps = (newClear, newText) => {
                 setText(newText);
-                setSelfClear(newClear);
             };
 
-            return <SearchInput selfClearProp={selfClear} value={text} onSearch={onSearch} />;
+            return <SearchInput value={text} onSearch={onSearch} />;
         };
     });
 
     describe("on submit", () => {
         it("calls onSearch with initial value passed via props", () => {
-            cy.mount(<SearchInput selfClearProp="" value="initial value" onSearch={onSearch} />);
+            cy.mount(<SearchInput value="initial value" onSearch={onSearch} />);
             cy.get('form').submit();
             cy.get('@onSearch').should('have.been.calledWith', 'initial value');
         });
 
         it("calls onSearch with current value", () => {
-            cy.mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} />);
+            cy.mount(<SearchInput value="" onSearch={onSearch} />);
             cy.get('input').type('current value');
             cy.get('form').submit();
             cy.get('@onSearch').should('have.been.calledWith', 'current value');
@@ -56,7 +54,7 @@ describe("<SearchInput />", () => {
         });
 
         it("cancels timeout set on input value change", () => {
-            cy.mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={1000} />);
+            cy.mount(<SearchInput value="" onSearch={onSearch} debounce={1000} />);
             cy.get('input').type('current value');
             cy.get('form').submit();
             cy.get('@onSearch').should('have.been.calledOnce');
@@ -69,7 +67,7 @@ describe("<SearchInput />", () => {
 
     describe("on input value change", () => {
         it("calls onSearch after default timeout", () => {
-            cy.mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} />);
+            cy.mount(<SearchInput value="" onSearch={onSearch} />);
             cy.get('input').type('current value');
             cy.get('@onSearch').should('not.have.been.called');
             cy.tick(DEFAULT_SEARCH_DEBOUNCE);
@@ -77,7 +75,7 @@ describe("<SearchInput />", () => {
         });
 
         it("calls onSearch after the time specified in props has passed", () => {
-            cy.mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={2000}/>);
+            cy.mount(<SearchInput value="" onSearch={onSearch} debounce={2000}/>);
             cy.get('input').type('current value');
             cy.tick(1000);
             cy.get('@onSearch').should('not.have.been.called');
@@ -86,7 +84,7 @@ describe("<SearchInput />", () => {
         });
 
         it("calls onSearch only once after no change happened during the specified time", () => {
-            cy.mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={1000}/>);
+            cy.mount(<SearchInput value="" onSearch={onSearch} debounce={1000}/>);
             cy.get('input').type('current value');
             cy.tick(500);
             cy.get('input').type('current value');
@@ -95,7 +93,7 @@ describe("<SearchInput />", () => {
         });
 
         it("calls onSearch again after the specified time has passed since previous call", () => {
-            cy.mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={1000}/>);
+            cy.mount(<SearchInput value="" onSearch={onSearch} debounce={1000}/>);
             cy.get('input').type('current value');
             cy.tick(500);
             cy.get('input').clear();
@@ -110,32 +108,5 @@ describe("<SearchInput />", () => {
 
         });
 
-    });
-
-    describe("on input target change", () => {
-        it("clears the input value on selfClearProp change", () => {
-            cy.mount(<WrappedComponent selfClearProp="abc" />);
-
-            // component should clear value upon creation
-            cy.tick(1000);
-            cy.get('@onSearch').should('have.been.calledWith', '');
-            cy.get('@onSearch').should('have.been.calledOnce');
-
-            // component should not clear on same selfClearProp
-            cy.window().then((win) => {
-                win.updateProps('', 'abc');
-              });
-            cy.tick(1000);
-            cy.get('@onSearch').should('have.been.called');
-
-            // component should clear on selfClearProp change
-            cy.window().then((win) => {
-                win.updateProps('', '111');
-              });
-            // cy.get('@onSearch').should('have.been.calledOnce');
-            cy.tick(1000);
-            cy.get('@onSearch').should('have.been.calledWith', '');
-            cy.get('@onSearch').should('have.been.calledTwice');
-        });
     });
 });

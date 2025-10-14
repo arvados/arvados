@@ -398,7 +398,6 @@ export const DataExplorer = withStyles(styles)(
                                                 <SearchInput
                                                     label={searchLabel}
                                                     value={searchValue}
-                                                    selfClearProp={""}
                                                     onSearch={onSearch}
                                                 />
                                             )}

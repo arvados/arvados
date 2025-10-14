@@ -16,7 +16,6 @@ import SearchIcon from '@mui/icons-material/Search';
 interface SearchInputDataProps {
     value: string;
     label?: string;
-    selfClearProp: string;
     width?: string;
 }
 
@@ -33,7 +32,6 @@ export const SearchInput = (props: SearchInputProps) => {
     const [timeout, setTimeout] = useState(0);
     const [value, setValue] = useState("");
     const [label, setLabel] = useState("Search");
-    const [selfClearProp, setSelfClearProp] = useState("");
 
     useEffect(() => {
         if (props.value) {
@@ -49,15 +47,6 @@ export const SearchInput = (props: SearchInputProps) => {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.value, props.label]);
-
-    useEffect(() => {
-        if (selfClearProp !== props.selfClearProp) {
-            setValue("");
-            setSelfClearProp(props.selfClearProp);
-            handleChange({ target: { value: "" } } as any);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.selfClearProp]);
 
     const handleSubmit = (event: React.FormEvent<HTMLElement>) => {
         event.preventDefault();
