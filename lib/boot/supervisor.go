@@ -582,42 +582,34 @@ func (super *Supervisor) installGoProgram(ctx context.Context, srcpath string) (
 	return binfile, err
 }
 
-func (super *Supervisor) usingRVM() bool {
-	return os.Getenv("rvm_path") != ""
-}
-
 func (super *Supervisor) setupRubyEnv() error {
-	if !super.usingRVM() {
-		// (If rvm is in use, assume the caller has everything
-		// set up as desired)
-		super.cleanEnv([]string{
-			"GEM_HOME=",
-			"GEM_PATH=",
-		})
-		gem := "gem"
-		if _, err := os.Stat("/var/lib/arvados/bin/gem"); err == nil || super.ClusterType == "production" {
-			gem = "/var/lib/arvados/bin/gem"
-		}
-		cmd := exec.Command(gem, "env", "gempath")
-		if super.ClusterType == "production" {
-			cmd.Args = append([]string{"sudo", "-u", "www-data", "-E", "HOME=/var/www"}, cmd.Args...)
-			path, err := exec.LookPath("sudo")
-			if err != nil {
-				return fmt.Errorf("LookPath(\"sudo\"): %w", err)
-			}
-			cmd.Path = path
-		}
-		cmd.Stderr = super.Stderr
-		cmd.Env = super.environ
-		buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
-		if err != nil || len(buf) == 0 {
-			return fmt.Errorf("gem env gempath: %w", err)
-		}
-		gempath := string(bytes.Split(buf, []byte{':'})[0])
-		super.prependEnv("PATH", gempath+"/bin:")
-		super.setEnv("GEM_HOME", gempath)
-		super.setEnv("GEM_PATH", gempath)
+	super.cleanEnv([]string{
+		"GEM_HOME=",
+		"GEM_PATH=",
+	})
+	gem := "gem"
+	if _, err := os.Stat("/var/lib/arvados/bin/gem"); err == nil || super.ClusterType == "production" {
+		gem = "/var/lib/arvados/bin/gem"
 	}
+	cmd := exec.Command(gem, "env", "gempath")
+	if super.ClusterType == "production" {
+		cmd.Args = append([]string{"sudo", "-u", "www-data", "-E", "HOME=/var/www"}, cmd.Args...)
+		path, err := exec.LookPath("sudo")
+		if err != nil {
+			return fmt.Errorf("LookPath(\"sudo\"): %w", err)
+		}
+		cmd.Path = path
+	}
+	cmd.Stderr = super.Stderr
+	cmd.Env = super.environ
+	buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
+	if err != nil || len(buf) == 0 {
+		return fmt.Errorf("gem env gempath: %w", err)
+	}
+	gempath := string(bytes.Split(buf, []byte{':'})[0])
+	super.prependEnv("PATH", gempath+"/bin:")
+	super.setEnv("GEM_HOME", gempath)
+	super.setEnv("GEM_PATH", gempath)
 	// Passenger install doesn't work unless $HOME is ~user
 	u, err := user.Current()
 	if err != nil {
