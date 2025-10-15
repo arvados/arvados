@@ -10,21 +10,21 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-* "Introduction":#introduction
-* "Limitations":#limitations
-* "Accessing S3 data in public buckets":#public-buckets
-* "Accessing S3 data with an access key":#s3-access-key
-** "Adding an access key in Arvados Workbench":#add-access-key-workbench
-** "Adding an access key via the Arvados API":#add-access-key-api
-** "Running a workflow using a stored access key":#use-s3-access-key
-** "Troubleshooting download errors using stored access keys":#troubleshooting-access-keys
-*** "Multiple credentials found":#multiple-credentials-found
-*** "boto3 did not find any local AWS credentials to use to download from S3":#aws-credentials-not-found
-** "Running a workflow using a local access key":#local-access-key
-* "Controlling when Arvados downloads external data":#download-options
-** "Download data from the Arvados compute node":#defer-downloads
-** "Prioritize cached data collections":#prefer-cached-downloads
-** "Ignore varying URL parameters when caching collections":#varying-url-params
+# "Introduction":#introduction
+# "Limitations":#limitations
+# "Accessing S3 data in public buckets":#public-buckets
+# "Accessing S3 data with an access key":#s3-access-key
+## "Adding an access key in Arvados Workbench":#add-access-key-workbench
+## "Adding an access key via the Arvados API":#add-access-key-api
+## "Running a workflow using a stored access key":#use-s3-access-key
+## "Troubleshooting download errors using stored access keys":#troubleshooting-access-keys
+### "Multiple credentials found":#multiple-credentials-found
+### "boto3 did not find any local AWS credentials to use to download from S3":#aws-credentials-not-found
+## "Running a workflow using a local access key":#local-access-key
+# "Controlling when Arvados downloads external data":#download-options
+## "Download data from the Arvados compute node":#defer-downloads
+## "Prioritize cached data collections":#prefer-cached-downloads
+## "Ignore varying URL parameters when caching collections":#varying-url-params
 
 h2(#introduction). Introduction
 
