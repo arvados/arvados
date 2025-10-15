@@ -109,7 +109,9 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	}
 	var conftemplate string
 	if super.ClusterType == "production" {
-		conftemplate = "/var/lib/arvados/share/nginx.conf"
+		// FIXME: This used to return paths set up by `arvados-server install`,
+		// which is no longer a thing.
+		return fmt.Errorf("production cluster type not implemented")
 	} else {
 		conftemplate = filepath.Join(super.SourcePath, "sdk", "python", "tests", "nginx.conf")
 	}

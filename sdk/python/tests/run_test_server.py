@@ -774,8 +774,7 @@ def setup_config():
         print("Getting config from %s" % clusterconf, file=sys.stderr)
         pgconnection = yaml.safe_load(open(clusterconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
     else:
-        # assume "arvados-server install -type test" has set up the
-        # conventional db credentials
+        # assume the conventional db credentials
         pgconnection = {
 	    "client_encoding": "utf8",
 	    "host": "localhost",

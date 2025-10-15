@@ -49,7 +49,7 @@ type Supervisor struct {
 	// Version number to build into binaries. Only used for
 	// dev/test clusters.
 	SourceVersion string
-	// "production", "development", or "test".
+	// "development" or "test".
 	ClusterType string
 	// Listening address for external services, and internal
 	// services whose InternalURLs are not explicitly configured.
@@ -262,15 +262,10 @@ func (super *Supervisor) runCluster() error {
 		}
 	}
 
-	// Choose bin and temp dirs: /var/lib/arvados/... in
-	// production, transient tempdir otherwise.
 	if super.ClusterType == "production" {
-		// These dirs have already been created by
-		// "arvados-server install" (or by extracting a
-		// package).
-		super.tempdir = "/var/lib/arvados/tmp"
-		super.wwwtempdir = "/var/lib/arvados/wwwtmp"
-		super.bindir = "/var/lib/arvados/bin"
+		// FIXME: This used to return paths set up by `arvados-server install`,
+		// which is no longer a thing.
+		return fmt.Errorf("production cluster type not implemented")
 	} else {
 		super.tempdir, err = ioutil.TempDir("", "arvados-server-boot-")
 		if err != nil {
@@ -315,7 +310,6 @@ func (super *Supervisor) runCluster() error {
 	super.setEnv("ARVADOS_CONFIG", super.configfile)
 	super.setEnv("RAILS_ENV", super.ClusterType)
 	super.setEnv("TMPDIR", super.tempdir)
-	super.prependEnv("PATH", "/var/lib/arvados/bin:")
 	if super.ClusterType != "production" {
 		super.prependEnv("PATH", super.tempdir+"/bin:")
 	}
@@ -587,11 +581,7 @@ func (super *Supervisor) setupRubyEnv() error {
 		"GEM_HOME=",
 		"GEM_PATH=",
 	})
-	gem := "gem"
-	if _, err := os.Stat("/var/lib/arvados/bin/gem"); err == nil || super.ClusterType == "production" {
-		gem = "/var/lib/arvados/bin/gem"
-	}
-	cmd := exec.Command(gem, "env", "gempath")
+	cmd := exec.Command("gem", "env", "gempath")
 	if super.ClusterType == "production" {
 		cmd.Args = append([]string{"sudo", "-u", "www-data", "-E", "HOME=/var/www"}, cmd.Args...)
 		path, err := exec.LookPath("sudo")
@@ -602,7 +592,7 @@ func (super *Supervisor) setupRubyEnv() error {
 	}
 	cmd.Stderr = super.Stderr
 	cmd.Env = super.environ
-	buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
+	buf, err := cmd.Output() // /var/www/.local/share/gem/ruby/3.1.0/bin:...
 	if err != nil || len(buf) == 0 {
 		return fmt.Errorf("gem env gempath: %w", err)
 	}
@@ -667,7 +657,6 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, opts runOpt
 				}
 			}
 		}
-		logprefix = strings.TrimPrefix(logprefix, "/var/lib/arvados/bin/")
 		logprefix = strings.TrimPrefix(logprefix, super.tempdir+"/bin/")
 		if logprefix == "bundle" && len(innerargs) > 2 && innerargs[0] == "exec" {
 			_, dirbase := filepath.Split(dir)
