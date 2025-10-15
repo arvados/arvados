@@ -32,6 +32,23 @@ class CredentialTest < ActiveSupport::TestCase
     assert_equal [], credential.scopes
   end
 
+  test "credential scopes array must only contain strings" do
+    credential = Credential.new(@valid_attrs)
+    assert credential.valid?
+
+    credential.scopes = []
+    assert credential.valid?
+
+    credential.scopes = ["foo", "bar"]
+    assert credential.valid?
+
+    credential.scopes = ["foo", 1]
+    assert_not credential.valid?
+
+    credential.scopes = ["foo", ["bar"]]
+    assert_not credential.valid?
+  end
+
   test "credential logged_attributes excludes secret" do
     credential = nil
     act_as_system_user do

@@ -2,11 +2,6 @@
 --
 -- SPDX-License-Identifier: AGPL-3.0
 
-\restrict 5rNC7hbBubrS7b9ApdXkYPgKsgaL0LZ9g76WDCcFLLtZQdrO4hwUlp4rNspfrGb
-
--- Dumped from database version 14.19 (Ubuntu 14.19-0ubuntu0.22.04.1)
--- Dumped by pg_dump version 14.19 (Ubuntu 14.19-0ubuntu0.22.04.1)
-
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
@@ -3229,8 +3224,6 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict 5rNC7hbBubrS7b9ApdXkYPgKsgaL0LZ9g76WDCcFLLtZQdrO4hwUlp4rNspfrGb
 
 SET search_path TO "$user", public;
 
