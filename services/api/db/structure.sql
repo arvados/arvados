@@ -2,7 +2,7 @@
 --
 -- SPDX-License-Identifier: AGPL-3.0
 
-\restrict HGO4yNUclEhxIP5CzUsu4ybDjISwsqow5FefBiuLVPEeCAw4Xcv9dPiopE6nOpS
+\restrict 5rNC7hbBubrS7b9ApdXkYPgKsgaL0LZ9g76WDCcFLLtZQdrO4hwUlp4rNspfrGb
 
 -- Dumped from database version 14.19 (Ubuntu 14.19-0ubuntu0.22.04.1)
 -- Dumped by pg_dump version 14.19 (Ubuntu 14.19-0ubuntu0.22.04.1)
@@ -690,18 +690,13 @@ CREATE TABLE public.credentials (
     created_at timestamp(6) without time zone NOT NULL,
     modified_at timestamp(6) without time zone NOT NULL,
     modified_by_user_uuid character varying,
-    name character varying,
+    name character varying NOT NULL,
     description text,
-    credential_class character varying,
+    credential_class character varying NOT NULL,
     scopes jsonb DEFAULT '[]'::jsonb,
-    external_id character varying,
-    secret text,
-    expires_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT credentials_credential_class_not_null CHECK ((credential_class IS NOT NULL)),
-    CONSTRAINT credentials_expires_at_not_null CHECK ((expires_at IS NOT NULL)),
-    CONSTRAINT credentials_external_id_not_null CHECK ((external_id IS NOT NULL)),
-    CONSTRAINT credentials_name_not_null CHECK ((name IS NOT NULL)),
-    CONSTRAINT credentials_secret_not_null CHECK ((secret IS NOT NULL))
+    external_id character varying NOT NULL,
+    secret text NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -3235,7 +3230,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 -- PostgreSQL database dump complete
 --
 
-\unrestrict HGO4yNUclEhxIP5CzUsu4ybDjISwsqow5FefBiuLVPEeCAw4Xcv9dPiopE6nOpS
+\unrestrict 5rNC7hbBubrS7b9ApdXkYPgKsgaL0LZ9g76WDCcFLLtZQdrO4hwUlp4rNspfrGb
 
 SET search_path TO "$user", public;
 
