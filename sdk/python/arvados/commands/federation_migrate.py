@@ -3,14 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#
 # Migration tool for merging user accounts belonging to the same user
 # but on separate clusters to use a single user account managed by a
 # specific cluster.
-#
-# If you're working on this, see
-# arvados/sdk/python/tests/fed-migrate/README for information about
-# the testing infrastructure.
 
 import arvados
 import arvados.util
