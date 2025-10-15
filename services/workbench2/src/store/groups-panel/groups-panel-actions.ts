@@ -118,11 +118,16 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
         }
     };
 
-export const createGroup = ({ name, users = [], description }: ProjectUpdateFormDialogData) =>
+export const createGroup = ({ name, users = [], description, properties }: ProjectUpdateFormDialogData) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
         dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
-            const newGroup = await groupsService.create({ name, description, groupClass: GroupClass.ROLE });
+            const newGroup = await groupsService.create({
+                name,
+                properties,
+                description,
+                groupClass: GroupClass.ROLE
+            });
             for (const user of users) {
                 await addGroupMember({
                     user,
