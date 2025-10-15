@@ -1245,7 +1245,7 @@ class Collection(RichCollectionBase):
                 return
 
             upstream_response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
-            other = CollectionReader(upstream_response["manifest_text"])
+            other = CollectionReader(upstream_response["manifest_text"], self._my_api())
 
         if self.committed():
             # 1st case, no local changes, content is the same
@@ -1273,7 +1273,7 @@ class Collection(RichCollectionBase):
         # _manifest_text stores the text from last time we received a
         # record from the API server.  This is the state of the
         # collection before our uncommitted changes.
-        baseline = Collection(self._manifest_text)
+        baseline = Collection(self._manifest_text, self._my_api())
 
         # Get the set of changes between our baseline and the other
         # collection and apply them to self.
