@@ -17,6 +17,7 @@ import unittest
 import arvados
 import arvados.keep
 import parameterized
+import pytest
 
 from arvados._internal.streams import Range, LocatorAndRange, locators_and_ranges
 from arvados.collection import Collection, CollectionReader
@@ -1243,6 +1244,81 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1 = self.create_count_txt()
         pdh = c1.portable_data_hash()
         self.assertEqual(type(''), type(pdh))
+
+
+class TestCollectionAPIPassthrough:
+    _API_HOST = os.environ['ARVADOS_API_HOST']
+
+    @pytest.fixture
+    def no_arvados_config(self, monkeypatch):
+        """Prevent loading Arvados client configuration
+
+        This fixture rigs things up so that Arvados API client objects can
+        only be constructed with explicit arguments.
+        """
+        # In principle, this is all we need:
+        monkeypatch.setattr(arvados.config, 'settings', lambda: {})
+        # As a hedge against future development, cover more bases:
+        monkeypatch.setattr(arvados.config, '_settings', {})
+        monkeypatch.setattr(arvados.config, 'load', lambda: {})
+        monkeypatch.delenv('ARVADOS_API_HOST', raising=False)
+        monkeypatch.delenv('ARVADOS_API_TOKEN', raising=False)
+        monkeypatch.delenv('ARVADOS_API_HOST_INSECURE', raising=False)
+
+    @pytest.fixture
+    def arv_client(self, no_arvados_config):
+        return arvados.api(
+            'v1',
+            host=self._API_HOST,
+            token=run_test_server.auth_token('active'),
+            insecure=True,
+        )
+
+    @pytest.fixture
+    def coll_fixture(self):
+        return run_test_server.fixture('collections')['collection_owned_by_active']
+
+    def new_coll(self, arv_client, coll_fixture):
+        coll = Collection(
+            api_client=arv_client,
+            manifest_locator_or_text=coll_fixture['portable_data_hash'],
+        )
+        coll.save_new()
+        return coll
+
+    def expect_manifest(self, coll_fixture, *copied_filenames):
+        assert (match := re.search(r' 0:\d+:\S', coll_fixture['manifest_text']))
+        prefix = match.group(0)[:-1]
+        manifest_ext = ''.join(prefix + name for name in copied_filenames)
+        return coll_fixture['manifest_text'].replace('\n', f'{manifest_ext}\n', 1)
+
+    def test_update_with_no_changes(self, arv_client, coll_fixture):
+        coll = self.new_coll(arv_client, coll_fixture)
+        assert coll.update() is None
+        assert coll.portable_manifest_text() == coll_fixture['manifest_text']
+
+    def test_update_with_self_changes(self, arv_client, coll_fixture):
+        coll = self.new_coll(arv_client, coll_fixture)
+        coll.copy('bar', 'baz')
+        assert coll.update() is None
+        assert coll.portable_manifest_text() == self.expect_manifest(coll_fixture, 'baz')
+
+    def test_update_with_other_changes(self, arv_client, coll_fixture):
+        coll1 = self.new_coll(arv_client, coll_fixture)
+        coll2 = Collection(coll1.manifest_locator(), arv_client)
+        coll2.copy('bar', 'baz')
+        coll2.save()
+        assert coll1.update() is None
+        assert coll1.portable_manifest_text() == self.expect_manifest(coll_fixture, 'baz')
+
+    def test_update_with_both_changes(self, arv_client, coll_fixture):
+        coll1 = self.new_coll(arv_client, coll_fixture)
+        coll2 = Collection(coll1.manifest_locator(), arv_client)
+        coll2.copy('bar', 'baz')
+        coll2.save()
+        coll1.copy('bar', 'foo')
+        assert coll1.update() is None
+        assert coll1.portable_manifest_text() == self.expect_manifest(coll_fixture, 'baz', 'foo')
 
 
 if __name__ == '__main__':
