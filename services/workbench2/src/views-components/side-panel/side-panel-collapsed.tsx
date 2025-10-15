@@ -35,7 +35,7 @@ import {
     navigateToDashboard,
 } from 'store/navigation/navigation-action'
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
-import { RouterAction } from 'react-router-redux'
+import { RouterAction } from 'connected-react-router'
 import { User } from 'models/user'
 
 type CssRules = 'button' | 'unselected' | 'selected'

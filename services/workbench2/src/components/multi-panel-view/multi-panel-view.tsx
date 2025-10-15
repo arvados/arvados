@@ -4,7 +4,7 @@
 
 import React, { MutableRefObject, ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
 import { connect } from 'react-redux';
-import { RouterState } from "react-router-redux";
+import { RouterState } from "connected-react-router";
 import { RootState } from 'store/store';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Grid, Paper, Tabs, Tab } from "@mui/material";
