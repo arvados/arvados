@@ -195,8 +195,6 @@ navbar:
   installguide:
     - Overview:
       - install/index.html.textile.liquid
-    - Docker quick start:
-      - install/arvbox.html.textile.liquid
     - Arvados Installer:
       - install/install-single-host.html.textile.liquid
       - install/install-multi-host.html.textile.liquid
