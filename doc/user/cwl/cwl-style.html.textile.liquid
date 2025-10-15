@@ -26,10 +26,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Getting the temporary and output directories":#tempdirs
 # "Specifying @ResourceRequirement@":#ResourceRequirement
 
-*Data import*
-# "Importing data into Keep from HTTP":#httpimport
-# "Importing data into Keep from S3":#s3import
-
 h2(#performance). Performance
 
 To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices.
@@ -256,70 +252,9 @@ steps:
         tmpdirMin: 90000
 {% endcodeblock %}
 
+<a name="httpimport"></a>
+<a name="s3import"></a>
+
 h2. Data import
 
-h3(#httpimport). Importing data into Keep from HTTP
-
-You can use HTTP URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
-
-{% codeblock as yaml %}
-fastq1:
-  class: File
-  location: https://example.com/genomes/sampleA_1.fastq
-fastq2:
-  class: File
-  location: https://example.com/genomes/sampleA_2.fastq
-{% endcodeblock %}
-
-Files are downloaded and stored in Keep collections with HTTP header information stored in metadata.  If a file was previously downloaded, @arvados-cwl-runner@ uses HTTP caching rules to decide if a file should be re-downloaded or not.
-
-The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.  There are a couple reasons you may want to do this:
-# You are submitting from a workstation, but expect the file will be downloaded faster by the compute node
-# You are submitting multiple workflow runs in a row and want to parallelize downloads
-
-@arvados-cwl-runner@ provides two additional options to control caching behavior.
-
-* @--varying-url-params@ will ignore the listed URL query parameters from any HTTP URLs when checking if a URL has already been downloaded to Keep.
-* @--prefer-cached-downloads@ will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
-
-One use of this is to import files from "AWS S3 signed URLs":https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html (but note that you can also import from S3 natively, see below).
-
-Here is an example usage.  The use of @--varying-url-params=AWSAccessKeyId,Signature,Expires@ is especially relevant, this removes these parameters from the cached URL, which means that if a new signed URL for the same object is generated later, it can be found in the cache.
-
-{% codeblock as sh %}
-arvados-cwl-runner --defer-download \
-                   --varying-url-params=AWSAccessKeyId,Signature,Expires \
-		   --prefer-cached-downloads \
-		   workflow.cwl params.yml
-{% endcodeblock %}
-
-h3(#s3import). Importing data into Keep from S3
-
-You can use S3 URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
-
-{% codeblock as yaml %}
-fastq1:
-  class: File
-  location: s3://examplebucket/genomes/sampleA_1.fastq
-fastq2:
-  class: File
-  location: s3://examplebucket/genomes/sampleA_2.fastq
-{% endcodeblock %}
-
-Files are downloaded and stored in Keep collections.  If the bucket is versioned, it will make note of the object version and last modified time.  If a file was previously downloaded, @arvados-cwl-runner@ will use the object version and/or last modified time to decide if a file should be re-downloaded or not.  The @--prefer-cached-downloads@ option will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
-
-The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.  There are several reasons you may want to do this:
-# You are submitting from a workstation, but expect the file will be downloaded faster by the compute node
-# You are submitting multiple workflow runs in a row and want to parallelize downloads
-# You don't have credentials to access the S3 bucket locally but do have read access to AWS credentials registered with Arvados
-
-When using the @--defer-download@ option, @arvados-cwl-runner@ use the following process to choose which AWS credentials to use to access the S3 bucket.
-
-# Arvados will first check to see if you have access to a "credential":{{site.baseurl}}/api/methods/credentials.html with @credential_class: aws_access_key@ where the s3 bucket is present in @scopes@ (the bucket name must be formatted as @s3://bucketname@).
-# Otherwise, Arvados will look for a "credential":{{site.baseurl}}/api/methods/credentials.html with @credential_class: aws_access_key@ where @scopes@ is empty.
-
-In each case, if more than one "credential":{{site.baseurl}}/api/methods/credentials.html matches, it will throw an error, and the user must provide @--use-credential@ on the command line with the name or uuid of the credential to specify precisely which one to use.
-
-If no AWS credentials are registered with Arvados, but you have AWS credentials available locally (for example, in @~/.aws/credentials@), you can use @--enable-aws-credential-capture@.  This instructs @arvados-cwl-runner@ to capture the active AWS credentials from your environment and pass them to the workflow runner container as a secret file.  In this case, these credentials are only stored in Arvados for the duration of the workflow run and are discarded when the workflow finishes.  Arvados uses the @boto3@ library to access S3, which "has a list of locations where it will search for credentials.":https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
-
-If the source S3 bucket is a public bucket, you can download from it without AWS credentials by providing @--s3-public-bucket@ on the command line.
+Information about running workflows with HTTP/S or S3 URL inputs now has its own page in the user guide: "Using external data sources in workflows":{{ site.baseurl }}/user/topics/external-inputs.html
