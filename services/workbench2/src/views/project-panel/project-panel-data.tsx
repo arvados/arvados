@@ -156,17 +156,15 @@ interface ProjectPanelDataProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
 };
 
-export const ProjectPanelData = class extends React.Component<ProjectPanelDataProps> {
-    render () {
-        return <DataExplorer
-            id={PROJECT_PANEL_DATA_ID}
-            onRowClick={this.props.onRowClick}
-            onRowDoubleClick={this.props.onRowDoubleClick}
-            onContextMenu={this.props.onContextMenu}
-            contextMenuColumn={false}
-            defaultViewIcon={ProjectIcon}
-            defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-            paperClassName={this.props.paperClassName}
-        />;
-    }
-};
+export const ProjectPanelData = (props: ProjectPanelDataProps) => (
+    <DataExplorer
+        id={PROJECT_PANEL_DATA_ID}
+        onRowClick={props.onRowClick}
+        onRowDoubleClick={props.onRowDoubleClick}
+        onContextMenu={props.onContextMenu}
+        contextMenuColumn={false}
+        defaultViewIcon={ProjectIcon}
+        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
+        paperClassName={props.paperClassName}
+    />
+);
