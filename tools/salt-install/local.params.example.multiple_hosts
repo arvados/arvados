@@ -95,6 +95,12 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # Sets the directory for Grafana dashboards
 # GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
 
+# Grafana's Alertmanager configuration.
+# Set GRAFANA_SMTP_SERVER as "host:port" value to enable alerting via SMTP.
+# GRAFANA_SMTP_SERVER=
+# GRAFANA_SMTP_FROM_EMAIL=grafana@example.com
+# GRAFANA_SMTP_FROM_NAME="Grafana"
+
 # Sets the amount of data (expressed in time) Prometheus keeps on its
 # time-series database. Default is 15 days.
 # PROMETHEUS_DATA_RETENTION_TIME="180d"
