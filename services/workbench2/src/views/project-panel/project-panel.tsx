@@ -80,104 +80,108 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
     };
 }
 
-export const ProjectPanel = withStyles(styles)(
-    connect(mapStateToProps)(
-        (props: ProjectPanelProps) => {
-            // shouldComponentUpdate( nextProps: Readonly<ProjectPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
-            //     return !isEqual(nextProps.resources, this.props.resources)
-            // }
+export const ProjectPanel = withStyles(styles)(connect(mapStateToProps)(
+    React.memo((props: ProjectPanelProps) => {
+        const { classes, isRootProject } = props;
+        // Root project doesn't have Overview Panel
+        const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
+        // Default to first tab if no user preference
+        const defaultTab = props.defaultTab || Object.keys(tabSet)[0];
+        // Apply user preference or default to initial state
+        const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
+                name: tabSet[key],
+                visible: tabSet[key] === defaultTab,
+        }));
 
-            const { classes, isRootProject } = props;
-            // Root project doesn't have Overview Panel
-            const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
-            // Default to first tab if no user preference
-            const defaultTab = props.defaultTab || Object.keys(tabSet)[0];
-            // Apply user preference or default to initial state
-            const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
-                    name: tabSet[key],
-                    visible: tabSet[key] === defaultTab,
-            }));
+        const handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            const { resources, isAdmin, currentItemId } = props;
+            const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
+            // When viewing the contents of a filter group, all contents should be treated as read only.
+            let readonly = false;
+            const project = currentItemId ? getResource<GroupResource>(currentItemId)(resources) : undefined;
+            if (project && project.groupClass === GroupClass.FILTER) {
+                readonly = true;
+            }
 
-            const handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { resources, isAdmin, currentItemId } = props;
-                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-                // When viewing the contents of a filter group, all contents should be treated as read only.
-                let readonly = false;
-                const project = currentItemId ? getResource<GroupResource>(currentItemId)(resources) : undefined;
-                if (project && project.groupClass === GroupClass.FILTER) {
-                    readonly = true;
-                }
+            const menuKind = props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
+            if (menuKind && resource) {
+                props.dispatch<any>(
+                    openContextMenuAndSelect(event, {
+                        name: resource.name,
+                        uuid: resource.uuid,
+                        ownerUuid: resource.ownerUuid,
+                        isTrashed: 'isTrashed' in resource ? resource.isTrashed : false,
+                        kind: resource.kind,
+                        menuKind,
+                        isAdmin,
+                        isFrozen: resourceIsFrozen(resource, resources),
+                        description: resource.description,
+                        storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
+                        properties: 'properties' in resource ? resource.properties : {},
+                    })
+                );
+            }
+            props.dispatch<any>(loadDetailsPanel(resourceUuid));
+        };
 
-                const menuKind = props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
-                if (menuKind && resource) {
-                    props.dispatch<any>(
-                        openContextMenuAndSelect(event, {
-                            name: resource.name,
-                            uuid: resource.uuid,
-                            ownerUuid: resource.ownerUuid,
-                            isTrashed: 'isTrashed' in resource ? resource.isTrashed : false,
-                            kind: resource.kind,
-                            menuKind,
-                            isAdmin,
-                            isFrozen: resourceIsFrozen(resource, resources),
-                            description: resource.description,
-                            storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
-                            properties: 'properties' in resource ? resource.properties : {},
-                        })
-                    );
-                }
-                props.dispatch<any>(loadDetailsPanel(resourceUuid));
-            };
+        const handleRowDoubleClick = (uuid: string) => {
+            props.dispatch<any>(navigateTo(uuid));
+        };
 
-            const handleRowDoubleClick = (uuid: string) => {
-                props.dispatch<any>(navigateTo(uuid));
-            };
+        const handleRowClick = (uuid: string) => {
+            props.dispatch<any>(toggleOne(uuid))
+        };
 
-            const handleRowClick = (uuid: string) => {
-                props.dispatch<any>(toggleOne(uuid))
-            };
+        return <div data-cy='project-panel' className={classes.root}>
+            <DetailsCardRoot />
+            <MPVContainer
+                className={classes.mpvRoot}
+                panelStates={initialPanelState}
+                justify-content="flex-start"
+                style={{flexWrap: 'nowrap'}}>
+                {isRootProject ? null : <MPVPanelContent
+                    forwardProps
+                    xs="auto"
+                    item
+                    data-cy="project-details"
+                    className={classes.dataExplorer}>
+                    <OverviewPanel detailsElement={<ProjectAttributes />} />
+                </MPVPanelContent>}
+                <MPVPanelContent
+                    forwardProps
+                    xs="auto"
+                    item
+                    data-cy="project-data"
+                    className={classes.dataExplorer}>
+                    <ProjectPanelData
+                        onRowClick={handleRowClick}
+                        onRowDoubleClick={handleRowDoubleClick}
+                        onContextMenu={handleContextMenu}
+                    />
+                </MPVPanelContent>
+                <MPVPanelContent
+                    forwardProps
+                    xs="auto"
+                    item
+                    data-cy="project-run"
+                    className={classes.dataExplorer}>
+                    <ProjectPanelRun
+                        onRowClick={handleRowClick}
+                        onRowDoubleClick={handleRowDoubleClick}
+                        onContextMenu={handleContextMenu}
+                    />
+                </MPVPanelContent>
+            </MPVContainer>
+        </div>;
+    }, preventRerender)
+));
 
-            return <div data-cy='project-panel' className={classes.root}>
-                <DetailsCardRoot />
-                <MPVContainer
-                    className={classes.mpvRoot}
-                    panelStates={initialPanelState}
-                    justify-content="flex-start"
-                    style={{flexWrap: 'nowrap'}}>
-                    {isRootProject ? null : <MPVPanelContent
-                        forwardProps
-                        xs="auto"
-                        item
-                        data-cy="project-details"
-                        className={classes.dataExplorer}>
-                        <OverviewPanel detailsElement={<ProjectAttributes />} />
-                    </MPVPanelContent>}
-                    <MPVPanelContent
-                        forwardProps
-                        xs="auto"
-                        item
-                        data-cy="project-data"
-                        className={classes.dataExplorer}>
-                        <ProjectPanelData
-                            onRowClick={handleRowClick}
-                            onRowDoubleClick={handleRowDoubleClick}
-                            onContextMenu={handleContextMenu}
-                        />
-                    </MPVPanelContent>
-                    <MPVPanelContent
-                        forwardProps
-                        xs="auto"
-                        item
-                        data-cy="project-run"
-                        className={classes.dataExplorer}>
-                        <ProjectPanelRun
-                            onRowClick={handleRowClick}
-                            onRowDoubleClick={handleRowDoubleClick}
-                            onContextMenu={handleContextMenu}
-                        />
-                    </MPVPanelContent>
-                </MPVContainer>
-            </div>;
-        }
-    )
-);
+function preventRerender(prevProps: ProjectPanelProps, nextProps: ProjectPanelProps) {
+    if (!isEqual(prevProps.resources, nextProps.resources)) {
+        return false;
+    }
+    if (prevProps.currentItemId !== nextProps.currentItemId) {
+        return false;
+    }
+    return true;
+}
