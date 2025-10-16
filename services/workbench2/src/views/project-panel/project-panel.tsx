@@ -82,69 +82,24 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
 
 export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
-        class extends React.Component<ProjectPanelProps> {
+        (props: ProjectPanelProps) => {
+            // shouldComponentUpdate( nextProps: Readonly<ProjectPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
+            //     return !isEqual(nextProps.resources, this.props.resources)
+            // }
 
-            shouldComponentUpdate( nextProps: Readonly<ProjectPanelProps>, nextState: Readonly<{}>, nextContext: any ): boolean {
-                return !isEqual(nextProps.resources, this.props.resources)
-            }
+            const { classes, isRootProject } = props;
+            // Root project doesn't have Overview Panel
+            const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
+            // Default to first tab if no user preference
+            const defaultTab = props.defaultTab || Object.keys(tabSet)[0];
+            // Apply user preference or default to initial state
+            const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
+                    name: tabSet[key],
+                    visible: tabSet[key] === defaultTab,
+            }));
 
-            render() {
-                const { classes, isRootProject } = this.props;
-                // Root project doesn't have Overview Panel
-                const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
-                // Default to first tab if no user preference
-                const defaultTab = this.props.defaultTab || Object.keys(tabSet)[0];
-                // Apply user preference or default to initial state
-                const initialPanelState: MPVPanelState[] = Object.keys(tabSet).map(key => ({
-                        name: tabSet[key],
-                        visible: tabSet[key] === defaultTab,
-                }));
-
-                return <div data-cy='project-panel' className={classes.root}>
-                    <DetailsCardRoot />
-                    <MPVContainer
-                        className={classes.mpvRoot}
-                        panelStates={initialPanelState}
-                        justify-content="flex-start"
-                        style={{flexWrap: 'nowrap'}}>
-                        {isRootProject ? null : <MPVPanelContent
-                            forwardProps
-                            xs="auto"
-                            item
-                            data-cy="project-details"
-                            className={classes.dataExplorer}>
-                            <OverviewPanel detailsElement={<ProjectAttributes />} />
-                        </MPVPanelContent>}
-                        <MPVPanelContent
-                            forwardProps
-                            xs="auto"
-                            item
-                            data-cy="project-data"
-                            className={classes.dataExplorer}>
-                            <ProjectPanelData
-                                onRowClick={this.handleRowClick}
-                                onRowDoubleClick={this.handleRowDoubleClick}
-                                onContextMenu={this.handleContextMenu}
-                            />
-                        </MPVPanelContent>
-                        <MPVPanelContent
-                            forwardProps
-                            xs="auto"
-                            item
-                            data-cy="project-run"
-                            className={classes.dataExplorer}>
-                            <ProjectPanelRun
-                                onRowClick={this.handleRowClick}
-                                onRowDoubleClick={this.handleRowDoubleClick}
-                                onContextMenu={this.handleContextMenu}
-                            />
-                        </MPVPanelContent>
-                    </MPVContainer>
-                </div>
-            }
-
-            handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { resources, isAdmin, currentItemId } = this.props;
+            const handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                const { resources, isAdmin, currentItemId } = props;
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
                 // When viewing the contents of a filter group, all contents should be treated as read only.
                 let readonly = false;
@@ -153,9 +108,9 @@ export const ProjectPanel = withStyles(styles)(
                     readonly = true;
                 }
 
-                const menuKind = this.props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
+                const menuKind = props.dispatch<any>(resourceToMenuKind(resourceUuid, readonly));
                 if (menuKind && resource) {
-                    this.props.dispatch<any>(
+                    props.dispatch<any>(
                         openContextMenuAndSelect(event, {
                             name: resource.name,
                             uuid: resource.uuid,
@@ -171,16 +126,58 @@ export const ProjectPanel = withStyles(styles)(
                         })
                     );
                 }
-                this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
+                props.dispatch<any>(loadDetailsPanel(resourceUuid));
             };
 
-            handleRowDoubleClick = (uuid: string) => {
-                this.props.dispatch<any>(navigateTo(uuid));
+            const handleRowDoubleClick = (uuid: string) => {
+                props.dispatch<any>(navigateTo(uuid));
             };
 
-            handleRowClick = (uuid: string) => {
-                this.props.dispatch<any>(toggleOne(uuid))
+            const handleRowClick = (uuid: string) => {
+                props.dispatch<any>(toggleOne(uuid))
             };
+
+            return <div data-cy='project-panel' className={classes.root}>
+                <DetailsCardRoot />
+                <MPVContainer
+                    className={classes.mpvRoot}
+                    panelStates={initialPanelState}
+                    justify-content="flex-start"
+                    style={{flexWrap: 'nowrap'}}>
+                    {isRootProject ? null : <MPVPanelContent
+                        forwardProps
+                        xs="auto"
+                        item
+                        data-cy="project-details"
+                        className={classes.dataExplorer}>
+                        <OverviewPanel detailsElement={<ProjectAttributes />} />
+                    </MPVPanelContent>}
+                    <MPVPanelContent
+                        forwardProps
+                        xs="auto"
+                        item
+                        data-cy="project-data"
+                        className={classes.dataExplorer}>
+                        <ProjectPanelData
+                            onRowClick={handleRowClick}
+                            onRowDoubleClick={handleRowDoubleClick}
+                            onContextMenu={handleContextMenu}
+                        />
+                    </MPVPanelContent>
+                    <MPVPanelContent
+                        forwardProps
+                        xs="auto"
+                        item
+                        data-cy="project-run"
+                        className={classes.dataExplorer}>
+                        <ProjectPanelRun
+                            onRowClick={handleRowClick}
+                            onRowDoubleClick={handleRowDoubleClick}
+                            onContextMenu={handleContextMenu}
+                        />
+                    </MPVPanelContent>
+                </MPVContainer>
+            </div>;
         }
     )
 );
