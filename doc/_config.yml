@@ -164,7 +164,6 @@ navbar:
       - admin/reassign-ownership.html.textile.liquid
       - admin/link-accounts.html.textile.liquid
       - admin/federation.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-external-sources.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid

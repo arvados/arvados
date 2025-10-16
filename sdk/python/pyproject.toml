@@ -45,7 +45,6 @@ script-files = [
   "bin/arv-get",
   "bin/arv-keepdocker",
   "bin/arv-ls",
-  "bin/arv-federation-migrate",
   "bin/arv-normalize",
   "bin/arv-put",
   "bin/arv-ws",
