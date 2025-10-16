@@ -13,7 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
    # A single_host multiple_hostnames example
    config.vm.define "arvados-sh-mn" do |arv|
-     arv.vm.box = "bento/debian-11"
+     arv.vm.box = "bento/debian-12"
      arv.vm.hostname = "harpo"
      # CPU/RAM
      config.vm.provider :virtualbox do |v|
@@ -58,7 +58,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
    # A single_host single_hostname example
    config.vm.define "arvados-sh-sn" do |arv|
      #arv.vm.box = "bento/centos-7"
-     arv.vm.box = "bento/ubuntu-20.04"
+     arv.vm.box = "bento/ubuntu-24.04"
      arv.vm.hostname = "zeppo"
      # CPU/RAM
      config.vm.provider :virtualbox do |v|

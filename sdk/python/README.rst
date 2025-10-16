@@ -49,7 +49,7 @@ You can test the change by running::
 Installing on Debian and Ubuntu systems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Arvados publishes packages for Debian 11 "bullseye," Debian 12 "bookworm," Ubuntu 20.04 "focal," and Ubuntu 22.04 "jammy." You can install the Python SDK package on any of these distributions by running the following commands::
+Arvados publishes packages for Debian 12 "bookworm," Ubuntu 22.04 "jammy," and Ubuntu 24.04 "noble." You can install the Python SDK package on any of these distributions by running the following commands::
 
   sudo install -d /etc/apt/keyrings
   sudo curl -fsSL -o /etc/apt/keyrings/arvados.asc https://apt.arvados.org/pubkey.gpg
