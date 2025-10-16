@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import withStyles from '@mui/styles/withStyles';
+import { Dispatch } from 'redux';
 import { DispatchProp, connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
 import { WithStyles } from '@mui/styles';
@@ -31,6 +32,7 @@ import { OverviewPanel } from 'components/overview-panel/overview-panel';
 import { ProjectAttributes } from './project-attributes';
 import { isUserResource } from 'models/user';
 import { ProjectResource } from 'models/project';
+import { projectPanelDataActions, projectPanelRunActions } from 'store/project-panel/project-panel-action-bind';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -66,7 +68,11 @@ interface ProjectPanelDataProps {
     isRootProject: boolean;
 }
 
-type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+interface ProjectPanelActionProps {
+    resetPagination: () => void;
+}
+
+type ProjectPanelProps = ProjectPanelDataProps & ProjectPanelActionProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
 const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
     const currentItemId = getProjectPanelCurrentUuid(state);
@@ -80,9 +86,22 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
     };
 }
 
-export const ProjectPanel = withStyles(styles)(connect(mapStateToProps)(
+const mapDispatchToProps = (dispatch: Dispatch): ProjectPanelActionProps => ({
+    resetPagination: () => {
+        dispatch(projectPanelDataActions.RESET_PAGINATION());
+        dispatch(projectPanelRunActions.RESET_PAGINATION());
+    },
+});
+
+export const ProjectPanel = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(
     React.memo((props: ProjectPanelProps) => {
-        const { classes, isRootProject } = props;
+        const { classes, isRootProject, currentItemId, resetPagination } = props;
+
+        // Reset all data explorer tab pagination on uuid change
+        useEffect(() => {
+            resetPagination();
+        }, [currentItemId, resetPagination]);
+
         // Root project doesn't have Overview Panel
         const tabSet = isRootProject ? RootProjectPanelTabLabels : ProjectPanelTabLabels;
         // Default to first tab if no user preference

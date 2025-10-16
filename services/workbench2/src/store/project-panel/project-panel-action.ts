@@ -24,12 +24,19 @@ export const RootProjectPanelTabLabels = {
     RUNS: "Workflow Runs",
 };
 
+/**
+ * openProjectPanel runs on any route change that matches the project panel
+ * This includes navigating within a project as well as the side panel
+ * including refreshing the same location
+ */
 export const openProjectPanel = (projectUuid: string) => async (dispatch: Dispatch) => {
     // Pre-emptively set working as early as possible to avoid delay from loadProject codepath
     dispatch(projectPanelDataActions.SET_WORKING(true));
     dispatch(projectPanelRunActions.SET_WORKING(true));
 
     await dispatch<any>(loadProject(projectUuid));
+    // Setting the current UUID must be done before requesting items, it also triggers
+    // the project panel to reset pagination if the uuid changed (we can't tell here)
     dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
 
     dispatch(projectPanelDataActions.RESET_EXPLORER_SEARCH_VALUE());
