@@ -22,7 +22,7 @@ inputs:
   reporting_end:
     type: string?
     label: Report end date in `YYYY-MM-DD` format
-    doc: Defaults to today
+    doc: Defaults to today if not provided
 
   prometheus_host:
     type: string?
@@ -53,7 +53,28 @@ requirements:
       RUN pip install --no-cache-dir "arvados-cluster-activity[prometheus]"
     dockerImageId: arvados/cluster-activity
 
-  InlineJavascriptRequirement: {}
+  InlineJavascriptRequirement:
+    expressionLib:
+      - |
+        function padZero(n) {
+          var s = n.toString();
+          if (s.length < 2) {
+            return "0" + s;
+          }
+          return s;
+        }
+
+      - |
+        function getDateWithDefault(dateString) {
+          if (!dateString) {
+            var now = new Date();
+            var yy = now.getFullYear();
+            var mm = now.getMonth() + 1;  // getMonth() is zero-based.
+            var dd = now.getDate();
+            return [yy.toString(), padZero(mm), padZero(dd)].join("-");
+          }
+          return dateString;
+        }
 
   arv:APIRequirement: {}
 
@@ -75,7 +96,7 @@ hints:
 arguments:
   - arv-cluster-activity
   - {prefix: '--start', valueFrom: $(inputs.reporting_start)}
-  - {prefix: '--end', valueFrom: $(inputs.reporting_end)}
+  - {prefix: '--end', valueFrom: $(getDateWithDefault(inputs.reporting_end))}
   - {prefix: '--exclude', valueFrom: $(inputs.exclude)}
   - {prefix: '--html-report-file', valueFrom: report.html}
   - {prefix: '--cost-report-file', valueFrom: cost.csv}
