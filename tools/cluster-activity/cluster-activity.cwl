@@ -57,23 +57,24 @@ requirements:
     expressionLib:
       - |
         function padZero(n) {
-          var s = n.toString();
-          if (s.length < 2) {
-            return "0" + s;
-          }
-          return s;
+            var s = n.toString();
+            if (s.length < 2) {
+                return "0" + s;
+            }
+            return s;
         }
 
       - |
         function getDateWithDefault(dateString) {
-          if (!dateString) {
-            var now = new Date();
-            var yy = now.getFullYear();
-            var mm = now.getMonth() + 1;  // getMonth() is zero-based.
-            var dd = now.getDate();
-            return [yy.toString(), padZero(mm), padZero(dd)].join("-");
-          }
-          return dateString;
+            if (!dateString) {
+                var now = new Date();
+                var yy = now.getFullYear();
+                // getMonth() is zero-based.
+                var mm = now.getMonth() + 1;
+                var dd = now.getDate();
+                return [yy.toString(), padZero(mm), padZero(dd)].join("-");
+            }
+            return dateString;
         }
 
   arv:APIRequirement: {}
