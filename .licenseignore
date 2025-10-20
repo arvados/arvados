@@ -85,9 +85,6 @@ contrib/java-sdk-v2/src/test/resources/*
 sdk/cwl/tests/wf/feddemo
 go.mod
 go.sum
-sdk/python/tests/fed-migrate/CWLFile
-sdk/python/tests/fed-migrate/*.cwl
-sdk/python/tests/fed-migrate/*.cwlex
 doc/install/*.xlsx
 sdk/cwl/tests/wf/hello.txt
 sdk/cwl/tests/wf/indir1/hello2.txt

@@ -3,28 +3,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#
 # Migration tool for merging user accounts belonging to the same user
 # but on separate clusters to use a single user account managed by a
 # specific cluster.
-#
-# If you're working on this, see
-# arvados/sdk/python/tests/fed-migrate/README for information about
-# the testing infrastructure.
+
+import argparse
+import csv
+import hashlib
+import hmac
+import importlib.metadata
+import os
+import re
+import sys
+import urllib.parse
 
 import arvados
+import arvados.commands._util as arv_cmd
 import arvados.util
 import arvados.errors
-import csv
-import sys
-import argparse
-import hmac
-import urllib.parse
-import os
-import hashlib
-import re
-from arvados._version import __version__
-from . import _util as arv_cmd
 
 EMAIL=0
 USERNAME=1
@@ -331,7 +327,9 @@ def main():
         parents=[arv_cmd.retry_opt],
     )
     parser.add_argument(
-        '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+        '--version',
+        action='version',
+        version=f"{sys.argv[0]} {importlib.metadata.version('arvados-bootstrap')}",
         help='Print version and exit.')
     parser.add_argument('--tokens', type=str, metavar='FILE', required=False, help="Read tokens from FILE. Not needed when using LoginCluster.")
     parser.add_argument('--data-into-subproject', action="store_true", help="Migrate user's data into a separate subproject. This can be used to avoid name collisions from within an account.")

@@ -43,7 +43,7 @@ If a provider identifier is not given, no match is found, it next searches by pr
 
 If no user account is found, a new user account is created with the information from the identity provider.
 
-If a user account has been "linked":{{site.baseurl}}/user/topics/link-accounts.html or "migrated":merge-remote-account.html the API server may follow internal redirects (@redirect_to_user_uuid@) to select the linked or migrated user account.
+If a user account has been "linked":{{site.baseurl}}/user/topics/link-accounts.html or migrated the API server may follow internal redirects (@redirect_to_user_uuid@) to select the linked or migrated user account.
 
 h3(#federated_auth). Federated Authentication
 
@@ -153,7 +153,6 @@ h3(#activation_flow_private). Private instance
 Policy: users must be manually set up by the admin.
 
 Here is the configuration for this policy.  This is also the default if not provided.
-(However, be aware that developer/demo builds such as "arvbox":{{site.baseurl}}/install/arvbox.html are configured with the "Open instance" policy described below.)
 
 <pre>
 Users:

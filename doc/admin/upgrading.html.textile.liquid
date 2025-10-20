@@ -32,6 +32,22 @@ h2(#main). development main
 
 "previous: Upgrading to 3.1.2":#v3_1_2
 
+h3. Debian 11 and Ubuntu 20.04 are no longer supported
+
+Arvados 3.2 no longer supports some of the older distributions supported by Arvados 3.1: Debian 11 "bullseye" and Ubuntu 20.04 "focal." If you are running Arvados on any of these distributions, you must first upgrade to a supported distribution before you upgrade to Arvados 3.2.
+
+Arvados 3.1 supports Debian 12 "bookworm" and Ubuntu 22.04 "jammy." You can upgrade your Arvados cluster to one of those releases, then proceed to upgrade Arvados to 3.2.
+
+The list of distributions supported by Arvados 3.2 can be found on the "planning and prerequisites page":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux of the install guide.
+
+h3. arvbox and @arvados-server install@ are no longer supported
+
+Arvados 3.2 no longer includes the arvbox Docker image and associated tooling. The @arvados-server install@ subcommand has also been removed from this release.
+
+If you were using arvbox in demo mode, consider installing on a Debian-based virtual machine with our "single-node Ansible installer":{{ site.baseurl }}/install/install-single-host.html.
+
+If you were using arvbox or @arvados-server install@ for development, we now provide an Ansible playbook to install development dependencies on a Debian-based system. Our "Hacking Prerequisites wiki":https://dev.arvados.org/projects/arvados/wiki/Hacking_prerequisites has instructions for how to use it.
+
 h3. Loki credentials in @local.params.secrets@ are no longer needed
 
 Salt installer's Terraform code replaces the use of AWS access key and secret for Loki's S3 bucket with equivalent permissions through an instance profile. Once applied, the credentials in the @local.params.secrets@ file will be invalid and can be safely removed.

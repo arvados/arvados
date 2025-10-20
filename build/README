@@ -61,8 +61,6 @@ run-build-packages.sh                    Actually build packages.  Intended to r
 run-build-packages-python-and-ruby.sh    Build Python and Ruby packages suitable
                                          for upload to PyPi and Rubygems.
 
-run-build-docker-images.sh               Build arvbox Docker images.
-
 run-library.sh                           A library of functions shared by the
                                          various scripts in this
                                          directory.

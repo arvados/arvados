@@ -1974,9 +1974,7 @@ func dataToWrite_SourceTree(c *check.C, maxfiles int) (writes []dataToWrite) {
 	c.Assert(err, check.IsNil, check.Commentf("%s", buf))
 	for _, path := range bytes.Split(buf, []byte("\n")) {
 		path := string(path)
-		if path == "" ||
-			strings.HasPrefix(path, "tools/arvbox/lib/arvbox/docker/service") &&
-				strings.HasSuffix(path, "/run") {
+		if path == "" {
 			// dangling symlink
 			continue
 		}

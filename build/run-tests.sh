@@ -180,11 +180,11 @@ sanity_checks() {
     echo -n 'xvfb: '
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
     echo -n 'singularity: '
-    singularity --version || fatal "No singularity. Try: arvados-server install"
+    singularity --version || fatal "No singularity."
     echo -n 'docker client: '
-    docker --version || echo "No docker client. Try: arvados-server install"
+    docker --version || echo "WARNING: No docker client."
     echo -n 'docker server: '
-    docker info --format='{{.ServerVersion}}' || echo "No docker server. Try: arvados-server install"
+    docker info --format='{{.ServerVersion}}' || echo "WARNING: No docker server."
 
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
@@ -372,11 +372,6 @@ setup_virtualenv() {
 }
 
 initialize() {
-    # If dependencies like ruby, go, etc. are installed in
-    # /var/lib/arvados -- presumably by "arvados-server install" --
-    # then we want to use those versions, instead of whatever happens
-    # to be installed in /usr.
-    PATH="/var/lib/arvados/bin:${PATH}"
     sanity_checks
 
     echo "WORKSPACE=$WORKSPACE"

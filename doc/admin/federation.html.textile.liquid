@@ -63,7 +63,7 @@ The @LoginCluster@ configuration redirects all user logins to the LoginCluster, 
 
 Note: tokens issued by the login cluster need to be periodically re-validated when used on other clusters in the federation.  The period between revalidation attempts is configured with @Login.RemoteTokenRefresh@.  The default is 5 minutes.  A longer period reduces overhead from validating tokens, but means it may take longer for other clusters to notice when a token has been revoked or a user has changed status (being activated/deactivated, admin flag changed).
 
-To migrate users of existing clusters with separate user databases to use a single LoginCluster, use "arv-federation-migrate":merge-remote-account.html .
+To migrate users of existing clusters with separate user databases to use a single LoginCluster, a script @arv-federation-migrate@ is available in @contrib/arvados-bootstrap@.
 
 h2. Groups
 

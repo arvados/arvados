@@ -14,15 +14,9 @@ all:
 
 arvados_build_one_target:
   hosts:
-    arvados_pkgbuild_debian11:
-      arvados_docker_from: debian:11-slim
-      arvados_docker_tag: arvados/build:debian11
     arvados_pkgbuild_debian12:
       arvados_docker_from: debian:12-slim
       arvados_docker_tag: arvados/build:debian12
-    arvados_pkgbuild_ubuntu2004:
-      arvados_docker_from: ubuntu:focal
-      arvados_docker_tag: arvados/build:ubuntu2004
     arvados_pkgbuild_ubuntu2204:
       arvados_docker_from: ubuntu:jammy
       arvados_docker_tag: arvados/build:ubuntu2204
@@ -41,15 +35,9 @@ arvados_build_one_target:
 
 arvados_package_tests:
   hosts:
-    arvados_pkgtest_debian11:
-      arvados_docker_from: debian:11-slim
-      arvados_docker_tag: arvados/package-test:debian11
     arvados_pkgtest_debian12:
       arvados_docker_from: debian:12-slim
       arvados_docker_tag: arvados/package-test:debian12
-    arvados_pkgtest_ubuntu2004:
-      arvados_docker_from: ubuntu:focal
-      arvados_docker_tag: arvados/package-test:ubuntu2004
     arvados_pkgtest_ubuntu2204:
       arvados_docker_from: ubuntu:jammy
       arvados_docker_tag: arvados/package-test:ubuntu2204

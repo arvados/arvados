@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
-	"net"
 	"os"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -26,7 +25,7 @@ func (runner runWorkbench2) String() string {
 }
 
 func (runner runWorkbench2) Run(ctx context.Context, fail func(error), super *Supervisor) error {
-	host, port, err := internalPort(runner.svc)
+	_, port, err := internalPort(runner.svc)
 	if err != nil {
 		return fmt.Errorf("bug: no internalPort for %q: %v (%#v)", runner, err, runner.svc)
 	}
@@ -34,9 +33,9 @@ func (runner runWorkbench2) Run(ctx context.Context, fail func(error), super *Su
 	go func() {
 		defer super.waitShutdown.Done()
 		if super.ClusterType == "production" {
-			err = super.RunProgram(ctx, "/var/lib/arvados/workbench2", runOptions{
-				user: "www-data",
-			}, "arvados-server", "workbench2", super.cluster.Services.Controller.ExternalURL.Host, net.JoinHostPort(host, port), ".")
+			// FIXME: This used to return paths set up by
+			// `arvados-server install`, which is no longer a thing.
+			fail(errors.New("production cluster type not implemented"))
 		} else {
 			// super.SourcePath might be readonly, so for
 			// dev/test mode we make a copy in a writable
