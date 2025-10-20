@@ -1484,10 +1484,9 @@ class UnsupportedOperationsTest(UnsupportedCreateTest):
 class DockerRaceTest(MountTestBase):
     """Test race condition when docker mount point is in a collection.
 
-    Without b7c05540d6c5c100394a11b2a668ccb3870993c5, this test would
-    occasionally fail with either (a) empty stdout, as if test.sh was
-    an empty shell script, or (b) a docker daemon error like this on
-    stderr:
+    Before the fix, this test would occasionally fail with either (a) empty
+    stdout, as if test.sh was an empty shell script, or (b) a docker daemon
+    error like this on stderr:
 
     docker: Error response from daemon: failed to create task for
     container: failed to create shim task: OCI runtime create failed:
@@ -1498,7 +1497,6 @@ class DockerRaceTest(MountTestBase):
     directory: unknown
 
     See #23136
-
     """
 
     def runTest(self):

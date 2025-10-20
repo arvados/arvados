@@ -334,69 +334,25 @@ class CollectionDirectoryBase(Directory):
             return
 
         name = self.sanitize_filename(name)
+        if event == arvados.collection.ADD:
+            self.new_entry(name, item, self.mtime())
+        elif event == arvados.collection.DEL:
+            ent = self._entries.pop(name)
+            self.inodes.invalidate_entry(self, name)
+            self.inodes.del_entry(ent)
+        elif event == arvados.collection.MOD:
+            # MOD events have (modified_from, newitem)
+            _, newitem = item
+            entry = getattr(newitem, "fuse_entry", None) or self._entries.get(name)
+            if entry is not None:
+                entry.invalidate()
+                self.inodes.invalidate_inode(entry)
 
-        #
-        # It's possible for another thread to have llfuse.lock and
-        # be waiting on collection.lock.  Meanwhile, we released
-        # llfuse.lock earlier in the stack, but are still holding
-        # on to the collection lock, and now we need to re-acquire
-        # llfuse.lock.  If we don't release the collection lock,
-        # we'll deadlock where we're holding the collection lock
-        # waiting for llfuse.lock and the other thread is holding
-        # llfuse.lock and waiting for the collection lock.
-        #
-        # The correct locking order here is to take llfuse.lock
-        # first, then the collection lock.
-        #
-        # Since collection.lock is an RLock, it might be locked
-        # multiple times, so we need to release it multiple times,
-        # keep a count, then re-lock it the correct number of
-        # times.
-        #
-        lockcount = 0
-        try:
-            while True:
-                self.collection.lock.release()
-                lockcount += 1
-        except RuntimeError:
-            pass
-
-        try:
-            with llfuse.lock:
-                with self.collection.lock:
-                    if event == arvados.collection.ADD:
-                        self.new_entry(name, item, self.mtime())
-                    elif event == arvados.collection.DEL:
-                        ent = self._entries[name]
-                        del self._entries[name]
-                        self.inodes.invalidate_entry(self, name)
-                        self.inodes.del_entry(ent)
-                    elif event == arvados.collection.MOD:
-                        # MOD events have (modified_from, newitem)
-                        newitem = item[1]
-                        entry = None
-                        if hasattr(newitem, "fuse_entry") and newitem.fuse_entry is not None:
-                            entry = newitem.fuse_entry
-                        elif name in self._entries:
-                            entry = self._entries[name]
-
-                        if entry is not None:
-                            entry.invalidate()
-                            self.inodes.invalidate_inode(entry)
-
-                        if name in self._entries:
-                            self.inodes.invalidate_entry(self, name)
-
-                    # TOK and WRITE events just invalidate the
-                    # collection record file.
-
-                    if self.collection_record_file is not None:
-                        self.collection_record_file.invalidate()
-                        self.inodes.invalidate_inode(self.collection_record_file)
-        finally:
-            while lockcount > 0:
-                self.collection.lock.acquire()
-                lockcount -= 1
+        # TOK and WRITE events just invalidate the
+        # collection record file.
+        if self.collection_record_file is not None:
+            self.collection_record_file.invalidate()
+            self.inodes.invalidate_inode(self.collection_record_file)
 
     def populate(self, mtime):
         self._mtime = mtime
