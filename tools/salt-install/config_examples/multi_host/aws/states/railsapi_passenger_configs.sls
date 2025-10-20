@@ -25,20 +25,7 @@ extra_railsapi_passenger_configs:
     - group: root
     - mode: '0644'
     - makedirs: True
-    - require:
-      - pkg: arvados-api-package-install-pkg-installed
-
-extra_systemd_daemon_reload:
-  cmd.run:
-    - name: systemctl daemon-reload
-    - onchanges:
-      - file: extra_railsapi_passenger_configs
-
-extra_railsapi_restart_on_passenger_configs_change:
-  service.running:
-    - name: arvados-railsapi
-    - reload: True
-    - watch:
-      - cmd: extra_systemd_daemon_reload
+    - require_in:
+      - service: arvados-api-service-running-service-running
 
 {%- endif %}
