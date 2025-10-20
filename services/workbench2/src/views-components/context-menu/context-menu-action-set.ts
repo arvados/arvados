@@ -31,6 +31,7 @@ export enum ContextMenuActionNames {
     DOWNLOAD = 'Download',
     EDIT_COLLECTION = 'Edit collection',
     EDIT_CREDENTIAL = 'Edit credential',
+    EDIT_GROUP = 'Edit group',
     EDIT_PROCESS = 'Edit process',
     EDIT_PROJECT = 'Edit project',
     FREEZE_PROJECT = 'Freeze project',

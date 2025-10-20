@@ -247,12 +247,12 @@ describe('Group manage tests', function() {
         // Navigate to Groups
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
 
-        // Open rename dialog
+        // Open edit dialog
         cy.get('[data-cy=groups-panel-data-explorer]')
             .contains(groupName)
             .rightclick();
         cy.get('[data-cy=context-menu]')
-            .contains('Rename')
+            .contains('Edit group')
             .click();
 
         // Rename the group
@@ -310,6 +310,87 @@ describe('Group manage tests', function() {
                 cy.get('[data-cy=resource-delete-button]').should('be.disabled');
                 cy.get('[data-cy=edit-permission-button]').should('not.exist');
             });
+        });
+    });
+
+    it('adds properties to groups', () => {
+        const groupWithProperties = `Group with properties (${Math.floor(999999 * Math.random())})`;
+
+        cy.loginAs(activeUser);
+
+        // Navigate to Groups
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+        // Create new group
+        cy.get('[data-cy=groups-panel-new-group]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Group')
+            .within(() => {
+                cy.get('input[name=name]').type(groupWithProperties);
+                cy.get('[data-cy=users-field] input').type("three");
+            });
+        // Click suggested user
+        cy.get('[role=tooltip]').click();
+
+        // Add properties
+        cy.get("[data-cy=resource-properties-form]").within(() => {
+            cy.get("[data-cy=property-field-key]").within(() => {
+                cy.get("input").type("Color");
+            });
+            cy.get("[data-cy=property-field-value]").within(() => {
+                cy.get("input").type("Magenta");
+            });
+            // Submit new property
+            cy.root().submit();
+        });
+
+        // Submit new group
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+
+        // Open edit dialog
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .contains(groupWithProperties)
+            .rightclick();
+        cy.get('[data-cy=context-menu]')
+            .contains('Edit group')
+            .click();
+
+        // Verify properties
+        cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
+
+        // Edit proprties
+        cy.get("[data-cy=resource-properties-form]").within(() => {
+            cy.get("[data-cy=property-field-key]").within(() => {
+                cy.get("input").type("Animal");
+            });
+            cy.get("[data-cy=property-field-value]").within(() => {
+                cy.get("input").type("Dog");
+            });
+            // Submit new property
+            cy.root().submit();
+        });
+        // Submit edited group
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+
+        // Open edit dialog
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .contains(groupWithProperties)
+            .rightclick();
+        cy.get('[data-cy=context-menu]')
+            .contains('Edit group')
+            .click();
+
+        // Verify properties
+        cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
+        cy.get("[data-cy=form-dialog]").should("contain", "Animal: Dog");
+
+        // Close dialog
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-cancel-btn]').click();
         });
     });
 
