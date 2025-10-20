@@ -18,7 +18,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from 'servi
 import { ProjectResource } from 'models/project';
 import { ServiceRepository } from 'services/services';
 import { matchProjectRoute, matchRunProcessRoute } from 'routes/routes';
-import { RouterState } from "react-router-redux";
+import { RouterState } from "connected-react-router";
 import { GroupClass } from "models/group";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";

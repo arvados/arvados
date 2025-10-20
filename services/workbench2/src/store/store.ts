@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { createStore, applyMiddleware, compose, Middleware, combineReducers, Store, Action, Dispatch } from "redux";
-import { routerMiddleware, routerReducer } from "react-router-redux";
+import { connectRouter, routerMiddleware } from 'connected-react-router';
 import thunkMiddleware from "redux-thunk";
 import { History } from "history";
 import { handleRedirects } from "../common/redirect-to";
@@ -104,7 +104,7 @@ export type RootState = ReturnType<ReturnType<typeof createRootReducer>>;
 export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
 
 export function configureStore(history: History, services: ServiceRepository, config: Config): RootStore {
-    const rootReducer = createRootReducer(services);
+    const rootReducer = createRootReducer(services, history);
 
     const projectPanelDataMiddleware = dataExplorerMiddleware(new ProjectPanelDataMiddlewareService(services, PROJECT_PANEL_DATA_ID));
     const projectPanelRunMiddleware = dataExplorerMiddleware(new ProjectPanelRunMiddlewareService(services, PROJECT_PANEL_RUN_ID));
@@ -201,7 +201,7 @@ export function configureStore(history: History, services: ServiceRepository, co
     return store;
 }
 
-const createRootReducer = (services: ServiceRepository) =>
+const createRootReducer = (services: ServiceRepository, history: History) =>
     combineReducers({
         auth: authReducer(services),
         banner: bannerReducer,
@@ -219,7 +219,7 @@ const createRootReducer = (services: ServiceRepository) =>
         processLogsPanel: processLogsPanelReducer,
         properties: propertiesReducer,
         resources: resourcesReducer,
-        router: routerReducer,
+        router: connectRouter(history),
         selectedResource: selectedResourceReducer,
         snackbar: snackbarReducer,
         treePicker: treePickerReducer,

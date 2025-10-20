@@ -14,7 +14,7 @@ import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
 import { saveApiToken } from 'store/auth/auth-action';
 import { navigateToDashboard } from 'store/navigation/navigation-action';
-import { replace } from 'react-router-redux';
+import { replace } from 'connected-react-router';
 import { PasswordLoginResponse } from 'views/login-panel/login-panel';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';

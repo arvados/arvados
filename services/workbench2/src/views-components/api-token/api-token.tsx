@@ -13,7 +13,7 @@ import { AuthService } from "services/auth-service/auth-service";
 import { navigateToLinkAccount, navigateToDashboard } from "store/navigation/navigation-action";
 import { Config } from "common/config";
 import { getAccountLinkData } from "store/link-account-panel/link-account-panel-actions";
-import { replace } from "react-router-redux";
+import { replace } from "connected-react-router";
 import { User } from "models/user";
 
 interface ApiTokenProps {

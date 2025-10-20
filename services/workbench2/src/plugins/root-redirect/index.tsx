@@ -6,7 +6,7 @@ import { PluginConfig } from 'common/plugintypes';
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
-import { push } from "react-router-redux";
+import { push } from "connected-react-router";
 
 export const register = (pluginConfig: PluginConfig, redirect: string) => {
 

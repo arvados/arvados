@@ -8,7 +8,7 @@ import { PluginConfig } from 'common/plugintypes';
 import React from 'react';
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
-import { push } from "react-router-redux";
+import { push } from "connected-react-router";
 import { Route, matchPath } from "react-router";
 import { RootStore } from 'store/store';
 import { activateSidePanelTreeItem } from 'store/side-panel-tree/side-panel-tree-actions';
