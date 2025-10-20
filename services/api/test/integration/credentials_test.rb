@@ -286,6 +286,26 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_match(/RecordNotUnique/, json_response["errors"][0])
   end
 
+  test "credential name cannot be empty or only spaces/tabs" do
+    ["", "   ", "\t\t"].each do |bad_name|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: {
+                      name: bad_name,
+                      description: "the credential for test",
+                      credential_class: "basic_auth",
+                      external_id: "my_username",
+                      secret: "my_password",
+                      expires_at: Time.now+2.weeks
+                    }
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 422
+      assert_includes json_response["errors"].first, "Name can't be blank"
+    end
+  end
+
   test "credential required fields must be set" do
     test_credential = {
       name: "test credential",

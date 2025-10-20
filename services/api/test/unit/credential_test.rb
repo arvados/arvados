@@ -27,6 +27,20 @@ class CredentialTest < ActiveSupport::TestCase
     end
   end
 
+  test "credential name must not be empty or only spaces/tabs" do
+  attrs = @valid_attrs.dup
+
+  ["", "   ", "\t\t"].each do |bad_name|
+    credential = Credential.new(attrs.merge(name: bad_name))
+    assert_not credential.valid?
+    assert_includes credential.errors.full_messages, "Name can't be blank"
+  end
+
+  credential = Credential.new(attrs.merge(name: "  valid name  "))
+  assert credential.valid?
+end
+
+
   test "credential scopes defaults to empty array" do
     credential = Credential.new(@valid_attrs)
     assert_equal [], credential.scopes
