@@ -206,7 +206,7 @@ package_go_binary() {
   case "$package_format-$TARGET" in
     # Red Hat-based distributions do not support native cross compilation at
     # all (they use a qemu-based solution we haven't implemented yet).
-      rpm-*)
+    rpm-*)
       cross_compilation=0
       if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
         echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
