@@ -91,6 +91,11 @@ requirements:
       REQUESTS_CA_BUNDLE: /etc/arvados/ca-certificates.crt
 
 hints:
+  # Disable reuse because missing/empty reporting_end parameter means "today",
+  # which is variable and can be an incomplete day.
+  WorkReuse:
+    enableReuse: false
+
   cwltool:Secrets:
     secrets: [prometheus_apikey, prometheus_password]
 
