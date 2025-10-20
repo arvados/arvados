@@ -22,7 +22,7 @@ inputs:
   reporting_end:
     type: string?
     label: Report end date in `YYYY-MM-DD` format
-    doc: Defaults to today
+    doc: Defaults to today if not provided
 
   prometheus_host:
     type: string?
@@ -53,7 +53,29 @@ requirements:
       RUN pip install --no-cache-dir "arvados-cluster-activity[prometheus]"
     dockerImageId: arvados/cluster-activity
 
-  InlineJavascriptRequirement: {}
+  InlineJavascriptRequirement:
+    expressionLib:
+      - |
+        function padZero(n) {
+            var s = n.toString();
+            if (s.length < 2) {
+                return "0" + s;
+            }
+            return s;
+        }
+
+      - |
+        function getDateWithDefault(dateString) {
+            if (!dateString) {
+                var now = new Date();
+                var yy = now.getFullYear();
+                // getMonth() is zero-based.
+                var mm = now.getMonth() + 1;
+                var dd = now.getDate();
+                return [yy.toString(), padZero(mm), padZero(dd)].join("-");
+            }
+            return dateString;
+        }
 
   arv:APIRequirement: {}
 
@@ -69,13 +91,18 @@ requirements:
       REQUESTS_CA_BUNDLE: /etc/arvados/ca-certificates.crt
 
 hints:
+  # Disable reuse because missing/empty reporting_end parameter means "today",
+  # which is variable and can be an incomplete day.
+  WorkReuse:
+    enableReuse: false
+
   cwltool:Secrets:
     secrets: [prometheus_apikey, prometheus_password]
 
 arguments:
   - arv-cluster-activity
   - {prefix: '--start', valueFrom: $(inputs.reporting_start)}
-  - {prefix: '--end', valueFrom: $(inputs.reporting_end)}
+  - {prefix: '--end', valueFrom: $(getDateWithDefault(inputs.reporting_end))}
   - {prefix: '--exclude', valueFrom: $(inputs.exclude)}
   - {prefix: '--html-report-file', valueFrom: report.html}
   - {prefix: '--cost-report-file', valueFrom: cost.csv}
