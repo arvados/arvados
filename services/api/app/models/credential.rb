@@ -76,16 +76,23 @@ class Credential < ArvadosModel
 
   def validate_credential_class_and_scopes
     return unless credential_class.present?
-    return unless credential_class.start_with?("arv:")
 
-    if CRED_CLASS_SCOPES_VALIDATION_REGEX.key?(credential_class)
-      scopes_are_valid_for_supported_credential_class
-    else
-      errors.add(:credential_class, "credential_class #{credential_class} is not implemented")
+    if credential_class.start_with?("arv:")
+      check_if_credential_class_is_implemented
+    elsif CRED_CLASS_SCOPES_VALIDATION_REGEX.key?("arv:" + credential_class)
+        errors.add(:credential_class,  "Credential_class #{credential_class} conflicts with reserved credential class arv:#{credential_class}")
     end
   end
 
-  def scopes_are_valid_for_supported_credential_class
+  def check_if_credential_class_is_implemented
+    if CRED_CLASS_SCOPES_VALIDATION_REGEX.key?(credential_class)
+      validate_scopes_for_implemented_credential_class
+    else
+      errors.add(:credential_class, "Credential_class #{credential_class} is not implemented")
+    end
+  end
+
+  def validate_scopes_for_implemented_credential_class
     return if scopes.blank?
 
     patterns = CRED_CLASS_SCOPES_VALIDATION_REGEX[credential_class]

@@ -464,7 +464,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/credentials",
          params: {:format => :json,
                   credential: {
-                    name: "aws credential valid",
+                    name: "credential unsupported",
                     description: "the credential for test",
                     credential_class: "arv:unsupported_credential_class",
                     external_id: "AKIAIOSFODNN7EXAMPLE",
@@ -476,6 +476,23 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
          headers: auth(:active),
          as: :json
     assert_response 422
-    assert_match(/credential_class arv:unsupported_credential_class is not implemented/, json_response["errors"][0])
+    assert_match(/Credential_class arv:unsupported_credential_class is not implemented/, json_response["errors"][0])
+
+    post "/arvados/v1/credentials",
+         params: {:format => :json,
+                  credential: {
+                    name: "credential reserved prefix",
+                    description: "the credential for test",
+                    credential_class: "aws_access_key",
+                    external_id: "AKIAIOSFODNN7EXAMPLE",
+                    secret: "my_aws_secret_key",
+                    expires_at: Time.now+2.weeks,
+                    scopes: ["s3://my-bucket"]
+                  }
+                 },
+         headers: auth(:active),
+         as: :json
+    assert_response 422
+    assert_match(/Credential_class aws_access_key conflicts with reserved credential class arv:aws_access_key/, json_response["errors"][0])
   end
 end
