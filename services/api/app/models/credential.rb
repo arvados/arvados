@@ -9,7 +9,7 @@ class Credential < ArvadosModel
 
   # Validation regexes for scopes, keyed by credential_class.
   CRED_CLASS_SCOPES_VALIDATION_REGEX = {
-    "aws_access_key" => [
+    "arv:aws_access_key" => [
       %r{\As3://(\*|[a-z0-9][\-.a-z0-9]{1,61}[a-z0-9])\z}
     ],
   }.freeze
@@ -20,8 +20,7 @@ class Credential < ArvadosModel
 
   attribute :scopes, :jsonbArray, default: []
 
-  validate :scopes_are_valid_for_supported_credential_class,
-    if: -> { CRED_CLASS_SCOPES_VALIDATION_REGEX.key?(credential_class) }
+  validate :validate_credential_class_and_scopes
 
   after_create :add_credential_manage_link
 
@@ -70,6 +69,19 @@ class Credential < ArvadosModel
                     link_class: "permission",
                     name: "can_manage")
       end
+    end
+  end
+
+  private
+
+  def validate_credential_class_and_scopes
+    return unless credential_class.present?
+    return unless credential_class.start_with?("arv:")
+
+    if CRED_CLASS_SCOPES_VALIDATION_REGEX.key?(credential_class)
+      scopes_are_valid_for_supported_credential_class
+    else
+      errors.add(:credential_class, "credential_class #{credential_class} is not implemented")
     end
   end
 
