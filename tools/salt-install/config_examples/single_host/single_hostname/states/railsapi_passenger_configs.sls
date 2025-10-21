@@ -15,7 +15,7 @@
 # of the line get processed quickly.
 extra_railsapi_passenger_configs:
   file.managed:
-    - name: /etc/systemd/system/arvados-railsapi.service.d/override.conf
+    - name: /etc/systemd/system/arvados-railsapi.service.d/26-installer.conf
     - contents: |
         ### This file managed by Salt, do not edit by hand!!
         [Service]
@@ -27,5 +27,13 @@ extra_railsapi_passenger_configs:
     - makedirs: True
     - require_in:
       - service: arvados-api-service-running-service-running
+    - watch_in:
+      - cmd: extra_systemd_daemon_reload
+      - service: arvados-api-service-running-service-running
+
+extra_systemd_daemon_reload:
+  cmd.run:
+    - name: systemctl daemon-reload
+
 
 {%- endif %}
