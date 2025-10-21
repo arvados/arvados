@@ -347,6 +347,22 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/credentials",
          params: {:format => :json,
                   credential: {
+                    name: "test credential",
+                    description: "the credential for test",
+                    credential_class: "basic_auth",
+                    external_id: "my_username",
+                    secret: "my_password",
+                    expires_at: Time.now+2.weeks,
+                    scopes: ["scope1", "scope2"]
+                  }
+                 },
+         headers: auth(:active),
+         as: :json
+    assert_response 200
+
+    post "/arvados/v1/credentials",
+         params: {:format => :json,
+                  credential: {
                     name: "test credential 0",
                     description: "the credential for test",
                     credential_class: "basic_auth",
@@ -409,5 +425,40 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
          as: :json
     assert_response 422
     assert_match(/Scopes must be an array/, json_response["errors"][0])
+  end
+
+  test "credential scopes validation for aws_access_key" do
+    post "/arvados/v1/credentials",
+         params: {:format => :json,
+                  credential: {
+                    name: "aws credential valid",
+                    description: "the credential for test",
+                    credential_class: "aws_access_key",
+                    external_id: "AKIAIOSFODNN7EXAMPLE",
+                    secret: "my_aws_secret_key",
+                    expires_at: Time.now+2.weeks,
+                    scopes: ["s3://my-bucket", "s3://*"]
+                  }
+                 },
+         headers: auth(:active),
+         as: :json
+    assert_response 200
+
+    post "/arvados/v1/credentials",
+         params: {:format => :json,
+                  credential: {
+                    name: "aws credential invalid",
+                    description: "the credential for test",
+                    credential_class: "aws_access_key",
+                    external_id: "AKIAIOSFODNN7EXAMPLE",
+                    secret: "my_aws_secret_key",
+                    expires_at: Time.now+2.weeks,
+                    scopes: ["invalid-scope", "s3://another-bucket"]
+                  }
+                 },
+         headers: auth(:active),
+         as: :json
+    assert_response 422
+    assert_match(/Credential class \S+ does not allow scopes: invalid-scope/, json_response["errors"][0])
   end
 end

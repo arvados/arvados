@@ -7,11 +7,21 @@ class Credential < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  # Validation regexes for scopes, keyed by credential_class.
+  CRED_CLASS_SCOPES_VALIDATION_REGEX = {
+    "aws_access_key" => [
+      %r{\As3://(\*|[a-z0-9][\-.a-z0-9]{1,61}[a-z0-9])\z}
+    ],
+  }.freeze
+
   validates :name, :credential_class, :external_id, :secret, :expires_at, presence: true
   validates :name, format: { without: /\A[ \t]*\z/ }
   validates :scopes, array_of_strings: true
 
   attribute :scopes, :jsonbArray, default: []
+
+  validate :scopes_are_valid_for_supported_credential_class,
+    if: -> { CRED_CLASS_SCOPES_VALIDATION_REGEX.key?(credential_class) }
 
   after_create :add_credential_manage_link
 
@@ -63,4 +73,17 @@ class Credential < ArvadosModel
     end
   end
 
+  def scopes_are_valid_for_supported_credential_class
+    return if scopes.blank?
+
+    patterns = CRED_CLASS_SCOPES_VALIDATION_REGEX[credential_class]
+
+    invalid = scopes.reject do |scope|
+      patterns.any? { |re| re.match?(scope) }
+    end
+    
+    if invalid.any?
+      errors.add(:scopes, "Credential class #{credential_class} does not allow scopes: #{invalid.join(', ')}")
+    end
+  end
 end
