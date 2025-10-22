@@ -641,6 +641,7 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
   echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
   echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+  echo "    - extra.railsapi_passenger_configs" >> ${STATES_TOP}
   echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
 
   # Pillars
@@ -875,6 +876,7 @@ else
           echo "    - nginx.passenger" >> ${STATES_TOP}
         fi
         echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+        echo "    - extra.railsapi_passenger_configs" >> ${STATES_TOP}
         grep -q "^    - postgres\\.client$" ${STATES_TOP} || echo "    - postgres.client" >> ${STATES_TOP}
         if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
           grep -q "    - extra.postgresql_external" ${STATES_TOP} || echo "    - extra.postgresql_external" >> ${STATES_TOP}
