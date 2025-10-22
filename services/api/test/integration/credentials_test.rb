@@ -389,15 +389,21 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     [
       {
         credential_class: "arv:aws_access_key",
-        scopes: nil,
+        scopes: ["s3://my-bucket", "s3://*"],
         http_status: 200,
         error_msg: nil
       },
       {
         credential_class: "arv:aws_access_key",
-        scopes: ["s3://my-bucket", "s3://*"],
-        http_status: 200,
-        error_msg: nil
+        scopes: nil,
+        http_status: 422,
+        error_msg: /Scopes Scopes cannot be blank for credential class arv:aws_access_key/
+      },
+      {
+        credential_class: "arv:aws_access_key",
+        scopes: [],
+        http_status: 422,
+        error_msg: /Scopes Scopes cannot be blank for credential class arv:aws_access_key/
       },
       {
         credential_class: "arv:aws_access_key",

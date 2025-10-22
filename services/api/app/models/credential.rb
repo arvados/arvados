@@ -93,7 +93,10 @@ class Credential < ArvadosModel
   end
 
   def validate_scopes_for_implemented_credential_class
-    return if scopes.blank?
+    if scopes.blank?
+      errors.add(:scopes, "Scopes cannot be blank for credential class #{credential_class}")
+      return
+    end
 
     patterns = CRED_CLASS_SCOPES_VALIDATION_REGEX[credential_class]
 
