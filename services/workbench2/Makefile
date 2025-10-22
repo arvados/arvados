@@ -81,6 +81,7 @@ else
 endif
 
 interactive-tests-in-docker: workbench-docker-volume
+	xhost +local:
 	docker run --interactive --tty --rm \
 		--env=DISPLAY \
 		--mount="type=volume,src=$(DOCKER_VOLUME),dst=/home" \
