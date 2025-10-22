@@ -397,15 +397,16 @@ describe("Project tests", function () {
         cy.doSidePanelNavigation('Home Projects');
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("contain", barProjectNameA);
 
-        cy.get("[data-cy=search-input]").type("foo");
+        cy.doDataExplorerSearch("foo");
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("not.contain", barProjectNameA);
 
         // Click on the table row to select it, search should remain the same.
-            cy.get(`p:contains(${fooProjectNameA})`).should('exist').parents('td').click()
-            cy.get("[data-cy=search-input] input").should("have.value", "foo");
+        cy.doDataExplorerSelect(fooProjectNameA);
+        cy.get("[data-cy=search-input] input").should("have.value", "foo");
 
         // Click to navigate to the project, search should be reset
-        cy.get(`p:contains(${fooProjectNameA})`).click();
+        cy.doDataExplorerNavigate(fooProjectNameA);
+        cy.doMPVTabSelect("Data");
         cy.get("[data-cy=search-input] input").should("not.have.value", "foo");
     });
 
