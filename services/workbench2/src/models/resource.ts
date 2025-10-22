@@ -26,6 +26,10 @@ export interface TrashableResource extends Resource {
     isTrashed: boolean;
 }
 
+export interface NamedResource extends Resource {
+    name: string;
+}
+
 export enum ResourceKind {
     API_CLIENT_AUTHORIZATION = "arvados#apiClientAuthorization",
     COLLECTION = "arvados#collection",
@@ -116,8 +120,8 @@ export const extractUuidKind = (uuid: string = '') => {
     }
 };
 
-export const isResourceResource = (resource: any): resource is Resource => {
-    return resource && isResourceUuid(resource.uuid) && containsAllResourceProps(resource);
+export const isResourceResource = (resource?: any): resource is Resource => {
+    return !!resource && isResourceUuid(resource.uuid) && containsAllResourceProps(resource);
 };
 
 const containsAllResourceProps = (obj: any) => {

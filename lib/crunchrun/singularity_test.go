@@ -60,6 +60,9 @@ func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
 }
 
 func (s *singularitySuite) TestInject(c *C) {
+	// FIXME #23225: This test ~never runs now that we've gotten away from
+	// `arvados-server install`. Remove the `path` test and implement a better
+	// one.
 	path, err := exec.LookPath("nsenter")
 	if err != nil || path != "/var/lib/arvados/bin/nsenter" {
 		c.Skip("looks like /var/lib/arvados/bin/nsenter is not installed -- re-run `arvados-server install`?")

@@ -2385,12 +2385,48 @@ func (s *TestSuite) TestSIGUSR2CostUpdate(c *C) {
 	c.Check(fmt.Sprintf("%.3f", costUpdates[1]), Equals, "7.600")
 }
 
-type FakeProcess struct {
-	cmdLine []string
-}
+func (s *TestSuite) TestLocalKeepstoreAddr(c *C) {
+	c.Check(localKeepstoreAddr(nil), Equals, "0.0.0.0")
 
-func (fp FakeProcess) CmdlineSlice() ([]string, error) {
-	return fp.cmdLine, nil
+	// Choose * if there are no non-loopback addrs
+	c.Check(localKeepstoreAddr(map[string]bool{
+		"127.0.0.1": true,
+		"127.0.0.2": true,
+	}), Equals, "0.0.0.0")
+
+	// Choose routable over loopback
+	c.Check(localKeepstoreAddr(map[string]bool{
+		"127.0.0.1": true,
+		"1.2.3.4":   true,
+	}), Equals, "1.2.3.4")
+
+	// Choose routable over loopback (even if loopback address
+	// sorts first numerically)
+	c.Check(localKeepstoreAddr(map[string]bool{
+		"127.0.0.1": true,
+		"201.2.3.4": true,
+	}), Equals, "201.2.3.4")
+
+	// Choose routable over loopback and CGNAT
+	c.Check(localKeepstoreAddr(map[string]bool{
+		"127.0.0.1":  true,
+		"1.2.3.4":    true,
+		"100.64.0.1": true,
+	}), Equals, "1.2.3.4")
+
+	// Choose routable over loopback and CGNAT (even if CGNAT
+	// address sorts first numerically)
+	c.Check(localKeepstoreAddr(map[string]bool{
+		"127.0.0.1":   true,
+		"192.168.0.1": true,
+		"100.64.0.1":  true,
+	}), Equals, "192.168.0.1")
+
+	// Choose CGNAT only if there are no routable addrs
+	c.Check(localKeepstoreAddr(map[string]bool{
+		"127.0.0.1":  true,
+		"100.64.0.1": true,
+	}), Equals, "100.64.0.1")
 }
 
 func logFileContent(c *C, cr *ContainerRunner, fnm string) string {

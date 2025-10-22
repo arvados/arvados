@@ -17,9 +17,21 @@ The methods are relative to the base URI, e.g., @/arvados/v1/resource_type@.  Fo
 
 Arguments specifying a *Location* of "query" are incorporated into the query portion of the URI or request body.  For example, @/arvados/v1/resource_type?count=none@.
 
-Certain method calls on certain object types support "federation":{{site.baseurl}}/architecture/federation.html , that is, the ability to operate on objects owned by different clusters.   API pages for specific object types list which federated operations are supported for that type (if any) in the "Methods" section.  Methods which implicitly include a cluster id (such as @GET@ on a specific uuid, using the uuid prefix) will be directed to the appropriate cluster.  Methods that don't implicitly include the cluster id (such as @create@) use the @cluster_id@ query parameter to specify which cluster to direct the request.
+Certain method calls on certain object types support "federation":{{site.baseurl}}/architecture/federation.html: the ability to operate on objects owned by different clusters.   API pages for specific object types list which federated operations are supported for that type (if any) in the "Methods" section.  Methods which implicitly include a cluster ID (such as @GET@ on a specific UUID, using the UUID prefix) will be directed to the appropriate cluster.  Methods that don't implicitly include the cluster ID (such as @create@) use the @cluster_id@ query parameter to specify which cluster to direct the request.
 
-h2. create
+* "create":#create
+* "delete":#delete
+* "get":#get
+* "list":#index
+** "Available list method filters":#filters
+*** "Filtering using substring search":#substringsearchfilter
+*** "Filtering on subproperties":#subpropertyfilters
+*** "Filtering using boolean expressions":#filterexpression
+** "Federated listing":#federated-list
+** "Results of list method":#list-results
+* "update":#update
+
+h2(#create). create
 
 The @create@ method creates a new object of the specified type.  Note that:
 
@@ -40,11 +52,11 @@ table(table table-bordered table-condensed).
 |select  |array  |Attributes of the new object to return in the response (by default, all available attributes are returned).
 Example: @["uuid","name","modified_at"]@|query|
 
-h2. delete
+h2(#delete). delete
 
 The @delete@ method deletes an object of the specified type.  It corresponds to the HTTP request @DELETE /arvados/v1/resource_type/uuid@.  A successful delete call returns a copy of the deleted object.
 
-The cluster id portion of the @uuid@ is used to determine which cluster owns the object, a federated delete request will be routed to that cluster.
+The cluster ID portion of the @uuid@ is used to determine which cluster owns the object, a federated delete request will be routed to that cluster.
 
 Arguments:
 
@@ -54,11 +66,11 @@ table(table table-bordered table-condensed).
 |select  |array  |Attributes of the deleted object to return in the response (by default, all available attributes are returned).
 Example: @["uuid","name","modified_at"]@|query|
 
-h2. get
+h2(#get). get
 
 The @get@ method gets a single object with the specified @uuid@.  It corresponds to the HTTP request @GET /arvados/v1/resource_type/uuid@.
 
-The cluster id portion of the @uuid@ is used to determine which cluster owns the object, a federated get request will be routed to that cluster.
+The cluster ID portion of the @uuid@ is used to determine which cluster owns the object, a federated get request will be routed to that cluster.
 
 Arguments:
 
@@ -157,7 +169,7 @@ Examples:
 Both types of filter (boolean expressions and @[attribute, operator, operand]@ filters) can be combined in the same API call. Example:
 * @{"filters": ["(replication_desired > replication_confirmed)", ["replication_desired", "<", 2]]}@
 
-h4. Federated listing
+h3(#federated-list). Federated listing
 
 Federated listing forwards a request to multiple clusters and combines the results.  Currently only a very restricted form of the "list" method is supported.
 
@@ -168,9 +180,9 @@ To query multiple clusters, the list request must:
 * Not specify @limit@, @offset@ or @order@
 * Not request more items than the maximum response size
 
-This form may be used to request a specific list of objects by uuid which are owned by multiple clusters.
+This form may be used to request a specific list of objects by UUID which are owned by multiple clusters.
 
-h3. Results of list method
+h3(#list-results). Results of list method
 
 A successful call to list will return the following object.
 
@@ -182,11 +194,11 @@ table(table table-bordered table-condensed).
 |items|array|actual query payload, an array of resource objects|
 |items_available|integer|total items available matching query|
 
-h2. update
+h2(#update). update
 
 The @update@ method updates fields on the object with the specified @uuid@.  It corresponds to the HTTP request @PUT /arvados/v1/resource_type/uuid@.  Note that only the listed attributes (and "standard metadata":resources.html) are updated, unset attributes will retain their previous values, and the attributes of a given resource type are fixed (you cannot introduce new toplevel attributes).  Also note that updates replace the value of the attribute, so if an attribute has an object value, the entire object is replaced.  A successful update call returns the updated copy of the object.
 
-The cluster id portion of the @uuid@ is used to determine which cluster owns the object, a federated update request will be routed to that cluster.
+The cluster ID portion of the @uuid@ is used to determine which cluster owns the object, a federated update request will be routed to that cluster.
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |

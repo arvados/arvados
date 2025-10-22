@@ -115,7 +115,8 @@ const FileInputComponent = connect()(
                         value={props.input.value}
                         error={props.meta.touched && !!props.meta.error}
                         onClick={!props.commandInput.disabled ? this.openDialog : undefined}
-                        onKeyPress={!props.commandInput.disabled ? this.openDialog : undefined} />}
+                        onKeyPress={!props.commandInput.disabled ? this.openDialog : undefined}
+                        onMouseDown={(e) => e.preventDefault()} />}
                 {...this.props} />;
         }
 

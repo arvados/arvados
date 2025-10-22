@@ -14,7 +14,6 @@ def test_arvados_cwltest(acr_script, integration_colls):
     cwltest = run_cwltest(
         TESTS_DIR / 'arvados-tests.yml',
         acr_script,
-        test_args=['-j1'],
     )
     assert cwltest.returncode == os.EX_OK
 

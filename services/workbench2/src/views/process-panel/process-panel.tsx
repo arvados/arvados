@@ -5,7 +5,6 @@
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
-import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from "./process-panel-root";
 import {
     loadInputs,
@@ -16,7 +15,6 @@ import {
     loadNodeJson,
     loadProcess,
 } from "store/process-panel/process-panel-actions";
-import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from "store/processes/processes-actions";
 import { navigateToLogCollection, pollProcessLogs, setProcessLogsPanelFilter } from "store/process-logs-panel/process-logs-panel-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
@@ -40,17 +38,9 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
             })
         );
     },
-    onContextMenu: (event, process) => {
-        if (process) {
-            dispatch<any>(openProcessContextMenu(event, process));
-        }
-    },
     onToggle: status => {
         dispatch<any>(toggleProcessPanelFilter(status));
     },
-    cancelProcess: uuid => dispatch<any>(cancelRunningWorkflow(uuid)),
-    startProcess: uuid => dispatch<any>(startWorkflow(uuid)),
-    resumeOnHoldWorkflow: uuid => dispatch<any>(resumeOnHoldWorkflow(uuid)),
     onLogFilterChange: filter => dispatch(setProcessLogsPanelFilter(filter.value)),
     navigateToLog: uuid => dispatch<any>(navigateToLogCollection(uuid)),
     loadInputs: containerRequest => dispatch<any>(loadInputs(containerRequest)),

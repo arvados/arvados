@@ -23,7 +23,6 @@ import (
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/crunchstat"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
-	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
 	"git.arvados.org/arvados.git/lib/service"
@@ -57,8 +56,6 @@ var (
 		"dispatch-lsf":       lsf.DispatchCommand,
 		"dispatch-slurm":     dispatchslurm.Command,
 		"health":             healthCommand,
-		"install":            install.Command,
-		"init":               install.InitCommand,
 		"keep-balance":       keepbalance.Command,
 		"keep-web":           keepweb.Command,
 		"keepproxy":          keepproxy.Command,

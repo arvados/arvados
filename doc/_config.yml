@@ -47,11 +47,13 @@ navbar:
     - Data Analysis with Workflows:
       - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
       - user/cwl/cwl-runner.html.textile.liquid
-      - user/cwl/cwl-run-options.html.textile.liquid
       - user/cwl/crunchstat-summary.html.textile.liquid
       - user/debugging/container-shell-access.html.textile.liquid
+      - user/topics/external-inputs.html.textile.liquid
+      - user/topics/service-containers.html.textile.liquid
       - user/cwl/costanalyzer.html.textile.liquid
       - user/cwl/federated-workflows.html.textile.liquid
+      - user/cwl/cwl-run-options.html.textile.liquid
     - Common Workflow Language:
       - user/cwl/rnaseq-cwl-training.html.textile.liquid
       - user/cwl/arvados-vscode-training.html.md.liquid
@@ -162,7 +164,6 @@ navbar:
       - admin/reassign-ownership.html.textile.liquid
       - admin/link-accounts.html.textile.liquid
       - admin/federation.html.textile.liquid
-      - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-external-sources.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid
@@ -193,15 +194,9 @@ navbar:
   installguide:
     - Overview:
       - install/index.html.textile.liquid
-    - Docker quick start:
-      - install/arvbox.html.textile.liquid
     - Arvados Installer:
       - install/install-single-host.html.textile.liquid
       - install/install-multi-host.html.textile.liquid
-#    - Arvados on Kubernetes:
-#      - install/arvados-on-kubernetes.html.textile.liquid
-#      - install/arvados-on-kubernetes-minikube.html.textile.liquid
-#      - install/arvados-on-kubernetes-GKE.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/packages.html.textile.liquid

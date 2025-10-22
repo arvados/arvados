@@ -136,7 +136,6 @@ export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<C
 export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
 export type SecretCommandInputParameter = GenericArrayCommandInputParameter<CWLType.STRING, SecretInclude>;
 
-
 export type WorkflowInputsData = {
     [key: string]: boolean | number | string | File | Directory | SecretInclude;
 };
@@ -253,4 +252,8 @@ export const stringifyInputType = ({ type }: CommandInputParameter) => {
     } else {
         return 'unknown';
     }
+};
+
+export const isWorkflowResource = (resource?: Resource): resource is WorkflowResource => {
+    return !!resource && resource.kind === ResourceKind.WORKFLOW;
 };

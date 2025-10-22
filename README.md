@@ -42,21 +42,6 @@ functionality in the Arvados platform from the command line.
 the services in Arvados are accessed through a RESTful API.  SDKs are
 available for Python, Go, R, Perl, Ruby, and Java.
 
-# Quick start
-
-To try out Arvados on your local workstation, you can use Arvbox, which
-provides Arvados components pre-installed in a Docker container (requires
-Docker 1.9+).  After cloning the Arvados git repository:
-
-```
-$ cd arvados/tools/arvbox/bin
-$ ./arvbox start localdemo
-```
-
-In this mode you will only be able to connect to Arvbox from the same host.  To
-configure Arvbox to be accessible over a network and for other options see
-http://doc.arvados.org/install/arvbox.html for details.
-
 # Documentation
 
 Complete documentation, including the [User Guide](https://doc.arvados.org/user/index.html), [Installation documentation](https://doc.arvados.org/install/index.html), [Administrator documentation](https://doc.arvados.org/admin/index.html) and

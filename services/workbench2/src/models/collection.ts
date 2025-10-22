@@ -65,8 +65,12 @@ export const getCollectionUrl = (uuid: string) => {
     return `/collections/${uuid}`;
 };
 
-export const isCollectionResource = (resource: Resource): resource is CollectionResource => {
-    return resource && resource.kind === ResourceKind.COLLECTION;
+export const isCollectionResource = (resource?: Resource): resource is CollectionResource => {
+    return !!resource && resource.kind === ResourceKind.COLLECTION;
+};
+
+export const isCollectionResourceLatestVersion = (resource?: Resource): boolean => {
+    return isCollectionResource(resource) && resource.uuid === resource.currentVersionUuid;
 };
 
 export enum CollectionType {

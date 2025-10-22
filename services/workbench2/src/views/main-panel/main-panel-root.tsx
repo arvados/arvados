@@ -15,7 +15,7 @@ import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
 import { Routes, matchLinkAccountRoute } from 'routes/routes';
-import { RouterState } from "react-router-redux";
+import { RouterState } from "connected-react-router";
 import parse from 'parse-duration';
 import { Config } from 'common/config';
 import { LinkAccountPanelState, LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';

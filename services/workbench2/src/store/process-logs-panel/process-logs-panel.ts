@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { matchProcessRoute } from 'routes/routes';
-import { RouterState } from 'react-router-redux';
+import { RouterState } from 'connected-react-router';
 
 export interface ProcessLogsPanel {
     filters: string[];

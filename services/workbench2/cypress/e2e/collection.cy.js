@@ -441,11 +441,15 @@ describe("Collection panel tests", function () {
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains("Home").click();
 
                     cy.waitForDom();
+                    cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
                     cy.get("[data-cy=collection-files-panel]")
                         .should("contain", subdir) // empty dir kept
                         .and("contain", "bar");
 
-                    cy.get("[data-cy=collection-files-panel]").contains(subdir).rightclick();
+                    // this is when the dom is actually finished loading
+                    cy.get("[data-cy=file-item-options-btn]", { timeout: 20000 }).first().should('exist')
+
+                    cy.get("[data-cy=collection-files-panel-content]").contains(subdir).rightclick();
                     cy.get("[data-cy=context-menu]").contains("Remove").click();
                     cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
                     cy.get("[data-cy=form-dialog]").should("not.exist");

@@ -18,7 +18,7 @@ interface RunProcessBasicFormProps {
     workflow?: WorkflowResource;
 }
 
-type CssRules = 'root' | 'name' | 'description';
+type CssRules = 'root' | 'name' | 'description' | 'inputItem';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -30,6 +30,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '1.875rem',
     },
     description: {},
+    inputItem: {
+        marginBottom: theme.spacing(2),
+    }
 });
 
 export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcessBasicFormProps>({
@@ -39,7 +42,7 @@ export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcess
         <form className={props.classes.root}>
             <Grid
                 container
-                spacing={2}
+                spacing={4}
             >
                 <Grid
                     item
@@ -72,6 +75,7 @@ export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcess
                     item
                     xs={12}
                     md={6}
+                    className={props.classes.inputItem}
                     >
                     <Field
                         name='name'
@@ -85,6 +89,7 @@ export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcess
                     item
                     xs={12}
                     md={6}
+                    className={props.classes.inputItem}
                 >
                     <RunWfProjectInput
                         required

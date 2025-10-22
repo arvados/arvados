@@ -795,6 +795,7 @@ describe('For process resources', () => {
 
             //Cancel process first to avoid unnecessary log polling
             cy.get('[aria-label="Cancel"]').click();
+            cy.get('[data-cy="confirmation-dialog-ok-btn"]').click();
             cy.assertToolbarButtons(tooltips.adminOnHoldProcess);
 
 
@@ -1045,7 +1046,7 @@ describe('For groups', () => {
             cy.contains('Close').click()
 
             //rename group
-            cy.doToolbarAction("Rename");
+            cy.doToolbarAction("Edit group");
             cy.get('[data-cy=form-dialog]').within(() => {
                 cy.get("[data-cy=form-cancel-btn]").click();
             });
@@ -1214,7 +1215,7 @@ describe('For users', () => {
     });
 });
 
-describe.only('For external credentials', () => {
+describe('For external credentials', () => {
     let adminUser;
 
     before(function () {

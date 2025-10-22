@@ -6,6 +6,7 @@ package boot
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -35,7 +36,9 @@ func (runner railsDatabase) Run(ctx context.Context, fail func(error), super *Su
 	// determine path to installed rails app or source tree
 	var appdir string
 	if super.ClusterType == "production" {
-		appdir = "/var/lib/arvados/railsapi"
+		// FIXME: This used to return paths set up by `arvados-server install`,
+		// which is no longer a thing.
+		return fmt.Errorf("production cluster type not implemented")
 	} else {
 		appdir = filepath.Join(super.SourcePath, "services/api")
 	}

@@ -108,7 +108,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                 });
             }
             // load user root project if not already loaded
-            if (this.props.userUuid && (!this.props.userRootProject || !isUserResource(this.props.userRootProject)  || !('firstName' in this.props.userRootProject))) {
+            if (this.props.userUuid && (!isUserResource(this.props.userRootProject) || !('firstName' in this.props.userRootProject))) {
                 this.props.dispatch<any>(loadProject(this.props.userUuid));
             }
             // open dialog automatically when input mounts
@@ -165,7 +165,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
         render() {
             return <>
                 {this.renderInput()}
-                    <DialogComponent
+                <DialogComponent
                     targetProject={this.state.targetProject}
                     open={this.state.open}
                     closeDialog={this.closeDialog}
@@ -240,7 +240,8 @@ const ProjectInputComponent = connect(mapStateToProps)(
                         error={props.meta.touched && !!props.meta.error}
                         disabled={props.commandInput.disabled}
                         onClick={!this.props.commandInput.disabled ? this.openDialog : undefined}
-                        onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined} />}
+                        onKeyPress={!this.props.commandInput.disabled ? () => this.openDialog : undefined}
+                        onMouseDown={(e) => e.preventDefault()} />}
                 {...this.props} />;
         }
     });

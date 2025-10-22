@@ -145,7 +145,7 @@ export const tooltips = {
     nonAdminGroup: [
         'View details',
         'API Details',
-        'Rename',
+        'Edit group',
         'Remove',
     ],
     builtInGroup: [

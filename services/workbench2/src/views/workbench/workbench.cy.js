@@ -8,7 +8,7 @@ import { WorkbenchPanel } from './workbench';
 import { Provider } from "react-redux";
 import { configureStore } from "store/store";
 import { createBrowserHistory } from "history";
-import { ConnectedRouter } from "react-router-redux";
+import { ConnectedRouter } from "connected-react-router";
 import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
 import { CustomTheme } from 'common/custom-theme';
 import { createServices } from "services/services";

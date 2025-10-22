@@ -116,7 +116,7 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
 
     let isFrozen = false;
-    if (resource && isResourceResource(resource)) {
+    if (isResourceResource(resource)) {
         isFrozen = resourceIsFrozen(resource, resources);
     }
 

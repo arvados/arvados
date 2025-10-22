@@ -521,3 +521,45 @@ $graph:
 
     - name: resubmitNonPreemptible
       type: boolean
+
+
+- type: record
+  name: ServiceDef
+  doc: |
+    A web service available on a container.
+  fields:
+    - name: servicePort
+      type: string
+      doc: The property key
+    - name: serviceAccess
+      type:
+        type: enum
+        symbols:
+          - public
+          - private
+    - name: label
+      jsonldPredicate: "rdfs:label"
+      type: string
+    - name: initialPath
+      type: string
+      doc: The path to use for initial connection to the service on this port
+      default: ""
+
+- name: PublishPorts
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Advertise ports on the container which are web services.
+  fields:
+    - name: class
+      type: string
+      doc: "arv:PublishPorts"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+
+    - name: publishPorts
+      type: ServiceDef[]
+      jsonldPredicate:
+        mapSubject: servicePort

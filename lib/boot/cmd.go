@@ -66,7 +66,7 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&super.ConfigPath, "config", "/etc/arvados/config.yml", "arvados config file `path`")
 	flags.StringVar(&super.SourcePath, "source", ".", "arvados source tree `directory`")
-	flags.StringVar(&super.ClusterType, "type", "production", "cluster `type`: development, test, or production")
+	flags.StringVar(&super.ClusterType, "type", "test", "cluster `type`: development or test")
 	flags.StringVar(&super.ListenHost, "listen-host", "127.0.0.1", "host name or interface address for internal services whose InternalURLs are not configured")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	flags.BoolVar(&super.NoWorkbench1, "no-workbench1", true, "do not run workbench1")
@@ -83,8 +83,15 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	} else if *versionFlag {
 		cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 		return nil
-	} else if super.ClusterType != "development" && super.ClusterType != "test" && super.ClusterType != "production" {
-		return fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
+	} else if super.ClusterType != "development" && super.ClusterType != "test" {
+		return fmt.Errorf("cluster type must be 'development' or 'test'")
+		// There are checks for `ClusterType == "production"` in the code. This
+		// was a planned feature that was never fully developed, and we have
+		// since broken some of the assumptions the original code relied on.
+		// They generally indicate places where the code should use system paths
+		// rather than temporary ones, so the branches remain in place to save
+		// that knowledge, but now they all error out until we have new
+		// implementations.
 	}
 
 	super.Start(ctx)

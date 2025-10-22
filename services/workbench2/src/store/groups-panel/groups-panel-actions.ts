@@ -78,9 +78,10 @@ export const openRemoveGroupDialog = (uuid: string, numOfGroups = 1) =>
     };
 
 // Group edit dialog uses project update dialog with sourcePanel set to reload the appropriate parts
-export const openGroupUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
+export const openGroupUpdateDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
+        const group = getResource<GroupResource>(uuid)(getState().resources);
+        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, group));
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_UPDATE_FORM_NAME,
             data: {
@@ -94,7 +95,15 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
         const uuid = project.uuid || '';
         dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
-            const updatedGroup = await services.groupsService.update(uuid, { name: project.name, description: project.description });
+            const updatedGroup = await services.groupsService.update(
+                uuid,
+                {
+                    name: project.name,
+                    properties: project.properties,
+                    description: project.description,
+                },
+                false
+            );
             dispatch(GroupsPanelActions.REQUEST_ITEMS());
             dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
@@ -109,11 +118,16 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
         }
     };
 
-export const createGroup = ({ name, users = [], description }: ProjectUpdateFormDialogData) =>
+export const createGroup = ({ name, users = [], description, properties }: ProjectUpdateFormDialogData) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
         dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
-            const newGroup = await groupsService.create({ name, description, groupClass: GroupClass.ROLE });
+            const newGroup = await groupsService.create({
+                name,
+                properties,
+                description,
+                groupClass: GroupClass.ROLE
+            });
             for (const user of users) {
                 await addGroupMember({
                     user,
