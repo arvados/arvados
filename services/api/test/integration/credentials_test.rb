@@ -286,20 +286,95 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     assert_match(/RecordNotUnique/, json_response["errors"][0])
   end
 
-  test "credential expires_at must be set" do
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password"
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/NotNullViolation/, json_response["errors"][0])
+  test "credential name cannot be empty or only spaces/tabs" do
+    ["", "   ", "\t\t"].each do |bad_name|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: {
+                      name: bad_name,
+                      description: "the credential for test",
+                      credential_class: "basic_auth",
+                      external_id: "my_username",
+                      secret: "my_password",
+                      expires_at: Time.now+2.weeks
+                    }
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 422
+      assert_includes json_response["errors"].first, "Name can't be blank"
+    end
+  end
+
+  test "credential required fields must be set" do
+    test_credential = {
+      name: "test credential",
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now + 2.weeks
+    }
+
+    field_error_msg_hash = {
+      name: "Name",
+      credential_class: "Credential class",
+      external_id: "External",
+      secret: "Secret",
+      expires_at: "Expires at",
+    }
+
+    field_error_msg_hash.each do |field, error_msg|
+
+      post "/arvados/v1/credentials",
+        params: {
+          format: :json,
+          credential: test_credential.except(field)
+        },
+        headers: auth(:active),
+        as: :json
+
+      assert_response 422
+      assert_match(
+        /^#{error_msg} can't be blank \(req-[^)]+\)$/,
+        json_response["errors"].first,
+        "Expected validation error for missing field '#{field}'"
+      )
+    end
+  end
+
+  test "credential scopes must be an array of strings or nil" do
+    test_credential = {
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now + 2.weeks
+    }
+
+    def random_name # avoid duplicate name errors
+      {name: "test credential" + rand(10000).to_s}
+    end
+
+    [nil, [], ["scope1", "scope2"]].each do |good_scopes|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(scopes: good_scopes)
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 200
+    end
+
+    ["not an array", [ "valid_scope", 123 ], [ "valid_scope", ["nested_array"] ] ].each do |bad_scopes|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(scopes: bad_scopes)
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 422
+      assert_match(/Scopes must be an array/, json_response["errors"][0])
+    end
   end
 end

@@ -685,12 +685,12 @@ CREATE TABLE public.credentials (
     created_at timestamp(6) without time zone NOT NULL,
     modified_at timestamp(6) without time zone NOT NULL,
     modified_by_user_uuid character varying,
-    name character varying,
+    name character varying NOT NULL,
     description text,
-    credential_class character varying,
+    credential_class character varying NOT NULL,
     scopes jsonb DEFAULT '[]'::jsonb,
-    external_id character varying,
-    secret text,
+    external_id character varying NOT NULL,
+    secret text NOT NULL,
     expires_at timestamp(6) without time zone NOT NULL
 );
 
@@ -3228,6 +3228,7 @@ CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((C
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251006181234'),
 ('20250527181323'),
 ('20250426201300'),
 ('20250422103000'),
