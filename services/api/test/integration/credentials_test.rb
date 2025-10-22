@@ -25,6 +25,10 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     json_response
   end
 
+  def random_name # avoid duplicate name errors
+    {name: "test credential" + rand(10000).to_s}
+  end
+
   test "credential create and query" do
     jr = credential_create_helper
 
@@ -344,155 +348,89 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential scopes must be an array of strings or nil" do
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["scope1", "scope2"]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 200
+    test_credential = {
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now + 2.weeks
+    }
 
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 0",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: []
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 200
+    [nil, [], ["scope1", "scope2"]].each do |good_scopes|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(scopes: good_scopes)
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 200
+    end
 
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 1",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: nil
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 200
-
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 2",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: "not an array"
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Scopes must be an array/, json_response["errors"][0])
-
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 3",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["foo", ["bar"]]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Scopes must be an array/, json_response["errors"][0])
+    ["not an array", [ "valid_scope", 123 ], [ "valid_scope", ["nested_array"] ] ].each do |bad_scopes|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(scopes: bad_scopes)
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 422
+      assert_match(/Scopes must be an array/, json_response["errors"][0])
+    end
   end
 
   test "credential scopes validation for supported credential_class keys" do
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "aws credential valid",
-                    description: "the credential for test",
-                    credential_class: "arv:aws_access_key",
-                    external_id: "AKIAIOSFODNN7EXAMPLE",
-                    secret: "my_aws_secret_key",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["s3://my-bucket", "s3://*"]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 200
+    test_credential = {
+      description: "the credential for test",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now + 2.weeks
+    }
 
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "aws credential invalid",
-                    description: "the credential for test",
-                    credential_class: "arv:aws_access_key",
-                    external_id: "AKIAIOSFODNN7EXAMPLE",
-                    secret: "my_aws_secret_key",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["invalid-scope", "s3://another-bucket"]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Credential class \S+ does not allow scopes: invalid-scope/, json_response["errors"][0])
-
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "credential unsupported",
-                    description: "the credential for test",
-                    credential_class: "arv:unsupported_credential_class",
-                    external_id: "AKIAIOSFODNN7EXAMPLE",
-                    secret: "my_aws_secret_key",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["totally-valid-scope-name"]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Credential_class arv:unsupported_credential_class is not implemented/, json_response["errors"][0])
-
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "credential reserved prefix",
-                    description: "the credential for test",
-                    credential_class: "aws_access_key",
-                    external_id: "AKIAIOSFODNN7EXAMPLE",
-                    secret: "my_aws_secret_key",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["s3://my-bucket"]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Credential_class aws_access_key conflicts with reserved credential class arv:aws_access_key/, json_response["errors"][0])
+    [
+      {
+        credential_class: "arv:aws_access_key",
+        scopes: nil,
+        http_status: 200,
+        error_msg: nil
+      },
+      {
+        credential_class: "arv:aws_access_key",
+        scopes: ["s3://my-bucket", "s3://*"],
+        http_status: 200,
+        error_msg: nil
+      },
+      {
+        credential_class: "arv:aws_access_key",
+        scopes: ["invalid-scope", "s3://another-bucket"],
+        http_status: 422,
+        error_msg: /Credential class \S+ does not allow scopes: invalid-scope/
+      },
+      {
+        credential_class: "arv:not_implemented_credential_class",
+        scopes: ["totally-valid-scope-name"],
+        http_status: 422,
+        error_msg: /Credential_class arv:not_implemented_credential_class is not implemented/
+      },
+      {
+        credential_class: "aws_access_key", # without arv: prefix
+        scopes: ["s3://my-bucket"],
+        http_status: 422,
+        error_msg: /Credential_class aws_access_key conflicts with reserved credential class arv:aws_access_key/
+      }
+    ].each do |tc|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(
+                      credential_class: tc[:credential_class],
+                      scopes: tc[:scopes]
+                    )
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response tc[:http_status]
+      if tc[:error_msg]
+        assert_match(tc[:error_msg], json_response["errors"][0])
+      end
+    end
   end
 end
