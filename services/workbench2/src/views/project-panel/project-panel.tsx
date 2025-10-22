@@ -86,11 +86,12 @@ const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
     };
 }
 
-const mapDispatchToProps = (dispatch: Dispatch): ProjectPanelActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch): ProjectPanelActionProps & DispatchProp => ({
     resetPagination: () => {
         dispatch(projectPanelDataActions.RESET_PAGINATION());
         dispatch(projectPanelRunActions.RESET_PAGINATION());
     },
+    dispatch,
 });
 
 export const ProjectPanel = withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(
