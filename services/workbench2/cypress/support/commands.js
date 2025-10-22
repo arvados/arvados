@@ -414,12 +414,13 @@ Cypress.Commands.add("addToFavorites", (userToken, userUUID, itemUUID) => {
     });
 });
 
-Cypress.Commands.add("createProject", ({ owningUser, targetUser, projectName, canWrite, addToFavorites }) => {
+Cypress.Commands.add("createProject", ({ owningUser, targetUser, ownerUuid, projectName, canWrite, addToFavorites }) => {
     const writePermission = canWrite ? "can_write" : "can_read";
 
     cy.createGroup(owningUser.token, {
         name: `${projectName} ${Math.floor(Math.random() * 999999)}`,
         group_class: "project",
+        ...(ownerUuid ? {owner_uuid: ownerUuid} : {})
     })
         .as(`${projectName}`)
         .then(project => {
@@ -937,4 +938,55 @@ Cypress.Commands.add("assertDetailsCardTitle", (resourceName, shouldExist = true
         .contains(resourceName)
         .should(shouldExist ? 'exist' : 'not.exist')
 
+});
+
+/**
+ * Sets the currently visible data explorer's page size
+ *
+ * @param size Desired page size, must exactly match the dropdown value
+ */
+Cypress.Commands.add("doDataExplorerPageSize", (size) => {
+    // prev/next are buttons and the page size is the only input element
+    cy.get("[data-cy=table-pagination] input").parent().click();
+    cy.get(`div[role=presentation] li[data-value=${size}]`).click();
+});
+
+/**
+ * Click the currently visible data explorer's next page button
+ */
+Cypress.Commands.add("doDataExporerNextPage", () => {
+    cy.get("[data-cy=table-pagination] button[title='Go to next page']").click();
+});
+
+/**
+ * Click the currently visible data explorer's prev page button
+ */
+Cypress.Commands.add("doDataExporerPrevPage", () => {
+    cy.get("[data-cy=table-pagination] button[title='Go to previous page']").click();
+});
+
+/**
+ * Assert the current data explorer pagination page size
+ */
+Cypress.Commands.add("assertDataExplorerPageSize", (size) => {
+    cy.get("[data-cy=table-pagination] input").should('have.value', size);
+});
+
+/**
+ * Since the actual page number of DE is not displayed, to assert the current DE
+ * page, we can multiply the expected page number by the page size and check
+ * that the page offset matches that + 1
+ *
+ * @param page Expected DE page number, 1 indexed
+ */
+Cypress.Commands.add("assertDataExplorerPage", (page) => {
+    cy.get("[data-cy=table-pagination] input")
+        .invoke('val')
+        .then(size => {
+            const firstItemNumber = ((page-1) * size) + 1;
+            // Special case for first page, which can start at 0 or 1
+            // Either is valid and reflects being on page 1 so we accept both
+            const expectedDisplayNumber = firstItemNumber === 1 ? "[0-1]" : firstItemNumber;
+            cy.get("[data-cy=table-pagination]").contains(new RegExp(`^${expectedDisplayNumber}-[0-9]+ of [0-9]+$`));
+        });
 });
