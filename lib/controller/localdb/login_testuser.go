@@ -72,7 +72,7 @@ const loginform = `
 	  }),
 	})
 	if (!resp.ok) {
-	  document.getElementById('error').innerHTML = '<p>Authentication failed.</p><p>The "test login" users are defined in Clusters.[ClusterID].Login.Test.Users section of config.yml</p><p>If you are using arvbox, use "arvbox adduser" to add users.</p>'
+	  document.getElementById('error').innerHTML = '<p>Authentication failed.</p><p>The "test login" users are defined in Clusters.[ClusterID].Login.Test.Users section of config.yml</p>'
 	  return
 	}
 	var redir = document.getElementById('return_to').value

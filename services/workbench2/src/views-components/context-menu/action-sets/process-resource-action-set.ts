@@ -28,7 +28,7 @@ import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
-import { cancelRunningWorkflow } from "store/processes/processes-actions";
+import { openCancelProcesswDialog } from "store/processes/processes-actions";
 import { copyStringToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
@@ -131,7 +131,7 @@ const runningProcessOnlyActionSet: ContextMenuActionSet = [
             name: ContextMenuActionNames.CANCEL,
             icon: StopIcon,
             execute: (dispatch, resources) => {
-                dispatch<any>(cancelRunningWorkflow(resources[0].uuid));
+                dispatch<any>(openCancelProcesswDialog(resources[0].uuid));
             },
         },
     ]

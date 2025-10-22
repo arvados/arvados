@@ -30,7 +30,7 @@ var railsEnv = []string{
 // passenger.
 type installPassenger struct {
 	src       string // path to app in source tree
-	varlibdir string // path to app (relative to /var/lib/arvados) in OS package: "railsapi" or "workbench1"
+	varlibdir string // path to app in OS package: "railsapi" or "workbench1"
 	depends   []supervisedTask
 }
 
@@ -40,8 +40,9 @@ func (runner installPassenger) String() string {
 
 func (runner installPassenger) Run(ctx context.Context, fail func(error), super *Supervisor) error {
 	if super.ClusterType == "production" {
-		// passenger has already been installed via package
-		return nil
+		// FIXME: This used to return paths set up by `arvados-server install`,
+		// which is no longer a thing.
+		return fmt.Errorf("production cluster type not implemented")
 	}
 	err := super.wait(ctx, runner.depends...)
 	if err != nil {
@@ -117,7 +118,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 
 type runPassenger struct {
 	src       string // path to app in source tree
-	varlibdir string // path to app (relative to /var/lib/arvados) in OS package: "railsapi" or "workbench1"
+	varlibdir string // path to app in OS package: "railsapi" or "workbench1"
 	svc       arvados.Service
 	depends   []supervisedTask
 }
@@ -138,7 +139,9 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	var appdir string
 	switch super.ClusterType {
 	case "production":
-		appdir = "/var/lib/arvados/" + runner.varlibdir
+		// FIXME: This used to return paths set up by `arvados-server install`,
+		// which is no longer a thing.
+		return fmt.Errorf("production cluster type not implemented")
 	case "test":
 		appdir = filepath.Join(super.tempdir, runner.varlibdir)
 	default:

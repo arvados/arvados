@@ -44,7 +44,7 @@ extra_snakeoil_certs_dependencies_pkg_installed:
       - ca-certificates
 
 extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run:
-  # Taken from https://github.com/arvados/arvados/blob/master/tools/arvbox/lib/arvbox/docker/service/certificate/run
+  # Taken from https://github.com/arvados/arvados/blob/3.1.2/tools/arvbox/lib/arvbox/docker/service/certificate/run
   cmd.run:
     - name: |
         # These dirs are not too CentOS-ish, but this is a helper script

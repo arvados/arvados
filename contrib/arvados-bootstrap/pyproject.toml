@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arvados-bootstrap"
-version = "3.2.0.dev20250924"
+version = "3.2.0.dev20251016"
 dependencies = [
   "arvados-python-client ~= 3.2.0.dev20250924170000",
 ]
@@ -36,6 +36,7 @@ requires-python = "~= 3.10"
 
 [project.scripts]
 arv-export = "arv_bootstrap.export_import:export_main"
+arv-federation-migrate = "arv_bootstrap.federation_migrate:main"
 arv-import = "arv_bootstrap.export_import:import_main"
 arv-seed = "arv_bootstrap.seed:main"
 

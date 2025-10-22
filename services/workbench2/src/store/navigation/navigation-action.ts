@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch, compose, AnyAction } from "redux";
-import { push } from "react-router-redux";
+import { push } from "connected-react-router";
 import { ResourceKind, extractUuidKind } from "models/resource";
 import { SidePanelTreeCategory } from "../side-panel-tree/side-panel-tree-actions";
 import { Routes, getGroupUrl, getNavUrl, getUserProfileUrl } from "routes/routes";

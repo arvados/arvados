@@ -20,11 +20,7 @@ PackageMapping = abc.Mapping[str, t.List[str]]
 # This mapping defines all the distributions we support. The values translate
 # package names from the latest supported Debian to the named distribution.
 _PACKAGE_NAMES_MAP: t.Dict[DistroID, PackageMapping] = {
-    ('Debian', '11'): {},
     ('Debian', '12'): {},
-    ('Ubuntu', '20'): {
-        'pkgconf': ['pkg-config'],
-    },
     ('Ubuntu', '22'): {},
     ('Ubuntu', '24'): {},
 }

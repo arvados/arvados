@@ -4,7 +4,7 @@
 
 import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
-import { ProjectsIcon,
+import { RootProjectIcon,
     ProcessIcon,
     FavoriteIcon,
     ShareMeIcon,
@@ -35,7 +35,7 @@ import {
     navigateToDashboard,
 } from 'store/navigation/navigation-action'
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
-import { RouterAction } from 'react-router-redux'
+import { RouterAction } from 'connected-react-router'
 import { User } from 'models/user'
 
 type CssRules = 'button' | 'unselected' | 'selected'
@@ -83,7 +83,7 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
     {
         name: SidePanelCollapsedCategory.PROJECTS,
-        icon: <ProjectsIcon />,
+        icon: <RootProjectIcon />,
         navTarget: '',
     },
     {

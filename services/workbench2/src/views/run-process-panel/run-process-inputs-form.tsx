@@ -47,29 +47,38 @@ const propsSelector = createStructuredSelector({
 const mapStateToProps = (_: any, props: RunProcessInputFormProps) =>
     propsSelector(props);
 
+type RunProcessCssRules = 'formGridContainer';
+
+const runProcessStyles: CustomStyleRulesCallback<RunProcessCssRules> = theme => ({
+    formGridContainer: {
+        marginTop: 0,
+    }
+});
+
 export const RunProcessInputsForm = compose(
     connect(mapStateToProps),
+    withStyles(runProcessStyles),
     reduxForm<WorkflowInputsData, RunProcessInputFormProps>({
         form: RUN_PROCESS_INPUTS_FORM
     }))(
-        (props: InjectedFormProps & RunProcessInputFormProps) =>
+        (props: InjectedFormProps & RunProcessInputFormProps & WithStyles<RunProcessCssRules>) =>
             <form>
-                <Grid container spacing={4}>
+                <Grid container spacing={4} className={props.classes.formGridContainer}>
                     {props.inputs.map(input =>
                         <InputItem input={input} key={input.id} />)}
                 </Grid>
             </form>);
 
-type CssRules = 'inputItem';
+type InputCssRules = 'inputItem';
 
-const styles: CustomStyleRulesCallback<CssRules> = theme => ({
+const inputStyles: CustomStyleRulesCallback<InputCssRules> = theme => ({
     inputItem: {
         marginBottom: theme.spacing(2),
     }
 });
 
-const InputItem = withStyles(styles)(
-    (props: WithStyles<CssRules> & { input: CommandInputParameter }) =>
+const InputItem = withStyles(inputStyles)(
+    (props: WithStyles<InputCssRules> & { input: CommandInputParameter }) =>
         <Grid item xs={12} md={6} className={props.classes.inputItem}>
             {getInputComponent(props.input)}
         </Grid>);

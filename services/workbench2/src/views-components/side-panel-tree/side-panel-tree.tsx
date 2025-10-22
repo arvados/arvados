@@ -21,7 +21,7 @@ import { ResourceKind } from "models/resource";
 import { IllegalNamingWarning } from "components/warning/warning";
 import { GroupClass } from "models/group";
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
-import { FilterGroupIcon, ProjectsIcon } from 'components/icon/icon';
+import { FilterGroupIcon, RootProjectIcon } from 'components/icon/icon';
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
@@ -72,4 +72,4 @@ const getProjectPickerIcon = (item: TreeItem<ProjectResource | string>) =>
         ? getSidePanelIcon(item.data)
         : (item.data && item.data.groupClass === GroupClass.FILTER)
             ? FilterGroupIcon
-            : ProjectsIcon;
+            : RootProjectIcon;

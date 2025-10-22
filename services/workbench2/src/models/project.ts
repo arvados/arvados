@@ -14,6 +14,6 @@ export const getProjectUrl = (uuid: string) => {
     return `/projects/${uuid}`;
 };
 
-export const isProjectResource = (resource: Resource): resource is ProjectResource => {
+export const isProjectResource = (resource?: Resource): resource is ProjectResource => {
     return isGroupResource(resource) && 'frozenByUuid' in resource;
 };

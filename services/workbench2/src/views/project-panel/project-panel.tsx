@@ -30,6 +30,7 @@ import { ProjectPanelTabLabels, RootProjectPanelTabLabels } from 'store/project-
 import { OverviewPanel } from 'components/overview-panel/overview-panel';
 import { ProjectAttributes } from './project-attributes';
 import { isUserResource } from 'models/user';
+import { ProjectResource } from 'models/project';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -69,13 +70,13 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRu
 
 const mapStateToProps = (state: RootState): ProjectPanelDataProps => {
     const currentItemId = getProjectPanelCurrentUuid(state);
-    const resource = getResource<any>(currentItemId)(state.resources);
+    const resource = getResource<ProjectResource>(currentItemId)(state.resources);
     return {
         currentItemId,
         resources: state.resources,
         isAdmin: state.auth.user!.isAdmin,
         defaultTab: state.auth.user?.prefs.wb?.default_project_tab,
-        isRootProject: (resource && isUserResource(resource)) || currentItemId === state.auth.user?.uuid ,
+        isRootProject: isUserResource(resource) || currentItemId === state.auth.user?.uuid ,
     };
 }
 

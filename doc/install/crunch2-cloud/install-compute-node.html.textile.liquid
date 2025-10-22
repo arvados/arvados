@@ -33,11 +33,9 @@ p(#introduction). This page describes how to build a compute node image that can
 ## "Run Ansible":#run-ansible
 # "Manual build":#requirements
 
+<a name="check-distro"></a>
+
 h2(#prerequisites). Prerequisites
-
-h3(#check-distro). Check your distribution
-
-These instructions work on all of our supported distributions *except* Ubuntu 20.04 "focal." Ubuntu 20.04 includes Python 3.8, which is too old to run Ansible 8 and our Ansible playbooks. If your cluster runs Ubuntu 20.04, you will need to use a system with a newer version of Python to build the compute node image. The system where you build the compute node image only needs to be able to communicate with your cloud provider. It does not need to be part of the Arvados cluster or have any Arvados client tools installed. Your Arvados cluster, and the compute node image you build, can all still be based on Ubuntu 20.04.
 
 h3(#sshkeypair). Create and configure an SSH keypair
 

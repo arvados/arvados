@@ -20,7 +20,7 @@ import { ResourceKind, extractUuidKind } from 'models/resource';
 import { ownerNameActions } from 'store/owner-name/owner-name-actions';
 import { getUserDisplayName } from 'models/user';
 import { CollectionResource } from 'models/collection';
-import { replace } from "react-router-redux";
+import { replace } from "connected-react-router";
 import { getNavUrl } from 'routes/routes';
 import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';

@@ -11,7 +11,7 @@ import { Route, Switch } from "react-router";
 import { createBrowserHistory } from "history";
 import { History } from "history";
 import { configureStore, RootStore } from "store/store";
-import { ConnectedRouter } from "react-router-redux";
+import { ConnectedRouter } from "connected-react-router";
 import { ApiToken } from "views-components/api-token/api-token";
 import { AddSession } from "views-components/add-session/add-session";
 import { initAuth, logout } from "store/auth/auth-action";

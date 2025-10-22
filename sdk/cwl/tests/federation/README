@@ -24,10 +24,6 @@ Create main-test.json:
     ]
 }
 
-Or create an arvbox test cluster:
-
-$ cwltool arvbox-make-federation.cwl --arvbox_base ~/.arvbox/ --in_acr /path/to/arvados-cwl-runner > main-test.json
-
 
 Run tests:
 

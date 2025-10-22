@@ -24,10 +24,6 @@ arvsave <name>
 arvrm <name>
   Delete $HOME/.config/arvados/<name>.conf
 
-arvboxswitch <name>
-  Set ARVBOX_CONTAINER to <name>
-  With no arguments, print current arvbox and available arvboxes.
-
 arvopen <uuid>
   Open an Arvados uuid in web browser (http://arvadosapi.com)
 
@@ -88,25 +84,6 @@ arvrm() {
     else
         echo "Delete Arvados environment conf"
         echo "Usage: arvrm <name>"
-    fi
-}
-
-arvboxswitch() {
-    if [[ -n "$1" ]] ; then
-        export ARVBOX_CONTAINER=$1
-        if [[ -d $HOME/.arvbox/$1 ]] ; then
-            echo "Arvbox switched to $1"
-        else
-            echo "Warning: $1 doesn't exist, will be created."
-        fi
-    else
-        if test -z "$ARVBOX_CONTAINER" ; then
-            ARVBOX_CONTAINER=arvbox
-        fi
-        echo "Switch Arvbox environment conf"
-        echo "Your current container is: $ARVBOX_CONTAINER"
-        echo "Usage: arvboxswitch <name>"
-        echo "Available confs:" $(cd $HOME/.arvbox && ls --indicator-style=none)
     fi
 }
 

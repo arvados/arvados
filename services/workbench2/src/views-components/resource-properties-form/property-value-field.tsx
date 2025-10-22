@@ -19,6 +19,7 @@ import {
 import { TAG_VALUE_VALIDATION } from 'validators/validators';
 import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
+import { memoize } from 'lodash';
 
 interface PropertyKeyProp {
     propertyKeyId: string;
@@ -48,7 +49,7 @@ export const PropertyValueField = connectVocabularyAndPropertyKey(
         <Field
             name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
-            validate={skipValidation ? undefined : getValidation(props)}
+            validate={skipValidation ? undefined : getValidation(props.propertyKeyId, props.vocabulary)}
             {...{...props, disabled: !props.propertyKeyName}} />
         </span>
 );
@@ -82,12 +83,16 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
         />
     )} />;
 
-const getValidation = (props: PropertyValueFieldProps) =>
-    isStrictTag(props.propertyKeyId, props.vocabulary)
-        ? [...TAG_VALUE_VALIDATION, matchTagValues(props)]
-        : TAG_VALUE_VALIDATION;
+/**
+ * getValidation must be memoized to prevent infinite re-renders due to Field
+ * checking it for changes
+ */
+const getValidation = memoize((propertyKeyId: string, vocabulary: Vocabulary) =>
+    isStrictTag(propertyKeyId, vocabulary)
+        ? [...TAG_VALUE_VALIDATION, matchTagValues(propertyKeyId, vocabulary)]
+        : TAG_VALUE_VALIDATION);
 
-const matchTagValues = ({ vocabulary, propertyKeyId }: PropertyValueFieldProps) =>
+const matchTagValues = (propertyKeyId: string, vocabulary: Vocabulary) =>
     (value: string) =>
         getTagValues(propertyKeyId, vocabulary).find(v => !value || v.label === value)
             ? undefined

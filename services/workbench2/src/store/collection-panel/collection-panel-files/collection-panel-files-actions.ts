@@ -132,7 +132,6 @@ export const renameFile = (newFullPath: string) =>
                 const oldPath = getFileFullPath(file);
                 const newPath = newFullPath;
                 services.collectionService.renameFile(currentCollection.uuid, currentCollection.portableDataHash, oldPath, newPath).then(() => {
-                    dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
                     dispatch<any>(loadCollection(currentCollection.uuid));
                 }).catch(e => {
@@ -143,6 +142,7 @@ export const renameFile = (newFullPath: string) =>
                 });
             }
         }
+        dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
     };
 
 export const DOWNLOAD_ZIP_DIALOG = 'downloadZipDialog';

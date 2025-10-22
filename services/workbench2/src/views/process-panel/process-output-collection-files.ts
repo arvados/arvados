@@ -26,7 +26,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: item.id }));
     },
     onItemMenuOpen: (event, item, isWritable) => {
-        const isDirectory = item.data.type === 'directory';
+        const isDirectory = item.data?.type === 'directory';
         dispatch<any>(openContextMenuAndSelect(
             event,
             {
@@ -38,7 +38,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
                         ? ContextMenuKind.READONLY_COLLECTION_DIRECTORY_ITEM
                         : ContextMenuKind.READONLY_COLLECTION_FILE_ITEM,
                 kind: ResourceKind.COLLECTION,
-                name: item.data.name,
+                name: item.data?.name || '',
                 uuid: item.id,
                 ownerUuid: ''
             }

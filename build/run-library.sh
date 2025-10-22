@@ -204,12 +204,9 @@ package_go_binary() {
   fi
 
   case "$package_format-$TARGET" in
-    # Ubuntu 20.04 does not support cross compilation because the
-    # libfuse package does not support multiarch. See
-    # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477>.
     # Red Hat-based distributions do not support native cross compilation at
     # all (they use a qemu-based solution we haven't implemented yet).
-    deb-ubuntu2004|rpm-*)
+    rpm-*)
       cross_compilation=0
       if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
         echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
@@ -453,9 +450,7 @@ test_package_presence() {
     elif [[ "$FORMAT" == "deb" ]]; then
       local codename
       case "$TARGET" in
-          debian11) codename=bullseye ;;
           debian12) codename=bookworm ;;
-          ubuntu2004) codename=focal ;;
           ubuntu2204) codename=jammy ;;
           ubuntu2404) codename=noble ;;
           *)

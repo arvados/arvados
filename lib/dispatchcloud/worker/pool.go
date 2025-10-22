@@ -363,7 +363,9 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 		// worker.
 		defer delete(wp.creating, secret)
 		if err != nil {
+			var isQuotaError, isCapacityError bool
 			if err, ok := err.(cloud.QuotaError); ok && err.IsQuotaError() {
+				isQuotaError = true
 				wp.atQuotaErr = err
 				n := len(wp.workers) + len(wp.creating) - 1
 				if n < 1 {
@@ -385,9 +387,14 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 				}
 			}
 			if err, ok := err.(cloud.CapacityError); ok && err.IsCapacityError() {
-				var capKey interface{} = it.ProviderType
+				isCapacityError = true
+				var capKey interface{}
 				if err.IsInstanceTypeSpecific() {
-					capKey = it.ProviderType
+					if it.Preemptible {
+						capKey = it.ProviderType + "-preemptible"
+					} else {
+						capKey = it.ProviderType
+					}
 				} else if err.IsInstanceQuotaGroupSpecific() {
 					capKey = wp.instanceSet.InstanceQuotaGroup(it)
 				} else {
@@ -398,8 +405,18 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 				}
 				wp.atCapacityUntil[capKey] = time.Now().Add(capacityErrorTTL)
 				time.AfterFunc(capacityErrorTTL, wp.notify)
+				logger.WithFields(logrus.Fields{
+					"capacityErrorTTL":             capacityErrorTTL,
+					"capKey":                       capKey,
+					"atCapacityUntil":              wp.atCapacityUntil[capKey],
+					"isInstanceTypeSpecific":       err.IsInstanceTypeSpecific(),
+					"isInstanceQuotaGroupSpecific": err.IsInstanceQuotaGroupSpecific(),
+				}).Info("capacity error -- pausing instance create calls")
 			}
-			logger.WithError(err).Error("create failed")
+			logger.WithError(err).WithFields(logrus.Fields{
+				"isCapacityError": isCapacityError,
+				"isQuotaError":    isQuotaError,
+			}).Error("create failed")
 			wp.instanceSet.throttleCreate.CheckRateLimitError(err, wp.logger, "create instance", wp.notify)
 			return
 		}
@@ -416,10 +433,16 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 func (wp *Pool) AtCapacity(it arvados.InstanceType) bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
+	var typeKey interface{}
+	if it.Preemptible {
+		typeKey = it.ProviderType + "-preemptible"
+	} else {
+		typeKey = it.ProviderType
+	}
 	for _, capKey := range []interface{}{
 		"",                                    // all instance types
 		wp.instanceSet.InstanceQuotaGroup(it), // instance quota group
-		it.ProviderType,                       // just this instance type
+		typeKey,                               // just this instance type
 	} {
 		if t, ok := wp.atCapacityUntil[capKey]; ok && time.Now().Before(t) {
 			return true
