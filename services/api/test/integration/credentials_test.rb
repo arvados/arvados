@@ -344,70 +344,37 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential scopes must be an array of strings or nil" do
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 0",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: []
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 200
+    test_credential = {
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now + 2.weeks
+    }
 
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 1",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: nil
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 200
+    def random_name # avoid duplicate name errors
+      {name: "test credential" + rand(10000).to_s}
+    end
 
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 2",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: "not an array"
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Scopes must be an array/, json_response["errors"][0])
+    [nil, [], ["scope1", "scope2"]].each do |good_scopes|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(scopes: good_scopes)
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 200
+    end
 
-    post "/arvados/v1/credentials",
-         params: {:format => :json,
-                  credential: {
-                    name: "test credential 3",
-                    description: "the credential for test",
-                    credential_class: "basic_auth",
-                    external_id: "my_username",
-                    secret: "my_password",
-                    expires_at: Time.now+2.weeks,
-                    scopes: ["foo", ["bar"]]
-                  }
-                 },
-         headers: auth(:active),
-         as: :json
-    assert_response 422
-    assert_match(/Scopes must be an array/, json_response["errors"][0])
+    ["not an array", [ "valid_scope", 123 ], [ "valid_scope", ["nested_array"] ] ].each do |bad_scopes|
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(random_name).merge(scopes: bad_scopes)
+                   },
+           headers: auth(:active),
+           as: :json
+      assert_response 422
+      assert_match(/Scopes must be an array/, json_response["errors"][0])
+    end
   end
 end
