@@ -7,6 +7,7 @@ import { ContainerState } from "models/container";
 describe("Process tests", function () {
     let activeUser;
     let adminUser;
+    let dockerImage;
 
     before(function () {
         // Only set up common users once. These aren't set up as aliases because
@@ -29,79 +30,26 @@ describe("Process tests", function () {
         });
     });
 
-    function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
-        return cy.setupDockerImage(docker_image).then(function (dockerImage) {
-            return cy.createContainerRequest(user.token, {
-                name: name,
-                command: command,
-                container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-                output_path: '/var/spool/cwl',
-                priority: 1,
-                runtime_constraints: {
-                    vcpus: 1,
-                    ram: 1,
-                },
-                use_existing: reuse,
-                state: state,
-                mounts: {
-                    '/var/lib/cwl/workflow.json': {
-                        kind: 'json',
-                        content: {},
-                    },
-                    '/var/spool/cwl': {
-                        kind: 'tmp',
-                        capacity: 1000000,
-                    },
-                },
-                owner_uuid: ownerUuid || undefined,
+    beforeEach(() => {
+        // Since setupDockerImage uses createCollection
+        // it will be cleaned up after every test even if we
+        // do this in before()
+        cy.setupDockerImage('arvados/jobs')
+            .as('dockerImageAlias')
+            .then((dockerImageAlias) => {
+                dockerImage = dockerImageAlias;
             });
-        });
-    }
-
-    // separate function to avoid overwriting properties
-    function createContainerRequestWithFakeProps(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
-        return cy.setupDockerImage(docker_image).then(function (dockerImage) {
-            return cy.createContainerRequest(user.token, {
-                name: name,
-                command: command,
-                container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-                output_path: '/var/spool/cwl',
-                priority: 1,
-                runtime_constraints: {
-                    vcpus: 1,
-                    ram: 1,
-                },
-                use_existing: reuse,
-                state: state,
-                mounts: {
-                    '/var/lib/cwl/workflow.json': {
-                        kind: 'json',
-                        content: {},
-                    },
-                    '/var/spool/cwl': {
-                        kind: 'tmp',
-                        capacity: 1000000,
-                    },
-                },
-                owner_uuid: ownerUuid || undefined,
-                properties: {
-                    cwl_input: {foo: "bar"},
-                    cwl_output: {baz: "qux"},
-                    foo: "bar"
-                }
-            });
-        });
-    }
+    });
 
     describe("Details panel", function () {
         it("shows process details", function () {
-            createContainerRequest(
-                activeUser,
-                `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                "arvados/jobs",
-                ["echo", "hello world"],
-                false,
-                "Committed"
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                {
+                    name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    state: "Committed",
+                },
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -126,13 +74,18 @@ describe("Process tests", function () {
                 });
             });
 
-            createContainerRequestWithFakeProps(
-                activeUser,
-                `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                "arvados/jobs",
-                ["echo", "hello world"],
-                false,
-                "Committed"
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                {
+                    name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    state: "Committed",
+                    properties: {
+                        cwl_input: {foo: "bar"},
+                        cwl_output: {baz: "qux"},
+                        foo: "bar"
+                    },
+                },
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -148,8 +101,14 @@ describe("Process tests", function () {
 
         it("should show runtime status indicators", function () {
             // Setup running container with runtime_status error & warning messages
-            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed")
-                .as("containerRequest")
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                {
+                    name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    state: "Committed",
+                },
+            ).as("containerRequest")
                 .then(function (containerRequest) {
                     expect(containerRequest.state).to.equal("Committed");
                     expect(containerRequest.container_uuid).not.to.be.equal("");
@@ -227,7 +186,11 @@ describe("Process tests", function () {
         it("allows copying processes", function () {
             const crName = "first_container_request";
             const copiedCrName = "copied_container_request";
-            createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crName, state: "Committed" },
+            ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details-card]").should("contain", crName);
@@ -326,9 +289,11 @@ describe("Process tests", function () {
 
             // Uncommitted container
             const crUncommitted = `Test process ${Math.floor(Math.random() * 999999)}`;
-            createContainerRequest(activeUser, crUncommitted, "arvados/jobs", ["echo", "hello world"], false, "Uncommitted").then(function (
-                containerRequest
-            ) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crUncommitted, state: "Uncommitted" },
+            ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 // Navigate to process and verify run / cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -341,9 +306,11 @@ describe("Process tests", function () {
             // Queued container
             const crQueued = `Test process ${Math.floor(Math.random() * 999999)}`;
             const fakeCtrUuid = "zzzzz-dz642-000000000000001";
-            createContainerRequest(activeUser, crQueued, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
-                containerRequest
-            ) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crQueued, state: "Committed" },
+            ).then(function (containerRequest) {
                 // Fake container uuid
                 cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*${containerRequest.uuid}*` }, req => {
                     req.on('response', res => {
@@ -373,9 +340,11 @@ describe("Process tests", function () {
             // Locked container
             const crLocked = `Test process ${Math.floor(Math.random() * 999999)}`;
             const fakeCtrLockedUuid = "zzzzz-dz642-000000000000002";
-            createContainerRequest(activeUser, crLocked, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
-                containerRequest
-            ) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crLocked, state: "Committed" },
+            ).then(function (containerRequest) {
                 // Fake container uuid
                 cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*${containerRequest.uuid}*` }, req => {
                     req.on('response', res => {
@@ -405,9 +374,11 @@ describe("Process tests", function () {
             // On Hold container
             const crOnHold = `Test process ${Math.floor(Math.random() * 999999)}`;
             const fakeCtrOnHoldUuid = "zzzzz-dz642-000000000000003";
-            createContainerRequest(activeUser, crOnHold, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
-                containerRequest
-            ) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crOnHold, state: "Committed" },
+            ).then(function (containerRequest) {
                 // Fake container uuid
                 cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*${containerRequest.uuid}*` }, req => {
                     req.on('response', res => {
@@ -460,13 +431,10 @@ describe("Process tests", function () {
             });
 
             // Create process
-            createContainerRequest(
-                activeUser,
-                crName,
-                "arvados/jobs",
-                ["echo", "hello world"],
-                false,
-                "Committed"
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crName, state: "Committed" },
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
 
@@ -503,7 +471,11 @@ describe("Process tests", function () {
             });
 
             const crName = "test_container_request";
-            createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crName, state: "Committed" },
+            ).then(function (containerRequest) {
                 // Create empty log file before loading process page
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", [""]);
 
@@ -566,9 +538,11 @@ describe("Process tests", function () {
                 "2022-03-22T13:56:22.542418167Z Nulla eget mollis ipsum.",
             ];
 
-            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
-                containerRequest
-            ) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: "test_container_request", state: "Committed" },
+            ).then(function (containerRequest) {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "node-info.txt", nodeInfoLogs).as("nodeInfoLogs");
                 cy.appendLog(adminUser.token, containerRequest.uuid, "crunch-run.txt", crunchRunLogs).as("crunchRunLogs");
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", stdoutLogs).as("stdoutLogs");
@@ -611,7 +585,11 @@ describe("Process tests", function () {
 
         it("sorts combined logs", function () {
             const crName = "test_container_request";
-            createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crName, state: "Committed" },
+            ).then(function (containerRequest) {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "node-info.txt", [
                     "3: nodeinfo 1",
                     "2: nodeinfo 2",
@@ -657,7 +635,11 @@ describe("Process tests", function () {
 
         it("preserves original ordering of lines within the same log type", function () {
             const crName = "test_container_request";
-            createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crName, state: "Committed" },
+            ).then(function (containerRequest) {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", [
                     // Should come first
                     "2023-07-18T20:14:46.000000000Z A out 1",
@@ -705,7 +687,11 @@ describe("Process tests", function () {
         it("correctly generates sniplines", function () {
             const SNIPLINE = `================ ✀ ================ ✀ ========= Some log(s) were skipped ========= ✀ ================ ✀ ================`;
             const crName = "test_container_request";
-            createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: crName, state: "Committed" },
+            ).then(function (containerRequest) {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", [
                     "X".repeat(63999) + "_" + "O".repeat(100) + "_" + "X".repeat(63999),
                 ]).as("stdout");
@@ -751,9 +737,11 @@ describe("Process tests", function () {
                 logLines.push(randomString(length));
             }
 
-            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
-                containerRequest
-            ) {
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: "test_container_request", state: "Committed" },
+            ).then(function (containerRequest) {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", logLines).as("stdoutLogs");
 
                 cy.getAll("@stdoutLogs").then(function () {
@@ -1467,9 +1455,11 @@ describe("Process tests", function () {
                 );
             });
 
-            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed").as(
-                "containerRequest"
-            );
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: "test_container_request", state: "Committed" },
+            ).as("containerRequest");
 
             cy.getAll("@containerRequest", "@testOutputCollection").then(function ([containerRequest, testOutputCollection]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -1608,9 +1598,11 @@ describe("Process tests", function () {
                 );
             });
 
-            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed").as(
-                "containerRequest"
-            );
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                { name: "test_container_request", state: "Committed" },
+            ).as("containerRequest");
 
             cy.getAll("@containerRequest").then(function ([containerRequest]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -1647,13 +1639,13 @@ describe("Process tests", function () {
     describe("Process operations", function () {
         it("navigates to parent project when deleting current process", function () {
             // Process in home project
-            createContainerRequest(
-                activeUser,
-                `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                "arvados/jobs",
-                ["echo", "hello world"],
-                false,
-                "Committed"
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                {
+                    name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    state: "Committed",
+                },
             ).then(function (containerRequest) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -1687,14 +1679,14 @@ describe("Process tests", function () {
                 projectName: 'myProject1',
                 addToFavorites: false
             }).then(function (subproject) {
-                createContainerRequest(
-                    activeUser,
-                    `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                    "arvados/jobs",
-                    ["echo", "hello world"],
-                    false,
-                    "Committed",
-                    subproject.uuid,
+                cy.createDefaultContainerRequest(
+                    activeUser.token,
+                    dockerImage,
+                    {
+                        name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                        state: "Committed",
+                        owner_uuid: subproject.uuid,
+                    },
                 ).then(function (containerRequest) {
                     cy.loginAs(activeUser);
                     cy.doSidePanelNavigation('Home Projects');
@@ -1722,22 +1714,22 @@ describe("Process tests", function () {
         });
 
         it("refreshes project runs tab when deleting process", function () {
-            createContainerRequest(
-                activeUser,
-                `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                "arvados/jobs",
-                ["echo", "hello world"],
-                false,
-                "Committed"
+            cy.createDefaultContainerRequest(
+                activeUser.token,
+                dockerImage,
+                {
+                    name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    state: "Committed",
+                },
             ).as('firstCr')
             .then(function () {
-                createContainerRequest(
-                    activeUser,
-                    `test_container_request ${Math.floor(Math.random() * 999999)}`,
-                    "arvados/jobs",
-                    ["echo", "hello world"],
-                    false,
-                    "Committed"
+                cy.createDefaultContainerRequest(
+                    activeUser.token,
+                    dockerImage,
+                    {
+                        name: `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                        state: "Committed",
+                    },
                 ).as('secondCr');
             });
 

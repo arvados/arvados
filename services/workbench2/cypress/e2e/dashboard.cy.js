@@ -2,39 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { tooltips } from '../support/msToolbarTooltips';
-
-const testWFDefinition = "{\n    \"$graph\": [\n        {\n            \"class\": \"Workflow\",\n            \"doc\": \"Reverse the lines in a document, then sort those lines.\",\n            \"hints\": [\n                {\n                    \"acrContainerImage\": \"99b0201f4cade456b4c9d343769a3b70+261\",\n                    \"class\": \"http://arvados.org/cwl#WorkflowRunnerResources\"\n                }\n            ],\n            \"id\": \"#main\",\n            \"inputs\": [\n                {\n                    \"default\": null,\n                    \"doc\": \"The input file to be processed.\",\n                    \"id\": \"#main/input\",\n                    \"type\": \"File\"\n                },\n                {\n                    \"default\": true,\n                    \"doc\": \"If true, reverse (decending) sort\",\n                    \"id\": \"#main/reverse_sort\",\n                    \"type\": \"boolean\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"doc\": \"The output with the lines reversed and sorted.\",\n                    \"id\": \"#main/output\",\n                    \"outputSource\": \"#main/sorted/output\",\n                    \"type\": \"File\"\n                }\n            ],\n            \"steps\": [\n                {\n                    \"id\": \"#main/rev\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/rev/input\",\n                            \"source\": \"#main/input\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/rev/output\"\n                    ],\n                    \"run\": \"#revtool.cwl\"\n                },\n                {\n                    \"id\": \"#main/sorted\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/sorted/input\",\n                            \"source\": \"#main/rev/output\"\n                        },\n                        {\n                            \"id\": \"#main/sorted/reverse\",\n                            \"source\": \"#main/reverse_sort\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/sorted/output\"\n                    ],\n                    \"run\": \"#sorttool.cwl\"\n                }\n            ]\n        },\n        {\n            \"baseCommand\": \"rev\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Reverse each line using the `rev` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#revtool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#revtool.cwl/input\",\n                    \"inputBinding\": {},\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#revtool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        },\n        {\n            \"baseCommand\": \"sort\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Sort lines using the `sort` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#sorttool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/reverse\",\n                    \"inputBinding\": {\n                        \"position\": 1,\n                        \"prefix\": \"-r\"\n                    },\n                    \"type\": \"boolean\"\n                },\n                {\n                    \"id\": \"#sorttool.cwl/input\",\n                    \"inputBinding\": {\n                        \"position\": 2\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        }\n    ],\n    \"cwlVersion\": \"v1.0\"\n}"
-
-function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
-    return cy.setupDockerImage(docker_image).then(function (dockerImage) {
-        return cy.createContainerRequest(user.token, {
-            name: name,
-            command: command,
-            container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-            output_path: '/var/spool/cwl',
-            priority: 1,
-            runtime_constraints: {
-                vcpus: 1,
-                ram: 1,
-            },
-            use_existing: reuse,
-            state: state,
-            mounts: {
-                '/var/lib/cwl/workflow.json': {
-                    kind: 'json',
-                    content: {},
-                },
-                '/var/spool/cwl': {
-                    kind: 'tmp',
-                    capacity: 1000000,
-                },
-            },
-            owner_uuid: ownerUuid || undefined,
-        });
-    });
-}
-
 describe('Main Dashboard', () => {
     let activeUser;
     let adminUser;
@@ -269,12 +236,24 @@ describe('Recent Workflow Runs section', () => {
     });
 
     it('handles recent workflow runs operations', () => {
-        createContainerRequest(adminUser, "test_container_request_1", "arvados/jobs", ["echo", "hello world"], false, "Committed")
-                .as("containerRequest1");
-        createContainerRequest(adminUser, "test_container_request_2", "arvados/jobs", ["echo", "hello world"], false, "Committed")
-                .as("containerRequest2");
-        createContainerRequest(adminUser, "test_container_request_3", "arvados/jobs", ["echo", "hello world"], false, "Committed")
-                .as("containerRequest3");
+        cy.setupDockerImage('arvados/jobs')
+            .then((dockerImage) => {
+                cy.createDefaultContainerRequest(
+                    adminUser.token,
+                    dockerImage,
+                    { name: "test_container_request_1", state: "Committed" },
+                ).as("containerRequest1");
+                cy.createDefaultContainerRequest(
+                    adminUser.token,
+                    dockerImage,
+                    { name: "test_container_request_2", state: "Committed" },
+                ).as("containerRequest2");
+                cy.createDefaultContainerRequest(
+                    adminUser.token,
+                    dockerImage,
+                    { name: "test_container_request_3", state: "Committed" },
+                ).as("containerRequest3");
+            });
         cy.getAll("@containerRequest1", "@containerRequest2", "@containerRequest3")
             .then(function ([containerRequest1, containerRequest2, containerRequest3]) {
                 cy.loginAs(adminUser);

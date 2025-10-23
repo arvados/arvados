@@ -210,6 +210,39 @@ Cypress.Commands.add("createContainerRequest", (token, data) => {
     });
 });
 
+/**
+ * Creates a pre-made simple CR to avoid repeating this CR everywhere
+ *
+ * Can be overridden with any modifications, but has sensible defaults
+ */
+Cypress.Commands.add("createDefaultContainerRequest", (token, dockerImage, data) => (
+    cy.createContainerRequest(token, {
+        name: data.name || `test_container_request ${Math.floor(Math.random() * 999999)}`,
+        command: data.command || ['echo', 'hello world'],
+        container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
+        output_path: '/var/spool/cwl',
+        priority: 1,
+        runtime_constraints: {
+            vcpus: 1,
+            ram: 1,
+        },
+        use_existing: data.use_existing || false,
+        state: data.state || "Uncommitted",
+        mounts: {
+            '/var/lib/cwl/workflow.json': {
+                kind: 'json',
+                content: {},
+            },
+            '/var/spool/cwl': {
+                kind: 'tmp',
+                capacity: 1000000,
+            },
+        },
+        owner_uuid: data.owner_uuid || undefined,
+        properties: data.properties || undefined,
+    })
+));
+
 Cypress.Commands.add("updateContainerRequest", (token, uuid, data) => {
     return cy.updateResource(token, "container_requests", uuid, {
         container_request: JSON.stringify(data),
@@ -632,19 +665,19 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
     let activeUser;
     let adminUser;
 
-        cy.getUser("admin", "Admin", "User", true, true)
-            .as("adminUser")
-            .then(function () {
-                adminUser = this.adminUser;
-            });
+    cy.getUser("admin", "Admin", "User", true, true)
+        .as("adminUser")
+        .then(function () {
+            adminUser = this.adminUser;
+        });
 
-        cy.getUser('activeuser', 'Active', 'User', false, true)
-            .as('activeUser').then(function () {
-                activeUser = this.activeUser;
-            });
+    cy.getUser('activeuser', 'Active', 'User', false, true)
+        .as('activeUser').then(function () {
+            activeUser = this.activeUser;
+        });
 
     cy.getAll('@activeUser', '@adminUser').then(([activeUser, adminUser]) => {
-	cy.createCollection(adminUser.token, {
+	    cy.createCollection(adminUser.token, {
             name: "docker_image",
             manifest_text:
                 ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n",

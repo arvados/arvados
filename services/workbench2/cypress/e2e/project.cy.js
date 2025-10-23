@@ -2,35 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
-    return cy.setupDockerImage(docker_image).then(function (dockerImage) {
-        return cy.createContainerRequest(user.token, {
-            name: name,
-            command: command,
-            container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-            output_path: '/var/spool/cwl',
-            priority: 1,
-            runtime_constraints: {
-                vcpus: 1,
-                ram: 1,
-            },
-            use_existing: reuse,
-            state: state,
-            mounts: {
-                '/var/lib/cwl/workflow.json': {
-                    kind: 'json',
-                    content: {},
-                },
-                '/var/spool/cwl': {
-                    kind: 'tmp',
-                    capacity: 1000000,
-                },
-            },
-            owner_uuid: ownerUuid || undefined,
-        });
-    });
-}
-
 describe("Project tests", function () {
     let activeUser;
     let adminUser;
@@ -769,6 +740,10 @@ describe("Project tests", function () {
         const mainProjectName = `Main project`;
         const blankWorkflowName = "Dummy workflow"
 
+        // Setup docker image
+        cy.setupDockerImage('arvados/jobs')
+            .as('dockerImage');
+
         // Create main project
         cy.createProject({
             owningUser: activeUser,
@@ -776,17 +751,17 @@ describe("Project tests", function () {
         }).as('mainProject');
 
         // Create 15 runs
-        cy.getAll('@mainProject').then(([mainProject]) => {
+        cy.getAll('@mainProject', '@dockerImage').then(([mainProject, dockerImage]) => {
             for (var i = 0; i < 15; i++) {
-                createContainerRequest(
-                    adminUser,
-                    `${blankWorkflowName} (${Math.floor(Math.random() * 999999)})`,
-                    "arvados/jobs",
-                    ["echo", "hello world"],
-                    false,
-                    "Committed",
-                    mainProject.uuid
-                ).as('testProcess');
+                cy.createDefaultContainerRequest(
+                    adminUser.token,
+                    dockerImage,
+                    {
+                        name: `${blankWorkflowName} (${Math.floor(Math.random() * 999999)})`,
+                        state: "Committed",
+                        owner_uuid: mainProject.uuid,
+                    },
+                );
             }
 
             // Navigate to containing project
