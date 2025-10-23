@@ -71,7 +71,7 @@ In the left-hand navigation, open "External Credentials." In the upper right, us
 Fill out the New External Credential dialog as follows for S3 credentials:
 
 * Give the credential a useful name, and optionally a description.
-* The Credential Class must be *exactly* @aws_access_key@.
+* The Credential Class must be *exactly* @arv:aws_access_key@.
 * The External ID is the access key ID (the alphanumeric string that usually starts with "AKIA").
 * The Secret is the secret access key (the random string).
 * Set the "Expires at" date to a date no later than the expiry of the underlying access key. Arvados will automatically stop using access keys after they have expired.
@@ -96,7 +96,7 @@ arv_client.credentials().create(
 {% endcodeblock %}
 
 * Give the credential a useful @name@ and optionally a @description@.
-* The @credential_class@ must be *exactly* @"aws_access_key"@.
+* The @credential_class@ must be *exactly* @"arv:aws_access_key"@.
 * The @external_id@ is the access key ID (the alphanumeric string that usually starts with "AKIA").
 * The @secret@ is the secret access key (the random string).
 * Set the @expires_at@ timestamp to a date no later than the expiry of the underlying access key. Arvados will automatically stop using access keys after they have expired.
@@ -106,7 +106,7 @@ arv_client.credentials().create(
 <pre><code class="json">{
   "name": "Example Credential",
   "description": "&lt;p&gt;This is an example credential for the Arvados documentation.&lt;/p&gt;",
-  "credential_class": "aws_access_key",
+  "credential_class": "arv:aws_access_key",
   "external_id": "AKIAS3ABCDEFGHIJKLMN",
   "secret": "ZYXWVUTSRQPONMLKJIHGFEDCBA",
   "expires_at": "2038-01-19T03:14:07Z",

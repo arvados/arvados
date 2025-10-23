@@ -49,7 +49,7 @@ def resolve_aws_key(apiclient, s3url):
     bucket = "s3://%s" % parsed.netloc
     expires_at = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "arv:aws_access_key"],
                                                     ["scopes", "contains", bucket],
                                                     ["expires_at", ">", expires_at]]).execute()
     if len(results["items"]) > 1:
@@ -58,7 +58,7 @@ def resolve_aws_key(apiclient, s3url):
     if len(results["items"]) == 1:
         return results["items"][0]
 
-    results = apiclient.credentials().list(filters=[["credential_class", "=", "aws_access_key"],
+    results = apiclient.credentials().list(filters=[["credential_class", "=", "arv:aws_access_key"],
                                                     ["scopes", "=", []],
                                                     ["expires_at", ">", expires_at]]).execute()
 

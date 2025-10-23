@@ -1612,7 +1612,7 @@ class TestSubmit(unittest.TestCase):
         expect_container['environment']['AWS_CONFIG_FILE'] = '/var/lib/cwl/.aws/config'
         expect_container['secret_mounts'] = {
             "/var/lib/cwl/.aws/credentials": {
-                "content": "[default]\naws_access_key_id = 123key\naws_secret_access_key = 789secret\n",
+                "content": "[default]\narv:aws_access_key_id = 123key\naws_secret_access_key = 789secret\n",
                 "kind": "text"
             },
             "/var/lib/cwl/.aws/config": {

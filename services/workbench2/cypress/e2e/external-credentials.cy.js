@@ -90,7 +90,7 @@ describe('External Credentials panel tests', function () {
         cy.get('[data-cy=form-submit-btn]').should('be.disabled');
 
         // verify default values
-        cy.get('input[name=credentialClass]').should('have.value', 'aws_access_key');
+        cy.get('input[name=credentialClass]').should('have.value', 'arv:aws_access_key');
         cy.get('[data-cy=date-picker-input]').should('have.value', moment().add(1, 'year').format('MM/DD/YYYY'));
 
         cy.get('input[name=name]').type(newCredentialName);
@@ -102,7 +102,7 @@ describe('External Credentials panel tests', function () {
         cy.get('[data-cy=form-submit-btn]').should('not.be.disabled');
 
         // modify default values
-        cy.get('input[name=credentialClass]').type('_foo');
+        cy.get('input[name=credentialClass]').clear().type('foo');
         cy.get('[data-cy=date-picker-input]').type('12/25/2099');
 
         cy.get('[data-cy=form-submit-btn]').should('not.be.disabled');
@@ -110,7 +110,7 @@ describe('External Credentials panel tests', function () {
 
         cy.contains(newCredentialName).should('be.visible');
         cy.contains('Test Description').should('be.visible');
-        cy.contains('aws_access_key_foo').should('be.visible');
+        cy.contains('foo').should('be.visible');
         cy.contains('Test External ID').should('be.visible');
         cy.contains('scope1').should('be.visible');
         cy.contains('scope2').should('be.visible');

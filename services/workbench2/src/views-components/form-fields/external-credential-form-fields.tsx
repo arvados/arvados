@@ -29,7 +29,7 @@ export const ExternalCredentialClassCreateField = () =>
     <Field
         name='credentialClass'
         component={TextFieldWithStartValue as any}
-        startValue={'aws_access_key'}
+        startValue={'arv:aws_access_key'}
         validate={REQUIRED_LENGTH255_VALIDATION}
         label="Credential Class *" />;
 
