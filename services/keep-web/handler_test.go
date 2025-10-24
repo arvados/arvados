@@ -27,6 +27,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -905,9 +906,7 @@ func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr
 // Process req using s.handler, and follow redirects if any.
 func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *http.Response) {
 	resp := httptest.NewRecorder()
-	var handler http.Handler = s.handler
-	// // Uncomment to enable request logging in test output:
-	// handler = httpserver.AddRequestIDs(httpserver.LogRequests(handler))
+	handler := httpserver.AddRequestIDs(httpserver.LogRequests(s.handler))
 	handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		return req, resp.Result()
@@ -2349,8 +2348,9 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	// Start small, and increase concurrency (2^2, 4^2, ...)
 	// only until hitting failure. Avoids unnecessarily long
 	// failure reports.
-	for n := 2; n < 16 && !c.Failed(); n = n * 2 {
-		c.Logf("%s: n=%d", c.TestName(), n)
+	for ndirs := 2; ndirs < 10 && !c.Failed(); ndirs++ {
+		nfiles := ndirs
+		c.Logf("%s: ndirs=%d nfiles=%d", c.TestName(), ndirs, nfiles)
 
 		var coll arvados.Collection
 		err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
@@ -2358,14 +2358,14 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 		defer client.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
 
 		var wg sync.WaitGroup
-		for i := 0; i < n && !c.Failed(); i++ {
+		for i := 0; i < ndirs && !c.Failed(); i++ {
 			i := i
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 				_, resp := s.do("MKCOL", s.collectionURL(coll.UUID, fmt.Sprintf("i=%d", i)), client.AuthToken, nil, nil)
-				c.Assert(resp.StatusCode, check.Equals, http.StatusCreated)
-				for j := 0; j < n && !c.Failed(); j++ {
+				c.Assert(resp.StatusCode, check.Equals, http.StatusCreated, check.Commentf("i=%d", i))
+				for j := 0; j < nfiles && !c.Failed(); j++ {
 					j := j
 					wg.Add(1)
 					go func() {
@@ -2385,7 +2385,7 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 			}()
 		}
 		wg.Wait()
-		for i := 0; i < n; i++ {
+		for i := 0; i < ndirs; i++ {
 			_, resp := s.do("PROPFIND", s.collectionURL(coll.UUID, fmt.Sprintf("i=%d", i)), client.AuthToken, nil, nil)
 			c.Assert(resp.StatusCode, check.Equals, http.StatusMultiStatus)
 		}

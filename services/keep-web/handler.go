@@ -610,6 +610,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		forceReload = need
+		httpserver.SetResponseLogFields(r.Context(), logrus.Fields{"needSync": need})
 	}
 	if forceReload {
 		err := collectionDir.Sync()
