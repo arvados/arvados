@@ -368,56 +368,67 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "credential scopes validation for supported credential_class keys" do
-    [
-      {
+  [
+    {
+      body: {
+        name: "valid scopes for arv:aws_access_key",
         credential_class: "arv:aws_access_key",
         scopes: ["s3://my-bucket", "s3://*"],
-        http_status: 200,
-        error_msg: nil
       },
-      {
+      error_msg: nil
+    },
+    {
+      body: {
+        name: "nil scopes for arv:aws_access_key",
         credential_class: "arv:aws_access_key",
         scopes: nil,
-        http_status: 422,
-        error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
       },
-      {
+      error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
+    },
+    {
+      body: {
+        name: "empty scopes for arv:aws_access_key",
         credential_class: "arv:aws_access_key",
         scopes: [],
-        http_status: 422,
-        error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
       },
-      {
+      error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
+    },
+    {
+      body: {
+        name: "invalid scopes for arv:aws_access_key",
         credential_class: "arv:aws_access_key",
         scopes: ["invalid-scope", "s3://another-bucket"],
-        http_status: 422,
-        error_msg: /Scopes not valid for credential class arv:aws_access_key: invalid-scope/
       },
-      {
+      error_msg: /Scopes not valid for credential class arv:aws_access_key: invalid-scope/
+    },
+    {
+      body: {
+        name: "not implemented credential_class",
         credential_class: "arv:not_implemented_credential_class",
         scopes: ["totally-valid-scope-name"],
-        http_status: 422,
-        error_msg: /Credential class arv:not_implemented_credential_class is not implemented/
       },
-      {
+      error_msg: /Credential class arv:not_implemented_credential_class is not implemented/
+    },
+    {
+      body: {
+        name: "conflicting credential_class without arv: prefix",
         credential_class: "aws_access_key", # without arv: prefix
         scopes: ["s3://my-bucket"],
-        http_status: 422,
-        error_msg: /Credential class aws_access_key conflicts with reserved credential class arv:aws_access_key/
-      }
-    ].each do |tc|
+      },
+      error_msg: /Credential class aws_access_key conflicts with reserved credential class arv:aws_access_key/
+    }
+  ].each do |tc|
+    test "credential validation for case: #{tc[:body][:name]}" do
       post "/arvados/v1/credentials",
            params: {:format => :json,
-                    credential: test_credential.merge(
-                      credential_class: tc[:credential_class],
-                      scopes: tc[:scopes]
-                    )
+                    credential: test_credential.merge(tc[:body])
                    },
            headers: auth(:active),
            as: :json
-      assert_response tc[:http_status]
-      if tc[:error_msg]
+      if tc[:error_msg].nil?
+        assert_response :success
+      else
+        assert_response 422
         assert_match(tc[:error_msg], json_response["errors"][0])
       end
     end
