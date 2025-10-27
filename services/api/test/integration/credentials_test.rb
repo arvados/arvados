@@ -397,31 +397,31 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
         credential_class: "arv:aws_access_key",
         scopes: nil,
         http_status: 422,
-        error_msg: /Scopes Scopes cannot be blank for credential class arv:aws_access_key/
+        error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
       },
       {
         credential_class: "arv:aws_access_key",
         scopes: [],
         http_status: 422,
-        error_msg: /Scopes Scopes cannot be blank for credential class arv:aws_access_key/
+        error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
       },
       {
         credential_class: "arv:aws_access_key",
         scopes: ["invalid-scope", "s3://another-bucket"],
         http_status: 422,
-        error_msg: /Credential class \S+ does not allow scopes: invalid-scope/
+        error_msg: /Scopes not valid for credential class arv:aws_access_key: invalid-scope/
       },
       {
         credential_class: "arv:not_implemented_credential_class",
         scopes: ["totally-valid-scope-name"],
         http_status: 422,
-        error_msg: /Credential_class arv:not_implemented_credential_class is not implemented/
+        error_msg: /Credential class arv:not_implemented_credential_class is not implemented/
       },
       {
         credential_class: "aws_access_key", # without arv: prefix
         scopes: ["s3://my-bucket"],
         http_status: 422,
-        error_msg: /Credential_class aws_access_key conflicts with reserved credential class arv:aws_access_key/
+        error_msg: /Credential class aws_access_key conflicts with reserved credential class arv:aws_access_key/
       }
     ].each do |tc|
       post "/arvados/v1/credentials",
