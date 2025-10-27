@@ -41,34 +41,39 @@ collection_pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+$')
 collection_pdh_pattern = re.compile(r'^keep:([0-9a-f]{32}\+\d+)(/.*)?')
 collection_uuid_pattern = re.compile(r'^keep:([a-z0-9]{5}-4zz18-[a-z0-9]{15})(/.*)?$')
 
+def _resolve_one_credential(apiclient, filters, description):
+    results = apiclient.credentials().list(filters=filters, limit=2).execute()
+    match results['items']:
+        case []:
+            return None
+        case [c]:
+            return c
+        case _:
+            raise WorkflowException(f"Multiple {description} found in Arvados. \
+Run `arvados-cwl-runner` with the `--use-credential` option to provide the UUID \
+of the credential to use.")
+
+
 def resolve_aws_key(apiclient, s3url):
     if "credentials" not in apiclient._rootDesc["resources"]:
         raise WorkflowException("Arvados instance does not support the external credentials API.  Use --enable-aws-credential-capture to use locally-defined credentials.")
-
-    parsed = urllib.parse.urlparse(s3url)
-    bucket = "s3://%s" % parsed.netloc
-    expires_at = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-
-    results = apiclient.credentials().list(filters=[["credential_class", "=", "arv:aws_access_key"],
-                                                    ["scopes", "contains", bucket],
-                                                    ["expires_at", ">", expires_at]]).execute()
-    if len(results["items"]) > 1:
-        raise WorkflowException("Multiple credentials found for bucket '%s' in Arvados, use --use-credential to specify which one to use." % bucket)
-
-    if len(results["items"]) == 1:
-        return results["items"][0]
-
-    results = apiclient.credentials().list(filters=[["credential_class", "=", "arv:aws_access_key"],
-                                                    ["scopes", "=", []],
-                                                    ["expires_at", ">", expires_at]]).execute()
-
-    if len(results["items"]) > 1:
-        raise WorkflowException("Multiple AWS credentials found in Arvados, provide --use-credential to specify which one to use")
-
-    if len(results["items"]) == 1:
-        return results["items"][0]
-
-    raise WorkflowException("No AWS credentials found, must register AWS credentials with Arvados or use --enable-aws-credential-capture to use locally-defined credentials.")
+    desc_fmt = "AWS access keys with scope {0!r}"
+    expires_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)
+    scope = f's3://{urllib.parse.urlparse(s3url).netloc}'
+    filters = [
+        ['credential_class', '=', 'arv:aws_access_key'],
+        ['expires_at', '>', f'{expires_at.isoformat()}Z'],
+        ['scopes', 'contains', scope],
+    ]
+    if credential := _resolve_one_credential(apiclient, filters, desc_fmt.format(scope)):
+        return credential
+    wild_scope = 's3://*'
+    filters[-1] = ['scopes', 'contains', wild_scope]
+    if credential := _resolve_one_credential(apiclient, filters, desc_fmt.format(wild_scope)):
+        return credential
+    raise WorkflowException(f"No AWS access keys for S3 bucket {scope} found in Arvados. \
+For information about how to run workflows with S3 inputs, refer to \
+<https://doc.arvados.org/user/topics/external-inputs.html>.")
 
 
 class ArvPathMapper(PathMapper):

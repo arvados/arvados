@@ -75,7 +75,7 @@ Fill out the New External Credential dialog as follows for S3 credentials:
 * The External ID is the access key ID (the alphanumeric string that usually starts with "AKIA").
 * The Secret is the secret access key (the random string).
 * Set the "Expires at" date to a date no later than the expiry of the underlying access key. Arvados will automatically stop using access keys after they have expired.
-* The applicable scopes identify which S3 bucket(s) this access key should be used for. Enter each scope in the format <notextile><code>s3://<strong>BUCKET_NAME</strong></code></notextile> for each bucket the access key can access. Each scope is listed under the input as you add it and can be removed if you enter a scope incorrectly.
+* The applicable scopes identify which S3 bucket(s) this access key should be used for. Enter each scope in the format <notextile><code>s3://<strong>BUCKET_NAME</strong></code></notextile> for each bucket the access key can access. Each scope is listed under the input as you add it and can be removed if you enter a scope incorrectly. You can enter the special value @s3://*@ if you want this credential to be used for any S3 inputs.
 
 For illustration, the Example Credential being filled out below can be used to access the @arvados-example@ and @arvados-doc@ S3 buckets.
 
@@ -100,7 +100,7 @@ arv_client.credentials().create(
 * The @external_id@ is the access key ID (the alphanumeric string that usually starts with "AKIA").
 * The @secret@ is the secret access key (the random string).
 * Set the @expires_at@ timestamp to a date no later than the expiry of the underlying access key. Arvados will automatically stop using access keys after they have expired.
-* The @scopes@ identify which S3 bucket(s) this access key should be used for. Enter each scope in the format <notextile><code>"s3://<strong>BUCKET_NAME</strong>"</code></notextile> for each bucket the access key can access. The example credential below can be used to access the @arvados-example@ and @arvados-doc@ S3 buckets.
+* The @scopes@ identify which S3 bucket(s) this access key should be used for. Enter each scope in the format <notextile><code>"s3://<strong>BUCKET_NAME</strong>"</code></notextile> for each bucket the access key can access. The example credential below can be used to access the @arvados-example@ and @arvados-doc@ S3 buckets. You can enter the special value @s3://*@ if you want this credential to be used for any S3 inputs.
 
 <notextile>
 <pre><code class="json">{
@@ -138,7 +138,7 @@ h4(#multiple-credentials-found). "Multiple credentials found"
 If you submit a workflow to Arvados and it reports this error:
 
 <notextile>
-<pre>WARNING Download error: Multiple credentials found for bucket 's3://BUCKET_NAME' in Arvados, use --use-credential to specify which one to use.
+<pre>WARNING Download error: Multiple AWS access keys with scope 's3://BUCKET_NAME' found in Arvados. Run `arvados-cwl-runner` with the `--use-credential` option to provide the UUID of the credential to use.
 </pre>
 </notextile>
 
@@ -165,7 +165,7 @@ This means Arvados did not find an access key to use for this bucket. Double-che
 
 * Is the access key registered as a credential in Arvados?
 * Does the user running the workflow have permission to use that credential? Can they see it in Workbench or get it from the API?
-* Does the credential have @s3://example-bucket@ in its list of scopes? Check both the credential scope and the workflow input to make sure the bucket name matches and doesn't have any typos.
+* Does the credential have @s3://example-bucket@ or @s3://*@ in its list of scopes? Check both the credential scope and the workflow input to make sure the bucket name matches and doesn't have any typos.
 * Is the external credential expired?
 
 h3(#local-access-key). Running a workflow using a local access key
