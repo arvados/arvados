@@ -7,11 +7,20 @@ class Credential < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  # Validation regexes for scopes, keyed by credential_class.
+  CRED_CLASS_SCOPES_VALIDATION_REGEX = {
+    "arv:aws_access_key" => [
+      %r{\As3://(\*|[a-z0-9][\-.a-z0-9]{1,61}[a-z0-9])\z}
+    ],
+  }.freeze
+
   validates :name, :credential_class, :external_id, :secret, :expires_at, presence: true
   validates :name, format: { without: /\A[ \t]*\z/ }
   validates :scopes, array_of_strings: true
 
   attribute :scopes, :jsonbArray, default: []
+
+  validate :validate_credential_class_and_scopes
 
   after_create :add_credential_manage_link
 
@@ -63,4 +72,40 @@ class Credential < ArvadosModel
     end
   end
 
+  private
+
+  def validate_credential_class_and_scopes
+    return unless credential_class.present?
+
+    if credential_class.start_with?("arv:")
+      check_if_credential_class_is_implemented
+    elsif CRED_CLASS_SCOPES_VALIDATION_REGEX.key?("arv:" + credential_class)
+      errors.add(:credential_class,  "#{credential_class} conflicts with reserved credential class arv:#{credential_class}")
+    end
+  end
+
+  def check_if_credential_class_is_implemented
+    if CRED_CLASS_SCOPES_VALIDATION_REGEX.key?(credential_class)
+      validate_scopes_for_implemented_credential_class
+    else
+      errors.add(:credential_class, "#{credential_class} is not implemented")
+    end
+  end
+
+  def validate_scopes_for_implemented_credential_class
+    if scopes.blank?
+      errors.add(:scopes, "cannot be blank for credential class #{credential_class}")
+      return
+    end
+
+    patterns = CRED_CLASS_SCOPES_VALIDATION_REGEX[credential_class]
+
+    invalid = scopes.reject do |scope|
+      patterns.any? { |re| re.match?(scope) }
+    end
+
+    if invalid.any?
+      errors.add(:scopes, "not valid for credential class #{credential_class}: #{invalid.join(', ')}")
+    end
+  end
 end

@@ -25,6 +25,17 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     json_response
   end
 
+  def test_credential
+    {
+      name: "test credential" + rand(100000).to_s,
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now+2.weeks
+    }
+  end
+
   test "credential create and query" do
     jr = credential_create_helper
 
@@ -307,15 +318,6 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential required fields must be set" do
-    test_credential = {
-      name: "test credential",
-      description: "the credential for test",
-      credential_class: "basic_auth",
-      external_id: "my_username",
-      secret: "my_password",
-      expires_at: Time.now + 2.weeks
-    }
-
     field_error_msg_hash = {
       name: "Name",
       credential_class: "Credential class",
@@ -344,22 +346,10 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential scopes must be an array of strings or nil" do
-    test_credential = {
-      description: "the credential for test",
-      credential_class: "basic_auth",
-      external_id: "my_username",
-      secret: "my_password",
-      expires_at: Time.now + 2.weeks
-    }
-
-    def random_name # avoid duplicate name errors
-      {name: "test credential" + rand(10000).to_s}
-    end
-
     [nil, [], ["scope1", "scope2"]].each do |good_scopes|
       post "/arvados/v1/credentials",
            params: {:format => :json,
-                    credential: test_credential.merge(random_name).merge(scopes: good_scopes)
+                    credential: test_credential.merge(scopes: good_scopes)
                    },
            headers: auth(:active),
            as: :json
@@ -369,12 +359,78 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     ["not an array", [ "valid_scope", 123 ], [ "valid_scope", ["nested_array"] ] ].each do |bad_scopes|
       post "/arvados/v1/credentials",
            params: {:format => :json,
-                    credential: test_credential.merge(random_name).merge(scopes: bad_scopes)
+                    credential: test_credential.merge(scopes: bad_scopes)
                    },
            headers: auth(:active),
            as: :json
       assert_response 422
       assert_match(/Scopes must be an array/, json_response["errors"][0])
+    end
+  end
+
+  [
+    {
+      body: {
+        name: "valid scopes for arv:aws_access_key",
+        credential_class: "arv:aws_access_key",
+        scopes: ["s3://my-bucket", "s3://*"],
+      },
+      error_msg: nil
+    },
+    {
+      body: {
+        name: "nil scopes for arv:aws_access_key",
+        credential_class: "arv:aws_access_key",
+        scopes: nil,
+      },
+      error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
+    },
+    {
+      body: {
+        name: "empty scopes for arv:aws_access_key",
+        credential_class: "arv:aws_access_key",
+        scopes: [],
+      },
+      error_msg: /Scopes cannot be blank for credential class arv:aws_access_key/
+    },
+    {
+      body: {
+        name: "invalid scopes for arv:aws_access_key",
+        credential_class: "arv:aws_access_key",
+        scopes: ["invalid-scope", "s3://another-bucket"],
+      },
+      error_msg: /Scopes not valid for credential class arv:aws_access_key: invalid-scope/
+    },
+    {
+      body: {
+        name: "not implemented credential_class",
+        credential_class: "arv:not_implemented_credential_class",
+        scopes: ["totally-valid-scope-name"],
+      },
+      error_msg: /Credential class arv:not_implemented_credential_class is not implemented/
+    },
+    {
+      body: {
+        name: "conflicting credential_class without arv: prefix",
+        credential_class: "aws_access_key", # without arv: prefix
+        scopes: ["s3://my-bucket"],
+      },
+      error_msg: /Credential class aws_access_key conflicts with reserved credential class arv:aws_access_key/
+    }
+  ].each do |tc|
+    test "credential validation for case: #{tc[:body][:name]}" do
+      post "/arvados/v1/credentials",
+           params: {:format => :json,
+                    credential: test_credential.merge(tc[:body])
+                   },
+           headers: auth(:active),
+           as: :json
+      if tc[:error_msg].nil?
+        assert_response :success
+      else
+        assert_response 422
+        assert_match(tc[:error_msg], json_response["errors"][0])
+      end
     end
   end
 end
