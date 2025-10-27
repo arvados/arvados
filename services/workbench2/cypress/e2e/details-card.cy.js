@@ -13,8 +13,8 @@ const ResourceKinds = {
 
 
 describe('Base Details Card tests', function () {
-    let activeUser;
     let adminUser;
+    let dockerImage;
 
     before(function () {
         // Only set up common users once. These aren't set up as aliases because
@@ -26,11 +26,6 @@ describe('Base Details Card tests', function () {
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser('activeUser1', 'Active', 'User', false, true)
-            .as('activeUser')
-            .then(function () {
-                activeUser = this.activeUser;
-            });
         cy.on('uncaught:exception', (err, runnable) => {
             console.error(err);
         });
@@ -39,11 +34,19 @@ describe('Base Details Card tests', function () {
     beforeEach(function () {
         cy.clearCookies();
         cy.clearLocalStorage();
+        // Since setupDockerImage uses createCollection
+        // it will be cleaned up after every test even if we
+        // do this in before()
+        cy.setupDockerImage('arvados/jobs')
+            .as('dockerImageAlias')
+            .then((dockerImageAlias) => {
+                dockerImage = dockerImageAlias;
+            });
     });
 
     Object.values(ResourceKinds).forEach(resourceKind => {
         it(`Should display the ${resourceKind} details card`, () => {
-            const { name, createResource, navToResource, extraAssertions } = getCardTestParams(activeUser, adminUser, resourceKind);
+            const { name, createResource, navToResource, extraAssertions } = getCardTestParams(dockerImage, adminUser, resourceKind);
 
             createResource();
             cy.loginAs(adminUser);
@@ -62,7 +65,7 @@ describe('Base Details Card tests', function () {
 });
 
 
-const getCardTestParams = (activeUser, adminUser, resourceKind) => {
+const getCardTestParams = (dockerImage, adminUser, resourceKind) => {
     let name;
     switch (resourceKind) {
         case ResourceKinds.USER:
@@ -118,7 +121,7 @@ const getCardTestParams = (activeUser, adminUser, resourceKind) => {
             name = `Test container request ${Math.floor(Math.random() * 999999)}`;
             return {
                 name,
-                createResource: () => createContainerRequest(adminUser, name, 'arvados/jobs', ['echo', 'hello world'], false, 'Committed'),
+                createResource: () => cy.createDefaultContainerRequest(adminUser.token, dockerImage, { name, state: 'Committed' }),
                 navToResource: () => {
                     cy.doMPVTabSelect("Workflow Runs");
                     cy.get('main').contains(name).click();
@@ -135,32 +138,3 @@ const getCardTestParams = (activeUser, adminUser, resourceKind) => {
             throw new Error(`Unknown resource kind: ${resourceKind}`);
     }
 };
-
-function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted", ownerUuid) {
-        return cy.setupDockerImage(docker_image).then(function (dockerImage) {
-            return cy.createContainerRequest(user.token, {
-                name: name,
-                command: command,
-                container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
-                output_path: '/var/spool/cwl',
-                priority: 1,
-                runtime_constraints: {
-                    vcpus: 1,
-                    ram: 1,
-                },
-                use_existing: reuse,
-                state: state,
-                mounts: {
-                    '/var/lib/cwl/workflow.json': {
-                        kind: 'json',
-                        content: {},
-                    },
-                    '/var/spool/cwl': {
-                        kind: 'tmp',
-                        capacity: 1000000,
-                    },
-                },
-                owner_uuid: ownerUuid || undefined,
-            });
-        });
-    }

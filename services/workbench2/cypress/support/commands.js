@@ -210,6 +210,39 @@ Cypress.Commands.add("createContainerRequest", (token, data) => {
     });
 });
 
+/**
+ * Creates a pre-made simple CR to avoid repeating this CR everywhere
+ *
+ * Can be overridden with any modifications, but has sensible defaults
+ */
+Cypress.Commands.add("createDefaultContainerRequest", (token, dockerImage, data) => (
+    cy.createContainerRequest(token, {
+        name: data.name || `test_container_request ${Math.floor(Math.random() * 999999)}`,
+        command: data.command || ['echo', 'hello world'],
+        container_image: dockerImage.portable_data_hash, // for some reason, docker_image doesn't work here
+        output_path: '/var/spool/cwl',
+        priority: 1,
+        runtime_constraints: {
+            vcpus: 1,
+            ram: 1,
+        },
+        use_existing: data.use_existing || false,
+        state: data.state || "Uncommitted",
+        mounts: {
+            '/var/lib/cwl/workflow.json': {
+                kind: 'json',
+                content: {},
+            },
+            '/var/spool/cwl': {
+                kind: 'tmp',
+                capacity: 1000000,
+            },
+        },
+        owner_uuid: data.owner_uuid || undefined,
+        properties: data.properties || undefined,
+    })
+));
+
 Cypress.Commands.add("updateContainerRequest", (token, uuid, data) => {
     return cy.updateResource(token, "container_requests", uuid, {
         container_request: JSON.stringify(data),
@@ -414,12 +447,13 @@ Cypress.Commands.add("addToFavorites", (userToken, userUUID, itemUUID) => {
     });
 });
 
-Cypress.Commands.add("createProject", ({ owningUser, targetUser, projectName, canWrite, addToFavorites }) => {
+Cypress.Commands.add("createProject", ({ owningUser, targetUser, ownerUuid, projectName, canWrite, addToFavorites }) => {
     const writePermission = canWrite ? "can_write" : "can_read";
 
     cy.createGroup(owningUser.token, {
         name: `${projectName} ${Math.floor(Math.random() * 999999)}`,
         group_class: "project",
+        ...(ownerUuid ? {owner_uuid: ownerUuid} : {})
     })
         .as(`${projectName}`)
         .then(project => {
@@ -631,19 +665,19 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
     let activeUser;
     let adminUser;
 
-        cy.getUser("admin", "Admin", "User", true, true)
-            .as("adminUser")
-            .then(function () {
-                adminUser = this.adminUser;
-            });
+    cy.getUser("admin", "Admin", "User", true, true)
+        .as("adminUser")
+        .then(function () {
+            adminUser = this.adminUser;
+        });
 
-        cy.getUser('activeuser', 'Active', 'User', false, true)
-            .as('activeUser').then(function () {
-                activeUser = this.activeUser;
-            });
+    cy.getUser('activeuser', 'Active', 'User', false, true)
+        .as('activeUser').then(function () {
+            activeUser = this.activeUser;
+        });
 
     cy.getAll('@activeUser', '@adminUser').then(([activeUser, adminUser]) => {
-	cy.createCollection(adminUser.token, {
+	    cy.createCollection(adminUser.token, {
             name: "docker_image",
             manifest_text:
                 ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n",
@@ -937,4 +971,55 @@ Cypress.Commands.add("assertDetailsCardTitle", (resourceName, shouldExist = true
         .contains(resourceName)
         .should(shouldExist ? 'exist' : 'not.exist')
 
+});
+
+/**
+ * Sets the currently visible data explorer's page size
+ *
+ * @param size Desired page size, must exactly match the dropdown value
+ */
+Cypress.Commands.add("doDataExplorerPageSize", (size) => {
+    // prev/next are buttons and the page size is the only input element
+    cy.get("[data-cy=table-pagination] input").parent().click();
+    cy.get(`div[role=presentation] li[data-value=${size}]`).click();
+});
+
+/**
+ * Click the currently visible data explorer's next page button
+ */
+Cypress.Commands.add("doDataExporerNextPage", () => {
+    cy.get("[data-cy=table-pagination] button[title='Go to next page']").click();
+});
+
+/**
+ * Click the currently visible data explorer's prev page button
+ */
+Cypress.Commands.add("doDataExporerPrevPage", () => {
+    cy.get("[data-cy=table-pagination] button[title='Go to previous page']").click();
+});
+
+/**
+ * Assert the current data explorer pagination page size
+ */
+Cypress.Commands.add("assertDataExplorerPageSize", (size) => {
+    cy.get("[data-cy=table-pagination] input").should('have.value', size);
+});
+
+/**
+ * Since the actual page number of DE is not displayed, to assert the current DE
+ * page, we can multiply the expected page number by the page size and check
+ * that the page offset matches that + 1
+ *
+ * @param page Expected DE page number, 1 indexed
+ */
+Cypress.Commands.add("assertDataExplorerPage", (page) => {
+    cy.get("[data-cy=table-pagination] input")
+        .invoke('val')
+        .then(size => {
+            const firstItemNumber = ((page-1) * size) + 1;
+            // Special case for first page, which can start at 0 or 1
+            // Either is valid and reflects being on page 1 so we accept both
+            const expectedDisplayNumber = firstItemNumber === 1 ? "[0-1]" : firstItemNumber;
+            cy.get("[data-cy=table-pagination]").contains(new RegExp(`^${expectedDisplayNumber}-[0-9]+ of [0-9]+$`));
+        });
 });

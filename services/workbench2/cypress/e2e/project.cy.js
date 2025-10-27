@@ -368,15 +368,16 @@ describe("Project tests", function () {
         cy.doSidePanelNavigation('Home Projects');
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("contain", barProjectNameA);
 
-        cy.get("[data-cy=search-input]").type("foo");
+        cy.doDataExplorerSearch("foo");
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("not.contain", barProjectNameA);
 
         // Click on the table row to select it, search should remain the same.
-            cy.get(`p:contains(${fooProjectNameA})`).should('exist').parents('td').click()
-            cy.get("[data-cy=search-input] input").should("have.value", "foo");
+        cy.doDataExplorerSelect(fooProjectNameA);
+        cy.get("[data-cy=search-input] input").should("have.value", "foo");
 
         // Click to navigate to the project, search should be reset
-        cy.get(`p:contains(${fooProjectNameA})`).click();
+        cy.doDataExplorerNavigate(fooProjectNameA);
+        cy.doMPVTabSelect("Data");
         cy.get("[data-cy=search-input] input").should("not.have.value", "foo");
     });
 
@@ -688,6 +689,102 @@ describe("Project tests", function () {
                 const searchParams = new URLSearchParams(new URL(interception.request.url).search);
                 expect(searchParams.get("order")).to.eq(test.desc);
             });
+        });
+    });
+
+    it('resets project data pagination when changing location', () => {
+        const mainProjectName = `Main project`;
+        const emptyProjectName = "Empty Project"
+
+        // Create main project
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: mainProjectName,
+        }).as('mainProject');
+
+        // Create 15 projects
+        cy.getAll('@mainProject').then(([mainProject]) => {
+            for (var i = 0; i < 15; i++) {
+                cy.createProject({
+                    owningUser: activeUser,
+                    ownerUuid: mainProject.uuid,
+                    projectName: `${emptyProjectName} (${Math.floor(999999 * Math.random())})`,
+                });
+            }
+
+            // Navigate to containing project
+            cy.loginAs(activeUser);
+            cy.doSidePanelNavigation('Home Projects');
+            cy.doDataExplorerNavigate(mainProject.name);
+            cy.doMPVTabSelect("Data");
+
+            // Change page size to 10 and go to next page
+            cy.doDataExplorerPageSize(10);
+            cy.doDataExporerNextPage();
+
+            // Assert correct page size and page
+            cy.assertDataExplorerPageSize(10);
+            cy.assertDataExplorerPage(2);
+
+            // Navigate using breadcrumb back to home
+            cy.doBreadcrumbsNavigation("Home Projects");
+            cy.doMPVTabSelect("Data");
+
+            // Assert we're back on page 1
+            cy.assertDataExplorerPageSize(10);
+            cy.assertDataExplorerPage(1);
+        });
+    });
+
+    it('resets project run pagination when changing location', () => {
+        const mainProjectName = `Main project`;
+        const blankWorkflowName = "Dummy workflow"
+
+        // Setup docker image
+        cy.setupDockerImage('arvados/jobs')
+            .as('dockerImage');
+
+        // Create main project
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: mainProjectName,
+        }).as('mainProject');
+
+        // Create 15 runs
+        cy.getAll('@mainProject', '@dockerImage').then(([mainProject, dockerImage]) => {
+            for (var i = 0; i < 15; i++) {
+                cy.createDefaultContainerRequest(
+                    adminUser.token,
+                    dockerImage,
+                    {
+                        name: `${blankWorkflowName} (${Math.floor(Math.random() * 999999)})`,
+                        state: "Committed",
+                        owner_uuid: mainProject.uuid,
+                    },
+                );
+            }
+
+            // Navigate to containing project
+            cy.loginAs(activeUser);
+            cy.doSidePanelNavigation('Home Projects');
+            cy.doDataExplorerNavigate(mainProject.name);
+            cy.doMPVTabSelect("Workflow Runs");
+
+            // Change page size to 10 and go to next page
+            cy.doDataExplorerPageSize(10);
+            cy.doDataExporerNextPage();
+
+            // Assert correct page size and page
+            cy.assertDataExplorerPageSize(10);
+            cy.assertDataExplorerPage(2);
+
+            // Navigate using breadcrumb back to home
+            cy.doBreadcrumbsNavigation("Home Projects");
+            cy.doMPVTabSelect("Workflow Runs");
+
+            // Assert we're back on page 1
+            cy.assertDataExplorerPageSize(10);
+            cy.assertDataExplorerPage(1);
         });
     });
 });

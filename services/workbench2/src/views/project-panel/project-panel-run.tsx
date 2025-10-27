@@ -180,14 +180,14 @@ interface ProjectPanelRunProps {
 
 const mapStateToProps = (state: RootState): Pick<ProjectPanelRunProps, 'project'> => {
     const projectUuid = getProjectPanelCurrentUuid(state);
-    const project = projectUuid ? getResource<ProjectResource>(projectUuid)(state.resources) : undefined;
+    const project = getResource<ProjectResource>(projectUuid)(state.resources);
     return {
         project,
     };
 };
 
-export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunProps) => {
-    return <DataExplorer
+export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunProps) => (
+    <DataExplorer
         id={PROJECT_PANEL_RUN_ID}
         onRowClick={props.onRowClick}
         onRowDoubleClick={props.onRowDoubleClick}
@@ -197,5 +197,5 @@ export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunP
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         parentResource={props.project}
         paperClassName={props.paperClassName}
-    />;
-});
+    />
+));
