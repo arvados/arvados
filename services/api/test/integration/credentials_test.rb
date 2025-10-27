@@ -25,8 +25,15 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     json_response
   end
 
-  def random_name # avoid duplicate name errors
-    {name: "test credential" + rand(10000).to_s}
+  def test_credential
+    {
+      name: "test credential" + rand(100000).to_s,
+      description: "the credential for test",
+      credential_class: "basic_auth",
+      external_id: "my_username",
+      secret: "my_password",
+      expires_at: Time.now+2.weeks
+    }
   end
 
   test "credential create and query" do
@@ -311,15 +318,6 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential required fields must be set" do
-    test_credential = {
-      name: "test credential",
-      description: "the credential for test",
-      credential_class: "basic_auth",
-      external_id: "my_username",
-      secret: "my_password",
-      expires_at: Time.now + 2.weeks
-    }
-
     field_error_msg_hash = {
       name: "Name",
       credential_class: "Credential class",
@@ -348,18 +346,10 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential scopes must be an array of strings or nil" do
-    test_credential = {
-      description: "the credential for test",
-      credential_class: "basic_auth",
-      external_id: "my_username",
-      secret: "my_password",
-      expires_at: Time.now + 2.weeks
-    }
-
     [nil, [], ["scope1", "scope2"]].each do |good_scopes|
       post "/arvados/v1/credentials",
            params: {:format => :json,
-                    credential: test_credential.merge(random_name).merge(scopes: good_scopes)
+                    credential: test_credential.merge(scopes: good_scopes)
                    },
            headers: auth(:active),
            as: :json
@@ -369,7 +359,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     ["not an array", [ "valid_scope", 123 ], [ "valid_scope", ["nested_array"] ] ].each do |bad_scopes|
       post "/arvados/v1/credentials",
            params: {:format => :json,
-                    credential: test_credential.merge(random_name).merge(scopes: bad_scopes)
+                    credential: test_credential.merge(scopes: bad_scopes)
                    },
            headers: auth(:active),
            as: :json
@@ -379,13 +369,6 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
   end
 
   test "credential scopes validation for supported credential_class keys" do
-    test_credential = {
-      description: "the credential for test",
-      external_id: "my_username",
-      secret: "my_password",
-      expires_at: Time.now + 2.weeks
-    }
-
     [
       {
         credential_class: "arv:aws_access_key",
@@ -426,7 +409,7 @@ class CredentialsApiTest < ActionDispatch::IntegrationTest
     ].each do |tc|
       post "/arvados/v1/credentials",
            params: {:format => :json,
-                    credential: test_credential.merge(random_name).merge(
+                    credential: test_credential.merge(
                       credential_class: tc[:credential_class],
                       scopes: tc[:scopes]
                     )
