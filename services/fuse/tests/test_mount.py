@@ -1479,3 +1479,43 @@ class UnsupportedOperationsTest(UnsupportedCreateTest):
         with self.assertRaises(OSError) as exc_check:
             test_path.unlink()
         self.assertEqual(exc_check.exception.errno, errno.EPERM)
+
+
+class DockerRaceTest(MountTestBase):
+    """Test race condition when docker mount point is in a collection.
+
+    Before the fix, this test would occasionally fail with either (a) empty
+    stdout, as if test.sh was an empty shell script, or (b) a docker daemon
+    error like this on stderr:
+
+    docker: Error response from daemon: failed to create task for
+    container: failed to create shim task: OCI runtime create failed:
+    runc create failed: unable to start container process: error
+    during container init: error mounting "/tmp/tmphd8ezs8s" to rootfs
+    at "/mnt/test.sh": mount src=/tmp/tmphd8ezs8s, dst=/mnt/test.sh,
+    dstFd=/proc/thread-self/fd/8, flags=0x5000: no such file or
+    directory: unknown
+
+    See #23136
+    """
+
+    def runTest(self):
+        self.make_mount(fuse.TmpCollectionDirectory, fuse_options=["allow_other"])
+        os.chmod(self.mounttmp, 0o755)
+        with tempfile.NamedTemporaryFile(suffix='.sh') as scriptfile:
+            scriptfile.write(b"#!/bin/sh\necho OK\n")
+            scriptfile.flush()
+            os.chmod(scriptfile.name, 0o755)
+            for _ in range(10):
+                dockerrun = subprocess.run(
+                    ["docker", "run",
+                     "--rm",
+                     "--workdir", "/mnt",
+                     "--mount", f"type=bind,dst=/mnt,src={self.mounttmp}",
+                     "--mount", f"type=bind,dst=/mnt/test.sh,src={scriptfile.name}",
+                     "busybox:uclibc", "sh", "test.sh"],
+                    stdout=subprocess.PIPE,
+                    stderr=2)
+                self.assertEqual(dockerrun.returncode, 0)
+                self.assertEqual(dockerrun.stdout, b"OK\n")
+                os.unlink(os.path.join(self.mounttmp, "test.sh"))
