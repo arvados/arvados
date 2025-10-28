@@ -289,6 +289,88 @@ class TestContainer(unittest.TestCase):
         for key in call_body:
             self.assertEqual(call_body_expected.get(key), call_body.get(key))
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        ("reuse", "yes", True),
+        ("no-reuse", "no", False),
+    ])
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_enable_reuse_expression(self, _, input_value, should_reuse, keepdocker):
+        arvados_cwl.add_arv_hints()
+
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        job_input = {"shouldEnableReuse": input_value}
+
+        tool = cmap({
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
+            "id": "",
+            "requirements": [{
+                    "class": "WorkReuse",
+                    "enableReuse": '$(inputs.shouldEnableReuse === "yes")'
+                },
+                {
+                    "class": "InlineJavascriptRequirement"
+                }],
+            "baseCommand": "echo",
+            "inputs": [{
+                "id": "shouldEnableReuse",
+                "type": "string",
+                "inputBinding": {"position": 1}
+            }],
+            "outputs": []
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, True)
+        runtimeContext.name = "test_enable_reuse_expression"
+
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+        for j in arvtool.job(job_input, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 268435456
+                    },
+                    'name': 'test_enable_reuse_expression',
+                    'use_existing': should_reuse,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824 },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output from step test_enable_reuse_expression',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['echo', input_value],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {'cwl_input': {'shouldEnableReuse': input_value}},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
+                }))
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
