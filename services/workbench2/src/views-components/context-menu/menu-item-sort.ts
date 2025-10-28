@@ -102,6 +102,7 @@ export const projectOrder = [
 
 const groupOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.COPY_UUID,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.EDIT_PROJECT,
@@ -110,6 +111,8 @@ const groupOrder = [
 
 const builtInGroupOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.COPY_UUID,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.API_DETAILS,
 ];
 
@@ -205,6 +208,7 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 
     [ContextMenuKind.GROUPS]: groupOrder,
+    [ContextMenuKind.GROUP_MEMBER]: groupOrder,
     [ContextMenuKind.BUILT_IN_GROUP]: builtInGroupOrder,
 
     [ContextMenuKind.FILTER_GROUP]: projectOrder,

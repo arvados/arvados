@@ -144,12 +144,14 @@ export const tooltips = {
     ],
     nonAdminGroup: [
         'View details',
+        'Copy UUID',
         'API Details',
         'Edit group',
         'Remove',
     ],
     builtInGroup: [
         'View details',
+        'Copy UUID',
         'API Details',
     ],
     multiBuiltInGroup: [],
@@ -158,6 +160,7 @@ export const tooltips = {
         'Remove',
     ],
     nonAdminUser: [
+        'Copy UUID',
         'API Details',
         'Attributes',
         'Remove',
@@ -171,6 +174,7 @@ export const tooltips = {
     processAndProject: [],
     //external credentials
     externalCredential: [
+        'Copy UUID',
         'Share',
         'Edit credential',
         'Remove',
