@@ -155,6 +155,7 @@ const userDetailsOrder = [
 ];
 
 const credentialOrder = [
+    ContextMenuActionNames.COPY_UUID,
     ContextMenuActionNames.SHARE,
     ContextMenuActionNames.EDIT_CREDENTIAL,
     ContextMenuActionNames.REMOVE,
@@ -166,6 +167,13 @@ const defaultMultiOrder = [
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
     ContextMenuActionNames.MOVE_TO_TRASH,
+];
+
+const apiKeyOrder = [
+    ContextMenuActionNames.COPY_UUID,
+    ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.API_DETAILS,
 ];
 
 const kindToOrder: Record<string, ContextMenuActionNames[]> = {
@@ -208,6 +216,8 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.USER_DETAILS]: userDetailsOrder,
 
     [ContextMenuKind.EXTERNAL_CREDENTIAL]: credentialOrder,
+
+    [ContextMenuKind.API_CLIENT_AUTHORIZATION]: apiKeyOrder,
 };
 
 export const menuDirection = {

@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet, ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
-import { AdvancedIcon, RemoveIcon, AttributesIcon } from 'components/icon/icon';
+import { AdvancedIcon, RemoveIcon, AttributesIcon, CopyIcon } from 'components/icon/icon';
 import { openSshKeyRemoveDialog, openSshKeyAttributesDialog } from 'store/auth/auth-action-ssh';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
+import { copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 export const sshKeyActionSet: ContextMenuActionSet = [
     [
@@ -28,6 +29,13 @@ export const sshKeyActionSet: ContextMenuActionSet = [
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openSshKeyRemoveDialog(resources[0].uuid));
+            },
+        },
+        {
+            icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_UUID,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
             },
         },
     ],

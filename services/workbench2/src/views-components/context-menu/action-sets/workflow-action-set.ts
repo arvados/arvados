@@ -47,6 +47,13 @@ export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
                 dispatch<any>(openRunProcess(resources[0].uuid, resources[0].ownerUuid, resources[0].name));
             },
         },
+        {
+            icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_UUID,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+            },
+        },
     ],
 ];
 
@@ -59,13 +66,6 @@ export const workflowActionSet: ContextMenuActionSet = [
             isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveWorkflowDialog(resources[0], resources.length));
-            },
-        },
-        {
-            icon: CopyIcon,
-            name: ContextMenuActionNames.COPY_UUID,
-            execute: (dispatch, resources) => {
-                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
             },
         },
     ],
