@@ -33,7 +33,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: "row",
         height: '2.5rem',
         width: 0,
-        padding: 0,
+        padding: "6px 0 0 0",
         margin: 0,
         overflow: 'hidden',
     },

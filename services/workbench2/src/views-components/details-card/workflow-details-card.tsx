@@ -18,7 +18,7 @@ import { setSelectedResourceUuid } from 'store/selected-resource/selected-resour
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { WorkflowResource } from 'models/workflow';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -43,9 +43,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardHeader: {
         minWidth: '30rem',
         padding: '0.2rem 0.4rem 0.2rem 1rem',
-    },
-    toolbarStyles: {
-        paddingTop: '4px',
     },
 });
 
@@ -105,7 +102,7 @@ export const WorkflowCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
+                    {isSelected && <MultiselectToolbar />}
                 </Grid>
             </Card>
         );

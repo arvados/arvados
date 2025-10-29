@@ -83,11 +83,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: "-5px",
     },
     subToolbarWrapper: {
-        marginTop: "5px",
         marginLeft: "-15px",
     },
     runsToolbarWrapper: {
-        marginTop: "5px",
         marginLeft: "-15px",
     },
     searchResultsToolbar: {
