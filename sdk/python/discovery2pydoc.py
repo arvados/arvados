@@ -185,6 +185,7 @@ _TYPE_MAP: Mapping[str, Annotation] = {
 def get_type_annotation(name: str) -> str:
     return _TYPE_MAP.get(name, name)
 
+
 def to_docstring(s: str, indent: int) -> str:
     prefix = ' ' * indent
     s = s.replace('"""', '""\"')
@@ -195,14 +196,18 @@ def to_docstring(s: str, indent: int) -> str:
     else:
         return f'{prefix}"""{s}"""'
 
+
 def transform_name(s: str, sep: str, fix_part: Callable[[str], str]) -> str:
     return sep.join(fix_part(part) for part in s.split('_'))
+
 
 def classify_name(s: str) -> str:
     return transform_name(s, '', TITLECASE)
 
+
 def humanize_name(s: str) -> str:
     return transform_name(s, ' ', LOWERCASE)
+
 
 class Parameter(inspect.Parameter):
     def __init__(self, name: str, spec: Mapping[str, Any]) -> None:
