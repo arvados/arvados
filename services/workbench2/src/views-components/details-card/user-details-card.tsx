@@ -21,7 +21,7 @@ import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { Resource } from 'models/resource';
 import { ProjectResource } from 'models/project';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'userNameContainer' | 'accountStatusSection' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'userNameContainer' | 'accountStatusSection';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -52,9 +52,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingLeft: '1rem',
-    },
-    toolbarStyles: {
-        paddingTop: '4px',
     },
 });
 
@@ -125,7 +122,7 @@ export const UserCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
+                    {isSelected && <MultiselectToolbar />}
                 </Grid>
             </Card>
         );

@@ -25,7 +25,7 @@ import { getProcess } from 'store/processes/process';
 import { PublishedPort } from 'models/container';
 import { ServiceMenu } from './service-menu';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'runStatusContainerWithServiceButton' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'runStatusContainerWithServiceButton' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -113,9 +113,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '& .MuiButton-endIcon': {
             flexShrink: 0,
         },
-    },
-    toolbarStyles: {
-        paddingTop: '4px',
     },
 });
 
@@ -224,7 +221,7 @@ export const ProcessCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
+                    {isSelected && <MultiselectToolbar />}
                 </Grid>
             </Card>
         );
