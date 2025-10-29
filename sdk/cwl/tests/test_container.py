@@ -292,11 +292,11 @@ class TestContainer(unittest.TestCase):
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @parameterized.expand([
-        ("reuse", "yes", True),
-        ("no-reuse", "no", False),
+        (True),
+        (False)
     ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_enable_reuse_expression(self, _, input_value, should_reuse, keepdocker):
+    def test_enable_reuse_expression(self, should_reuse, keepdocker):
         arvados_cwl.add_arv_hints()
 
         runner = mock.MagicMock()
@@ -310,7 +310,7 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        job_input = {"shouldEnableReuse": input_value}
+        job_input = {"shouldEnableReuse": str(should_reuse)}
 
         tool = cmap({
             "cwlVersion": "v1.2",
@@ -318,7 +318,7 @@ class TestContainer(unittest.TestCase):
             "id": "",
             "requirements": [{
                     "class": "WorkReuse",
-                    "enableReuse": '$(inputs.shouldEnableReuse === "yes")'
+                    "enableReuse": '$(inputs.shouldEnableReuse === "True")'
                 },
                 {
                     "class": "InlineJavascriptRequirement"
@@ -364,10 +364,12 @@ class TestContainer(unittest.TestCase):
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
                     'container_image': '99999999999999999999999999999993+99',
-                    'command': ['echo', input_value],
+                    'command': ['echo', str(should_reuse)],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
-                    'properties': {'cwl_input': {'shouldEnableReuse': input_value}},
+                    'properties': {
+                        'cwl_input': {'shouldEnableReuse': str(should_reuse)}
+                    },
                     'secret_mounts': {},
                     'output_storage_classes': ["default"]
                 }))
