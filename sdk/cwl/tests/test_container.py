@@ -291,10 +291,7 @@ class TestContainer(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
-    @parameterized.expand([
-        (True),
-        (False)
-    ])
+    @parameterized.expand([True, False])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_enable_reuse_expression(self, should_reuse, keepdocker):
         arvados_cwl.add_arv_hints()
