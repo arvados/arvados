@@ -58,7 +58,7 @@ def resolve_aws_key(apiclient, s3url):
     if "credentials" not in apiclient._rootDesc["resources"]:
         raise WorkflowException("Arvados instance does not support the external credentials API.  Use --enable-aws-credential-capture to use locally-defined credentials.")
     desc_fmt = "AWS access keys with scope {0!r}"
-    expires_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=5)
+    expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=5)
     scope = f's3://{urllib.parse.urlparse(s3url).netloc}'
     filters = [
         ['credential_class', '=', 'arv:aws_access_key'],
