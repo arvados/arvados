@@ -872,7 +872,7 @@ def setup_config():
                         "Enable": False,
                         # Hostname used by lib/controller/localdb/login_docker_test
                         # Other settings are the defaults for the
-                        # bitnami/openldap Docker image it uses
+                        # bitnamilegacy/openldap Docker image it uses
                         "URL": "ldap://arvados-test-openldap:1389/",
                         "StartTLS": False,
                         "SearchBase": "dc=example,dc=org",
