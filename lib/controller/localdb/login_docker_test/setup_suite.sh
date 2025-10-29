@@ -35,7 +35,7 @@ go build -o "${tmpdir}" ../../../../cmd/arvados-server
 docker run --rm --detach \
        --name=arvados-test-openldap \
        --network="$net_name" \
-       bitnami/openldap:2.6
+       bitnamilegacy/openldap:2.6
 
 awk -v passhash="$(docker exec -i arvados-test-openldap slappasswd -s "secret")" -- '
 ($1 == "userPassword:") { $2 = passhash; }
@@ -47,4 +47,4 @@ docker run --rm \
        --network="$net_name" \
        -v "$PWD/setup_suite_users.sh":/setup_suite_users.sh:ro \
        -v "${tmpdir}/add_example_user.ldif":/add_example_user.ldif:ro \
-       bitnami/openldap:2.6
+       bitnamilegacy/openldap:2.6
