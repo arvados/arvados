@@ -30,6 +30,10 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
+"previous: Upgrading to 3.2.0":#v3_2_0
+
+h2(#v3_2_0). v3.2.0 (2025-11-03)
+
 "previous: Upgrading to 3.1.2":#v3_1_2
 
 h3. Debian 11 and Ubuntu 20.04 are no longer supported
@@ -39,36 +43,6 @@ Arvados 3.2 no longer supports some of the older distributions supported by Arva
 Arvados 3.1 supports Debian 12 "bookworm" and Ubuntu 22.04 "jammy." You can upgrade your Arvados cluster to one of those releases, then proceed to upgrade Arvados to 3.2.
 
 The list of distributions supported by Arvados 3.2 can be found on the "planning and prerequisites page":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux of the install guide.
-
-h3. arvbox and @arvados-server install@ are no longer supported
-
-Arvados 3.2 no longer includes the arvbox Docker image and associated tooling. The @arvados-server install@ subcommand has also been removed from this release.
-
-If you were using arvbox in demo mode, consider installing on a Debian-based virtual machine with our "single-node Ansible installer":{{ site.baseurl }}/install/install-single-host.html.
-
-If you were using arvbox or @arvados-server install@ for development, we now provide an Ansible playbook to install development dependencies on a Debian-based system. Our "Hacking Prerequisites wiki":https://dev.arvados.org/projects/arvados/wiki/Hacking_prerequisites has instructions for how to use it.
-
-h3. Loki credentials in @local.params.secrets@ are no longer needed
-
-Salt installer's Terraform code replaces the use of AWS access key and secret for Loki's S3 bucket with equivalent permissions through an instance profile. Once applied, the credentials in the @local.params.secrets@ file will be invalid and can be safely removed.
-
-h3. SbatchArgumentsList (SLURM) configuration semantics have changed
-
-@Containers.SLURM.SbatchArgumentsList@ must now specify arguments that were previously added implicitly. Also, the @%@ character invokes template behavior. If your current configuration looks like this:
-
-<notextile>
-<pre><code>SbatchArgumentsList: ["--clusters=all"]
-</code></pre>
-</notextile>
-
-You must update it to add the arguments that were previously added implicitly:
-
-<notextile>
-<pre><code>SbatchArgumentsList: [<span class="userinput">"--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--constraint=instancetype=%I", "--partition=%P", </span>"--clusters=all"]
-</code></pre>
-</notextile>
-
-If your configuration file does not have an @SbatchArgumentsList@ entry, you do not need to add one.
 
 h3. RPMs now require Red Hat/AlmaLinux/Rocky Linux 8.8 or later
 
@@ -93,6 +67,24 @@ Edit this line to add @$releasever/@ after @RHEL/@, so it looks like this:
 </notextile>
 
 Then save and close the file. The old key URL still works, so this step is not required to upgrade Arvados itself. However, doing it now will help ensure you retain access to the Arvados repositories next time you upgrade your distribution.
+
+h3. SbatchArgumentsList (SLURM) configuration semantics have changed
+
+@Containers.SLURM.SbatchArgumentsList@ must now specify arguments that were previously added implicitly. Also, the @%@ character invokes template behavior. If your current configuration looks like this:
+
+<notextile>
+<pre><code>SbatchArgumentsList: ["--clusters=all"]
+</code></pre>
+</notextile>
+
+You must update it to add the arguments that were previously added implicitly:
+
+<notextile>
+<pre><code>SbatchArgumentsList: [<span class="userinput">"--job-name=%U", "--mem=%M", "--cpus-per-task=%C", "--tmp=%T", "--constraint=instancetype=%I", "--partition=%P", </span>"--clusters=all"]
+</code></pre>
+</notextile>
+
+If your configuration file does not have an @SbatchArgumentsList@ entry, you do not need to add one.
 
 h3. @Users.SendUserSetupNotificationEmail@ is disabled by default
 
@@ -122,6 +114,18 @@ Arvados now allows external clients to connect to HTTP services running in conta
 * Add the wildcard name to the @server_name@ directive in the controller section of your Nginx configuration, e.g., @server_name ClusterID.example.com *.containers.ClusterID.example.com;@
 * Add wildcard DNS records so @*.containers.ClusterID.example.com@ names resolve to the same address(es) as your controller's external URL
 * Update the TLS certificate used by Nginx for @ClusterID.example.com@ so it also validates for @*.containers.ClusterID.example.com@
+
+h3. Loki credentials in @local.params.secrets@ are no longer needed
+
+Salt installer's Terraform code replaces the use of AWS access key and secret for Loki's S3 bucket with equivalent permissions through an instance profile. Once applied, the credentials in the @local.params.secrets@ file will be invalid and can be safely removed.
+
+h3. arvbox and @arvados-server install@ are no longer supported
+
+Arvados 3.2 no longer includes the arvbox Docker image and associated tooling. The @arvados-server install@ subcommand has also been removed from this release.
+
+If you were using arvbox in demo mode, consider installing on a Debian-based virtual machine with our "single-node Ansible installer":{{ site.baseurl }}/install/install-single-host.html.
+
+If you were using arvbox or @arvados-server install@ for development, we now provide an Ansible playbook to install development dependencies on a Debian-based system. Our "Hacking Prerequisites wiki":https://dev.arvados.org/projects/arvados/wiki/Hacking_prerequisites has instructions for how to use it.
 
 h2(#v3_1_2). v3.1.2 (2025-05-27)
 
