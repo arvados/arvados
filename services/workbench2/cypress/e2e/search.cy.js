@@ -270,9 +270,10 @@ describe("Search tests", function () {
             // Check Copy link to clipboard
             cy.get("[data-cy=search-results]").contains(colName).rightclick();
             cy.get("[data-cy=context-menu]").within(ctx => {
-                // Check that there are 4 items in the menu
-                cy.get(ctx).children().should("have.length", 4);
+                // Check that there are 5 items in the menu
+                cy.get(ctx).children().should("have.length", 5);
                 cy.contains("API Details");
+                cy.contains("Copy UUID");
                 cy.contains("Copy link to clipboard");
                 cy.contains("Open in new tab");
                 cy.contains("View details");

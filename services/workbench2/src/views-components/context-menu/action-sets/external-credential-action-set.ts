@@ -5,11 +5,12 @@
 import { Dispatch } from "redux";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
-import { RenameIcon, AdvancedIcon, DeleteForever } from "components/icon/icon";
+import { RenameIcon, AdvancedIcon, DeleteForever, CopyIcon } from "components/icon/icon";
 import { openRemoveExternalCredentialDialog, openExternalCredentialUpdateDialog } from "store/external-credentials/external-credentials-actions";
 import { ShareIcon } from "components/icon/icon";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
+import { copyStringToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 export const advancedAction = {
     icon: AdvancedIcon,
@@ -44,6 +45,13 @@ export const deleteAction = {
     },
 };
 
+export const copyUuidAction = {
+    icon: CopyIcon,
+    name: ContextMenuActionNames.COPY_UUID,
+    execute: (dispatch: Dispatch, resources: ContextMenuResource[]) => {
+        dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+    },
+};
 
 export const externalCredentialActionSet: ContextMenuActionSet = [
     [
@@ -51,5 +59,6 @@ export const externalCredentialActionSet: ContextMenuActionSet = [
         editExternalCredentialAction,
         shareAction,
         deleteAction,
+        copyUuidAction,
     ],
 ];

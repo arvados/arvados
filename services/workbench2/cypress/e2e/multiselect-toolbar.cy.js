@@ -4,7 +4,6 @@
 
 import moment from 'moment';
 import { tooltips } from '../support/msToolbarTooltips';
-import { generateExternalCredential } from './external-credentials.cy';
 
 const testWFDefinition = "{\n    \"$graph\": [\n        {\n            \"class\": \"Workflow\",\n            \"doc\": \"Reverse the lines in a document, then sort those lines.\",\n            \"hints\": [\n                {\n                    \"acrContainerImage\": \"99b0201f4cade456b4c9d343769a3b70+261\",\n                    \"class\": \"http://arvados.org/cwl#WorkflowRunnerResources\"\n                }\n            ],\n            \"id\": \"#main\",\n            \"inputs\": [\n                {\n                    \"default\": null,\n                    \"doc\": \"The input file to be processed.\",\n                    \"id\": \"#main/input\",\n                    \"type\": \"File\"\n                },\n                {\n                    \"default\": true,\n                    \"doc\": \"If true, reverse (decending) sort\",\n                    \"id\": \"#main/reverse_sort\",\n                    \"type\": \"boolean\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"doc\": \"The output with the lines reversed and sorted.\",\n                    \"id\": \"#main/output\",\n                    \"outputSource\": \"#main/sorted/output\",\n                    \"type\": \"File\"\n                }\n            ],\n            \"steps\": [\n                {\n                    \"id\": \"#main/rev\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/rev/input\",\n                            \"source\": \"#main/input\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/rev/output\"\n                    ],\n                    \"run\": \"#revtool.cwl\"\n                },\n                {\n                    \"id\": \"#main/sorted\",\n                    \"in\": [\n                        {\n                            \"id\": \"#main/sorted/input\",\n                            \"source\": \"#main/rev/output\"\n                        },\n                        {\n                            \"id\": \"#main/sorted/reverse\",\n                            \"source\": \"#main/reverse_sort\"\n                        }\n                    ],\n                    \"out\": [\n                        \"#main/sorted/output\"\n                    ],\n                    \"run\": \"#sorttool.cwl\"\n                }\n            ]\n        },\n        {\n            \"baseCommand\": \"rev\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Reverse each line using the `rev` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#revtool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#revtool.cwl/input\",\n                    \"inputBinding\": {},\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#revtool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        },\n        {\n            \"baseCommand\": \"sort\",\n            \"class\": \"CommandLineTool\",\n            \"doc\": \"Sort lines using the `sort` command\",\n            \"hints\": [\n                {\n                    \"class\": \"ResourceRequirement\",\n                    \"ramMin\": 8\n                }\n            ],\n            \"id\": \"#sorttool.cwl\",\n            \"inputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/reverse\",\n                    \"inputBinding\": {\n                        \"position\": 1,\n                        \"prefix\": \"-r\"\n                    },\n                    \"type\": \"boolean\"\n                },\n                {\n                    \"id\": \"#sorttool.cwl/input\",\n                    \"inputBinding\": {\n                        \"position\": 2\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"outputs\": [\n                {\n                    \"id\": \"#sorttool.cwl/output\",\n                    \"outputBinding\": {\n                        \"glob\": \"output.txt\"\n                    },\n                    \"type\": \"File\"\n                }\n            ],\n            \"stdout\": \"output.txt\"\n        }\n    ],\n    \"cwlVersion\": \"v1.0\"\n}"
 
@@ -86,7 +85,6 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                 cy.get('[data-cy=data-table-header-checkbox]').should('not.be.checked');
         });
     });
-
 
     it('uses selector popover to select the correct items', () => {
         cy.setupDockerImage('arvados/jobs')
@@ -182,7 +180,6 @@ describe('Multiselect Toolbar Baseline Tests', () => {
                     cy.get('[data-cy=data-table-multiselect-popover]').click();
                     cy.get('[data-cy=multiselect-popover-None]').click();
                     cy.assertCheckboxes([testProcess1.uuid, testProcess2.uuid, testWorkflow3.uuid], false);
-
         });
     });
 
@@ -294,11 +291,10 @@ describe('For project resources', () => {
             cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testProject.name);
 
-            // disabled until #22787 is resolved
             // View details
-            // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testProject.name).should('be.visible');
-            // cy.get('[data-cy=close-details-btn]').click();
+            cy.get('[aria-label="View details"]').click();
+            cy.get('[data-cy=details-panel]').contains(testProject.name).should('be.visible');
+            cy.get('[data-cy=close-details-btn]').click();
 
             cy.window().then((win) => {
                 cy.stub(win, 'open').as('windowOpen');
@@ -360,7 +356,6 @@ describe('For project resources', () => {
             cy.get('[aria-label="API Details"]').click()
             cy.get('[role=dialog]').contains('API Details')
             cy.contains('Close').click()
-
         });
     });
 
@@ -592,11 +587,10 @@ describe('For collection resources', () => {
             cy.doMPVTabSelect('Data');
             cy.doDataExplorerSelect(testCollection.name);
 
-            // disabled until #22787 is resolved
             // View details
-            // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testCollection.name).should('be.visible');
-            // cy.get('[data-cy=close-details-btn]').click();
+            cy.get('[aria-label="View details"]').click();
+            cy.get('[data-cy=details-panel]').contains(testCollection.name).should('be.visible');
+            cy.get('[data-cy=close-details-btn]').click();
 
             cy.window().then((win) => {
                 cy.stub(win, 'open').as('windowOpen');
@@ -780,12 +774,10 @@ describe('For process resources', () => {
             cy.get('[data-cy="confirmation-dialog-ok-btn"]').click();
             cy.assertToolbarButtons(tooltips.adminOnHoldProcess);
 
-
-            // disabled until #22787 is resolved
             // View details
-            // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testProcess.name).should('be.visible');
-            // cy.get('[data-cy=close-details-btn]').click();
+            cy.get('[aria-label="View details"]').click();
+            cy.get('[data-cy=details-panel]').contains(testProcess.name).should('be.visible');
+            cy.get('[data-cy=close-details-btn]').click();
 
             cy.window().then((win) => {
                 cy.stub(win, 'open').as('windowOpen');
@@ -813,6 +805,11 @@ describe('For process resources', () => {
             cy.doToolbarAction("Outputs");
             cy.contains('Output collection was trashed or deleted').should('exist');
 
+            //API Details
+            cy.doToolbarAction("API Details");
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
+
             //Add to favorites
             cy.doToolbarAction("Add to favorites");
             cy.get('[data-cy=favorite-star]').should('exist')
@@ -824,11 +821,6 @@ describe('For process resources', () => {
             cy.get('[data-cy=public-favorite-star]').should('exist')
                 .parents('[data-cy=data-table-row]')
                 .contains(testProcess.name)
-
-            //API Details
-            cy.doToolbarAction("API Details");
-            cy.get('[role=dialog]').contains('API Details')
-            cy.contains('Close').click()
 
             //Remove
             cy.doToolbarAction("Remove");
@@ -918,11 +910,10 @@ describe('For workflow resources', () => {
             cy.doDataExplorerSelect(testWorkflow.name);
             cy.assertToolbarButtons(tooltips.adminWorkflow);
 
-            // disabled until #22787 is resolved
             // View details
-            // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testWorkflow.name).should('be.visible');
-            // cy.get('[data-cy=close-details-btn]').click();
+            cy.get('[aria-label="View details"]').click();
+            cy.get('[data-cy=details-panel]').contains(testWorkflow.name).should('be.visible');
+            cy.get('[data-cy=close-details-btn]').click();
 
             cy.window().then((win) => {
                 cy.stub(win, 'open').as('windowOpen');
@@ -1020,11 +1011,10 @@ describe('For groups', () => {
             cy.doDataExplorerSelect(testGroup.name);
             cy.assertToolbarButtons(tooltips.nonAdminGroup);
 
-            // disabled until #22787 is resolved
             // View details
-            // cy.get('[aria-label="View details"]').click();
-            // cy.get('[data-cy=details-panel]').contains(testGroup.name).should('be.visible');
-            // cy.get('[data-cy=close-details-btn]').click();
+            cy.get('[aria-label="View details"]').click();
+            cy.get('[data-cy=details-panel]').contains(testGroup.name).should('be.visible');
+            cy.get('[data-cy=close-details-btn]').click();
 
             //API Details
             cy.doToolbarAction("API Details");
@@ -1053,6 +1043,16 @@ describe('For groups', () => {
 
             cy.doDataExplorerSelect('All users');
             cy.assertToolbarButtons(tooltips.builtInGroup);
+
+            // View details
+            cy.get('[aria-label="View details"]').click();
+            cy.get('[data-cy=details-panel]').contains('All users').should('be.visible');
+            cy.get('[data-cy=close-details-btn]').click();
+
+            //API Details
+            cy.doToolbarAction("API Details");
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
 
             cy.doDataExplorerSelect('System group');
             cy.assertToolbarButtons(tooltips.multiBuiltInGroup);
@@ -1146,7 +1146,7 @@ describe('For users', () => {
 
         cy.doDataExplorerSelect(otherUser.user.full_name);
 
-        // API Details
+        //API Details
         cy.doToolbarAction("API Details");
         cy.get('[role=dialog]').contains('API Details')
         cy.contains('Close').click()
@@ -1217,7 +1217,7 @@ describe('For external credentials', () => {
     });
 
     it('should behave correctly for a single external credential', () => {
-        cy.createExternalCredential(adminUser.token, generateExternalCredential('Test External Credential', moment().add(1, 'year'))).as('testExternalCredential');
+        cy.createExternalCredential(adminUser.token).as('testExternalCredential');
         cy.getAll('@testExternalCredential').then(([testExternalCredential]) => {
             cy.loginAs(adminUser);
             cy.visit('/external_credentials');
@@ -1227,6 +1227,23 @@ describe('For external credentials', () => {
             //assert toolbar buttons
             cy.doDataExplorerSelect(testExternalCredential.name);
             cy.assertToolbarButtons(tooltips.externalCredential);
+
+            //Share
+            cy.get('[aria-label="Share"]').click();
+            cy.get('.sharing-dialog').should('exist');
+            cy.contains('button', 'Close').click();
+
+            //edit credential
+            cy.get('[aria-label="Edit credential"]').click();
+            cy.get("[data-cy=form-dialog]").within(() => {
+                cy.contains("Edit External Credential").should('be.visible');
+                cy.get("[data-cy=form-cancel-btn]").click();
+            });
+
+            //API Details
+            cy.get('[aria-label="API Details"]').click()
+            cy.get('[role=dialog]').contains('API Details')
+            cy.contains('Close').click()
 
             //remove credential
             cy.get('[aria-label="Remove"]').click();
@@ -1238,8 +1255,8 @@ describe('For external credentials', () => {
     });
 
     it('should behave correctly for multiple external credentials', () => {
-        cy.createExternalCredential(adminUser.token, generateExternalCredential('Test External Credential', moment().add(1, 'year'))).as('testExternalCredential1');
-        cy.createExternalCredential(adminUser.token, generateExternalCredential('Test External Credential', moment().add(1, 'year'))).as('testExternalCredential2');
+        cy.createExternalCredential(adminUser.token).as('testExternalCredential1');
+        cy.createExternalCredential(adminUser.token).as('testExternalCredential2');
         cy.getAll('@testExternalCredential1', '@testExternalCredential2').then(([testExternalCredential1, testExternalCredential2]) => {
             cy.loginAs(adminUser);
             cy.visit('/external_credentials');

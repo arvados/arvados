@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet, ContextMenuActionNames } from '../context-menu-action-set';
-import { DetailsIcon, AdvancedIcon, OpenIcon, Link } from 'components/icon/icon';
+import { DetailsIcon, AdvancedIcon, OpenIcon, Link, CopyIcon } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
-import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
+import { copyStringToClipboardAction, copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 export const searchResultsActionSet: ContextMenuActionSet = [
     [
@@ -36,6 +36,13 @@ export const searchResultsActionSet: ContextMenuActionSet = [
             name: ContextMenuActionNames.API_DETAILS,
             execute: (dispatch, resources) => {
                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
+            },
+        },
+        {
+            icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_UUID,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
             },
         },
     ],

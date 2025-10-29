@@ -31,6 +31,7 @@
 import 'cypress-wait-until';
 import { extractFilesData } from "services/collection-service/collection-service-files-response";
 import _ from 'lodash';
+import moment from 'moment';
 
 const controllerURL = Cypress.env("controller_url");
 const systemToken = Cypress.env("system_token");
@@ -712,7 +713,17 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
     });
 });
 
-Cypress.Commands.add('createExternalCredential', (token, credentialData) => {
+Cypress.Commands.add('createExternalCredential', (token, testData = {}) => {
+    const credentialData = {
+        name: `Test External Credential ${Math.floor(Math.random() * 999999)}`,
+        expires_at: moment().add(1, 'year').toISOString(),
+        description: `Test Description ${Math.floor(Math.random() * 999999)}`,
+        credential_class: `Test Credential Class ${Math.floor(Math.random() * 999999)}`,
+        external_id: `Test External ID ${Math.floor(Math.random() * 999999)}`,
+        scopes: [`scope1 ${Math.floor(Math.random() * 999999)}`, `scope2 ${Math.floor(Math.random() * 999999)}`],
+        secret: 'test-secret',
+        ...testData
+    };
     try {
         return cy.createResource(token, 'credentials', credentialData)
     } catch (error) {

@@ -12,6 +12,7 @@ import {
     LoginAsIcon,
     AdminMenuIcon,
     ActiveIcon,
+    CopyIcon,
 } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { loginAs, openUserAttributes, openUserProjects } from 'store/users/users-actions';
@@ -25,6 +26,7 @@ import {
     needsUserProfileLink,
     isOtherUser,
 } from 'store/context-menu/context-menu-filters';
+import { copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 export const userActionSet: ContextMenuActionSet = [
     [
@@ -56,6 +58,13 @@ export const userActionSet: ContextMenuActionSet = [
                 dispatch<any>(navigateToUserProfile(resources[0].uuid));
             },
             filters: [needsUserProfileLink],
+        },
+        {
+            icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_UUID,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+            },
         },
     ],
     [

@@ -42,7 +42,7 @@ describe('External Credentials panel tests', function () {
 
     it('displays credential details correctly', () => {
         const expirationDate = moment().add(1, 'year');
-        cy.createExternalCredential(adminUser.token, generateExternalCredential('Test Credential', expirationDate)).then((credential) => {
+        cy.createExternalCredential(adminUser.token, { expires_at: expirationDate }).then((credential) => {
             cy.reload();
 
             cy.contains(credential.name).should('be.visible');
@@ -58,7 +58,7 @@ describe('External Credentials panel tests', function () {
     });
 
     it('opens context menu on right click', () => {
-        cy.createExternalCredential(adminUser.token, generateExternalCredential('Context Menu Test', moment().add(1, 'year'))).then((credential) => {
+        cy.createExternalCredential(adminUser.token, { name: 'Context Menu Test', expires_at: moment().add(1, 'year') }).then((credential) => {
             cy.reload();
 
             cy.contains(credential.name).rightclick();
@@ -70,8 +70,8 @@ describe('External Credentials panel tests', function () {
         const expiringDate = moment().add(1, 'month');
         const expiredDate = moment().subtract(1, 'month');
 
-        cy.createExternalCredential(adminUser.token, generateExternalCredential('Expiring Test Credential', expiringDate)).then((expiringCredential) => {
-            cy.createExternalCredential(adminUser.token, generateExternalCredential('Expired Test Credential', expiredDate)).then((expiredCredential) => {
+        cy.createExternalCredential(adminUser.token, { name: 'Expiring Test Credential', expires_at: expiringDate }).then((expiringCredential) => {
+            cy.createExternalCredential(adminUser.token, { name: 'Expired Test Credential', expires_at: expiredDate }).then((expiredCredential) => {
                 cy.reload();
 
                 cy.contains(expiringCredential.name).should('be.visible');
@@ -126,7 +126,7 @@ describe('External Credentials panel tests', function () {
     it('edits an existing credential', () => {
         const newCredentialName = `Test Credential ${Math.floor(Math.random() * 999999)}`;
         const editCredentialName = `Edited Test Credential ${Math.floor(Math.random() * 999999)}`;
-        cy.createExternalCredential(adminUser.token, generateExternalCredential(newCredentialName, moment().add(1, 'year'))).then((credential) => {
+        cy.createExternalCredential(adminUser.token, { name: newCredentialName, expires_at: moment().add(1, 'year') }).then((credential) => {
             cy.reload();
             cy.contains(credential.name).rightclick();
             cy.get('[data-cy=context-menu]').contains('Edit').click();
@@ -160,23 +160,3 @@ describe('External Credentials panel tests', function () {
         });
     });
 });
-
-export const generateExternalCredential = (
-    name,
-    expiresAt,
-    description = `Test Description ${Math.floor(Math.random() * 999999)}`,
-    credentialClass = `Test Credential Class ${Math.floor(Math.random() * 999999)}`,
-    externalId = `Test External ID ${Math.floor(Math.random() * 999999)}`,
-    scopes = [`scope1 ${Math.floor(Math.random() * 999999)}`, `scope2 ${Math.floor(Math.random() * 999999)}`],
-    secret = 'test-secret'
-) => {
-    return {
-        name: `${name} ${Math.floor(Math.random() * 999999)}`,
-        description,
-        credential_class: credentialClass,
-        external_id: externalId,
-        expires_at: expiresAt,
-        scopes,
-        secret,
-    };
-};

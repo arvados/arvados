@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
-import { AdvancedIcon, UserPanelIcon, DetailsIcon } from 'components/icon/icon';
+import { AdvancedIcon, UserPanelIcon, DetailsIcon, CopyIcon } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateToUserProfile } from 'store/navigation/navigation-action';
 import { needsUserProfileLink } from 'store/context-menu/context-menu-filters';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
+import { copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 export const UserDetailsActionSet: ContextMenuActionSet = [
     [
@@ -33,6 +34,13 @@ export const UserDetailsActionSet: ContextMenuActionSet = [
                 dispatch<any>(navigateToUserProfile(resources[0].uuid));
             },
             filters: [needsUserProfileLink],
+        },
+        {
+            icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_UUID,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+            },
         },
     ],
 ];
