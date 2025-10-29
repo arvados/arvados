@@ -102,10 +102,10 @@ def test_report(apistub):
                           None,
                           "")
     if write_report:
-        with open("test/test_report.csv", "wt") as f:
+        with open("tests/test_report.csv", "wt") as f:
             f.write(csvreport.getvalue())
 
-    with open("test/test_report.csv", "rt", newline='') as f:
+    with open("tests/test_report.csv", "rt", newline='') as f:
         assert csvreport.getvalue() == f.read()
 
 
@@ -116,8 +116,8 @@ def test_report(apistub):
                                         True)
 
     if write_report:
-        with open("test/test_report.html", "wt") as f:
+        with open("tests/test_report.html", "wt") as f:
             f.write(htmlreport)
 
-    with open("test/test_report.html", "rt") as f:
+    with open("tests/test_report.html", "rt") as f:
         assert f.read() == htmlreport
