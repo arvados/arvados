@@ -23,7 +23,7 @@ import { UserResource } from 'models/user';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ReadOnlyIcon } from 'components/icon/icon';
 
-type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'readOnlyIcon' | 'nameContainer' | 'toolbarStyles';
+type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'readOnlyIcon' | 'nameContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -52,9 +52,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     readOnlyIcon: {
         marginLeft: theme.spacing(1),
         fontSize: 'small',
-    },
-    toolbarStyles: {
-        paddingTop: '4px',
     },
 });
 
@@ -136,7 +133,7 @@ export const CollectionCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
+                    {isSelected && <MultiselectToolbar />}
                 </Grid>
             </Card>
         );

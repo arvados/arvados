@@ -80,13 +80,16 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "30px",
     },
     msToolbarStyles: {
+        padding: 0,
         marginLeft: "-5px",
     },
     subToolbarWrapper: {
+        padding: 0,
         marginTop: "5px",
         marginLeft: "-15px",
     },
     runsToolbarWrapper: {
+        padding: 0,
         marginTop: "5px",
         marginLeft: "-15px",
     },
