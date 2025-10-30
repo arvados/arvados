@@ -382,10 +382,10 @@ export const DataExplorer = withStyles(styles)(
                     {!this.state.hideToolbar
                         && (this.props.isSelectedResourceInDataExplorer || isMoreThanOneSelected(this.props.checkedList))
                         && (this.multiSelectToolbarInTitle
-                            ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
+                            ? <MultiselectToolbar toolbarClass={classes.msToolbarStyles} />
                             : <MultiselectToolbar
                                     forceMultiSelectMode={forceMultiSelectMode}
-                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
+                                    toolbarClass={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
                     }
                     {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                         <Grid

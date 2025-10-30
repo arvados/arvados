@@ -224,7 +224,7 @@ export const ProcessCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar injectedStyles={showServiceMenu ? classes.runningToolbarStyles : undefined} />}
+                    {isSelected && <MultiselectToolbar toolbarClass={showServiceMenu ? classes.runningToolbarStyles : undefined} />}
                 </Grid>
             </Card>
         );

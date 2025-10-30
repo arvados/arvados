@@ -70,7 +70,7 @@ type MultiselectToolbarActionProps = {
 
 type MultiselectToolbarRecievedProps = {
     forceMultiSelectMode?: boolean;
-    injectedStyles?: string;
+    toolbarClass?: string;
 }
 
 const detailsCardPaths = [
@@ -91,7 +91,7 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)(React.memo((props: MultiselectToolbarProps) => {
-        const { classes, checkedList, resources, pathName, forceMultiSelectMode, injectedStyles } = props;
+        const { classes, checkedList, resources, pathName, forceMultiSelectMode, toolbarClass: injectedStyles } = props;
         const selectedResourceArray = selectedToArray(checkedList);
         const selectedResourceUuid = usesDetailsCard(pathName) && selectedResourceArray.length < 2 ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [props.resourceToMenukind(selectedResourceUuid)] : null

@@ -160,7 +160,7 @@ export const ProjectCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
+                    {isSelected && <MultiselectToolbar toolbarClass={classes.toolbarStyles} />}
                 </Grid>
             </Card>
         );
