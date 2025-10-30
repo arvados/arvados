@@ -10,6 +10,7 @@
 import argparse
 import logging
 import os
+import re
 import runpy
 import shlex
 import shutil
@@ -244,8 +245,11 @@ class ArgumentParser(argparse.ArgumentParser):
         # We put environment variables for the tool in the args so the rest
         # of the program has a single place to access parameters.
         env_workspace = os.environ.get('WORKSPACE')
+        if version := os.environ.get('ARVADOS_BUILDING_VERSION'):
+            version = re.sub(r'~(dev[0-9])', r'.\1', version, 1)
+            version = re.sub(r'~(a|b|rc)([0-9])', r'\1\2', version, 1)
         self.set_defaults(
-            version=os.environ.get('ARVADOS_BUILDING_VERSION'),
+            version=version,
             workspace=Path(env_workspace) if env_workspace else None,
         )
 
