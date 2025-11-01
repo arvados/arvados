@@ -478,8 +478,13 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		go func() {
 			defer wg.Done()
 			for coll := range collQ {
+				if len(errs) > 0 {
+					// already failing, just drain
+					// the channel
+					continue
+				}
 				err := bal.addCollection(coll)
-				if err != nil || len(errs) > 0 {
+				if err != nil {
 					select {
 					case errs <- err:
 					default:
@@ -1238,7 +1243,6 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 			lastErr = err
 		}
 	}
-	close(errs)
 	return lastErr
 }
 
