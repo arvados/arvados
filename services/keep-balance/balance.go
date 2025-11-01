@@ -1260,8 +1260,8 @@ func (bal *Balancer) time(name, help string) func() {
 }
 
 // Log current memory usage: once now, at least once every 10 minutes,
-// and when memory grows by 40% since the last log. Stop when ctx is
-// canceled.
+// and when memory grows by 40% since the last log. Log one more time
+// and then stop when ctx is canceled.
 func (bal *Balancer) reportMemorySize(ctx context.Context) {
 	buf, _ := os.ReadFile("/proc/self/smaps")
 	m := regexp.MustCompile(`\nKernelPageSize:\s*(\d+) kB\n`).FindSubmatch(buf)
@@ -1298,18 +1298,22 @@ func (bal *Balancer) reportMemorySize(ctx context.Context) {
 	const maxIncrease = 1.4
 
 	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 	var memstats runtime.MemStats
-	for ctx.Err() == nil {
+	for done := false; !done; {
+		select {
+		case <-ctx.Done():
+			// log one more time, then return
+			done = true
+		case <-ticker.C:
+		}
 		now := time.Now()
 		runtime.ReadMemStats(&memstats)
 		mem := memstats.StackInuse + memstats.HeapInuse
-		if now.After(nextTime) || mem >= nextMem {
+		if now.After(nextTime) || mem >= nextMem || done {
 			bal.logf("heap %d stack %d heapalloc %d%s", memstats.HeapInuse, memstats.StackInuse, memstats.HeapAlloc, osstats())
 			nextMem = uint64(float64(mem) * maxIncrease)
 			nextTime = now.Add(maxInterval)
 		}
-		<-ticker.C
 	}
 }
 
