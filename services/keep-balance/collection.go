@@ -199,6 +199,20 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 					// temporarily.
 					repl = desired
 				}
+				needUpdate := coll.ReplicationConfirmed == nil ||
+					*coll.ReplicationConfirmed != repl ||
+					repl > 0 && len(coll.StorageClassesConfirmed) != len(coll.StorageClassesDesired) ||
+					repl == 0 && len(coll.StorageClassesConfirmed) != 0
+				if repl > 0 {
+					for i := range coll.StorageClassesDesired {
+						if !needUpdate && coll.StorageClassesDesired[i] != coll.StorageClassesConfirmed[i] {
+							needUpdate = true
+						}
+					}
+				}
+				if !needUpdate {
+					continue
+				}
 				classes := emptyJSONArray
 				if repl > 0 {
 					classes, err = json.Marshal(coll.StorageClassesDesired)
@@ -206,15 +220,6 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 						bal.logf("BUG? json.Marshal(%v) failed: %s", classes, err)
 						continue
 					}
-				}
-				needUpdate := coll.ReplicationConfirmed == nil || *coll.ReplicationConfirmed != repl || len(coll.StorageClassesConfirmed) != len(coll.StorageClassesDesired)
-				for i := range coll.StorageClassesDesired {
-					if !needUpdate && coll.StorageClassesDesired[i] != coll.StorageClassesConfirmed[i] {
-						needUpdate = true
-					}
-				}
-				if !needUpdate {
-					continue
 				}
 				_, err = tx.ExecContext(ctx, `update collections set
 					replication_confirmed=$1,
