@@ -202,10 +202,11 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 					*coll.ReplicationConfirmed != repl ||
 					repl > 0 && len(coll.StorageClassesConfirmed) != len(coll.StorageClassesDesired) ||
 					repl == 0 && len(coll.StorageClassesConfirmed) != 0
-				if repl > 0 {
+				if !needUpdate && repl > 0 {
 					for i := range coll.StorageClassesDesired {
-						if !needUpdate && coll.StorageClassesDesired[i] != coll.StorageClassesConfirmed[i] {
+						if coll.StorageClassesDesired[i] != coll.StorageClassesConfirmed[i] {
 							needUpdate = true
+							break
 						}
 					}
 				}
