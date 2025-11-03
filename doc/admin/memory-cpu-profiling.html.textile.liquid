@@ -1,0 +1,124 @@
+---
+layout: default
+navsection: admin
+title: Memory and CPU profiling
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados system services (other than the Rails API server) offer a live profiling mode that can help identify memory and CPU usage issues.
+
+Enable profiling by choosing a listening address and adding @-pprof <address>@ to the @EXTRA_OPTS@ environment variable in the systemd service.
+
+Example:
+
+<notextile><pre><code>$ <span class="userinput">sudo systemctl edit keep-balance</span>
+### Editing /etc/systemd/system/keep-balance.service.d/override.conf
+### Anything between here and the comment below will become the new contents of the file
+<span class="userinput">[Service]
+Environment="EXTRA_OPTS=-pprof <strong>127.0.0.1:3333</strong>"</span>
+### Lines below this comment will be discarded
+[...]
+</code></pre></notextile>
+
+Restart the service.
+
+<notextile><pre><code>$ <span class="userinput">sudo systemctl restart keep-balance</span>
+</code></pre></notextile>
+
+Install the Go runtime from OS packages or from the "Go download page":https://go.dev/doc/install.
+
+<notextile><pre><code>$ <span class="userinput">sudo apt install golang</span>
+</code></pre></notextile>
+
+The @go tool pprof@ command retrieves profile snapshots from the running program and displays them in the terminal or via web UI.
+
+To display a sampling of active memory usage after garbage collection:
+
+<notextile><pre><code>$ <span class="userinput">go tool pprof -top 'http://<strong>localhost:3333</strong>/debug/pprof/heap?gc=1'</span>
+Fetching profile over HTTP from http://localhost:3333/debug/pprof/heap?gc=1
+Saved profile in /home/username/pprof/pprof.keep-balance.alloc_objects.alloc_space.inuse_objects.inuse_space.0001.pb.gz
+File: keep-balance
+Build ID: edd0405c97f4235473dba21b7c7fd52c8f755cde
+Type: inuse_space
+Time: Nov 3, 2025 at 11:12am (EST)
+Showing nodes accounting for 443.71MB, 98.02% of 452.67MB total
+Dropped 35 nodes (cum <= 2.26MB)
+      flat  flat%   sum%        cum   cum%
+  217.54MB 48.06% 48.06%   217.54MB 48.06%  git.arvados.org/arvados.git/services/keep-balance.(*BlockState).increaseDesired (inline)
+   85.46MB 18.88% 66.94%    85.46MB 18.88%  git.arvados.org/arvados.git/services/keep-balance.(*BlockStateMap).get (inline)
+   66.07MB 14.60% 81.53%    76.58MB 16.92%  git.arvados.org/arvados.git/sdk/go/arvados.(*Collection).SizedDigests
+   19.87MB  4.39% 85.92%    20.87MB  4.61%  github.com/lib/pq.textDecode
+      13MB  2.87% 88.79%       13MB  2.87%  git.arvados.org/arvados.git/services/keep-balance.(*BlockState).addReplica (inline)
+   10.51MB  2.32% 91.12%    10.51MB  2.32%  bytes.genSplit
+   10.25MB  2.26% 93.38%    10.25MB  2.26%  github.com/lib/pq.(*conn).recvMessage
+    7.50MB  1.66% 95.04%    53.63MB 11.85%  git.arvados.org/arvados.git/services/keep-balance.EachCollection
+       5MB  1.10% 96.14%    13.50MB  2.98%  encoding/json.Unmarshal
+    4.50MB  0.99% 97.14%     4.50MB  0.99%  encoding/json.(*scanner).pushParseState
+       4MB  0.88% 98.02%        4MB  0.88%  encoding/json.(*decodeState).literalStore
+         0     0% 98.02%    10.51MB  2.32%  bytes.Split (inline)
+         0     0% 98.02%    31.13MB  6.88%  database/sql.(*Rows).Next
+         0     0% 98.02%    31.13MB  6.88%  database/sql.(*Rows).Next.func1
+         0     0% 98.02%    31.13MB  6.88%  database/sql.(*Rows).nextLocked
+         0     0% 98.02%    31.13MB  6.88%  database/sql.withLock
+         0     0% 98.02%        4MB  0.88%  encoding/json.(*decodeState).array
+         0     0% 98.02%        4MB  0.88%  encoding/json.(*decodeState).unmarshal
+         0     0% 98.02%        4MB  0.88%  encoding/json.(*decodeState).value
+         0     0% 98.02%     4.50MB  0.99%  encoding/json.checkValid
+         0     0% 98.02%     4.50MB  0.99%  encoding/json.stateBeginValue
+         0     0% 98.02%     2.46MB  0.54%  git.arvados.org/arvados.git/lib/service.(*command).RunCommand.ifCollectionInHost.func9
+         0     0% 98.02%     2.46MB  0.54%  git.arvados.org/arvados.git/sdk/go/httpserver.(*metrics).ServeAPI.RequireLiteralToken.func3
+...
+</code></pre></notextile>
+
+To display a sampling of CPU usage over a 2-second interval:
+
+<notextile><pre><code>$ <span class="userinput">go tool pprof -top 'http://<strong>localhost:3333</strong>/debug/pprof/profile?seconds=2'</span>
+Fetching profile over HTTP from http://localhost:3333/debug/pprof/profile?seconds=2
+Saved profile in /home/username/pprof/pprof.keep-balance.samples.cpu.001.pb.gz
+File: keep-balance
+Build ID: edd0405c97f4235473dba21b7c7fd52c8f755cde
+Type: cpu
+Time: Nov 3, 2025 at 11:12am (EST)
+Duration: 2.19s, Total samples = 2.98s (136.17%)
+Showing nodes accounting for 2.57s, 86.24% of 2.98s total
+Dropped 73 nodes (cum <= 0.01s)
+      flat  flat%   sum%        cum   cum%
+     0.34s 11.41% 11.41%      0.36s 12.08%  runtime.findObject
+     0.15s  5.03% 16.44%      0.32s 10.74%  regexp.(*Regexp).doOnePass
+     0.13s  4.36% 20.81%      0.13s  4.36%  runtime.(*mspan).heapBitsSmallForAddr
+     0.12s  4.03% 24.83%      0.12s  4.03%  runtime.(*gcBits).bitp (inline)
+     0.11s  3.69% 28.52%      0.11s  3.69%  regexp/syntax.(*Inst).MatchRunePos
+     0.08s  2.68% 31.21%      0.09s  3.02%  runtime.(*mspan).writeHeapBitsSmall
+     0.07s  2.35% 33.56%      0.07s  2.35%  runtime.nextFreeFast (inline)
+     0.06s  2.01% 35.57%      0.06s  2.01%  runtime.futex
+     0.06s  2.01% 37.58%      0.06s  2.01%  runtime.memclrNoHeapPointers
+     0.05s  1.68% 39.26%      0.05s  1.68%  indexbytebody
+     0.05s  1.68% 40.94%      0.05s  1.68%  internal/runtime/syscall.Syscall6
+     0.05s  1.68% 42.62%      0.43s 14.43%  runtime.mallocgc
+     0.05s  1.68% 44.30%      0.05s  1.68%  runtime.memmove
+     0.05s  1.68% 45.97%      0.71s 23.83%  runtime.scanobject
+     0.05s  1.68% 47.65%      0.05s  1.68%  runtime.usleep
+     0.04s  1.34% 48.99%      0.26s  8.72%  runtime.mallocgcSmallScanNoHeader
+     0.04s  1.34% 50.34%      0.04s  1.34%  runtime.rand
+     0.03s  1.01% 51.34%      0.03s  1.01%  crypto/internal/fips140/aes/gcm.gcmAesDec
+     0.03s  1.01% 52.35%      0.57s 19.13%  database/sql.(*Rows).nextLocked
+     0.03s  1.01% 53.36%      0.13s  4.36%  database/sql.convertAssignRows
+     0.03s  1.01% 54.36%      0.56s 18.79%  git.arvados.org/arvados.git/sdk/go/arvados.(*Collection).SizedDigests
+     0.03s  1.01% 55.37%      0.18s  6.04%  git.arvados.org/arvados.git/services/keep-balance.(*BlockStateMap).GetConfirmedReplication
+...
+</code></pre></notextile>
+
+The saved profiles (e.g., @/home/username/pprof/pprof.keep-balance.samples.cpu.001.pb.gz@ in the output above) can be inspected later using @go tool pprof@.
+
+<notextile><pre><code>$ go tool pprof -top /home/username/pprof/pprof.keep-balance.samples.cpu.001.pb.gz
+(same output as above)
+</code></pre></notextile>
+
+To view profiling information without installing the Go runtime on the server, you can
+* arrange for the pprof port to be accessible from another machine where Go is installed, or
+* download the profiling data (e.g., @curl 'http://localhost:3333/debug/pprof/profile?seconds=2' > /tmp/cpu.gz@) and copy it to another machine where Go is installed.
