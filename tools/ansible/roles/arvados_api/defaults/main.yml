@@ -1,0 +1,6 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_api_max_pool_size: "{{ ansible_processor_nproc | int }}"
+arvados_api_max_request_queue_size: "{{ arvados_api_max_pool_size | int * 2 + 1 }}"
