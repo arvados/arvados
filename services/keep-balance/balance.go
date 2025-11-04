@@ -700,7 +700,10 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 
 	unsafeToDelete := make(map[int64]bool, len(slots))
 	for _, class := range bal.classes {
-		desired := blk.Desired[class]
+		if blk.Desired == nil {
+			continue
+		}
+		desired := (*blk.Desired)[class]
 		if desired == 0 {
 			continue
 		}
@@ -839,7 +842,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 
 	classState := make(map[string]balancedBlockState, len(bal.classes))
 	for _, class := range bal.classes {
-		classState[class] = computeBlockState(slots, bal.mountsByClass[class], len(blk.Replicas), blk.Desired[class])
+		desired := 0
+		if blk.Desired != nil {
+			desired = (*blk.Desired)[class]
+		}
+		classState[class] = computeBlockState(slots, bal.mountsByClass[class], len(blk.Replicas), desired)
 	}
 	blockState := computeBlockState(slots, nil, len(blk.Replicas), 0)
 
@@ -911,7 +918,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		}
 	}
 	if bal.Dumper != nil {
-		bal.Dumper.Printf("%s refs=%d needed=%d unneeded=%d pulling=%v %v %v", blkid, blk.RefCount, blockState.needed, blockState.unneeded, blockState.pulling, blk.Desired, changes)
+		var desired map[string]int
+		if blk.Desired != nil {
+			desired = *blk.Desired
+		}
+		bal.Dumper.Printf("%s refs=%d needed=%d unneeded=%d pulling=%v %v %v", blkid, blk.RefCount, blockState.needed, blockState.unneeded, blockState.pulling, desired, changes)
 	}
 	return balanceResult{
 		blk:        blk,
@@ -1180,7 +1191,10 @@ func (bal *Balancer) CheckSanityLate() error {
 
 	anyDesired := false
 	bal.BlockStateMap.Apply(func(_ arvados.SizedDigest, blk *BlockState) {
-		for _, desired := range blk.Desired {
+		if blk.Desired == nil {
+			return
+		}
+		for _, desired := range *blk.Desired {
 			if desired > 0 {
 				anyDesired = true
 				break
