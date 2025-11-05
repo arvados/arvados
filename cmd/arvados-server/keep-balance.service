@@ -12,6 +12,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
+Environment=GOGC=50
 ExecStart=/usr/bin/keep-balance
 Restart=always
 RestartSec=10s
