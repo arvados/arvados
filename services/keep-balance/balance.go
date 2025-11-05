@@ -376,7 +376,6 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 	defer cancel()
 
 	defer bal.time("get_state", "wall clock time to get current state")()
-	bal.BlockStateMap = NewBlockStateMap()
 
 	dd, err := c.DiscoveryDocument()
 	if err != nil {
@@ -408,6 +407,13 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		}
 	}
 
+	// Determine max possible replication (i.e., total replication
+	// of a block stored on every mount)
+	maxRepl := 0
+	for mnt := range equivMount {
+		maxRepl += mnt.Replication
+	}
+	bal.BlockStateMap = NewBlockStateMap(maxRepl)
 	// Start one goroutine for each (non-redundant) mount:
 	// retrieve the index, and add the returned blocks to
 	// BlockStateMap.

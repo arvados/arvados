@@ -22,7 +22,7 @@ type confirmedReplicationSuite struct {
 func (s *confirmedReplicationSuite) SetUpTest(c *check.C) {
 	t, _ := time.Parse(time.RFC3339Nano, time.RFC3339Nano)
 	s.mtime = t.UnixNano()
-	s.blockStateMap = NewBlockStateMap()
+	s.blockStateMap = NewBlockStateMap(8)
 	s.blockStateMap.AddReplicas(&KeepMount{KeepMount: arvados.KeepMount{
 		Replication:    1,
 		StorageClasses: map[string]bool{"default": true},

@@ -67,9 +67,12 @@ type BlockStateMap struct {
 }
 
 // NewBlockStateMap returns a newly allocated BlockStateMap.
-func NewBlockStateMap() *BlockStateMap {
+func NewBlockStateMap(maxReplication int) *BlockStateMap {
 	return &BlockStateMap{
 		entries: make(map[arvados.SizedDigest]*BlockState),
+		pool: mapPool{
+			Maximum: maxReplication + 1,
+		},
 	}
 }
 
@@ -182,8 +185,9 @@ func (bsm *BlockStateMap) GetConfirmedReplication(blkids []arvados.SizedDigest, 
 // See (*mapPool)setMinimum() and (*BlockState)increaseDesired() for
 // usage.
 type mapPool struct {
-	next map[mapPoolTransition]mapPoolEnt
-	lock sync.RWMutex
+	Maximum int
+	next    map[mapPoolTransition]mapPoolEnt
+	lock    sync.RWMutex
 }
 
 type mapPoolEnt *map[string]int
@@ -206,6 +210,9 @@ type mapPoolTransition struct {
 //
 // Functionally, it is equivalent to
 //
+//	if p.Maximum > 0 && minimum > p.Maximum {
+//	        minimum = p.Maximum
+//	}
 //	if ent[class] < minimum {
 //	        ent[class] = minimum
 //	}
@@ -217,6 +224,12 @@ type mapPoolTransition struct {
 func (p *mapPool) setMinimum(ent mapPoolEnt, class string, minimum int) mapPoolEnt {
 	if ent != nil && (*ent)[class] >= minimum {
 		return ent
+	}
+	if minimum > p.Maximum {
+		// Clamp ent.minimum, otherwise p.next can become
+		// excessively large when users set
+		// replication_desired to unrealistic values.
+		minimum = p.Maximum
 	}
 	transition := mapPoolTransition{
 		ent:     ent,
@@ -239,6 +252,15 @@ func (p *mapPool) setMinimum(ent mapPoolEnt, class string, minimum int) mapPoolE
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	// The following find_matching_ent loop is not especially fast
+	// -- O(poolsize*mapsize) at best -- but that's okay because
+	// it runs only ~once per distinct pool entry, and the number
+	// of pool entries is bounded by configuration (maximum
+	// achievable replication ** number of storage classes)
+	// regardless of how many blocks are being processed.
+	//
+	// Typically setMinimum is called millions of times but we
+	// arrive at this loop less than 100 times.
 find_matching_ent:
 	for _, existing := range p.next {
 		if len(*existing) != len(newmap) {
