@@ -12,6 +12,10 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
+# GOGC=50 reduces the Go runtime's default 100% garbage collection
+# threshold to 50%.  This reduces keep-balance's peak memory usage and
+# makes it run a bit slower.  See
+# https://dev.arvados.org/issues/23235#note-16.
 Environment=GOGC=50
 ExecStart=/usr/bin/keep-balance
 Restart=always
