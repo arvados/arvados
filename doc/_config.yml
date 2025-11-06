@@ -176,6 +176,7 @@ navbar:
       - admin/diagnostics.html.textile.liquid
       - admin/management-token.html.textile.liquid
       - admin/user-activity.html.textile.liquid
+      - admin/memory-cpu-profiling.html.textile.liquid
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid
