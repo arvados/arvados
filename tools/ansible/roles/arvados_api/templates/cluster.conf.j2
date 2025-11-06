@@ -9,3 +9,5 @@
 [Service]
 Environment=PASSENGER_ADDRESS={{ listen_address.address }}
 Environment=PASSENGER_PORT={{ listen_address.port }}
+Environment=PASSENGER_MAX_POOL_SIZE={{ arvados_api_max_pool_size }}
+Environment=PASSENGER_MAX_REQUEST_QUEUE_SIZE={{ arvados_api_max_request_queue_size }}
