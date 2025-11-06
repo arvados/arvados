@@ -129,3 +129,7 @@ Dropped 73 nodes (cum <= 0.01s)
 * @symbol@ -- Maps given program counters to function names. Counters can be specified in a GET raw query or POST body, multiple counters are separated by '+'.
 * @threadcreate@ -- Stack traces that led to the creation of new OS threads
 * @trace@ -- A trace of execution of the current program. You can specify the duration in the seconds GET parameter. After you get the trace file, use the go tool trace command to investigate the trace.
+
+Additional resources:
+* "pprof tool documentation":https://github.com/google/pprof/blob/main/doc/README.md
+* "Go profiling data endpoint documentation":https://pkg.go.dev/net/http/pprof
