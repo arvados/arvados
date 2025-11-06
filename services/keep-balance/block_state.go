@@ -5,6 +5,7 @@
 package keepbalance
 
 import (
+	"maps"
 	"sync"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -26,15 +27,7 @@ type BlockState struct {
 	Refs     map[string]bool // pdh => true (only tracked when len(Replicas)==0)
 	RefCount int
 	Replicas []Replica
-	Desired  map[string]int
-	// TODO: Support combinations of classes ("private + durable")
-	// by replacing the map[string]int with a map[*[]string]int
-	// here, where the map keys come from a pool of semantically
-	// distinct class combinations.
-	//
-	// TODO: Use a pool of semantically distinct Desired maps to
-	// conserve memory (typically there are far more BlockState
-	// objects in memory than distinct Desired profiles).
+	Desired  mapPoolEnt
 }
 
 var defaultClasses = []string{"default"}
@@ -46,7 +39,7 @@ func (bs *BlockState) addReplica(r Replica) {
 	bs.Refs = nil
 }
 
-func (bs *BlockState) increaseDesired(pdh string, classes []string, n int) {
+func (bs *BlockState) increaseDesired(pool *mapPool, pdh string, classes []string, n int) {
 	if pdh != "" && len(bs.Replicas) == 0 {
 		// Note we only track PDHs if there's a possibility
 		// that we will report the list of referring PDHs,
@@ -61,11 +54,7 @@ func (bs *BlockState) increaseDesired(pdh string, classes []string, n int) {
 		classes = defaultClasses
 	}
 	for _, class := range classes {
-		if bs.Desired == nil {
-			bs.Desired = map[string]int{class: n}
-		} else if d, ok := bs.Desired[class]; !ok || d < n {
-			bs.Desired[class] = n
-		}
+		bs.Desired = pool.setMinimum(bs.Desired, class, n)
 	}
 }
 
@@ -73,13 +62,17 @@ func (bs *BlockState) increaseDesired(pdh string, classes []string, n int) {
 // map[arvados.SizedDigest]*BlockState.
 type BlockStateMap struct {
 	entries map[arvados.SizedDigest]*BlockState
+	pool    mapPool
 	mutex   sync.Mutex
 }
 
 // NewBlockStateMap returns a newly allocated BlockStateMap.
-func NewBlockStateMap() *BlockStateMap {
+func NewBlockStateMap(maxReplication int) *BlockStateMap {
 	return &BlockStateMap{
 		entries: make(map[arvados.SizedDigest]*BlockState),
+		pool: mapPool{
+			Maximum: maxReplication + 1,
+		},
 	}
 }
 
@@ -130,7 +123,7 @@ func (bsm *BlockStateMap) IncreaseDesired(pdh string, classes []string, n int, b
 	defer bsm.mutex.Unlock()
 
 	for _, blkid := range blocks {
-		bsm.get(blkid).increaseDesired(pdh, classes, n)
+		bsm.get(blkid).increaseDesired(&bsm.pool, pdh, classes, n)
 	}
 }
 
@@ -186,4 +179,108 @@ func (bsm *BlockStateMap) GetConfirmedReplication(blkids []arvados.SizedDigest, 
 		}
 	}
 	return min
+}
+
+// mapPool manages a pool of distinct maps of type map[string]int.
+// See (*mapPool)setMinimum() and (*BlockState)increaseDesired() for
+// usage.
+type mapPool struct {
+	Maximum int
+	next    map[mapPoolTransition]mapPoolEnt
+	lock    sync.RWMutex
+}
+
+type mapPoolEnt *map[string]int
+
+type mapPoolTransition struct {
+	ent     mapPoolEnt
+	class   string
+	minimum int
+}
+
+// setMinimum returns a singleton mapPoolEnt that has
+// ent[class]>=minimum and is equivalent to the provided ent for all
+// other classes.
+//
+// The provided ent must be either nil, or a mapPoolEnt previously
+// returned by this method.
+//
+// The provided ent will be returned if it already satisfies
+// ent[class]>minimum.
+//
+// Functionally, it is equivalent to
+//
+//	if p.Maximum > 0 && minimum > p.Maximum {
+//	        minimum = p.Maximum
+//	}
+//	if ent[class] < minimum {
+//	        ent[class] = minimum
+//	}
+//
+// Except that, as long as the mapPool is shared by many
+// BlockState callers, it uses far less memory.
+//
+// The caller should not modify the returned mapPoolEnt.
+func (p *mapPool) setMinimum(ent mapPoolEnt, class string, minimum int) mapPoolEnt {
+	if ent != nil && (*ent)[class] >= minimum {
+		return ent
+	}
+	if minimum > p.Maximum {
+		// Clamp ent.minimum, otherwise p.next can become
+		// excessively large when users set
+		// replication_desired to unrealistic values.
+		minimum = p.Maximum
+	}
+	transition := mapPoolTransition{
+		ent:     ent,
+		class:   class,
+		minimum: minimum,
+	}
+	p.lock.RLock()
+	next := p.next[transition]
+	p.lock.RUnlock()
+	if next != nil {
+		return next
+	}
+	var newmap map[string]int
+	if ent != nil {
+		newmap = maps.Clone(*ent)
+		newmap[class] = minimum
+	} else {
+		newmap = map[string]int{class: minimum}
+	}
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	// The following find_matching_ent loop is not especially fast
+	// -- O(poolsize*mapsize) at best -- but that's okay because
+	// it runs only ~once per distinct pool entry, and the number
+	// of pool entries is bounded by configuration (maximum
+	// achievable replication ** number of storage classes)
+	// regardless of how many blocks are being processed.
+	//
+	// Typically setMinimum is called millions of times but we
+	// arrive at this loop less than 100 times.
+find_matching_ent:
+	for _, existing := range p.next {
+		if len(*existing) != len(newmap) {
+			continue find_matching_ent
+		}
+		for c, d := range *existing {
+			if newmap[c] != d {
+				continue find_matching_ent
+			}
+		}
+		// reuse existing pool entry, previously added as
+		// outcome of a different transition (or by another
+		// goroutine between RUnlock and Lock, in which case
+		// this is a no-op)
+		p.next[transition] = existing
+		return ent
+	}
+	if p.next == nil {
+		p.next = make(map[mapPoolTransition]mapPoolEnt)
+	}
+	p.next[transition] = &newmap
+	return &newmap
 }

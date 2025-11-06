@@ -5,6 +5,10 @@
 package keepbalance
 
 import (
+	"fmt"
+	"math"
+	"math/rand"
+	"sort"
 	"sync"
 	"time"
 
@@ -22,7 +26,7 @@ type confirmedReplicationSuite struct {
 func (s *confirmedReplicationSuite) SetUpTest(c *check.C) {
 	t, _ := time.Parse(time.RFC3339Nano, time.RFC3339Nano)
 	s.mtime = t.UnixNano()
-	s.blockStateMap = NewBlockStateMap()
+	s.blockStateMap = NewBlockStateMap(8)
 	s.blockStateMap.AddReplicas(&KeepMount{KeepMount: arvados.KeepMount{
 		Replication:    1,
 		StorageClasses: map[string]bool{"default": true},
@@ -114,4 +118,56 @@ func (s *confirmedReplicationSuite) TestConcurrency(c *check.C) {
 		}()
 	}
 	wg.Wait()
+}
+
+var _ = check.Suite(&mapPoolSuite{})
+
+type mapPoolSuite struct{}
+
+func (s *mapPoolSuite) TestMapPool(c *check.C) {
+	maxPoolReplication := 8
+	maxDesired := 1000 // unrealistically high replication_desired
+	nblocks := 10000
+	classes := []string{"class_one", "class_two", "class_three"}
+	bsm := NewBlockStateMap(maxPoolReplication)
+	var wg sync.WaitGroup
+	for i := 0; i < nblocks; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			bsm.IncreaseDesired("", classes, rand.Int()%maxDesired, []arvados.SizedDigest{knownBlkid(i)})
+		}()
+	}
+	wg.Wait()
+
+	// Check that the mapPool's "next" transition map does not get
+	// too large, even with unrealistically high
+	// replication_desired values.
+	c.Logf("blocks==%d len(classes)==%d --> len(pool)==%d", nblocks, len(classes), len(bsm.pool.next))
+	c.Check(len(bsm.pool.next) <= int(math.Pow(float64(maxPoolReplication+1), float64(len(classes)))), check.Equals, true)
+
+	// Check that all pool entries are unique, i.e., if ent1 !=
+	// ent2, then maps *ent1 and *ent2 have different content.
+	ents := map[mapPoolEnt]bool{}
+	for transition, ent := range bsm.pool.next {
+		ents[ent] = true
+		ents[transition.ent] = true
+	}
+	seen := map[string]bool{}
+	for ent := range ents {
+		var txt string
+		if ent != nil {
+			var classes []string
+			for class := range *ent {
+				classes = append(classes, class)
+			}
+			sort.Strings(classes)
+			for _, class := range classes {
+				txt += fmt.Sprintf("%s %d ", class, (*ent)[class])
+			}
+		}
+		c.Check(seen[txt], check.Equals, false, check.Commentf("seen twice: %s", txt))
+		seen[txt] = true
+	}
+	c.Assert(seen, check.HasLen, len(ents))
 }
