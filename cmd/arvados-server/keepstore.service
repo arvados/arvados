@@ -16,7 +16,7 @@ StartLimitIntervalSec=0
 # configured to use.
 Environment=GOGC=10
 Type=notify
-ExecStart=/usr/bin/keepstore
+ExecStart=/usr/bin/keepstore $EXTRA_OPTS
 Restart=always
 RestartSec=1
 RestartPreventExitStatus=2

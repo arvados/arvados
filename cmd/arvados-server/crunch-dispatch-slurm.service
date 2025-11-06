@@ -12,7 +12,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/crunch-dispatch-slurm
+ExecStart=/usr/bin/crunch-dispatch-slurm $EXTRA_OPTS
 Restart=always
 RestartSec=1
 RestartPreventExitStatus=2

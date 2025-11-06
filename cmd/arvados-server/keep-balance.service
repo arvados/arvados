@@ -12,7 +12,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/keep-balance
+ExecStart=/usr/bin/keep-balance $EXTRA_OPTS
 Restart=always
 RestartSec=10s
 Nice=19

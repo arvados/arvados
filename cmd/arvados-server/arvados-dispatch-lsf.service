@@ -12,7 +12,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/arvados-dispatch-lsf
+ExecStart=/usr/bin/arvados-dispatch-lsf $EXTRA_OPTS
 Restart=always
 RestartSec=1
 RestartPreventExitStatus=2

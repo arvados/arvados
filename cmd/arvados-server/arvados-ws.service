@@ -11,7 +11,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/arvados-ws
+ExecStart=/usr/bin/arvados-ws $EXTRA_OPTS
 Restart=always
 RestartSec=1
 RestartPreventExitStatus=2
