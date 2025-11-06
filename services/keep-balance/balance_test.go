@@ -753,7 +753,7 @@ func (bal *balancerSuite) try(c *check.C, t tester) {
 	bal.setupLookupTables(bal.config)
 	blk := &BlockState{
 		Replicas: bal.replList(t.known, t.current),
-		Desired:  t.desired,
+		Desired:  &t.desired,
 	}
 	for i, t := range t.timestamps {
 		blk.Replicas[i].Mtime = t
