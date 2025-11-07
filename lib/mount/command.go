@@ -52,6 +52,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	logLevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
+	crunchstatInterval := flags.Int("crunchstat-interval", 60, "interval in seconds between updates of crunch job stats in mounted filesystem (0 to disable)")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
 	}
@@ -72,6 +73,10 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		go func() {
 			log.Println(http.ListenAndServe(*pprof, nil))
 		}()
+	}
+	if *crunchstatInterval < 0 {
+		logger.Error("-crunch-stat-interval must be non-negative")
+		return 2
 	}
 
 	client := arvados.NewClientFromEnv()
