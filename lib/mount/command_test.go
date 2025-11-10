@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -39,7 +40,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	mountCmd := mountCommand{ready: make(chan struct{})}
 	ready := false
 	go func() {
-		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", s.mnt}, stdin, stdout, stderr)
+		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--crunchstat-interval", "1", s.mnt}, stdin, stdout, stderr)
 	}()
 	go func() {
 		<-mountCmd.ready
@@ -63,6 +64,11 @@ func (s *CmdSuite) TestMount(c *check.C) {
 
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
 		c.Check(os.IsNotExist(err), check.Equals, true)
+
+		// Check that crunchstat ticker is running
+		time.Sleep(1200 * time.Millisecond)
+		logs := stderr.String()
+		c.Check(strings.Contains(logs, "tick"), check.Equals, true)
 
 		ok := mountCmd.Unmount()
 		c.Check(ok, check.Equals, true)
