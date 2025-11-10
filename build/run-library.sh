@@ -538,6 +538,21 @@ BEGIN { OFS="\0"; ORS="\0"; }
     print "--version", substr($2, 2, length($2) - 2), $1;
 }
 ' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch
+        # For any binary gems we fetched, fetch the Ruby platform too.
+        # This pulls double duty for us:
+        # 1. It ensures we support `force_ruby_platform: true` in `Gemfile`
+        #    since that flag isn't indicated in `Gemfile.lock`.
+        # 2. It ensures the package includes the source for all gems
+        #    which is good for license compliance.
+        find vendor/cache -name "*-linux.gem" -printf "%f\0" | awk -- '
+BEGIN { FS="-"; RS="\0"; ORS="\0"; }
+{ ver_index = NF - 2;
+  gem_ver = $ver_index;
+  OFS = "-";
+  NF = ver_index - 1;
+  OFS = "\0";
+  print "--version", gem_ver, $0;
+}' | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch --platform=ruby
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
         # Tip: If this command removes "stale" gems downloaded in the previous
