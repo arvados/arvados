@@ -13,6 +13,7 @@ import (
 	// pprof is only imported to register its HTTP handlers
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -105,10 +106,22 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	})
 	c.Unmount = host.Unmount
 
+	go repeatEvery(time.Duration(*crunchstatInterval)*time.Second, func() {
+		logger.Info("tick")
+	})
+
 	logger.WithField("mountargs", flags.Args()).Debug("mounting")
 	ok := host.Mount("", flags.Args())
 	if !ok {
 		return 1
 	}
 	return 0
+}
+
+func repeatEvery(d time.Duration, f func()) {
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+	for range ticker.C {
+		f()
+	}
 }
