@@ -53,7 +53,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	logLevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
-	crunchstatInterval := flags.Int("crunchstat-interval", 60, "interval in seconds between updates of crunch job stats in mounted filesystem (0 to disable)")
+	crunchstatInterval := flags.Int("crunchstat-interval", 0, "interval in seconds between updates of crunch job stats in mounted filesystem")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
 	}
@@ -106,9 +106,11 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	})
 	c.Unmount = host.Unmount
 
-	go repeatEvery(time.Duration(*crunchstatInterval)*time.Second, func() {
-		logger.Info("tick")
-	})
+	if *crunchstatInterval > 0 {
+		go repeatEvery(time.Duration(*crunchstatInterval)*time.Second, func() {
+			logger.Info("tick")
+		})
+	}
 
 	logger.WithField("mountargs", flags.Args()).Debug("mounting")
 	ok := host.Mount("", flags.Args())
