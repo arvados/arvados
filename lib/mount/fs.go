@@ -11,6 +11,7 @@ import (
 	"os"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -39,6 +40,7 @@ type keepFS struct {
 	root   arvados.CustomFileSystem
 	open   map[uint64]*sharedFile
 	lastFH uint64
+	statsInterval time.Duration
 	sync.RWMutex
 
 	// If non-nil, this channel will be closed by Init() to notify
@@ -74,6 +76,9 @@ func (fs *keepFS) Init() {
 	defer fs.debugPanics()
 	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
 	fs.root.MountProject("home", "")
+	if fs.statsInterval > 0 {
+		go statsLogger(fs.Logger, fs.statsInterval)
+	}
 	if fs.ready != nil {
 		close(fs.ready)
 	}
@@ -445,4 +450,13 @@ func (fs *keepFS) debugPanics() {
 
 func (fs *keepFS) debugOp(op, path string) {
 	fs.Logger.WithFields(nil).Tracef("fuse call %s %s", op, path)
+}
+
+func statsLogger(logger logrus.FieldLogger, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		logger.Info("tick")
+	}
 }
