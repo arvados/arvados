@@ -1,0 +1,16 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Add postgresql repository
+  become: yes
+  ansible.builtin.deb822_repository:
+    name: postgresql
+    types: deb
+    uris: https://apt.postgresql.org/pub/repos/apt
+    suites: '{{ ansible_distribution_release }}-pgdg'
+    components: main
+    signed_by: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+  when: "arvados_postgresql_repository == 'postgresql'"
+  notify:
+    - apt update
