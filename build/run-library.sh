@@ -512,38 +512,17 @@ handle_rails_package() {
         #
         # `bundle cache` caches from Git and paths, not just rubygems.org.
         bundle config set cache_all true
-        # Disallow changes to Gemfile.
-        bundle config set deployment true
         # Avoid loading system-wide gems (although this seems to not work 100%).
         bundle config set disable_shared_gems true
         # `bundle cache` only downloads gems, doesn't install them.
         # Our Rails postinst script does the install step.
         bundle config set no_install true
-        # As of April 2024/Bundler 2.4, `bundle cache` seems to skip downloading
-        # gems that are already available system-wide... and then it complains
-        # that your bundle is incomplete. Work around this by fetching gems
-        # manually.
-        # `--max-procs=6` is an abritrary number to download in parallel
-        # while being at least a little polite to rubygems.org.
-        # TODO: Once all our supported distros have Ruby 3+, we can modify
-        # the awk script to print "NAME:VERSION" output, and pipe that directly
-        # to `xargs -0r gem fetch` for reduced overhead.
-        mkdir -p vendor/cache
-        awk -- '
-BEGIN { OFS="\0"; ORS="\0"; }
-(/^[A-Z ]*$/) { level1=$0; }
-(/^  [[:alpha:]]+:$/) { level2=substr($0, 3, length($0) - 3); next; }
-(/^ {0,3}[[:alpha:]]/) { level2=""; next; }
-(level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
-    print "--version", substr($2, 2, length($2) - 2), $1;
-}
-' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch
-        # Despite the bug, we still run `bundle cache` to make sure Bundler is
-        # happy for later steps.
-        # Tip: If this command removes "stale" gems downloaded in the previous
-        # step, that might mean those gems declare that the version of Ruby
-        # you're running is too new.
-        bundle cache
+        # `bundle cache` has a bug where if a gem is installed at the system
+        # level, it will not cache that gem, but then a later step will realize
+        # the cache is incomplete and report failure. Work around this by
+        # running it with an empty gem set.
+        local gem_dir="$(mktemp --directory --tmpdir bundle.XXXXXXXX)"
+        GEM_HOME="$gem_dir" GEM_PATH="$gem_dir" BUNDLE_PATH="$gem_dir" bundle cache
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
