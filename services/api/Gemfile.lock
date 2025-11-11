@@ -218,8 +218,7 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.4)
-    nokogiri (1.17.2)
-      mini_portile2 (~> 2.8.2)
+    nokogiri (1.17.2-x86_64-linux)
       racc (~> 1.4)
     oj (3.16.11)
       bigdecimal (>= 3.0)
@@ -231,7 +230,7 @@ GEM
       rack (>= 1.6.13)
       rackup (>= 1.0.1)
       rake (>= 12.3.3)
-    pg (1.6.2)
+    pg (1.6.2-x86_64-linux)
     power_assert (2.0.5)
     pp (0.6.2)
       prettyprint
@@ -342,7 +341,7 @@ GEM
     zlib (3.2.1)
 
 PLATFORMS
-  ruby
+  x86_64-linux
 
 DEPENDENCIES
   acts_as_api
