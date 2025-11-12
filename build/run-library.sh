@@ -504,6 +504,13 @@ handle_rails_package() {
     (
         set -e
         _build_rails_package_scripts "$pkgname" "$scripts_dir"
+        # Bundler behaves inconsistently when gems are available system-wide.
+        # Avoid those bugs by starting with a fresh GEM_HOME.
+        # TODO: Set this up in CI instead.
+        export GEM_HOME="$(mktemp --directory --tmpdir bundler.XXXXXXXX)"
+        export GEM_PATH="$GEM_HOME"
+        gem install --conservative --version '~> 2.5.0' bundler
+        bundle() { "$GEM_HOME/bin/bundler" "$@"; }
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
@@ -521,12 +528,7 @@ handle_rails_package() {
         bundle config set no_install true
         # Do not install gem sets unnecessary for production.
         bundle config set without development:test
-        # `bundle cache` has a bug where if a gem is installed at the system
-        # level, it will not cache that gem, but then a later step will realize
-        # the cache is incomplete and report failure. Work around this by
-        # running it with an empty gem set.
-        local gem_dir="$(mktemp --directory --tmpdir bundle.XXXXXXXX)"
-        GEM_HOME="$gem_dir" GEM_PATH="$gem_dir" BUNDLE_PATH="$gem_dir" bundle cache
+        bundle cache
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2

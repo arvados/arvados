@@ -172,24 +172,14 @@ if [ ! -e $SHARED_PATH/log/production.log ]; then touch $SHARED_PATH/log/product
 
 cd "$RELEASE_PATH"
 export RAILS_ENV=production
-
+# Bundler behaves inconsistently when gems are available system-wide.
+# Avoid those bugs by starting with a GEM_HOME that *only* contains Bundler.
+export GEM_HOME="$SHARED_PATH/bundler"
+export GEM_PATH="$GEM_HOME"
 run_and_report "Installing bundler" gem install --conservative --version '~> 2.5.0' bundler
-ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-BUNDLE="$(gem contents --version '~> 2.5.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
-if ! [ -x "$BUNDLE" ]; then
-    # Some distros (at least Ubuntu 24.04) append the Ruby version to the
-    # executable name, but that isn't reflected in the output of
-    # `gem contents`. Check for that version.
-    BUNDLE="$BUNDLE$ruby_minor_ver"
-    if ! [ -x "$BUNDLE" ]; then
-        echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
-        exit 11
-    fi
-fi
-
-bundle_path="$SHARED_PATH/vendor_bundle"
 run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
                "$BUNDLE" config set --local path "$bundle_path"
+BUNDLE="$GEM_HOME/bin/bundler"
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 
