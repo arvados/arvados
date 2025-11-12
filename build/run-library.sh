@@ -525,11 +525,15 @@ handle_rails_package() {
         #
         # `bundle cache` caches from Git and paths, not just rubygems.org.
         bundle config set cache_all true
+        # `bundle cache` caches for all platforms listed in `Gemfile.lock`.
+        bundle config set cache_all_platforms true
         # Avoid loading system-wide gems (although this seems to not work 100%).
         bundle config set disable_shared_gems true
         # `bundle cache` only downloads gems, doesn't install them.
         # Our Rails postinst script does the install step.
         bundle config set no_install true
+        # Do not install gem sets unnecessary for production.
+        bundle config set without development:test
 
         bundle cache
         # Configuration after this point is for the installed package but only
