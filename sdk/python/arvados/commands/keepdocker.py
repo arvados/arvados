@@ -379,7 +379,7 @@ def load_image_metadata(image_file):
             image_config = json.load(config_file)
     return image_manifest, image_config
 
-def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None):
+def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, install_sig_handlers=True, api=None):
     args = arg_parser.parse_args(arguments)
     if api is None:
         api = arvados.api('v1', num_retries=args.retries)

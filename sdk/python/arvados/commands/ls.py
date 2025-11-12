@@ -36,8 +36,8 @@ def size_formatter(coll_file):
 def name_formatter(coll_file):
     return "{}/{}".format(coll_file.stream_name, coll_file.name)
 
-def main(args, stdout, stderr, api_client=None, logger=None):
-    args = parse_args(args)
+def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, api_client=None, logger=None):
+    args = parse_args(arguments)
 
     if api_client is None:
         api_client = arvados.api('v1', num_retries=args.retries)
