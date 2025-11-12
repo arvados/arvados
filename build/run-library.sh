@@ -504,6 +504,19 @@ handle_rails_package() {
     (
         set -e
         _build_rails_package_scripts "$pkgname" "$scripts_dir"
+        # Bundler behaves inconsistently when gems are available system-wide.
+        # Avoid those bugs by starting with a fresh GEM_HOME.
+        # TODO: Set this up in packaging Docker image instead.
+        export GEM_HOME="$(mktemp --directory --tmpdir bundler.XXXXXXXX)"
+        export GEM_PATH="$GEM_HOME"
+        # We still need to set directory switches because RHEL configures
+        # `gem` with built-in options that override the environment variables.
+        gem install \
+            --bindir "$GEM_HOME/bin" \
+            --install-dir "$GEM_HOME" \
+            --version "~> 2.5.0" \
+            bundler
+        bundle() { "$GEM_HOME/bin/bundle" "$@"; }
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
@@ -512,38 +525,18 @@ handle_rails_package() {
         #
         # `bundle cache` caches from Git and paths, not just rubygems.org.
         bundle config set cache_all true
-        # Disallow changes to Gemfile.
-        bundle config set deployment true
         # Avoid loading system-wide gems (although this seems to not work 100%).
         bundle config set disable_shared_gems true
         # `bundle cache` only downloads gems, doesn't install them.
         # Our Rails postinst script does the install step.
         bundle config set no_install true
-        # As of April 2024/Bundler 2.4, `bundle cache` seems to skip downloading
-        # gems that are already available system-wide... and then it complains
-        # that your bundle is incomplete. Work around this by fetching gems
-        # manually.
-        # `--max-procs=6` is an abritrary number to download in parallel
-        # while being at least a little polite to rubygems.org.
-        # TODO: Once all our supported distros have Ruby 3+, we can modify
-        # the awk script to print "NAME:VERSION" output, and pipe that directly
-        # to `xargs -0r gem fetch` for reduced overhead.
-        mkdir -p vendor/cache
-        awk -- '
-BEGIN { OFS="\0"; ORS="\0"; }
-(/^[A-Z ]*$/) { level1=$0; }
-(/^  [[:alpha:]]+:$/) { level2=substr($0, 3, length($0) - 3); next; }
-(/^ {0,3}[[:alpha:]]/) { level2=""; next; }
-(level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
-    print "--version", substr($2, 2, length($2) - 2), $1;
-}
-' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 --max-procs=6 gem fetch
-        # Despite the bug, we still run `bundle cache` to make sure Bundler is
-        # happy for later steps.
-        # Tip: If this command removes "stale" gems downloaded in the previous
-        # step, that might mean those gems declare that the version of Ruby
-        # you're running is too new.
+
         bundle cache
+        # Configuration after this point is for the installed package but only
+        # makes sense to set *after* running `bundle cache`.
+        #
+        # Install with deployment settings.
+        bundle config set deployment true
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
