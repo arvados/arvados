@@ -37,10 +37,11 @@ type keepFS struct {
 	Gid        int
 	Logger     logrus.FieldLogger
 
-	root   arvados.CustomFileSystem
-	open   map[uint64]*sharedFile
-	lastFH uint64
+	root          arvados.CustomFileSystem
+	open          map[uint64]*sharedFile
+	lastFH        uint64
 	statsInterval time.Duration
+	done          chan struct{}
 	sync.RWMutex
 
 	// If non-nil, this channel will be closed by Init() to notify
@@ -76,12 +77,27 @@ func (fs *keepFS) Init() {
 	defer fs.debugPanics()
 	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
 	fs.root.MountProject("home", "")
+	fs.done = make(chan struct{})
 	if fs.statsInterval > 0 {
-		go statsLogger(fs.Logger, fs.statsInterval)
+		ticker := time.NewTicker(fs.statsInterval)
+		go func() {
+			for {
+				select {
+				case <-fs.done:
+					return
+				case <-ticker.C:
+					fs.Logger.Info("tick")
+				}
+			}
+		}()
 	}
 	if fs.ready != nil {
 		close(fs.ready)
 	}
+}
+
+func (fs *keepFS) Destroy() {
+	close(fs.done)
 }
 
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
@@ -450,13 +466,4 @@ func (fs *keepFS) debugPanics() {
 
 func (fs *keepFS) debugOp(op, path string) {
 	fs.Logger.WithFields(nil).Tracef("fuse call %s %s", op, path)
-}
-
-func statsLogger(logger logrus.FieldLogger, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		logger.Info("tick")
-	}
 }
