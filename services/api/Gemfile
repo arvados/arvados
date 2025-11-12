@@ -27,7 +27,8 @@ group :test, :development do
   gem 'simplecov', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
-  gem 'byebug'
+  # byebug 12.0 dropped Ruby 3.0.
+  gem 'byebug', '~> 11.1'
   gem 'listen'
 end
 
