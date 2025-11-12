@@ -509,8 +509,14 @@ handle_rails_package() {
         # TODO: Set this up in CI instead.
         export GEM_HOME="$(mktemp --directory --tmpdir bundler.XXXXXXXX)"
         export GEM_PATH="$GEM_HOME"
-        gem install --conservative --version '~> 2.5.0' bundler
-        bundle() { "$GEM_HOME/bin/bundler" "$@"; }
+        # We still need to set directory switches because RHEL configures
+        # `gem` with built-in options that override the environment variables.
+        gem install \
+            --bindir "$GEM_HOME/bin" \
+            --install-dir "$GEM_HOME" \
+            --version "~> 2.5.0" \
+            bundler
+        bundle() { "$GEM_HOME/bin/bundle" "$@"; }
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version

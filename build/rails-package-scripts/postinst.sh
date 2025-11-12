@@ -176,10 +176,31 @@ export RAILS_ENV=production
 # Avoid those bugs by starting with a GEM_HOME that *only* contains Bundler.
 export GEM_HOME="$SHARED_PATH/bundler"
 export GEM_PATH="$GEM_HOME"
-run_and_report "Installing bundler" gem install --conservative --version '~> 2.5.0' bundler
+# We still need to set directory switches because RHEL configures `gem` with
+# built-in options that override the environment variables.
+run_and_report "Installing bundler" gem install \
+               --bindir "$GEM_HOME/bin" \
+               --install-dir "$GEM_HOME" \
+               --version "~> 2.5.0" \
+               bundler
 BUNDLE="$GEM_HOME/bin/bundler"
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
+# Some of our infrastructure expects `bundler` to be available system-wide
+# after installing arvados-api-server. Ensure that's the case.
+# TODO: Make the other infrastructure stop doing that, then delete this code.
+for bcmd in bundle bundler; do
+    if ! command -v "$bcmd" >/dev/null 2>&1; then
+        cat >"/usr/local/bin/$bcmd" <<EOF
+#!/bin/sh
+GEM_HOME="$GEM_HOME"
+GEM_PATH="$GEM_PATH"
+export GEM_HOME GEM_PATH
+exec "\$GEM_HOME/bin/$bcmd" "\$@"
+EOF
+        chmod a+rx "/usr/local/bin/$bcmd"
+    fi
+done
 
 passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
 if ! [ -x "$passenger" ]; then
