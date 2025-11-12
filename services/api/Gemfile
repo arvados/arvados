@@ -11,11 +11,12 @@ gem 'i18n'
 gem 'sprockets-rails'
 
 group :test, :development do
-  gem 'factory_bot_rails'
   # factory_bot 6.4.6 dropped Ruby 2.7.  Ruby 3.0 compatibility might
   # also be dropped at a patchlevel release.
   # factory_bot 6.5.5 is the latest version we've tested.
   gem 'factory_bot', '6.5.5'
+  # Similarly, factory_bot_rails 6.5.1 dropped Ruby 3.0.
+  gem 'factory_bot_rails', '6.5.0'
   # ruby-prof 1.7.0 dropped Ruby 2.7.
   # ruby-prof 1.7 is the latest minor version we've tested.
   gem 'ruby-prof', '~> 1.7.0'
