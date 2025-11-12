@@ -30,7 +30,8 @@ group :test, :development do
   gem 'listen'
 end
 
-gem 'pg', '~> 1.0'
+# pg 1.6 prebuilt gems require newer glibc than RHEL 8 has.
+gem 'pg', '~> 1.0', force_ruby_platform: true
 
 gem 'oj'
 
