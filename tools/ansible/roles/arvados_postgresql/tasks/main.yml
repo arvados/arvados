@@ -10,14 +10,14 @@
   ansible.builtin.apt:
     name:
       - "postgresql"
-  when: "arvados_postgresql_version is falsy"
+  when: "arvados_postgresql_version is not defined"
 
 - name: Install PostgreSQL server package from postgresql.org
   become: yes
   ansible.builtin.apt:
     name:
       - "postgresql-{{ arvados_postgresql_version }}"
-  when: "arvados_postgresql_version is truthy"
+  when: "arvados_postgresql_version is defined"
 
 - name: Install psycopg2
   become: yes

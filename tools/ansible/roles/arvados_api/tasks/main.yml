@@ -13,7 +13,7 @@
   ansible.builtin.apt:
     name:
       - "postgresql-client-{{ arvados_postgresql_version }}"
-  when: "arvados_postgresql_version is truthy"
+  when: "arvados_postgresql_version is defined"
 
 - name: Install arvados-api-server
   become: yes
