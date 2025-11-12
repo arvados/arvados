@@ -5,3 +5,4 @@
 dependencies:
   - role: arvados_apt
   - role: arvados_service
+  - role: distro_postgresql
