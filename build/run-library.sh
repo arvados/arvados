@@ -537,6 +537,9 @@ handle_rails_package() {
         #
         # Install with deployment settings.
         bundle config set deployment true
+        # Install gems to a dedicated path that is only used by RailsAPI
+        # (but shared across versions for efficiency).
+        bundle config set path /var/www/arvados-api/shared/vendor_bundle
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
