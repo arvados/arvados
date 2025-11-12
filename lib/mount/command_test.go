@@ -40,7 +40,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	mountCmd := mountCommand{ready: make(chan struct{})}
 	ready := false
 	go func() {
-		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--crunchstat-interval", "1", s.mnt}, stdin, stdout, stderr)
+		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--crunchstat-interval", "0.01", s.mnt}, stdin, stdout, stderr)
 	}()
 	go func() {
 		<-mountCmd.ready
@@ -66,12 +66,17 @@ func (s *CmdSuite) TestMount(c *check.C) {
 		c.Check(os.IsNotExist(err), check.Equals, true)
 
 		// Check that crunchstat ticker is running
-		time.Sleep(1200 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		logs := stderr.String()
 		c.Check(strings.Contains(logs, "tick"), check.Equals, true)
 
 		ok := mountCmd.Unmount()
 		c.Check(ok, check.Equals, true)
+
+		stderrLen1 := stderr.Len()
+		time.Sleep(100 * time.Millisecond)
+		stderrLen2 := stderr.Len()
+		c.Check(stderrLen2, check.Equals, stderrLen1)
 	}()
 	select {
 	case <-time.After(5 * time.Second):
