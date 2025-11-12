@@ -177,8 +177,6 @@ export RAILS_ENV=production
 export GEM_HOME="$SHARED_PATH/bundler"
 export GEM_PATH="$GEM_HOME"
 run_and_report "Installing bundler" gem install --conservative --version '~> 2.5.0' bundler
-run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-               "$BUNDLE" config set --local path "$bundle_path"
 BUNDLE="$GEM_HOME/bin/bundler"
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true

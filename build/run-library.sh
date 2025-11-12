@@ -528,7 +528,16 @@ handle_rails_package() {
         bundle config set no_install true
         # Do not install gem sets unnecessary for production.
         bundle config set without development:test
+
         bundle cache
+        # Configuration after this point is for the installed package but only
+        # makes sense to set *after* running `bundle cache`.
+        #
+        # Install with deployment settings.
+        bundle config set deployment true
+        # Install gems to a dedicated path that is only used by RailsAPI
+        # (but shared across versions for efficiency).
+        bundle config set path /var/www/arvados-api/shared/vendor_bundle
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
