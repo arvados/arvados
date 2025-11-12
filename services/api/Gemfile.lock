@@ -131,7 +131,7 @@ GEM
     extlib (0.9.16)
     factory_bot (6.5.5)
       activesupport (>= 6.1.0)
-    factory_bot_rails (6.5.1)
+    factory_bot_rails (6.5.0)
       factory_bot (~> 6.5)
       railties (>= 6.1.0)
     faraday (2.13.4)
@@ -349,7 +349,7 @@ DEPENDENCIES
   arvados (~> 3.2.0)
   byebug
   factory_bot (= 6.5.5)
-  factory_bot_rails
+  factory_bot_rails (= 6.5.0)
   hash_validator (~> 2.0)
   httpclient
   i18n
