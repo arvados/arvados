@@ -184,11 +184,6 @@ run_and_report "Installing bundler" gem install \
                --version "~> 2.5.0" \
                bundler
 BUNDLE="$GEM_HOME/bin/bundle"
-
-bundle_path="$SHARED_PATH/vendor_bundle"
-run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-               "$BUNDLE" config set --local path "$bundle_path"
-
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
 # Some of our infrastructure expects `bundler` to be available system-wide
