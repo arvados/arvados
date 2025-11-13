@@ -76,7 +76,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		}()
 	}
 	if *crunchstatInterval < 0.0 {
-		logger.Error("-crunch-stat-interval must be non-negative")
+		logger.Error("-crunchstat-interval must be non-negative")
 		return 2
 	}
 
@@ -96,13 +96,13 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		return 1
 	}
 	host := fuse.NewFileSystemHost(&keepFS{
-		Client:     client,
-		KeepClient: kc,
-		ReadOnly:   *ro,
-		Uid:        os.Getuid(),
-		Gid:        os.Getgid(),
-		Logger:     logger,
-		ready:      c.ready,
+		Client:        client,
+		KeepClient:    kc,
+		ReadOnly:      *ro,
+		Uid:           os.Getuid(),
+		Gid:           os.Getgid(),
+		Logger:        logger,
+		ready:         c.ready,
 		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
 	})
 	c.Unmount = host.Unmount
@@ -114,4 +114,3 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	}
 	return 0
 }
-
