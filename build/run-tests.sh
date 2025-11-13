@@ -795,7 +795,7 @@ test_doc() {
 test_gofmt() {
     cd "$WORKSPACE" || return 1
     dirs=$(ls -d */ | egrep -v 'vendor|tmp')
-    [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
+    [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]] || return 1
     go vet -composites=false ./...
 }
 
