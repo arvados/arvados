@@ -28,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // BLOCKSIZE defines the length of a Keep "block", which is 64MB.
@@ -146,12 +147,16 @@ type KeepClient struct {
 	disableDiscovery bool
 
 	gatewayStack arvados.KeepGateway
+
+	setupMetricsOnce sync.Once
+	metrics          arvados.KeepClientMetrics
 }
 
 func (kc *KeepClient) Clone() *KeepClient {
 	kc.lock.Lock()
 	defer kc.lock.Unlock()
-	return &KeepClient{
+	kc.setupMetrics()
+	clone := &KeepClient{
 		Arvados:               kc.Arvados,
 		Want_replicas:         kc.Want_replicas,
 		localRoots:            kc.localRoots,
@@ -167,7 +172,10 @@ func (kc *KeepClient) Clone() *KeepClient {
 		replicasPerService:    kc.replicasPerService,
 		foundNonDiskSvc:       kc.foundNonDiskSvc,
 		disableDiscovery:      kc.disableDiscovery,
+		metrics:               kc.metrics,
 	}
+	clone.setupMetricsOnce.Do(func() {})
+	return clone
 }
 
 func (kc *KeepClient) loadDefaultClasses() error {
@@ -358,10 +366,12 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 			}
 			// Success
 			if method == "GET" {
+				kc.setupMetrics()
 				return HashCheckingReader{
-					Reader: resp.Body,
-					Hash:   md5.New(),
-					Check:  locator[0:32],
+					Reader:  resp.Body,
+					Hash:    md5.New(),
+					Check:   locator[0:32],
+					counter: kc.metrics.BackendBytesIn,
 				}, expectLength, url, resp.Header, nil
 			}
 			resp.Body.Close()
@@ -418,11 +428,13 @@ func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
 	if kc.DiskCacheSize == DiskCacheDisabled {
 		kc.gatewayStack = backend
 	} else {
+		kc.setupMetrics()
 		kc.gatewayStack = &arvados.DiskCache{
 			Dir:         cachedir,
 			MaxSize:     kc.DiskCacheSize,
 			KeepGateway: backend,
 			Logger:      kc.Arvados.Logger,
+			Metrics:     kc.metrics,
 		}
 	}
 	return kc.gatewayStack
@@ -493,18 +505,34 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 // BlockRead retrieves a block from the cache if it's present, otherwise
 // from the network.
 func (kc *KeepClient) BlockRead(ctx context.Context, opts arvados.BlockReadOptions) (int, error) {
+	kc.setupMetrics()
+	kc.metrics.ClientOpsGet.Add(1)
 	return kc.upstreamGateway().BlockRead(ctx, opts)
 }
 
 // ReadAt retrieves a portion of block from the cache if it's
 // present, otherwise from the network.
 func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
+	if off == 0 {
+		// Python SDK's get_counter metric (reported in
+		// arv-mount crunchstat as "keepcalls ... get") counts
+		// blocks reads initiated by the application.  But
+		// here, applications might not do any full block
+		// reads at all, only partial reads.  We count partial
+		// reads with offset==0 as a full block read, so the
+		// resulting statistics are similar to what the Python
+		// SDK would report for similar activity.
+		kc.setupMetrics()
+		kc.metrics.ClientOpsGet.Add(1)
+	}
 	return kc.upstreamGateway().ReadAt(locator, p, off)
 }
 
 // BlockWrite writes a full block to upstream servers and saves a copy
 // in the local cache.
 func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	kc.setupMetrics()
+	kc.metrics.ClientOpsPut.Add(1)
 	return kc.upstreamGateway().BlockWrite(ctx, req)
 }
 
@@ -650,6 +678,23 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 func (kc *KeepClient) SetStorageClasses(sc []string) {
 	// make a copy so the caller can't mess with it.
 	kc.StorageClasses = append([]string{}, sc...)
+}
+
+func (kc *KeepClient) setupMetrics() {
+	kc.setupMetricsOnce.Do(func() {
+		kc.metrics = arvados.NewKeepClientMetrics()
+	})
+}
+
+// RegisterMetrics registers keepclient's metrics with the given
+// registry.
+//
+// If a KeepClient is cloned, metrics are combined.  RegisterMetrics
+// should only be called once, either on the original or one of the
+// clones.
+func (kc *KeepClient) RegisterMetrics(reg *prometheus.Registry) error {
+	kc.setupMetrics()
+	return kc.metrics.Register(reg)
 }
 
 var (

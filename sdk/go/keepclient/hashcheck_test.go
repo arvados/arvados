@@ -24,7 +24,7 @@ func (h *HashcheckSuiteSuite) TestRead(c *C) {
 
 	{
 		r, w := io.Pipe()
-		hcr := HashCheckingReader{r, md5.New(), hash}
+		hcr := HashCheckingReader{r, md5.New(), hash, nil}
 		go func() {
 			w.Write([]byte("foo"))
 			w.Close()
@@ -36,7 +36,7 @@ func (h *HashcheckSuiteSuite) TestRead(c *C) {
 
 	{
 		r, w := io.Pipe()
-		hcr := HashCheckingReader{r, md5.New(), hash}
+		hcr := HashCheckingReader{r, md5.New(), hash, nil}
 		go func() {
 			w.Write([]byte("bar"))
 			w.Close()
@@ -52,7 +52,7 @@ func (h *HashcheckSuiteSuite) TestWriteTo(c *C) {
 
 	{
 		bb := bytes.NewBufferString("foo")
-		hcr := HashCheckingReader{bb, md5.New(), hash}
+		hcr := HashCheckingReader{bb, md5.New(), hash, nil}
 		r, w := io.Pipe()
 		done := make(chan bool)
 		go func() {
@@ -71,7 +71,7 @@ func (h *HashcheckSuiteSuite) TestWriteTo(c *C) {
 
 	{
 		bb := bytes.NewBufferString("bar")
-		hcr := HashCheckingReader{bb, md5.New(), hash}
+		hcr := HashCheckingReader{bb, md5.New(), hash, nil}
 		r, w := io.Pipe()
 		done := make(chan bool)
 		go func() {
@@ -92,7 +92,7 @@ func (h *HashcheckSuiteSuite) TestWriteTo(c *C) {
 	// write error (not "bad checksum").
 	{
 		input := bytes.NewBuffer(make([]byte, 1<<26))
-		hcr := HashCheckingReader{input, md5.New(), hash}
+		hcr := HashCheckingReader{input, md5.New(), hash, nil}
 		r, w := io.Pipe()
 		r.Close()
 		n, err := hcr.WriteTo(w)

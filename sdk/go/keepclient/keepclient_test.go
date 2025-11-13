@@ -23,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 )
 
@@ -1183,6 +1184,99 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(err, ErrorMatches, `.*HEAD .*\+R.*`)
 		c.Check(err, ErrorMatches, `.*HTTP 400.*`)
 	}
+}
+
+func (s *ServerRequiredSuite) TestCollectMetrics(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, IsNil)
+	kc1, err := MakeKeepClient(arv)
+	kc1.Want_replicas = 1
+	c.Assert(err, IsNil)
+	kc2 := kc1.Clone()
+	kc2.Want_replicas = 2
+	kcNoCache := kc1.Clone()
+	kcNoCache.DiskCacheSize = DiskCacheDisabled
+	kcNoCache.Want_replicas = 1
+
+	reg := prometheus.NewRegistry()
+	kc1.RegisterMetrics(reg)
+
+	write := func(kc *KeepClient, len int) string {
+		hash, _, err := kc.PutB(make([]byte, len))
+		c.Assert(err, IsNil)
+		return hash
+	}
+	read := func(kc *KeepClient, hash string) {
+		r, _, _, err := kc.Get(hash)
+		c.Assert(err, IsNil)
+		_, err = ioutil.ReadAll(r)
+		c.Assert(err, IsNil)
+	}
+	type metrics struct {
+		bytesIn   int
+		bytesOut  int
+		cacheHit  int
+		cacheMiss int
+		opsGet    int
+		opsPut    int
+	}
+	getMetrics := func() (m metrics) {
+		m.bytesIn = int(arvadostest.GetMetricValue(c, reg, "arvados_keepclient_backend_bytes", "direction", "in"))
+		m.bytesOut = int(arvadostest.GetMetricValue(c, reg, "arvados_keepclient_backend_bytes", "direction", "out"))
+		m.cacheHit = int(arvadostest.GetMetricValue(c, reg, "arvados_keepclient_cache", "event", "hit"))
+		m.cacheMiss = int(arvadostest.GetMetricValue(c, reg, "arvados_keepclient_cache", "event", "miss"))
+		m.opsGet = int(arvadostest.GetMetricValue(c, reg, "arvados_keepclient_ops", "op", "get"))
+		m.opsPut = int(arvadostest.GetMetricValue(c, reg, "arvados_keepclient_ops", "op", "put"))
+		return
+	}
+
+	m0 := getMetrics()
+	c.Check(m0, Equals, metrics{})
+	hash1 := write(kc1, 1111) // 1111 bytes out
+	hash2 := write(kc2, 2222) // 4444 bytes out
+	m := getMetrics()
+	c.Check(m.bytesIn, Equals, m0.bytesIn)
+	c.Check(m.bytesOut, Equals, m0.bytesOut+5555)
+	c.Check(m.opsPut, Equals, m0.opsPut+2)
+
+	// Read blocks using different clients, and check metrics:
+	// bytes in, cache hits, and Get ops.
+	{
+		m0 = getMetrics()
+
+		read(kc1, hash2) // cached
+		read(kc2, hash1) // cached
+		m = getMetrics()
+		c.Check(m.bytesIn, Equals, m0.bytesIn)
+		c.Check(m.cacheHit, Equals, m0.cacheHit+2)
+		c.Check(m.cacheMiss, Equals, m0.cacheMiss)
+		c.Check(m.opsGet, Equals, m0.opsGet+2)
+	}
+
+	// Use a client with DiskCacheDisabled to write a block, so we
+	// can read it back without hitting the cache, and check the
+	// cache hits metric.
+	{
+		m0 = getMetrics()
+
+		hash3 := write(kcNoCache, 3210)
+		m = getMetrics()
+		c.Check(m.opsGet, Equals, m0.opsGet)
+		c.Check(m.opsPut, Equals, m0.opsPut+1)
+		c.Check(m.cacheMiss, Equals, m0.cacheMiss)
+		c.Check(m.bytesIn, Equals, m0.bytesIn)
+		c.Check(m.bytesOut, Equals, m0.bytesOut+3210)
+
+		read(kc1, hash3)
+		m = getMetrics()
+		c.Check(m.cacheHit, Equals, m0.cacheHit)
+		c.Check(m.cacheMiss, Equals, m0.cacheMiss+1)
+		c.Check(m.opsGet, Equals, m0.opsGet+1)
+		c.Check(m.bytesIn, Equals, m0.bytesIn+3210)
+		c.Check(m.bytesOut, Equals, m0.bytesOut+3210)
+	}
+
+	c.Logf("### Metrics after %s ###\n%s", c.TestName(), arvadostest.GatherMetricsAsString(reg))
 }
 
 type StubProxyHandler struct {
