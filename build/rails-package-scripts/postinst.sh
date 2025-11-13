@@ -236,6 +236,8 @@ install -d /lib/systemd/system/arvados-railsapi.service.d
 # earlier.
 cat >/lib/systemd/system/arvados-railsapi.service.d/20-postinst.conf <<EOF
 [Service]
+Environment=GEM_HOME=$(systemd_quote "$GEM_HOME")
+Environment=GEM_PATH=$(systemd_quote "$GEM_PATH")
 ExecStartPre=+/bin/chgrp $systemd_group log tmp
 ExecStartPre=+-/bin/chgrp $systemd_group \${PASSENGER_LOG_FILE}
 ExecStart=
