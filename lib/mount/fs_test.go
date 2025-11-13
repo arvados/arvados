@@ -43,6 +43,10 @@ func (s *FSSuite) SetUpTest(c *C) {
 	s.fs.Init()
 }
 
+func (s *FSSuite) TearDownTest(c *C) {
+	s.fs.Destroy()
+}
+
 func (s *FSSuite) TestFuseInterface(c *C) {
 	var _ fuse.FileSystemInterface = s.fs
 }
