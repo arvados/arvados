@@ -13,6 +13,7 @@ import (
 	// pprof is only imported to register its HTTP handlers
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -52,6 +53,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	logLevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
+	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
 	}
@@ -73,6 +75,10 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 			log.Println(http.ListenAndServe(*pprof, nil))
 		}()
 	}
+	if *crunchstatInterval < 0.0 {
+		logger.Error("-crunchstat-interval must be non-negative")
+		return 2
+	}
 
 	client := arvados.NewClientFromEnv()
 	if err := yaml.Unmarshal([]byte(*cacheSizeStr), &client.DiskCacheSize); err != nil {
@@ -90,13 +96,14 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		return 1
 	}
 	host := fuse.NewFileSystemHost(&keepFS{
-		Client:     client,
-		KeepClient: kc,
-		ReadOnly:   *ro,
-		Uid:        os.Getuid(),
-		Gid:        os.Getgid(),
-		Logger:     logger,
-		ready:      c.ready,
+		Client:        client,
+		KeepClient:    kc,
+		ReadOnly:      *ro,
+		Uid:           os.Getuid(),
+		Gid:           os.Getgid(),
+		Logger:        logger,
+		ready:         c.ready,
+		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
 	})
 	c.Unmount = host.Unmount
 
