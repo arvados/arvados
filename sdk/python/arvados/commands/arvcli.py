@@ -41,6 +41,11 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         keep_parser.add_argument("method",
                                  choices=["ls", "get", "put", "docker"])
 
+        ws_parser = subparsers.add_parser("ws")
+        copy_parser = subparsers.add_parser("copy")
+
+        self.subparsers = subparsers
+
 
 def dispatch():
     import sys
@@ -59,13 +64,11 @@ def dispatch():
                     from arvados.commands.put import main
                 case "docker":
                     from arvados.commands.keepdocker import main
-            sys.exit(main(remaining_args))
         case "ws":
-            pass
+            from arvados.commands.ws import main
         case "copy":
-            pass
-        case _:
-            pass
+            from arvados.commands.arv_copy import main
+    sys.exit(main(remaining_args))
 
 
 if __name__ == "__main__":
