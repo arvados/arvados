@@ -37,9 +37,9 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                                          help="Subcommands",
                                          parser_class=argparse.ArgumentParser)
 
-        ws_parser = subparsers.add_parser("keep")
-        ws_parser.add_argument("method",
-                               choices=["ls", "get", "put", "docker"])
+        keep_parser = subparsers.add_parser("keep")
+        keep_parser.add_argument("method",
+                                 choices=["ls", "get", "put", "docker"])
 
 
 def dispatch():
