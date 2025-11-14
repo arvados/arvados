@@ -22,7 +22,7 @@ all:
     # This is the cluster identifier (five lowercase alphanumerics) for the
     # cluster configured in `arvados_config_file` that you want to deploy.
     arvados_cluster_id: xurid
-    
+
     # If specified, this file will be deployed to cluster hosts as
     # /etc/arvados/ca-certificates.crt. Arvados services use this file as a
     # source of trusted CA certificates.
@@ -75,6 +75,14 @@ all:
     # values for different periodic settings. Refer to
     # `roles/distro_apt/defaults/main.yml`.
 
+    # `arvados_postgresql_repository` controls whether postgresql is installed
+    # through distro packages or from the postgresql.org apt repo. This allows
+    # installing a wider range of postgresql versions. When this is set to
+    # postgresql, a version must be set in `arvados_postgresql_version`
+    # Can be either "distro" or "postgresql"
+    #arvados_postgresql_repository: distro
+    # Can name a version number like 15, 17, etc.
+    #arvados_postgresql_version: null
 
 ### Host groups for core Arvados services ###
 # Most Arvados clusters will have at least one host in each of these groups.

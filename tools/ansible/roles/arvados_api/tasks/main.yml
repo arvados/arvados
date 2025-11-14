@@ -8,6 +8,13 @@
 - name: apt update if needed
   ansible.builtin.meta: flush_handlers
 
+- name: Install PostgreSQL client package from postgresql.org
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - "postgresql-client-{{ arvados_postgresql_version }}"
+  when: "arvados_postgresql_version is defined"
+
 - name: Install arvados-api-server
   become: yes
   ansible.builtin.apt:
