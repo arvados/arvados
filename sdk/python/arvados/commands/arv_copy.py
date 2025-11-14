@@ -69,8 +69,8 @@ scripts_copied = set()
 # The owner_uuid of the object being copied
 src_owner_uuid = None
 
-def main():
-    copy_opts = argparse.ArgumentParser(add_help=False)
+def main(arguments=None):
+    copy_opts = argparse.ArgumentParser(arguments, add_help=False)
 
     copy_opts.add_argument(
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
