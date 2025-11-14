@@ -76,7 +76,7 @@ all:
     # `roles/distro_apt/defaults/main.yml`.
 
     # `arvados_postgresql_repository` controls whether postgresql is installed
-    # through distro packages or from the postgresql.org apt repo.  This allows
+    # through distro packages or from the postgresql.org apt repo. This allows
     # installing a wider range of postgresql versions. When this is set to
     # postgresql, a version must be set in `arvados_postgresql_version`
     # Can be either "distro" or "postgresql"
