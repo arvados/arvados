@@ -2,11 +2,25 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Main executable for Arvados CLI SDK, the ``arv`` command.
+
+This script implements the ``arv`` command's argument parser. The ``arv``
+command is meant to be invoked in the following manner:
+
+$ arv [--flags] subcommand|resource [...options]
+
+where ``--flags`` are common CLI options for the various subcommands.
+
+The ``ArvCLIArgumentParser`` class, specializing the standard Python
+``argparse.ArgumentParser``, provides the support for this CLI usage.
+"""
+
+
 import argparse
 
 
 class ArvCLIArgumentParser(argparse.ArgumentParser):
-    """Argument parser for @arv@ commands.
+    """Argument parser for ``arv`` commands.
     """
     def __init__(self, **kwargs):
         super().__init__(description="Arvados command line client",
@@ -43,8 +57,6 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
 
         ws_parser = subparsers.add_parser("ws")
         copy_parser = subparsers.add_parser("copy")
-
-        self.subparsers = subparsers
 
 
 def dispatch():
