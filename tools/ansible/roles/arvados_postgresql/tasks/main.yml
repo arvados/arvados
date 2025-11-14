@@ -5,11 +5,24 @@
 - name: apt update if needed
   ansible.builtin.meta: flush_handlers
 
-- name: Install PostgreSQL server package and psycopg2
+- name: Install PostgreSQL server package
   become: yes
   ansible.builtin.apt:
     name:
-      - "{{ arvados_postgresql_package }}"
+      - "postgresql"
+  when: "arvados_postgresql_version is not defined"
+
+- name: Install PostgreSQL server package from postgresql.org
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ arvados_postgresql_version }}"
+  when: "arvados_postgresql_version is defined"
+
+- name: Install psycopg2
+  become: yes
+  ansible.builtin.apt:
+    name:
       - python3-psycopg2
 
 - name: Setup PostgreSQL service
