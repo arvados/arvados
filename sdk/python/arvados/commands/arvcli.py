@@ -80,7 +80,11 @@ def dispatch():
             from arvados.commands.ws import main
         case "copy":
             from arvados.commands.arv_copy import main
-    sys.exit(main(remaining_args))
+    try:
+        sys.exit(main(remaining_args))
+    except NameError as e:
+        if e.name != "main":
+            raise e
 
 
 if __name__ == "__main__":
