@@ -4,3 +4,4 @@
 
 dependencies:
   - role: distro_apt
+  - role: distro_postgresql

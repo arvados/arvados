@@ -172,41 +172,35 @@ if [ ! -e $SHARED_PATH/log/production.log ]; then touch $SHARED_PATH/log/product
 
 cd "$RELEASE_PATH"
 export RAILS_ENV=production
-
-run_and_report "Installing bundler" gem install --conservative --version '~> 2.5.0' bundler
-ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
-BUNDLE="$(gem contents --version '~> 2.5.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
-if ! [ -x "$BUNDLE" ]; then
-    # Some distros (at least Ubuntu 24.04) append the Ruby version to the
-    # executable name, but that isn't reflected in the output of
-    # `gem contents`. Check for that version.
-    BUNDLE="$BUNDLE$ruby_minor_ver"
-    if ! [ -x "$BUNDLE" ]; then
-        echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
-        exit 11
-    fi
-fi
-
-bundle_path="$SHARED_PATH/vendor_bundle"
-run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-               "$BUNDLE" config set --local path "$bundle_path"
-
-# As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
-# which are already installed system-wide, which causes bundle activation to
-# fail later. Prevent this by trying to pre-install all gems manually.
-# `gem install` can fail if there are conflicts between gems installed by
-# previous versions and gems installed by the current version. Ignore those
-# errors; all that matters is that we get `bundle install` to succeed, and
-# we check that next. <https://dev.arvados.org/issues/22647>
-echo "Preinstalling bundle gems -- conflict errors are OK..."
-find vendor/cache -maxdepth 1 -name '*.gem' -print0 |
-    xargs -0r gem install --conservative --ignore-dependencies \
-          --local --no-document --quiet \
-          --install-dir="$bundle_path/ruby/$ruby_minor_ver.0" ||
-    true
-echo " done."
+# Bundler behaves inconsistently when gems are available system-wide.
+# Avoid those bugs by starting with a GEM_HOME that *only* contains Bundler.
+export GEM_HOME="$SHARED_PATH/bundler"
+export GEM_PATH="$GEM_HOME"
+# We still need to set directory switches because RHEL configures `gem` with
+# built-in options that override the environment variables.
+run_and_report "Installing bundler" gem install \
+               --bindir "$GEM_HOME/bin" \
+               --install-dir "$GEM_HOME" \
+               --version "~> 2.5.0" \
+               bundler
+BUNDLE="$GEM_HOME/bin/bundle"
 run_and_report "Running bundle install" "$BUNDLE" install --prefer-local --quiet
 run_and_report "Verifying bundle is complete" "$BUNDLE" exec true
+# Some of our infrastructure expects `bundler` to be available system-wide
+# after installing arvados-api-server. Ensure that's the case.
+# TODO: Make the other infrastructure stop doing that, then delete this code.
+for bcmd in bundle bundler; do
+    if ! command -v "$bcmd" >/dev/null 2>&1; then
+        cat >"/usr/local/bin/$bcmd" <<EOF
+#!/bin/sh
+GEM_HOME="$GEM_HOME"
+GEM_PATH="$GEM_PATH"
+export GEM_HOME GEM_PATH
+exec "\$GEM_HOME/bin/$bcmd" "\$@"
+EOF
+        chmod a+rx "/usr/local/bin/$bcmd"
+    fi
+done
 
 passenger="$("$BUNDLE" exec gem contents passenger | grep -E '/(bin|exe)/passenger$' | tail -n1)"
 if ! [ -x "$passenger" ]; then
@@ -242,6 +236,8 @@ install -d /lib/systemd/system/arvados-railsapi.service.d
 # earlier.
 cat >/lib/systemd/system/arvados-railsapi.service.d/20-postinst.conf <<EOF
 [Service]
+Environment=GEM_HOME=$(systemd_quote "$GEM_HOME")
+Environment=GEM_PATH=$(systemd_quote "$GEM_PATH")
 ExecStartPre=+/bin/chgrp $systemd_group log tmp
 ExecStartPre=+-/bin/chgrp $systemd_group \${PASSENGER_LOG_FILE}
 ExecStart=
