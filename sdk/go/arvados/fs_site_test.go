@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -617,4 +618,37 @@ func (s *customFSSuite) TestMountByID(c *check.C) {
 	f, err = s.fs.Open(fmt.Sprintf("/dirname/%s/%s/testfile.txt", s.coll.OwnerUUID, s.coll.Name))
 	c.Assert(err, check.IsNil)
 	f.Close()
+}
+
+func (s *customFSSuite) TestMountTmp(c *check.C) {
+	err := s.fs.MountTmp("dirname")
+	c.Assert(err, check.IsNil)
+	{
+		f, err := s.fs.OpenFile("/dirname/testfile.txt", os.O_CREATE|os.O_RDWR, 0700)
+		c.Assert(err, check.IsNil)
+		_, err = f.Write([]byte("file data in temporary collection"))
+		c.Check(err, check.IsNil)
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+	{
+		f, err := s.fs.Open("/dirname/testfile.txt")
+		c.Assert(err, check.IsNil)
+		data, err := io.ReadAll(f)
+		c.Check(string(data), check.Equals, "file data in temporary collection")
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+	{
+		f, err := s.fs.Open("/dirname/.arvados#collection")
+		c.Assert(err, check.IsNil)
+		var tmpcoll Collection
+		err = json.NewDecoder(f).Decode(&tmpcoll)
+		c.Check(err, check.IsNil)
+		err = f.Close()
+		c.Check(err, check.IsNil)
+		c.Check(tmpcoll.ManifestText, check.Not(check.Equals), "")
+		c.Check(tmpcoll.ManifestText, check.Matches, `.*testfile\.txt\n`)
+		c.Check(tmpcoll.UUID, check.Equals, "")
+	}
 }

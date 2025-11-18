@@ -18,6 +18,7 @@ type CustomFileSystem interface {
 	MountByPDH(mount string)
 	MountProject(mount, uuid string)
 	MountUsers(mount string)
+	MountTmp(mount string) error
 	ForwardSlashNameSubstitution(string)
 }
 
@@ -68,6 +69,22 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 		},
 	}
 	return fs
+}
+
+func (fs *customFileSystem) MountTmp(mount string) error {
+	newfs, err := (&Collection{}).FileSystem(fs, fs)
+	if err != nil {
+		return err
+	}
+	cfs := newfs.(*collectionFileSystem)
+	cfs.SetParent(fs.root, mount)
+
+	fs.root.treenode.Lock()
+	defer fs.root.treenode.Unlock()
+	_, err = fs.root.treenode.Child(mount, func(inode) (inode, error) {
+		return cfs, nil
+	})
+	return err
 }
 
 func (fs *customFileSystem) MountByID(mount string) {
