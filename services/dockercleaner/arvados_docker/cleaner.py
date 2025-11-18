@@ -48,7 +48,7 @@ class DockerImage:
 
     def __init__(self, image_hash):
         self.docker_id = image_hash['Id']
-        self.size = image_hash['VirtualSize']
+        self.size = image_hash['Size']
         self.last_used = -1
 
     def used_at(self, use_time):
@@ -362,7 +362,7 @@ def main(arguments=sys.argv[1:]):
     config = load_config(arguments)
     configure_logging(config)
     try:
-        run(config, docker.APIClient(version='1.35'))
+        run(config, docker.APIClient(version='1.48'))
     except KeyboardInterrupt:
         sys.exit(1)
 
