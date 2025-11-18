@@ -547,3 +547,74 @@ func (s *SiteFSSuite) TestLocks(c *check.C) {
 	wg.Wait()
 	c.Logf("MemorySize == %d", s.fs.MemorySize())
 }
+
+var _ = check.Suite(&customFSSuite{})
+
+type customFSSuite struct {
+	client *Client
+	kc     keepClient
+	fs     CustomFileSystem
+	coll   Collection
+}
+
+func (s *customFSSuite) SetUpTest(c *check.C) {
+	s.client = &Client{
+		APIHost:   os.Getenv("ARVADOS_API_HOST"),
+		AuthToken: fixtureActiveToken,
+		Insecure:  true,
+	}
+	s.kc = &keepClientStub{
+		blocks:    map[string][]byte{},
+		sigkey:    fixtureBlobSigningKey,
+		sigttl:    fixtureBlobSigningTTL,
+		authToken: fixtureActiveToken,
+	}
+	tmpfs, err := s.coll.FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	f, err := tmpfs.OpenFile("testfile.txt", os.O_CREATE|os.O_RDWR, 0700)
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("testfile contents"))
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	s.coll.ManifestText, err = tmpfs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	err = s.client.RequestAndDecode(&s.coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"owner_uuid":    fixtureAProjectUUID,
+			"name":          fmt.Sprintf("test collection %d", time.Now().UnixNano()),
+			"manifest_text": s.coll.ManifestText,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	s.fs = s.client.CustomFileSystem(s.kc)
+}
+
+func (s *customFSSuite) TearDownTest(c *check.C) {
+	if s.coll.UUID != "" {
+		err := s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+s.coll.UUID, nil, nil)
+		c.Check(err, check.IsNil)
+	}
+}
+
+func (s *customFSSuite) TestMountByPDH(c *check.C) {
+	s.fs.MountByPDH("dirname")
+	_, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.UUID))
+	c.Check(err, check.Equals, os.ErrNotExist)
+	f, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.PortableDataHash))
+	c.Assert(err, check.IsNil)
+	f.Close()
+}
+
+func (s *customFSSuite) TestMountByID(c *check.C) {
+	s.fs.MountByID("dirname")
+	f, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.PortableDataHash))
+	c.Assert(err, check.IsNil)
+	f.Close()
+	f, err = s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.UUID))
+	c.Assert(err, check.IsNil)
+	f.Close()
+	f, err = s.fs.Open(fmt.Sprintf("/dirname/%s/%s/testfile.txt", s.coll.OwnerUUID, s.coll.Name))
+	c.Assert(err, check.IsNil)
+	f.Close()
+}

@@ -15,6 +15,7 @@ import (
 type CustomFileSystem interface {
 	FileSystem
 	MountByID(mount string)
+	MountByPDH(mount string)
 	MountProject(mount, uuid string)
 	MountUsers(mount string)
 	ForwardSlashNameSubstitution(string)
@@ -70,6 +71,19 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 }
 
 func (fs *customFileSystem) MountByID(mount string) {
+	fs.mountVdir(mount, fs.newCollectionOrProjectHardlink)
+}
+
+func (fs *customFileSystem) MountByPDH(mount string) {
+	fs.mountVdir(mount, func(parent inode, name string) (inode, error) {
+		if pdhRegexp.MatchString(name) {
+			return fs.newCollectionOrProjectHardlink(parent, name)
+		}
+		return nil, nil
+	})
+}
+
+func (fs *customFileSystem) mountVdir(mount string, createfunc func(inode, string) (inode, error)) {
 	fs.root.treenode.Lock()
 	defer fs.root.treenode.Unlock()
 	fs.root.treenode.Child(mount, func(inode) (inode, error) {
@@ -84,7 +98,7 @@ func (fs *customFileSystem) MountByID(mount string) {
 					mode:    0755 | os.ModeDir,
 				},
 			},
-			create: fs.newCollectionOrProjectHardlink,
+			create: createfunc,
 		}, nil
 	})
 }
