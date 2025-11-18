@@ -19,6 +19,14 @@ The ``ArvCLIArgumentParser`` class, specializing the standard Python
 import argparse
 
 
+class _HelplessArgumentParser(argparse.ArgumentParser):
+    """Convenient wrapper class for ArgumentParser that does not consume the
+    -h/--help parameter, for use as the subcommands' parser class.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(add_help=False, **kwargs)
+
+
 class ArvCLIArgumentParser(argparse.ArgumentParser):
     """Argument parser for ``arv`` commands.
     """
@@ -44,12 +52,9 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                                  help=("Return only UUIDs "
                                        "(equilvalent to --format=uuid)"))
 
-        # NOTE: Without explicitly naming "parser_class" for the
-        # subparsers, this __init__ method run into infinite recursion (by
-        # trying to make the subparsers instances of this derived class).
         subparsers = self.add_subparsers(dest="subcommand",
                                          help="Subcommands",
-                                         parser_class=argparse.ArgumentParser)
+                                         parser_class=_HelplessArgumentParser)
 
         keep_parser = subparsers.add_parser("keep")
         keep_parser.add_argument("method",
