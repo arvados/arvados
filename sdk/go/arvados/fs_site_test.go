@@ -100,9 +100,10 @@ func (s *SiteFSSuite) TestUpdateStorageClasses(c *check.C) {
 }
 
 func (s *SiteFSSuite) TestSameCollectionDifferentPaths(c *check.C) {
-	s.fs.MountProject("home", "")
+	err := s.fs.MountProject("home", "")
+	c.Assert(err, check.IsNil)
 	var coll Collection
-	err := s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+	err = s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"owner_uuid": fixtureAProjectUUID,
 			"name":       fmt.Sprintf("test collection %d", time.Now().UnixNano()),
@@ -273,7 +274,8 @@ func copyFromOS(fs FileSystem, dst, src string) error {
 }
 
 func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
-	s.fs.MountProject("home", "")
+	err := s.fs.MountProject("home", "")
+	c.Assert(err, check.IsNil)
 	thisfile, err := ioutil.ReadFile("fs_site_test.go")
 	c.Assert(err, check.IsNil)
 
@@ -599,8 +601,11 @@ func (s *customFSSuite) TearDownTest(c *check.C) {
 }
 
 func (s *customFSSuite) TestMountByPDH(c *check.C) {
-	s.fs.MountByPDH("dirname")
-	_, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.UUID))
+	err := s.fs.MountByPDH("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountByPDH("dirname")
+	c.Assert(err, check.IsNil)
+	_, err = s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.UUID))
 	c.Check(err, check.Equals, os.ErrNotExist)
 	f, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.PortableDataHash))
 	c.Assert(err, check.IsNil)
@@ -608,7 +613,10 @@ func (s *customFSSuite) TestMountByPDH(c *check.C) {
 }
 
 func (s *customFSSuite) TestMountByID(c *check.C) {
-	s.fs.MountByID("dirname")
+	err := s.fs.MountByID("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountByID("dirname")
+	c.Assert(err, check.IsNil)
 	f, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.PortableDataHash))
 	c.Assert(err, check.IsNil)
 	f.Close()
@@ -621,7 +629,9 @@ func (s *customFSSuite) TestMountByID(c *check.C) {
 }
 
 func (s *customFSSuite) TestMountTmp(c *check.C) {
-	err := s.fs.MountTmp("dirname")
+	err := s.fs.MountTmp("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountTmp("dirname")
 	c.Assert(err, check.IsNil)
 	{
 		f, err := s.fs.OpenFile("/dirname/testfile.txt", os.O_CREATE|os.O_RDWR, 0700)

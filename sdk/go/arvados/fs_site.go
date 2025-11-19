@@ -14,12 +14,12 @@ import (
 
 type CustomFileSystem interface {
 	FileSystem
-	MountByID(mount string)
-	MountByPDH(mount string)
-	MountProject(mount, uuid string)
-	MountUsers(mount string)
+	MountByID(mount string) error
+	MountByPDH(mount string) error
 	MountHome(mount string) error
+	MountProject(mount, uuid string) error
 	MountTmp(mount string) error
+	MountUsers(mount string) error
 	ForwardSlashNameSubstitution(string)
 }
 
@@ -80,6 +80,9 @@ func checkMountTarget(mount string) error {
 }
 
 func (fs *customFileSystem) MountTmp(mount string) error {
+	if err := checkMountTarget(mount); err != nil {
+		return err
+	}
 	newfs, err := (&Collection{}).FileSystem(fs, fs)
 	if err != nil {
 		return err
@@ -95,12 +98,12 @@ func (fs *customFileSystem) MountTmp(mount string) error {
 	return err
 }
 
-func (fs *customFileSystem) MountByID(mount string) {
-	fs.mountVdir(mount, fs.newCollectionOrProjectHardlink)
+func (fs *customFileSystem) MountByID(mount string) error {
+	return fs.mountVdir(mount, fs.newCollectionOrProjectHardlink)
 }
 
-func (fs *customFileSystem) MountByPDH(mount string) {
-	fs.mountVdir(mount, func(parent inode, name string) (inode, error) {
+func (fs *customFileSystem) MountByPDH(mount string) error {
+	return fs.mountVdir(mount, func(parent inode, name string) (inode, error) {
 		if pdhRegexp.MatchString(name) {
 			return fs.newCollectionOrProjectHardlink(parent, name)
 		}
@@ -108,10 +111,13 @@ func (fs *customFileSystem) MountByPDH(mount string) {
 	})
 }
 
-func (fs *customFileSystem) mountVdir(mount string, createfunc func(inode, string) (inode, error)) {
+func (fs *customFileSystem) mountVdir(mount string, createfunc func(inode, string) (inode, error)) error {
+	if err := checkMountTarget(mount); err != nil {
+		return err
+	}
 	fs.root.treenode.Lock()
 	defer fs.root.treenode.Unlock()
-	fs.root.treenode.Child(mount, func(inode) (inode, error) {
+	_, err := fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &vdirnode{
 			treenode: treenode{
 				fs:     fs,
@@ -126,6 +132,7 @@ func (fs *customFileSystem) mountVdir(mount string, createfunc func(inode, strin
 			create: createfunc,
 		}, nil
 	})
+	return err
 }
 
 func (fs *customFileSystem) MountHome(mount string) error {
@@ -140,18 +147,25 @@ func (fs *customFileSystem) MountHome(mount string) error {
 	return err
 }
 
-func (fs *customFileSystem) MountProject(mount, uuid string) {
+func (fs *customFileSystem) MountProject(mount, uuid string) error {
+	if err := checkMountTarget(mount); err != nil {
+		return err
+	}
 	fs.root.treenode.Lock()
 	defer fs.root.treenode.Unlock()
-	fs.root.treenode.Child(mount, func(inode) (inode, error) {
+	_, err := fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return fs.newProjectDir(fs.root, mount, uuid, nil), nil
 	})
+	return err
 }
 
-func (fs *customFileSystem) MountUsers(mount string) {
+func (fs *customFileSystem) MountUsers(mount string) error {
+	if err := checkMountTarget(mount); err != nil {
+		return err
+	}
 	fs.root.treenode.Lock()
 	defer fs.root.treenode.Unlock()
-	fs.root.treenode.Child(mount, func(inode) (inode, error) {
+	_, err := fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &lookupnode{
 			stale:   fs.Stale,
 			loadOne: fs.usersLoadOne,
@@ -168,6 +182,7 @@ func (fs *customFileSystem) MountUsers(mount string) {
 			},
 		}, nil
 	})
+	return err
 }
 
 func (fs *customFileSystem) ForwardSlashNameSubstitution(repl string) {
