@@ -666,6 +666,10 @@ func (s *customFSSuite) TestMountTmp(c *check.C) {
 func (s *customFSSuite) TestMountHome(c *check.C) {
 	err := s.fs.MountHome("a/b/c")
 	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountHome(".")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountHome("..")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
 	err = s.fs.MountHome("dirname")
 	c.Assert(err, check.IsNil)
 	{
