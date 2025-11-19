@@ -6,7 +6,7 @@ fpm_depends+=(
     # Dependencies to build gems
     bison
     make
-    "ruby >= 2.7.0"
+    "ruby >= 3.0.0"
     # Postinst script dependencies
     diffutils
     # Passenger dependencies
@@ -29,7 +29,7 @@ case "$TARGET" in
             postgresql
             postgresql-devel
             redhat-rpm-config
-            "ruby-devel >= 2.7.0"
+            "ruby-devel >= 3.0.0"
             zlib-devel
             # Passenger runtime dependencies
             libnsl
@@ -47,7 +47,7 @@ case "$TARGET" in
             postgresql
             postgresql-devel
             redhat-rpm-config
-            "ruby-devel >= 2.7.0"
+            "ruby-devel >= 3.0.0"
             zlib-devel
             # Passenger runtime dependencies
             libnsl
@@ -65,7 +65,7 @@ case "$TARGET" in
             libpq-dev
             libyaml-dev
             postgresql-client
-            "ruby-dev >= 2.7.0"
+            "ruby-dev >= 3.0.0"
             zlib1g-dev
             # Passenger runtime dependencies
             libnsl2
