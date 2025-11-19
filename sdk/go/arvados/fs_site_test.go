@@ -652,3 +652,23 @@ func (s *customFSSuite) TestMountTmp(c *check.C) {
 		c.Check(tmpcoll.UUID, check.Equals, "")
 	}
 }
+
+func (s *customFSSuite) TestMountHome(c *check.C) {
+	err := s.fs.MountHome("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountHome("dirname")
+	c.Assert(err, check.IsNil)
+	{
+		f, err := s.fs.Open("/dirname/A Project/zzzzz-4zz18-fy296fx3hot09f7 added sometime/foo")
+		c.Assert(err, check.IsNil)
+		f.Close()
+	}
+	{
+		_, err := s.fs.OpenFile("/dirname/testfile.txt", os.O_CREATE, 0700)
+		c.Check(err, check.Equals, ErrInvalidOperation)
+	}
+	{
+		_, err := s.fs.Open("/dirname/.arvados#collection")
+		c.Check(os.IsNotExist(err), check.Equals, true)
+	}
+}

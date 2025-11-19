@@ -18,6 +18,7 @@ type CustomFileSystem interface {
 	MountByPDH(mount string)
 	MountProject(mount, uuid string)
 	MountUsers(mount string)
+	MountHome(mount string) error
 	MountTmp(mount string) error
 	ForwardSlashNameSubstitution(string)
 }
@@ -71,6 +72,13 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 	return fs
 }
 
+func checkMountTarget(mount string) error {
+	if len(mount) == 0 || strings.Contains(mount, "/") {
+		return ErrInvalidArgument
+	}
+	return nil
+}
+
 func (fs *customFileSystem) MountTmp(mount string) error {
 	newfs, err := (&Collection{}).FileSystem(fs, fs)
 	if err != nil {
@@ -118,6 +126,18 @@ func (fs *customFileSystem) mountVdir(mount string, createfunc func(inode, strin
 			create: createfunc,
 		}, nil
 	})
+}
+
+func (fs *customFileSystem) MountHome(mount string) error {
+	if err := checkMountTarget(mount); err != nil {
+		return err
+	}
+	fs.root.treenode.Lock()
+	defer fs.root.treenode.Unlock()
+	_, err := fs.root.treenode.Child(mount, func(inode) (inode, error) {
+		return &hardlink{inode: fs.projectSingleton("", nil), parent: fs.root, name: mount}, nil
+	})
+	return err
 }
 
 func (fs *customFileSystem) MountProject(mount, uuid string) {
