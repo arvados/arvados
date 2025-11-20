@@ -468,7 +468,7 @@ test_package_presence() {
     else
       local rpm_root
       case "$TARGET" in
-        rocky8 | rocky9) rpm_root="RHEL/${TARGET#rocky}/dev" ;;
+        rocky8 | rocky9 | rocky10 ) rpm_root="RHEL/${TARGET#rocky}/dev" ;;
         *)
           echo "FIXME: Don't know RPM URL path for $TARGET, building"
           return 0
