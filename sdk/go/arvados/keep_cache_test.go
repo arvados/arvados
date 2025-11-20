@@ -124,6 +124,7 @@ func (s *keepCacheSuite) TestBlockWrite(c *check.C) {
 		MaxSize:     40000000,
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
+		Metrics:     NewKeepClientMetrics(),
 	}
 	ctx := context.Background()
 	real, err := cache.BlockWrite(ctx, BlockWriteOptions{
@@ -154,6 +155,7 @@ func (s *keepCacheSuite) TestMaxSize(c *check.C) {
 		MaxSize:     40000000,
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
+		Metrics:     NewKeepClientMetrics(),
 	}
 	ctx := context.Background()
 	resp1, err := cache.BlockWrite(ctx, BlockWriteOptions{
@@ -201,6 +203,7 @@ func (s *keepCacheSuite) testConcurrentReaders(c *check.C, cannotRefresh, mangle
 		MaxSize:     ByteSizeOrPercent(blksize),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
+		Metrics:     NewKeepClientMetrics(),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -284,6 +287,7 @@ func (s *keepCacheSuite) TestBlockRead_CheckCacheOnly(c *check.C) {
 		MaxSize:     ByteSizeOrPercent(len(blkUncached) + len(blkCached)),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
+		Metrics:     NewKeepClientMetrics(),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -348,6 +352,7 @@ func (s *keepCacheSuite) TestStreaming(c *check.C) {
 		MaxSize:     ByteSizeOrPercent(blksize),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
+		Metrics:     NewKeepClientMetrics(),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -567,6 +572,7 @@ func setupCacheWithBlocks(c *check.C, blksize, blkcount int) (cache *DiskCache, 
 		MaxSize:     ByteSizeOrPercent(blksize),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
+		Metrics:     NewKeepClientMetrics(),
 	}
 	locators = make([]string, blkcount)
 	data := make([]byte, blksize)
