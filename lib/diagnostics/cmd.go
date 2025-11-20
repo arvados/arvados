@@ -720,8 +720,16 @@ func (diag *diagnoser) runtests() {
 			diag.dockerImage = collection.PortableDataHash
 			ctrCommand = []string{"/arvados-client", "diagnostics",
 				"-priority=0", // don't run a container
-				"-log-level=" + diag.logLevel,
-				"-internal-client=true"}
+				"-log-level=" + diag.logLevel}
+			if cluster.Containers.LocalKeepBlobBuffersPerVCPU == 0 {
+				// If compute nodes are not running
+				// their own keepstore processes,
+				// containers will rely on the
+				// configured keepstore services, in
+				// which case they must be recognized
+				// as internal clients.
+				ctrCommand = append(ctrCommand, "-internal-client=true")
+			}
 		case "hello-world":
 			if collection.UUID == "" {
 				return fmt.Errorf("skipping, no test collection to use as docker image")
