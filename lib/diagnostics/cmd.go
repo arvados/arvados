@@ -43,6 +43,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	f.StringVar(&diag.dockerImageFrom, "docker-image-from", "debian:bookworm-slim", "`base` image to use when building a custom image (see https://doc.arvados.org/main/admin/diagnostics.html#container-options)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
+	f.BoolVar(&diag.checkContainer, "container-client", false, "check container connectivity, i.e., host is considered an \"internal\" client if ARVADOS_KEEP_SERVICES is not set")
 	f.BoolVar(&diag.verbose, "v", false, "verbose: include more information in report")
 	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
 	f.DurationVar(&diag.timeout, "timeout", 10*time.Second, "timeout for http requests")
@@ -83,6 +84,7 @@ type diagnoser struct {
 	dockerImageFrom string
 	checkInternal   bool
 	checkExternal   bool
+	checkContainer  bool
 	verbose         bool
 	timeout         time.Duration
 	logger          *logrus.Logger
@@ -334,6 +336,14 @@ func (diag *diagnoser) runtests() {
 			diag.infof("controller returned only proxy services, this host is treated as \"external\"")
 		} else if isInternal {
 			diag.infof("controller returned only non-proxy services, this host is treated as \"internal\"")
+		}
+		if diag.checkContainer {
+			if os.Getenv("ARVADOS_KEEP_SERVICES") == "" {
+				diag.checkInternal = true
+				diag.infof("ARVADOS_KEEP_SERVICES is not set, container connectivity relies on being treated as \"internal\"")
+			} else {
+				diag.infof("ARVADOS_KEEP_SERVICES is set, container connectivity does not rely on being treated as \"internal\"")
+			}
 		}
 		if (diag.checkInternal && !isInternal) || (diag.checkExternal && !isExternal) {
 			return fmt.Errorf("expecting internal=%v external=%v, but found internal=%v external=%v", diag.checkInternal, diag.checkExternal, isInternal, isExternal)
@@ -720,16 +730,8 @@ func (diag *diagnoser) runtests() {
 			diag.dockerImage = collection.PortableDataHash
 			ctrCommand = []string{"/arvados-client", "diagnostics",
 				"-priority=0", // don't run a container
-				"-log-level=" + diag.logLevel}
-			if cluster.Containers.LocalKeepBlobBuffersPerVCPU == 0 {
-				// If compute nodes are not running
-				// their own keepstore processes,
-				// containers will rely on the
-				// configured keepstore services, in
-				// which case they must be recognized
-				// as internal clients.
-				ctrCommand = append(ctrCommand, "-internal-client=true")
-			}
+				"-log-level=" + diag.logLevel,
+				"-container-client=true"}
 		case "hello-world":
 			if collection.UUID == "" {
 				return fmt.Errorf("skipping, no test collection to use as docker image")
