@@ -40,12 +40,14 @@ def test_global_conflict_options():
 
 
 # Pass-through (sub)commands and their corresponding 'entry point' functions.
-PASSTHROUGH_CMD_FUNCS = [("keep ls", "arvados.commands.ls.main"),
-                         ("keep get", "arvados.commands.get.main"),
-                         ("keep put", "arvados.commands.put.main"),
-                         ("keep docker", "arvados.commands.keepdocker.main"),
-                         ("ws", "arvados.commands.ws.main"),
-                         ("copy", "arvados.commands.arv_copy.main")]
+PASSTHROUGH_CMD_FUNCS = [
+    ("keep ls", "arvados.commands.ls.main"),
+    ("keep get", "arvados.commands.get.main"),
+    ("keep put", "arvados.commands.put.main"),
+    ("keep docker", "arvados.commands.keepdocker.main"),
+    ("ws", "arvados.commands.ws.main"),
+    ("copy", "arvados.commands.arv_copy.main")
+]
 
 
 @pytest.mark.parametrize("subcommand,main_fcn_name", PASSTHROUGH_CMD_FUNCS)

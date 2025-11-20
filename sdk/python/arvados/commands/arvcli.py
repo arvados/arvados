@@ -35,23 +35,33 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         # used as a shorthand for "--format=uuid". Specifying both -f and
         # -s is an error.
         format_args = self.add_mutually_exclusive_group()
-        format_args.add_argument("-f", "--format",
-                                 choices=["json", "yaml", "uuid"],
-                                 default="json",
-                                 help="Set output format")
-        format_args.add_argument("-s", "--short",
-                                 dest="format",
-                                 action="store_const", const="uuid",
-                                 help=("Return only UUIDs "
-                                       "(equivalent to --format=uuid)"))
+        format_args.add_argument(
+            "-f", "--format",
+            choices=["json", "yaml", "uuid"],
+            default="json",
+            help="Set output format"
+        )
+        format_args.add_argument(
+            "-s", "--short",
+            dest="format",
+            action="store_const", const="uuid",
+            help="Return only UUIDs (equivalent to --format=uuid)"
+        )
 
-        subparsers = self.add_subparsers(dest="subcommand",
-                                         help="Subcommands",
-                                         parser_class=functools.partial(argparse.ArgumentParser, add_help=False))
+        subparsers = self.add_subparsers(
+            dest="subcommand",
+            help="Subcommands",
+            parser_class=functools.partial(
+                argparse.ArgumentParser,
+                add_help=False
+            )
+        )
 
         keep_parser = subparsers.add_parser("keep")
-        keep_parser.add_argument("method",
-                                 choices=["ls", "get", "put", "docker"])
+        keep_parser.add_argument(
+            "method",
+            choices=["ls", "get", "put", "docker"]
+        )
 
         ws_parser = subparsers.add_parser("ws")
         copy_parser = subparsers.add_parser("copy")
