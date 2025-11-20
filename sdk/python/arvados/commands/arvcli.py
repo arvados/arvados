@@ -17,14 +17,7 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 
 
 import argparse
-
-
-class _HelplessArgumentParser(argparse.ArgumentParser):
-    """Convenient wrapper class for ArgumentParser that does not consume the
-    -h/--help parameter, for use as the subcommands' parser class.
-    """
-    def __init__(self, **kwargs):
-        super().__init__(add_help=False, **kwargs)
+import functools
 
 
 class ArvCLIArgumentParser(argparse.ArgumentParser):
@@ -54,7 +47,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
 
         subparsers = self.add_subparsers(dest="subcommand",
                                          help="Subcommands",
-                                         parser_class=_HelplessArgumentParser)
+                                         parser_class=functools.partial(argparse.ArgumentParser, add_help=False))
 
         keep_parser = subparsers.add_parser("keep")
         keep_parser.add_argument("method",
