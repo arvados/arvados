@@ -67,11 +67,11 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         copy_parser = subparsers.add_parser("copy")
 
 
-def dispatch():
+def dispatch(arguments=None):
     import sys
 
     cmd_parser = ArvCLIArgumentParser()
-    args, remaining_args = cmd_parser.parse_known_args()
+    args, remaining_args = cmd_parser.parse_known_args(arguments)
 
     match args.subcommand:
         case "keep":
