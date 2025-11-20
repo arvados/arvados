@@ -32,6 +32,13 @@ def test_global_conflict_options():
     assert exit_status.value.code != 0
 
 
+def test_invalid_subcommand():
+    parser = arvcli.ArvCLIArgumentParser()
+    with pytest.raises(SystemExit) as exit_status:
+        parser.parse_known_args(["foo"])
+    assert exit_status.value.code != 0
+
+
 # Pass-through (sub)commands and their corresponding 'entry point' functions.
 PASSTHROUGH_CMD_FUNCS = [
     ("keep ls", "arvados.commands.ls.main"),

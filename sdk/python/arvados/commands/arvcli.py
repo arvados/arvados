@@ -88,11 +88,9 @@ def dispatch(arguments=None):
             from arvados.commands.ws import main
         case "copy":
             from arvados.commands.arv_copy import main
-    try:
-        sys.exit(main(remaining_args))
-    except NameError as e:
-        if e.name != "main":
-            raise e
+        case _:
+            cmd_parser.error(f"unknown subcommand {args.subcommand!r}")
+    sys.exit(main(remaining_args))
 
 
 if __name__ == "__main__":
