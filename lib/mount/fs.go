@@ -85,12 +85,9 @@ func (fs *keepFS) Init() {
 	fs.root.MountProject("home", "")
 	fs.done = make(chan struct{})
 	if fs.statsInterval > 0 {
-		fs.initMetrics()
-		// Initial gather to establish baseline metrics
-		previousMetrics := gatherMetrics(fs.Registry)
-
+		fs.registerMetrics()
+		previousMetrics := gatherMetrics(fs.Registry) // Initial gather to establish baseline
 		ticker := time.NewTicker(fs.statsInterval)
-
 		go func() {
 			for {
 				select {
@@ -98,8 +95,7 @@ func (fs *keepFS) Init() {
 					return
 				case <-ticker.C:
 					currentMetrics := gatherMetrics(fs.Registry)
-					intervalSeconds := fs.statsInterval.Seconds()
-					lines := formatMetrics(currentMetrics, previousMetrics, intervalSeconds)
+					lines := FormatMetrics(currentMetrics, previousMetrics, fs.statsInterval.Seconds())
 					for _, line := range lines {
 						fs.Logger.Info(line)
 					}
@@ -117,7 +113,7 @@ func (fs *keepFS) Destroy() {
 	close(fs.done)
 }
 
-func (fs *keepFS) initMetrics() {
+func (fs *keepFS) registerMetrics() {
 	fs.mBytes = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "arvados_fuse_bytes",
 		Help: "Bytes read/written by the FUSE filesystem",
@@ -171,7 +167,7 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 	}
 }
 
-func formatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
+func FormatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
 	var lines []string
 
 	getCurrentAndDelta := func(name string) (float64, float64) {
