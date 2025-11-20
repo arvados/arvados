@@ -29,14 +29,13 @@ def MockContainer(image_hash):
             'Image': image_hash['Id']}
 
 
-def MockImage(*, size=0, vsize=None, tags=[]):
-    if vsize is None:
-        vsize = random.randint(100, 2000000)
+def MockImage(*, size=None, tags=[]):
+    if size is None:
+        size = random.randint(100, 2000000)
     return {'Id': MockDockerId(),
             'ParentId': MockDockerId(),
             'RepoTags': list(tags),
-            'Size': size,
-            'VirtualSize': vsize}
+            'Size': size}
 
 
 class MockEvent(dict):
@@ -88,11 +87,11 @@ class DockerImagesTestCase(unittest.TestCase):
     def setUp(self):
         self.mock_images = []
 
-    def setup_mock_images(self, *vsizes):
-        self.mock_images.extend(MockImage(vsize=vsize) for vsize in vsizes)
+    def setup_mock_images(self, *sizes):
+        self.mock_images.extend(MockImage(size=size) for size in sizes)
 
-    def setup_images(self, *vsizes, target_size=1000000):
-        self.setup_mock_images(*vsizes)
+    def setup_images(self, *sizes, target_size=1000000):
+        self.setup_mock_images(*sizes)
         images = cleaner.DockerImages(target_size)
         for image in self.mock_images:
             images.add_image(image)
@@ -214,8 +213,8 @@ class DockerImagesTestCase(unittest.TestCase):
         images.end_user(user['Id'])
         self.assertEqual([], list(images.should_delete()))
 
-    def setup_from_daemon(self, *vsizes, target_size=1500000):
-        self.setup_mock_images(*vsizes)
+    def setup_from_daemon(self, *sizes, target_size=1500000):
+        self.setup_mock_images(*sizes)
         docker_client = mock.MagicMock(name='docker_client')
         docker_client.images.return_value = iter(self.mock_images)
         return cleaner.DockerImages.from_daemon(target_size, docker_client)
@@ -404,9 +403,9 @@ class MainTestCase(unittest.TestCase):
             cf.flush()
             cleaner.main(['--config', cf.name])
         self.assertEqual(1, docker_client.call_count)
-        # We are standardized on Docker API version 1.35.
+        # We are standardized on Docker API version 1.48.
         # See DockerAPIVersion in lib/crunchrun/docker.go.
-        self.assertEqual('1.35',
+        self.assertEqual('1.48',
                          docker_client.call_args[1].get('version'))
         self.assertEqual(1, run_mock.call_count)
         self.assertIs(run_mock.call_args[0][1], docker_client())

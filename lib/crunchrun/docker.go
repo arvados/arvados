@@ -27,12 +27,10 @@ import (
 const minDockerRAM = int64(16 * 1024 * 1024)
 
 // DockerAPIVersion is the API version we use to communicate with the
-// docker service.  The oldest OS we support is Ubuntu 18.04 (bionic)
-// which originally shipped docker 1.17.12 / API 1.35 so there is no
-// reason to use an older API version.  See
-// https://dev.arvados.org/issues/15370#note-38 and
-// https://docs.docker.com/engine/api/.
-const DockerAPIVersion = "1.35"
+// docker service. We were standardized on Docker 28 when 3.2.0 released, so
+// we use its corresponding API version. See
+// https://docs.docker.com/reference/api/engine/.
+const DockerAPIVersion = "1.48"
 
 // Number of consecutive "inspect container" failures before
 // concluding Docker is unresponsive, giving up, and cancelling the
