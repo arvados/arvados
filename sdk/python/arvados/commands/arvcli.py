@@ -2,17 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Main executable for Arvados CLI SDK, the ``arv`` command.
+"""Main executable for Arvados CLI SDK, the `arv` command.
 
-This script implements the ``arv`` command's argument parser. The ``arv``
-command is meant to be invoked in the following manner:
+This script implements the `arv` command's argument parser. The `arv` command
+is meant to be invoked in the following manner:
 
 $ arv [--flags] subcommand|resource [...options]
 
-where ``--flags`` are common CLI options for the various subcommands.
+where `--flags` are common CLI options for the various subcommands.
 
-The ``ArvCLIArgumentParser`` class, specializing the standard Python
-``argparse.ArgumentParser``, provides the support for this CLI usage.
+The `ArvCLIArgumentParser` class, specializing the standard Python
+`argparse.ArgumentParser`, provides the support for this CLI usage.
 """
 
 
@@ -28,7 +28,7 @@ class _HelplessArgumentParser(argparse.ArgumentParser):
 
 
 class ArvCLIArgumentParser(argparse.ArgumentParser):
-    """Argument parser for ``arv`` commands.
+    """Argument parser for `arv` commands.
     """
     def __init__(self, **kwargs):
         super().__init__(description="Arvados command line client",
@@ -50,7 +50,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                                  dest="format",
                                  action="store_const", const="uuid",
                                  help=("Return only UUIDs "
-                                       "(equilvalent to --format=uuid)"))
+                                       "(equivalent to --format=uuid)"))
 
         subparsers = self.add_subparsers(dest="subcommand",
                                          help="Subcommands",
