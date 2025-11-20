@@ -50,15 +50,21 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 	ldr := config.NewLoader(&bytes.Buffer{}, logger)
 	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
-	cc, err := cfg.GetCluster("")
+	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
-	s.cluster = cc
+	client, err := arvados.NewClientFromConfig(s.cluster)
+	c.Assert(err, check.IsNil)
+	ac, err := arvadosclient.New(client)
+	c.Assert(err, check.IsNil)
+	kc := keepclient.New(ac)
+	kc.DiskCacheSize = s.cluster.Collections.WebDAVCache.DiskCacheSize
 	s.handler = &handler{
-		Cluster: cc,
+		Cluster: s.cluster,
 		Cache: cache{
-			cluster:  cc,
-			logger:   logger,
-			registry: prometheus.NewRegistry(),
+			cluster:    s.cluster,
+			logger:     logger,
+			registry:   prometheus.NewRegistry(),
+			keepclient: kc,
 		},
 		metrics: newMetrics(prometheus.NewRegistry()),
 	}

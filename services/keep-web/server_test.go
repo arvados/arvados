@@ -524,6 +524,15 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_upload_speed_bucket{size_range="0",le="\+Inf"} 2\n.*`)
 	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_upload_sync_delay_seconds_bucket{size_range="0",le="10"} 2\n.*`)
 
+	// Check that keepclient metrics are being tracked and
+	// exported.  Don't check cache for non-zero cache misses or
+	// backend bytes in, which are zero when the cache is working
+	// well.
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepclient_backend_bytes{direction="out"} [^0].*\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepclient_cache{event="hit"} [^0].*\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepclient_ops{op="get"} [^0].*\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepclient_ops{op="put"} [^0].*\n.*`)
+
 	c.Logf("%s", allmetrics)
 }
 

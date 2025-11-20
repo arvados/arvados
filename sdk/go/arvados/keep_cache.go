@@ -43,6 +43,7 @@ type DiskCache struct {
 	Dir     string
 	MaxSize ByteSizeOrPercent
 	Logger  logrus.FieldLogger
+	Metrics KeepClientMetrics
 
 	*sharedCache
 	setupOnce sync.Once
@@ -351,6 +352,7 @@ func (cache *DiskCache) readAt(locator string, dst []byte, offset int, checkCach
 				err = fmt.Errorf("flock(%s, lock_sh) failed: %w", cachefilename, err)
 				return
 			}
+			cache.Metrics.CacheMisses.Add(1)
 			size, err = cache.KeepGateway.BlockRead(context.Background(), BlockReadOptions{
 				Locator: locator,
 				WriteTo: funcwriter(func(p []byte) (int, error) {
@@ -509,6 +511,15 @@ func (cache *DiskCache) heldopenEnt(cachefilename string) *openFileEnt {
 		heldopen.err = err
 		return heldopen
 	}
+
+	// Python SDK's hits_counter metric (reported in arv-mount
+	// crunchstat as "keepcache hit") counts blocks reads that are
+	// served from cache.  But here, applications generally do
+	// partial block reads, not full block reads.  So, as a proxy,
+	// we count how many times we open a cache file to serve a
+	// read request.
+	cache.Metrics.CacheHits.Add(1)
+
 	heldopen.f = f
 	return heldopen
 }

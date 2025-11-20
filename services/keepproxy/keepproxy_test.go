@@ -26,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"gopkg.in/check.v1"
@@ -120,7 +121,7 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool, kp *ar
 	logger.Out = logbuf
 	ctx := ctxlog.Context(context.Background(), logger)
 
-	handler := newHandlerOrErrorHandler(ctx, cluster, cluster.SystemRootToken, nil).(*proxyHandler)
+	handler := newHandlerOrErrorHandler(ctx, cluster, cluster.SystemRootToken, prometheus.NewRegistry()).(*proxyHandler)
 	srv := &testServer{
 		Server: &httpserver.Server{
 			Server: http.Server{

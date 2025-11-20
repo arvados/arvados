@@ -21,13 +21,14 @@ import (
 const metricsUpdateInterval = time.Second / 10
 
 type cache struct {
-	cluster   *arvados.Cluster
-	logger    logrus.FieldLogger
-	registry  *prometheus.Registry
-	metrics   cacheMetrics
-	sessions  map[string]*cachedSession
-	setupOnce sync.Once
-	mtx       sync.Mutex
+	cluster    *arvados.Cluster
+	logger     logrus.FieldLogger
+	registry   *prometheus.Registry
+	keepclient *keepclient.KeepClient
+	metrics    cacheMetrics
+	sessions   map[string]*cachedSession
+	setupOnce  sync.Once
+	mtx        sync.Mutex
 
 	chPruneSessions chan struct{}
 }
@@ -189,8 +190,8 @@ func (c *cache) checkout(token string) (*cachedSession, error) {
 		if err != nil {
 			return nil, err
 		}
-		kc := keepclient.New(arvadosclient)
-		kc.DiskCacheSize = c.cluster.Collections.WebDAVCache.DiskCacheSize
+		kc := c.keepclient.Clone()
+		kc.Arvados = arvadosclient
 		sess = &cachedSession{
 			cache:         c,
 			client:        client,

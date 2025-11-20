@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"hash"
 	"io"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var BadChecksum = errors.New("Reader failed checksum")
@@ -24,6 +26,9 @@ type HashCheckingReader struct {
 
 	// The hash value to check against.  Must be a hex-encoded lowercase string.
 	Check string
+
+	// If non-nil, count the number of bytes read.
+	counter prometheus.Counter
 }
 
 // Reads from the underlying reader, update the hashing function, and
@@ -40,6 +45,9 @@ func (hcr HashCheckingReader) Read(p []byte) (n int, err error) {
 			err = BadChecksum
 		}
 	}
+	if hcr.counter != nil {
+		hcr.counter.Add(float64(n))
+	}
 	return n, err
 }
 
@@ -48,6 +56,9 @@ func (hcr HashCheckingReader) Read(p []byte) (n int, err error) {
 // match.
 func (hcr HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error) {
 	written, err = io.Copy(io.MultiWriter(dest, hcr.Hash), hcr.Reader)
+	if hcr.counter != nil {
+		hcr.counter.Add(float64(written))
+	}
 	if err != nil {
 		return written, err
 	}

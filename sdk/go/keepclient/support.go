@@ -20,6 +20,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/asyncbuf"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type keepService struct {
@@ -49,6 +50,17 @@ type uploadStatus struct {
 	response       string
 }
 
+type instrumentedReader struct {
+	io.Reader
+	prometheus.Counter
+}
+
+func (r instrumentedReader) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	r.Counter.Add(float64(n))
+	return n, err
+}
+
 func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo []string, body io.Reader,
 	uploadStatusChan chan<- uploadStatus, expectedLength int, reqid string) {
 
@@ -63,7 +75,8 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 
 	req.ContentLength = int64(expectedLength)
 	if expectedLength > 0 {
-		req.Body = ioutil.NopCloser(body)
+		kc.setupMetrics()
+		req.Body = ioutil.NopCloser(instrumentedReader{body, kc.metrics.BackendBytesOut})
 	} else {
 		// "For client requests, a value of 0 means unknown if
 		// Body is not nil."  In this case we do want the body
@@ -139,7 +152,7 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 		buf := asyncbuf.NewBuffer(make([]byte, 0, req.DataSize))
 		reader := req.Reader
 		if req.Hash != "" {
-			reader = HashCheckingReader{req.Reader, md5.New(), req.Hash}
+			reader = HashCheckingReader{req.Reader, md5.New(), req.Hash, nil}
 		}
 		go func() {
 			_, err := io.Copy(buf, reader)
