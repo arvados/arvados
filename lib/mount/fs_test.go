@@ -6,6 +6,7 @@ package mount
 
 import (
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -103,4 +104,70 @@ func (s *FSSuite) TestMknod(c *C) {
 	// Should return error if target exists
 	errc = s.fs.Mknod(path, syscall.S_IFREG|0o644, 0)
 	c.Check(errc, Equals, -fuse.EEXIST)
+}
+
+func (s *FSSuite) TestFormatMetrics(c *C) {
+	// Zero to first tick
+	previousMetrics := map[string]float64{}
+	currentMetrics := map[string]float64{
+		`arvados_fuse_ops{fuseop="read"}`:              5,
+		`arvados_fuse_ops{fuseop="write"}`:             3,
+		`arvados_fuse_ops{fuseop="getattr"}`:           10,
+		`arvados_fuse_seconds_total{fuseop="read"}`:    0.123456,
+		`arvados_fuse_seconds_total{fuseop="write"}`:   0.234567,
+		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.045678,
+	}
+	lines := FormatMetrics(currentMetrics, previousMetrics, 1.0)
+
+	c.Check(len(lines), Equals, 19) // 1 summary + 18 operations
+	c.Check(lines[0], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
+	c.Check(lines[1], Equals, "crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time")
+
+	// Check read and write lines
+	var readLine, writeLine string
+	for _, line := range lines {
+		if strings.HasPrefix(line, "crunchstat: fuseop:read ") {
+			readLine = line
+		}
+		if strings.HasPrefix(line, "crunchstat: fuseop:write ") {
+			writeLine = line
+		}
+	}
+	c.Check(readLine, Equals, "crunchstat: fuseop:read 5 count 0.123456 time -- interval 1.0000 seconds 5 count 0.123456 time")
+	c.Check(writeLine, Equals, "crunchstat: fuseop:write 3 count 0.234567 time -- interval 1.0000 seconds 3 count 0.234567 time")
+
+	// First tick to second tick
+	previousMetrics = map[string]float64{
+		`arvados_fuse_ops{fuseop="read"}`:              3,
+		`arvados_fuse_ops{fuseop="write"}`:             1,
+		`arvados_fuse_ops{fuseop="getattr"}`:           7,
+		`arvados_fuse_seconds_total{fuseop="read"}`:    0.100000,
+		`arvados_fuse_seconds_total{fuseop="write"}`:   0.200000,
+		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.030000,
+	}
+	currentMetrics = map[string]float64{
+		`arvados_fuse_ops{fuseop="read"}`:              8,
+		`arvados_fuse_ops{fuseop="write"}`:             5,
+		`arvados_fuse_ops{fuseop="getattr"}`:           15,
+		`arvados_fuse_seconds_total{fuseop="read"}`:    0.250000,
+		`arvados_fuse_seconds_total{fuseop="write"}`:   0.350000,
+		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.075000,
+	}
+	lines = FormatMetrics(currentMetrics, previousMetrics, 1.0)
+
+	// Check summary line shows totals and deltas
+	c.Check(lines[0], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
+
+	// Check individual operations and deltas
+	for _, line := range lines {
+		if strings.HasPrefix(line, "crunchstat: fuseop:read ") {
+			c.Check(line, Equals, "crunchstat: fuseop:read 8 count 0.250000 time -- interval 1.0000 seconds 5 count 0.150000 time")
+		}
+		if strings.HasPrefix(line, "crunchstat: fuseop:write ") {
+			c.Check(line, Equals, "crunchstat: fuseop:write 5 count 0.350000 time -- interval 1.0000 seconds 4 count 0.150000 time")
+		}
+		if strings.HasPrefix(line, "crunchstat: fuseop:getattr ") {
+			c.Check(line, Equals, "crunchstat: fuseop:getattr 15 count 0.075000 time -- interval 1.0000 seconds 8 count 0.045000 time")
+		}
+	}
 }

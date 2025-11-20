@@ -99,7 +99,7 @@ func (fs *keepFS) Init() {
 				case <-ticker.C:
 					currentMetrics := gatherMetrics(fs.Registry)
 					intervalSeconds := fs.statsInterval.Seconds()
-					lines := formatMetrics(currentMetrics, previousMetrics, intervalSeconds)
+					lines := FormatMetrics(currentMetrics, previousMetrics, intervalSeconds)
 					for _, line := range lines {
 						fs.Logger.Info(line)
 					}
@@ -171,7 +171,7 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 	}
 }
 
-func formatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
+func FormatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
 	var lines []string
 
 	getCurrentAndDelta := func(name string) (float64, float64) {
