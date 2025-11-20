@@ -6,7 +6,7 @@ fpm_depends+=(
     # Dependencies to build gems
     bison
     make
-    "ruby >= 2.7.0"
+    "ruby >= 3.0.0"
     # Postinst script dependencies
     diffutils
     # Passenger dependencies
@@ -19,7 +19,7 @@ fpm_depends+=(
 )
 
 case "$TARGET" in
-    rocky9)
+    rocky8)
         fpm_depends+=(
             # Dependencies to build gems
             automake
@@ -29,14 +29,12 @@ case "$TARGET" in
             postgresql
             postgresql-devel
             redhat-rpm-config
-            "ruby-devel >= 2.7.0"
+            "ruby-devel >= 3.0.0"
             zlib-devel
             # Passenger runtime dependencies
             libnsl
             openssl-devel
             rubygem-rake
-            # nginx compilation dependencies
-            pcre2-devel
         )
         ;;
     rocky*)
@@ -49,29 +47,14 @@ case "$TARGET" in
             postgresql
             postgresql-devel
             redhat-rpm-config
-            "ruby-devel >= 2.7.0"
+            "ruby-devel >= 3.0.0"
             zlib-devel
             # Passenger runtime dependencies
             libnsl
             openssl-devel
             rubygem-rake
-        )
-        ;;
-    ubuntu2004)
-        fpm_depends+=(
-            # Dependencies to build gems
-            g++
-            libcurl-ssl-dev
-            libpq-dev
-            libyaml-dev
-            postgresql-client
-            "ruby-dev >= 2.7.0"
-            zlib1g-dev
-            # Passenger runtime dependencies
-            # libnsl2 is excluded because it was included as part of glibc
-            libnss-systemd
-            libssl-dev
-            rake
+            # nginx compilation dependencies
+            pcre2-devel
         )
         ;;
     debian* | ubuntu*)
@@ -82,7 +65,7 @@ case "$TARGET" in
             libpq-dev
             libyaml-dev
             postgresql-client
-            "ruby-dev >= 2.7.0"
+            "ruby-dev >= 3.0.0"
             zlib1g-dev
             # Passenger runtime dependencies
             libnsl2
