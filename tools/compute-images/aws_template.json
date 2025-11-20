@@ -65,6 +65,9 @@
     }
   }],
   "provisioners": [{
+      "type": "shell",
+      "inline": [ "if cloud-init --version; then sudo cloud-init status --wait; else : ; fi" ]
+  }, {
       "type": "ansible",
       "command": "{{user `ansible_command`}}",
       "playbook_file": "../ansible/build-compute-image.yml",
