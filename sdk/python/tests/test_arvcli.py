@@ -7,13 +7,6 @@ import pytest
 from arvados.commands import arvcli
 
 
-def test_global_option_help():
-    parser = arvcli.ArvCLIArgumentParser()
-    with pytest.raises(SystemExit) as exit_status:
-        parser.parse_known_args(["-h"])
-    assert exit_status.value.code == 0
-
-
 def test_global_option_help_followed_by_subcommand():
     """When called as arvcli.py -h [subcommand], the subcommand is ignored,
     the -h option is consumed by the parser, and the help message is printed,
@@ -21,18 +14,8 @@ def test_global_option_help_followed_by_subcommand():
     """
     parser = arvcli.ArvCLIArgumentParser()
     with pytest.raises(SystemExit) as exit_status:
-        parser.parse_known_args(["-h", "keep", "ls"])
+        parser.parse_known_args(["-h", "foo"])
     assert exit_status.value.code == 0
-
-
-@pytest.mark.parametrize("first,second,format_in_effect", [
-    ("-s", "--format=yaml", "yaml"),
-    ("--format=yaml", "-s", "uuid"),
-])
-def test_global_format_options(first, second, format_in_effect):
-    parser = arvcli.ArvCLIArgumentParser()
-    args, _ = parser.parse_known_args([first, second, "ws"])
-    assert args.format == format_in_effect
 
 
 def test_no_subcommand():

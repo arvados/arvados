@@ -24,9 +24,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
     """Argument parser for `arv` commands.
     """
     def __init__(self, **kwargs):
-        super().__init__(description="Arvados command line client",
-                         conflict_handler="resolve",
-                         **kwargs)
+        super().__init__(description="Arvados command line client", **kwargs)
         # Common flags to the main command.
         self.add_argument("-n", "--dry-run", action="store_true",
                           help="Don't actually do anything")
