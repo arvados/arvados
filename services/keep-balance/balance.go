@@ -376,7 +376,6 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 	defer cancel()
 
 	defer bal.time("get_state", "wall clock time to get current state")()
-	bal.BlockStateMap = NewBlockStateMap()
 
 	dd, err := c.DiscoveryDocument()
 	if err != nil {
@@ -408,6 +407,13 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		}
 	}
 
+	// Determine max possible replication (i.e., total replication
+	// of a block stored on every mount)
+	maxRepl := 0
+	for mnt := range equivMount {
+		maxRepl += mnt.Replication
+	}
+	bal.BlockStateMap = NewBlockStateMap(maxRepl)
 	// Start one goroutine for each (non-redundant) mount:
 	// retrieve the index, and add the returned blocks to
 	// BlockStateMap.
@@ -478,8 +484,13 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		go func() {
 			defer wg.Done()
 			for coll := range collQ {
+				if len(errs) > 0 {
+					// already failing, just drain
+					// the channel
+					continue
+				}
 				err := bal.addCollection(coll)
-				if err != nil || len(errs) > 0 {
+				if err != nil {
 					select {
 					case errs <- err:
 					default:
@@ -695,7 +706,10 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 
 	unsafeToDelete := make(map[int64]bool, len(slots))
 	for _, class := range bal.classes {
-		desired := blk.Desired[class]
+		if blk.Desired == nil {
+			continue
+		}
+		desired := (*blk.Desired)[class]
 		if desired == 0 {
 			continue
 		}
@@ -834,7 +848,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 
 	classState := make(map[string]balancedBlockState, len(bal.classes))
 	for _, class := range bal.classes {
-		classState[class] = computeBlockState(slots, bal.mountsByClass[class], len(blk.Replicas), blk.Desired[class])
+		desired := 0
+		if blk.Desired != nil {
+			desired = (*blk.Desired)[class]
+		}
+		classState[class] = computeBlockState(slots, bal.mountsByClass[class], len(blk.Replicas), desired)
 	}
 	blockState := computeBlockState(slots, nil, len(blk.Replicas), 0)
 
@@ -906,7 +924,11 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		}
 	}
 	if bal.Dumper != nil {
-		bal.Dumper.Printf("%s refs=%d needed=%d unneeded=%d pulling=%v %v %v", blkid, blk.RefCount, blockState.needed, blockState.unneeded, blockState.pulling, blk.Desired, changes)
+		var desired map[string]int
+		if blk.Desired != nil {
+			desired = *blk.Desired
+		}
+		bal.Dumper.Printf("%s refs=%d needed=%d unneeded=%d pulling=%v %v %v", blkid, blk.RefCount, blockState.needed, blockState.unneeded, blockState.pulling, desired, changes)
 	}
 	return balanceResult{
 		blk:        blk,
@@ -1175,7 +1197,10 @@ func (bal *Balancer) CheckSanityLate() error {
 
 	anyDesired := false
 	bal.BlockStateMap.Apply(func(_ arvados.SizedDigest, blk *BlockState) {
-		for _, desired := range blk.Desired {
+		if blk.Desired == nil {
+			return
+		}
+		for _, desired := range *blk.Desired {
 			if desired > 0 {
 				anyDesired = true
 				break
@@ -1238,7 +1263,6 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 			lastErr = err
 		}
 	}
-	close(errs)
 	return lastErr
 }
 
@@ -1260,8 +1284,8 @@ func (bal *Balancer) time(name, help string) func() {
 }
 
 // Log current memory usage: once now, at least once every 10 minutes,
-// and when memory grows by 40% since the last log. Stop when ctx is
-// canceled.
+// and when memory grows by 40% since the last log. Log one more time
+// and then stop when ctx is canceled.
 func (bal *Balancer) reportMemorySize(ctx context.Context) {
 	buf, _ := os.ReadFile("/proc/self/smaps")
 	m := regexp.MustCompile(`\nKernelPageSize:\s*(\d+) kB\n`).FindSubmatch(buf)
@@ -1298,18 +1322,22 @@ func (bal *Balancer) reportMemorySize(ctx context.Context) {
 	const maxIncrease = 1.4
 
 	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 	var memstats runtime.MemStats
-	for ctx.Err() == nil {
+	for done := false; !done; {
+		select {
+		case <-ctx.Done():
+			// log one more time, then return
+			done = true
+		case <-ticker.C:
+		}
 		now := time.Now()
 		runtime.ReadMemStats(&memstats)
 		mem := memstats.StackInuse + memstats.HeapInuse
-		if now.After(nextTime) || mem >= nextMem {
+		if now.After(nextTime) || mem >= nextMem || done {
 			bal.logf("heap %d stack %d heapalloc %d%s", memstats.HeapInuse, memstats.StackInuse, memstats.HeapAlloc, osstats())
 			nextMem = uint64(float64(mem) * maxIncrease)
 			nextTime = now.Add(maxInterval)
 		}
-		<-ticker.C
 	}
 }
 

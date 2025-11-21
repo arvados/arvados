@@ -7,6 +7,7 @@ package keepbalance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -126,26 +127,24 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 
 	errs := make(chan error, 1)
 	collQ := make(chan arvados.Collection, cluster.Collections.BalanceCollectionBuffers)
-	go func() {
+	goSendErr(errs, func() error {
 		defer close(collQ)
+		reachedLimit := errors.New("reached limit")
 		err := EachCollection(ctx, bal.DB, c, func(coll arvados.Collection) error {
 			if atomic.LoadInt64(&updated) >= int64(cluster.Collections.BalanceUpdateLimit) {
 				bal.logf("reached BalanceUpdateLimit (%d)", cluster.Collections.BalanceUpdateLimit)
-				cancel()
-				return context.Canceled
+				return reachedLimit
 			}
 			collQ <- coll
 			return nil
 		}, func(done, total int) {
 			bal.logf("update collections: %d/%d (%d updated @ %.01f updates/s)", done, total, atomic.LoadInt64(&updated), float64(atomic.LoadInt64(&updated))/time.Since(threshold).Seconds())
 		})
-		if err != nil && err != context.Canceled {
-			select {
-			case errs <- err:
-			default:
-			}
+		if err == reachedLimit {
+			err = nil
 		}
-	}()
+		return err
+	})
 
 	var wg sync.WaitGroup
 
@@ -163,12 +162,12 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 			txPending := 0
 			flush := func(final bool) error {
 				err := tx.Commit()
-				if err != nil && ctx.Err() == nil {
+				if err != nil {
 					tx.Rollback()
 					return err
 				}
 				txPending = 0
-				if final {
+				if final || ctx.Err() != nil {
 					return nil
 				}
 				tx, err = bal.DB.Beginx()
@@ -177,7 +176,7 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 			txBatch := 100
 			for coll := range collQ {
 				if ctx.Err() != nil || len(errs) > 0 {
-					continue
+					break
 				}
 				blkids, err := coll.SizedDigests()
 				if err != nil {
@@ -199,6 +198,21 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 					// temporarily.
 					repl = desired
 				}
+				needUpdate := coll.ReplicationConfirmed == nil ||
+					*coll.ReplicationConfirmed != repl ||
+					repl > 0 && len(coll.StorageClassesConfirmed) != len(coll.StorageClassesDesired) ||
+					repl == 0 && len(coll.StorageClassesConfirmed) != 0
+				if !needUpdate && repl > 0 {
+					for i := range coll.StorageClassesDesired {
+						if coll.StorageClassesDesired[i] != coll.StorageClassesConfirmed[i] {
+							needUpdate = true
+							break
+						}
+					}
+				}
+				if !needUpdate {
+					continue
+				}
 				classes := emptyJSONArray
 				if repl > 0 {
 					classes, err = json.Marshal(coll.StorageClassesDesired)
@@ -206,15 +220,6 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 						bal.logf("BUG? json.Marshal(%v) failed: %s", classes, err)
 						continue
 					}
-				}
-				needUpdate := coll.ReplicationConfirmed == nil || *coll.ReplicationConfirmed != repl || len(coll.StorageClassesConfirmed) != len(coll.StorageClassesDesired)
-				for i := range coll.StorageClassesDesired {
-					if !needUpdate && coll.StorageClassesDesired[i] != coll.StorageClassesConfirmed[i] {
-						needUpdate = true
-					}
-				}
-				if !needUpdate {
-					continue
 				}
 				_, err = tx.ExecContext(ctx, `update collections set
 					replication_confirmed=$1,
@@ -242,8 +247,11 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 	}
 	wg.Wait()
 	bal.logf("updated %d collections", updated)
+	// Drain collQ in case all workers exited before completion
+	for range collQ {
+	}
 	if len(errs) > 0 {
-		return fmt.Errorf("error updating collections: %s", <-errs)
+		return fmt.Errorf("error updating collections: %w", <-errs)
 	}
 	return nil
 }

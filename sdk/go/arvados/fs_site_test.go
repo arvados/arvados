@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -99,9 +100,10 @@ func (s *SiteFSSuite) TestUpdateStorageClasses(c *check.C) {
 }
 
 func (s *SiteFSSuite) TestSameCollectionDifferentPaths(c *check.C) {
-	s.fs.MountProject("home", "")
+	err := s.fs.MountProject("home", "")
+	c.Assert(err, check.IsNil)
 	var coll Collection
-	err := s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+	err = s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"owner_uuid": fixtureAProjectUUID,
 			"name":       fmt.Sprintf("test collection %d", time.Now().UnixNano()),
@@ -272,7 +274,8 @@ func copyFromOS(fs FileSystem, dst, src string) error {
 }
 
 func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
-	s.fs.MountProject("home", "")
+	err := s.fs.MountProject("home", "")
+	c.Assert(err, check.IsNil)
 	thisfile, err := ioutil.ReadFile("fs_site_test.go")
 	c.Assert(err, check.IsNil)
 
@@ -546,4 +549,140 @@ func (s *SiteFSSuite) TestLocks(c *check.C) {
 	}
 	wg.Wait()
 	c.Logf("MemorySize == %d", s.fs.MemorySize())
+}
+
+var _ = check.Suite(&customFSSuite{})
+
+type customFSSuite struct {
+	client *Client
+	kc     keepClient
+	fs     CustomFileSystem
+	coll   Collection
+}
+
+func (s *customFSSuite) SetUpTest(c *check.C) {
+	s.client = &Client{
+		APIHost:   os.Getenv("ARVADOS_API_HOST"),
+		AuthToken: fixtureActiveToken,
+		Insecure:  true,
+	}
+	s.kc = &keepClientStub{
+		blocks:    map[string][]byte{},
+		sigkey:    fixtureBlobSigningKey,
+		sigttl:    fixtureBlobSigningTTL,
+		authToken: fixtureActiveToken,
+	}
+	tmpfs, err := s.coll.FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	f, err := tmpfs.OpenFile("testfile.txt", os.O_CREATE|os.O_RDWR, 0700)
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("testfile contents"))
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	s.coll.ManifestText, err = tmpfs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	err = s.client.RequestAndDecode(&s.coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"owner_uuid":    fixtureAProjectUUID,
+			"name":          fmt.Sprintf("test collection %d", time.Now().UnixNano()),
+			"manifest_text": s.coll.ManifestText,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	s.fs = s.client.CustomFileSystem(s.kc)
+}
+
+func (s *customFSSuite) TearDownTest(c *check.C) {
+	if s.coll.UUID != "" {
+		err := s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+s.coll.UUID, nil, nil)
+		c.Check(err, check.IsNil)
+	}
+}
+
+func (s *customFSSuite) TestMountByPDH(c *check.C) {
+	err := s.fs.MountByPDH("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountByPDH("dirname")
+	c.Assert(err, check.IsNil)
+	_, err = s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.UUID))
+	c.Check(err, check.Equals, os.ErrNotExist)
+	f, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.PortableDataHash))
+	c.Assert(err, check.IsNil)
+	f.Close()
+}
+
+func (s *customFSSuite) TestMountByID(c *check.C) {
+	err := s.fs.MountByID("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountByID("dirname")
+	c.Assert(err, check.IsNil)
+	f, err := s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.PortableDataHash))
+	c.Assert(err, check.IsNil)
+	f.Close()
+	f, err = s.fs.Open(fmt.Sprintf("/dirname/%s/testfile.txt", s.coll.UUID))
+	c.Assert(err, check.IsNil)
+	f.Close()
+	f, err = s.fs.Open(fmt.Sprintf("/dirname/%s/%s/testfile.txt", s.coll.OwnerUUID, s.coll.Name))
+	c.Assert(err, check.IsNil)
+	f.Close()
+}
+
+func (s *customFSSuite) TestMountTmp(c *check.C) {
+	err := s.fs.MountTmp("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountTmp("dirname")
+	c.Assert(err, check.IsNil)
+	{
+		f, err := s.fs.OpenFile("/dirname/testfile.txt", os.O_CREATE|os.O_RDWR, 0700)
+		c.Assert(err, check.IsNil)
+		_, err = f.Write([]byte("file data in temporary collection"))
+		c.Check(err, check.IsNil)
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+	{
+		f, err := s.fs.Open("/dirname/testfile.txt")
+		c.Assert(err, check.IsNil)
+		data, err := io.ReadAll(f)
+		c.Check(string(data), check.Equals, "file data in temporary collection")
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+	{
+		f, err := s.fs.Open("/dirname/.arvados#collection")
+		c.Assert(err, check.IsNil)
+		var tmpcoll Collection
+		err = json.NewDecoder(f).Decode(&tmpcoll)
+		c.Check(err, check.IsNil)
+		err = f.Close()
+		c.Check(err, check.IsNil)
+		c.Check(tmpcoll.ManifestText, check.Not(check.Equals), "")
+		c.Check(tmpcoll.ManifestText, check.Matches, `.*testfile\.txt\n`)
+		c.Check(tmpcoll.UUID, check.Equals, "")
+	}
+}
+
+func (s *customFSSuite) TestMountHome(c *check.C) {
+	err := s.fs.MountHome("a/b/c")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountHome(".")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountHome("..")
+	c.Assert(err, check.Equals, ErrInvalidArgument)
+	err = s.fs.MountHome("dirname")
+	c.Assert(err, check.IsNil)
+	{
+		f, err := s.fs.Open("/dirname/A Project/zzzzz-4zz18-fy296fx3hot09f7 added sometime/foo")
+		c.Assert(err, check.IsNil)
+		f.Close()
+	}
+	{
+		_, err := s.fs.OpenFile("/dirname/testfile.txt", os.O_CREATE, 0700)
+		c.Check(err, check.Equals, ErrInvalidOperation)
+	}
+	{
+		_, err := s.fs.Open("/dirname/.arvados#collection")
+		c.Check(os.IsNotExist(err), check.Equals, true)
+	}
 }

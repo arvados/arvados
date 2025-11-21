@@ -47,6 +47,10 @@ func newHandlerOrErrorHandler(ctx context.Context, cluster *arvados.Cluster, tok
 	if err != nil {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("Error setting up keep client: %w", err))
 	}
+	err = kc.RegisterMetrics(reg)
+	if err != nil {
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("Error setting up keep client metrics: %w", err))
+	}
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 	router, err := newHandler(ctx, kc, time.Duration(keepclient.DefaultProxyRequestTimeout), cluster)
 	if err != nil {

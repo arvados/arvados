@@ -6,6 +6,7 @@ require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
 require 'update_priorities'
+require 'validate_serialized'
 
 class Container < ArvadosModel
   include ArvadosModelUpdates

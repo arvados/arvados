@@ -382,11 +382,14 @@ class ArvadosContainer(JobBase):
         enable_reuse = runtimeContext.enable_reuse
         if enable_reuse:
             reuse_req, _ = self.get_requirement("WorkReuse")
-            if reuse_req:
+            if reuse_req:  # CWL >= v1.1; enableReuse can be an expression.
                 enable_reuse = reuse_req["enableReuse"]
-            reuse_req, _ = self.get_requirement("http://arvados.org/cwl#ReuseRequirement")
-            if reuse_req:
-                enable_reuse = reuse_req["enableReuse"]
+                if isinstance(enable_reuse, str):
+                    enable_reuse = self.builder.do_eval(enable_reuse)
+            else:  # Arv extension to CWL v1.0; enableReuse is a boolean.
+                reuse_req, _ = self.get_requirement("http://arvados.org/cwl#ReuseRequirement")
+                if reuse_req:
+                    enable_reuse = reuse_req["enableReuse"]
         container_request["use_existing"] = enable_reuse
 
         properties_req, _ = self.get_requirement("http://arvados.org/cwl#ProcessProperties")

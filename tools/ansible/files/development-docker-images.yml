@@ -29,6 +29,9 @@ arvados_build_one_target:
     arvados_pkgbuild_rocky9:
       arvados_docker_from: rockylinux:9-minimal
       arvados_docker_tag: arvados/build:rocky9
+    arvados_pkgbuild_rocky10:
+      arvados_docker_from: rockylinux/rockylinux:10-minimal
+      arvados_docker_tag: arvados/build:rocky10
   vars:
     arvados_docker_changes:
       - "ENV WORKSPACE=/arvados"
@@ -52,6 +55,9 @@ arvados_package_tests:
     arvados_pkgtest_rocky9:
       arvados_docker_from: rockylinux:9-minimal
       arvados_docker_tag: arvados/package-test:rocky9
+    arvados_pkgtest_rocky10:
+      arvados_docker_from: rockylinux/rockylinux:10-minimal
+      arvados_docker_tag: arvados/package-test:rocky10
   vars:
     arvados_docker_changes:
       - "ENV DEBIAN_FRONTEND=noninteractive"

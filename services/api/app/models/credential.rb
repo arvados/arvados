@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'validate_serialized'
+
 class Credential < ArvadosModel
   include HasUuid
   include KindAndEtag

@@ -11,6 +11,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,12 +35,26 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 	os.Setenv("ARVADOS_API_HOST", cluster.Services.Controller.ExternalURL.Host)
+
+	client, err := arvados.NewClientFromConfig(cluster)
+	if err != nil {
+		return nil, err
+	}
+	ac, err := arvadosclient.New(client)
+	if err != nil {
+		return nil, err
+	}
+	kc := keepclient.New(ac)
+	kc.DiskCacheSize = cluster.Collections.WebDAVCache.DiskCacheSize
+	kc.RegisterMetrics(reg)
+
 	return &handler{
 		Cluster: cluster,
 		Cache: cache{
-			cluster:  cluster,
-			logger:   logger,
-			registry: reg,
+			cluster:    cluster,
+			logger:     logger,
+			registry:   reg,
+			keepclient: kc,
 		},
 		metrics: newMetrics(reg),
 	}, nil

@@ -191,19 +191,28 @@ server {
 </code></pre>
 </notextile>
 
-h2. Enable development repository
+h2(#install-packages). Install arvados-api-server and arvados-controller
 
-Skip to the next section if you are installing on Debian or Ubuntu.
+h3. Red Hat, AlmaLinux, and Rocky Linux 8
 
-On Red Hat, AlmaLinux, and Rocky Linux, the API server package depends on development headers available from a separate repository. The repository you need depends on which version of the distribution you're running. Run the command given for your distribution below:
+<notextile>
+<pre><code># <span class="userinput">dnf install --enablerepo=powertools arvados-api-server arvados-controller</span>
+</code></pre>
+</notextile>
 
-|_. Distribution and version|_. Command to enable repository|
-|Red Hat/AlmaLinux/Rocky Linux 9|@# dnf config-manager --set-enabled devel@|
-|Red Hat/AlmaLinux/Rocky Linux 8|@# dnf config-manager --set-enabled powertools@|
+h3. Red Hat, AlmaLinux, and Rocky Linux 9 or 10
 
-{% assign arvados_component = 'arvados-api-server arvados-controller' %}
+<notextile>
+<pre><code># <span class="userinput">dnf install --enablerepo=devel arvados-api-server arvados-controller</span>
+</code></pre>
+</notextile>
 
-{% include 'install_packages' %}
+h3. Debian and Ubuntu
+
+<notextile>
+<pre><code># <span class="userinput">apt install arvados-api-server arvados-controller</span>
+</code></pre>
+</notextile>
 
 h3(#railsapi-config). Configure Rails API server
 

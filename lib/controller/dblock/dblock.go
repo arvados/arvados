@@ -127,8 +127,8 @@ func (dbl *DBLocker) Check() bool {
 	}
 	ctxlog.FromContext(dbl.ctx).WithError(err).Info("database connection ping failed")
 	dbl.conn.Close()
-	dbl.conn = nil
 	ctx, getdb := dbl.ctx, dbl.getdb
+	dbl.ctx, dbl.getdb, dbl.conn = nil, nil, nil
 	dbl.mtx.Unlock()
 	return dbl.Lock(ctx, getdb)
 }
@@ -144,6 +144,9 @@ func (dbl *DBLocker) Unlock() {
 			ctxlog.FromContext(dbl.ctx).WithField("ID", dbl.key).Debug("released pg_advisory_lock")
 		}
 		dbl.conn.Close()
-		dbl.conn = nil
 	}
+	// Ensure we don't interfere with garbage collection by
+	// retaining references to objects/closures provided by the
+	// caller for us to use while locked.
+	dbl.ctx, dbl.getdb, dbl.conn = nil, nil, nil
 }
