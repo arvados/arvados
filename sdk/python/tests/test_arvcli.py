@@ -25,18 +25,28 @@ def test_global_option_help_followed_by_subcommand():
     assert exit_status.value.code == 0
 
 
-def test_global_conflict_options():
+@pytest.mark.parametrize("first,second,format_in_effect", [
+    ("-s", "--format=yaml", "yaml"),
+    ("--format=yaml", "-s", "uuid"),
+])
+def test_global_format_options(first, second, format_in_effect):
+    parser = arvcli.ArvCLIArgumentParser()
+    args, _ = parser.parse_known_args([first, second, "ws"])
+    assert args.format == format_in_effect
+
+
+def test_no_subcommand():
     parser = arvcli.ArvCLIArgumentParser()
     with pytest.raises(SystemExit) as exit_status:
-        parser.parse_known_args(["-s", "--format=yaml"])
-    assert exit_status.value.code != 0
+        parser.parse_known_args(["-s"])
+    assert exit_status.value.code == 2
 
 
 def test_invalid_subcommand():
     parser = arvcli.ArvCLIArgumentParser()
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["foo"])
-    assert exit_status.value.code != 0
+    assert exit_status.value.code == 2
 
 
 # Pass-through (sub)commands and their corresponding 'entry point' functions.

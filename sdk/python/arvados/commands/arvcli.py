@@ -25,6 +25,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
     """
     def __init__(self, **kwargs):
         super().__init__(description="Arvados command line client",
+                         conflict_handler="resolve",
                          **kwargs)
         # Common flags to the main command.
         self.add_argument("-n", "--dry-run", action="store_true",
@@ -32,16 +33,15 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         self.add_argument("-v", "--verbose", action="store_true",
                           help="Print some things on stderr")
         # Default output format is JSON, while "-s" or "--short" can be
-        # used as a shorthand for "--format=uuid". Specifying both -f and
-        # -s is an error.
-        format_args = self.add_mutually_exclusive_group()
-        format_args.add_argument(
+        # used as a shorthand for "--format=uuid". If both are specified, the
+        # last one takes effect.
+        self.add_argument(
             "-f", "--format",
             choices=["json", "yaml", "uuid"],
             default="json",
             help="Set output format"
         )
-        format_args.add_argument(
+        self.add_argument(
             "-s", "--short",
             dest="format",
             action="store_const", const="uuid",
@@ -51,6 +51,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         subparsers = self.add_subparsers(
             dest="subcommand",
             help="Subcommands",
+            required=True,
             parser_class=functools.partial(
                 argparse.ArgumentParser,
                 add_help=False
