@@ -32,23 +32,23 @@ type sharedFile struct {
 // keepFS implements cgofuse's FileSystemInterface.
 type keepFS struct {
 	fuse.FileSystemBase
-	Client      *arvados.Client
-	KeepClient  *keepclient.KeepClient
-	ReadOnly    bool
-	Uid         int
-	Gid         int
-	Logger      logrus.FieldLogger
-	Registry    *prometheus.Registry
-	StatsOutput io.Writer
+	Client        *arvados.Client
+	KeepClient    *keepclient.KeepClient
+	ReadOnly      bool
+	Uid           int
+	Gid           int
+	Logger        logrus.FieldLogger
+	Registry      *prometheus.Registry
+	StatsOutput   io.Writer
+	StatsInterval time.Duration
 
-	root          arvados.CustomFileSystem
-	open          map[uint64]*sharedFile
-	lastFH        uint64
-	statsInterval time.Duration
-	done          chan struct{}
-	mBytes        *prometheus.CounterVec
-	mOps          *prometheus.CounterVec
-	mSeconds      *prometheus.CounterVec
+	root     arvados.CustomFileSystem
+	open     map[uint64]*sharedFile
+	lastFH   uint64
+	done     chan struct{}
+	mBytes   *prometheus.CounterVec
+	mOps     *prometheus.CounterVec
+	mSeconds *prometheus.CounterVec
 	sync.RWMutex
 
 	// If non-nil, this channel will be closed by Init() to notify
@@ -85,10 +85,10 @@ func (fs *keepFS) Init() {
 	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
 	fs.root.MountProject("home", "")
 	fs.done = make(chan struct{})
-	if fs.statsInterval > 0 {
+	if fs.StatsInterval > 0 {
 		fs.registerMetrics()
-		previousMetrics := gatherMetrics(fs.Registry) // Initial gather to establish baseline
-		ticker := time.NewTicker(fs.statsInterval)
+		var previousMetrics map[string]float64
+		ticker := time.NewTicker(fs.StatsInterval)
 		go func() {
 			for {
 				select {
@@ -96,7 +96,7 @@ func (fs *keepFS) Init() {
 					return
 				case <-ticker.C:
 					currentMetrics := gatherMetrics(fs.Registry)
-					lines := FormatMetrics(currentMetrics, previousMetrics, fs.statsInterval.Seconds())
+					lines := fs.formatMetrics(currentMetrics, previousMetrics, fs.StatsInterval.Seconds())
 					writer := fs.StatsOutput
 					if writer == nil {
 						writer = os.Stderr
@@ -120,16 +120,22 @@ func (fs *keepFS) Destroy() {
 
 func (fs *keepFS) registerMetrics() {
 	fs.mBytes = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "arvados_fuse_bytes",
-		Help: "Bytes read/written by the FUSE filesystem",
+		Namespace: "arvados",
+		Subsystem: "fuse",
+		Name:      "bytes",
+		Help:      "Bytes read/written by the FUSE filesystem",
 	}, []string{"fuseop"})
 	fs.mOps = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "arvados_fuse_ops",
-		Help: "FUSE filesystem operations",
+		Namespace: "arvados",
+		Subsystem: "fuse",
+		Name:      "ops",
+		Help:      "FUSE filesystem operations",
 	}, []string{"fuseop"})
 	fs.mSeconds = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "arvados_fuse_seconds_total",
-		Help: "Time spent in FUSE filesystem operations",
+		Namespace: "arvados",
+		Subsystem: "fuse",
+		Name:      "seconds_total",
+		Help:      "Time spent in FUSE filesystem operations",
 	}, []string{"fuseop"})
 
 	fs.Registry.MustRegister(fs.mBytes)
@@ -139,21 +145,19 @@ func (fs *keepFS) registerMetrics() {
 
 func gatherMetrics(reg *prometheus.Registry) map[string]float64 {
 	metricsMap := map[string]float64{}
-	metricFamilies, err := reg.Gather()
-	if err == nil {
-		for _, mf := range metricFamilies {
-			for _, metric := range mf.GetMetric() {
-				var operation string
-				for _, label := range metric.GetLabel() {
-					if label.GetName() == "fuseop" {
-						operation = label.GetValue()
-						break
-					}
+	metricFamilies, _ := reg.Gather()
+	for _, mf := range metricFamilies {
+		for _, metric := range mf.GetMetric() {
+			var operation string
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == "fuseop" {
+					operation = label.GetValue()
+					break
 				}
-				if operation != "" && metric.Counter != nil {
-					metricName := mf.GetName() + "{fuseop=\"" + operation + "\"}"
-					metricsMap[metricName] = metric.GetCounter().GetValue()
-				}
+			}
+			if operation != "" && metric.Counter != nil {
+				metricName := mf.GetName() + "{fuseop=\"" + operation + "\"}"
+				metricsMap[metricName] = metric.GetCounter().GetValue()
 			}
 		}
 	}
@@ -172,7 +176,7 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 	}
 }
 
-func FormatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
+func (*keepFS) formatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
 	var lines []string
 
 	getCurrentAndDelta := func(name string) (float64, float64) {

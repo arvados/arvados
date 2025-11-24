@@ -117,7 +117,7 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="write"}`:   0.234567,
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.045678,
 	}
-	lines := FormatMetrics(currentMetrics, previousMetrics, 1.0)
+	lines := s.fs.formatMetrics(currentMetrics, previousMetrics, 1.0)
 
 	c.Check(len(lines), Equals, 19) // 1 summary + 18 operations
 	c.Check(lines[0], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
@@ -153,7 +153,7 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="write"}`:   0.350000,
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.075000,
 	}
-	lines = FormatMetrics(currentMetrics, previousMetrics, 1.0)
+	lines = s.fs.formatMetrics(currentMetrics, previousMetrics, 1.0)
 
 	// Check summary line shows totals and deltas
 	c.Check(lines[0], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
