@@ -49,13 +49,13 @@ func (s *authorizedKeySuite) TestAuthorizedKeyCreate(c *C) {
 			"name":       "testkey",
 			"public_key": "ssh-dsa boguskey\n",
 		}})
-	c.Check(err, ErrorMatches, `Public key does not appear to be valid: ssh: no key found`)
+	c.Check(err, ErrorMatches, `Public key does not appear to be valid: ssh: no key found; .*`)
 	_, err = s.localdb.AuthorizedKeyUpdate(s.userctx, arvados.UpdateOptions{
 		UUID: ak.UUID,
 		Attrs: map[string]interface{}{
 			"public_key": strings.Replace(testPubKey, "A", "#", 1),
 		}})
-	c.Check(err, ErrorMatches, `Public key does not appear to be valid: ssh: no key found`)
+	c.Check(err, ErrorMatches, `Public key does not appear to be valid: ssh: no key found; .*`)
 	_, err = s.localdb.AuthorizedKeyUpdate(s.userctx, arvados.UpdateOptions{
 		UUID: ak.UUID,
 		Attrs: map[string]interface{}{

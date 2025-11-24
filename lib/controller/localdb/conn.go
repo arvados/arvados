@@ -80,7 +80,7 @@ func (conn *Conn) checkProperties(ctx context.Context, properties interface{}) e
 	}
 	err = voc.Check(props)
 	if err != nil {
-		return httpErrorf(http.StatusBadRequest, voc.Check(props).Error())
+		return httpserver.ErrorWithStatus(err, http.StatusBadRequest)
 	}
 	return nil
 }
