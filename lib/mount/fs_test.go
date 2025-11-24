@@ -110,6 +110,14 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 	// Zero to first tick
 	previousMetrics := map[string]float64{}
 	currentMetrics := map[string]float64{
+		// Keep client metrics
+		`arvados_keepclient_backend_bytes{direction="out"}`: 1024,
+		`arvados_keepclient_backend_bytes{direction="in"}`:  2048,
+		`arvados_keepclient_requests_total{method="PUT"}`:   5,
+		`arvados_keepclient_requests_total{method="GET"}`:   10,
+		`arvados_keepclient_cache_hit_total`:                8,
+		`arvados_keepclient_cache_miss_total`:               2,
+		// FUSE metrics
 		`arvados_fuse_ops{fuseop="read"}`:              5,
 		`arvados_fuse_ops{fuseop="write"}`:             3,
 		`arvados_fuse_ops{fuseop="getattr"}`:           10,
@@ -119,9 +127,14 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 	}
 	lines := s.fs.formatMetrics(currentMetrics, previousMetrics, 1.0)
 
-	c.Check(len(lines), Equals, 19) // 1 summary + 18 operations
-	c.Check(lines[0], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
-	c.Check(lines[1], Equals, "crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time")
+	c.Check(len(lines), Equals, 23) // 5 summary stats + 18 operations
+	// These lines are always in this order
+	c.Check(lines[0], Matches, "crunchstat: net:keep0 1024 tx 2048 rx -- interval 1.0000 seconds 1024 tx 2048 rx.*")
+	c.Check(lines[1], Equals, "crunchstat: keepcalls 5 put 10 get -- interval 1.0000 seconds 5 put 10 get")
+	c.Check(lines[2], Equals, "crunchstat: keepcache 8 hit 2 miss -- interval 1.0000 seconds 8 hit 2 miss")
+	c.Check(lines[3], Equals, "crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read")
+	c.Check(lines[4], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
+	c.Check(lines[5], Equals, "crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time")
 
 	// Check read and write lines
 	var readLine, writeLine string
@@ -138,6 +151,14 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 
 	// First tick to second tick
 	previousMetrics = map[string]float64{
+		// Keep client metrics
+		`arvados_keepclient_backend_bytes{direction="out"}`: 512,
+		`arvados_keepclient_backend_bytes{direction="in"}`:  1024,
+		`arvados_keepclient_requests_total{method="PUT"}`:   2,
+		`arvados_keepclient_requests_total{method="GET"}`:   5,
+		`arvados_keepclient_cache_hit_total`:                3,
+		`arvados_keepclient_cache_miss_total`:               1,
+		// FUSE metrics
 		`arvados_fuse_ops{fuseop="read"}`:              3,
 		`arvados_fuse_ops{fuseop="write"}`:             1,
 		`arvados_fuse_ops{fuseop="getattr"}`:           7,
@@ -146,6 +167,14 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.030000,
 	}
 	currentMetrics = map[string]float64{
+		// Keep client metrics (increased)
+		`arvados_keepclient_backend_bytes{direction="out"}`: 2048,
+		`arvados_keepclient_backend_bytes{direction="in"}`:  4096,
+		`arvados_keepclient_requests_total{method="PUT"}`:   7,
+		`arvados_keepclient_requests_total{method="GET"}`:   15,
+		`arvados_keepclient_cache_hit_total`:                11,
+		`arvados_keepclient_cache_miss_total`:               4,
+		// FUSE metrics (increased)
 		`arvados_fuse_ops{fuseop="read"}`:              8,
 		`arvados_fuse_ops{fuseop="write"}`:             5,
 		`arvados_fuse_ops{fuseop="getattr"}`:           15,
@@ -155,19 +184,43 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 	}
 	lines = s.fs.formatMetrics(currentMetrics, previousMetrics, 1.0)
 
-	// Check summary line shows totals and deltas
-	c.Check(lines[0], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
+	// These lines are always in this order
+	c.Check(lines[0], Matches, "crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx.*")
+	c.Check(lines[1], Equals, "crunchstat: keepcalls 7 put 15 get -- interval 1.0000 seconds 5 put 10 get")
+	c.Check(lines[2], Equals, "crunchstat: keepcache 11 hit 4 miss -- interval 1.0000 seconds 8 hit 3 miss")
+	c.Check(lines[3], Equals, "crunchstat: blkio:0:0 2048 write 4096 read -- interval 1.0000 seconds 1536 write 3072 read")
+	c.Check(lines[4], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
 
-	// Check individual operations and deltas
-	for _, line := range lines {
-		if strings.HasPrefix(line, "crunchstat: fuseop:read ") {
-			c.Check(line, Equals, "crunchstat: fuseop:read 8 count 0.250000 time -- interval 1.0000 seconds 5 count 0.150000 time")
+	statLine := func(op string) string {
+		for _, line := range lines {
+			if strings.HasPrefix(line, "crunchstat: fuseop:"+op+" ") {
+				return line
+			}
 		}
-		if strings.HasPrefix(line, "crunchstat: fuseop:write ") {
-			c.Check(line, Equals, "crunchstat: fuseop:write 5 count 0.350000 time -- interval 1.0000 seconds 4 count 0.150000 time")
-		}
-		if strings.HasPrefix(line, "crunchstat: fuseop:getattr ") {
-			c.Check(line, Equals, "crunchstat: fuseop:getattr 15 count 0.075000 time -- interval 1.0000 seconds 8 count 0.045000 time")
-		}
+		return ""
+	}
+
+	opsOutputHash := map[string]string{
+		"read":       "crunchstat: fuseop:read 8 count 0.250000 time -- interval 1.0000 seconds 5 count 0.150000 time",
+		"write":      "crunchstat: fuseop:write 5 count 0.350000 time -- interval 1.0000 seconds 4 count 0.150000 time",
+		"getattr":    "crunchstat: fuseop:getattr 15 count 0.075000 time -- interval 1.0000 seconds 8 count 0.045000 time",
+		"open":       "crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"release":    "crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"opendir":    "crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"releasedir": "crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"readdir":    "crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"mknod":      "crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"mkdir":      "crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"unlink":     "crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"rmdir":      "crunchstat: fuseop:rmdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"rename":     "crunchstat: fuseop:rename 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"truncate":   "crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"utimens":    "crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"fsync":      "crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"fsyncdir":   "crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+	}
+
+	for op, output := range opsOutputHash {
+		c.Check(statLine(op), Equals, output)
 	}
 }

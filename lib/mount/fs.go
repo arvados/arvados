@@ -185,6 +185,28 @@ func (*keepFS) formatMetrics(currentMetrics, previousMetrics map[string]float64,
 		return current, current - previous
 	}
 
+	// Keep client network stats
+	bytesOut, bytesOutDelta := getCurrentAndDelta(`arvados_keepclient_backend_bytes{direction="out"}`)
+	bytesIn, bytesInDelta := getCurrentAndDelta(`arvados_keepclient_backend_bytes{direction="in"}`)
+	lines = append(lines, fmt.Sprintf("crunchstat: net:keep0 %.0f tx %.0f rx -- interval %.4f seconds %.0f tx %.0f rx	",
+		bytesOut, bytesIn, intervalSeconds, bytesOutDelta, bytesInDelta))
+
+	// Keep client call stats
+	putCalls, putCallsDelta := getCurrentAndDelta(`arvados_keepclient_requests_total{method="PUT"}`)
+	getCalls, getCallsDelta := getCurrentAndDelta(`arvados_keepclient_requests_total{method="GET"}`)
+	lines = append(lines, fmt.Sprintf("crunchstat: keepcalls %.0f put %.0f get -- interval %.4f seconds %.0f put %.0f get",
+		putCalls, getCalls, intervalSeconds, putCallsDelta, getCallsDelta))
+
+	// Keep cache stats (if available)
+	cacheHit, cacheHitDelta := getCurrentAndDelta(`arvados_keepclient_cache_hit_total`)
+	cacheMiss, cacheMissDelta := getCurrentAndDelta(`arvados_keepclient_cache_miss_total`)
+	lines = append(lines, fmt.Sprintf("crunchstat: keepcache %.0f hit %.0f miss -- interval %.4f seconds %.0f hit %.0f miss",
+		cacheHit, cacheMiss, intervalSeconds, cacheHitDelta, cacheMissDelta))
+
+	// Block I/O stats (map from keep client bytes)
+	lines = append(lines, fmt.Sprintf("crunchstat: blkio:0:0 %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read",
+		bytesOut, bytesIn, intervalSeconds, bytesOutDelta, bytesInDelta))
+
 	// FUSE operation summary
 	readOps, readOpsDelta := getCurrentAndDelta(`arvados_fuse_ops{fuseop="read"}`)
 	writeOps, writeOpsDelta := getCurrentAndDelta(`arvados_fuse_ops{fuseop="write"}`)
