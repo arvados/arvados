@@ -65,6 +65,8 @@ func (s *CmdSuite) TestMount(c *check.C) {
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
 		c.Check(os.IsNotExist(err), check.Equals, true)
 
+		c.Check(stderr.String(), check.Equals, "")
+
 		ok := mountCmd.Unmount()
 		c.Check(ok, check.Equals, true)
 

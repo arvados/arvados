@@ -32,19 +32,20 @@ type sharedFile struct {
 // keepFS implements cgofuse's FileSystemInterface.
 type keepFS struct {
 	fuse.FileSystemBase
-	Client     *arvados.Client
-	KeepClient *keepclient.KeepClient
-	ReadOnly   bool
-	Uid        int
-	Gid        int
-	Logger     logrus.FieldLogger
+	Client      *arvados.Client
+	KeepClient  *keepclient.KeepClient
+	ReadOnly    bool
+	Uid         int
+	Gid         int
+	Logger      logrus.FieldLogger
+	Registry    *prometheus.Registry
+	StatsOutput io.Writer
 
 	root          arvados.CustomFileSystem
 	open          map[uint64]*sharedFile
 	lastFH        uint64
 	statsInterval time.Duration
 	done          chan struct{}
-	Registry      *prometheus.Registry
 	mBytes        *prometheus.CounterVec
 	mOps          *prometheus.CounterVec
 	mSeconds      *prometheus.CounterVec
@@ -96,8 +97,12 @@ func (fs *keepFS) Init() {
 				case <-ticker.C:
 					currentMetrics := gatherMetrics(fs.Registry)
 					lines := FormatMetrics(currentMetrics, previousMetrics, fs.statsInterval.Seconds())
+					writer := fs.StatsOutput
+					if writer == nil {
+						writer = os.Stderr
+					}
 					for _, line := range lines {
-						fs.Logger.Info(line)
+						fmt.Fprintf(writer, "%s\n", line)
 					}
 					previousMetrics = currentMetrics
 				}

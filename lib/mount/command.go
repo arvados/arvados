@@ -106,6 +106,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		Logger:        logger,
 		ready:         c.ready,
 		Registry:      registry,
+		StatsOutput:   stderr,
 		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
 	})
 	c.Unmount = host.Unmount
