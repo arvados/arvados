@@ -29,7 +29,7 @@
 - name: Install Loki package
   become: yes
   ansible.builtin.apt:
-    name: loki=3.*
+    name: loki
 
 - name: Create Loki config dir
   ansible.builtin.file:
