@@ -32,11 +32,16 @@
     name: loki
 
 - name: Create Loki config dir
+  become: yes
   ansible.builtin.file:
     path: /etc/loki
     state: directory
+    owner: root
+    group: root
+    mode: 0755 # Matches the default permissions used by the grafana loki package
 
 - name: Write Loki config.yml
+  become: yes
   no_log: yes
   ansible.builtin.copy:
     src: "{{ arvados_loki_config_file }}"
