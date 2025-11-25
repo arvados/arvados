@@ -1,0 +1,59 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Loki package pin
+  become: yes
+  ansible.builtin.copy:
+    src: arvados-loki.pref
+    dest: /etc/apt/preferences.d/arvados-loki.pref
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Add Grafana apt repository
+  become: yes
+  ansible.builtin.deb822_repository:
+    name: grafana
+    types: deb
+    uris: https://apt.grafana.com
+    suites: stable
+    components: main
+    signed_by: https://apt.grafana.com/gpg.key
+  notify:
+    - apt update
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install Loki package
+  become: yes
+  ansible.builtin.apt:
+    name: loki
+
+- name: Create Loki config dir
+  become: yes
+  ansible.builtin.file:
+    path: /etc/loki
+    state: directory
+    owner: root
+    group: root
+    mode: 0755 # Matches the default permissions used by the grafana loki package
+
+- name: Write Loki config.yml
+  become: yes
+  no_log: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_loki_config_file }}"
+    dest: /etc/loki/config.yml
+    owner: root
+    group: root
+    mode: 0664 # Matches the default permissions used by the grafana loki package
+  register: arvados_loki_config_copy
+
+- name: Start and enable loki.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: loki.service
+    state: "{{ 'restarted' if arvados_loki_config_copy.changed else 'started' }}"
+    enabled: true

@@ -1,0 +1,10 @@
+### This file is managed by Ansible ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Pin Loki packages to tested and known-good versions
+
+Package: loki
+Pin: version 3.*
+Pin-Priority: 995
