@@ -113,11 +113,13 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		// Keep client metrics
 		`arvados_keepclient_backend_bytes{direction="out"}`: 1024,
 		`arvados_keepclient_backend_bytes{direction="in"}`:  2048,
-		`arvados_keepclient_requests_total{method="PUT"}`:   5,
-		`arvados_keepclient_requests_total{method="GET"}`:   10,
-		`arvados_keepclient_cache_hit_total`:                8,
-		`arvados_keepclient_cache_miss_total`:               2,
+		`arvados_keepclient_ops{op="put"}`:                  5,
+		`arvados_keepclient_ops{op="get"}`:                  10,
+		`arvados_keepclient_cache{event="hit"}`:             8,
+		`arvados_keepclient_cache{event="miss"}`:            2,
 		// FUSE metrics
+		`arvados_fuse_bytes{fuseop="read"}`:            2048,
+		`arvados_fuse_bytes{fuseop="write"}`:           1024,
 		`arvados_fuse_ops{fuseop="read"}`:              5,
 		`arvados_fuse_ops{fuseop="write"}`:             3,
 		`arvados_fuse_ops{fuseop="getattr"}`:           10,
@@ -154,11 +156,13 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		// Keep client metrics
 		`arvados_keepclient_backend_bytes{direction="out"}`: 512,
 		`arvados_keepclient_backend_bytes{direction="in"}`:  1024,
-		`arvados_keepclient_requests_total{method="PUT"}`:   2,
-		`arvados_keepclient_requests_total{method="GET"}`:   5,
-		`arvados_keepclient_cache_hit_total`:                3,
-		`arvados_keepclient_cache_miss_total`:               1,
+		`arvados_keepclient_ops{op="put"}`:                  2,
+		`arvados_keepclient_ops{op="get"}`:                  5,
+		`arvados_keepclient_cache{event="hit"}`:             3,
+		`arvados_keepclient_cache{event="miss"}`:            1,
 		// FUSE metrics
+		`arvados_fuse_bytes{fuseop="read"}`:            1024,
+		`arvados_fuse_bytes{fuseop="write"}`:           512,
 		`arvados_fuse_ops{fuseop="read"}`:              3,
 		`arvados_fuse_ops{fuseop="write"}`:             1,
 		`arvados_fuse_ops{fuseop="getattr"}`:           7,
@@ -170,11 +174,13 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		// Keep client metrics (increased)
 		`arvados_keepclient_backend_bytes{direction="out"}`: 2048,
 		`arvados_keepclient_backend_bytes{direction="in"}`:  4096,
-		`arvados_keepclient_requests_total{method="PUT"}`:   7,
-		`arvados_keepclient_requests_total{method="GET"}`:   15,
-		`arvados_keepclient_cache_hit_total`:                11,
-		`arvados_keepclient_cache_miss_total`:               4,
+		`arvados_keepclient_ops{op="put"}`:                  7,
+		`arvados_keepclient_ops{op="get"}`:                  15,
+		`arvados_keepclient_cache{event="hit"}`:             11,
+		`arvados_keepclient_cache{event="miss"}`:            4,
 		// FUSE metrics (increased)
+		`arvados_fuse_bytes{fuseop="read"}`:            4096,
+		`arvados_fuse_bytes{fuseop="write"}`:           2048,
 		`arvados_fuse_ops{fuseop="read"}`:              8,
 		`arvados_fuse_ops{fuseop="write"}`:             5,
 		`arvados_fuse_ops{fuseop="getattr"}`:           15,
@@ -218,6 +224,7 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		"utimens":    "crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"fsync":      "crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"fsyncdir":   "crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"create":     "crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 	}
 
 	for op, output := range opsOutputHash {
