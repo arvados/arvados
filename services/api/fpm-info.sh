@@ -32,6 +32,7 @@ case "$TARGET" in
             "ruby-devel >= 3.0.0"
             zlib-devel
             # Passenger runtime dependencies
+            ccache
             libnsl
             openssl-devel
             rubygem-rake
@@ -50,6 +51,7 @@ case "$TARGET" in
             "ruby-devel >= 3.0.0"
             zlib-devel
             # Passenger runtime dependencies
+            ccache
             libnsl
             openssl-devel
             rubygem-rake
@@ -68,6 +70,7 @@ case "$TARGET" in
             "ruby-dev >= 3.0.0"
             zlib1g-dev
             # Passenger runtime dependencies
+            ccache
             libnsl2
             libnss-systemd
             libssl-dev

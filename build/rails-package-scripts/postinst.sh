@@ -211,6 +211,8 @@ fi
 # `passenger-config install-standalone-runtime` downloads an agent, but at
 # least with Passenger 6.0.23 (late 2024), that version tends to segfault.
 # Compiling our own is safer.
+export CC="ccache gcc"
+export CXX="ccache g++"
 "$BUNDLE" exec "$passenger-config" compile-agent --auto --optimize
 "$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
 
