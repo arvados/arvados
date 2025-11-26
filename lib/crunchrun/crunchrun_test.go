@@ -45,6 +45,10 @@ func TestCrunchExec(t *testing.T) {
 	TestingT(t)
 }
 
+func init() {
+	arvadostest.StartKeep(2, true)
+}
+
 const logLineStart = `(?m)(.*\n)*\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z `
 
 var _ = Suite(&TestSuite{})

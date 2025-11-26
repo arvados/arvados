@@ -49,8 +49,6 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 		c.Skip("looks like docker is not installed")
 	}
 
-	arvadostest.StartKeep(2, true)
-
 	out, err := exec.Command("docker", "load", "--input", arvadostest.BusyboxDockerImage(c)).CombinedOutput()
 	c.Log(string(out))
 	c.Assert(err, IsNil)
