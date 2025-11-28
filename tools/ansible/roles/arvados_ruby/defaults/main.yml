@@ -9,4 +9,7 @@ arvados_ruby_destdir: "/opt/ruby-{{ arvados_ruby_version }}"
 # source on modern distros. Compromise on 3.1.
 arvados_ruby_version: "3.1.7"
 
+arvados_bundler_gem_dir: /opt/arvados-bundler
+arvados_bundler_bin_dir: "{{ (arvados_bundler_gem_dir, 'bin')|path_join }}"
+arvados_bundler_version: "~> 2.5.23"
 ruby_minor_version: "{{ arvados_ruby_version|regex_search('^[0-9]+\\.[0-9]+\\b') }}"

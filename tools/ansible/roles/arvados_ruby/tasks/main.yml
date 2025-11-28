@@ -25,9 +25,26 @@
     - ri
     - ruby
 
+# The Rails packaging scripts need Bundler in a dedicated $GEM_HOME in order
+# to avoid Bundler packaging bugs.
 - name: Install bundler gem
   become: yes
   community.general.gem:
     name: bundler
+    version: "{{ arvados_bundler_version }}"
+    install_dir: "{{ arvados_bundler_gem_dir }}"
+    bindir: "{{ arvados_bundler_bin_dir }}"
     user_install: no
-    version: "~> 2.5.23"
+
+# Make that version usable for other tasks.
+- name: Install Bundler scripts
+  become: yes
+  ansible.builtin.template:
+    src: bundler.sh.j2
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - bundle
+    - bundler
