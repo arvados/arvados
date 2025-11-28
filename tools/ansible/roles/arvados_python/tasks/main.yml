@@ -1,0 +1,22 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Check for Python installed from source
+  ansible.builtin.stat:
+    path: "{{ (arvados_python_destdir, 'bin/python3')|path_join }}"
+  register: python_stat
+
+- ansible.builtin.include_tasks: install_from_source.yml
+  when: "not (arvados_dev_from_pkgs or python_stat.stat.exists)"
+
+- name: Add Python commands to PATH
+  when: "arvados_dev_from_pkgs is truthy"
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ (arvados_python_destdir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+  loop:
+    - python3
+    - "python{{ arvados_python_version|regex_search('^[0-9]+\\.[0-9]+\\b') }}"

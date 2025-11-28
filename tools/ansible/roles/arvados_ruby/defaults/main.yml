@@ -1,0 +1,12 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_dev_from_pkgs: false
+arvados_ruby_destdir: "/opt/ruby-{{ arvados_ruby_version }}"
+# The oldest version of Ruby we actually support is 3.0, but unfortunately
+# it can't be built with OpenSSL 3.0, making it much harder to build from
+# source on modern distros. Compromise on 3.1.
+arvados_ruby_version: "3.1.7"
+
+ruby_minor_version: "{{ arvados_ruby_version|regex_search('^[0-9]+\\.[0-9]+\\b') }}"

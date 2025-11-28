@@ -1,0 +1,33 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Check for Ruby installed from source
+  ansible.builtin.stat:
+    path: "{{ (arvados_ruby_destdir, 'bin/ruby')|path_join }}"
+  register: ruby_stat
+
+- ansible.builtin.include_tasks: install_from_source.yml
+  when: "not (arvados_dev_from_pkgs or ruby_stat.stat.exists)"
+
+- name: Add Ruby commands to PATH
+  when: "arvados_dev_from_pkgs is truthy"
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ (arvados_ruby_destdir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+  loop:
+    - gem
+    - irb
+    - rake
+    - rdoc
+    - ri
+    - ruby
+
+- name: Install bundler gem
+  become: yes
+  community.general.gem:
+    name: bundler
+    user_install: no
+    version: "~> 2.5.23"

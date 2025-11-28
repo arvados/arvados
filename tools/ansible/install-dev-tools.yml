@@ -251,53 +251,12 @@
 - hosts: arvados_build_python
   tasks:
     - ansible.builtin.include_role:
-        name: distro_packages
-      vars:
-        task_name: Install Python build requirements
-        package_names:
-          - g++
-          - libcurl4-openssl-dev
-          - libfuse-dev
-          - libssl-dev
-          - make
-          - pkgconf
-          - python3-dev
-          - python3-venv
+        name: arvados_python
 
 - hosts: arvados_build_ruby
   tasks:
     - ansible.builtin.include_role:
-        name: distro_dnf
-      vars:
-        arvados_dnf_modules:
-          - ruby
-
-    - ansible.builtin.include_role:
-        name: distro_packages
-      vars:
-        task_name: Install Ruby build requirements
-        package_names:
-          - bison
-          - g++
-          - libcurl4-openssl-dev
-          - libpq-dev
-          - libssl-dev
-          - libyaml-dev
-          - make
-          - pkgconf
-          - postgresql-client
-          - procps
-          - ruby
-          - ruby-dev
-          - shared-mime-info
-          - zlib1g-dev
-
-    - name: Install bundler gem
-      become: yes
-      community.general.gem:
-        name: bundler
-        user_install: no
-        version: "~> 2.5.23"
+        name: arvados_ruby
 
 ### Distribution package dependencies
 # These are ordered here because they depend on the core language
@@ -313,16 +272,6 @@
           - "-e"
           - print RUBY_VERSION
       register: ruby_version
-
-    # This is a dependency of fpm that dropped support for Ruby 2.7
-    # in its 3.0 release.
-    - name: Install dotenv gem
-      when: "ruby_version.stdout is version('3.0.0', operator='<')"
-      become: yes
-      community.general.gem:
-        name: dotenv
-        user_install: no
-        version: "~> 2.8"
 
     - name: Install fpm gem
       become: yes
