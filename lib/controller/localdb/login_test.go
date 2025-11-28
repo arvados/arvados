@@ -38,8 +38,6 @@ func (s *loginSuite) TestValidateLoginRedirectTarget(c *check.C) {
 
 		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://ok.wildcard.example/"},
 		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://ok.ok.wildcard.example/"},
-		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://[ok.ok.wildcard.example]:443/"},
-		{true, "https://wb1.example/", "https://wb2.example/", "https://[*.wildcard.example]:443", "https://ok.ok.wildcard.example/"},
 		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example:443", "https://ok.wildcard.example/"},
 		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://ok.wildcard.example:443/"},
 		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example:443", "https://ok.wildcard.example:443/"},
@@ -56,6 +54,7 @@ func (s *loginSuite) TestValidateLoginRedirectTarget(c *check.C) {
 		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://attacker.example/?https://ok.wildcard.example/"},
 		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://attacker.example/#https://ok.wildcard.example/"},
 		{false, "https://wb1.example/", "https://wb2.example/", "https://*-wildcard.example", "https://notsupported-wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://[notipv6.wildcard.example]:443/"},
 	} {
 		c.Logf("trial %+v", trial)
 		// We use json.Unmarshal() to load the test strings

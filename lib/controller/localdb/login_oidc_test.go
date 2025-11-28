@@ -783,8 +783,8 @@ func (s *OIDCLoginSuite) TestValidateLoginRedirectTarget(c *check.C) {
 		// localhost or non-listed private IP addr => accept only if TrustPrivateNetworks is set
 		{false, false, "https://localhost/"},
 		{true, true, "https://localhost/"},
-		{false, false, "https://[10.9.8.7]:80/foo"},
-		{true, true, "https://[10.9.8.7]:80/foo"},
+		{false, false, "https://10.9.8.7:80/foo"},
+		{true, true, "https://10.9.8.7:80/foo"},
 		{false, false, "https://[::1]:80/foo"},
 		{true, true, "https://[::1]:80/foo"},
 		{true, true, "http://192.168.1.1/"},
@@ -792,6 +792,7 @@ func (s *OIDCLoginSuite) TestValidateLoginRedirectTarget(c *check.C) {
 		// bad url => deny
 		{false, true, "https://10.1.1.1:blorp/foo"},        // non-numeric port
 		{false, true, "https://app.example.com:blorp/foo"}, // non-numeric port
+		{false, true, "https://[10.9.8.7]:80/foo"},
 		{false, true, "https://]:443"},
 		{false, true, "https://"},
 		{false, true, "https:"},
