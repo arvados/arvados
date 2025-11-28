@@ -393,7 +393,7 @@
         name:
           # services/keep-web
           - cadaver
-          - mime-support
+          - media-types
 
 ### Individual component dependencies
 

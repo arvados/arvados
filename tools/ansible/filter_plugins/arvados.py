@@ -33,6 +33,7 @@ _RHEL_BASE: PackageMapping = {
         'libpq-dev': ['postgresql-devel'],
         'libssl-dev': ['openssl-devel'],
         'libyaml-dev': ['libyaml-devel'],
+        'media-types': ['mailcap'],
         'postgresql': ['postgresql-server'],
         'postgresql-client': ['postgresql'],
         'procps': ['procps-ng'],
