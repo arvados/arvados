@@ -149,9 +149,6 @@ sanity_checks() {
     python3 -m venv --help | grep -q '^usage: venv ' \
         && echo "venv module found" \
         || fatal "No virtualenv. Try: apt-get install python3-venv"
-    echo -n 'Python3 pyconfig.h: '
-    find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
-        || fatal "No Python3 pyconfig.h. Try: apt-get install python3-dev"
     which netstat \
         || fatal "No netstat. Try: apt-get install net-tools"
     echo -n 'nginx: '
