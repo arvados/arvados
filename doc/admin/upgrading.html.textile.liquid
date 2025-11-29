@@ -32,6 +32,10 @@ h2(#main). development main
 
 "previous: Upgrading to 3.2.0":#v3_2_0
 
+h3. Configuration URLs are stricter about bracketed addresses
+
+The new version of Go used to build this release has stricter URL parsing: _only_ an IPv6 address can appear inside brackets around the network location of the URL. If your cluster configuration includes URLs with brackets around DNS hostnames or IPv4 addresses, remove those brackets before upgrading.
+
 h2(#v3_2_0). v3.2.0 (2025-11-03)
 
 "previous: Upgrading to 3.1.2":#v3_1_2
