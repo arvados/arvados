@@ -79,6 +79,17 @@ PYTHONPATH=
 GEMHOME=
 R_LIBS=
 export LANG=en_US.UTF-8
+# googleapiclient raises a FutureWarning if you use a recent version with the
+# last supported version of Python. That interferes with tests that check CLI
+# tool stderr. Filter it out, filling in default warnings if needed.
+# <https://docs.python.org/3.10/library/warnings.html#default-warning-filter>
+export PYTHONWARNINGS="ignore::FutureWarning:google.api_core._python_version_support,${PYTHONWARNINGS:-\
+default::DeprecationWarning:__main__\
+,ignore::DeprecationWarning\
+,ignore::PendingDeprecationWarning\
+,ignore::ImportWarning\
+,ignore::ResourceWarning\
+}"
 
 # setup_ruby_environment will set this to the path of the `bundle` executable
 # it installs. This stub will cause commands to fail if they try to run before
