@@ -38,6 +38,7 @@ type keepFS struct {
 	Logger     logrus.FieldLogger
 
 	root          arvados.CustomFileSystem
+	customDirName string
 	open          map[uint64]*sharedFile
 	lastFH        uint64
 	statsInterval time.Duration

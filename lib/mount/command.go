@@ -54,6 +54,9 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
+	mountById := flags.String("mount-by-id", "", "Make a magic directory available where collections and "+
+		"projects are accessible through subdirectories named after their UUID or "+
+		"portable data hash. (experimental)")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
 	}
@@ -79,6 +82,9 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Error("-crunchstat-interval must be non-negative")
 		return 2
 	}
+	if *mountById == "" {
+		logger.Error("-mount-by-id requires a directory name")
+	}
 
 	client := arvados.NewClientFromEnv()
 	if err := yaml.Unmarshal([]byte(*cacheSizeStr), &client.DiskCacheSize); err != nil {
@@ -103,6 +109,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		Gid:           os.Getgid(),
 		Logger:        logger,
 		ready:         c.ready,
+		customDirName: *mountById,
 		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
 	})
 	c.Unmount = host.Unmount
