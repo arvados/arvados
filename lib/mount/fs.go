@@ -96,7 +96,7 @@ func (fs *keepFS) Init() {
 					return
 				case <-ticker.C:
 					currentMetrics := gatherMetrics(fs.Registry)
-					lines := fs.formatMetrics(currentMetrics, previousMetrics, fs.StatsInterval.Seconds())
+					lines := FormatMetrics(currentMetrics, previousMetrics, fs.StatsInterval.Seconds())
 					writer := fs.StatsOutput
 					if writer == nil {
 						writer = os.Stderr
@@ -151,23 +151,24 @@ func gatherMetrics(reg *prometheus.Registry) map[string]float64 {
 	for _, mf := range metricFamilies {
 		for _, metric := range mf.GetMetric() {
 			metricName := mf.GetName()
-			if len(metric.GetLabel()) > 0 {
-				labels := ""
-				for i, label := range metric.GetLabel() {
-					if i > 0 {
-						labels += ","
-					}
-					labels += label.GetName() + "=\"" + label.GetValue() + "\""
-				}
-				metricName = metricName + "{" + labels + "}"
-
-				var value float64
-				if metric.Counter != nil {
-					value = metric.GetCounter().GetValue()
-				}
-
-				metricsMap[metricName] = value
+			if len(metric.GetLabel()) == 0 {
+				continue
 			}
+			labels := ""
+			for i, label := range metric.GetLabel() {
+				if i > 0 {
+					labels += ","
+				}
+				labels += label.GetName() + "=\"" + label.GetValue() + "\""
+			}
+			metricName = metricName + "{" + labels + "}"
+
+			var value float64
+			if metric.Counter != nil {
+				value = metric.GetCounter().GetValue()
+			}
+
+			metricsMap[metricName] = value
 		}
 	}
 	return metricsMap
@@ -185,7 +186,7 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 	}
 }
 
-func (*keepFS) formatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
+func FormatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
 	var lines []string
 
 	getCurrentAndDelta := func(name string) (float64, float64) {
