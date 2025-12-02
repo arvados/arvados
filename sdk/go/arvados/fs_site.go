@@ -206,6 +206,12 @@ func (c *Client) SiteFileSystem(kc keepClient) CustomFileSystem {
 	return fs
 }
 
+func (c *Client) SiteFileSystemById(mount string, kc keepClient) CustomFileSystem {
+	fs := c.CustomFileSystem(kc)
+	fs.MountByID(mount)
+	return fs
+}
+
 func (fs *customFileSystem) Sync() error {
 	return fs.byIDRoot.Sync()
 }

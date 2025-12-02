@@ -56,7 +56,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
 	mountById := flags.String("mount-by-id", "", "Make a magic directory available where collections and "+
 		"projects are accessible through subdirectories named after their UUID or "+
-		"portable data hash. (experimental)")
+		"portable data hash.")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
 	}
@@ -82,8 +82,20 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Error("-crunchstat-interval must be non-negative")
 		return 2
 	}
-	if *mountById == "" {
-		logger.Error("-mount-by-id requires a directory name")
+	mountSubdir := ""
+	wasMountByIdPassed := false
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == "mount-by-id" {
+			wasMountByIdPassed = true
+		}
+	})
+	if wasMountByIdPassed {
+		if *mountById == "" {
+			logger.Error("-mount-by-id requires a directory name")
+			return 2
+		} else {
+			mountSubdir = *mountById
+		}
 	}
 
 	client := arvados.NewClientFromEnv()
@@ -109,7 +121,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		Gid:           os.Getgid(),
 		Logger:        logger,
 		ready:         c.ready,
-		customDirName: *mountById,
+		customDirName: mountSubdir,
 		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
 	})
 	c.Unmount = host.Unmount

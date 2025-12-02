@@ -76,8 +76,13 @@ func (fs *keepFS) lookupFH(fh uint64) *sharedFile {
 
 func (fs *keepFS) Init() {
 	defer fs.debugPanics()
-	fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
-	fs.root.MountProject("home", "")
+	if fs.customDirName != "" {
+		fs.root = fs.Client.SiteFileSystemById(fs.customDirName, fs.KeepClient)
+		fs.root.MountByID(fs.customDirName)
+	} else {
+		fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
+		fs.root.MountProject("home", "")
+	}
 	fs.done = make(chan struct{})
 	if fs.statsInterval > 0 {
 		ticker := time.NewTicker(fs.statsInterval)
