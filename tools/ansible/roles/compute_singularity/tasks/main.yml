@@ -53,7 +53,7 @@
       when: "go_version.rc != 0"
       become: no
       ansible.builtin.unarchive:
-        src: "https://storage.googleapis.com/golang/go{{ compute_go_version }}.linux-amd64.tar.gz"
+        src: "https://go.dev/dl/go{{ compute_go_version }}.linux-amd64.tar.gz"
         dest: "{{ singularity_build.path }}"
         remote_src: yes
 
