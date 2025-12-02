@@ -1,0 +1,47 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Set up Python build directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: "Python-{{ arvados_python_version }}."
+  register: python_builddir
+
+- name: Unarchive Python source
+  ansible.builtin.unarchive:
+    src: "https://www.python.org/ftp/python/{{ arvados_python_version }}/Python-{{ arvados_python_version }}.tgz"
+    dest: "{{ python_builddir.path }}"
+    extra_opts:
+      - "--strip-components=1"
+    remote_src: yes
+
+- name: Configure Python
+  ansible.builtin.command:
+    argv:
+      - "./configure"
+      - "--prefix={{ arvados_python_destdir }}"
+      - "--enable-optimizations"
+      - "--with-lto=full"
+    chdir: "{{ python_builddir.path }}"
+
+- name: Build Python
+  ansible.builtin.command:
+    argv:
+      - "make"
+      - "-j4"
+    chdir: "{{ python_builddir.path }}"
+
+- name: Install Python
+  become: yes
+  ansible.builtin.command:
+    argv:
+      - "make"
+      - "install"
+    chdir: "{{ python_builddir.path }}"
+
+- name: Remove Python build directory
+  become: yes
+  ansible.builtin.file:
+    path: "{{ python_builddir.path }}"
+    state: absent

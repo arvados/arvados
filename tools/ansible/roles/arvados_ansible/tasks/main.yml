@@ -2,15 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Install python3-venv
-  when: "ansible_pkg_mgr == 'apt'"
-  become: yes
-  ansible.builtin.apt:
-    name:
-      - python3-venv
-
-# RHEL's python3 package includes venv, so we don't need a corresponding dnf task.
-
 - name: Create requirements.txt tempfile
   ansible.builtin.tempfile:
     prefix: "requirements-"

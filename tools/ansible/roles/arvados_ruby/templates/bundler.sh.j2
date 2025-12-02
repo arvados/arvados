@@ -1,0 +1,9 @@
+#!/bin/sh
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+### This file is managed by Ansible
+exec env \
+     GEM_PATH={{ arvados_bundler_gem_dir|quote }}:"$(gem env path)" \
+     {{ (arvados_bundler_bin_dir, item)|path_join|quote }} "$@"

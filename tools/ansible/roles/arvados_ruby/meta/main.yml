@@ -1,0 +1,46 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dependencies:
+  - role: distro_dnf
+    when: "arvados_dev_from_pkgs is truthy"
+    vars:
+      arvados_dnf_modules:
+        - ruby
+
+  - role: distro_packages
+    vars:
+      # common_deps are required to build extensions whether Ruby is
+      # installed from source or packages.
+      common_deps:
+        - bison
+        - g++
+        - libcurl4-openssl-dev
+        - libpq-dev
+        - libssl-dev
+        - libyaml-dev
+        - make
+        - pkgconf
+        - postgresql-client
+        - procps
+        - shared-mime-info
+        - zlib1g-dev
+      # build_deps are additionally required to build Ruby itself from source.
+      # These are mostly cribbed from Debian's Build-Depends, minus support
+      # for some optional integration we don't need.
+      build_deps:
+        - file
+        - libffi-dev
+        - libgdbm-compat-dev
+        - libgdbm-dev
+        - libgmp-dev
+        - netbase
+        - openssl
+        - tzdata
+      # ruby_pkgs are installed when we're not installing Ruby from source.
+      ruby_pkgs:
+        - ruby
+        - ruby-dev
+      task_name: Install Ruby runtime dependencies
+      package_names: "{{ common_deps + (ruby_pkgs if arvados_dev_from_pkgs else build_deps) }}"

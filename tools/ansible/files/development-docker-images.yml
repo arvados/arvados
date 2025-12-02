@@ -9,6 +9,7 @@ all:
   vars:
     ansible_connection: docker
     ansible_user: root
+    arvados_dev_from_pkgs: true
     arvados_dnf_command: "microdnf --assumeyes"
     distro_bootstrap_dnf_command: "{{ arvados_dnf_command }}"
 

@@ -1,0 +1,12 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# These packages are required by ansible.builtin.pip.
+dependencies:
+  - role: distro_packages
+    vars:
+      task_name: Install Python development tools
+      package_names:
+        - python3-packaging
+        - python3-venv
