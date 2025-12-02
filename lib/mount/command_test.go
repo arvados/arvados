@@ -90,3 +90,41 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	// stdin should not have been read
 	c.Check(stdin.String(), check.Equals, "stdin")
 }
+
+func (s *CmdSuite) TestMountById(c *check.C) {
+	exited := make(chan int)
+	stdin := bytes.NewBufferString("stdin")
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+	mountCmd := mountCommand{ready: make(chan struct{})}
+	ready := false
+	go func() {
+		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--mount-by-id", "by_id_test", s.mnt}, stdin, stdout, stderr)
+	}()
+	go func() {
+		<-mountCmd.ready
+		ready = true
+
+		f, err := os.Open(s.mnt + "/by_id_test/" + arvadostest.FooCollection)
+		if c.Check(err, check.IsNil) {
+			dirnames, err := f.Readdirnames(-1)
+			c.Check(err, check.IsNil)
+			c.Check(dirnames, check.DeepEquals, []string{"foo"})
+			f.Close()
+		}
+
+		ok := mountCmd.Unmount()
+		c.Check(ok, check.Equals, true)
+	}()
+	select {
+	case <-time.After(5 * time.Second):
+		c.Fatal("timed out")
+	case errCode, ok := <-exited:
+		c.Check(ok, check.Equals, true)
+		c.Check(errCode, check.Equals, 0)
+	}
+	c.Check(ready, check.Equals, true)
+	c.Check(stdout.String(), check.Equals, "")
+	// stdin should not have been read
+	c.Check(stdin.String(), check.Equals, "stdin")
+}
