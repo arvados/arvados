@@ -25,6 +25,7 @@ arvados_build_one_target:
       arvados_docker_from: ubuntu:noble
       arvados_docker_tag: arvados/build:ubuntu2404
     arvados_pkgbuild_rocky8:
+      ansible_python_interpreter: /usr/libexec/platform-python
       arvados_docker_from: rockylinux:8-minimal
       arvados_docker_tag: arvados/build:rocky8
     arvados_pkgbuild_rocky9:
@@ -49,6 +50,7 @@ arvados_package_tests:
       arvados_docker_from: ubuntu:noble
       arvados_docker_tag: arvados/package-test:ubuntu2404
     arvados_pkgtest_rocky8:
+      ansible_python_interpreter: /usr/libexec/platform-python
       arvados_docker_from: rockylinux:8-minimal
       arvados_docker_tag: arvados/package-test:rocky8
       arvados_pkgtest_dnf_devel_basename: Rocky-PowerTools
