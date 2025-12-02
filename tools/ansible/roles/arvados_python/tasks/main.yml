@@ -11,7 +11,7 @@
   when: "not (arvados_dev_from_pkgs or python_stat.stat.exists)"
 
 - name: Add Python commands to PATH
-  when: "arvados_dev_from_pkgs is truthy"
+  when: "not arvados_dev_from_pkgs"
   become: yes
   ansible.builtin.file:
     state: link
