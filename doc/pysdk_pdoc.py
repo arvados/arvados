@@ -5,8 +5,7 @@
 """pysdk_pdoc.py - Run pdoc with extra rendering options
 
 This script is a wrapper around the standard `pdoc` tool that enables the
-`admonitions` and `smarty-pants` extras for nicer rendering. It checks that
-the version of `markdown2` included with `pdoc` supports those extras.
+`admonitions` and `smarty-pants` extras for nicer rendering.
 
 If run without arguments, it uses arguments to build the Arvados Python SDK
 documentation.
@@ -21,7 +20,6 @@ from pathlib import Path
 
 try:
     import pdoc.__main__
-    import pdoc.markdown2
     import pdoc.render_helpers
 except ImportError as err:
     if __name__ == '__main__':
@@ -53,10 +51,6 @@ MD_EXTENSIONS = {
 def main(arglist=None):
     if _imp_err is not None:
         print("error: failed to import pdoc:", _imp_err, file=sys.stderr)
-        return os.EX_SOFTWARE
-    # Ensure markdown2 is new enough to support our desired extras.
-    elif pdoc.markdown2.__version_info__ < (2, 4, 3):
-        print("error: need markdown2>=2.4.3 to render admonitions", file=sys.stderr)
         return os.EX_SOFTWARE
 
     # Configure pdoc to use extras we want.
