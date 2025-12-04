@@ -208,10 +208,6 @@ if ! [ -x "$passenger" ]; then
     exit 12
 fi
 "$BUNDLE" exec "$passenger-config" build-native-support
-# `passenger-config install-standalone-runtime` downloads an agent, but at
-# least with Passenger 6.0.23 (late 2024), that version tends to segfault.
-# Compiling our own is safer.
-"$BUNDLE" exec "$passenger-config" compile-agent --auto --optimize
 "$BUNDLE" exec "$passenger-config" install-standalone-runtime --auto --brief
 
 echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
