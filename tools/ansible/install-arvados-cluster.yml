@@ -111,9 +111,16 @@
     - ansible.builtin.include_role:
         name: arvados_dispatch_cloud
 
-- name: Set up loki
+- name: Set up Loki
   hosts: arvados_loki
   serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_loki
+
+- name: Set up Alloy
+  hosts: arvados_alloy
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_alloy
