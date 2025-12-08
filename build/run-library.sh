@@ -504,22 +504,14 @@ handle_rails_package() {
     (
         set -e
         _build_rails_package_scripts "$pkgname" "$scripts_dir"
-        # Bundler behaves inconsistently when gems are available system-wide.
-        # Avoid those bugs by starting with a fresh GEM_HOME.
-        # TODO: Set this up in packaging Docker image instead.
-        export GEM_HOME="$(mktemp --directory --tmpdir bundler.XXXXXXXX)"
-        export GEM_PATH="$GEM_HOME"
-        # We still need to set directory switches because RHEL configures
-        # `gem` with built-in options that override the environment variables.
-        gem install \
-            --bindir "$GEM_HOME/bin" \
-            --install-dir "$GEM_HOME" \
-            --version "~> 2.5.0" \
-            bundler
-        bundle() { "$GEM_HOME/bin/bundle" "$@"; }
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
+        # Prevent `bundle cache` from seeing system-wide gems and skipping
+        # their download. This depends on the Bundler install set up
+        # in the arvados_ruby Ansible role. See there for more background.
+        export GEM_HOME=/opt/arvados-bundler
+        export GEM_PATH="$GEM_HOME"
         # Please make sure you read `bundle help config` carefully before you
         # modify any of these settings. Some of their names are not intuitive.
         #

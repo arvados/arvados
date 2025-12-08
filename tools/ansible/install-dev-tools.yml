@@ -265,14 +265,6 @@
 
 - hosts: arvados_build_one_target
   tasks:
-    - name: Get Ruby version
-      ansible.builtin.command:
-        argv:
-          - ruby
-          - "-e"
-          - print RUBY_VERSION
-      register: ruby_version
-
     - name: Install fpm gem
       become: yes
       community.general.gem:
