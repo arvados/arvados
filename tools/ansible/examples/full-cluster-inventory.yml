@@ -133,7 +133,7 @@ arvados_keep_web:
   hosts:
     webdav.arvados.example:
 
-# arvados_keepstore host(s) serve the Arvados Workbench front-end.
+# arvados_workbench host(s) serve the Arvados Workbench front-end.
 arvados_workbench:
   hosts:
     workbench.arvados.example:
