@@ -16,6 +16,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
+	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 )
 
@@ -42,6 +43,7 @@ func (s *FSSuite) SetUpTest(c *C) {
 		Logger:     ctxlog.TestLogger(c),
 	}
 	s.fs.Init()
+	s.fs.Registry = prometheus.NewRegistry()
 }
 
 func (s *FSSuite) TearDownTest(c *C) {
@@ -230,4 +232,17 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 	for op, output := range opsOutputHash {
 		c.Check(statLine(op), Equals, output)
 	}
+}
+
+func (s *FSSuite) TestGatherMetrics(c *C) {
+	s.fs.registerMetrics()
+	metrics := gatherMetrics(s.fs.Registry)
+	c.Check(len(metrics) > 0, Equals, true)
+	c.Check(metrics["arvados_fuse_ops{fuseop=\"read\"}"], Not(IsNil))
+	c.Check(metrics["arvados_keepclient_backend_bytes{direction=\"in\"}"], Not(IsNil))
+	c.Check(metrics["arvados_keepclient_backend_bytes{direction=\"out\"}"], Not(IsNil))
+	c.Check(metrics["arvados_keepclient_cache{event=\"hit\"}"], Not(IsNil))
+	c.Check(metrics["arvados_keepclient_cache{event=\"miss\"}"], Not(IsNil))
+	c.Check(metrics["arvados_keepclient_ops{op=\"get\"}"], Not(IsNil))
+	c.Check(metrics["arvados_keepclient_ops{op=\"put\"}"], Not(IsNil))
 }
