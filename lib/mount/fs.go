@@ -183,7 +183,7 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 	}
 }
 
-func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
+func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) error {
 	var lines []string
 
 	getCurrentAndDelta := func(name string) (float64, float64) {
@@ -234,10 +234,13 @@ func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]floa
 	}
 
 	for _, line := range lines {
-		fmt.Fprintf(out, "%s\n", line)
+		_, err := fmt.Fprintf(out, "%s\n", line)
+		if err != nil {
+			return err
+		}
 	}
 
-	return lines
+	return nil
 }
 
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {

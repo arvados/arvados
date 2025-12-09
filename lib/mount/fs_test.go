@@ -129,20 +129,25 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="write"}`:   0.234567,
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.045678,
 	}
-	lines := writeMetrics(os.Stdout, currentMetrics, previousMetrics, 1.0)
 
-	c.Check(len(lines), Equals, 23) // 5 summary stats + 18 operations
+	out1 := &strings.Builder{}
+	err := writeMetrics(out1, currentMetrics, previousMetrics, 1.0)
+	c.Check(err, IsNil)
+
+	lines1 := strings.Split(strings.TrimSpace(out1.String()), "\n")
+
+	c.Check(len(lines1), Equals, 23) // 5 summary stats + 18 operations
 	// These lines are always in this order
-	c.Check(lines[0], Matches, "crunchstat: net:keep0 1024 tx 2048 rx -- interval 1.0000 seconds 1024 tx 2048 rx.*")
-	c.Check(lines[1], Equals, "crunchstat: keepcalls 5 put 10 get -- interval 1.0000 seconds 5 put 10 get")
-	c.Check(lines[2], Equals, "crunchstat: keepcache 8 hit 2 miss -- interval 1.0000 seconds 8 hit 2 miss")
-	c.Check(lines[3], Equals, "crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read")
-	c.Check(lines[4], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
-	c.Check(lines[5], Equals, "crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time")
+	c.Check(lines1[0], Matches, "crunchstat: net:keep0 1024 tx 2048 rx -- interval 1.0000 seconds 1024 tx 2048 rx.*")
+	c.Check(lines1[1], Equals, "crunchstat: keepcalls 5 put 10 get -- interval 1.0000 seconds 5 put 10 get")
+	c.Check(lines1[2], Equals, "crunchstat: keepcache 8 hit 2 miss -- interval 1.0000 seconds 8 hit 2 miss")
+	c.Check(lines1[3], Equals, "crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read")
+	c.Check(lines1[4], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
+	c.Check(lines1[5], Equals, "crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time")
 
 	// Check read and write lines
 	var readLine, writeLine string
-	for _, line := range lines {
+	for _, line := range lines1 {
 		if strings.HasPrefix(line, "crunchstat: fuseop:read ") {
 			readLine = line
 		}
@@ -190,17 +195,22 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="write"}`:   0.350000,
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.075000,
 	}
-	lines = writeMetrics(os.Stdout, currentMetrics, previousMetrics, 1.0)
+
+	out2 := &strings.Builder{}
+	err = writeMetrics(out2, currentMetrics, previousMetrics, 1.0)
+	c.Check(err, IsNil)
+
+	lines2 := strings.Split(strings.TrimSpace(out2.String()), "\n")
 
 	// These lines are always in this order
-	c.Check(lines[0], Matches, "crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx.*")
-	c.Check(lines[1], Equals, "crunchstat: keepcalls 7 put 15 get -- interval 1.0000 seconds 5 put 10 get")
-	c.Check(lines[2], Equals, "crunchstat: keepcache 11 hit 4 miss -- interval 1.0000 seconds 8 hit 3 miss")
-	c.Check(lines[3], Equals, "crunchstat: blkio:0:0 2048 write 4096 read -- interval 1.0000 seconds 1536 write 3072 read")
-	c.Check(lines[4], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
+	c.Check(lines2[0], Matches, "crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx.*")
+	c.Check(lines2[1], Equals, "crunchstat: keepcalls 7 put 15 get -- interval 1.0000 seconds 5 put 10 get")
+	c.Check(lines2[2], Equals, "crunchstat: keepcache 11 hit 4 miss -- interval 1.0000 seconds 8 hit 3 miss")
+	c.Check(lines2[3], Equals, "crunchstat: blkio:0:0 2048 write 4096 read -- interval 1.0000 seconds 1536 write 3072 read")
+	c.Check(lines2[4], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
 
 	statLine := func(op string) string {
-		for _, line := range lines {
+		for _, line := range lines2 {
 			if strings.HasPrefix(line, "crunchstat: fuseop:"+op+" ") {
 				return line
 			}
