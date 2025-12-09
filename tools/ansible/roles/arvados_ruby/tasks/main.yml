@@ -1,0 +1,52 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Check for Ruby installed from source
+  ansible.builtin.stat:
+    path: "{{ (arvados_ruby_destdir, 'bin/ruby')|path_join }}"
+  register: ruby_stat
+
+- ansible.builtin.include_tasks: install_from_source.yml
+  when: "not (arvados_dev_from_pkgs or ruby_stat.stat.exists)"
+
+- name: Add Ruby commands to PATH
+  when: "not arvados_dev_from_pkgs"
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ (arvados_ruby_destdir, 'bin', item)|path_join }}"
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+  loop:
+    - gem
+    - irb
+    - rake
+    - rdoc
+    - ri
+    - ruby
+
+# In Bundler 2.5, we have seen `bundle cache` fail to download gems that are
+# already installed on the system. This can cause bad package builds.
+# Install Bundler to a dedicated $GEM_HOME where it is the only thing installed
+# to work around these issues. `build/run-library.sh` depends on this.
+- name: Install bundler gem
+  become: yes
+  community.general.gem:
+    name: bundler
+    version: "{{ arvados_bundler_version }}"
+    install_dir: "{{ arvados_bundler_gem_dir }}"
+    bindir: "{{ arvados_bundler_bin_dir }}"
+    user_install: no
+
+# Make that version usable for other tasks.
+- name: Install Bundler scripts
+  become: yes
+  ansible.builtin.template:
+    src: bundler.sh.j2
+    dest: "{{ ('/usr/local/bin', item)|path_join }}"
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - bundle
+    - bundler

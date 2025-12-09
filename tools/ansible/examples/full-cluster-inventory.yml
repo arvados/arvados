@@ -195,3 +195,19 @@ arvados_workbench:
 #      # will come from the inventory hostname by default. If you need to use
 #      # a different hostname externally, set `arvados_shell_hostname` like this:
 #      #arvados_shell_hostname: shellhost.arvados.example
+
+# arvados_loki host(s) will have Loki installed from the Grafana APT repository.
+# The required Loki configuration file is defined by `arvados_loki_config_file`.
+#arvados_loki:
+#  hosts:
+#    api.arvados.example:
+#  vars:
+#    arvados_loki_config_file: /PATH/TO/config.yml
+
+# arvados_alloy host(s) will have Alloy installed from the Grafana APT repository.
+# The required Alloy configuration file is defined by `arvados_alloy_config_file`.
+#arvados_alloy:
+#  hosts:
+#    api.arvados.example:
+#  vars:
+#    arvados_alloy_config_file: /PATH/TO/config.alloy

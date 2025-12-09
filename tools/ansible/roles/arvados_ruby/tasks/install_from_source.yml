@@ -1,0 +1,45 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Set up Ruby build directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: "ruby-{{ arvados_ruby_version }}."
+  register: ruby_builddir
+
+- name: Unarchive Ruby source
+  ansible.builtin.unarchive:
+    src: "https://cache.ruby-lang.org/pub/ruby/{{ ruby_minor_version }}/ruby-{{ arvados_ruby_version }}.tar.gz"
+    dest: "{{ ruby_builddir.path }}"
+    extra_opts:
+      - "--strip-components=1"
+    remote_src: yes
+
+- name: Configure Ruby
+  ansible.builtin.command:
+    argv:
+      - "./configure"
+      - "--prefix={{ arvados_ruby_destdir }}"
+    chdir: "{{ ruby_builddir.path }}"
+
+- name: Build Ruby
+  ansible.builtin.command:
+    argv:
+      - "make"
+      - "-j4"
+    chdir: "{{ ruby_builddir.path }}"
+
+- name: Install Ruby
+  become: yes
+  ansible.builtin.command:
+    argv:
+      - "make"
+      - "install"
+    chdir: "{{ ruby_builddir.path }}"
+
+- name: Remove Ruby build directory
+  become: yes
+  ansible.builtin.file:
+    path: "{{ ruby_builddir.path }}"
+    state: absent
