@@ -106,7 +106,7 @@ func (s *FSSuite) TestMknod(c *C) {
 	c.Check(errc, Equals, -fuse.EEXIST)
 }
 
-func (s *FSSuite) TestFormatMetrics(c *C) {
+func (s *FSSuite) TestWriteMetrics(c *C) {
 	// Zero to first tick
 	previousMetrics := map[string]float64{}
 	currentMetrics := map[string]float64{
@@ -127,7 +127,7 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="write"}`:   0.234567,
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.045678,
 	}
-	lines := FormatMetrics(currentMetrics, previousMetrics, 1.0)
+	lines := writeMetrics(os.Stdout, currentMetrics, previousMetrics, 1.0)
 
 	c.Check(len(lines), Equals, 23) // 5 summary stats + 18 operations
 	// These lines are always in this order
@@ -188,7 +188,7 @@ func (s *FSSuite) TestFormatMetrics(c *C) {
 		`arvados_fuse_seconds_total{fuseop="write"}`:   0.350000,
 		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.075000,
 	}
-	lines = FormatMetrics(currentMetrics, previousMetrics, 1.0)
+	lines = writeMetrics(os.Stdout, currentMetrics, previousMetrics, 1.0)
 
 	// These lines are always in this order
 	c.Check(lines[0], Matches, "crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx.*")

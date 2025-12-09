@@ -39,7 +39,7 @@ type keepFS struct {
 	Gid           int
 	Logger        logrus.FieldLogger
 	Registry      *prometheus.Registry
-	StatsOutput   io.Writer
+	StatsWriter   io.Writer
 	StatsInterval time.Duration
 
 	root     arvados.CustomFileSystem
@@ -96,14 +96,11 @@ func (fs *keepFS) Init() {
 					return
 				case <-ticker.C:
 					currentMetrics := gatherMetrics(fs.Registry)
-					lines := FormatMetrics(currentMetrics, previousMetrics, fs.StatsInterval.Seconds())
-					writer := fs.StatsOutput
+					writer := fs.StatsWriter
 					if writer == nil {
 						writer = os.Stderr
 					}
-					for _, line := range lines {
-						fmt.Fprintf(writer, "%s\n", line)
-					}
+					writeMetrics(writer, currentMetrics, previousMetrics, fs.StatsInterval.Seconds())
 					previousMetrics = currentMetrics
 				}
 			}
@@ -186,7 +183,7 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 	}
 }
 
-func FormatMetrics(currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
+func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) []string {
 	var lines []string
 
 	getCurrentAndDelta := func(name string) (float64, float64) {
@@ -234,6 +231,10 @@ func FormatMetrics(currentMetrics, previousMetrics map[string]float64, intervalS
 		opTime, opTimeDelta := getCurrentAndDelta(fmt.Sprintf(`arvados_fuse_seconds_total{fuseop="%s"}`, op))
 		lines = append(lines, fmt.Sprintf("crunchstat: fuseop:%s %.0f count %.6f time -- interval %.4f seconds %.0f count %.6f time",
 			op, opCount, opTime, intervalSeconds, opCountDelta, opTimeDelta))
+	}
+
+	for _, line := range lines {
+		fmt.Fprintf(out, "%s\n", line)
 	}
 
 	return lines
