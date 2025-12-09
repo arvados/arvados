@@ -117,6 +117,12 @@ arvados_keepstore:
     keep0.arvados.example:
     keep1.arvados.example:
 
+# arvados_keepbalance host(s) run the Arvados keep-balance service.
+arvados_keepbalance:
+  hosts:
+    keep0.arvados.example:
+    keep1.arvados.example:
+
 # arvados_keepproxy host(s) run the Arvados keepproxy service.
 arvados_keepproxy:
   hosts:
