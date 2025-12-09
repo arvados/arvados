@@ -241,8 +241,7 @@ func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]floa
 }
 
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
-	t0 := time.Now()
-	defer fs.reportMetrics("create", t0, nil)
+	defer fs.reportMetrics("create", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Create", path)
 	if fs.ReadOnly {
@@ -258,8 +257,7 @@ func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint
 }
 
 func (fs *keepFS) Mknod(path string, mode uint32, dev uint64) int {
-	t0 := time.Now()
-	defer fs.reportMetrics("mknod", t0, nil)
+	defer fs.reportMetrics("mknod", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Mknod", path)
 	if filetype := mode & uint32(^os.ModePerm); filetype != 0 && filetype != uint32(fuse.S_IFREG) {
@@ -282,8 +280,7 @@ func (fs *keepFS) Mknod(path string, mode uint32, dev uint64) int {
 }
 
 func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
-	t0 := time.Now()
-	defer fs.reportMetrics("open", t0, nil)
+	defer fs.reportMetrics("open", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Open", path)
 	if fs.ReadOnly && flags&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0 {
@@ -302,8 +299,7 @@ func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
 }
 
 func (fs *keepFS) Utimens(path string, tmsp []fuse.Timespec) int {
-	t0 := time.Now()
-	defer fs.reportMetrics("utimens", t0, nil)
+	defer fs.reportMetrics("utimens", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Utimens", path)
 	if fs.ReadOnly {
@@ -348,8 +344,7 @@ func (fs *keepFS) errCode(op, path string, err error) (errc int) {
 }
 
 func (fs *keepFS) Mkdir(path string, mode uint32) int {
-	t0 := time.Now()
-	defer fs.reportMetrics("mkdir", t0, nil)
+	defer fs.reportMetrics("mkdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Mkdir", path)
 	if fs.ReadOnly {
@@ -364,8 +359,7 @@ func (fs *keepFS) Mkdir(path string, mode uint32) int {
 }
 
 func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
-	t0 := time.Now()
-	defer fs.reportMetrics("opendir", t0, nil)
+	defer fs.reportMetrics("opendir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Opendir", path)
 	f, err := fs.root.OpenFile(path, 0, 0)
@@ -381,24 +375,21 @@ func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 }
 
 func (fs *keepFS) Releasedir(path string, fh uint64) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("releasedir", t0, nil)
+	defer fs.reportMetrics("releasedir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Releasedir", path)
 	return fs.Release(path, fh)
 }
 
 func (fs *keepFS) Rmdir(path string) int {
-	t0 := time.Now()
-	defer fs.reportMetrics("rmdir", t0, nil)
+	defer fs.reportMetrics("rmdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Rmdir", path)
 	return fs.errCode("Rmdir", path, fs.root.Remove(path))
 }
 
 func (fs *keepFS) Release(path string, fh uint64) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("release", t0, nil)
+	defer fs.reportMetrics("release", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Release", path)
 	fs.Lock()
@@ -414,8 +405,7 @@ func (fs *keepFS) Release(path string, fh uint64) (errc int) {
 }
 
 func (fs *keepFS) Rename(oldname, newname string) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("rename", t0, nil)
+	defer fs.reportMetrics("rename", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Rename", oldname+" -> "+newname)
 	if fs.ReadOnly {
@@ -425,8 +415,7 @@ func (fs *keepFS) Rename(oldname, newname string) (errc int) {
 }
 
 func (fs *keepFS) Unlink(path string) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("unlink", t0, nil)
+	defer fs.reportMetrics("unlink", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Unlink", path)
 	if fs.ReadOnly {
@@ -436,8 +425,7 @@ func (fs *keepFS) Unlink(path string) (errc int) {
 }
 
 func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("truncate", t0, nil)
+	defer fs.reportMetrics("truncate", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Truncate", path)
 	if fs.ReadOnly {
@@ -460,8 +448,7 @@ func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
 }
 
 func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("getattr", t0, nil)
+	defer fs.reportMetrics("getattr", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Getattr", path)
 	var fi os.FileInfo
@@ -481,8 +468,7 @@ func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 }
 
 func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("chmod", t0, nil)
+	defer fs.reportMetrics("chmod", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Chmod", path)
 	if fs.ReadOnly {
@@ -532,12 +518,7 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 }
 
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
-	t0 := time.Now()
-	defer func() {
-		if n > 0 {
-			fs.reportMetrics("write", t0, &n)
-		}
-	}()
+	defer fs.reportMetrics("write", time.Now(), &n)
 	defer fs.debugPanics()
 	fs.debugOp("Write", path)
 	if fs.ReadOnly {
@@ -560,12 +541,7 @@ func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) 
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
-	t0 := time.Now()
-	defer func() {
-		if n > 0 {
-			fs.reportMetrics("read", t0, &n)
-		}
-	}()
+	defer fs.reportMetrics("read", time.Now(), &n)
 	defer fs.debugPanics()
 	fs.debugOp("Read", path)
 	f := fs.lookupFH(fh)
@@ -598,8 +574,7 @@ func (fs *keepFS) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
-	t0 := time.Now()
-	defer fs.reportMetrics("readdir", t0, nil)
+	defer fs.reportMetrics("readdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Readdir", path)
 	f := fs.lookupFH(fh)
@@ -621,8 +596,7 @@ func (fs *keepFS) Readdir(path string,
 }
 
 func (fs *keepFS) Fsync(path string, datasync bool, fh uint64) int {
-	t0 := time.Now()
-	defer fs.reportMetrics("fsync", t0, nil)
+	defer fs.reportMetrics("fsync", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Fsync", path)
 	f := fs.lookupFH(fh)
@@ -633,8 +607,7 @@ func (fs *keepFS) Fsync(path string, datasync bool, fh uint64) int {
 }
 
 func (fs *keepFS) Fsyncdir(path string, datasync bool, fh uint64) int {
-	t0 := time.Now()
-	defer fs.reportMetrics("fsyncdir", t0, nil)
+	defer fs.reportMetrics("fsyncdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Fsyncdir", path)
 	return fs.Fsync(path, datasync, fh)
