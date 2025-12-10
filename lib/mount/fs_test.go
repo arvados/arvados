@@ -131,8 +131,7 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 	}
 
 	out1 := &strings.Builder{}
-	err := writeMetrics(out1, currentMetrics, previousMetrics, 1.0)
-	c.Check(err, IsNil)
+	writeMetrics(out1, currentMetrics, previousMetrics, 1.0)
 
 	lines1 := strings.Split(strings.TrimSpace(out1.String()), "\n")
 
@@ -197,8 +196,7 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 	}
 
 	out2 := &strings.Builder{}
-	err = writeMetrics(out2, currentMetrics, previousMetrics, 1.0)
-	c.Check(err, IsNil)
+	writeMetrics(out2, currentMetrics, previousMetrics, 1.0)
 
 	lines2 := strings.Split(strings.TrimSpace(out2.String()), "\n")
 
