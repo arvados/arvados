@@ -69,6 +69,13 @@
     - ansible.builtin.include_role:
         name: arvados_keepstore
 
+- name: Set up keep-balance
+  hosts: arvados_keepbalance
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keepbalance
+
 - name: Set up keepproxy(ies)
   hosts: arvados_keepproxy
   serial: 1
