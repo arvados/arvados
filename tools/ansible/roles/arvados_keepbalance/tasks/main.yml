@@ -1,0 +1,19 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install Arvados keep-balance
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - keep-balance
+
+- name: Start and enable keep-balance.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: keep-balance.service
+    state: "{{ 'restarted' if arvados_config_changed else 'started' }}"
+    enabled: true

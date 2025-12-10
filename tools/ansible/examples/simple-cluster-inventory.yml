@@ -88,6 +88,10 @@ arvados_keepstore:
   children:
     arvados_cluster_host:
 
+arvados_keepbalance:
+  children:
+    arvados_cluster_host:
+
 arvados_keepproxy:
   children:
     arvados_cluster_host:
