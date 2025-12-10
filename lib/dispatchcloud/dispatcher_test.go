@@ -201,8 +201,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		}
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 100 {
-			// trigger scheduler maxConcurrency limit
-			c.Logf("test: requesting 503 in order to trigger maxConcurrency limit")
+			// trigger scheduler maxContainers limit
+			c.Logf("test: requesting 503 in order to trigger maxContainers limit")
 			s.disp.ArvClient.RequestAndDecode(nil, "GET", "503", nil, nil)
 		}
 		if len(waiting) == 0 {

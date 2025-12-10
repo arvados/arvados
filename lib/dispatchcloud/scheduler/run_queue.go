@@ -94,26 +94,26 @@ func (sch *Scheduler) runQueue() {
 	if t := sch.client.Last503(); t.After(sch.last503time) {
 		// API has sent an HTTP 503 response since last time
 		// we checked. Use current #containers - 1 as
-		// maxConcurrency, i.e., try to stay just below the
+		// maxContainers, i.e., try to stay just below the
 		// level where we see 503s.
 		sch.last503time = t
 		if newlimit := len(running) - 1; newlimit < 1 {
-			sch.maxConcurrency = 1
+			sch.maxContainers = 1
 		} else {
-			sch.maxConcurrency = newlimit
+			sch.maxContainers = newlimit
 		}
-	} else if sch.maxConcurrency > 0 && time.Since(sch.last503time) > quietAfter503 {
+	} else if sch.maxContainers > 0 && time.Since(sch.last503time) > quietAfter503 {
 		// If we haven't seen any 503 errors lately, raise
 		// limit to ~10% beyond the current workload.
 		//
 		// As we use the added 10% to schedule more
 		// containers, len(running) will increase and we'll
 		// push the limit up further. Soon enough,
-		// maxConcurrency will get high enough to schedule the
+		// maxContainers will get high enough to schedule the
 		// entire queue, hit pool quota, or get 503s again.
 		max := len(running)*11/10 + 1
-		if sch.maxConcurrency < max {
-			sch.maxConcurrency = max
+		if sch.maxContainers < max {
+			sch.maxContainers = max
 		}
 	}
 	if sch.last503time.IsZero() {
@@ -121,8 +121,8 @@ func (sch *Scheduler) runQueue() {
 	} else {
 		sch.mLast503Time.Set(float64(sch.last503time.Unix()))
 	}
-	if sch.maxInstances > 0 && sch.maxConcurrency > sch.maxInstances {
-		sch.maxConcurrency = sch.maxInstances
+	if sch.maxInstances > 0 && sch.maxContainers > sch.maxInstances {
+		sch.maxContainers = sch.maxInstances
 	}
 	if sch.instancesWithinQuota > 0 && sch.instancesWithinQuota < totalInstances {
 		// Evidently it is possible to run this many
@@ -134,21 +134,21 @@ func (sch *Scheduler) runQueue() {
 		// allowed, for the sake of reporting metrics and
 		// calculating max supervisors.
 		//
-		// Now that sch.maxConcurrency is set, we will only
+		// Now that sch.maxContainers is set, we will only
 		// raise it past len(running) by 10%.  This helps
 		// avoid running an inappropriate number of
 		// supervisors when we reach the cloud-imposed quota
 		// (which may be based on # CPUs etc) long before the
 		// configured MaxInstances.
-		if sch.maxConcurrency == 0 || sch.maxConcurrency > totalInstances {
+		if sch.maxContainers == 0 || sch.maxContainers > totalInstances {
 			if totalInstances == 0 {
-				sch.maxConcurrency = 1
+				sch.maxContainers = 1
 			} else {
-				sch.maxConcurrency = totalInstances
+				sch.maxContainers = totalInstances
 			}
 		}
 		sch.instancesWithinQuota = totalInstances
-	} else if sch.instancesWithinQuota > 0 && sch.maxConcurrency > sch.instancesWithinQuota+1 {
+	} else if sch.instancesWithinQuota > 0 && sch.maxContainers > sch.instancesWithinQuota+1 {
 		// Once we've hit a quota error and started tracking
 		// instancesWithinQuota (i.e., it's not zero), we
 		// avoid exceeding that known-working level by more
@@ -160,19 +160,19 @@ func (sch *Scheduler) runQueue() {
 		// driver stops reporting AtQuota, which tends to use
 		// up the max lock/unlock cycles on the next few
 		// containers in the queue, and cause them to fail.
-		sch.maxConcurrency = sch.instancesWithinQuota + 1
+		sch.maxContainers = sch.instancesWithinQuota + 1
 	}
-	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
+	sch.mMaxContainerConcurrency.Set(float64(sch.maxContainers))
 
-	maxSupervisors := int(float64(sch.maxConcurrency) * sch.supervisorFraction)
-	if maxSupervisors < 1 && sch.supervisorFraction > 0 && sch.maxConcurrency > 0 {
+	maxSupervisors := int(float64(sch.maxContainers) * sch.supervisorFraction)
+	if maxSupervisors < 1 && sch.supervisorFraction > 0 && sch.maxContainers > 0 {
 		maxSupervisors = 1
 	}
 
 	sch.logger.WithFields(logrus.Fields{
-		"Containers":     len(sorted),
-		"Processes":      len(running),
-		"maxConcurrency": sch.maxConcurrency,
+		"Containers":    len(sorted),
+		"Processes":     len(running),
+		"maxContainers": sch.maxContainers,
 	}).Debug("runQueue")
 
 	dontstart := map[arvados.InstanceType]bool{}
@@ -183,7 +183,7 @@ func (sch *Scheduler) runQueue() {
 
 	// trying is #containers running + #containers we're trying to
 	// start. We stop trying to start more containers if this
-	// reaches the dynamic maxConcurrency limit.
+	// reaches the dynamic maxContainers limit.
 	trying := len(running)
 
 	qpos := 0
@@ -245,8 +245,8 @@ tryrun:
 		}
 		switch ctr.State {
 		case arvados.ContainerStateQueued:
-			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
-				logger.Tracef("not locking: already at maxConcurrency %d", sch.maxConcurrency)
+			if sch.maxContainers > 0 && trying >= sch.maxContainers {
+				logger.Tracef("not locking: already at maxContainers %d", sch.maxContainers)
 				continue
 			}
 			trying++
@@ -266,8 +266,8 @@ tryrun:
 			go sch.lockContainer(logger, ctr.UUID)
 			unalloc[unallocType]--
 		case arvados.ContainerStateLocked:
-			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
-				logger.Tracef("not starting: already at maxConcurrency %d", sch.maxConcurrency)
+			if sch.maxContainers > 0 && trying >= sch.maxContainers {
+				logger.Tracef("not starting: already at maxContainers %d", sch.maxContainers)
 				continue
 			}
 			trying++

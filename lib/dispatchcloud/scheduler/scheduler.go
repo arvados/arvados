@@ -48,7 +48,7 @@ type Scheduler struct {
 	stopped chan struct{}
 
 	last503time          time.Time // last time API responded 503
-	maxConcurrency       int       // dynamic container limit (0 = unlimited), see runQueue()
+	maxContainers        int       // dynamic container limit (0 = unlimited), see runQueue()
 	supervisorFraction   float64   // maximum fraction of "supervisor" containers (these are containers who's main job is to launch other containers, e.g. workflow runners)
 	maxInstances         int       // maximum number of instances the pool will bring up (0 = unlimited)
 	instancesWithinQuota int       // max concurrency achieved since last quota error (0 = no quota error yet)
@@ -83,9 +83,9 @@ func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool
 		maxInstances:        maxInstances,
 	}
 	if minQuota > 0 {
-		sch.maxConcurrency = minQuota
+		sch.maxContainers = minQuota
 	} else {
-		sch.maxConcurrency = maxInstances
+		sch.maxContainers = maxInstances
 	}
 	sch.registerMetrics(reg)
 	return sch

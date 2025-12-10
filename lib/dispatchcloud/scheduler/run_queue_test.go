@@ -371,10 +371,10 @@ func (*SchedulerSuite) TestInstanceCapacity(c *check.C) {
 }
 
 // Don't unlock containers or shutdown unalloc (booting/idle) nodes
-// just because some 503 errors caused us to reduce maxConcurrency
+// just because some 503 errors caused us to reduce maxContainers
 // below the current load level.
 //
-// We expect to raise maxConcurrency soon when we stop seeing 503s. If
+// We expect to raise maxContainers soon when we stop seeing 503s. If
 // that doesn't happen soon, the idle timeout will take care of the
 // excess nodes.
 func (*SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
@@ -459,7 +459,7 @@ func (*SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
 	}
 	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	sch.last503time = time.Now()
-	sch.maxConcurrency = 3
+	sch.maxContainers = 3
 	sch.sync()
 	sch.runQueue()
 	sch.sync()
