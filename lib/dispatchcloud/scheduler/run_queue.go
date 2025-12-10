@@ -121,9 +121,6 @@ func (sch *Scheduler) runQueue() {
 	} else {
 		sch.mLast503Time.Set(float64(sch.last503time.Unix()))
 	}
-	if sch.maxInstances > 0 && sch.maxContainers > sch.maxInstances {
-		sch.maxContainers = sch.maxInstances
-	}
 	if sch.instancesWithinQuota > 0 && sch.instancesWithinQuota < totalInstances {
 		// Evidently it is possible to run this many
 		// instances, so raise our estimate.
