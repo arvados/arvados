@@ -96,10 +96,19 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 	go func() {
 		<-mountCmd.ready
 
+		collectionPath := s.mnt + "/by_id/" + arvadostest.FooCollection
+		data := make([]byte, 2048)
+		for i := range data {
+			data[i] = byte(i % 256)
+		}
+
+		os.WriteFile(collectionPath+"/testfile", data, 0644)
+		os.ReadFile(collectionPath + "/testfile")
+
 		// Check that crunchstat ticker is running
 		time.Sleep(20 * time.Millisecond)
 		logs := stderr.String()
-		c.Check(strings.Contains(logs, "crunchstat"), check.Equals, true)
+		c.Check(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
 
 		ok := mountCmd.Unmount()
 		c.Check(ok, check.Equals, true)
