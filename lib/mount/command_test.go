@@ -109,6 +109,7 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 		time.Sleep(20 * time.Millisecond)
 		logs := stderr.String()
 		c.Check(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
+		c.Check(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
 
 		ok := mountCmd.Unmount()
 		c.Check(ok, check.Equals, true)
