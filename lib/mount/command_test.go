@@ -96,14 +96,15 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 	go func() {
 		<-mountCmd.ready
 
-		collectionPath := s.mnt + "/by_id/" + arvadostest.FooCollection
 		data := make([]byte, 2048)
 		for i := range data {
 			data[i] = byte(i % 256)
 		}
 
-		os.WriteFile(collectionPath+"/testfile", data, 0644)
-		os.ReadFile(collectionPath + "/testfile")
+		collectionPath := s.mnt + "/by_id/" + arvadostest.FooCollection + "/testfile"
+
+		os.WriteFile(collectionPath, data, 0644)
+		os.ReadFile(collectionPath)
 
 		// Check that crunchstat ticker is running
 		time.Sleep(20 * time.Millisecond)

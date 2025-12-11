@@ -166,41 +166,24 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 	c.Check(lines1, DeepEquals, expected1)
 
 	// First tick to second tick
-	previousMetrics = map[string]float64{
-		// Keep client metrics
-		`arvados_keepclient_backend_bytes{direction="out"}`: 512,
-		`arvados_keepclient_backend_bytes{direction="in"}`:  1024,
-		`arvados_keepclient_ops{op="put"}`:                  2,
-		`arvados_keepclient_ops{op="get"}`:                  5,
-		`arvados_keepclient_cache{event="hit"}`:             3,
-		`arvados_keepclient_cache{event="miss"}`:            1,
-		// FUSE metrics
-		`arvados_fuse_bytes{fuseop="read"}`:            1024,
-		`arvados_fuse_bytes{fuseop="write"}`:           512,
-		`arvados_fuse_ops{fuseop="read"}`:              3,
-		`arvados_fuse_ops{fuseop="write"}`:             1,
-		`arvados_fuse_ops{fuseop="getattr"}`:           7,
-		`arvados_fuse_seconds_total{fuseop="read"}`:    0.100000,
-		`arvados_fuse_seconds_total{fuseop="write"}`:   0.200000,
-		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.030000,
-	}
+	previousMetrics = currentMetrics
 	currentMetrics = map[string]float64{
 		// Keep client metrics (increased)
-		`arvados_keepclient_backend_bytes{direction="out"}`: 2048,
-		`arvados_keepclient_backend_bytes{direction="in"}`:  4096,
-		`arvados_keepclient_ops{op="put"}`:                  7,
-		`arvados_keepclient_ops{op="get"}`:                  15,
-		`arvados_keepclient_cache{event="hit"}`:             11,
-		`arvados_keepclient_cache{event="miss"}`:            4,
+		`arvados_keepclient_backend_bytes{direction="out"}`: 2560,
+		`arvados_keepclient_backend_bytes{direction="in"}`:  5120,
+		`arvados_keepclient_ops{op="put"}`:                  10,
+		`arvados_keepclient_ops{op="get"}`:                  20,
+		`arvados_keepclient_cache{event="hit"}`:             16,
+		`arvados_keepclient_cache{event="miss"}`:            5,
 		// FUSE metrics (increased)
-		`arvados_fuse_bytes{fuseop="read"}`:            4096,
-		`arvados_fuse_bytes{fuseop="write"}`:           2048,
-		`arvados_fuse_ops{fuseop="read"}`:              8,
-		`arvados_fuse_ops{fuseop="write"}`:             5,
-		`arvados_fuse_ops{fuseop="getattr"}`:           15,
-		`arvados_fuse_seconds_total{fuseop="read"}`:    0.250000,
-		`arvados_fuse_seconds_total{fuseop="write"}`:   0.350000,
-		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.075000,
+		`arvados_fuse_bytes{fuseop="read"}`:            5120,
+		`arvados_fuse_bytes{fuseop="write"}`:           2560,
+		`arvados_fuse_ops{fuseop="read"}`:              10,
+		`arvados_fuse_ops{fuseop="write"}`:             7,
+		`arvados_fuse_ops{fuseop="getattr"}`:           25,
+		`arvados_fuse_seconds_total{fuseop="read"}`:    0.273456,
+		`arvados_fuse_seconds_total{fuseop="write"}`:   0.384567,
+		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.090678,
 	}
 
 	out2 := &strings.Builder{}
@@ -209,16 +192,16 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 	lines2 := strings.Split(strings.TrimSpace(out2.String()), "\n")
 
 	expected2 := []string{
-		"crunchstat: blkio:0:0 2048 write 4096 read -- interval 1.0000 seconds 1536 write 3072 read",
+		"crunchstat: blkio:0:0 2560 write 5120 read -- interval 1.0000 seconds 1536 write 3072 read",
 		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"crunchstat: fuseop:getattr 15 count 0.075000 time -- interval 1.0000 seconds 8 count 0.045000 time",
+		"crunchstat: fuseop:getattr 25 count 0.090678 time -- interval 1.0000 seconds 15 count 0.045000 time",
 		"crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"crunchstat: fuseop:read 8 count 0.250000 time -- interval 1.0000 seconds 5 count 0.150000 time",
+		"crunchstat: fuseop:read 10 count 0.273456 time -- interval 1.0000 seconds 5 count 0.150000 time",
 		"crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
@@ -227,11 +210,11 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 		"crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
 		"crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"crunchstat: fuseop:write 5 count 0.350000 time -- interval 1.0000 seconds 4 count 0.150000 time",
-		"crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read",
-		"crunchstat: keepcache 11 hit 4 miss -- interval 1.0000 seconds 8 hit 3 miss",
-		"crunchstat: keepcalls 7 put 15 get -- interval 1.0000 seconds 5 put 10 get",
-		"crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx",
+		"crunchstat: fuseop:write 7 count 0.384567 time -- interval 1.0000 seconds 4 count 0.150000 time",
+		"crunchstat: fuseops 7 write 10 read -- interval 1.0000 seconds 4 write 5 read",
+		"crunchstat: keepcache 16 hit 5 miss -- interval 1.0000 seconds 8 hit 3 miss",
+		"crunchstat: keepcalls 10 put 20 get -- interval 1.0000 seconds 5 put 10 get",
+		"crunchstat: net:keep0 2560 tx 5120 rx -- interval 1.0000 seconds 1536 tx 3072 rx",
 	}
 
 	sort.Strings(lines2)
