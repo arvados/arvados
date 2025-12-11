@@ -1,0 +1,29 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install Grafana
+  become: yes
+  ansible.builtin.apt:
+    name: grafana
+
+- name: Write Grafana config
+  become: yes
+  no_log: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_grafana_config_file }}"
+    dest: /etc/grafana/grafana.ini
+    owner: root
+    group: grafana
+    mode: 0640 # Matches the default permissions used by the grafana package
+  register: arvados_grafana_config_copy
+
+- name: Start and enable grafana
+  become: yes
+  ansible.builtin.systemd_service:
+    name: grafana-server.service
+    state: "{{ 'restarted' if arvados_grafana_config_copy.changed else 'started' }}"
+    enabled: true
