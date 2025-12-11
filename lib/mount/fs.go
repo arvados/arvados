@@ -184,8 +184,6 @@ func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
 }
 
 func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) {
-	var lines []string
-
 	getCurrentAndDelta := func(name string) (float64, float64) {
 		current := currentMetrics[name]
 		previous := previousMetrics[name]
@@ -195,32 +193,32 @@ func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]floa
 	// Keep client network stats
 	bytesIn, bytesInDelta := getCurrentAndDelta(`arvados_keepclient_backend_bytes{direction="in"}`)
 	bytesOut, bytesOutDelta := getCurrentAndDelta(`arvados_keepclient_backend_bytes{direction="out"}`)
-	lines = append(lines, fmt.Sprintf("crunchstat: net:keep0 %.0f tx %.0f rx -- interval %.4f seconds %.0f tx %.0f rx	",
-		bytesOut, bytesIn, intervalSeconds, bytesOutDelta, bytesInDelta))
+	fmt.Fprintf(out, "crunchstat: net:keep0 %.0f tx %.0f rx -- interval %.4f seconds %.0f tx %.0f rx\n",
+		bytesOut, bytesIn, intervalSeconds, bytesOutDelta, bytesInDelta)
 
 	// Keep client call stats
 	getCalls, getCallsDelta := getCurrentAndDelta(`arvados_keepclient_ops{op="get"}`)
 	putCalls, putCallsDelta := getCurrentAndDelta(`arvados_keepclient_ops{op="put"}`)
-	lines = append(lines, fmt.Sprintf("crunchstat: keepcalls %.0f put %.0f get -- interval %.4f seconds %.0f put %.0f get",
-		putCalls, getCalls, intervalSeconds, putCallsDelta, getCallsDelta))
+	fmt.Fprintf(out, "crunchstat: keepcalls %.0f put %.0f get -- interval %.4f seconds %.0f put %.0f get\n",
+		putCalls, getCalls, intervalSeconds, putCallsDelta, getCallsDelta)
 
 	// Keep cache stats (if available)
 	cacheHit, cacheHitDelta := getCurrentAndDelta(`arvados_keepclient_cache{event="hit"}`)
 	cacheMiss, cacheMissDelta := getCurrentAndDelta(`arvados_keepclient_cache{event="miss"}`)
-	lines = append(lines, fmt.Sprintf("crunchstat: keepcache %.0f hit %.0f miss -- interval %.4f seconds %.0f hit %.0f miss",
-		cacheHit, cacheMiss, intervalSeconds, cacheHitDelta, cacheMissDelta))
+	fmt.Fprintf(out, "crunchstat: keepcache %.0f hit %.0f miss -- interval %.4f seconds %.0f hit %.0f miss\n",
+		cacheHit, cacheMiss, intervalSeconds, cacheHitDelta, cacheMissDelta)
 
 	// Block I/O stats (FUSE layer bytes, not Keep backend bytes)
 	fuseReadBytes, fuseReadBytesDelta := getCurrentAndDelta(`arvados_fuse_bytes{fuseop="read"}`)
 	fuseWriteBytes, fuseWriteBytesDelta := getCurrentAndDelta(`arvados_fuse_bytes{fuseop="write"}`)
-	lines = append(lines, fmt.Sprintf("crunchstat: blkio:0:0 %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read",
-		fuseWriteBytes, fuseReadBytes, intervalSeconds, fuseWriteBytesDelta, fuseReadBytesDelta))
+	fmt.Fprintf(out, "crunchstat: blkio:0:0 %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read\n",
+		fuseWriteBytes, fuseReadBytes, intervalSeconds, fuseWriteBytesDelta, fuseReadBytesDelta)
 
 	// FUSE operation summary
 	readOps, readOpsDelta := getCurrentAndDelta(`arvados_fuse_ops{fuseop="read"}`)
 	writeOps, writeOpsDelta := getCurrentAndDelta(`arvados_fuse_ops{fuseop="write"}`)
-	lines = append(lines, fmt.Sprintf("crunchstat: fuseops %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read",
-		writeOps, readOps, intervalSeconds, writeOpsDelta, readOpsDelta))
+	fmt.Fprintf(out, "crunchstat: fuseops %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read\n",
+		writeOps, readOps, intervalSeconds, writeOpsDelta, readOpsDelta)
 
 	// Individual FUSE operation details
 	operations := []string{"getattr", "opendir", "readdir", "open", "create",
@@ -229,12 +227,8 @@ func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]floa
 	for _, op := range operations {
 		opCount, opCountDelta := getCurrentAndDelta(fmt.Sprintf(`arvados_fuse_ops{fuseop="%s"}`, op))
 		opTime, opTimeDelta := getCurrentAndDelta(fmt.Sprintf(`arvados_fuse_seconds_total{fuseop="%s"}`, op))
-		lines = append(lines, fmt.Sprintf("crunchstat: fuseop:%s %.0f count %.6f time -- interval %.4f seconds %.0f count %.6f time",
-			op, opCount, opTime, intervalSeconds, opCountDelta, opTimeDelta))
-	}
-
-	for _, line := range lines {
-		fmt.Fprintf(out, "%s\n", line)
+		fmt.Fprintf(out, "crunchstat: fuseop:%s %.0f count %.6f time -- interval %.4f seconds %.0f count %.6f time\n",
+			op, opCount, opTime, intervalSeconds, opCountDelta, opTimeDelta)
 	}
 }
 

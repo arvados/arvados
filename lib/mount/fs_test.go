@@ -6,6 +6,7 @@ package mount
 
 import (
 	"os"
+	"sort"
 	"strings"
 	"syscall"
 	"testing"
@@ -135,27 +136,34 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 
 	lines1 := strings.Split(strings.TrimSpace(out1.String()), "\n")
 
-	c.Check(len(lines1), Equals, 23) // 5 summary stats + 18 operations
-	// These lines are always in this order
-	c.Check(lines1[0], Matches, "crunchstat: net:keep0 1024 tx 2048 rx -- interval 1.0000 seconds 1024 tx 2048 rx.*")
-	c.Check(lines1[1], Equals, "crunchstat: keepcalls 5 put 10 get -- interval 1.0000 seconds 5 put 10 get")
-	c.Check(lines1[2], Equals, "crunchstat: keepcache 8 hit 2 miss -- interval 1.0000 seconds 8 hit 2 miss")
-	c.Check(lines1[3], Equals, "crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read")
-	c.Check(lines1[4], Equals, "crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read")
-	c.Check(lines1[5], Equals, "crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time")
-
-	// Check read and write lines
-	var readLine, writeLine string
-	for _, line := range lines1 {
-		if strings.HasPrefix(line, "crunchstat: fuseop:read ") {
-			readLine = line
-		}
-		if strings.HasPrefix(line, "crunchstat: fuseop:write ") {
-			writeLine = line
-		}
+	expected1 := []string{
+		"crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read",
+		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time",
+		"crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:read 5 count 0.123456 time -- interval 1.0000 seconds 5 count 0.123456 time",
+		"crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rename 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rmdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:write 3 count 0.234567 time -- interval 1.0000 seconds 3 count 0.234567 time",
+		"crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read",
+		"crunchstat: keepcache 8 hit 2 miss -- interval 1.0000 seconds 8 hit 2 miss",
+		"crunchstat: keepcalls 5 put 10 get -- interval 1.0000 seconds 5 put 10 get",
+		"crunchstat: net:keep0 1024 tx 2048 rx -- interval 1.0000 seconds 1024 tx 2048 rx",
 	}
-	c.Check(readLine, Equals, "crunchstat: fuseop:read 5 count 0.123456 time -- interval 1.0000 seconds 5 count 0.123456 time")
-	c.Check(writeLine, Equals, "crunchstat: fuseop:write 3 count 0.234567 time -- interval 1.0000 seconds 3 count 0.234567 time")
+
+	sort.Strings(lines1)
+	c.Check(lines1, DeepEquals, expected1)
 
 	// First tick to second tick
 	previousMetrics = map[string]float64{
@@ -200,46 +208,34 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 
 	lines2 := strings.Split(strings.TrimSpace(out2.String()), "\n")
 
-	// These lines are always in this order
-	c.Check(lines2[0], Matches, "crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx.*")
-	c.Check(lines2[1], Equals, "crunchstat: keepcalls 7 put 15 get -- interval 1.0000 seconds 5 put 10 get")
-	c.Check(lines2[2], Equals, "crunchstat: keepcache 11 hit 4 miss -- interval 1.0000 seconds 8 hit 3 miss")
-	c.Check(lines2[3], Equals, "crunchstat: blkio:0:0 2048 write 4096 read -- interval 1.0000 seconds 1536 write 3072 read")
-	c.Check(lines2[4], Equals, "crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read")
-
-	statLine := func(op string) string {
-		for _, line := range lines2 {
-			if strings.HasPrefix(line, "crunchstat: fuseop:"+op+" ") {
-				return line
-			}
-		}
-		return ""
+	expected2 := []string{
+		"crunchstat: blkio:0:0 2048 write 4096 read -- interval 1.0000 seconds 1536 write 3072 read",
+		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:getattr 15 count 0.075000 time -- interval 1.0000 seconds 8 count 0.045000 time",
+		"crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:read 8 count 0.250000 time -- interval 1.0000 seconds 5 count 0.150000 time",
+		"crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rename 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rmdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:write 5 count 0.350000 time -- interval 1.0000 seconds 4 count 0.150000 time",
+		"crunchstat: fuseops 5 write 8 read -- interval 1.0000 seconds 4 write 5 read",
+		"crunchstat: keepcache 11 hit 4 miss -- interval 1.0000 seconds 8 hit 3 miss",
+		"crunchstat: keepcalls 7 put 15 get -- interval 1.0000 seconds 5 put 10 get",
+		"crunchstat: net:keep0 2048 tx 4096 rx -- interval 1.0000 seconds 1536 tx 3072 rx",
 	}
 
-	opsOutputHash := map[string]string{
-		"read":       "crunchstat: fuseop:read 8 count 0.250000 time -- interval 1.0000 seconds 5 count 0.150000 time",
-		"write":      "crunchstat: fuseop:write 5 count 0.350000 time -- interval 1.0000 seconds 4 count 0.150000 time",
-		"getattr":    "crunchstat: fuseop:getattr 15 count 0.075000 time -- interval 1.0000 seconds 8 count 0.045000 time",
-		"open":       "crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"release":    "crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"opendir":    "crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"releasedir": "crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"readdir":    "crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"mknod":      "crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"mkdir":      "crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"unlink":     "crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"rmdir":      "crunchstat: fuseop:rmdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"rename":     "crunchstat: fuseop:rename 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"truncate":   "crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"utimens":    "crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"fsync":      "crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"fsyncdir":   "crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-		"create":     "crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
-	}
-
-	for op, output := range opsOutputHash {
-		c.Check(statLine(op), Equals, output)
-	}
+	sort.Strings(lines2)
+	c.Check(lines2, DeepEquals, expected2)
 }
 
 func (s *FSSuite) TestGatherMetrics(c *C) {
