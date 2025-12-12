@@ -1056,12 +1056,12 @@ func (s *ContainerGatewaySuite) TestContainerRequestLogViaCadaver(c *check.C) {
 	c.Check(out, check.Matches, `(?ms).*a\s+0\s.*`)
 
 	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID, "get stderr.txt")
-	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
+	c.Check(out, check.Matches, `(?ms).*Downloading .* to \W?stderr\.txt\W?: .* succeeded\..*`)
 
 	s.saveLogAndCloseGateway(c)
 
 	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID, "get stderr.txt")
-	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
+	c.Check(out, check.Matches, `(?ms).*Downloading .* to \W?stderr\.txt\W?: .* succeeded\..*`)
 }
 
 func (s *ContainerGatewaySuite) runCadaver(c *check.C, password, path, stdin string) string {
