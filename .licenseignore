@@ -132,3 +132,12 @@ services/workbench2/cypress/fixtures/webdav-propfind-outputs.xml
 services/workbench2/.yarn/releases/*
 services/workbench2/package.json
 services/workbench2/yarn.lock
+
+node_modules/.yarn-integrity
+sdk/cwl/arvados_cwl/_version.py
+node_modules/.yarn-integrity
+sdk/cwl/arvados_cwl/_version.py
+sdk/python/arvados/_version.py
+services/fuse/arvados_fuse/_version.py
+tools/cluster-activity/arvados_cluster_activity/_version.py
+tools/crunchstat-summary/crunchstat_summary/_version.py
