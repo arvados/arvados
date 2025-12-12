@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# Pin Loki & Alloy packages to tested and known-good versions
+# Pin packages to tested and known-good versions
 
 Package: loki
 Pin: version 3.*
@@ -11,4 +11,8 @@ Pin-Priority: 995
 
 Package: alloy
 Pin: version 1.*
+Pin-Priority: 995
+
+Package: grafana
+Pin: version 12.*
 Pin-Priority: 995

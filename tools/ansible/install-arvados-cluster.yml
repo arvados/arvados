@@ -131,3 +131,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_alloy
+
+- name: Set up Grafana
+  hosts: arvados_grafana
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_grafana

@@ -217,3 +217,11 @@ arvados_workbench:
 #    api.arvados.example:
 #  vars:
 #    arvados_alloy_config_file: /PATH/TO/config.alloy
+
+# arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
+# The required Grafana configuration file is defined by `arvados_grafana_config_file`.
+#arvados_grafana:
+#  hosts:
+#    api.arvados.example:
+#  vars:
+#    arvados_grafana_config_file: /PATH/TO/grafana.ini
