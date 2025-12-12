@@ -400,9 +400,10 @@ class ArvadosContainer(JobBase):
         output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
         if output_properties_req:
             if self.arvrunner.api._rootDesc["revision"] >= "20220510":
-                container_request["output_properties"] = {}
-                for pr in output_properties_req["outputProperties"]:
-                    container_request["output_properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+                container_request["output_properties"] = {
+                    key: self.builder.do_eval(val)
+                    for key, val in output_properties_req["outputProperties"].items()
+                }
             else:
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
