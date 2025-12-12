@@ -6,12 +6,15 @@ package keepweb
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +22,55 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
+
+// cadaverOptions stores the version of cadaver this system runs and parameters
+// to vary test execution based on that.
+type cadaverOptions struct {
+	majorV    int
+	minorV    int
+	renameCmd string
+	renameLog string
+}
+
+// Run `cadaver --version` and build cadaverOptions based on its output.
+func newCadaverOptions() (*cadaverOptions, error) {
+	stdout, err := exec.Command("cadaver", "--version").Output()
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 255 {
+		// `cadaver --version` normally exits 255. Ignore that.
+	} else if err != nil {
+		return nil, fmt.Errorf("running `cadaver --version` failed: %w", err)
+	}
+
+	versionRE := regexp.MustCompile(`(?m)^cadaver\s+(\d+)\.(\d+)\b`)
+	match := versionRE.FindSubmatch(stdout)
+	if match == nil {
+		return nil, fmt.Errorf("no version number found in `cadaver --version` output")
+	}
+	majorV, err := strconv.Atoi(string(match[1]))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse cadaver major version: %w", err)
+	}
+	minorV, err := strconv.Atoi(string(match[2]))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse cadaver minor version: %w", err)
+	}
+
+	var renameCmd, renameLog string
+	if majorV <= 0 && minorV < 26 {
+		renameCmd = "move"
+		renameLog = "Moving"
+	} else {
+		renameCmd = "rename"
+		renameLog = "Renaming"
+	}
+	return &cadaverOptions{
+		majorV:    majorV,
+		minorV:    minorV,
+		renameCmd: renameCmd,
+		renameLog: renameLog,
+	}, nil
+}
 
 func (s *IntegrationSuite) TestCadaverHTTPAuth(c *check.C) {
 	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
@@ -77,6 +129,12 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	readPath, writePath, pdhPath := pathFunc(newCollection)
 
 	matchToday := time.Now().Format("Jan +2")
+
+	if s.cadaverOpts == nil {
+		s.cadaverOpts, err = newCadaverOptions()
+		c.Assert(err, check.IsNil)
+		c.Assert(s.cadaverOpts, check.NotNil)
+	}
 
 	type testcase struct {
 		path           string
@@ -185,13 +243,13 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir1/ newdir1x/\n",
-			match: `(?ms).*Moving .* succeeded.*`,
+			cmd:   s.cadaverOpts.renameCmd + " newdir1/ newdir1x/\n",
+			match: `(?ms).*` + s.cadaverOpts.renameLog + ` .* succeeded.*`,
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir1x newdir1\n",
-			match: `(?ms).*Moving .* succeeded.*`,
+			cmd:   s.cadaverOpts.renameCmd + " newdir1x newdir1\n",
+			match: `(?ms).*` + s.cadaverOpts.renameLog + ` .* succeeded.*`,
 		},
 		{
 			path:  writePath,
