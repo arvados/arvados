@@ -148,8 +148,10 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
-    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 12 ]] \
-        || fatal "Go >= 1.12 required. See http://golang.org/doc/install"
+    if cd "$temp/GOPATH/pkg/mod/golang.org"; then
+       echo "Additional Go toolchains available:"
+       ls -1 | grep toolchain
+    fi
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
