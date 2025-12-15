@@ -139,6 +139,9 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 		return nil, err
 	}
 
+	// For detecting local changes during Sync, we need to compute
+	// the PDH of our own encoding, which might differ from the
+	// encoding received from server (e.g., ordering of files).
 	txt, err := root.marshalManifest(context.Background(), ".", false)
 	if err != nil {
 		return nil, err
@@ -482,18 +485,53 @@ func (fs *collectionFileSystem) Sync() error {
 	if refreshed || fs.uuid == "" {
 		return nil
 	}
-	txt, err := fs.MarshalManifest(".")
-	if err != nil {
-		return fmt.Errorf("sync failed: %s", err)
-	}
-	savingPDH := PortableDataHash(txt)
-	if savingPDH == fs.savedPDH.Load() {
-		// No local changes since last save or initial load.
-		return nil
+	var savingPDH, savingManifest string
+	for attempts := 0; ; attempts++ {
+		savedPDH := fs.savedPDH.Load()
+		savingManifest, err = fs.MarshalManifest(".")
+		if err != nil {
+			return fmt.Errorf("sync failed: %s", err)
+		}
+		savingPDH = PortableDataHash(savingManifest)
+		if savingPDH == savedPDH {
+			// No local changes since last save or initial
+			// load.
+			return nil
+		}
+		if savedPDH != fs.savedPDH.Load() {
+			// Another goroutine saved or loaded changes
+			// while we were doing MarshalManifest above.
+			//
+			// In the case where the other goroutine saved
+			// local changes, it might have called
+			// MarshalManifest before this Sync started,
+			// and we might have newer changes that need
+			// to be saved.  Retry this loop until we
+			// complete it without losing the race to
+			// another Sync.
+			//
+			// In the case where the other goroutine
+			// loaded remote changes, it will have
+			// clobbered the local changes we detected
+			// above, and the next iteration of this loop
+			// will find no changes, and return nil.
+			//
+			// In the worst case, the number of loop
+			// iterations is bounded by the number of
+			// concurrent Sync calls from other goroutines
+			// that result in a change to savedPDH.  In
+			// practice, it is rare to see even two
+			// iterations.
+			if attempts >= 1000 {
+				return fmt.Errorf("sync failed: bug: race unresolved after %d attempts", attempts)
+			}
+			continue
+		}
+		break
 	}
 	coll := Collection{
 		UUID:         fs.uuid,
-		ManifestText: txt,
+		ManifestText: savingManifest,
 	}
 
 	selectFields := []string{"uuid", "portable_data_hash"}
