@@ -14,50 +14,42 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"golang.org/x/mod/semver"
 	check "gopkg.in/check.v1"
 )
 
 // cadaverOptions stores the version of cadaver this system runs and parameters
 // to vary test execution based on that.
 type cadaverOptions struct {
-	majorV    int
-	minorV    int
+	version   string
 	renameCmd string
 	renameLog string
 }
 
 // Run `cadaver --version` and build cadaverOptions based on its output.
-func newCadaverOptions() (*cadaverOptions, error) {
+func newCadaverOptions(c *check.C) *cadaverOptions {
 	stdout, err := exec.Command("cadaver", "--version").Output()
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) && exitErr.ExitCode() == 255 {
-		// `cadaver --version` normally exits 255. Ignore that.
-	} else if err != nil {
-		return nil, fmt.Errorf("running `cadaver --version` failed: %w", err)
+		err = nil // `cadaver --version` normally exits 255. Ignore that.
 	}
+	c.Assert(err, check.IsNil,
+		check.Commentf("running `cadaver --version` failed"))
 
-	versionRE := regexp.MustCompile(`(?m)^cadaver\s+(\d+)\.(\d+)\b`)
-	match := versionRE.FindSubmatch(stdout)
-	if match == nil {
-		return nil, fmt.Errorf("no version number found in `cadaver --version` output")
-	}
-	majorV, err := strconv.Atoi(string(match[1]))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse cadaver major version: %w", err)
-	}
-	minorV, err := strconv.Atoi(string(match[2]))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse cadaver minor version: %w", err)
-	}
+	match := regexp.MustCompile(`(?m)^cadaver\s+(\d+\.\d+)\b`).FindSubmatch(stdout)
+	c.Assert(match, check.NotNil,
+		check.Commentf("no version number found in `cadaver --version` output"))
+	version := "v" + string(match[1])
+	c.Assert(semver.IsValid(version), check.Equals, true,
+		check.Commentf("cadaver version number found but not valid (bug in our regexp?)"))
 
 	var renameCmd, renameLog string
-	if majorV <= 0 && minorV < 26 {
+	if semver.Compare(version, "v0.26") < 0 {
 		renameCmd = "move"
 		renameLog = "Moving"
 	} else {
@@ -65,11 +57,10 @@ func newCadaverOptions() (*cadaverOptions, error) {
 		renameLog = "Renaming"
 	}
 	return &cadaverOptions{
-		majorV:    majorV,
-		minorV:    minorV,
+		version:   version,
 		renameCmd: renameCmd,
 		renameLog: renameLog,
-	}, nil
+	}
 }
 
 func (s *IntegrationSuite) TestCadaverHTTPAuth(c *check.C) {
@@ -131,8 +122,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	matchToday := time.Now().Format("Jan +2")
 
 	if s.cadaverOpts == nil {
-		s.cadaverOpts, err = newCadaverOptions()
-		c.Assert(err, check.IsNil)
+		s.cadaverOpts = newCadaverOptions(c)
 		c.Assert(s.cadaverOpts, check.NotNil)
 	}
 
