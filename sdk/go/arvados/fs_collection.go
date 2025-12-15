@@ -486,7 +486,7 @@ func (fs *collectionFileSystem) Sync() error {
 		return nil
 	}
 	var savingPDH, savingManifest string
-	for {
+	for attempts := 0; ; attempts++ {
 		savedPDH := fs.savedPDH.Load()
 		savingManifest, err = fs.MarshalManifest(".")
 		if err != nil {
@@ -515,6 +515,16 @@ func (fs *collectionFileSystem) Sync() error {
 			// clobbered the local changes we detected
 			// above, and the next iteration of this loop
 			// will find no changes, and return nil.
+			//
+			// In the worst case, the number of loop
+			// iterations is bounded by the number of
+			// concurrent Sync calls from other goroutines
+			// that result in a change to savedPDH.  In
+			// practice, it is rare to see even two
+			// iterations.
+			if attempts >= 1000 {
+				return fmt.Errorf("sync failed: bug: race unresolved after %d attempts", attempts)
+			}
 			continue
 		}
 		break
