@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 
 	// pprof is only imported to register its HTTP handlers
 	_ "net/http/pprof"
@@ -26,6 +27,17 @@ import (
 )
 
 var Command = &mountCommand{}
+
+type arrayFlags []string
+
+func (a *arrayFlags) String() string {
+	return strings.Join(*a, ", ")
+}
+
+func (a *arrayFlags) Set(value string) error {
+	*a = append(*a, value)
+	return nil
+}
 
 type mountCommand struct {
 	// ready, if non-nil, will be closed when the mount is
@@ -54,9 +66,11 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
-	mountById := flags.String("mount-by-id", "", "Make a magic directory available where collections and "+
+	var mountById arrayFlags
+	flags.Var(&mountById, "mount-by-id", "Make a magic directory available where collections and "+
 		"projects are accessible through subdirectories named after their UUID or "+
 		"portable data hash.")
+
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
 	}
@@ -83,18 +97,15 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		return 2
 	}
 	mountSubdir := ""
-	wasMountByIdPassed := false
-	flags.Visit(func(f *flag.Flag) {
-		if f.Name == "mount-by-id" {
-			wasMountByIdPassed = true
-		}
-	})
-	if wasMountByIdPassed {
-		if *mountById == "" {
+	if len(mountById) > 0 {
+		if len(mountById) > 1 {
+			logger.Error("-mount-by-id may be specified at most once")
+			return 2
+		} else if mountById[0] == "" {
 			logger.Error("-mount-by-id requires a directory name")
 			return 2
 		} else {
-			mountSubdir = *mountById
+			mountSubdir = mountById[0]
 		}
 	}
 
