@@ -1,0 +1,29 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install Prometheus
+  become: yes
+  ansible.builtin.apt:
+    name: prometheus
+
+- name: Write Prometheus config
+  become: yes
+  no_log: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_prometheus_config_file }}"
+    dest: /etc/prometheus/prometheus.yml
+    owner: root
+    group: root
+    mode: 0644 # Matches the default permissions used by the grafana package
+  register: arvados_prometheus_config_copy
+
+- name: Start and enable prometheus
+  become: yes
+  ansible.builtin.systemd_service:
+    name: prometheus.service
+    state: "{{ 'restarted' if arvados_prometheus_config_copy.changed else 'started' }}"
+    enabled: true

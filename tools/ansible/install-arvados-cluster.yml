@@ -138,3 +138,10 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_grafana
+
+- name: Set up Prometheus
+  hosts: arvados_prometheus
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_prometheus
