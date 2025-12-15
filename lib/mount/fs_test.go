@@ -6,6 +6,8 @@ package mount
 
 import (
 	"os"
+	"sort"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -15,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
+	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 )
 
@@ -41,6 +44,7 @@ func (s *FSSuite) SetUpTest(c *C) {
 		Logger:     ctxlog.TestLogger(c),
 	}
 	s.fs.Init()
+	s.fs.Registry = prometheus.NewRegistry()
 }
 
 func (s *FSSuite) TearDownTest(c *C) {
@@ -103,4 +107,131 @@ func (s *FSSuite) TestMknod(c *C) {
 	// Should return error if target exists
 	errc = s.fs.Mknod(path, syscall.S_IFREG|0o644, 0)
 	c.Check(errc, Equals, -fuse.EEXIST)
+}
+
+func (s *FSSuite) TestWriteMetrics(c *C) {
+	// Zero to first tick
+	previousMetrics := map[string]float64{}
+	currentMetrics := map[string]float64{
+		// Keep client metrics
+		`arvados_keepclient_backend_bytes{direction="out"}`: 1024,
+		`arvados_keepclient_backend_bytes{direction="in"}`:  2048,
+		`arvados_keepclient_ops{op="put"}`:                  5,
+		`arvados_keepclient_ops{op="get"}`:                  10,
+		`arvados_keepclient_cache{event="hit"}`:             8,
+		`arvados_keepclient_cache{event="miss"}`:            2,
+		// FUSE metrics
+		`arvados_fuse_bytes{fuseop="read"}`:            2048,
+		`arvados_fuse_bytes{fuseop="write"}`:           1024,
+		`arvados_fuse_ops{fuseop="read"}`:              5,
+		`arvados_fuse_ops{fuseop="write"}`:             3,
+		`arvados_fuse_ops{fuseop="getattr"}`:           10,
+		`arvados_fuse_seconds_total{fuseop="read"}`:    0.123456,
+		`arvados_fuse_seconds_total{fuseop="write"}`:   0.234567,
+		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.045678,
+	}
+
+	out1 := &strings.Builder{}
+	writeMetrics(out1, currentMetrics, previousMetrics, 1.0)
+
+	lines1 := strings.Split(strings.TrimSpace(out1.String()), "\n")
+
+	// pre-sorted to match sorted output
+	expected1 := []string{
+		"crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read",
+		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:getattr 10 count 0.045678 time -- interval 1.0000 seconds 10 count 0.045678 time",
+		"crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:read 5 count 0.123456 time -- interval 1.0000 seconds 5 count 0.123456 time",
+		"crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rename 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rmdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:write 3 count 0.234567 time -- interval 1.0000 seconds 3 count 0.234567 time",
+		"crunchstat: fuseops 3 write 5 read -- interval 1.0000 seconds 3 write 5 read",
+		"crunchstat: keepcache 8 hit 2 miss -- interval 1.0000 seconds 8 hit 2 miss",
+		"crunchstat: keepcalls 5 put 10 get -- interval 1.0000 seconds 5 put 10 get",
+		"crunchstat: net:keep0 1024 tx 2048 rx -- interval 1.0000 seconds 1024 tx 2048 rx",
+	}
+
+	sort.Strings(lines1)
+	c.Check(lines1, DeepEquals, expected1)
+
+	// First tick to second tick
+	previousMetrics = currentMetrics
+	currentMetrics = map[string]float64{
+		// Keep client metrics (increased)
+		`arvados_keepclient_backend_bytes{direction="out"}`: 2560,
+		`arvados_keepclient_backend_bytes{direction="in"}`:  5120,
+		`arvados_keepclient_ops{op="put"}`:                  10,
+		`arvados_keepclient_ops{op="get"}`:                  20,
+		`arvados_keepclient_cache{event="hit"}`:             16,
+		`arvados_keepclient_cache{event="miss"}`:            5,
+		// FUSE metrics (increased)
+		`arvados_fuse_bytes{fuseop="read"}`:            5120,
+		`arvados_fuse_bytes{fuseop="write"}`:           2560,
+		`arvados_fuse_ops{fuseop="read"}`:              10,
+		`arvados_fuse_ops{fuseop="write"}`:             7,
+		`arvados_fuse_ops{fuseop="getattr"}`:           25,
+		`arvados_fuse_seconds_total{fuseop="read"}`:    0.273456,
+		`arvados_fuse_seconds_total{fuseop="write"}`:   0.384567,
+		`arvados_fuse_seconds_total{fuseop="getattr"}`: 0.090678,
+	}
+
+	out2 := &strings.Builder{}
+	writeMetrics(out2, currentMetrics, previousMetrics, 1.0)
+
+	lines2 := strings.Split(strings.TrimSpace(out2.String()), "\n")
+
+	// pre-sorted to match sorted output
+	expected2 := []string{
+		"crunchstat: blkio:0:0 2560 write 5120 read -- interval 1.0000 seconds 1536 write 3072 read",
+		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsync 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:fsyncdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:getattr 25 count 0.090678 time -- interval 1.0000 seconds 15 count 0.045000 time",
+		"crunchstat: fuseop:mkdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:mknod 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:open 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:opendir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:read 10 count 0.273456 time -- interval 1.0000 seconds 5 count 0.150000 time",
+		"crunchstat: fuseop:readdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:release 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:releasedir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rename 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:rmdir 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:truncate 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:unlink 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:utimens 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
+		"crunchstat: fuseop:write 7 count 0.384567 time -- interval 1.0000 seconds 4 count 0.150000 time",
+		"crunchstat: fuseops 7 write 10 read -- interval 1.0000 seconds 4 write 5 read",
+		"crunchstat: keepcache 16 hit 5 miss -- interval 1.0000 seconds 8 hit 3 miss",
+		"crunchstat: keepcalls 10 put 20 get -- interval 1.0000 seconds 5 put 10 get",
+		"crunchstat: net:keep0 2560 tx 5120 rx -- interval 1.0000 seconds 1536 tx 3072 rx",
+	}
+
+	sort.Strings(lines2)
+	c.Check(lines2, DeepEquals, expected2)
+}
+
+func (s *FSSuite) TestGatherMetrics(c *C) {
+	s.fs.registerMetrics()
+	metrics := gatherMetrics(s.fs.Registry)
+	c.Check(len(metrics) > 0, Equals, true)
+	c.Check(metrics["arvados_fuse_ops{fuseop=\"read\"}"], NotNil)
+	c.Check(metrics["arvados_keepclient_backend_bytes{direction=\"in\"}"], NotNil)
+	c.Check(metrics["arvados_keepclient_backend_bytes{direction=\"out\"}"], NotNil)
+	c.Check(metrics["arvados_keepclient_cache{event=\"hit\"}"], NotNil)
+	c.Check(metrics["arvados_keepclient_cache{event=\"miss\"}"], NotNil)
+	c.Check(metrics["arvados_keepclient_ops{op=\"get\"}"], NotNil)
+	c.Check(metrics["arvados_keepclient_ops{op=\"put\"}"], NotNil)
 }
