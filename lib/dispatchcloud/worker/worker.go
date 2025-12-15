@@ -31,33 +31,22 @@ const (
 
 // State indicates whether a worker is available to do work, and (if
 // not) whether/when it is expected to become ready.
-type State int
+type State string
 
 const (
-	StateUnknown  State = iota // might be running a container already
-	StateBooting               // instance is booting
-	StateIdle                  // instance booted, no containers are running
-	StateRunning               // instance is running one or more containers
-	StateShutdown              // worker has stopped monitoring the instance
+	StateUnknown  State = "unknown"  // might be running a container already
+	StateBooting        = "booting"  // instance is booting
+	StateIdle           = "idle"     // instance booted, no containers are running
+	StateRunning        = "running"  // instance is running one or more containers
+	StateShutdown       = "shutdown" // worker has stopped monitoring the instance
 )
 
-var stateString = map[State]string{
-	StateUnknown:  "unknown",
-	StateBooting:  "booting",
-	StateIdle:     "idle",
-	StateRunning:  "running",
-	StateShutdown: "shutdown",
-}
-
-// String implements fmt.Stringer.
-func (s State) String() string {
-	return stateString[s]
-}
-
-// MarshalText implements encoding.TextMarshaler so a JSON encoding of
-// map[State]anything uses the state's string representation.
-func (s State) MarshalText() ([]byte, error) {
-	return []byte(stateString[s]), nil
+var validStates = map[State]bool{
+	StateUnknown:  true,
+	StateBooting:  true,
+	StateIdle:     true,
+	StateRunning:  true,
+	StateShutdown: true,
 }
 
 // BootOutcome is the result of a worker boot. It is used as a label in a metric.

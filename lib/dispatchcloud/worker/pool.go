@@ -42,7 +42,7 @@ type InstanceView struct {
 	ProviderInstanceType string           `json:"provider_instance_type"`
 	LastContainerUUID    string           `json:"last_container_uuid"`
 	LastBusy             time.Time        `json:"last_busy"`
-	WorkerState          string           `json:"worker_state"`
+	WorkerState          State            `json:"worker_state"`
 	IdleBehavior         IdleBehavior     `json:"idle_behavior"`
 }
 
@@ -766,8 +766,8 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Name:      "instances_disappeared",
 		Help:      "Number of occurrences of an instance disappearing from the cloud provider's list of instances.",
 	}, []string{"state"})
-	for _, v := range stateString {
-		wp.mDisappearances.WithLabelValues(v).Add(0)
+	for s := range validStates {
+		wp.mDisappearances.WithLabelValues(string(s)).Add(0)
 	}
 	reg.MustRegister(wp.mDisappearances)
 	wp.mTimeToSSH = prometheus.NewSummary(prometheus.SummaryOpts{
@@ -972,7 +972,7 @@ func (wp *Pool) Instances() []InstanceView {
 			ProviderInstanceType: w.instType.ProviderType,
 			LastContainerUUID:    w.lastUUID,
 			LastBusy:             w.busy,
-			WorkerState:          w.state.String(),
+			WorkerState:          w.state,
 			IdleBehavior:         w.idleBehavior,
 		})
 	}
@@ -1099,7 +1099,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		logger.Info("instance disappeared in cloud")
 		wkr.reportBootOutcome(BootOutcomeDisappeared)
 		if wp.mDisappearances != nil {
-			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
+			wp.mDisappearances.WithLabelValues(string(wkr.state)).Inc()
 		}
 		// wkr.destroyed.IsZero() can happen if instance disappeared but we weren't trying to shut it down
 		if wp.mTimeFromShutdownToGone != nil && !wkr.destroyed.IsZero() {
