@@ -40,7 +40,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	mountCmd := mountCommand{ready: make(chan struct{})}
 	ready := false
 	go func() {
-		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--crunchstat-interval", "0.01", s.mnt}, stdin, stdout, stderr)
+		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", s.mnt}, stdin, stdout, stderr)
 	}()
 	go func() {
 		<-mountCmd.ready
@@ -65,18 +65,11 @@ func (s *CmdSuite) TestMount(c *check.C) {
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
 		c.Check(os.IsNotExist(err), check.Equals, true)
 
-		// Check that crunchstat ticker is running
-		time.Sleep(20 * time.Millisecond)
-		logs := stderr.String()
-		c.Check(strings.Contains(logs, "tick"), check.Equals, true)
+		c.Check(stderr.String(), check.Equals, "")
 
 		ok := mountCmd.Unmount()
 		c.Check(ok, check.Equals, true)
 
-		stderrLen1 := stderr.Len()
-		time.Sleep(100 * time.Millisecond)
-		stderrLen2 := stderr.Len()
-		c.Check(stderrLen2, check.Equals, stderrLen1)
 	}()
 	select {
 	case <-time.After(5 * time.Second):
@@ -89,4 +82,51 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	c.Check(stdout.String(), check.Equals, "")
 	// stdin should not have been read
 	c.Check(stdin.String(), check.Equals, "stdin")
+}
+
+func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
+	exited := make(chan int)
+	stdin := bytes.NewBufferString("stdin")
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+	mountCmd := mountCommand{ready: make(chan struct{})}
+	go func() {
+		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--crunchstat-interval", "0.01", s.mnt}, stdin, stdout, stderr)
+	}()
+	go func() {
+		<-mountCmd.ready
+
+		data := make([]byte, 2048)
+		for i := range data {
+			data[i] = byte(i % 256)
+		}
+
+		collectionPath := s.mnt + "/by_id/" + arvadostest.FooCollection + "/testfile"
+
+		os.WriteFile(collectionPath, data, 0644)
+		os.ReadFile(collectionPath)
+		time.Sleep(20 * time.Millisecond)
+
+		// Check that any logging has occurred
+		logs := stderr.String()
+		c.Check(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
+		c.Check(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
+
+		ok := mountCmd.Unmount()
+		c.Check(ok, check.Equals, true)
+
+		// Check that logging has stopped
+		stderrLen1 := stderr.Len()
+		time.Sleep(100 * time.Millisecond)
+		stderrLen2 := stderr.Len()
+		c.Check(stderrLen2, check.Equals, stderrLen1)
+	}()
+
+	select {
+	case <-time.After(5 * time.Second):
+		c.Fatal("timed out")
+	case errCode, ok := <-exited:
+		c.Check(ok, check.Equals, true)
+		c.Check(errCode, check.Equals, 0)
+	}
 }
