@@ -796,7 +796,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 					return nil
 				}
 				var updated arvados.Collection
-				err = client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+collectionID, nil, map[string]interface{}{
+				err = client.RequestAndDecodeContext(r.Context(), &updated, "PATCH", "arvados/v1/collections/"+collectionID, nil, map[string]interface{}{
 					"replace_files": replace,
 					"collection":    map[string]interface{}{"manifest_text": manifest}})
 				var te arvados.TransactionError
@@ -824,6 +824,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == http.MethodGet {
 		applyContentDispositionHdr(w, r, basename, attachment)
+	}
+	if r.Method == http.MethodPut {
+		// It is normal for large file uploads to take longer
+		// than the configured API.RequestTimeout.
+		httpserver.ExemptFromDeadline(r)
 	}
 	wh := &webdav.Handler{
 		Prefix: webdavPrefix,

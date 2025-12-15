@@ -336,11 +336,6 @@ func (s *IntegrationSuite) runServer(c *check.C) (cluster arvados.Cluster, srvad
 }
 
 // Ensure uploads can take longer than API.RequestTimeout.
-//
-// Currently, this works only by accident: service.Command cancels the
-// request context as usual (there is no exemption), but
-// webdav.Handler doesn't notice if the request context is cancelled
-// while waiting to send or receive file data.
 func (s *IntegrationSuite) TestRequestTimeoutExemption(c *check.C) {
 	s.handler.Cluster.API.RequestTimeout = arvados.Duration(time.Second / 2)
 	_, srvaddr, _ := s.runServer(c)
