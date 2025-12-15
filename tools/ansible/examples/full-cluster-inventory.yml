@@ -225,3 +225,11 @@ arvados_workbench:
 #    api.arvados.example:
 #  vars:
 #    arvados_grafana_config_file: /PATH/TO/grafana.ini
+
+# arvados_prometheus host(s) will have Prometheus installed from the Prometheus APT repository.
+# The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
+#arvados_prometheus:
+#  hosts:
+#    api.arvados.example:
+#  vars:
+#    arvados_prometheus_config_file: /PATH/TO/prometheus.yml
