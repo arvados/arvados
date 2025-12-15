@@ -136,6 +136,7 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 
 	lines1 := strings.Split(strings.TrimSpace(out1.String()), "\n")
 
+	// pre-sorted to match sorted output
 	expected1 := []string{
 		"crunchstat: blkio:0:0 1024 write 2048 read -- interval 1.0000 seconds 1024 write 2048 read",
 		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",
@@ -191,6 +192,7 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 
 	lines2 := strings.Split(strings.TrimSpace(out2.String()), "\n")
 
+	// pre-sorted to match sorted output
 	expected2 := []string{
 		"crunchstat: blkio:0:0 2560 write 5120 read -- interval 1.0000 seconds 1536 write 3072 read",
 		"crunchstat: fuseop:create 0 count 0.000000 time -- interval 1.0000 seconds 0 count 0.000000 time",

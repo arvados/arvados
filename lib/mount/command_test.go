@@ -105,9 +105,9 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 
 		os.WriteFile(collectionPath, data, 0644)
 		os.ReadFile(collectionPath)
-
-		// Check that crunchstat ticker is running
 		time.Sleep(20 * time.Millisecond)
+
+		// Check that any logging has occurred
 		logs := stderr.String()
 		c.Check(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
 		c.Check(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
