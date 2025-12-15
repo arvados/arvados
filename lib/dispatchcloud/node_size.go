@@ -160,8 +160,8 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 		} else {
 			// not blank, "cuda", or "rocm" so that's an error
 			return nil, ConstraintsNotSatisfiableError{
-				errors.New(fmt.Sprintf("Invalid GPU stack %q, expected to be blank or one of 'cuda' or 'rocm'", ctr.RuntimeConstraints.GPU.Stack)),
-				[]arvados.InstanceType{},
+				error:          errors.New(fmt.Sprintf("Invalid GPU stack %q, expected to be blank or one of 'cuda' or 'rocm'", ctr.RuntimeConstraints.GPU.Stack)),
+				AvailableTypes: []arvados.InstanceType{},
 			}
 		}
 
