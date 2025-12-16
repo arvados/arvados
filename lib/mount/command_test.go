@@ -34,7 +34,7 @@ func (s *CmdSuite) TearDownTest(c *check.C) {
 
 func (s *CmdSuite) TestMount(c *check.C) {
 	stderr := bytes.NewBuffer(nil)
-	s.testMount(c, []string{"--crunchstat-interval", "0.01"}, func() {
+	s.mountAndCheck(c, []string{}, func() {
 		f, err := os.Open(s.mnt + "/by_id/" + arvadostest.FooCollection)
 		if c.Check(err, check.IsNil) {
 			dirnames, err := f.Readdirnames(-1)
@@ -53,16 +53,11 @@ func (s *CmdSuite) TestMount(c *check.C) {
 
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
 		c.Check(os.IsNotExist(err), check.Equals, true)
-
-		// Check that crunchstat ticker is running
-		time.Sleep(20 * time.Millisecond)
-		logs := stderr.String()
-		c.Check(strings.Contains(logs, "tick"), check.Equals, true)
 	}, stderr)
 }
 
 func (s *CmdSuite) TestMountById(c *check.C) {
-	s.testMount(c, []string{"--mount-by-id", "by_id_test"}, func() {
+	s.mountAndCheck(c, []string{"--mount-by-id", "by_id_test"}, func() {
 		f, err := os.Open(s.mnt + "/by_id_test/" + arvadostest.FooCollection)
 		if c.Check(err, check.IsNil) {
 			dirnames, err := f.Readdirnames(-1)
@@ -71,48 +66,6 @@ func (s *CmdSuite) TestMountById(c *check.C) {
 			f.Close()
 		}
 	}, nil)
-}
-
-func (s *CmdSuite) testMount(c *check.C, args []string, testFunc func(), stderr *bytes.Buffer) {
-	exited := make(chan int)
-	stdin := bytes.NewBufferString("stdin")
-	stdout := bytes.NewBuffer(nil)
-	mountCmd := mountCommand{ready: make(chan struct{})}
-	ready := false
-	testArgs := make([]string, len(args))
-	copy(testArgs, args)
-	arr := append(testArgs, "-experimental", s.mnt)
-	go func() {
-		exited <- mountCmd.RunCommand("test mount", arr, stdin, stdout, stderr)
-	}()
-	go func() {
-		<-mountCmd.ready
-		defer func() {
-			ok := mountCmd.Unmount()
-			c.Check(ok, check.Equals, true)
-			testFunc()
-			if stderr == nil {
-				return
-			}
-			//check that all logging has stopped
-			stderrLen1 := stderr.Len()
-			time.Sleep(100 * time.Millisecond)
-			stderrLen2 := stderr.Len()
-			c.Check(stderrLen2, check.Equals, stderrLen1)
-		}()
-		ready = true
-	}()
-	select {
-	case <-time.After(5 * time.Second):
-		c.Fatal("timed out")
-	case errCode, ok := <-exited:
-		c.Check(ok, check.Equals, true)
-		c.Check(errCode, check.Equals, 0)
-	}
-	c.Check(ready, check.Equals, true)
-	c.Check(stdout.String(), check.Equals, "")
-	// stdin should not have been read
-	c.Check(stdin.String(), check.Equals, "stdin")
 }
 
 func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
@@ -160,4 +113,46 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 		c.Check(ok, check.Equals, true)
 		c.Check(errCode, check.Equals, 0)
 	}
+}
+
+func (s *CmdSuite) mountAndCheck(c *check.C, args []string, testFunc func(), stderr *bytes.Buffer) {
+	exited := make(chan int)
+	stdin := bytes.NewBufferString("stdin")
+	stdout := bytes.NewBuffer(nil)
+	mountCmd := mountCommand{ready: make(chan struct{})}
+	ready := false
+	testArgs := make([]string, len(args))
+	copy(testArgs, args)
+	arr := append(testArgs, "-experimental", s.mnt)
+	go func() {
+		exited <- mountCmd.RunCommand("test mount", arr, stdin, stdout, stderr)
+	}()
+	go func() {
+		<-mountCmd.ready
+		defer func() {
+			ok := mountCmd.Unmount()
+			c.Check(ok, check.Equals, true)
+			if stderr == nil {
+				return
+			}
+			//check that all logging has stopped
+			stderrLen1 := stderr.Len()
+			time.Sleep(100 * time.Millisecond)
+			stderrLen2 := stderr.Len()
+			c.Check(stderrLen2, check.Equals, stderrLen1)
+		}()
+		testFunc()
+		ready = true
+	}()
+	select {
+	case <-time.After(5 * time.Second):
+		c.Fatal("timed out")
+	case errCode, ok := <-exited:
+		c.Check(ok, check.Equals, true)
+		c.Check(errCode, check.Equals, 0)
+	}
+	c.Check(ready, check.Equals, true)
+	c.Check(stdout.String(), check.Equals, "")
+	// stdin should not have been read
+	c.Check(stdin.String(), check.Equals, "stdin")
 }
