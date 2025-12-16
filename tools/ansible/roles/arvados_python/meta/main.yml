@@ -27,6 +27,7 @@ dependencies:
         - libffi-dev
         - libgdbm-dev
         - liblzma-dev
+        - libreadline-dev
         - libsqlite3-dev
         - locales-all
         - lsb-release

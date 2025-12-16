@@ -21,6 +21,7 @@ PackageMapping = abc.Mapping[str, t.List[str]]
 # package names from the latest supported Debian to the named distribution.
 _PACKAGE_NAMES_MAP: t.Dict[DistroID, PackageMapping] = {
     ('Debian', '12'): {},
+    ('Debian', '13'): {},
     ('Ubuntu', '22'): {},
     ('Ubuntu', '24'): {},
 }
