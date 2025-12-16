@@ -340,12 +340,25 @@
 
 - hosts: arvados_build_doc
   tasks:
-    - name: Install doc build requirements
-      become: yes
-      ansible.builtin.apt:
-        name:
-          - python3-venv
+    # The documentation build just needs basic Ruby and Python.
+    # If we already installed those for the corresponding Arvados components,
+    # we don't need to do anything. The version we installed will work whether
+    # it's from source or distro packages.
+    - ansible.builtin.include_role:
+        name: distro_packages
+      when: "'arvados_build_ruby' not in group_names"
+      vars:
+        task_name: Install Ruby (rake) for documentation build
+        package_names:
           - ruby
+
+    - ansible.builtin.include_role:
+        name: distro_packages
+      when: "'arvados_build_python' not in group_names"
+      vars:
+        task_name: Install Python for PySDK documentation build
+        package_names:
+          - python3-venv
 
 - hosts: arvados_test_doc
   tasks:
