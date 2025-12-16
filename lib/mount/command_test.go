@@ -31,41 +31,38 @@ func (s *CmdSuite) SetUpTest(c *check.C) {
 }
 
 func (s *CmdSuite) TearDownTest(c *check.C) {
-	c.Check(os.RemoveAll(s.mnt), check.IsNil)
+	c.Assert(os.RemoveAll(s.mnt), check.IsNil)
 }
 
 func (s *CmdSuite) TestMount(c *check.C) {
 	s.mountAndCheck(c, []string{}, func() {
 		f, err := os.Open(s.mnt + "/by_id/" + arvadostest.FooCollection)
-		if c.Check(err, check.IsNil) {
-			dirnames, err := f.Readdirnames(-1)
-			c.Check(err, check.IsNil)
-			c.Check(dirnames, check.DeepEquals, []string{"foo"})
-			f.Close()
-		}
+		c.Assert(err, check.IsNil)
+		dirnames, err := f.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
+		f.Close()
 
 		buf, err := ioutil.ReadFile(s.mnt + "/by_id/" + arvadostest.FooCollection + "/.arvados#collection")
-		if c.Check(err, check.IsNil) {
-			var m map[string]interface{}
-			err = json.Unmarshal(buf, &m)
-			c.Check(err, check.IsNil)
-			c.Check(m["manifest_text"], check.Matches, `\. acbd.* 0:3:foo\n`)
-		}
+		c.Assert(err, check.IsNil)
+		var m map[string]interface{}
+		err = json.Unmarshal(buf, &m)
+		c.Assert(err, check.IsNil)
+		c.Assert(m["manifest_text"], check.Matches, `\. acbd.* 0:3:foo\n`)
 
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
-		c.Check(os.IsNotExist(err), check.Equals, true)
+		c.Assert(os.IsNotExist(err), check.Equals, true)
 	})
 }
 
 func (s *CmdSuite) TestMountById(c *check.C) {
 	s.mountAndCheck(c, []string{"--mount-by-id", "by_id_test"}, func() {
 		f, err := os.Open(s.mnt + "/by_id_test/" + arvadostest.FooCollection)
-		if c.Check(err, check.IsNil) {
-			dirnames, err := f.Readdirnames(-1)
-			c.Check(err, check.IsNil)
-			c.Check(dirnames, check.DeepEquals, []string{"foo"})
-			f.Close()
-		}
+		c.Assert(err, check.IsNil)
+		dirnames, err := f.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
+		f.Close()
 	})
 }
 
@@ -83,8 +80,8 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 
 		// Check that any logging has occurred
 		logs := s.stderr.String()
-		c.Check(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
-		c.Check(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
+		c.Assert(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
+		c.Assert(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
 	})
 }
 
@@ -102,14 +99,14 @@ func (s *CmdSuite) mountAndCheck(c *check.C, testArgs []string, testFunc func())
 		<-mountCmd.ready
 		defer func() {
 			ok := mountCmd.Unmount()
-			c.Check(ok, check.Equals, true)
+			c.Assert(ok, check.Equals, true)
 
 			//If stderr was populated during the test, check that logging stops after unmount.
 			if len(s.stderr.Bytes()) > 0 {
 				len1 := s.stderr.Len()
 				time.Sleep(100 * time.Millisecond)
 				len2 := s.stderr.Len()
-				c.Check(len1, check.Equals, len2)
+				c.Assert(len1, check.Equals, len2)
 			}
 		}()
 		testFunc()
@@ -119,11 +116,11 @@ func (s *CmdSuite) mountAndCheck(c *check.C, testArgs []string, testFunc func())
 	case <-time.After(5 * time.Second):
 		c.Fatal("timed out")
 	case errCode, ok := <-exited:
-		c.Check(ok, check.Equals, true)
-		c.Check(errCode, check.Equals, 0)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(errCode, check.Equals, 0)
 	}
-	c.Check(ready, check.Equals, true)
-	c.Check(stdout.String(), check.Equals, "")
+	c.Assert(ready, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "")
 	// stdin should not have been read
-	c.Check(stdin.String(), check.Equals, "stdin")
+	c.Assert(stdin.String(), check.Equals, "stdin")
 }
