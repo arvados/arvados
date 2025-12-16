@@ -2,27 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Install Loki package pin
-  become: yes
-  ansible.builtin.copy:
-    src: arvados-loki.pref
-    dest: /etc/apt/preferences.d/arvados-loki.pref
-    owner: root
-    group: root
-    mode: 0644
-
-- name: Add Grafana apt repository
-  become: yes
-  ansible.builtin.deb822_repository:
-    name: grafana
-    types: deb
-    uris: https://apt.grafana.com
-    suites: stable
-    components: main
-    signed_by: https://apt.grafana.com/gpg.key
-  notify:
-    - apt update
-
 - name: apt update if needed
   ansible.builtin.meta: flush_handlers
 

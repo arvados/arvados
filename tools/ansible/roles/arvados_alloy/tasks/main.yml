@@ -1,0 +1,38 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: apt update if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Install Alloy package
+  become: yes
+  ansible.builtin.apt:
+    name: alloy
+
+- name: Create Alloy config dir
+  become: yes
+  ansible.builtin.file:
+    path: /etc/alloy
+    state: directory
+    owner: root
+    group: alloy # Config folder must be owned by alloy
+    mode: 0770 # Matches the default permissions used by the grafana alloy package
+
+- name: Write Alloy config
+  become: yes
+  no_log: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_alloy_config_file }}"
+    dest: /etc/alloy/config.alloy
+    owner: root
+    group: root
+    mode: 0644 # Matches the default permissions used by the grafana alloy package
+  register: arvados_alloy_config_copy
+
+- name: Start and enable alloy.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: alloy.service
+    state: "{{ 'restarted' if arvados_alloy_config_copy.changed else 'started' }}"
+    enabled: true

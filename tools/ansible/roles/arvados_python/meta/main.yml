@@ -1,0 +1,45 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dependencies:
+  - role: distro_packages
+    vars:
+      # common_deps are required to build extensions whether Python is
+      # installed from source or packages.
+      common_deps:
+        - g++
+        - libcurl4-openssl-dev
+        - libfuse-dev
+        - libssl-dev
+        - make
+        - pkgconf
+      # build_deps are additionally required to build Python itself from source.
+      # These are mostly cribbed from Debian's Build-Depends, minus support
+      # for some optional stdlib modules we don't need like Bluetooth and GUIs.
+      build_deps:
+        - autoconf
+        - bzip2
+        - gzip
+        - libbz2-dev
+        - libdb-dev
+        - libexpat1-dev
+        - libffi-dev
+        - libgdbm-dev
+        - liblzma-dev
+        - libsqlite3-dev
+        - locales-all
+        - lsb-release
+        - media-types
+        - net-tools
+        - netbase
+        - sharutils
+        - tar
+        - time
+        - zlib1g-dev
+      # python_pkgs are installed when we're not installing Python from source.
+      python_pkgs:
+        - python3-dev
+        - python3-venv
+      task_name: Install Python runtime dependencies
+      package_names: "{{ common_deps + (python_pkgs if arvados_dev_from_pkgs else build_deps) }}"

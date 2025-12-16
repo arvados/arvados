@@ -6,6 +6,7 @@ package mount
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,19 +32,25 @@ type sharedFile struct {
 // keepFS implements cgofuse's FileSystemInterface.
 type keepFS struct {
 	fuse.FileSystemBase
-	Client     *arvados.Client
-	KeepClient *keepclient.KeepClient
-	ReadOnly   bool
-	Uid        int
-	Gid        int
-	Logger     logrus.FieldLogger
+	Client        *arvados.Client
+	KeepClient    *keepclient.KeepClient
+	ReadOnly      bool
+	Uid           int
+	Gid           int
+	Logger        logrus.FieldLogger
+	Registry      *prometheus.Registry
+	StatsWriter   io.Writer
+	StatsInterval time.Duration
 
-	root          arvados.CustomFileSystem
 	customDirName string
+	statsInterval time.Duration
+	root          arvados.CustomFileSystem
 	open          map[uint64]*sharedFile
 	lastFH        uint64
-	statsInterval time.Duration
 	done          chan struct{}
+	mBytes        *prometheus.CounterVec
+	mOps          *prometheus.CounterVec
+	mSeconds      *prometheus.CounterVec
 	sync.RWMutex
 
 	// If non-nil, this channel will be closed by Init() to notify
@@ -84,15 +92,23 @@ func (fs *keepFS) Init() {
 		fs.root.MountProject("home", "")
 	}
 	fs.done = make(chan struct{})
-	if fs.statsInterval > 0 {
-		ticker := time.NewTicker(fs.statsInterval)
+	if fs.StatsInterval > 0 {
+		fs.registerMetrics()
+		var previousMetrics map[string]float64
+		ticker := time.NewTicker(fs.StatsInterval)
 		go func() {
 			for {
 				select {
 				case <-fs.done:
 					return
 				case <-ticker.C:
-					fs.Logger.Info("tick")
+					currentMetrics := gatherMetrics(fs.Registry)
+					writer := fs.StatsWriter
+					if writer == nil {
+						writer = os.Stderr
+					}
+					writeMetrics(writer, currentMetrics, previousMetrics, fs.StatsInterval.Seconds())
+					previousMetrics = currentMetrics
 				}
 			}
 		}()
@@ -106,7 +122,125 @@ func (fs *keepFS) Destroy() {
 	close(fs.done)
 }
 
+func (fs *keepFS) registerMetrics() {
+	fs.KeepClient.RegisterMetrics(fs.Registry)
+
+	fs.mBytes = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "fuse",
+		Name:      "bytes",
+		Help:      "Bytes read/written by the FUSE filesystem",
+	}, []string{"fuseop"})
+	fs.mOps = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "fuse",
+		Name:      "ops",
+		Help:      "FUSE filesystem operations",
+	}, []string{"fuseop"})
+	fs.mSeconds = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "fuse",
+		Name:      "seconds_total",
+		Help:      "Time spent in FUSE filesystem operations",
+	}, []string{"fuseop"})
+
+	fs.Registry.MustRegister(fs.mBytes)
+	fs.Registry.MustRegister(fs.mOps)
+	fs.Registry.MustRegister(fs.mSeconds)
+}
+
+func gatherMetrics(reg *prometheus.Registry) map[string]float64 {
+	metricsMap := map[string]float64{}
+	metricFamilies, _ := reg.Gather()
+	for _, mf := range metricFamilies {
+		for _, metric := range mf.GetMetric() {
+			metricName := mf.GetName()
+			if len(metric.GetLabel()) == 0 {
+				continue
+			}
+			labels := ""
+			for i, label := range metric.GetLabel() {
+				if i > 0 {
+					labels += ","
+				}
+				labels += label.GetName() + "=\"" + label.GetValue() + "\""
+			}
+			metricName = metricName + "{" + labels + "}"
+
+			var value float64
+			if metric.Counter != nil {
+				value = metric.GetCounter().GetValue()
+			}
+
+			metricsMap[metricName] = value
+		}
+	}
+	return metricsMap
+}
+
+func (fs *keepFS) reportMetrics(op string, t0 time.Time, bytes *int) {
+	if fs.mOps != nil {
+		fs.mOps.WithLabelValues(op).Inc()
+	}
+	if fs.mSeconds != nil {
+		fs.mSeconds.WithLabelValues(op).Add(time.Since(t0).Seconds())
+	}
+	if bytes != nil && fs.mBytes != nil {
+		fs.mBytes.WithLabelValues(op).Add(float64(*bytes))
+	}
+}
+
+func writeMetrics(out io.Writer, currentMetrics, previousMetrics map[string]float64, intervalSeconds float64) {
+	getCurrentAndDelta := func(name string) (float64, float64) {
+		current := currentMetrics[name]
+		previous := previousMetrics[name]
+		return current, current - previous
+	}
+
+	// Keep client network stats
+	bytesIn, bytesInDelta := getCurrentAndDelta(`arvados_keepclient_backend_bytes{direction="in"}`)
+	bytesOut, bytesOutDelta := getCurrentAndDelta(`arvados_keepclient_backend_bytes{direction="out"}`)
+	fmt.Fprintf(out, "crunchstat: net:keep0 %.0f tx %.0f rx -- interval %.4f seconds %.0f tx %.0f rx\n",
+		bytesOut, bytesIn, intervalSeconds, bytesOutDelta, bytesInDelta)
+
+	// Keep client call stats
+	getCalls, getCallsDelta := getCurrentAndDelta(`arvados_keepclient_ops{op="get"}`)
+	putCalls, putCallsDelta := getCurrentAndDelta(`arvados_keepclient_ops{op="put"}`)
+	fmt.Fprintf(out, "crunchstat: keepcalls %.0f put %.0f get -- interval %.4f seconds %.0f put %.0f get\n",
+		putCalls, getCalls, intervalSeconds, putCallsDelta, getCallsDelta)
+
+	// Keep cache stats (if available)
+	cacheHit, cacheHitDelta := getCurrentAndDelta(`arvados_keepclient_cache{event="hit"}`)
+	cacheMiss, cacheMissDelta := getCurrentAndDelta(`arvados_keepclient_cache{event="miss"}`)
+	fmt.Fprintf(out, "crunchstat: keepcache %.0f hit %.0f miss -- interval %.4f seconds %.0f hit %.0f miss\n",
+		cacheHit, cacheMiss, intervalSeconds, cacheHitDelta, cacheMissDelta)
+
+	// Block I/O stats (FUSE layer bytes, not Keep backend bytes)
+	fuseReadBytes, fuseReadBytesDelta := getCurrentAndDelta(`arvados_fuse_bytes{fuseop="read"}`)
+	fuseWriteBytes, fuseWriteBytesDelta := getCurrentAndDelta(`arvados_fuse_bytes{fuseop="write"}`)
+	fmt.Fprintf(out, "crunchstat: blkio:0:0 %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read\n",
+		fuseWriteBytes, fuseReadBytes, intervalSeconds, fuseWriteBytesDelta, fuseReadBytesDelta)
+
+	// FUSE operation summary
+	readOps, readOpsDelta := getCurrentAndDelta(`arvados_fuse_ops{fuseop="read"}`)
+	writeOps, writeOpsDelta := getCurrentAndDelta(`arvados_fuse_ops{fuseop="write"}`)
+	fmt.Fprintf(out, "crunchstat: fuseops %.0f write %.0f read -- interval %.4f seconds %.0f write %.0f read\n",
+		writeOps, readOps, intervalSeconds, writeOpsDelta, readOpsDelta)
+
+	// Individual FUSE operation details
+	operations := []string{"getattr", "opendir", "readdir", "open", "create",
+		"mknod", "mkdir", "unlink", "rmdir", "rename", "truncate", "utimens",
+		"read", "write", "fsync", "fsyncdir", "release", "releasedir"}
+	for _, op := range operations {
+		opCount, opCountDelta := getCurrentAndDelta(fmt.Sprintf(`arvados_fuse_ops{fuseop="%s"}`, op))
+		opTime, opTimeDelta := getCurrentAndDelta(fmt.Sprintf(`arvados_fuse_seconds_total{fuseop="%s"}`, op))
+		fmt.Fprintf(out, "crunchstat: fuseop:%s %.0f count %.6f time -- interval %.4f seconds %.0f count %.6f time\n",
+			op, opCount, opTime, intervalSeconds, opCountDelta, opTimeDelta)
+	}
+}
+
 func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint64) {
+	defer fs.reportMetrics("create", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Create", path)
 	if fs.ReadOnly {
@@ -122,6 +256,7 @@ func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint
 }
 
 func (fs *keepFS) Mknod(path string, mode uint32, dev uint64) int {
+	defer fs.reportMetrics("mknod", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Mknod", path)
 	if filetype := mode & uint32(^os.ModePerm); filetype != 0 && filetype != uint32(fuse.S_IFREG) {
@@ -144,6 +279,7 @@ func (fs *keepFS) Mknod(path string, mode uint32, dev uint64) int {
 }
 
 func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
+	defer fs.reportMetrics("open", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Open", path)
 	if fs.ReadOnly && flags&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0 {
@@ -162,6 +298,7 @@ func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
 }
 
 func (fs *keepFS) Utimens(path string, tmsp []fuse.Timespec) int {
+	defer fs.reportMetrics("utimens", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Utimens", path)
 	if fs.ReadOnly {
@@ -206,6 +343,7 @@ func (fs *keepFS) errCode(op, path string, err error) (errc int) {
 }
 
 func (fs *keepFS) Mkdir(path string, mode uint32) int {
+	defer fs.reportMetrics("mkdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Mkdir", path)
 	if fs.ReadOnly {
@@ -220,6 +358,7 @@ func (fs *keepFS) Mkdir(path string, mode uint32) int {
 }
 
 func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
+	defer fs.reportMetrics("opendir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Opendir", path)
 	f, err := fs.root.OpenFile(path, 0, 0)
@@ -235,18 +374,21 @@ func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 }
 
 func (fs *keepFS) Releasedir(path string, fh uint64) (errc int) {
+	defer fs.reportMetrics("releasedir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Releasedir", path)
 	return fs.Release(path, fh)
 }
 
 func (fs *keepFS) Rmdir(path string) int {
+	defer fs.reportMetrics("rmdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Rmdir", path)
 	return fs.errCode("Rmdir", path, fs.root.Remove(path))
 }
 
 func (fs *keepFS) Release(path string, fh uint64) (errc int) {
+	defer fs.reportMetrics("release", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Release", path)
 	fs.Lock()
@@ -262,6 +404,7 @@ func (fs *keepFS) Release(path string, fh uint64) (errc int) {
 }
 
 func (fs *keepFS) Rename(oldname, newname string) (errc int) {
+	defer fs.reportMetrics("rename", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Rename", oldname+" -> "+newname)
 	if fs.ReadOnly {
@@ -271,6 +414,7 @@ func (fs *keepFS) Rename(oldname, newname string) (errc int) {
 }
 
 func (fs *keepFS) Unlink(path string) (errc int) {
+	defer fs.reportMetrics("unlink", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Unlink", path)
 	if fs.ReadOnly {
@@ -280,6 +424,7 @@ func (fs *keepFS) Unlink(path string) (errc int) {
 }
 
 func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
+	defer fs.reportMetrics("truncate", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Truncate", path)
 	if fs.ReadOnly {
@@ -302,6 +447,7 @@ func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
 }
 
 func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+	defer fs.reportMetrics("getattr", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Getattr", path)
 	var fi os.FileInfo
@@ -321,6 +467,7 @@ func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 }
 
 func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
+	defer fs.reportMetrics("chmod", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Chmod", path)
 	if fs.ReadOnly {
@@ -370,6 +517,7 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 }
 
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {
+	defer fs.reportMetrics("write", time.Now(), &n)
 	defer fs.debugPanics()
 	fs.debugOp("Write", path)
 	if fs.ReadOnly {
@@ -392,6 +540,7 @@ func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) 
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
+	defer fs.reportMetrics("read", time.Now(), &n)
 	defer fs.debugPanics()
 	fs.debugOp("Read", path)
 	f := fs.lookupFH(fh)
@@ -424,6 +573,7 @@ func (fs *keepFS) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
+	defer fs.reportMetrics("readdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Readdir", path)
 	f := fs.lookupFH(fh)
@@ -445,6 +595,7 @@ func (fs *keepFS) Readdir(path string,
 }
 
 func (fs *keepFS) Fsync(path string, datasync bool, fh uint64) int {
+	defer fs.reportMetrics("fsync", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Fsync", path)
 	f := fs.lookupFH(fh)
@@ -455,6 +606,8 @@ func (fs *keepFS) Fsync(path string, datasync bool, fh uint64) int {
 }
 
 func (fs *keepFS) Fsyncdir(path string, datasync bool, fh uint64) int {
+	defer fs.reportMetrics("fsyncdir", time.Now(), nil)
+	defer fs.debugPanics()
 	fs.debugOp("Fsyncdir", path)
 	return fs.Fsync(path, datasync, fh)
 }

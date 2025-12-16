@@ -1,0 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+arvados_dev_from_pkgs: false
+arvados_python_destdir: "/opt/Python-{{ arvados_python_version }}"
+arvados_python_version: "3.10.19"

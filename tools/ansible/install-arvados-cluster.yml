@@ -69,6 +69,13 @@
     - ansible.builtin.include_role:
         name: arvados_keepstore
 
+- name: Set up keep-balance
+  hosts: arvados_keepbalance
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_keepbalance
+
 - name: Set up keepproxy(ies)
   hosts: arvados_keepproxy
   serial: 1
@@ -111,9 +118,30 @@
     - ansible.builtin.include_role:
         name: arvados_dispatch_cloud
 
-- name: Set up loki
+- name: Set up Loki
   hosts: arvados_loki
   serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_loki
+
+- name: Set up Alloy
+  hosts: arvados_alloy
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_alloy
+
+- name: Set up Grafana
+  hosts: arvados_grafana
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_grafana
+
+- name: Set up Prometheus
+  hosts: arvados_prometheus
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_prometheus

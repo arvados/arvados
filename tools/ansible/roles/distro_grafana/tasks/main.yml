@@ -1,0 +1,24 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install grafana repo package pins
+  become: yes
+  ansible.builtin.copy:
+    src: arvados-grafana.pref
+    dest: /etc/apt/preferences.d/arvados-grafana.pref
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Add Grafana apt repository
+  become: yes
+  ansible.builtin.deb822_repository:
+    name: grafana
+    types: deb
+    uris: https://apt.grafana.com
+    suites: stable
+    components: main
+    signed_by: https://apt.grafana.com/gpg.key
+  notify:
+    - apt update

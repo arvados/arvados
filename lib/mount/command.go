@@ -23,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
 	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -124,6 +125,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Error(err)
 		return 1
 	}
+	registry := prometheus.NewRegistry()
 	host := fuse.NewFileSystemHost(&keepFS{
 		Client:        client,
 		KeepClient:    kc,
@@ -134,6 +136,9 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		ready:         c.ready,
 		customDirName: mountSubdir,
 		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
+		Registry:      registry,
+		StatsWriter:   stderr,
+		StatsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
 	})
 	c.Unmount = host.Unmount
 
