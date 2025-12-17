@@ -814,10 +814,10 @@ class ContainerRequest < ArvadosModel
     return unless saved_change_to_state? || saved_change_to_priority? || saved_change_to_container_uuid?
     if container_uuid_before_last_save &&
        container_uuid_before_last_save != container_uuid &&
-       !Container.find_by_uuid(container_uuid_before_last_save).state.in?([Container::Complete, Container::Cancelled])
+       !Container.find_by_uuid(container_uuid_before_last_save).andand.state.in?([Container::Complete, Container::Cancelled])
       update_priorities(container_uuid_before_last_save)
     end
-    if container_uuid && !container.state.in?([Container::Complete, Container::Cancelled])
+    if container_uuid && !container.andand.state.in?([Container::Complete, Container::Cancelled])
       update_priorities(container_uuid)
     end
   end

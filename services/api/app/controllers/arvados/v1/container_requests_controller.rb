@@ -57,7 +57,7 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
       # cascading changes to other rows/tables, the only lock will be
       # the single row lock on SQL UPDATE.
       super
-    elsif @object.container.state.in?([Container::Complete, Container::Cancelled])
+    elsif @object.container.andand.state.in?([Container::Complete, Container::Cancelled])
       # If the assigned container is already finalized,
       # Container#update_priority will skip the cascading priority
       # update, so there's no need to preemptively acquire row locks
