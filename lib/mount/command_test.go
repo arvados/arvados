@@ -53,6 +53,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
 		c.Assert(os.IsNotExist(err), check.Equals, true)
 	})
+	c.Assert(s.stderr.String(), check.Equals, "")
 }
 
 func (s *CmdSuite) TestMountById(c *check.C) {
@@ -83,6 +84,11 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 		c.Assert(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
 		c.Assert(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
 	})
+	// Check that logging has stopped after unmount
+	len1 := s.stderr.Len()
+	time.Sleep(100 * time.Millisecond)
+	len2 := s.stderr.Len()
+	c.Assert(len1, check.Equals, len2)
 }
 
 func (s *CmdSuite) mountAndCheck(c *check.C, testArgs []string, testFunc func()) {
@@ -100,14 +106,6 @@ func (s *CmdSuite) mountAndCheck(c *check.C, testArgs []string, testFunc func())
 		defer func() {
 			ok := mountCmd.Unmount()
 			c.Assert(ok, check.Equals, true)
-
-			//If stderr was populated during the test, check that logging stops after unmount.
-			if len(s.stderr.Bytes()) > 0 {
-				len1 := s.stderr.Len()
-				time.Sleep(100 * time.Millisecond)
-				len2 := s.stderr.Len()
-				c.Assert(len1, check.Equals, len2)
-			}
 		}()
 		testFunc()
 		ready = true

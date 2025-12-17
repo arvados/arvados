@@ -29,13 +29,13 @@ import (
 
 var Command = &mountCommand{}
 
-type mountByIdArgs []string
+type arrayFlags []string
 
-func (a *mountByIdArgs) String() string {
+func (a *arrayFlags) String() string {
 	return strings.Join(*a, ", ")
 }
 
-func (a *mountByIdArgs) Set(value string) error {
+func (a *arrayFlags) Set(value string) error {
 	*a = append(*a, value)
 	return nil
 }
@@ -67,8 +67,8 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
-	var dirNames mountByIdArgs
-	flags.Var(&dirNames, "mount-by-id", "Make a magic directory available where collections and "+
+	var mountByIdIds arrayFlags
+	flags.Var(&mountByIdIds, "mount-by-id", "Make a magic directory available where collections and "+
 		"projects are accessible through subdirectories named after their UUID or "+
 		"portable data hash.")
 
@@ -113,9 +113,9 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		return 1
 	}
 	var fsRoot arvados.CustomFileSystem
-	if len(dirNames) > 0 {
+	if len(mountByIdIds) > 0 {
 		fsRoot = client.CustomFileSystem(kc)
-		for _, dirName := range dirNames {
+		for _, dirName := range mountByIdIds {
 			fsRoot.MountByID(dirName)
 		}
 	} else {
