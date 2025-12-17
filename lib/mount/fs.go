@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -32,25 +31,21 @@ type sharedFile struct {
 // keepFS implements cgofuse's FileSystemInterface.
 type keepFS struct {
 	fuse.FileSystemBase
-	Client        *arvados.Client
-	KeepClient    *keepclient.KeepClient
 	ReadOnly      bool
 	Uid           int
 	Gid           int
 	Logger        logrus.FieldLogger
-	Registry      *prometheus.Registry
+	Root          arvados.CustomFileSystem
 	StatsWriter   io.Writer
 	StatsInterval time.Duration
+	Registry      *prometheus.Registry
 
-	customDirName string
-	statsInterval time.Duration
-	root          arvados.CustomFileSystem
-	open          map[uint64]*sharedFile
-	lastFH        uint64
-	done          chan struct{}
-	mBytes        *prometheus.CounterVec
-	mOps          *prometheus.CounterVec
-	mSeconds      *prometheus.CounterVec
+	open     map[uint64]*sharedFile
+	lastFH   uint64
+	done     chan struct{}
+	mBytes   *prometheus.CounterVec
+	mOps     *prometheus.CounterVec
+	mSeconds *prometheus.CounterVec
 	sync.RWMutex
 
 	// If non-nil, this channel will be closed by Init() to notify
@@ -84,13 +79,6 @@ func (fs *keepFS) lookupFH(fh uint64) *sharedFile {
 
 func (fs *keepFS) Init() {
 	defer fs.debugPanics()
-	if fs.customDirName != "" {
-		fs.root = fs.Client.SiteFileSystemById(fs.customDirName, fs.KeepClient)
-		fs.root.MountByID(fs.customDirName)
-	} else {
-		fs.root = fs.Client.SiteFileSystem(fs.KeepClient)
-		fs.root.MountProject("home", "")
-	}
 	fs.done = make(chan struct{})
 	if fs.StatsInterval > 0 {
 		fs.registerMetrics()
@@ -123,8 +111,6 @@ func (fs *keepFS) Destroy() {
 }
 
 func (fs *keepFS) registerMetrics() {
-	fs.KeepClient.RegisterMetrics(fs.Registry)
-
 	fs.mBytes = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "arvados",
 		Subsystem: "fuse",
@@ -246,7 +232,7 @@ func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint
 	if fs.ReadOnly {
 		return -fuse.EROFS, invalidFH
 	}
-	f, err := fs.root.OpenFile(path, flags|os.O_CREATE, os.FileMode(mode))
+	f, err := fs.Root.OpenFile(path, flags|os.O_CREATE, os.FileMode(mode))
 	if err == os.ErrExist {
 		return -fuse.EEXIST, invalidFH
 	} else if err != nil {
@@ -263,14 +249,14 @@ func (fs *keepFS) Mknod(path string, mode uint32, dev uint64) int {
 		return -fuse.ENOSYS
 	}
 	if fs.ReadOnly {
-		_, err := fs.root.Stat(path)
+		_, err := fs.Root.Stat(path)
 		if err != nil {
 			return -fuse.EROFS
 		} else {
 			return -fuse.EEXIST
 		}
 	}
-	f, err := fs.root.OpenFile(path, os.O_CREATE|os.O_EXCL, os.FileMode(mode)&os.ModePerm)
+	f, err := fs.Root.OpenFile(path, os.O_CREATE|os.O_EXCL, os.FileMode(mode)&os.ModePerm)
 	if err != nil {
 		return fs.errCode("Mknod", path, err)
 	}
@@ -285,7 +271,7 @@ func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
 	if fs.ReadOnly && flags&(os.O_RDWR|os.O_WRONLY|os.O_CREATE) != 0 {
 		return -fuse.EROFS, invalidFH
 	}
-	f, err := fs.root.OpenFile(path, flags, 0)
+	f, err := fs.Root.OpenFile(path, flags, 0)
 	if err != nil {
 		return -fuse.ENOENT, invalidFH
 	} else if fi, err := f.Stat(); err != nil {
@@ -304,7 +290,7 @@ func (fs *keepFS) Utimens(path string, tmsp []fuse.Timespec) int {
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
-	f, err := fs.root.OpenFile(path, 0, 0)
+	f, err := fs.Root.OpenFile(path, 0, 0)
 	if err != nil {
 		return fs.errCode("Utimens", path, err)
 	}
@@ -349,7 +335,7 @@ func (fs *keepFS) Mkdir(path string, mode uint32) int {
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
-	f, err := fs.root.OpenFile(path, os.O_CREATE|os.O_EXCL, os.FileMode(mode)|os.ModeDir)
+	f, err := fs.Root.OpenFile(path, os.O_CREATE|os.O_EXCL, os.FileMode(mode)|os.ModeDir)
 	if err != nil {
 		return fs.errCode("Mkdir", path, err)
 	}
@@ -361,7 +347,7 @@ func (fs *keepFS) Opendir(path string) (errc int, fh uint64) {
 	defer fs.reportMetrics("opendir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Opendir", path)
-	f, err := fs.root.OpenFile(path, 0, 0)
+	f, err := fs.Root.OpenFile(path, 0, 0)
 	if err != nil {
 		return fs.errCode("Opendir", path, err), invalidFH
 	} else if fi, err := f.Stat(); err != nil {
@@ -384,7 +370,7 @@ func (fs *keepFS) Rmdir(path string) int {
 	defer fs.reportMetrics("rmdir", time.Now(), nil)
 	defer fs.debugPanics()
 	fs.debugOp("Rmdir", path)
-	return fs.errCode("Rmdir", path, fs.root.Remove(path))
+	return fs.errCode("Rmdir", path, fs.Root.Remove(path))
 }
 
 func (fs *keepFS) Release(path string, fh uint64) (errc int) {
@@ -410,7 +396,7 @@ func (fs *keepFS) Rename(oldname, newname string) (errc int) {
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
-	return fs.errCode("Rename", oldname+" -> "+newname, fs.root.Rename(oldname, newname))
+	return fs.errCode("Rename", oldname+" -> "+newname, fs.Root.Rename(oldname, newname))
 }
 
 func (fs *keepFS) Unlink(path string) (errc int) {
@@ -420,7 +406,7 @@ func (fs *keepFS) Unlink(path string) (errc int) {
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
-	return fs.errCode("Unlink", path, fs.root.Remove(path))
+	return fs.errCode("Unlink", path, fs.Root.Remove(path))
 }
 
 func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
@@ -438,7 +424,7 @@ func (fs *keepFS) Truncate(path string, size int64, fh uint64) (errc int) {
 	}
 
 	// Other times, fh is invalid and we need to lookup path.
-	f, err := fs.root.OpenFile(path, os.O_RDWR, 0)
+	f, err := fs.Root.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		return fs.errCode("Truncate", path, err)
 	}
@@ -457,7 +443,7 @@ func (fs *keepFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		fi, err = f.Stat()
 	} else {
 		// Invalid filehandle -- lookup path.
-		fi, err = fs.root.Stat(path)
+		fi, err = fs.Root.Stat(path)
 	}
 	if err != nil {
 		return fs.errCode("Getattr", path, err)
@@ -473,7 +459,7 @@ func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
 	if fs.ReadOnly {
 		return -fuse.EROFS
 	}
-	if fi, err := fs.root.Stat(path); err != nil {
+	if fi, err := fs.Root.Stat(path); err != nil {
 		return fs.errCode("Chmod", path, err)
 	} else if mode & ^uint32(fuse.S_IFREG|fuse.S_IFDIR|0777) != 0 {
 		// Refuse to set mode bits other than

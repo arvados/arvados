@@ -29,13 +29,13 @@ import (
 
 var Command = &mountCommand{}
 
-type arrayFlags []string
+type mountByIdArgs []string
 
-func (a *arrayFlags) String() string {
+func (a *mountByIdArgs) String() string {
 	return strings.Join(*a, ", ")
 }
 
-func (a *arrayFlags) Set(value string) error {
+func (a *mountByIdArgs) Set(value string) error {
 	*a = append(*a, value)
 	return nil
 }
@@ -67,8 +67,8 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
-	var mountById arrayFlags
-	flags.Var(&mountById, "mount-by-id", "Make a magic directory available where collections and "+
+	var dirNames mountByIdArgs
+	flags.Var(&dirNames, "mount-by-id", "Make a magic directory available where collections and "+
 		"projects are accessible through subdirectories named after their UUID or "+
 		"portable data hash.")
 
@@ -97,19 +97,6 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Error("-crunchstat-interval must be non-negative")
 		return 2
 	}
-	mountSubdir := ""
-	if len(mountById) > 0 {
-		if len(mountById) > 1 {
-			logger.Error("-mount-by-id may be specified at most once")
-			return 2
-		} else if mountById[0] == "" {
-			logger.Error("-mount-by-id requires a directory name")
-			return 2
-		} else {
-			mountSubdir = mountById[0]
-		}
-	}
-
 	client := arvados.NewClientFromEnv()
 	if err := yaml.Unmarshal([]byte(*cacheSizeStr), &client.DiskCacheSize); err != nil {
 		logger.Errorf("error parsing -cache-size argument: %s", err)
@@ -125,20 +112,29 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Error(err)
 		return 1
 	}
+	var fsRoot arvados.CustomFileSystem
+	if len(dirNames) > 0 {
+		fsRoot = client.CustomFileSystem(kc)
+		for _, dirName := range dirNames {
+			fsRoot.MountByID(dirName)
+		}
+	} else {
+		fsRoot = client.SiteFileSystem(kc)
+		fsRoot.MountProject("home", "")
+	}
+
 	registry := prometheus.NewRegistry()
+	kc.RegisterMetrics(registry)
 	host := fuse.NewFileSystemHost(&keepFS{
-		Client:        client,
-		KeepClient:    kc,
 		ReadOnly:      *ro,
 		Uid:           os.Getuid(),
 		Gid:           os.Getgid(),
 		Logger:        logger,
-		ready:         c.ready,
-		customDirName: mountSubdir,
-		statsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
-		Registry:      registry,
+		Root:          fsRoot,
 		StatsWriter:   stderr,
 		StatsInterval: time.Duration(*crunchstatInterval * float64(time.Second)),
+		Registry:      registry,
+		ready:         c.ready,
 	})
 	c.Unmount = host.Unmount
 
