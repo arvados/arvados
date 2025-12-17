@@ -56,11 +56,6 @@ if [ ! -f src/index.tsx ]; then
     usage
 fi
 
-if [ -f public/config.json ]; then
-    echo "ERROR: Please move public/config.json file out of the way" >&2
-    exit 1
-fi
-
 echo "Launching arvados in test mode..."
 TESTTMP="$ARVADOS_DIRECTORY/tmp/workbench2-integration"
 mkdir -p "$TESTTMP"

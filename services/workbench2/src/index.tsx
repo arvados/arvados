@@ -252,6 +252,8 @@ fetchConfig().then(({ config, apiHost }) => {
     );
 
     ReactDOM.render(<App />, document.getElementById("root") as HTMLElement);
+}).catch((e) => {
+    console.error(`Fatal error: ${e.message}`);
 });
 
 const initListener = (history: History, store: RootStore, services: ServiceRepository, config: Config) => {
