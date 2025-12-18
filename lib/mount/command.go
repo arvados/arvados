@@ -32,6 +32,9 @@ var Command = &mountCommand{}
 type arrayFlags []string
 
 func (a *arrayFlags) String() string {
+	if a == nil {
+		return ""
+	}
 	return strings.Join(*a, ", ")
 }
 
