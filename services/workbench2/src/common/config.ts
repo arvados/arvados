@@ -275,6 +275,8 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`
                 config.vocabularyUrl = getVocabularyURL(workbenchConfig.API_HOST);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
+            }).catch((e) => {
+                throw new Error(`Failed to fetch cluster config from ${workbenchConfig.API_HOST}: ${e.message}`);
             });
         });
 };
