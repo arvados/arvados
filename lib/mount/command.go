@@ -62,13 +62,13 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
-	cacheSizeStr := flags.String("cache-size", "0", "cache size as percent of home filesystem size (\"5%\") or size (\"10GiB\") or 0 for automatic")
-	logLevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
+	cacheSizeStr := flags.String("cache-size", "0", "cache size as `PERCENT` of home filesystem size (\"5%\") or size (\"10GiB\") or 0 for automatic")
+	logLevel := flags.String("log-level", "info", "logging `LEVEL` (debug, info, ...)")
 	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
-	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in seconds between updates of crunch job stats in mounted filesystem")
+	crunchstatInterval := flags.Float64("crunchstat-interval", 0.0, "interval in `SECONDS` between updates of crunch job stats in mounted filesystem")
 	var mountByIdIds arrayFlags
-	flags.Var(&mountByIdIds, "mount-by-id", "Make a magic directory available where collections and "+
+	flags.Var(&mountByIdIds, "mount-by-id", "Make a magic directory under the mount at `PATH` available where collections and "+
 		"projects are accessible through subdirectories named after their UUID or "+
 		"portable data hash.")
 
