@@ -88,61 +88,87 @@ def test_parameter_key_to_argument_name(key, argument_name):
 
 PARAMETER_TRANSFORM_TESTS = [
     ({
-        "type": "boolean",
-        "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
-        "location": "query",
-        "required": False,
-        "default": "false"
+        "ensure_unique_name": {
+            "type": "boolean",
+            "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
+            "location": "query",
+            "required": False,
+            "default": "false"
+        }
     }, {
-        "action": "store_true",
-        "help": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
-        "required": False
+        "--ensure-unique-name": {
+            "dest": "ensure_unique_name",
+            "action": "store_true",
+            "help": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
+            "required": False,
+            "default": False
+        },
+        "--no-ensure-unique-name": {
+            "dest": "ensure_unique_name",
+            "action": "store_false",
+            "required": False
+        }
     }),
     ({
-        "type": "array",
-        "required": False,
-        "default": '["all"]',
-        "description": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
-        "location": "query"
+        "create_system_auth": {
+            "type": "array",
+            "required": False,
+            "default": '["all"]',
+            "description": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
+            "location": "query"
+        }
     }, {
-        "type": str,
-        "metavar": "STR",
-        "required": False,
-        "default": '["all"]',
-        "help": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
+        "--create-system-auth": {
+            "type": str,
+            "metavar": "STR",
+            "required": False,
+            "default": '["all"]',
+            "help": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
+        }
     }),
     ({
-        "type": "integer",
-        "required": False,
-        "default": "0",
-        "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
-        "location": "query"
+        "offset": {
+            "type": "integer",
+            "required": False,
+            "default": "0",
+            "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
+            "location": "query"
+        }
     }, {
-        "type": int,
-        "metavar": "N",
-        "required": False,
-        "default": 0,
-        "help": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
+        "--offset": {
+            "type": int,
+            "metavar": "N",
+            "required": False,
+            "default": 0,
+            "help": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n"
+        }
     }),
     ({
-        "type": "object",
-        "description": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
-        "required": False,
-        "location": "query",
-        "properties": {},
-        "additionalProperties": {"type": "string"}
+        "replace_files": {
+            "type": "object",
+            "description": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
+            "required": False,
+            "location": "query",
+            "properties": {},
+            "additionalProperties": {"type": "string"}
+        }
     }, {
-        "type": str,
-        "metavar": "STR",
-        "help": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
-        "required": False,
+        "--replace-files": {
+            "type": str,
+            "metavar": "STR",
+            "help": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
+            "required": False,
+        }
     })
 ]
 
 
-@pytest.mark.parametrize("input_dict,output_args", PARAMETER_TRANSFORM_TESTS)
-def test_parameter_schema_to_argument(input_dict, output_args):
-    assert arvcli.parameter_schema_to_argument(input_dict) == output_args
+@pytest.mark.parametrize(
+    "input_parameters_schema,output_dict",
+    PARAMETER_TRANSFORM_TESTS
+)
+def test_parameter_schema_to_argument(input_parameters_schema, output_dict):
+    assert arvcli.parameters_schema_to_arguments(input_parameters_schema) == output_dict
 
 
 def test_resource_subcommand_stub_help(capsys):

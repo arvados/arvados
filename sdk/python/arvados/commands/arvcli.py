@@ -19,6 +19,7 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 import sys
 import argparse
 import functools
+import json
 import arvados
 
 
@@ -33,6 +34,68 @@ def singularize_resource(plural: str) -> str:
             return plural.removesuffix("s")
 
 
+def parameters_schema_to_arguments(parameters_schema):
+    """Convert a dictionary containing parameter names and definitions to a
+    the form suitable for constructing a command-line parser.
+
+    Arguments:
+        * `parameters_schema`: dictionary defining the parameters as they appear
+          in the discovery document.
+
+    Return value:
+        * A dictionary whose keys are transformed into the conventional CLI
+          option form "--foo-bar", and the corresponding values are dicts
+          suitable to be passed to the `argparse.ArgumentParser.add_argument()`
+          method as keyword arguments. For boolean parameters, both forms
+          "--foo-bar" and "--no-foo-bar" are created, with the latter's action
+          inverting the former.
+    """
+    arguments = {}
+    for parameter_key, parameter_dict in parameters_schema.items():
+        parameter_kwargs = {"required": parameter_dict.get("required", False)}
+        parameter_kwargs["help"] = parameter_dict.get("description")
+        # The "type" member refers to one of the JSON values types, out of
+        # string/integer/array/object/boolean.
+        # NOTE: Arrays and objects are treated as strings for Python
+        # argument-parsing purposes.
+        # NOTE: Currently, enum-like value choices are not implemented, as the
+        # enum values cannot be directly inferred from the discover doc.
+        argument_key = parameter_key_to_argument_name(parameter_key)
+        match parameter_dict.get("type"):
+            case "boolean":
+                # Using the 'action="store_true" (or "store_false")' mechanism
+                # results in flag-like action rather than an option that takes
+                # a true or false value. For each bool flag "--foo", also
+                # generate an additional "negative" version "--no-foo".
+                neg_argument_key = parameter_key_to_argument_name(
+                    f"no_{parameter_key}"
+                )
+                neg_parameter_kwargs = {}
+                neg_parameter_kwargs["action"] = "store_false"
+                neg_parameter_kwargs["required"] = False
+                neg_parameter_kwargs["dest"] = parameter_key
+                neg_parameter_kwargs["default"] = json.loads(
+                    parameter_dict.get("default", "null")
+                )
+                arguments[neg_argument_key] = neg_parameter_kwargs
+
+                parameter_kwargs["action"] = "store_true"
+                parameter_kwargs["dest"] = parameter_key
+                parameter_kwargs["default"] = neg_parameter_kwargs["default"]
+            case "integer":
+                parameter_kwargs["type"] = int
+                parameter_kwargs["metavar"] = "N"
+                if "default" in parameter_dict:
+                    parameter_kwargs["default"] = int(parameter_dict["default"])
+            case _:
+                parameter_kwargs["type"] = str
+                parameter_kwargs["metavar"] = "STR"
+                if "default" in parameter_dict:
+                    parameter_kwargs["default"] = parameter_dict["default"]
+        arguments[argument_key] = parameter_kwargs
+    return arguments
+
+
 def parameter_key_to_argument_name(parameter_key: str) -> str:
     """Convert a parameter key in the discovery document to CLI parameter form.
 
@@ -44,58 +107,6 @@ def parameter_key_to_argument_name(parameter_key: str) -> str:
         * Parameter in the conventional CLI form, for example, `--foo-bar`.
     """
     return "--" + parameter_key.replace("_", "-")
-
-
-def parameter_schema_to_argument(parameter_schema):
-    """Convert a parameter's schema as specified in the discover document into
-    kwargs to add_argument().
-
-    Arguments:
-        * `parameter_schema`: dict containing the schema that defines the
-          parameter's type and behavior, from the discovery document.
-
-    Return value:
-        * A dict that contains the keyword arguments ready to be passed to
-          `argparser.ArgumentParser.add_argument()`
-    """
-    parameter_kwargs = {"required": parameter_schema.get("required")}
-    parameter_kwargs["help"] = parameter_schema.get("description")
-    # The "type" member refers to one of the JSON values types, out of
-    # string/integer/array/object/boolean.
-    # NOTE: Arrays and objects are treated as strings for Python
-    # argument-parsing purposes, but in the future basic validation can be done
-    # at argument-parsing time to ensure they're valid JSON strings of the
-    # required type. In addition, the "metavar" may hint at the required JSON
-    # type (array/object).
-    # NOTE: Currently, enum-like value choices are not implemented, as the enum
-    # values cannot be directly inferred from the discover doc.
-    match parameter_schema.get("type"):
-        case "boolean":
-            # Using the 'action="store_true" (or "store_false")' mechanism
-            # results in flag-like action rather than an option that takes a
-            # true or false value.
-            # NOTE: currently there are only boolean parameters with
-            # {"default": "false"}; the best way to generate command-line UI
-            # for generic case is yet to be determined.
-            if "default" in parameter_schema:
-                match parameter_schema["default"]:
-                    case "true":
-                        parameter_kwargs["action"] = "store_false"
-                    case "false":
-                        parameter_kwargs["action"] = "store_true"
-            else:
-                parameter_kwargs["type"] = bool
-        case "integer":
-            parameter_kwargs["type"] = int
-            parameter_kwargs["metavar"] = "N"
-            if "default" in parameter_schema:
-                parameter_kwargs["default"] = int(parameter_schema["default"])
-        case _:
-            parameter_kwargs["type"] = str
-            parameter_kwargs["metavar"] = "STR"
-            if "default" in parameter_schema:
-                parameter_kwargs["default"] = parameter_schema["default"]
-    return parameter_kwargs
 
 
 class ArvCLIArgumentParser(argparse.ArgumentParser):
@@ -185,13 +196,11 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         method,
                         help=method_schema.get("description")
                     )
-                    for parameter_key, parameter_schema in method_schema.get(
-                        "parameters", {}
-                    ).items():
-                        method_parser.add_argument(
-                            parameter_key_to_argument_name(parameter_key),
-                            **parameter_schema_to_argument(parameter_schema)
-                        )
+                    parameter_arguments = parameters_schema_to_arguments(
+                        method_schema.get("parameters", {})
+                    )
+                    for parameter_name, kwargs in parameter_arguments.items():
+                        method_parser.add_argument(parameter_name, **kwargs)
 
 
 def dispatch(arguments=None):
