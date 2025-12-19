@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -36,6 +37,16 @@ func (s *CmdSuite) TearDownTest(c *check.C) {
 
 func (s *CmdSuite) TestMount(c *check.C) {
 	s.mountAndCheck(c, []string{}, func() {
+		mntF, err := os.Open(s.mnt)
+		c.Assert(err, check.IsNil)
+		dirsGot, err := mntF.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		dirsWant := []string{"by_id", "home", "users"}
+		sort.Strings(dirsGot)
+		sort.Strings(dirsWant)
+		c.Check(dirsGot, check.DeepEquals, dirsWant)
+		mntF.Close()
+
 		f, err := os.Open(s.mnt + "/by_id/" + arvadostest.FooCollection)
 		c.Assert(err, check.IsNil)
 		dirnames, err := f.Readdirnames(-1)
@@ -57,13 +68,31 @@ func (s *CmdSuite) TestMount(c *check.C) {
 }
 
 func (s *CmdSuite) TestMountById(c *check.C) {
-	s.mountAndCheck(c, []string{"--mount-by-id", "by_id_test"}, func() {
-		f, err := os.Open(s.mnt + "/by_id_test/" + arvadostest.FooCollection)
+	s.mountAndCheck(c, []string{"--mount-by-id", "by_id_test_1", "--mount-by-id", "by_id_test_2"}, func() {
+		mntF, err := os.Open(s.mnt)
 		c.Assert(err, check.IsNil)
-		dirnames, err := f.Readdirnames(-1)
+		dirsGot, err := mntF.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		dirsWant := []string{"by_id_test_1", "by_id_test_2"}
+		sort.Strings(dirsGot)
+		sort.Strings(dirsWant)
+		c.Check(dirsGot, check.DeepEquals, dirsWant)
+		mntF.Close()
+
+		f_1, err := os.Open(s.mnt + "/by_id_test_1/" + arvadostest.FooCollection)
+		c.Assert(err, check.IsNil)
+		dirnames, err := f_1.Readdirnames(-1)
 		c.Assert(err, check.IsNil)
 		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
-		f.Close()
+
+		f_2, err := os.Open(s.mnt + "/by_id_test_2/" + arvadostest.FooCollection)
+		c.Assert(err, check.IsNil)
+		dirnames, err = f_2.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
+
+		f_1.Close()
+		f_2.Close()
 	})
 }
 
