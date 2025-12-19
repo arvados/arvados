@@ -12,21 +12,21 @@ def test_global_option_help_followed_by_subcommand():
     the -h option is consumed by the parser, and the help message is printed,
     followed by normal exit.
     """
-    parser = arvcli.ArvCLIArgumentParser()
+    parser = arvcli.ArvCLIArgumentParser({})
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["-h", "foo"])
     assert exit_status.value.code == 0
 
 
 def test_no_subcommand():
-    parser = arvcli.ArvCLIArgumentParser()
+    parser = arvcli.ArvCLIArgumentParser({})
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["-s"])
     assert exit_status.value.code == 2
 
 
 def test_invalid_subcommand():
-    parser = arvcli.ArvCLIArgumentParser()
+    parser = arvcli.ArvCLIArgumentParser({})
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["foo"])
     assert exit_status.value.code == 2
