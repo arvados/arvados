@@ -38,13 +38,15 @@ func (s *FSSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	kc, err := keepclient.MakeKeepClient(ac)
 	c.Assert(err, IsNil)
+	root := client.SiteFileSystem(kc)
+	registry := prometheus.NewRegistry()
+	kc.RegisterMetrics(registry)
 	s.fs = &keepFS{
-		Client:     client,
-		KeepClient: kc,
-		Logger:     ctxlog.TestLogger(c),
+		Logger:   ctxlog.TestLogger(c),
+		Root:     root,
+		Registry: registry,
 	}
 	s.fs.Init()
-	s.fs.Registry = prometheus.NewRegistry()
 }
 
 func (s *FSSuite) TearDownTest(c *C) {
@@ -74,7 +76,7 @@ func (s *FSSuite) TestMknod_ReadOnly(c *C) {
 
 func (s *FSSuite) TestMknod(c *C) {
 	path := "/by_id/" + arvadostest.FooCollection + "/z"
-	_, err := s.fs.root.Stat(path)
+	_, err := s.fs.Root.Stat(path)
 	c.Assert(err, Equals, os.ErrNotExist)
 
 	// Should return error if mode indicates unsupported file type
@@ -86,7 +88,7 @@ func (s *FSSuite) TestMknod(c *C) {
 	} {
 		errc := s.fs.Mknod(path, mode, 0)
 		c.Check(errc, Equals, -fuse.ENOSYS)
-		_, err := s.fs.root.Stat(path)
+		_, err := s.fs.Root.Stat(path)
 		c.Check(err, Equals, os.ErrNotExist)
 	}
 
@@ -94,14 +96,14 @@ func (s *FSSuite) TestMknod(c *C) {
 	// file
 	errc := s.fs.Mknod(path, syscall.S_IFREG|0o644, 0)
 	c.Check(errc, Equals, 0)
-	_, err = s.fs.root.Stat(path)
+	_, err = s.fs.Root.Stat(path)
 	c.Check(err, IsNil)
 
 	// Special case: "Zero file type is equivalent to type
 	// S_IFREG." cf. mknod(2)
 	errc = s.fs.Mknod(path+"2", 0o644, 0)
 	c.Check(errc, Equals, 0)
-	_, err = s.fs.root.Stat(path + "2")
+	_, err = s.fs.Root.Stat(path + "2")
 	c.Check(err, IsNil)
 
 	// Should return error if target exists
@@ -224,7 +226,7 @@ func (s *FSSuite) TestWriteMetrics(c *C) {
 }
 
 func (s *FSSuite) TestGatherMetrics(c *C) {
-	s.fs.registerMetrics()
+
 	metrics := gatherMetrics(s.fs.Registry)
 	c.Check(len(metrics) > 0, Equals, true)
 	c.Check(metrics["arvados_fuse_ops{fuseop=\"read\"}"], NotNil)
