@@ -25,7 +25,7 @@ import { ProcessPanel } from "views/process-panel/process-panel";
 import { ChangeWorkflowDialog } from "views-components/run-process-dialog/change-workflow-dialog";
 import { CreateProjectDialog } from "views-components/dialog-forms/create-project-dialog";
 import { CreateCollectionDialog } from "views-components/dialog-forms/create-collection-dialog";
-import { CopyCollectionDialog, CopyMultiCollectionDialog } from "views-components/dialog-forms/copy-collection-dialog";
+import { CopyCollectionDialog, CopyMultiCollectionDialog } from "views-components/dialog-copy/dialog-copy";
 import { CopyProcessDialog } from "views-components/dialog-forms/copy-process-dialog";
 import { UpdateCollectionDialog } from "views-components/dialog-forms/update-collection-dialog";
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";

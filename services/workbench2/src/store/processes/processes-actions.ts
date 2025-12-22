@@ -304,11 +304,11 @@ export const openCancelProcesswDialog = (uuid: string) => (dispatch: Dispatch, g
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const currentProcessPanelUuid = getProcessPanelCurrentUuid(getState().router);
     const currentProjectUuid = getProjectPanelCurrentUuid(getState());
-    const resource = getState().dialog.removeProcessDialog.data.resource;
+
+    //if checkedlist has items, use them
     const checkedList = getState().multiselect.checkedList;
-
-    const uuidsToRemove: string[] = resource.fromContextMenu ? [resource.uuid] : selectedToArray(checkedList);
-
+    const uuidsToRemove: string[] = selectedToArray(checkedList);
+    
     //if no items in checkedlist, default to normal context menu behavior
     if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
 

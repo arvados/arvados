@@ -46,11 +46,12 @@ import * as projectMoveActions from "store/projects/project-move-actions";
 import * as projectUpdateActions from "store/projects/project-update-actions";
 import * as collectionCreateActions from "store/collections/collection-create-actions";
 import * as collectionCopyActions from "store/collections/collection-copy-actions";
+import { COLLECTION_COPY_FORM_NAME, COLLECTION_MULTI_COPY_FORM_NAME} from "store/collections/collection-copy-actions";
 import * as collectionMoveActions from "store/collections/collection-move-actions";
 import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
-
+import { dialogActions } from "store/dialog/dialog-actions";
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { loadProcessPanel } from "store/process-panel/process-panel-actions";
 import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
@@ -465,9 +466,11 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
     }
 };
 
-export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const checkedList = getState().multiselect.checkedList;
-    const uuidsToCopy: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+    const uuidsToCopy: string[] = selectedToArray(checkedList);
+    const formName = uuidsToCopy.length === 1 ? COLLECTION_COPY_FORM_NAME : COLLECTION_MULTI_COPY_FORM_NAME;
+    dispatch(progressIndicatorActions.START_WORKING(formName));
 
     //if no items in checkedlist && no items passed in, default to normal context menu behavior
     if (!uuidsToCopy.length) uuidsToCopy.push(data.uuid);
@@ -481,13 +484,12 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
     }
 
     async function copySingleCollection(copyToProject: CollectionCopyResource) {
-        const newName = data.fromContextMenu || collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
+        const newName = collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
         try {
             const collection = await dispatch<any>(
                 collectionCopyActions.copyCollection({
                     ...copyToProject,
                     name: newName,
-                    fromContextMenu: collectionsToCopy.length === 1 ? true : data.fromContextMenu,
                 })
             );
             if (copyToProject && collection) {
@@ -511,8 +513,10 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
                 })
             );
         }
+        dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
     }
     dispatch(projectPanelDataActions.REQUEST_ITEMS());
+    dispatch(progressIndicatorActions.STOP_WORKING(formName));
 };
 
 export const moveCollection =

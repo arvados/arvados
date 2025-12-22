@@ -47,7 +47,6 @@ export type ContextMenuResource = {
     storageClassesDesired?: string[];
     properties?: { [key: string]: string | string[] };
     isMulti?: boolean;
-    fromContextMenu?: boolean;
 };
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;

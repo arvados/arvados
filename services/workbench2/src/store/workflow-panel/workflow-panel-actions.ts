@@ -141,10 +141,8 @@ export const openRemoveWorkflowDialog =
 export const REMOVE_WORKFLOW_DIALOG = "removeWorkflowDialog";
 
 export const removeWorkflowPermanently = (uuid: string, ownerUuid?: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const resource = getState().dialog.removeWorkflowDialog.data.resource;
     const checkedList = getState().multiselect.checkedList;
-
-    const uuidsToRemove: string[] = resource.fromContextMenu ? [resource.uuid] : selectedToArray(checkedList);
+    const uuidsToRemove: string[] = selectedToArray(checkedList);
 
     //if no items in checkedlist, default to normal context menu behavior
     if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
