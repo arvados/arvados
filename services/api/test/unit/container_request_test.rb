@@ -1985,6 +1985,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       assert_equal cr.container_uuid, cr2.container_uuid
       assert_not_nil(logs.string =~ /select_for_update_priorities/)
       assert_not_nil(logs.string =~ /update containers set priority=/)
+      assert_not_nil(logs.string =~ /SELECT .* FROM "containers" .* FOR UPDATE/, "Should have skipped 'select ... from containers ... for update'")
 
       run_container(cr)
       cr.reload
@@ -1992,7 +1993,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
       # When reusing a *completed* container, we should *not* see log
       # entries about doing the cascading priority update.
-      logs.truncate(0)
+      logs = StringIO.new
+      ActiveRecord::Base.logger = Logger.new(logs)
       cr3 = create_minimal_req!(priority: 2, state: ContainerRequest::Uncommitted)
       cr3.update!(priority: 3, state: ContainerRequest::Committed)
       assert_equal cr.container_uuid, cr3.container_uuid
@@ -2001,6 +2003,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       # extremely long escaped multiline string when it fails)
       assert_nil(logs.string =~ /select_for_update_priorities/, "Should have skipped select_for_update_priorities")
       assert_nil(logs.string =~ /update containers set priority=/, "Should have skipped 'update containers set priority=...'")
+      assert_nil(logs.string =~ /SELECT .* FROM "containers" .* FOR UPDATE/, "Should have skipped 'select ... from containers ... for update'")
     ensure
       ActiveRecord::Base.logger = initial_logger
     end
