@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -155,10 +156,6 @@ func (p *stubPool) bootAllInstances() {
 	}
 }
 
-func chooseType(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-	return []arvados.InstanceType{test.InstanceType(ctr.RuntimeConstraints.VCPUs)}, nil
-}
-
 var _ = check.Suite(&SchedulerSuite{})
 
 type SchedulerSuite struct {
@@ -172,10 +169,14 @@ func (s *SchedulerSuite) SetUpTest(c *check.C) {
 	s.testCluster.Containers.CloudVMs.MaxInstances = 10
 	s.testCluster.Containers.CloudVMs.SupervisorFraction = 0.2
 	s.testCluster.InstanceTypes = make(arvados.InstanceTypeMap)
-	for i := 1; i < 16; i++ {
+	for i := 1; i <= 16; i++ {
 		it := test.InstanceType(i)
 		s.testCluster.InstanceTypes[it.Name] = it
 	}
+}
+
+func (s *SchedulerSuite) chooseType(ctr *arvados.Container) ([]arvados.InstanceType, error) {
+	return container.ChooseInstanceType(&s.testCluster, ctr)
 }
 
 // Assign priority=4 container to idle node. Create new instances for
@@ -183,7 +184,7 @@ func (s *SchedulerSuite) SetUpTest(c *check.C) {
 func (s *SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:     test.ContainerUUID(1),
@@ -244,6 +245,302 @@ func (s *SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	}
 }
 
+// The smallest (type-2) instance can accommodate 2 containers, so we
+// create 2 of them to run 4 containers.
+func (s *SchedulerSuite) TestPackContainers_NewInstance(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(2), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.HasLen, 0)
+}
+
+// A type-3 instance is available, and it's within MaximumPriceFactor
+// and fits 3 containers, so we start 3 containers on it and start a
+// type-2 instance to run the fourth container.
+func (s *SchedulerSuite) TestPackContainers_IdleInstance(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool.Create(test.InstanceType(3))
+	pool.bootAllInstances()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(3), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(3), test.ContainerUUID(2)})
+}
+
+// A type-4 instance is idle, but shouldn't be used because its price
+// exceeds MaximumPriceFactor (1.5x smallest usable type-2).  Create
+// type-2 instances instead.
+func (s *SchedulerSuite) TestPackContainers_IdleInstance_TooBig(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool.Create(test.InstanceType(4))
+	pool.bootAllInstances()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(4), test.InstanceType(2), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.HasLen, 0)
+}
+
+// A type-3 instance is running a container, is within
+// MaximumPriceFactor, and has room for 2 more.  Start 2 containers on
+// the type-3 instance, and create a new instance for the last
+// container.
+func (s *SchedulerSuite) TestPackContainers_SpareResources(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool.Create(test.InstanceType(3))
+	pool.bootAllInstances()
+	pool.StartContainer(pool.Instances()[0].Instance, queue.Containers[3])
+	queue.Containers[3].State = arvados.ContainerStateRunning
+	queue.Update()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(3), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(3), test.ContainerUUID(2)})
+}
+
+// A type-3 instance is running a container, is within
+// MaximumPriceFactor, and has room for 2 more, but it is on
+// admin-hold (IdleBehaviorHold), so we don't start new containers on
+// it.  Instead we create two new instances for the other three
+// containers.
+func (s *SchedulerSuite) TestPackContainers_IdleBehaviorHold(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool.Create(test.InstanceType(3))
+	pool.bootAllInstances()
+	for _, wkr := range pool.workers {
+		wkr.IdleBehavior = worker.IdleBehaviorHold
+	}
+	pool.StartContainer(pool.Instances()[0].Instance, queue.Containers[3])
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(3), test.InstanceType(2), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
+}
+
+// A type-2 instance is idle, and can fit one more container, but
+// container packing is disabled by MaxRunningContainersPerInstance
+// config, so we start 1 container and create 3 new instances for the
+// other 3 containers.
+func (s *SchedulerSuite) TestPackContainers_DisabledInConfig(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	s.testCluster.Containers.CloudVMs.MaxRunningContainersPerInstance = 1
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool.Create(test.InstanceType(2))
+	pool.bootAllInstances()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(2), test.InstanceType(2), test.InstanceType(2), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
+}
+
+func (s *SchedulerSuite) setupTestPackContainers(c *check.C) (test.Queue, stubPool) {
+	delete(s.testCluster.InstanceTypes, test.InstanceType(1).Name)
+	s.testCluster.Containers.MaximumPriceFactor = 1.5
+	queue := test.Queue{
+		ChooseType: s.chooseType,
+		Containers: []arvados.Container{
+			{
+				UUID:     test.ContainerUUID(1),
+				Priority: 1,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(2),
+				Priority: 2,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(3),
+				Priority: 3,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(4),
+				Priority: 4,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+	pool := stubPool{
+		quota:     999,
+		canCreate: 999,
+	}
+	return queue, pool
+}
+
+func (s *SchedulerSuite) TestPackContainers_Resources(c *check.C) {
+	// Reduce the menu to instance types with 2^N CPUs.
+	for _, i := range []int{3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15} {
+		delete(s.testCluster.InstanceTypes, test.InstanceType(i).Name)
+	}
+	queue := test.Queue{
+		ChooseType: s.chooseType,
+		Containers: []arvados.Container{
+			// Each of the following 3 containers needs at
+			// least a type-8 instance (for CPU, RAM, or
+			// scratch), and they can all fit on a single
+			// type-8 instance.
+			{
+				UUID:     test.ContainerUUID(1),
+				Priority: 1,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   5 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(2),
+				Priority: 2,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 5,
+					RAM:   1 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(3),
+				Priority: 3,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         1,
+					RAM:           1 << 30,
+					KeepCacheDisk: 5 << 30,
+				},
+			},
+			// This container needs a type-16 instance,
+			// leaving enough capacity to run containers
+			// 1,2,3 as well -- except we won't do that
+			// because it costs 2x a type-8 instance and
+			// MaximumPriceFactor is only 1.5.
+			{
+				UUID:     test.ContainerUUID(4),
+				Priority: 4,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 9,
+					RAM:   1 << 30,
+				},
+			},
+			// Currently CRs with VCPUs==0 are not allowed
+			// by API server, but if/when they are, they
+			// can run on any instance with enough RAM and
+			// scratch.
+			//
+			// The next 4 containers each need 128 MiB of
+			// RAM and disk, so they should pack onto a
+			// single type-1 node.
+			{
+				UUID:     test.ContainerUUID(5),
+				Priority: 5,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(6),
+				Priority: 6,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(7),
+				Priority: 7,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(8),
+				Priority: 8,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+		},
+	}
+	queue.Update()
+	pool := stubPool{
+		quota:     999,
+		canCreate: 999,
+	}
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster)
+	sch.runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(1), test.InstanceType(16), test.InstanceType(8),
+	})
+	c.Check(pool.starts, check.HasLen, 0)
+	pool.bootAllInstances()
+	sch.runQueue()
+	for _, wkr := range pool.workers {
+		switch wkr.ArvadosInstanceType {
+		case test.InstanceType(1).Name:
+			c.Check(wkr.RunningContainerUUIDs, check.DeepEquals, []string{
+				test.ContainerUUID(8),
+				test.ContainerUUID(7),
+				test.ContainerUUID(6),
+				test.ContainerUUID(5),
+			})
+		case test.InstanceType(2).Name:
+			c.Check(wkr.RunningContainerUUIDs, check.HasLen, 0)
+		case test.InstanceType(8).Name:
+			c.Check(wkr.RunningContainerUUIDs, check.DeepEquals, []string{
+				test.ContainerUUID(3),
+				test.ContainerUUID(2),
+				test.ContainerUUID(1),
+			})
+		case test.InstanceType(16).Name:
+			c.Check(wkr.RunningContainerUUIDs, check.DeepEquals, []string{
+				test.ContainerUUID(4),
+			})
+		default:
+			c.Errorf("unexpected instance type %s", wkr.ArvadosInstanceType)
+		}
+	}
+}
+
 // If pool.AtQuota() is true, shutdown some unalloc nodes, and don't
 // call Create().
 func (s *SchedulerSuite) TestShutdownAtQuota(c *check.C) {
@@ -251,7 +548,7 @@ func (s *SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	for quota := 1; quota <= 3; quota++ {
 		c.Logf("quota=%d", quota)
 		queue := test.Queue{
-			ChooseType: chooseType,
+			ChooseType: s.chooseType,
 			Containers: []arvados.Container{
 				{
 					UUID:     test.ContainerUUID(2),
@@ -324,7 +621,7 @@ func (s *SchedulerSuite) TestInstanceCapacity(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:     test.ContainerUUID(1),
@@ -396,7 +693,7 @@ func (s *SchedulerSuite) TestInstanceCapacity(c *check.C) {
 func (s *SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			// scheduled on an instance (but not Running yet)
 			{
@@ -486,7 +783,7 @@ func (s *SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
 func (s *SchedulerSuite) TestUnlockExcessSupervisors(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 	}
 	for i := 1; i <= 6; i++ {
 		queue.Containers = append(queue.Containers, arvados.Container{
@@ -536,7 +833,7 @@ func (s *SchedulerSuite) TestUnlockExcessSupervisors(c *check.C) {
 func (s *SchedulerSuite) TestExcessSupervisors(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 	}
 	for i := 1; i <= 8; i++ {
 		queue.Containers = append(queue.Containers, arvados.Container{
@@ -588,7 +885,7 @@ func (s *SchedulerSuite) TestEqualPriorityContainers(c *check.C) {
 	logger := ctxlog.TestLogger(c)
 	ctx := ctxlog.Context(context.Background(), logger)
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Logger:     logger,
 	}
 	for i := 0; i < 8; i++ {
@@ -636,7 +933,7 @@ func (s *SchedulerSuite) TestEqualPriorityContainers(c *check.C) {
 func (s *SchedulerSuite) TestStartWhileCreating(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				// create a new worker
@@ -730,7 +1027,7 @@ func (s *SchedulerSuite) TestStartWhileCreating(c *check.C) {
 func (s *SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				// create a new worker
@@ -764,7 +1061,7 @@ func (s *SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 func (s *SchedulerSuite) TestContainersMetrics(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:      test.ContainerUUID(1),
@@ -812,7 +1109,7 @@ func (s *SchedulerSuite) TestContainersMetrics(c *check.C) {
 	// queued container will be started immediately and
 	// mLongestWaitTimeSinceQueue should be zero.
 	queue = test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:      test.ContainerUUID(1),
@@ -845,7 +1142,7 @@ func (s *SchedulerSuite) TestContainersMetrics(c *check.C) {
 func (s *SchedulerSuite) TestSkipSupervisors(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:     test.ContainerUUID(1),

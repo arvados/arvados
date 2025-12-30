@@ -22,7 +22,7 @@ func (s *SchedulerSuite) TestForgetIrrelevantContainers(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool := stubPool{}
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:     test.ContainerUUID(1),
@@ -67,7 +67,7 @@ func (s *SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
 	}
 	c.Assert(pool.CountWorkers()[worker.StateUnknown], check.Equals, 1)
 	queue := test.Queue{
-		ChooseType: chooseType,
+		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
 				UUID:     test.ContainerUUID(1),
