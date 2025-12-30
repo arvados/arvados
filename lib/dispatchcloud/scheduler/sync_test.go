@@ -18,7 +18,7 @@ import (
 // Ensure the scheduler expunges containers from the queue when they
 // are no longer relevant (completed and not running, queued with
 // priority 0, etc).
-func (*SchedulerSuite) TestForgetIrrelevantContainers(c *check.C) {
+func (s *SchedulerSuite) TestForgetIrrelevantContainers(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool := stubPool{}
 	queue := test.Queue{
@@ -49,14 +49,14 @@ func (*SchedulerSuite) TestForgetIrrelevantContainers(c *check.C) {
 	ents, _ := queue.Entries()
 	c.Check(ents, check.HasLen, 1)
 
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &testCluster)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster)
 	sch.sync()
 
 	ents, _ = queue.Entries()
 	c.Check(ents, check.HasLen, 0)
 }
 
-func (*SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
+func (s *SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool := stubPool{
 		canCreate: 1,
@@ -85,7 +85,7 @@ func (*SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
 	ents, _ := queue.Entries()
 	c.Check(ents, check.HasLen, 1)
 
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &testCluster)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster)
 
 	// Sync shouldn't cancel the container because it might be
 	// running on the VM with state=="unknown".
