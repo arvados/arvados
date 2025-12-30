@@ -250,7 +250,7 @@ func (s *SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 func (s *SchedulerSuite) TestPackContainers_NewInstance(c *check.C) {
 	queue, pool := s.setupTestPackContainers(c)
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
 		test.InstanceType(2), test.InstanceType(2),
 	})
@@ -265,7 +265,7 @@ func (s *SchedulerSuite) TestPackContainers_IdleInstance(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool.Create(test.InstanceType(3))
 	pool.bootAllInstances()
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
 		test.InstanceType(3), test.InstanceType(2),
 	})
@@ -280,7 +280,7 @@ func (s *SchedulerSuite) TestPackContainers_IdleInstance_TooBig(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool.Create(test.InstanceType(4))
 	pool.bootAllInstances()
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
 		test.InstanceType(4), test.InstanceType(2), test.InstanceType(2),
 	})
@@ -299,7 +299,7 @@ func (s *SchedulerSuite) TestPackContainers_SpareResources(c *check.C) {
 	pool.StartContainer(pool.Instances()[0].Instance, queue.Containers[3])
 	queue.Containers[3].State = arvados.ContainerStateRunning
 	queue.Update()
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
 		test.InstanceType(3), test.InstanceType(2),
 	})
@@ -320,7 +320,7 @@ func (s *SchedulerSuite) TestPackContainers_IdleBehaviorHold(c *check.C) {
 		wkr.IdleBehavior = worker.IdleBehaviorHold
 	}
 	pool.StartContainer(pool.Instances()[0].Instance, queue.Containers[3])
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
 		test.InstanceType(3), test.InstanceType(2), test.InstanceType(2),
 	})
@@ -337,17 +337,17 @@ func (s *SchedulerSuite) TestPackContainers_DisabledInConfig(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool.Create(test.InstanceType(2))
 	pool.bootAllInstances()
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
 		test.InstanceType(2), test.InstanceType(2), test.InstanceType(2), test.InstanceType(2),
 	})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 }
 
-func (s *SchedulerSuite) setupTestPackContainers(c *check.C) (test.Queue, stubPool) {
+func (s *SchedulerSuite) setupTestPackContainers(c *check.C) (*test.Queue, *stubPool) {
 	delete(s.testCluster.InstanceTypes, test.InstanceType(1).Name)
 	s.testCluster.Containers.MaximumPriceFactor = 1.5
-	queue := test.Queue{
+	queue := &test.Queue{
 		ChooseType: s.chooseType,
 		Containers: []arvados.Container{
 			{
@@ -389,7 +389,7 @@ func (s *SchedulerSuite) setupTestPackContainers(c *check.C) (test.Queue, stubPo
 		},
 	}
 	queue.Update()
-	pool := stubPool{
+	pool := &stubPool{
 		quota:     999,
 		canCreate: 999,
 	}
