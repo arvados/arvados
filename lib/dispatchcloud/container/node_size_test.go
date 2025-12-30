@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package dispatchcloud
+package container
 
 import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"

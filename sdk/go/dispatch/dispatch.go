@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"github.com/sirupsen/logrus"
@@ -181,7 +181,7 @@ func (d *Dispatcher) start(c arvados.Container) *runTracker {
 		err := d.RunContainer(d, c, tracker.updates)
 		if err != nil {
 			text := fmt.Sprintf("Error running container %s: %s", c.UUID, err)
-			if err, ok := err.(dispatchcloud.ConstraintsNotSatisfiableError); ok {
+			if err, ok := err.(container.ConstraintsNotSatisfiableError); ok {
 				fallbackState = Cancelled
 				var logBuf bytes.Buffer
 				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", c.UUID, err)

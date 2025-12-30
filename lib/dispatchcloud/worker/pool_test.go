@@ -59,11 +59,11 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 			})
 			if len(instances) == 3 &&
 				instances[0].ArvadosInstanceType == type1.Name &&
-				instances[0].WorkerState == StateIdle.String() &&
+				instances[0].WorkerState == StateIdle &&
 				instances[1].ArvadosInstanceType == type1.Name &&
-				instances[1].WorkerState == StateIdle.String() &&
+				instances[1].WorkerState == StateIdle &&
 				instances[2].ArvadosInstanceType == type2.Name &&
-				instances[2].WorkerState == StateIdle.String() {
+				instances[2].WorkerState == StateIdle {
 				return
 			}
 			select {
@@ -205,7 +205,7 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 		}
 
 		// Try to start a container
-		started := pool.StartContainer(type1, arvados.Container{UUID: "testcontainer"})
+		started := pool.StartContainer(pool.Instances()[0].Instance, arvados.Container{UUID: "testcontainer"})
 		c.Check(started, check.Equals, test.result)
 	}
 }
@@ -227,27 +227,27 @@ func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
 		},
 	}
 
-	c.Check(pool.Unallocated()[type1], check.Equals, 0)
-	res := pool.Create(type1)
-	c.Check(pool.Unallocated()[type1], check.Equals, 1)
+	c.Check(suite.instancesByType(pool, type1), check.HasLen, 0)
+	_, res := pool.Create(type1)
+	c.Check(suite.instancesByType(pool, type1), check.HasLen, 1)
 	c.Check(res, check.Equals, true)
 
-	res = pool.Create(type1)
-	c.Check(pool.Unallocated()[type1], check.Equals, 1)
+	_, res = pool.Create(type1)
+	c.Check(suite.instancesByType(pool, type1), check.HasLen, 1)
 	c.Check(res, check.Equals, false)
 
 	pool.instanceSet.throttleCreate.err = nil
 	pool.maxConcurrentInstanceCreateOps = 2
 
-	res = pool.Create(type1)
-	c.Check(pool.Unallocated()[type1], check.Equals, 2)
+	_, res = pool.Create(type1)
+	c.Check(suite.instancesByType(pool, type1), check.HasLen, 2)
 	c.Check(res, check.Equals, true)
 
 	pool.instanceSet.throttleCreate.err = nil
 	pool.maxConcurrentInstanceCreateOps = 0
 
-	res = pool.Create(type1)
-	c.Check(pool.Unallocated()[type1], check.Equals, 3)
+	_, res = pool.Create(type1)
+	c.Check(suite.instancesByType(pool, type1), check.HasLen, 3)
 	c.Check(res, check.Equals, true)
 }
 
@@ -277,19 +277,21 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	notify2 := pool.Subscribe()
 	defer pool.Unsubscribe(notify2)
 
-	c.Check(pool.Unallocated()[type1], check.Equals, 0)
-	c.Check(pool.Unallocated()[type2], check.Equals, 0)
-	c.Check(pool.Unallocated()[type3], check.Equals, 0)
+	c.Check(pool.Instances(), check.HasLen, 0)
 	pool.Create(type2)
 	pool.Create(type1)
 	pool.Create(type2)
 	pool.Create(type3)
-	c.Check(pool.Unallocated()[type1], check.Equals, 1)
-	c.Check(pool.Unallocated()[type2], check.Equals, 2)
-	c.Check(pool.Unallocated()[type3], check.Equals, 1)
 
-	// Unblock the pending Create calls.
-	go driver.ReleaseCloudOps(4)
+	// Check the pending instances already appear in
+	// pool.Instances() even though the cloud driver has not yet
+	// responded to CreateInstance.
+	c.Check(suite.instancesByType(pool, type1), check.HasLen, 1)
+	c.Check(suite.instancesByType(pool, type2), check.HasLen, 2)
+	c.Check(suite.instancesByType(pool, type3), check.HasLen, 1)
+
+	// Unblock driver operations for the duration of the test.
+	go driver.ReleaseCloudOps(4444)
 
 	// Wait for each instance to either return from its Create
 	// call, or show up in a poll.
@@ -309,24 +311,22 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	err = pool.SetIdleBehavior(type3instanceID, IdleBehaviorHold)
 	c.Check(err, check.IsNil)
 
-	// Check admin-hold behavior: refuse to shutdown, and don't
-	// report as Unallocated ("available now or soon").
-	c.Check(pool.Shutdown(type3), check.Equals, false)
+	// Check admin-hold behavior: refuse to shutdown, and
+	// Instances() reports IdleBehaviorHold.
+	c.Check(pool.Shutdown(type3instanceID), check.Equals, false)
 	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type3] == 0
+		return suite.instancesByType(pool, type3)[0].IdleBehavior == IdleBehaviorHold
 	})
 	c.Check(suite.instancesByType(pool, type3), check.HasLen, 1)
 
 	// Shutdown both type2 nodes
-	c.Check(pool.Shutdown(type2), check.Equals, true)
-	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type1] == 1 && pool.Unallocated()[type2] == 1
-	})
-	c.Check(pool.Shutdown(type2), check.Equals, true)
-	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type1] == 1 && pool.Unallocated()[type2] == 0
-	})
-	c.Check(pool.Shutdown(type2), check.Equals, false)
+	for n, iv := range suite.instancesByType(pool, type2) {
+		c.Check(pool.Shutdown(iv.Instance), check.Equals, true)
+		suite.wait(c, pool, notify, func() bool {
+			pool.getInstancesAndSync()
+			return len(suite.instancesByType(pool, type1)) == 1 && len(suite.instancesByType(pool, type2)) == 1-n
+		})
+	}
 	for {
 		// Consume any waiting notifications to ensure the
 		// next one we get is from Shutdown.
@@ -339,9 +339,10 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	}
 
 	// Shutdown type1 node
-	c.Check(pool.Shutdown(type1), check.Equals, true)
+	c.Check(pool.Shutdown(suite.instancesByType(pool, type1)[0].Instance), check.Equals, true)
 	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type1] == 0 && pool.Unallocated()[type2] == 0 && pool.Unallocated()[type3] == 0
+		pool.getInstancesAndSync()
+		return len(suite.instancesByType(pool, type1)) == 0
 	})
 	select {
 	case <-notify2:
@@ -353,26 +354,16 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	err = pool.SetIdleBehavior(type3instanceID, IdleBehaviorRun)
 	c.Check(err, check.IsNil)
 	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type3] == 1
+		return suite.instancesByType(pool, type3)[0].IdleBehavior == IdleBehaviorRun
 	})
 
-	// Check admin-drain behavior: shut down right away, and don't
-	// report as Unallocated.
+	// Check admin-drain behavior: shut down right away.
 	err = pool.SetIdleBehavior(type3instanceID, IdleBehaviorDrain)
 	c.Check(err, check.IsNil)
 	suite.wait(c, pool, notify, func() bool {
-		return pool.Unallocated()[type3] == 0
-	})
-	suite.wait(c, pool, notify, func() bool {
 		ivs := suite.instancesByType(pool, type3)
-		return len(ivs) == 1 && ivs[0].WorkerState == StateShutdown.String()
+		return len(ivs) == 1 && ivs[0].WorkerState == StateShutdown
 	})
-
-	// Unblock all pending Destroy calls. Pool calls Destroy again
-	// if a node still appears in the provider list after a
-	// previous attempt, so there might be more than 4 Destroy
-	// calls to unblock.
-	go driver.ReleaseCloudOps(4444)
 
 	// Sync until all instances disappear from the provider list.
 	suite.wait(c, pool, notify, func() bool {
@@ -430,7 +421,8 @@ func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceQuotaGroupSpecific: true} }
 	// pool.Create() returns true when it starts a goroutine to
 	// call instanceSet.Create() in the background.
-	c.Check(pool.Create(typeA1), check.Equals, true)
+	_, created := pool.Create(typeA1)
+	c.Check(created, check.Equals, true)
 	// Wait for the pool to start reporting that the provider is
 	// at capacity for instance type A1.
 	for deadline := time.Now().Add(time.Second); !pool.AtCapacity(typeA1); time.Sleep(time.Millisecond) {
@@ -442,7 +434,8 @@ func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 	// Arrange for a type-specific error on next
 	// instanceSet.Create().
 	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceTypeSpecific: true} }
-	c.Check(pool.Create(typeB4p), check.Equals, true)
+	_, created = pool.Create(typeB4p)
+	c.Check(created, check.Equals, true)
 	for deadline := time.Now().Add(time.Second); !pool.AtCapacity(typeB4p); time.Sleep(time.Millisecond) {
 		if time.Now().After(deadline) {
 			c.Fatal("timed out waiting for pool to report quota")
@@ -461,14 +454,22 @@ func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 	c.Check(pool.AtCapacity(typeB3p), check.Equals, false)
 	c.Check(pool.AtCapacity(typeB4), check.Equals, false)
 	c.Check(pool.AtCapacity(typeB4p), check.Equals, true)
-	c.Check(pool.Create(typeA2), check.Equals, false)
-	c.Check(pool.Create(typeB3), check.Equals, true)
-	c.Check(pool.Create(typeB3p), check.Equals, true)
-	c.Check(pool.Create(typeB4), check.Equals, true)
-	c.Check(pool.Create(typeB4p), check.Equals, false)
-	c.Check(pool.Create(typeA2), check.Equals, false)
-	c.Check(pool.Create(typeA1), check.Equals, false)
-	c.Check(pool.Create(typeA1p), check.Equals, true)
+	_, created = pool.Create(typeA2)
+	c.Check(created, check.Equals, false)
+	_, created = pool.Create(typeB3)
+	c.Check(created, check.Equals, true)
+	_, created = pool.Create(typeB3p)
+	c.Check(created, check.Equals, true)
+	_, created = pool.Create(typeB4)
+	c.Check(created, check.Equals, true)
+	_, created = pool.Create(typeB4p)
+	c.Check(created, check.Equals, false)
+	_, created = pool.Create(typeA2)
+	c.Check(created, check.Equals, false)
+	_, created = pool.Create(typeA1)
+	c.Check(created, check.Equals, false)
+	_, created = pool.Create(typeA1p)
+	c.Check(created, check.Equals, true)
 }
 
 func (suite *PoolSuite) instancesByType(pool *Pool, it arvados.InstanceType) []InstanceView {

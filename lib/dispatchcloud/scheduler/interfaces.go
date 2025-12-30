@@ -7,6 +7,7 @@ package scheduler
 import (
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -32,13 +33,13 @@ type ContainerQueue interface {
 // stubs. See worker.Pool method documentation for details.
 type WorkerPool interface {
 	Running() map[string]time.Time
-	Unallocated() map[arvados.InstanceType]int
+	Instances() []worker.InstanceView
 	CountWorkers() map[worker.State]int
 	AtCapacity(arvados.InstanceType) bool
 	AtQuota() bool
-	Create(arvados.InstanceType) bool
-	Shutdown(arvados.InstanceType) bool
-	StartContainer(arvados.InstanceType, arvados.Container) bool
+	Create(arvados.InstanceType) (worker.InstanceView, bool)
+	Shutdown(cloud.InstanceID) bool
+	StartContainer(cloud.InstanceID, arvados.Container) bool
 	KillContainer(uuid, reason string) bool
 	ForgetContainer(uuid string)
 	Subscribe() <-chan struct{}

@@ -35,15 +35,16 @@ const (
 
 // An InstanceView shows a worker's current state and recent activity.
 type InstanceView struct {
-	Instance             cloud.InstanceID `json:"instance"`
-	Address              string           `json:"address"`
-	Price                float64          `json:"price"`
-	ArvadosInstanceType  string           `json:"arvados_instance_type"`
-	ProviderInstanceType string           `json:"provider_instance_type"`
-	LastContainerUUID    string           `json:"last_container_uuid"`
-	LastBusy             time.Time        `json:"last_busy"`
-	WorkerState          State            `json:"worker_state"`
-	IdleBehavior         IdleBehavior     `json:"idle_behavior"`
+	Instance              cloud.InstanceID `json:"instance"`
+	Address               string           `json:"address"`
+	Price                 float64          `json:"price"`
+	ArvadosInstanceType   string           `json:"arvados_instance_type"`
+	ProviderInstanceType  string           `json:"provider_instance_type"`
+	LastContainerUUID     string           `json:"last_container_uuid"`
+	LastBusy              time.Time        `json:"last_busy"`
+	RunningContainerUUIDs []string         `json:"running_container_uuids"`
+	WorkerState           State            `json:"worker_state"`
+	IdleBehavior          IdleBehavior     `json:"idle_behavior"`
 }
 
 // An Executor executes shell commands on a remote host.
@@ -259,9 +260,6 @@ func (wp *Pool) Unsubscribe(ch <-chan struct{}) {
 	delete(wp.subscribers, ch)
 }
 
-// Unallocated returns the number of unallocated (creating + booting +
-// idle + unknown) workers for each instance type.  Workers in
-// hold/drain mode are not included.
 func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.RLock()
@@ -319,15 +317,15 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 // setting prevents it from even attempting to create a new
 // instance. Those errors are logged by the Pool, so the caller does
 // not need to log anything in such cases.
-func (wp *Pool) Create(it arvados.InstanceType) bool {
+func (wp *Pool) Create(it arvados.InstanceType) (iv InstanceView, created bool) {
 	logger := wp.logger.WithField("InstanceType", it.Name)
 	wp.setupOnce.Do(wp.setup)
 	if wp.loadRunnerData() != nil {
 		// Boot probe is certain to fail.
-		return false
+		return
 	}
 	if wp.AtCapacity(it) || wp.AtQuota() || wp.instanceSet.throttleCreate.Error() != nil {
-		return false
+		return
 	}
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
@@ -341,7 +339,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	if wp.maxConcurrentInstanceCreateOps > 0 && len(wp.creating) >= wp.maxConcurrentInstanceCreateOps {
 		logger.Info("reached MaxConcurrentInstanceCreateOps")
 		wp.instanceSet.throttleCreate.ErrorUntil(errors.New("reached MaxConcurrentInstanceCreateOps"), time.Now().Add(5*time.Second), wp.notify)
-		return false
+		return
 	}
 	now := time.Now()
 	secret := randomHex(instanceSecretLength)
@@ -425,7 +423,13 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	if len(wp.creating)+len(wp.workers) == wp.maxInstances {
 		logger.Infof("now at MaxInstances limit of %d instances", wp.maxInstances)
 	}
-	return true
+	return InstanceView{
+		Price:                it.Price,
+		ArvadosInstanceType:  it.Name,
+		ProviderInstanceType: it.ProviderType,
+		WorkerState:          StateBooting,
+		IdleBehavior:         IdleBehaviorRun,
+	}, true
 }
 
 // AtCapacity returns true if Create() is currently expected to fail
@@ -564,27 +568,22 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 	return wkr, true
 }
 
-// Shutdown shuts down a worker with the given type, or returns false
-// if all workers with the given type are busy.
-func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
+// Shutdown shuts down the indicated instance, or returns false if it
+// is ineligible for shutdown.
+func (wp *Pool) Shutdown(id cloud.InstanceID) bool {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	logger := wp.logger.WithField("InstanceType", it.Name)
+	logger := wp.logger.WithField("Instance", id)
 	logger.Info("shutdown requested")
-	for _, tryState := range []State{StateBooting, StateIdle} {
-		// TODO: shutdown the worker with the longest idle
-		// time (Idle) or the earliest create time (Booting)
-		for _, wkr := range wp.workers {
-			if wkr.idleBehavior != IdleBehaviorHold && wkr.state == tryState && wkr.instType == it {
-				logger.WithField("Instance", wkr.instance.ID()).Info("shutting down")
-				wkr.reportBootOutcome(BootOutcomeAborted)
-				wkr.shutdown()
-				return true
-			}
-		}
+	wkr := wp.workers[id]
+	if wkr == nil || wkr.idleBehavior == IdleBehaviorHold || !(wkr.state == StateBooting || wkr.state == StateIdle) {
+		return false
 	}
-	return false
+	logger.Info("shutting down")
+	wkr.reportBootOutcome(BootOutcomeAborted)
+	wkr.shutdown()
+	return true
 }
 
 // CountWorkers returns the current number of workers in each state.
@@ -631,19 +630,12 @@ func (wp *Pool) Running() map[string]time.Time {
 
 // StartContainer starts a container on an idle worker immediately if
 // possible, otherwise returns false.
-func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) bool {
+func (wp *Pool) StartContainer(id cloud.InstanceID, ctr arvados.Container) bool {
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	var wkr *worker
-	for _, w := range wp.workers {
-		if w.instType == it && w.state == StateIdle && w.idleBehavior == IdleBehaviorRun {
-			if wkr == nil || w.busy.After(wkr.busy) {
-				wkr = w
-			}
-		}
-	}
-	if wkr == nil {
+	wkr := wp.workers[id]
+	if wkr == nil || !(wkr.state == StateIdle || wkr.state == StateRunning) || wkr.idleBehavior != IdleBehaviorRun {
 		return false
 	}
 	wkr.startContainer(ctr)
@@ -959,25 +951,49 @@ func (wp *Pool) Stop() {
 
 // Instances returns an InstanceView for each worker in the pool,
 // summarizing its current state and recent activity.
+//
+// Each pending Create call is represented by an InstanceView with a
+// blank Instance field.
 func (wp *Pool) Instances() []InstanceView {
 	var r []InstanceView
 	wp.setupOnce.Do(wp.setup)
 	wp.mtx.Lock()
 	for _, w := range wp.workers {
+		running := make([]string, 0, len(w.running)+len(w.starting))
+		for uuid := range w.running {
+			running = append(running, uuid)
+		}
+		for uuid := range w.starting {
+			running = append(running, uuid)
+		}
+		sort.Strings(running)
 		r = append(r, InstanceView{
-			Instance:             w.instance.ID(),
-			Address:              w.instance.Address(),
-			Price:                w.instType.Price,
-			ArvadosInstanceType:  w.instType.Name,
-			ProviderInstanceType: w.instType.ProviderType,
-			LastContainerUUID:    w.lastUUID,
-			LastBusy:             w.busy,
-			WorkerState:          w.state,
-			IdleBehavior:         w.idleBehavior,
+			Instance:              w.instance.ID(),
+			Address:               w.instance.Address(),
+			Price:                 w.instType.Price,
+			ArvadosInstanceType:   w.instType.Name,
+			ProviderInstanceType:  w.instType.ProviderType,
+			LastContainerUUID:     w.lastUUID,
+			LastBusy:              w.busy,
+			RunningContainerUUIDs: running,
+			WorkerState:           w.state,
+			IdleBehavior:          w.idleBehavior,
+		})
+	}
+	for _, cc := range wp.creating {
+		r = append(r, InstanceView{
+			Price:                cc.instanceType.Price,
+			ArvadosInstanceType:  cc.instanceType.Name,
+			ProviderInstanceType: cc.instanceType.ProviderType,
+			WorkerState:          StateBooting,
+			IdleBehavior:         IdleBehaviorRun,
 		})
 	}
 	wp.mtx.Unlock()
 	sort.Slice(r, func(i, j int) bool {
+		if r[i].Instance == r[j].Instance {
+			return strings.Compare(r[i].ArvadosInstanceType, r[j].ArvadosInstanceType) < 0
+		}
 		return strings.Compare(string(r[i].Instance), string(r[j].Instance)) < 0
 	})
 	return r

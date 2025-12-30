@@ -34,7 +34,7 @@ const (
 type State string
 
 const (
-	StateUnknown  State = "unknown"  // might be running a container already
+	StateUnknown  State = "unknown"  // not created by this process, hasn't completed a probe yet
 	StateBooting        = "booting"  // instance is booting
 	StateIdle           = "idle"     // instance booted, no containers are running
 	StateRunning        = "running"  // instance is running one or more containers
@@ -593,6 +593,11 @@ func (wkr *worker) eligibleForShutdown() bool {
 		// draining, and all remaining runners are just trying
 		// to force-kill their crunch-run procs
 		return true
+	case StateUnknown:
+		// instance was created by someone other than us
+		// (probably the previous dispatchcloud process) and
+		// has never responded to a probe
+		return time.Since(wkr.appeared) >= wkr.wp.timeoutBooting
 	default:
 		return false
 	}

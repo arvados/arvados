@@ -31,13 +31,12 @@ import (
 // If it encounters errors while creating new workers, a Scheduler
 // shuts down idle workers, in case they are consuming quota.
 type Scheduler struct {
-	logger              logrus.FieldLogger
-	client              *arvados.Client
-	queue               ContainerQueue
-	pool                WorkerPool
-	reg                 *prometheus.Registry
-	staleLockTimeout    time.Duration
-	queueUpdateInterval time.Duration
+	logger  logrus.FieldLogger
+	client  *arvados.Client
+	queue   ContainerQueue
+	pool    WorkerPool
+	reg     *prometheus.Registry
+	cluster *arvados.Cluster
 
 	uuidOp map[string]string // operation in progress: "lock", "cancel", ...
 	mtx    sync.Mutex
@@ -49,8 +48,6 @@ type Scheduler struct {
 
 	last503time          time.Time // last time API responded 503
 	maxContainers        int       // dynamic container limit (0 = unlimited), see runQueue()
-	supervisorFraction   float64   // maximum fraction of "supervisor" containers (these are containers who's main job is to launch other containers, e.g. workflow runners)
-	maxInstances         int       // maximum number of instances the pool will bring up (0 = unlimited)
 	instancesWithinQuota int       // max concurrency achieved since last quota error (0 = no quota error yet)
 
 	mContainersAllocatedNotStarted   prometheus.Gauge
@@ -66,26 +63,24 @@ type Scheduler struct {
 //
 // Any given queue and pool should not be used by more than one
 // scheduler at a time.
-func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, staleLockTimeout, queueUpdateInterval time.Duration, minQuota, maxInstances int, supervisorFraction float64) *Scheduler {
+func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, cluster *arvados.Cluster) *Scheduler {
 	sch := &Scheduler{
-		logger:              ctxlog.FromContext(ctx),
-		client:              client,
-		queue:               queue,
-		pool:                pool,
-		reg:                 reg,
-		staleLockTimeout:    staleLockTimeout,
-		queueUpdateInterval: queueUpdateInterval,
-		wakeup:              time.NewTimer(time.Second),
-		stop:                make(chan struct{}),
-		stopped:             make(chan struct{}),
-		uuidOp:              map[string]string{},
-		supervisorFraction:  supervisorFraction,
-		maxInstances:        maxInstances,
+		logger:  ctxlog.FromContext(ctx),
+		client:  client,
+		queue:   queue,
+		pool:    pool,
+		reg:     reg,
+		cluster: cluster,
+		wakeup:  time.NewTimer(time.Second),
+		stop:    make(chan struct{}),
+		stopped: make(chan struct{}),
+		uuidOp:  map[string]string{},
 	}
+	minQuota := cluster.Containers.CloudVMs.InitialQuotaEstimate
 	if minQuota > 0 {
 		sch.maxContainers = minQuota
 	} else {
-		sch.maxContainers = maxInstances
+		sch.maxContainers = cluster.Containers.CloudVMs.MaxInstances
 	}
 	sch.registerMetrics(reg)
 	return sch
@@ -183,10 +178,12 @@ func (sch *Scheduler) Stop() {
 func (sch *Scheduler) run() {
 	defer close(sch.stopped)
 
+	updateInterval := time.Duration(sch.cluster.Containers.CloudVMs.PollInterval)
+
 	// Ensure the queue is fetched once before attempting anything.
 	for err := sch.queue.Update(); err != nil; err = sch.queue.Update() {
 		sch.logger.Errorf("error updating queue: %s", err)
-		d := sch.queueUpdateInterval / 10
+		d := updateInterval / 10
 		if d < time.Second {
 			d = time.Second
 		}
@@ -208,8 +205,8 @@ func (sch *Scheduler) run() {
 			// another. Otherwise, wait for the configured
 			// poll interval.
 			delay := time.Since(starttime)
-			if delay < sch.queueUpdateInterval {
-				delay = sch.queueUpdateInterval
+			if delay < updateInterval {
+				delay = updateInterval
 			}
 			time.Sleep(delay)
 		}

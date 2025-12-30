@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package dispatchcloud
+package container
 
 import (
 	"errors"
@@ -25,6 +25,33 @@ var discountConfiguredRAMPercent = 5
 type ConstraintsNotSatisfiableError struct {
 	error
 	AvailableTypes []arvados.InstanceType
+}
+
+// InstanceResources are the allocatable resources needed to run a
+// container, including system overhead.
+type InstanceResources struct {
+	VCPUs   int
+	RAM     arvados.ByteSize
+	Scratch arvados.ByteSize
+	GPUs    int
+	GPUVRAM arvados.ByteSize
+}
+
+func (r InstanceResources) Less(r2 InstanceResources) bool {
+	return r.VCPUs < r2.VCPUs ||
+		r.RAM < r2.RAM ||
+		r.Scratch < r2.Scratch ||
+		r.GPUs < r2.GPUs ||
+		r.GPUVRAM < r2.GPUVRAM
+}
+
+func (r InstanceResources) Minus(r2 InstanceResources) InstanceResources {
+	r.VCPUs -= r2.VCPUs
+	r.RAM -= r2.RAM
+	r.Scratch -= r2.Scratch
+	r.GPUs -= r2.GPUs
+	r.GPUVRAM -= r2.GPUVRAM
+	return r
 }
 
 var pdhRegexp = regexp.MustCompile(`^[0-9a-f]{32}\+(\d+)$`)
@@ -89,6 +116,26 @@ func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
 	return
 }
 
+func InstanceResourcesNeeded(cc *arvados.Cluster, ctr *arvados.Container) InstanceResources {
+	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
+	needRAM += int64(cc.Containers.ReserveExtraRAM)
+	if cc.Containers.LocalKeepBlobBuffersPerVCPU > 0 {
+		// + 200 MiB for keepstore process + 10% for GOGC=10
+		needRAM += 220 << 20
+		// + 64 MiB for each blob buffer + 10% for GOGC=10
+		needRAM += int64(cc.Containers.LocalKeepBlobBuffersPerVCPU * ctr.RuntimeConstraints.VCPUs * (1 << 26) * 11 / 10)
+	}
+	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
+
+	return InstanceResources{
+		VCPUs:   ctr.RuntimeConstraints.VCPUs,
+		RAM:     arvados.ByteSize(needRAM),
+		Scratch: arvados.ByteSize(EstimateScratchSpace(ctr)),
+		GPUs:    ctr.RuntimeConstraints.GPU.DeviceCount,
+		GPUVRAM: arvados.ByteSize(ctr.RuntimeConstraints.GPU.VRAM),
+	}
+}
+
 // compareVersion returns true if vs1 < vs2, otherwise false
 func versionLess(vs1 string, vs2 string) (bool, error) {
 	v1, err := strconv.ParseFloat(vs1, 64)
@@ -113,21 +160,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 	if len(cc.InstanceTypes) == 0 {
 		return nil, ErrInstanceTypesNotConfigured
 	}
-
-	needScratch := EstimateScratchSpace(ctr)
-
-	needVCPUs := ctr.RuntimeConstraints.VCPUs
-
-	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
-	needRAM += int64(cc.Containers.ReserveExtraRAM)
-	if cc.Containers.LocalKeepBlobBuffersPerVCPU > 0 {
-		// + 200 MiB for keepstore process + 10% for GOGC=10
-		needRAM += 220 << 20
-		// + 64 MiB for each blob buffer + 10% for GOGC=10
-		needRAM += int64(cc.Containers.LocalKeepBlobBuffersPerVCPU * needVCPUs * (1 << 26) * 11 / 10)
-	}
-	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
-
+	need := InstanceResourcesNeeded(cc, ctr)
 	maxPriceFactor := math.Max(cc.Containers.MaximumPriceFactor, 1)
 	var types []arvados.InstanceType
 	var maxPrice float64
@@ -136,9 +169,9 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 
 		var capabilityInsuff bool
 		var capabilityErr error
-		if ctr.RuntimeConstraints.GPU.Stack == "" {
-			// do nothing
-		} else if ctr.RuntimeConstraints.GPU.Stack == "cuda" {
+		switch ctr.RuntimeConstraints.GPU.Stack {
+		case "":
+		case "cuda":
 			if len(ctr.RuntimeConstraints.GPU.HardwareTarget) > 1 {
 				// Check if the node's capability
 				// exactly matches any of the
@@ -152,25 +185,23 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 			} else {
 				capabilityInsuff = true
 			}
-		} else if ctr.RuntimeConstraints.GPU.Stack == "rocm" {
+		case "rocm":
 			// Check if the node's hardware matches any of
 			// the requested hardware.  For rocm, this is
 			// a gfxXXXX LLVM target.
 			capabilityInsuff = !slices.Contains(ctr.RuntimeConstraints.GPU.HardwareTarget, it.GPU.HardwareTarget)
-		} else {
-			// not blank, "cuda", or "rocm" so that's an error
+		default:
 			return nil, ConstraintsNotSatisfiableError{
-				error:          errors.New(fmt.Sprintf("Invalid GPU stack %q, expected to be blank or one of 'cuda' or 'rocm'", ctr.RuntimeConstraints.GPU.Stack)),
-				AvailableTypes: []arvados.InstanceType{},
+				error: fmt.Errorf("Invalid GPU stack %q, expected to be blank or one of 'cuda' or 'rocm'", ctr.RuntimeConstraints.GPU.Stack),
 			}
 		}
 
 		switch {
 		// reasons to reject a node
 		case maxPrice > 0 && it.Price > maxPrice: // too expensive
-		case int64(it.Scratch) < needScratch: // insufficient scratch
-		case int64(it.RAM) < needRAM: // insufficient RAM
-		case it.VCPUs < needVCPUs: // insufficient VCPUs
+		case it.Scratch < need.Scratch: // insufficient scratch
+		case it.RAM < need.RAM: // insufficient RAM
+		case it.VCPUs < need.VCPUs: // insufficient VCPUs
 		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
 		case it.GPU.Stack != ctr.RuntimeConstraints.GPU.Stack: // incompatible GPU software stack (or none available)
 		case it.GPU.DeviceCount < ctr.RuntimeConstraints.GPU.DeviceCount: // insufficient GPU devices
@@ -195,8 +226,8 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 			return availableTypes[a].Price < availableTypes[b].Price
 		})
 		return nil, ConstraintsNotSatisfiableError{
-			errors.New("constraints not satisfiable by any configured instance type"),
-			availableTypes,
+			error:          errors.New("constraints not satisfiable by any configured instance type"),
+			AvailableTypes: availableTypes,
 		}
 	}
 	sort.Slice(types, func(i, j int) bool {

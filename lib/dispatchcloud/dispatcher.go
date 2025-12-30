@@ -34,11 +34,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const (
-	defaultPollInterval     = time.Second
-	defaultStaleLockTimeout = time.Minute
-)
-
 type pool interface {
 	scheduler.WorkerPool
 	CheckHealth() error
@@ -119,10 +114,6 @@ func (disp *dispatcher) newExecutor(inst cloud.Instance) worker.Executor {
 	return exr
 }
 
-func (disp *dispatcher) typeChooser(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-	return ChooseInstanceType(disp.Cluster, ctr)
-}
-
 func (disp *dispatcher) setup() {
 	disp.initialize()
 	go disp.run()
@@ -164,21 +155,10 @@ func (disp *dispatcher) initialize() {
 	disp.instanceSet = instanceSet
 	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, installPublicKey, disp.Cluster)
 	if disp.queue == nil {
-		disp.queue = container.NewQueue(disp.logger, disp.Registry, disp.typeChooser, disp.ArvClient)
+		disp.queue = container.NewQueue(disp.logger, disp.Registry, disp.Cluster, disp.ArvClient)
 	}
 
-	staleLockTimeout := time.Duration(disp.Cluster.Containers.StaleLockTimeout)
-	if staleLockTimeout == 0 {
-		staleLockTimeout = defaultStaleLockTimeout
-	}
-	pollInterval := time.Duration(disp.Cluster.Containers.CloudVMs.PollInterval)
-	if pollInterval <= 0 {
-		pollInterval = defaultPollInterval
-	}
-	disp.sched = scheduler.New(disp.Context, disp.ArvClient, disp.queue, disp.pool, disp.Registry, staleLockTimeout, pollInterval,
-		disp.Cluster.Containers.CloudVMs.InitialQuotaEstimate,
-		disp.Cluster.Containers.CloudVMs.MaxInstances,
-		disp.Cluster.Containers.CloudVMs.SupervisorFraction)
+	disp.sched = scheduler.New(disp.Context, disp.ArvClient, disp.queue, disp.pool, disp.Registry, disp.Cluster)
 
 	if disp.Cluster.ManagementToken == "" {
 		disp.httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

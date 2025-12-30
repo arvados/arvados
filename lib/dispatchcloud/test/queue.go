@@ -170,9 +170,10 @@ func (q *Queue) Update() error {
 			types, _ := q.ChooseType(&ctr)
 			ctr.Mounts = nil
 			upd[ctr.UUID] = container.QueueEnt{
-				Container:     ctr,
-				InstanceTypes: types,
-				FirstSeenAt:   time.Now(),
+				Container:         ctr,
+				InstanceResources: container.InstanceResourcesNeeded(&arvados.Cluster{}, &ctr),
+				InstanceTypes:     types,
+				FirstSeenAt:       time.Now(),
 			}
 		}
 	}

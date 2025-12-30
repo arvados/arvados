@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -174,7 +175,8 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	if ctr.State != dispatch.Locked {
 		// already started by prior invocation
 	} else if _, ok := disp.lsfqueue.Lookup(ctr.UUID); !ok {
-		if _, err := dispatchcloud.ChooseInstanceType(disp.Cluster, &ctr); errors.As(err, &dispatchcloud.ConstraintsNotSatisfiableError{}) {
+		_, err := container.ChooseInstanceType(disp.Cluster, &ctr)
+		if err != nil && err != container.ErrInstanceTypesNotConfigured {
 			err := disp.arvDispatcher.Arv.Update("containers", ctr.UUID, arvadosclient.Dict{
 				"container": map[string]interface{}{
 					"runtime_status": map[string]string{
@@ -191,7 +193,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		cmd := []string{disp.Cluster.Containers.CrunchRunCommand}
 		cmd = append(cmd, "--runtime-engine="+disp.Cluster.Containers.RuntimeEngine)
 		cmd = append(cmd, disp.Cluster.Containers.CrunchRunArgumentsList...)
-		err := disp.submit(ctr, cmd)
+		err = disp.submit(ctr, cmd)
 		if err != nil {
 			return err
 		}
