@@ -287,6 +287,9 @@ tryrun:
 				instance.WorkerState != worker.StateRunning &&
 				instance.WorkerState != worker.StateBooting &&
 				instance.WorkerState != worker.StateIdle:
+				// Shutdown or invalid state
+			case instance.IdleBehavior != worker.IdleBehaviorRun:
+				// Admin-hold/drain
 			case sch.cluster.Containers.CloudVMs.MaxRunningContainersPerInstance > 0 &&
 				sch.cluster.Containers.CloudVMs.MaxRunningContainersPerInstance <= len(instance.RunningContainerUUIDs):
 				// reached configured limit on #
