@@ -388,7 +388,9 @@ tryrun:
 					"Instance":     instances[ready].Instance,
 					"InstanceType": instances[ready].ArvadosInstanceType,
 				})
-				if sch.pool.KillContainer(ctr.UUID, "about to start") {
+				if instances[ready].Instance == "" {
+					logger.Trace("not trying to start: selected instance does not have an ID yet")
+				} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 					sorted[i].SchedulingStatus = schedStatusWaitingForPreviousAttempt
 					logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 				} else if sch.pool.StartContainer(instances[ready].Instance, ctr) {

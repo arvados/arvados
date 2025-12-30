@@ -95,7 +95,12 @@ func (p *stubPool) Create(it arvados.InstanceType) (worker.InstanceView, bool) {
 		WorkerState:          worker.StateBooting,
 		IdleBehavior:         worker.IdleBehaviorRun,
 	}
-	return *p.workers[id], true
+	// Returned InstanceView should have a blank instance ID, just
+	// like a real pool (instances are created asynchronously so a
+	// real cloud provider can't have provided an ID yet).
+	created := *p.workers[id]
+	created.Instance = ""
+	return created, true
 }
 func (p *stubPool) ForgetContainer(uuid string) {
 }
