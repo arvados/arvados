@@ -270,9 +270,9 @@ tryrun:
 			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusSupervisorLimitReached, len(overmaxsuper))
 			continue
 		}
-		typesM := map[string]bool{}
+		eligibleTypes := map[string]bool{}
 		for _, it := range types {
-			typesM[it.Name] = true
+			eligibleTypes[it.Name] = true
 		}
 		// ready>=0 means instances[ready] is where we should
 		// try to run ctr (it's one of the eligible instance
@@ -294,7 +294,7 @@ tryrun:
 				sch.cluster.Containers.CloudVMs.MaxRunningContainersPerInstance <= len(instance.RunningContainerUUIDs):
 				// reached configured limit on #
 				// containers per instance
-			case !typesM[instance.ArvadosInstanceType]:
+			case !eligibleTypes[instance.ArvadosInstanceType]:
 				// incompatible or too expensive
 			case instanceResources[i].Less(ctrResources):
 				// insufficient spare resources
