@@ -485,12 +485,16 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	defer s.disp.Close()
 
 	type instance struct {
-		Instance             string
-		WorkerState          string `json:"worker_state"`
-		Price                float64
-		LastContainerUUID    string `json:"last_container_uuid"`
-		ArvadosInstanceType  string `json:"arvados_instance_type"`
-		ProviderInstanceType string `json:"provider_instance_type"`
+		Instance              string
+		Address               string
+		Price                 float64
+		WorkerState           string    `json:"worker_state"`
+		LastContainerUUID     string    `json:"last_container_uuid"`
+		RunningContainerUUIDs []string  `json:"running_container_uuids"`
+		ArvadosInstanceType   string    `json:"arvados_instance_type"`
+		ProviderInstanceType  string    `json:"provider_instance_type"`
+		IdleBehavior          string    `json:"idle_behavior"`
+		LastBusy              time.Time `json:"last_busy"`
 	}
 	type instancesResponse struct {
 		Items []instance
@@ -519,7 +523,7 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 
 	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
 		sr = getInstances()
-		if len(sr.Items) > 0 {
+		if len(sr.Items) > 0 && sr.Items[0].Instance != "" {
 			break
 		}
 		time.Sleep(time.Millisecond)
@@ -529,6 +533,8 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
 	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
+	c.Check(sr.Items[0].RunningContainerUUIDs, check.HasLen, 0)
 	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, test.InstanceType(1).ProviderType)
 	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, test.InstanceType(1).Name)
+	c.Check(sr.Items[0].IdleBehavior, check.Equals, "run")
 }
