@@ -344,6 +344,34 @@ func (s *SchedulerSuite) TestPackContainers_DisabledInConfig(c *check.C) {
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 }
 
+// An existing type-2 instance is in StateUnknown (e.g., it was
+// created by our predecessor and we haven't had a successful probe
+// response yet) so we should only start one new instance. When the
+// new instance comes up, we should run the two higher-priority
+// containers on it.
+func (s *SchedulerSuite) TestPackContainers_InstanceStateUnknown(c *check.C) {
+	queue, pool := s.setupTestPackContainers(c)
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	sch := New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster)
+
+	pool.Create(test.InstanceType(2))
+	pool.workers["i-0000001"].WorkerState = worker.StateUnknown
+	sch.runQueue()
+	c.Check(pool.creates, check.HasLen, 2)
+	c.Check(pool.starts, check.HasLen, 0)
+
+	// i-0000002 is now in StateBooting, still shouldn't try to
+	// start
+	sch.runQueue()
+	c.Check(pool.creates, check.HasLen, 2)
+	c.Check(pool.starts, check.HasLen, 0)
+
+	pool.workers["i-0000002"].WorkerState = worker.StateIdle
+	sch.runQueue()
+	c.Check(pool.creates, check.HasLen, 2)
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(3)})
+}
+
 func (s *SchedulerSuite) setupTestPackContainers(c *check.C) (*test.Queue, *stubPool) {
 	delete(s.testCluster.InstanceTypes, test.InstanceType(1).Name)
 	s.testCluster.Containers.MaximumPriceFactor = 1.5
@@ -668,6 +696,7 @@ func (s *SchedulerSuite) TestInstanceCapacity(c *check.C) {
 		canCreate: 2,
 	}
 	pool.Create(test.InstanceType(4))
+	pool.bootAllInstances()
 	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster)
 	sch.sync()
 	sch.runQueue()
@@ -862,6 +891,7 @@ func (s *SchedulerSuite) TestExcessSupervisors(c *check.C) {
 	pool.Create(test.InstanceType(2))
 	pool.Create(test.InstanceType(2))
 	pool.Create(test.InstanceType(2))
+	pool.bootAllInstances()
 	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster)
 	sch.sync()
 	sch.runQueue()
@@ -1012,7 +1042,7 @@ func (s *SchedulerSuite) TestStartWhileCreating(c *check.C) {
 
 	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.HasLen, 6)
-	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(6), test.ContainerUUID(5), test.ContainerUUID(3), test.ContainerUUID(2)})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(6), test.ContainerUUID(3)})
 	running := map[string]bool{}
 	for uuid, t := range pool.running {
 		if t.IsZero() {
@@ -1200,6 +1230,7 @@ func (s *SchedulerSuite) TestSkipSupervisors(c *check.C) {
 	for i := 0; i < 8; i++ {
 		pool.Create(test.InstanceType(i/4 + 1))
 	}
+	pool.bootAllInstances()
 	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster).runQueue()
 	c.Check(pool.creates, check.HasLen, 8)
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(3), test.ContainerUUID(1)})

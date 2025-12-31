@@ -384,22 +384,29 @@ tryrun:
 				// start the container.
 				instanceResources[ready] = instanceResources[ready].Minus(ctrResources)
 				instances[ready].RunningContainerUUIDs = append(instances[ready].RunningContainerUUIDs, ctr.UUID)
+				inst := instances[ready]
 				logger = logger.WithFields(logrus.Fields{
-					"Instance":     instances[ready].Instance,
-					"InstanceType": instances[ready].ArvadosInstanceType,
+					"Instance":     inst.Instance,
+					"InstanceType": inst.ArvadosInstanceType,
 				})
-				if instances[ready].Instance == "" {
+				if inst.Instance == "" {
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, inst.ArvadosInstanceType)
 					logger.Trace("not trying to start: selected instance does not have an ID yet")
+					containerAllocatedWorkerBootingCount++
+				} else if inst.WorkerState != worker.StateIdle && inst.WorkerState != worker.StateRunning {
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, inst.ArvadosInstanceType)
+					logger.Tracef("not trying to start: selected instance state=%s", inst.WorkerState)
+					containerAllocatedWorkerBootingCount++
 				} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 					sorted[i].SchedulingStatus = schedStatusWaitingForPreviousAttempt
 					logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
-				} else if sch.pool.StartContainer(instances[ready].Instance, ctr) {
+				} else if sch.pool.StartContainer(inst.Instance, ctr) {
 					sorted[i].SchedulingStatus = schedStatusPreparingRuntimeEnvironment
 					logger.Trace("StartContainer => true")
 				} else {
-					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, instances[ready].ArvadosInstanceType)
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, inst.ArvadosInstanceType)
 					logger.Trace("StartContainer => false")
-					containerAllocatedWorkerBootingCount += 1
+					containerAllocatedWorkerBootingCount++
 				}
 				continue
 			}
