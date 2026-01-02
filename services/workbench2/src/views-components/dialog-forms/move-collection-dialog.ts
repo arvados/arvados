@@ -8,7 +8,7 @@ import { reduxForm } from 'redux-form';
 import { DialogMoveTo } from 'views-components/dialog-move/dialog-move-to';
 import { COLLECTION_MOVE_FORM_NAME } from 'store/collections/collection-move-actions';
 import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog';
-import { moveCollection } from 'store/workbench/workbench-actions';
+import { moveCollectionRunner } from 'store/workbench/workbench-actions';
 import { pickerId } from 'store/tree-picker/picker-id';
 
 export const MoveCollectionDialog = compose(
@@ -16,7 +16,7 @@ export const MoveCollectionDialog = compose(
     reduxForm<MoveToFormDialogData>({
         form: COLLECTION_MOVE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            dispatch(moveCollection(data));
+            dispatch(moveCollectionRunner(data));
         }
     }),
     pickerId(COLLECTION_MOVE_FORM_NAME),

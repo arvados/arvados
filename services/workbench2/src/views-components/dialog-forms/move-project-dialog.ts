@@ -8,7 +8,7 @@ import { reduxForm } from "redux-form";
 import { PROJECT_MOVE_FORM_NAME } from "store/projects/project-move-actions";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { DialogMoveTo } from "views-components/dialog-move/dialog-move-to";
-import { moveProject } from "store/workbench/workbench-actions";
+import { moveProjectRunner } from "store/workbench/workbench-actions";
 import { pickerId } from "store/tree-picker/picker-id";
 
 export const MoveProjectDialog = compose(
@@ -16,7 +16,7 @@ export const MoveProjectDialog = compose(
     reduxForm<MoveToFormDialogData>({
         form: PROJECT_MOVE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            dispatch(moveProject(data));
+            dispatch(moveProjectRunner(data));
         },
     }),
     pickerId(PROJECT_MOVE_FORM_NAME)

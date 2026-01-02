@@ -30,7 +30,6 @@ import { CopyProcessDialog } from "views-components/dialog-forms/copy-process-di
 import { UpdateCollectionDialog } from "views-components/dialog-forms/update-collection-dialog";
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
 import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
-import { MoveProcessDialog } from "views-components/dialog-forms/move-process-dialog";
 import { MoveProjectDialog } from "views-components/dialog-forms/move-project-dialog";
 import { MoveCollectionDialog } from "views-components/dialog-forms/move-collection-dialog";
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
@@ -497,7 +496,6 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <GroupMemberAttributesDialog />
             <HelpApiClientAuthorizationDialog />
             <MoveCollectionDialog />
-            <MoveProcessDialog />
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />

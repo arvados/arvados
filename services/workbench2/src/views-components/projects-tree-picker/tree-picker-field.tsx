@@ -36,10 +36,6 @@ export const ProjectTreePickerDialogField = (props: { setSelectedProject: (uuid:
                 toggleItemActive={(_: any, { id }) => props.setSelectedProject(id)}
                 cascadeSelection={false}
                 options={{ showOnlyOwned: false, showOnlyWritable: true }} />
-            {/* {props.meta.dirty && props.meta.error &&
-                <Typography variant='caption' color='error'>
-                    {props.meta.error}
-                </Typography>} */}
         </div>
     </div>;
 

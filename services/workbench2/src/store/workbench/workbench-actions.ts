@@ -48,7 +48,6 @@ import * as collectionCreateActions from "store/collections/collection-create-ac
 import * as collectionCopyActions from "store/collections/collection-copy-actions";
 import { COLLECTION_COPY_FORM_NAME } from "store/collections/collection-copy-actions";
 import * as collectionMoveActions from "store/collections/collection-move-actions";
-import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -89,7 +88,7 @@ import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
 import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
-
+import { PROJECT_MOVE_FORM_NAME } from "store/projects/project-move-actions";
 import { DataTableFetchMode } from "components/data-table/data-table";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 
@@ -118,6 +117,7 @@ import { externalCredentialsPanelColumns } from "views/external-credentials-pane
 import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action";
 import { loadRecentlyVisited } from "store/recently-visited/recently-visited-actions";
 import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service"
+import { COLLECTION_MOVE_FORM_NAME } from "store/collections/collection-move-actions";
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -315,9 +315,10 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
     }
 };
 
-export const moveProject =
+export const moveProjectRunner =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            dispatch(progressIndicatorActions.START_WORKING(PROJECT_MOVE_FORM_NAME));
             const checkedList = getState().multiselect.checkedList;
             const uuidsToMove: string[] = selectedToArray(checkedList);
 
@@ -372,6 +373,7 @@ export const moveProject =
             }
             if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
             await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
+            dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_MOVE_FORM_NAME));
         };
 
 export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
@@ -518,9 +520,10 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
     dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
 };
 
-export const moveCollection =
+export const moveCollectionRunner =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
             const checkedList = getState().multiselect.checkedList;
             const uuidsToMove: string[] = selectedToArray(checkedList);
 
@@ -568,6 +571,8 @@ export const moveCollection =
                     );
                 }
             }
+
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
         };
 
 export const loadProcess = (uuid: string) =>
@@ -644,58 +649,6 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
         );
     }
 };
-
-export const moveProcess =
-    (data: MoveToFormDialogData, isSecondaryMove = false) =>
-        async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-            const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = selectedToArray(checkedList);
-
-            //if no items in checkedlist && no items passed in, default to normal context menu behavior
-            if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
-
-            const processesToMove: MoveableResource[] = uuidsToMove
-                .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
-                .filter(resource => resource.kind === ResourceKind.PROCESS);
-
-            for (const process of processesToMove) {
-                await moveSingleProcess(process);
-            }
-
-            //omly propagate if this call is the original
-            if (!isSecondaryMove) {
-                const kindsToMove: Set<string> = selectedToKindSet(checkedList);
-                kindsToMove.delete(ResourceKind.PROCESS);
-
-                kindsToMove.forEach(kind => {
-                    secondaryMove[kind](data, true)(dispatch, getState, services);
-                });
-            }
-
-            async function moveSingleProcess(process: MoveableResource) {
-                try {
-                    const oldProcess: MoveToFormDialogData = { name: process.name, uuid: process.uuid, ownerUuid: data.ownerUuid };
-                    const movedProcess = await dispatch<any>(processMoveActions.moveProcess(oldProcess));
-                    dispatch<any>(updateResources([movedProcess]));
-                    dispatch<any>(reloadProjectMatchingUuid([movedProcess.ownerUuid]));
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: "Process has been moved.",
-                            hideDuration: 2000,
-                            kind: SnackbarKind.SUCCESS,
-                        })
-                    );
-                } catch (e) {
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: e.message,
-                            hideDuration: 2000,
-                            kind: SnackbarKind.ERROR,
-                        })
-                    );
-                }
-            }
-        };
 
 export const copyProcess = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     try {
@@ -914,7 +867,6 @@ type MoveFunc = (
 ) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>;
 
 const secondaryMove: Record<string, MoveFunc> = {
-    [ResourceKind.PROJECT]: moveProject,
-    [ResourceKind.PROCESS]: moveProcess,
-    [ResourceKind.COLLECTION]: moveCollection,
+    [ResourceKind.PROJECT]: moveProjectRunner,
+    [ResourceKind.COLLECTION]: moveCollectionRunner,
 };
