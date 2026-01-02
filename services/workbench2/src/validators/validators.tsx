@@ -12,14 +12,17 @@ import { isValidFutureDate } from './is-valid-future-date';
 
 type Validator = (value: string) => string | undefined;
 
-export const validateTextField = (value: string, validationArray: Validator[]): string | null => {
+// pass in fieldName for better debugging messages
+export const getFieldErrors = (value: string, validationArray: Validator[], fieldName?: string): string[] => {
+  const errMessages: string[] = [];
   for (const validation of validationArray) {
-    const errorMsg = validation(value);
+    const result = validation(value);
+    const errorMsg = result ? (fieldName ? `${fieldName}: ${result}` : result) : null;
     if (errorMsg) {
-      return errorMsg;
+      errMessages.push(errorMsg);
     }
   }
-  return null;
+  return errMessages;
 }
 
 export const TAG_KEY_VALIDATION: Validator[] = [maxLength(255)];

@@ -15,10 +15,11 @@ import {
 } from '@mui/material'
 import { withStyles, WithStyles } from '@mui/styles'
 import { WithDialogProps, withDialog } from 'store/dialog/with-dialog'
-import { ProjectTreePickerField, ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
+import { ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
 import {
-    validateTextField,
+    getFieldErrors,
     COPY_NAME_VALIDATION,
+    REQUIRED_VALIDATION,
 } from 'validators/validators'
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog'
 import { PickerIdProp } from 'store/tree-picker/picker-id'
@@ -34,8 +35,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
         fontSize: '0.875rem',
     },
     paper: {
-        width: '70vw',
-        maxWidth: '70vw',
+        width: '800px',
     },
 })
 
@@ -59,7 +59,9 @@ export const CopyCollectionDialog = compose(
     const [selectedProjectUuid, setSelectedProjectUuid] = React.useState<string>('')
     const [nameVal, setNameVal] = React.useState<string>(data.name || '')
 
-	const isFormValid = selectedProjectUuid.trim().length > 0 && (!isSingleResource || (nameVal.trim().length > 0 && nameVal.trim().length <= 255))
+    const selectedProjectErr = getFieldErrors(selectedProjectUuid, REQUIRED_VALIDATION, 'Project')
+    const nameErr = getFieldErrors(nameVal, COPY_NAME_VALIDATION, 'Name')
+    const formErrors = [...selectedProjectErr, ...nameErr]
 
 	// prevent stale selected project uuid when dialog is closed
 	React.useEffect(() => {
@@ -68,14 +70,17 @@ export const CopyCollectionDialog = compose(
 		}
 	}, [open])
 
-    const handleClose = () => {
+    const handleClose = (reason?: string) => {
+        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+            return
+        }
         props.closeDialog()
     }
 
     return (
         <Dialog
             open={open}
-            onClose={handleClose}
+            onClose={(_, reason) => handleClose(reason)}
 			fullWidth
 			maxWidth={false}
 			className={classes.root}
@@ -108,8 +113,8 @@ export const CopyCollectionDialog = compose(
                 setSelectedProject={setSelectedProjectUuid}
             />
             <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button disabled={!isFormValid} type="submit">Copy</Button>
+                <Button onClick={props.closeDialog}>Cancel</Button>
+                <Button disabled={formErrors.length > 0} type="submit">Copy</Button>
             </DialogActions>
         </Dialog>
     )
@@ -122,12 +127,12 @@ type NameFieldProps = {
 
 const NameField = React.memo(({ defaultName, setNameVal }: NameFieldProps) => {
     const [value, setValue] = React.useState(defaultName)
-    const err = validateTextField(value, COPY_NAME_VALIDATION)
-	const prevErr = usePrevious(err)
+    const errs = getFieldErrors(value, COPY_NAME_VALIDATION)
+	const prevErr = usePrevious(errs)
 
 	// trigger submit button enable/disable on valid/invalid input change
 	React.useEffect(() => {
-		if (!!prevErr !== !!err) {
+		if (!!prevErr !== !!errs) {
 			setNameVal(value.trim())
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,8 +144,8 @@ const NameField = React.memo(({ defaultName, setNameVal }: NameFieldProps) => {
             onChange={(e) => setValue(e.target.value)}
             autoFocus
             required
-            error={!!err}
-            helperText={err || ''}
+            error={errs.length > 0}
+            helperText={errs.join(', ') || ''}
             margin="dense"
             id="name"
             name="name"
