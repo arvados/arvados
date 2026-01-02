@@ -319,7 +319,7 @@ export const moveProject =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
             const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+            const uuidsToMove: string[] = selectedToArray(checkedList);
 
             //if no items in checkedlist default to normal context menu behavior
             if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -522,7 +522,7 @@ export const moveCollection =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
             const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+            const uuidsToMove: string[] = selectedToArray(checkedList);
 
             //if no items in checkedlist && no items passed in, default to normal context menu behavior
             if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -649,7 +649,7 @@ export const moveProcess =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
             const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+            const uuidsToMove: string[] = selectedToArray(checkedList);
 
             //if no items in checkedlist && no items passed in, default to normal context menu behavior
             if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -904,7 +904,7 @@ const groupContentsHandlers = unionize(groupContentsHandlersRecord);
 
 type GroupContentsHandler = UnionOf<typeof groupContentsHandlers>;
 
-type CollectionCopyResource = Resource & { name: string; fromContextMenu: boolean };
+type CollectionCopyResource = Resource & { name: string; };
 
 type MoveableResource = Resource & { name: string };
 

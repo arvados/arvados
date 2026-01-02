@@ -17,7 +17,7 @@ import { getResourcesFromCheckedList } from "store/multiselect/multiselect-actio
 
 export const COLLECTION_COPY_FORM_NAME = "collectionCopyFormName";
 
-export const openCollectionCopy = (resource: { name: string; uuid: string; fromContextMenu?: boolean }) => (dispatch: Dispatch, getState: () => RootState) => {
+export const openCollectionCopy = (resource: { name: string; uuid: string; }) => (dispatch: Dispatch, getState: () => RootState) => {
     const resourcesToCopy = getResourcesFromCheckedList(getState()).filter(res => !!res).map(res => ({ name: res!.name, uuid: res!.uuid }));
     if (!resourcesToCopy.length) resourcesToCopy.push(resource);
     const isSingleResource = resourcesToCopy.length === 1;

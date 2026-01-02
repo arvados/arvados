@@ -6,6 +6,5 @@ export interface CopyFormDialogData {
     name: string;
     uuid: string;
     ownerUuid: string;
-    fromContextMenu?: boolean;
     isSingleResource?: boolean;
 }
