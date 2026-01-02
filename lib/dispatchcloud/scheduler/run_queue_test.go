@@ -569,6 +569,111 @@ func (s *SchedulerSuite) TestPackContainers_Resources(c *check.C) {
 	}
 }
 
+// For any N > 0, an N-VCPU container should not share an N-VCPU
+// instance with anything, even 0-VCPU containers.  In other words, a
+// container requesting 0 VCPUs is considered to consume a tiny
+// fraction of a VCPU.
+func (s *SchedulerSuite) TestPackContainers_0VCPUs(c *check.C) {
+	delete(s.testCluster.InstanceTypes, test.InstanceType(1).Name)
+	queue := test.Queue{
+		ChooseType: s.chooseType,
+		Containers: []arvados.Container{
+			// One 1-VCPU container and four 0-VCPU
+			// containers can share one type-2 (2-VCPU)
+			// instance.
+			{
+				UUID:     test.ContainerUUID(1),
+				Priority: 1,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         1,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(2),
+				Priority: 2,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(3),
+				Priority: 3,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(4),
+				Priority: 4,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(5),
+				Priority: 5,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         0,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+			// A 2-VCPU container should get a type-2
+			// instance all to itself, even though it
+			// would have enough RAM and scratch space for
+			// the four 0-VCPU containers.
+			{
+				UUID:     test.ContainerUUID(6),
+				Priority: 6,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs:         2,
+					RAM:           1 << 27,
+					KeepCacheDisk: 1 << 27,
+				},
+			},
+		},
+	}
+	queue.Update()
+	pool := stubPool{
+		quota:     999,
+		canCreate: 999,
+	}
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, &s.testCluster)
+	sch.runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(2), test.InstanceType(2),
+	})
+	c.Check(pool.starts, check.HasLen, 0)
+	pool.bootAllInstances()
+	sch.runQueue()
+	c.Assert(pool.workers, check.HasLen, 2)
+	c.Check(pool.workers["i-0000001"].RunningContainerUUIDs, check.DeepEquals, []string{
+		test.ContainerUUID(6),
+	})
+	c.Check(pool.workers["i-0000002"].RunningContainerUUIDs, check.DeepEquals, []string{
+		test.ContainerUUID(5),
+		test.ContainerUUID(4),
+		test.ContainerUUID(3),
+		test.ContainerUUID(2),
+		test.ContainerUUID(1),
+	})
+}
+
 // If pool.AtQuota() is true, shutdown some unalloc nodes, and don't
 // call Create().
 func (s *SchedulerSuite) TestShutdownAtQuota(c *check.C) {

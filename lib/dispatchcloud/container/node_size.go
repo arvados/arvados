@@ -35,6 +35,10 @@ type InstanceResources struct {
 	Scratch arvados.ByteSize
 	GPUs    int
 	GPUVRAM arvados.ByteSize
+
+	// One of the instance's remaining VCPUs has been allocated to
+	// one or more 0-VCPU containers.
+	sharedVCPUUsed bool
 }
 
 func (r InstanceResources) Less(r2 InstanceResources) bool {
@@ -42,7 +46,9 @@ func (r InstanceResources) Less(r2 InstanceResources) bool {
 		r.RAM < r2.RAM ||
 		r.Scratch < r2.Scratch ||
 		r.GPUs < r2.GPUs ||
-		r.GPUVRAM < r2.GPUVRAM
+		r.GPUVRAM < r2.GPUVRAM ||
+		r.VCPUs == 0 ||
+		(r.sharedVCPUUsed && r.VCPUs == r2.VCPUs)
 }
 
 func (r InstanceResources) Minus(r2 InstanceResources) InstanceResources {
@@ -51,6 +57,9 @@ func (r InstanceResources) Minus(r2 InstanceResources) InstanceResources {
 	r.Scratch -= r2.Scratch
 	r.GPUs -= r2.GPUs
 	r.GPUVRAM -= r2.GPUVRAM
+	if r2.VCPUs == 0 {
+		r.sharedVCPUUsed = true
+	}
 	return r
 }
 
