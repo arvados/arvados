@@ -15,7 +15,7 @@ import {
 } from '@mui/material'
 import { withStyles, WithStyles } from '@mui/styles'
 import { WithDialogProps, withDialog } from 'store/dialog/with-dialog'
-import { ProjectTreePickerField } from 'views-components/projects-tree-picker/tree-picker-field'
+import { ProjectTreePickerField, ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
 import {
     validateTextField,
     COPY_NAME_VALIDATION,
@@ -24,7 +24,7 @@ import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog'
 import { PickerIdProp } from 'store/tree-picker/picker-id'
 import { CustomStyleRulesCallback } from 'common/custom-theme'
 import { copyCollectionRunner } from 'store/workbench/workbench-actions'
-import { COLLECTION_COPY_FORM_NAME, COLLECTION_MULTI_COPY_FORM_NAME } from 'store/collections/collection-copy-actions'
+import { COLLECTION_COPY_FORM_NAME } from 'store/collections/collection-copy-actions'
 import { usePrevious } from 'common/usePrevious'
 
 type CssRules = 'root' | 'paper'
@@ -55,10 +55,11 @@ export const CopyCollectionDialog = compose(
     withStyles(styles)
 )((props: CopyDialogProps) => {
     const { open, data, classes } = props
+    const { isSingleResource } = data
     const [selectedProjectUuid, setSelectedProjectUuid] = React.useState<string>('')
     const [nameVal, setNameVal] = React.useState<string>(data.name || '')
 
-	const isFormValid = nameVal.trim().length > 0 && nameVal.trim().length <= 255 && selectedProjectUuid.trim().length > 0
+	const isFormValid = selectedProjectUuid.trim().length > 0 && (!isSingleResource || (nameVal.trim().length > 0 && nameVal.trim().length <= 255))
 
 	// prevent stale selected project uuid when dialog is closed
 	React.useEffect(() => {
@@ -92,11 +93,17 @@ export const CopyCollectionDialog = compose(
                 },
             }}
         >
-            <DialogTitle>Make a copy</DialogTitle>
-            <DialogContent>
-                <NameField defaultName={data.name} setNameVal={setNameVal} />
-            </DialogContent>
-            <ProjectTreePickerField
+            {isSingleResource ? (
+				<>
+					<DialogTitle>Make a copy</DialogTitle>
+					<DialogContent>
+						<NameField defaultName={data.name} setNameVal={setNameVal} />
+					</DialogContent>
+				</>
+			) : (
+				<DialogTitle>Make copies</DialogTitle>
+			)}
+            <ProjectTreePickerDialogField
                 pickerId={props.pickerId}
                 setSelectedProject={setSelectedProjectUuid}
             />
@@ -145,58 +152,3 @@ const NameField = React.memo(({ defaultName, setNameVal }: NameFieldProps) => {
         />
     )
 })
-
-export const CopyMultiCollectionDialog = compose(
-    withDialog(COLLECTION_MULTI_COPY_FORM_NAME),
-    connect(null, mapDispatchToProps),
-    withStyles(styles)
-)((props: CopyDialogProps) => {
-    const { open, data, classes } = props
-    const [selectedProjectUuid, setSelectedProjectUuid] = React.useState<string>('')
-
-    const isFormValid = selectedProjectUuid.trim().length > 0
-
-    // prevent stale selected project uuid when dialog is closed
-    React.useEffect(() => {
-        if (!open) {
-            setSelectedProjectUuid('')
-        }
-    }, [open])
-
-    const handleClose = () => {
-        props.closeDialog()
-    }
-
-    return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            fullWidth
-            maxWidth={false}
-            className={classes.root}
-            PaperProps={{
-                component: 'form',
-                className: classes.paper,
-                onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
-                    event.preventDefault()
-                    props.copyCollection({
-                        name: data.name, // Use original name for multi-copy
-                        uuid: data.uuid,
-                        ownerUuid: selectedProjectUuid,
-                    })
-                    handleClose()
-                },
-            }}
-        >
-            <DialogTitle>Make Copies</DialogTitle>
-            <ProjectTreePickerField
-                pickerId={props.pickerId}
-                setSelectedProject={setSelectedProjectUuid}
-            />
-            <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button disabled={!isFormValid} type="submit">Copy</Button>
-            </DialogActions>
-        </Dialog>
-    )
-});

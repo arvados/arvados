@@ -21,7 +21,7 @@ import {
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
-import { openCollectionCopySwitch } from "store/collections/collection-copy-actions";
+import { openCollectionCopy } from "store/collections/collection-copy-actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
 import { toggleResourceTrashed } from "store/trash/trash-actions";
@@ -74,7 +74,7 @@ const commonActionSet: ContextMenuActionSet = [
             name: ContextMenuActionNames.MAKE_A_COPY,
             isForMulti: true,
             execute: (dispatch, resources) => {
-                dispatch<any>(openCollectionCopySwitch(resources[0]));
+                dispatch<any>(openCollectionCopy(resources[0]));
             },
         },
         {

@@ -16,33 +16,16 @@ import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { getResourcesFromCheckedList } from "store/multiselect/multiselect-actions";
 
 export const COLLECTION_COPY_FORM_NAME = "collectionCopyFormName";
-export const COLLECTION_MULTI_COPY_FORM_NAME = "collectionMultiCopyFormName";
 
-export const openCollectionCopySwitch = (resource: { name: string; uuid: string; fromContextMenu?: boolean }) => (dispatch: Dispatch, getState: () => RootState) => {
+export const openCollectionCopy = (resource: { name: string; uuid: string; fromContextMenu?: boolean }) => (dispatch: Dispatch, getState: () => RootState) => {
     const resourcesToCopy = getResourcesFromCheckedList(getState()).filter(res => !!res).map(res => ({ name: res!.name, uuid: res!.uuid }));
     if (!resourcesToCopy.length) resourcesToCopy.push(resource);
-    if (resourcesToCopy.length > 1) {
-        dispatch<any>(openMultiCollectionCopyDialog());
-        return;
-    }
-    if (resourcesToCopy.length === 1) {
-        dispatch<any>(openCollectionCopyDialog(resource));
-        return;
-    }
-}
-
-export const openCollectionCopyDialog = (resource: { name: string; uuid: string; fromContextMenu?: boolean }) => (dispatch: Dispatch) => {
+    const isSingleResource = resourcesToCopy.length === 1;
     dispatch<any>(resetPickerProjectTree());
     dispatch<any>(initProjectsTreePicker(COLLECTION_COPY_FORM_NAME));
-    const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: "", uuid: resource.uuid };
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_COPY_FORM_NAME, data: initialData }));
-};
-
-export const openMultiCollectionCopyDialog = () => (dispatch: Dispatch) => {
-    dispatch<any>(resetPickerProjectTree());
-    dispatch<any>(initProjectsTreePicker(COLLECTION_MULTI_COPY_FORM_NAME));
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_MULTI_COPY_FORM_NAME, data: {} }));
-};
+    const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: "", uuid: resource.uuid, isSingleResource };
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_COPY_FORM_NAME, data: initialData }) );
+}
 
 export const copyCollection =
     (resource: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

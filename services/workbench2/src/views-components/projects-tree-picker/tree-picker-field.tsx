@@ -28,6 +28,21 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
         </div>
     </div>;
 
+export const ProjectTreePickerDialogField = (props: { setSelectedProject: (uuid: string) => void } & PickerIdProp) =>
+    <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
+        <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <ProjectsTreePicker
+                pickerId={props.pickerId}
+                toggleItemActive={(_: any, { id }) => props.setSelectedProject(id)}
+                cascadeSelection={false}
+                options={{ showOnlyOwned: false, showOnlyWritable: true }} />
+            {/* {props.meta.dirty && props.meta.error &&
+                <Typography variant='caption' color='error'>
+                    {props.meta.error}
+                </Typography>} */}
+        </div>
+    </div>;
+
 const handleChange = (props: WrappedFieldProps) =>
     (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
         if (id.startsWith(SEARCH_PROJECT_ID_PREFIX)) {

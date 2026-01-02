@@ -46,7 +46,7 @@ import * as projectMoveActions from "store/projects/project-move-actions";
 import * as projectUpdateActions from "store/projects/project-update-actions";
 import * as collectionCreateActions from "store/collections/collection-create-actions";
 import * as collectionCopyActions from "store/collections/collection-copy-actions";
-import { COLLECTION_COPY_FORM_NAME, COLLECTION_MULTI_COPY_FORM_NAME} from "store/collections/collection-copy-actions";
+import { COLLECTION_COPY_FORM_NAME } from "store/collections/collection-copy-actions";
 import * as collectionMoveActions from "store/collections/collection-move-actions";
 import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
@@ -469,8 +469,7 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
 export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const checkedList = getState().multiselect.checkedList;
     const uuidsToCopy: string[] = selectedToArray(checkedList);
-    const formName = uuidsToCopy.length === 1 ? COLLECTION_COPY_FORM_NAME : COLLECTION_MULTI_COPY_FORM_NAME;
-    dispatch(progressIndicatorActions.START_WORKING(formName));
+    dispatch(progressIndicatorActions.START_WORKING(COLLECTION_COPY_FORM_NAME));
 
     //if no items in checkedlist && no items passed in, default to normal context menu behavior
     if (!uuidsToCopy.length) uuidsToCopy.push(data.uuid);
@@ -513,10 +512,10 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
                 })
             );
         }
-        dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
+        dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
     }
     dispatch(projectPanelDataActions.REQUEST_ITEMS());
-    dispatch(progressIndicatorActions.STOP_WORKING(formName));
+    dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
 };
 
 export const moveCollection =
