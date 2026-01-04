@@ -380,19 +380,19 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 }
 
 func (*NodeSizeSuite) TestInstanceResources(c *check.C) {
-	c.Check(InstanceResources{VCPUs: 2}.Minus(InstanceResources{VCPUs: 0}).sharedVCPUUsed, check.Equals, true)
-	c.Check(InstanceResources{VCPUs: 2}.Minus(InstanceResources{VCPUs: 1}).sharedVCPUUsed, check.Equals, false)
-	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Minus(InstanceResources{VCPUs: 0}).sharedVCPUUsed, check.Equals, true)
-	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Minus(InstanceResources{VCPUs: 1}).sharedVCPUUsed, check.Equals, true)
-	c.Check(InstanceResources{VCPUs: 2}.Less(InstanceResources{VCPUs: 2}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 2}.Sub(InstanceResources{VCPUs: 0}).sharedVCPUUsed, check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2}.Sub(InstanceResources{VCPUs: 1}).sharedVCPUUsed, check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Sub(InstanceResources{VCPUs: 0}).sharedVCPUUsed, check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Sub(InstanceResources{VCPUs: 1}).sharedVCPUUsed, check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2}.Accommodates(InstanceResources{VCPUs: 2}), check.Equals, true)
 	// once sharedVCPUUsed is set, r.Less(r2)==true when
 	// r.VCPUs==r2.VCPUs.
-	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Less(InstanceResources{VCPUs: 2}), check.Equals, true)
-	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Less(InstanceResources{VCPUs: 1}), check.Equals, false)
-	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Less(InstanceResources{VCPUs: 0}), check.Equals, false)
-	c.Check(InstanceResources{VCPUs: 1, sharedVCPUUsed: true}.Less(InstanceResources{VCPUs: 1}), check.Equals, true)
-	c.Check(InstanceResources{VCPUs: 1, sharedVCPUUsed: true}.Less(InstanceResources{VCPUs: 0}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 2}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 1}), check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 1, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 1}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 1, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, true)
 	// once VCPUs is 0, r.Less(...) returns true.
-	c.Check(InstanceResources{VCPUs: 0, sharedVCPUUsed: true}.Less(InstanceResources{VCPUs: 0}), check.Equals, true)
-	c.Check(InstanceResources{VCPUs: 0}.Less(InstanceResources{VCPUs: 0}), check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 0, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 0}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, false)
 }

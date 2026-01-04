@@ -148,7 +148,7 @@ func (sch *Scheduler) runQueue() {
 				break
 			}
 			rsc := container.InstanceResourcesNeeded(sch.cluster, containers[uuid])
-			instanceResources[i] = instanceResources[i].Minus(rsc)
+			instanceResources[i] = instanceResources[i].Sub(rsc)
 		}
 	}
 
@@ -296,7 +296,7 @@ tryrun:
 				// containers per instance
 			case !eligibleTypes[instance.ArvadosInstanceType]:
 				// incompatible or too expensive
-			case instanceResources[i].Less(ctrResources):
+			case !instanceResources[i].Accommodates(ctrResources):
 				// insufficient spare resources
 				if instance.WorkerState == worker.StateIdle && len(instance.RunningContainerUUIDs) == 0 {
 					// This should be impossible
@@ -369,7 +369,7 @@ tryrun:
 			}
 			go sch.lockContainer(logger, ctr.UUID)
 			if ready >= 0 {
-				instanceResources[ready] = instanceResources[ready].Minus(ctrResources)
+				instanceResources[ready] = instanceResources[ready].Sub(ctrResources)
 				instances[ready].RunningContainerUUIDs = append(instances[ready].RunningContainerUUIDs, ctr.UUID)
 			}
 		case arvados.ContainerStateLocked:
@@ -382,7 +382,7 @@ tryrun:
 				// We have a suitable instance type,
 				// so mark it as allocated, and try to
 				// start the container.
-				instanceResources[ready] = instanceResources[ready].Minus(ctrResources)
+				instanceResources[ready] = instanceResources[ready].Sub(ctrResources)
 				instances[ready].RunningContainerUUIDs = append(instances[ready].RunningContainerUUIDs, ctr.UUID)
 				inst := instances[ready]
 				logger = logger.WithFields(logrus.Fields{
@@ -468,7 +468,7 @@ tryrun:
 			}
 			newInstance.RunningContainerUUIDs = append(newInstance.RunningContainerUUIDs, ctr.UUID)
 			instances = slices.Insert(instances, idx, newInstance)
-			instanceResources = slices.Insert(instanceResources, idx, instanceResourcesForInstanceType(availableType).Minus(ctrResources))
+			instanceResources = slices.Insert(instanceResources, idx, instanceResourcesForInstanceType(availableType).Sub(ctrResources))
 		}
 	}
 

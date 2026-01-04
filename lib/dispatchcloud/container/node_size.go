@@ -41,17 +41,23 @@ type InstanceResources struct {
 	sharedVCPUUsed bool
 }
 
-func (r InstanceResources) Less(r2 InstanceResources) bool {
-	return r.VCPUs < r2.VCPUs ||
-		r.RAM < r2.RAM ||
-		r.Scratch < r2.Scratch ||
-		r.GPUs < r2.GPUs ||
-		r.GPUVRAM < r2.GPUVRAM ||
-		r.VCPUs == 0 ||
-		(r.sharedVCPUUsed && r.VCPUs == r2.VCPUs)
+// Check whether an instance's remaining resources r are enough to
+// accommodate container r2.
+//
+// If an instance is running any 0-VCPU containers, only r.VCPUs-1 are
+// available for containers that request 1 or more VCPUs.
+func (r InstanceResources) Accommodates(r2 InstanceResources) bool {
+	return r.VCPUs >= r2.VCPUs &&
+		r.RAM >= r2.RAM &&
+		r.Scratch >= r2.Scratch &&
+		r.GPUs >= r2.GPUs &&
+		r.GPUVRAM >= r2.GPUVRAM &&
+		r.VCPUs > 0 &&
+		(!r.sharedVCPUUsed || r.VCPUs > r2.VCPUs)
 }
 
-func (r InstanceResources) Minus(r2 InstanceResources) InstanceResources {
+// Subtract r2 from the resources r remaining on an instance.
+func (r InstanceResources) Sub(r2 InstanceResources) InstanceResources {
 	r.VCPUs -= r2.VCPUs
 	r.RAM -= r2.RAM
 	r.Scratch -= r2.Scratch
