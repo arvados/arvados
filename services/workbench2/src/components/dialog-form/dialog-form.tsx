@@ -56,7 +56,6 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
                 onSubmit: onSubmit,
             }}
         >
-            {console.log('>>>errors:', formErrors)}
             {fields}
             <DialogActions>
                 <Button onClick={closeDialog}>Cancel</Button>
