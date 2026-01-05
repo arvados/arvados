@@ -260,55 +260,6 @@ func (wp *Pool) Unsubscribe(ch <-chan struct{}) {
 	delete(wp.subscribers, ch)
 }
 
-func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
-	wp.setupOnce.Do(wp.setup)
-	wp.mtx.RLock()
-	defer wp.mtx.RUnlock()
-	unalloc := map[arvados.InstanceType]int{}
-	creating := map[arvados.InstanceType]int{}
-	oldestCreate := map[arvados.InstanceType]time.Time{}
-	for _, cc := range wp.creating {
-		it := cc.instanceType
-		creating[it]++
-		if t, ok := oldestCreate[it]; !ok || t.After(cc.time) {
-			oldestCreate[it] = cc.time
-		}
-	}
-	for _, wkr := range wp.workers {
-		// Skip workers that are not expected to become
-		// available soon. Note len(wkr.running)>0 is not
-		// redundant here: it can be true even in
-		// StateUnknown.
-		if wkr.state == StateShutdown ||
-			wkr.state == StateRunning ||
-			wkr.idleBehavior != IdleBehaviorRun ||
-			len(wkr.running) > 0 {
-			continue
-		}
-		it := wkr.instType
-		unalloc[it]++
-		if wkr.state == StateUnknown && creating[it] > 0 && wkr.appeared.After(oldestCreate[it]) {
-			// If up to N new workers appear in
-			// Instances() while we are waiting for N
-			// Create() calls to complete, we assume we're
-			// just seeing a race between Instances() and
-			// Create() responses.
-			//
-			// The other common reason why nodes have
-			// state==Unknown is that they appeared at
-			// startup, before any Create calls. They
-			// don't match the above timing condition, so
-			// we never mistakenly attribute them to
-			// pending Create calls.
-			creating[it]--
-		}
-	}
-	for it, c := range creating {
-		unalloc[it] += c
-	}
-	return unalloc
-}
-
 // Create a new instance with the given type, and add it to the worker
 // pool. The worker is added immediately; instance creation runs in
 // the background.
