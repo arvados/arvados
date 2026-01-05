@@ -35,10 +35,10 @@ type State string
 
 const (
 	StateUnknown  State = "unknown"  // not created by this process, hasn't completed a probe yet
-	StateBooting        = "booting"  // instance is booting
-	StateIdle           = "idle"     // instance booted, no containers are running
-	StateRunning        = "running"  // instance is running one or more containers
-	StateShutdown       = "shutdown" // worker has stopped monitoring the instance
+	StateBooting  State = "booting"  // instance is booting
+	StateIdle     State = "idle"     // instance booted, no containers are running
+	StateRunning  State = "running"  // instance is running one or more containers
+	StateShutdown State = "shutdown" // worker has stopped monitoring the instance
 )
 
 var validStates = map[State]bool{
