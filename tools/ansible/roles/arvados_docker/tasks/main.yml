@@ -17,15 +17,25 @@
     mode: 0644
   when: "ansible_pkg_mgr == 'apt' and arvados_compute_pin_packages|bool"
 
-- name: Install Docker dnf package pins
+- name: Clean-up Docker dnf package pins
+  become: yes
+  community.general.dnf_versionlock:
+    name:
+      - containerd.io
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+    state: absent
+  when: "ansible_pkg_mgr == 'dnf' and arvados_compute_pin_packages|bool"
+
+- name: Install current Docker dnf package pins
   become: yes
   community.general.dnf_versionlock:
     name:
       - containerd.io-{{ docker_dnf_pin_version['containerd.io'] }}
-      - "docker-ce-{{ docker_dnf_pin_version['docker-ce'] }}"
-      - "docker-ce-cli-{{ docker_dnf_pin_version['docker-ce-cli'] }}"
-      - "docker-ce-rootless-extras-{{ docker_dnf_pin_version['docker-ce-rootless-extras'] }}"
-    raw: true
+      - docker-ce-{{ docker_dnf_pin_version['docker-ce'] }}
+      - docker-ce-cli-{{ docker_dnf_pin_version['docker-ce-cli'] }}
+      - docker-ce-rootless-extras-{{ docker_dnf_pin_version['docker-ce-rootless-extras'] }}
     state: present
   when: "ansible_pkg_mgr == 'dnf' and arvados_compute_pin_packages|bool"
 
@@ -67,4 +77,9 @@
   become: yes
   when: "ansible_pkg_mgr == 'dnf'"
   ansible.builtin.dnf:
-    name: docker-ce
+    name:
+      - containerd.io
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+    state: latest
