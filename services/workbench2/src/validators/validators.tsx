@@ -10,7 +10,7 @@ import { validFileName, validFilePath, validName, validNameAllowSlash } from "./
 import { isZipFilename } from './is-zip-filename';
 import { isValidFutureDate } from './is-valid-future-date';
 
-type Validator = (value: string) => string | undefined;
+export type Validator = (value: string) => string | undefined;
 
 // pass in fieldName for better debugging messages
 export const getFieldErrors = (value: string, validationArray: Validator[], fieldName?: string): string[] => {
