@@ -50,7 +50,7 @@ require (
 	golang.org/x/crypto v0.45.0
 	golang.org/x/mod v0.29.0
 	golang.org/x/net v0.47.0
-	golang.org/x/oauth2 v0.21.0
+	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sys v0.38.0
 	google.golang.org/api v0.181.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
