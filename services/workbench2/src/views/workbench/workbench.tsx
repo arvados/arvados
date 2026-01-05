@@ -35,7 +35,7 @@ import { MoveCollectionDialog } from "views-components/dialog-forms/move-collect
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
 import { PartialCopyToNewCollectionDialog } from "views-components/dialog-forms/partial-copy-to-new-collection-dialog";
 import { PartialCopyToExistingCollectionDialog } from "views-components/dialog-forms/partial-copy-to-existing-collection-dialog";
-import { PartialCopyToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-copy-to-separate-collections-dialog";
+import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
 import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/partial-move-to-new-collection-dialog";
 import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
 import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
@@ -489,6 +489,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <CreateSshKeyDialog />
             <CreateUserDialog />
             <CreateExternalCredentialDialog />
+            <DialogCollectionPartialCopyToSeparateCollection />
             <TokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
@@ -501,7 +502,6 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <PublicKeyDialog />
             <PartialCopyToNewCollectionDialog />
             <PartialCopyToExistingCollectionDialog />
-            <PartialCopyToSeparateCollectionsDialog />
             <PartialMoveToNewCollectionDialog />
             <PartialMoveToExistingCollectionDialog />
             <PartialMoveToSeparateCollectionsDialog />

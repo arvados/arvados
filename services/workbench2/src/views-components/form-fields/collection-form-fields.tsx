@@ -9,7 +9,7 @@ import {
     COLLECTION_NAME_VALIDATION, COLLECTION_NAME_VALIDATION_ALLOW_SLASH,
     COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION
 } from "validators/validators";
-import { ProjectTreePickerField, CollectionTreePickerField, DirectoryTreePickerField } from "views-components/projects-tree-picker/tree-picker-field";
+import { ProjectTreePickerField, DirectoryTreePickerField } from "views-components/projects-tree-picker/tree-picker-field";
 import { PickerIdProp } from 'store/tree-picker/picker-id';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
@@ -50,13 +50,6 @@ export const CollectionProjectPickerField = (props: PickerIdProp) =>
         name="projectUuid"
         pickerId={props.pickerId}
         component={ProjectTreePickerField}
-        validate={COLLECTION_PROJECT_VALIDATION} />;
-
-export const CollectionPickerField = (props: PickerIdProp) =>
-    <Field
-        name="collectionUuid"
-        pickerId={props.pickerId}
-        component={CollectionTreePickerField}
         validate={COLLECTION_PROJECT_VALIDATION} />;
 
 const validateDirectory = (val) => (val && val.uuid ? undefined : ERROR_MESSAGE);

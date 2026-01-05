@@ -13,6 +13,11 @@ import { FileOperationLocation, getFileOperationLocation, SEARCH_PROJECT_ID_PREF
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 
+type TreePickerDialogProps = {
+    pickerId: string;
+    setSelectedProject: (uuid: string) => void;
+}
+
 export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
         <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -28,7 +33,7 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
         </div>
     </div>;
 
-export const ProjectTreePickerDialogField = (props: { setSelectedProject: (uuid: string) => void } & PickerIdProp) =>
+export const ProjectTreePickerDialogField = (props: TreePickerDialogProps) =>
     <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
         <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ProjectsTreePicker
@@ -47,22 +52,6 @@ const handleChange = (props: WrappedFieldProps) =>
             props.input.onChange(id);
         }
     }
-
-export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
-    <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
-        <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ProjectsTreePicker
-                pickerId={props.pickerId}
-                toggleItemActive={handleChange(props)}
-                cascadeSelection={false}
-                options={{ showOnlyOwned: false, showOnlyWritable: true }}
-                includeCollections />
-            {props.meta.dirty && props.meta.error &&
-                <Typography variant='caption' color='error'>
-                    {props.meta.error}
-                </Typography>}
-        </div>
-    </div>;
 
 type ProjectsTreePickerActionProps = {
     getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
