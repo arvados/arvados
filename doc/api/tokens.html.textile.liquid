@@ -17,7 +17,7 @@ Browser based applications can log in using one of the two possible flows:
 
 h3. Authenticate via a third party
 
-# The web application instructs the user to click on a link to the @/login@ endpoint on the API server.  This link should include the @return_to@ parameter in the query portion of the URL.  For example @https://{{ site.arvados_api_host }}/login?return_to=XXX@ , where  @return_to=XXX@ is a page in the web application.
+# The web application instructs the user to click on a link to the @/login@ endpoint on the API server.  This link should include the @return_to@ parameter in the query portion of the URL.  For example @https://{{ site.arvados_api_host }}/login?return_to=XXX@ where @return_to=XXX@ is a page in the web application.
 # The @/login@ endpoint redirects the user to the configured third party authentication provider (e.g. Google or other OpenID Connect provider).
 # The user logs in to the third party provider, then they are redirected back to the API server.
 # The API server authenticates the user, issues a new API token, and redirects the browser to the URL provided in @return_to=XXX@ with the addition of @?api_token=xxxxapitokenxxxx@.
