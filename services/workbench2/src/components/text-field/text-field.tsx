@@ -147,7 +147,6 @@ export const TextFieldWithStartValue = (props: TextFieldWithStartValueProps) => 
 
     useEffect(() => {
         props.input.onChange(props.startValue);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

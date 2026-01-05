@@ -25,7 +25,6 @@ export const DialogTextField = React.memo(({ label, defaultValue, validators, se
         if (prevErr && Boolean(prevErr.length) !== Boolean(errs.length)) {
             setValue(thisValue.trim())
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [thisValue])
 
     return (

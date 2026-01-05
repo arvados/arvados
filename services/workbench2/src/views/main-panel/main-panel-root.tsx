@@ -72,7 +72,6 @@ export const MainPanelRoot = withStyles(styles)(
                 } else {
                     setCurrentRouteUuid(null);
                 }
-                // eslint-disable-next-line react-hooks/exhaustive-deps
             }, [currentRoute]);
 
         return loading

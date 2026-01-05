@@ -46,7 +46,6 @@ export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDesc
         } else {
             setTimeout(() => setFadeDescription(false), 750);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showDescription]);
 
     return (

@@ -21,7 +21,6 @@ export function DatePicker({label, startValue, input}: DatePickerProps & Wrapped
         if (!input.value) {
             input.onChange(getInitialValue(startValue, input.value));
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [input.value]);
 
     return (

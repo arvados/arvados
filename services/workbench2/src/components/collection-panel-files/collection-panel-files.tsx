@@ -326,7 +326,6 @@ export const CollectionPanelFiles = withStyles(styles)(
                 setLeftSearch("");
                 setRightSearch("");
             }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [rightKey, rightData]); 
 
         const currentPDH = (collectionPanel.item || {}).portableDataHash;
@@ -334,7 +333,6 @@ export const CollectionPanelFiles = withStyles(styles)(
             if (currentPDH) {
                 fetchData([leftKey, rightKey], true);
             }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [currentPDH]); 
 
         React.useEffect(() => {
@@ -453,7 +451,6 @@ export const CollectionPanelFiles = withStyles(styles)(
                     onItemMenuOpen(event, item, isWritable);
                 }
             },
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             [path, setPath, collectionPanelFiles, isWritable]
         );
 
@@ -490,7 +487,6 @@ export const CollectionPanelFiles = withStyles(styles)(
             (ev, isWritable) => {
                 props.onOptionsMenuOpen(ev, isWritable);
             },
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             [props.onOptionsMenuOpen] 
         );
 

@@ -40,7 +40,6 @@ export const CopyCollectionDialog = compose(
 
 	React.useEffect(() => {
 		setFormErrors([...selectedProjectErr, ...nameErr])
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [nameVal, selectedProjectUuid])
 
 	const fields = () => (

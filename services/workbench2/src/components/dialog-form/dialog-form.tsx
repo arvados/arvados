@@ -34,7 +34,6 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
         if (!open) {
             clearFormValues();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
 	const handleClose = (reason?: string) => {
