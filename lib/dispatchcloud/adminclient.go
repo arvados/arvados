@@ -28,12 +28,8 @@ func (instanceList) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	loader := config.NewLoader(stdin, logger)
 	loader.SkipLegacy = true
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
-	flags.Usage = func() {
-		fmt.Fprintf(flags.Output(), `Usage: %s`, prog)
-		flags.PrintDefaults()
-	}
-	header := flags.Bool("header", false, "print column headings")
 	loader.SetupFlags(flags)
+	header := flags.Bool("header", false, "print column headings")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	}
@@ -76,6 +72,9 @@ func (instanceList) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		for _, inst := range instances.Items {
 			if inst.Instance == "" {
 				inst.Instance = "-"
+			}
+			if inst.LastContainerUUID == "" {
+				inst.LastContainerUUID = "-"
 			}
 			fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\t%s\t%s\t%f\t%s\n", inst.Instance, inst.Address, inst.WorkerState, inst.IdleBehavior, inst.ArvadosInstanceType, inst.ProviderInstanceType, inst.Price, inst.LastContainerUUID)
 		}
