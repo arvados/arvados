@@ -223,15 +223,16 @@ const removeTrailingSlashes = (
 };
 
 export const fetchConfig = () => {
-    return Axios.get<WorkbenchConfig>(
-        WORKBENCH_CONFIG_URL + '?nocache=' + new Date().getTime()
-    )
-        .then((response) => response.data)
-        .catch(() => {
-            console.warn(
-                `There was an exception getting the Workbench config file at ${WORKBENCH_CONFIG_URL}. Using defaults instead.`
-            );
-            return Promise.resolve(getDefaultConfig());
+    return getEnvConfig()
+        .catch((e) => {
+            // If ENV config not found, warn and default to config file
+            console.warn(e.message);
+            return getWBConfig();
+        })
+        .catch((e) => {
+            // If config file not found, warn and exit
+            console.warn(e.message);
+            throw new Error(`Unable to start Workbench: could not load config from ENV or file.`);
         })
         .then((workbenchConfig) => {
             if (workbenchConfig.API_HOST === undefined) {
@@ -274,6 +275,8 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`
                 config.vocabularyUrl = getVocabularyURL(workbenchConfig.API_HOST);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
+            }).catch((e) => {
+                throw new Error(`Failed to fetch cluster config from ${workbenchConfig.API_HOST}: ${e.message}`);
             });
         });
 };
@@ -388,22 +391,33 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     ...config,
 });
 
-const getDefaultConfig = (): WorkbenchConfig => {
-    let apiHost = '';
-    const envHost = process.env.REACT_APP_ARVADOS_API_HOST;
-    if (envHost !== undefined) {
-        console.warn(`Using default API host ${envHost}.`);
-        apiHost = envHost;
-    } else {
-        console.warn(
-            `No API host was found in the environment. Workbench may not be able to communicate with Arvados components.`
-        );
+/**
+ * Loads config from ENV. Rejects promise if ENV var not set
+ */
+const getEnvConfig = async (): Promise<WorkbenchConfig> => {
+    if (process.env.REACT_APP_ARVADOS_API_HOST === undefined) {
+        throw new Error(`No API host was found in the environment: REACT_APP_ARVADOS_API_HOST not set`);
     }
+
+    console.warn(`Using env API host: ${process.env.REACT_APP_ARVADOS_API_HOST}.`);
     return {
-        API_HOST: apiHost,
+        API_HOST: process.env.REACT_APP_ARVADOS_API_HOST,
         VOCABULARY_URL: undefined,
         FILE_VIEWERS_CONFIG_URL: undefined,
     };
+};
+
+/**
+ * Loads WB config file. Promise rejects if file can't be loaded
+ */
+const getWBConfig = async (): Promise<WorkbenchConfig> => {
+    return Axios.get<WorkbenchConfig>(
+        WORKBENCH_CONFIG_URL + '?nocache=' + new Date().getTime()
+    )
+        .then((response) => response.data)
+        .catch(() => {
+            throw new Error(`There was an exception getting the Workbench config file at ${WORKBENCH_CONFIG_URL}.`);
+        });
 };
 
 export const ARVADOS_API_PATH = 'arvados/v1';
