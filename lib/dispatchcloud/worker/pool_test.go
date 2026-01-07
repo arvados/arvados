@@ -50,6 +50,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	type1 := test.InstanceType(1)
 	type2 := test.InstanceType(2)
 	type3 := test.InstanceType(3)
+	type4 := test.InstanceType(4)
 	waitForIdle := func(pool *Pool, notify <-chan struct{}) {
 		timeout := time.NewTimer(time.Second)
 		for {
@@ -57,13 +58,15 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 			sort.Slice(instances, func(i, j int) bool {
 				return strings.Compare(instances[i].ArvadosInstanceType, instances[j].ArvadosInstanceType) < 0
 			})
-			if len(instances) == 3 &&
+			if len(instances) == 4 &&
 				instances[0].ArvadosInstanceType == type1.Name &&
 				instances[0].WorkerState == StateIdle.String() &&
 				instances[1].ArvadosInstanceType == type1.Name &&
 				instances[1].WorkerState == StateIdle.String() &&
 				instances[2].ArvadosInstanceType == type2.Name &&
-				instances[2].WorkerState == StateIdle.String() {
+				instances[2].WorkerState == StateIdle.String() &&
+				instances[3].ArvadosInstanceType == type4.Name &&
+				instances[3].WorkerState == StateIdle.String() {
 				return
 			}
 			select {
@@ -103,6 +106,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		type1.Name: type1,
 		type2.Name: type2,
 		type3.Name: type3,
+		type4.Name: type4,
 	}
 
 	pool := NewPool(suite.logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, suite.testCluster)
@@ -111,6 +115,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	pool.Create(type1)
 	pool.Create(type1)
 	pool.Create(type2)
+	pool.Create(type4)
 	waitForIdle(pool, notify)
 	var heldInstanceID cloud.InstanceID
 	for _, inst := range pool.Instances() {
@@ -141,6 +146,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	c.Log("------- starting new pool, waiting to recover state")
 
+	delete(suite.testCluster.InstanceTypes, type4.Name)
 	pool2 := NewPool(suite.logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, suite.testCluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
@@ -149,6 +155,12 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		if inst.ArvadosInstanceType == type2.Name {
 			c.Check(inst.Instance, check.Equals, heldInstanceID)
 			c.Check(inst.IdleBehavior, check.Equals, IdleBehaviorHold)
+		} else if inst.ArvadosInstanceType == type4.Name {
+			// type4 instance is tagged IdleBehaviorRun,
+			// but type4 was removed from config, so the
+			// worker should be added with
+			// IdleBehaviorDrain.
+			c.Check(inst.IdleBehavior, check.Equals, IdleBehaviorDrain)
 		} else {
 			c.Check(inst.IdleBehavior, check.Equals, IdleBehaviorRun)
 		}
