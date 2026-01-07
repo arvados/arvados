@@ -78,6 +78,9 @@ func (instanceList) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			if inst.Instance == "" {
 				inst.Instance = "-"
 			}
+			if inst.Address == "" {
+				inst.Address = "-"
+			}
 			if inst.LastContainerUUID == "" {
 				inst.LastContainerUUID = "-"
 			}
