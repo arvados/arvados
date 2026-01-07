@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react'
-import { memoize } from 'lodash/fp'
 import { compose, Dispatch } from 'redux'
 import { DialogForm } from 'components/dialog-form/dialog-form'
 import { connect } from 'react-redux'
@@ -20,7 +19,8 @@ import { WithDialogProps } from 'store/dialog/with-dialog'
 import { PickerIdProp } from 'store/tree-picker/picker-id'
 import { DialogTitle, DialogContent } from '@mui/material'
 import { DialogRichTextField } from 'components/dialog-form/dialog-text-field'
-import { getFieldErrors, REQUIRED_VALIDATION, REQUIRED_LENGTH255_VALIDATION, MAXLENGTH_524288_VALIDATION } from 'validators/validators'
+import { REQUIRED_VALIDATION, REQUIRED_LENGTH255_VALIDATION, MAXLENGTH_524288_VALIDATION } from 'validators/validators'
+import { useStateWithValidation } from 'common/useStateWithValidation'
 
 type DialogCollectionPartialCopyProps = WithDialogProps<{
 	initialFormData: CollectionPartialCopyToNewCollectionFormData
@@ -50,18 +50,15 @@ export const DialogCollectionPartialCopyToNewCollection = compose(
 	const { initialFormData, collectionFileSelection } = data
 	const { name, description } = initialFormData || {}
 
-	const [thisName, setThisName] = React.useState<string>(name || '')
-	const [thisDescription, setThisDescription] = React.useState<string>(description || '')
-	const [thisOwnerUuid, setThisOwnerUuid] = React.useState<string>('')
+	const [thisName, setThisName, nameErrs] = useStateWithValidation(name, REQUIRED_LENGTH255_VALIDATION, 'Name')
+    const [thisDescription, setThisDescription, descriptionErrs] = useStateWithValidation(description, MAXLENGTH_524288_VALIDATION, 'Description')
+    const [thisOwnerUuid, setThisOwnerUuid, ownerUuidErrs] = useStateWithValidation('', REQUIRED_VALIDATION, 'Project')
+
     const [formErrors, setFormErrors] = React.useState<string[]>([])
 
-    const nameFieldErrors = getFieldErrors(thisName, REQUIRED_LENGTH255_VALIDATION)
-    const descriptionFieldErrors = getFieldErrors(thisDescription, MAXLENGTH_524288_VALIDATION)
-    const ownerFieldErrors = getFieldErrors(thisOwnerUuid, REQUIRED_VALIDATION)
-
     React.useEffect(() => {
-        setFormErrors([...nameFieldErrors, ...descriptionFieldErrors, ...ownerFieldErrors])
-    }, [thisName, thisDescription, thisOwnerUuid])
+        setFormErrors([...nameErrs, ...descriptionErrs, ...ownerUuidErrs])
+    }, [nameErrs, descriptionErrs, ownerUuidErrs])
 
 	const fields = () => (
 		<>
@@ -72,7 +69,7 @@ export const DialogCollectionPartialCopyToNewCollection = compose(
 					label="Description"
 					defaultValue={description}
 					setValue={setThisDescription}
-					validators={REQUIRED_VALIDATION}
+					validators={MAXLENGTH_524288_VALIDATION}
 				/>
 				<ProjectTreePickerDialogField
 					pickerId={pickerId}

@@ -12,7 +12,20 @@ import { isValidFutureDate } from './is-valid-future-date';
 
 export type Validator = (value: string) => string | undefined;
 
-// pass in fieldName for better debugging messages
+/**
+ * Validates a field value against an array of validation functions and returns error messages.
+ * 
+ * @param value - The string value to validate
+ * @param validationArray - Array of validator functions to apply to the value
+ * @param fieldName - Optional field name to prepend to error messages for better debugging
+ * @returns Array of validation error messages. Empty array if no errors.
+ * 
+ * @example
+ * ```tsx
+ * const errors = getFieldErrors('', [fieldRequire, maxLength(255)], 'Name');
+ * // Returns: ['Name: This field is required'] if value is empty
+ * ```
+ */
 export const getFieldErrors = (value: string, validationArray: Validator[], fieldName?: string): string[] => {
   const errMessages: string[] = [];
   for (const validation of validationArray) {

@@ -8,13 +8,14 @@ import { connect } from 'react-redux'
 import { DialogTitle, DialogContent } from '@mui/material'
 import { WithDialogProps, withDialog } from 'store/dialog/with-dialog'
 import { ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
-import { getFieldErrors, COPY_NAME_VALIDATION, REQUIRED_VALIDATION } from 'validators/validators'
+import { COPY_NAME_VALIDATION, REQUIRED_VALIDATION } from 'validators/validators'
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog'
 import { PickerIdProp } from 'store/tree-picker/picker-id'
 import { copyCollectionRunner } from 'store/workbench/workbench-actions'
 import { COLLECTION_COPY_FORM_NAME } from 'store/collections/collection-copy-actions'
 import { DialogForm } from 'components/dialog-form/dialog-form'
 import { DialogTextField } from 'components/dialog-form/dialog-text-field'
+import { useStateWithValidation } from 'common/useStateWithValidation'
 
 type CopyDialogProps = WithDialogProps<CopyFormDialogData> &
 	PickerIdProp & {
@@ -31,15 +32,12 @@ export const CopyCollectionDialog = compose(
 	connect(null, mapDispatchToProps)
 )((props: CopyDialogProps) => {
 	const { open, data, pickerId } = props
-	const [selectedProjectUuid, setSelectedProjectUuid] = React.useState<string>('')
-	const [nameVal, setNameVal] = React.useState<string>(data.name || '')
+	const [nameVal, setNameVal, nameErrs] = useStateWithValidation(data.name || '', COPY_NAME_VALIDATION, 'Name')
+	const [selectedProjectUuid, setSelectedProjectUuid, selectedProjectErrs] = useStateWithValidation('', REQUIRED_VALIDATION, 'Project')
 	const [formErrors, setFormErrors] = React.useState<string[]>([])
 
-	const selectedProjectErr = getFieldErrors(selectedProjectUuid, REQUIRED_VALIDATION, 'Project')
-	const nameErr = data.isSingleResource ? getFieldErrors(nameVal, COPY_NAME_VALIDATION, 'Name') : []
-
 	React.useEffect(() => {
-		setFormErrors([...selectedProjectErr, ...nameErr])
+		setFormErrors([...selectedProjectErrs, ...nameErrs])
 	}, [nameVal, selectedProjectUuid])
 
 	const fields = () => (
