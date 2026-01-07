@@ -42,7 +42,7 @@ export const openCollectionPartialCopyToNewCollectionDialog = (resource: Context
         const sourceCollection = getState().collectionPanel.item;
 
         if (sourceCollection) {
-            openCopyToNewDialog(dispatch, sourceCollection, [resource]);
+            openCopyPartialToNewDialog(dispatch, sourceCollection, [resource]);
         }
     };
 
@@ -52,11 +52,11 @@ export const openCollectionPartialCopyMultipleToNewCollectionDialog = () =>
         const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
 
         if (sourceCollection && selectedItems.length) {
-            openCopyToNewDialog(dispatch, sourceCollection, selectedItems);
+            openCopyPartialToNewDialog(dispatch, sourceCollection, selectedItems);
         }
     };
 
-const openCopyToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
+const openCopyPartialToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
     // Get selected files
     const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
     // Populate form initial state
@@ -65,9 +65,8 @@ const openCopyToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionRes
         description: sourceCollection.description,
         projectUuid: undefined
     };
-    dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: { collectionFileSelection, initialFormData } }));
 };
 
 export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToNewCollectionFormData) =>

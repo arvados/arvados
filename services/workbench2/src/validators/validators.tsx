@@ -67,5 +67,6 @@ export const REQUIRED_VALIDATION: Validator[] = [fieldRequire];
 export const LENGTH255_VALIDATION: Validator[] = [maxLength(255)];
 export const REQUIRED_LENGTH255_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
 export const REQUIRED_VALIDNAME_LENGTH255_VALIDATION: Validator[] = [fieldRequire, validName, maxLength(255)];
+export const MAXLENGTH_524288_VALIDATION: Validator[] = [maxLength(524_288)];
 
 export const DATE_VALIDATION: Validator[] = [isValidFutureDate];

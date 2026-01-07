@@ -4,6 +4,7 @@
 
 import React from "react";
 import { Field, Validator } from "redux-form";
+import { DialogTextField } from "components/dialog-form/dialog-text-field";
 import { TextField, RichEditorTextField } from "components/text-field/text-field";
 import {
     COLLECTION_NAME_VALIDATION, COLLECTION_NAME_VALIDATION_ALLOW_SLASH,
@@ -38,12 +39,33 @@ export const CollectionNameField = connect(
             autoFocus={true} /></span>
     );
 
+export const DialogCollectionNameField = connect(
+    (state: RootState) => {
+        return {
+            validators: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
+                COLLECTION_NAME_VALIDATION : COLLECTION_NAME_VALIDATION_ALLOW_SLASH)
+        };
+    })((props: {
+        defaultValue: string; setValue: (value: string) => void; validators: Validator[] }) => {
+        const { defaultValue, setValue, validators } = props;
+        return <DialogTextField
+                    label='Collection Name'
+                    defaultValue={defaultValue}
+                    setValue={setValue}
+                    validators={validators}
+                />;
+    })
+
 export const CollectionDescriptionField = () =>
     <Field
         name='description'
         component={RichEditorTextField as any}
         validate={COLLECTION_DESCRIPTION_VALIDATION}
         label="Description" />;
+
+export const DialogCollectionDescriptionField = () => {
+    // return <RichEditorTextField />
+}
 
 export const CollectionProjectPickerField = (props: PickerIdProp) =>
     <Field

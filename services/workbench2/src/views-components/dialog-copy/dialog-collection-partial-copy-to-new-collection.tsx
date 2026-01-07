@@ -2,30 +2,105 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
-import { memoize } from "lodash/fp";
-import { FormDialog } from 'components/form-dialog/form-dialog';
-import { CollectionNameField, CollectionDescriptionField, CollectionProjectPickerField } from 'views-components/form-fields/collection-form-fields';
-import { WithDialogProps } from 'store/dialog/with-dialog';
-import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyToNewCollectionFormData } from 'store/collections/collection-partial-copy-actions';
-import { PickerIdProp } from "store/tree-picker/picker-id";
+import React from 'react'
+import { memoize } from 'lodash/fp'
+import { compose, Dispatch } from 'redux'
+import { DialogForm } from 'components/dialog-form/dialog-form'
+import { connect } from 'react-redux'
+import { withDialog } from 'store/dialog/with-dialog'
+import { DialogCollectionNameField } from 'views-components/form-fields/collection-form-fields'
+import {
+	CollectionPartialCopyToNewCollectionFormData,
+	copyCollectionPartialToNewCollection,
+	COLLECTION_PARTIAL_COPY_FORM_NAME,
+} from 'store/collections/collection-partial-copy-actions'
+import { ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
+import { CollectionFileSelection } from 'store/collection-panel/collection-panel-files/collection-panel-files-state'
+import { WithDialogProps } from 'store/dialog/with-dialog'
+import { PickerIdProp } from 'store/tree-picker/picker-id'
+import { DialogTitle, DialogContent } from '@mui/material'
+import { DialogRichTextField } from 'components/dialog-form/dialog-text-field'
+import { getFieldErrors, REQUIRED_VALIDATION, REQUIRED_LENGTH255_VALIDATION, MAXLENGTH_524288_VALIDATION } from 'validators/validators'
 
-type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToNewCollectionFormData>;
+type DialogCollectionPartialCopyProps = WithDialogProps<{
+	initialFormData: CollectionPartialCopyToNewCollectionFormData
+	collectionFileSelection: CollectionFileSelection
+}> &
+	PickerIdProp & {
+		copyCollectionPartialToNewCollection: (
+			fileSelection: CollectionFileSelection,
+			formData: CollectionPartialCopyToNewCollectionFormData
+		) => void
+	}
 
-export const DialogCollectionPartialCopyToNewCollection = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
-    <FormDialog
-        dialogTitle='Copy to new collection'
-        formFields={CollectionPartialCopyFields(props.pickerId)}
-        submitLabel='Create collection'
-        {...props}
-    />;
+const mapDispatch = (dispatch: Dispatch) => ({
+	copyCollectionPartialToNewCollection: (
+		fileSelection: CollectionFileSelection,
+		formData: CollectionPartialCopyToNewCollectionFormData
+	) => {
+		dispatch<any>(copyCollectionPartialToNewCollection(fileSelection, formData))
+	},
+})
 
-const CollectionPartialCopyFields = memoize(
-    (pickerId: string) =>
-        () =>
-            <>
-                <CollectionNameField />
-                <CollectionDescriptionField />
-                <CollectionProjectPickerField {...{ pickerId }} />
-            </>);
+export const DialogCollectionPartialCopyToNewCollection = compose(
+	withDialog(COLLECTION_PARTIAL_COPY_FORM_NAME),
+	connect(null, mapDispatch)
+)((props: DialogCollectionPartialCopyProps) => {
+	const { open, data, pickerId } = props
+	const { initialFormData, collectionFileSelection } = data
+	const { name, description } = initialFormData || {}
+
+	const [thisName, setThisName] = React.useState<string>(name || '')
+	const [thisDescription, setThisDescription] = React.useState<string>(description || '')
+	const [thisOwnerUuid, setThisOwnerUuid] = React.useState<string>('')
+    const [formErrors, setFormErrors] = React.useState<string[]>([])
+
+    const nameFieldErrors = getFieldErrors(thisName, REQUIRED_LENGTH255_VALIDATION)
+    const descriptionFieldErrors = getFieldErrors(thisDescription, MAXLENGTH_524288_VALIDATION)
+    const ownerFieldErrors = getFieldErrors(thisOwnerUuid, REQUIRED_VALIDATION)
+
+    React.useEffect(() => {
+        setFormErrors([...nameFieldErrors, ...descriptionFieldErrors, ...ownerFieldErrors])
+    }, [thisName, thisDescription, thisOwnerUuid])
+
+	const fields = () => (
+		<>
+			<DialogTitle>Copy to new collection</DialogTitle>
+			<DialogContent>
+				<DialogCollectionNameField defaultValue={name} setValue={setThisName} />
+				<DialogRichTextField
+					label="Description"
+					defaultValue={description}
+					setValue={setThisDescription}
+					validators={REQUIRED_VALIDATION}
+				/>
+				<ProjectTreePickerDialogField
+					pickerId={pickerId}
+					setSelectedProject={setThisOwnerUuid}
+				/>
+			</DialogContent>
+		</>
+	)
+
+	return (
+		<DialogForm
+			open={open}
+			fields={fields()}
+			formErrors={formErrors}
+			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+				event.preventDefault()
+				props.copyCollectionPartialToNewCollection(collectionFileSelection, {
+					name: thisName,
+					description: thisDescription,
+					projectUuid: thisOwnerUuid,
+				})
+			}}
+			closeDialog={props.closeDialog}
+			clearFormValues={() => {
+				setThisName('')
+				setThisDescription('')
+				setThisOwnerUuid('')
+			}}
+		/>
+	)
+})

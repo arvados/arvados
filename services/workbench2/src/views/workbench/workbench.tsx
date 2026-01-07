@@ -33,7 +33,7 @@ import { UpdateProjectDialog } from "views-components/dialog-forms/update-projec
 import { MoveProjectDialog } from "views-components/dialog-forms/move-project-dialog";
 import { MoveCollectionDialog } from "views-components/dialog-forms/move-collection-dialog";
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
-import { PartialCopyToNewCollectionDialog } from "views-components/dialog-forms/partial-copy-to-new-collection-dialog";
+import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
 import { PartialCopyToExistingCollectionDialog } from "views-components/dialog-forms/partial-copy-to-existing-collection-dialog";
 import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
 import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/partial-move-to-new-collection-dialog";
@@ -500,7 +500,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
-            <PartialCopyToNewCollectionDialog />
+            <DialogCollectionPartialCopyToNewCollection />
             <PartialCopyToExistingCollectionDialog />
             <PartialMoveToNewCollectionDialog />
             <PartialMoveToExistingCollectionDialog />
