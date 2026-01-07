@@ -68,6 +68,7 @@ export const CopyCollectionDialog = compose(
 		<DialogForm
 			open={open}
 			fields={fields()}
+			submitLabel='Copy Collection'
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
 				event.preventDefault()
 				props.copyCollection({

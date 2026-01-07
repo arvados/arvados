@@ -21,6 +21,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
 type DialogFormProps = WithStyles<CssRules> & {
     open: boolean;
     fields: React.ReactNode;
+    submitLabel?: string;
     formErrors: string[];
     onSubmit: (data: any) => void;
     closeDialog: () => void;
@@ -28,7 +29,7 @@ type DialogFormProps = WithStyles<CssRules> & {
 }
 
 export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
-    const { open, fields, classes, formErrors, onSubmit, closeDialog, clearFormValues } = props;
+    const { open, fields, submitLabel, classes, formErrors, onSubmit, closeDialog, clearFormValues } = props;
 
     useEffect(() => {
         if (!open) {
@@ -59,7 +60,9 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
             {fields}
             <DialogActions>
                 <Button onClick={closeDialog}>Cancel</Button>
-                <Button disabled={formErrors.length > 0} type="submit">Copy</Button>
+                <Button disabled={formErrors.length > 0} type="submit">
+                    {submitLabel && submitLabel.length > 0 ? submitLabel : "Submit"}
+                </Button>
             </DialogActions>
         </Dialog>
     )

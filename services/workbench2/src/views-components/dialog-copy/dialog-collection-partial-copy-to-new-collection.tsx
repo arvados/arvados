@@ -83,6 +83,7 @@ export const DialogCollectionPartialCopyToNewCollection = compose(
 		<DialogForm
 			open={open}
 			fields={fields()}
+            submitLabel='Create Collection'
 			formErrors={formErrors}
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
 				event.preventDefault()
