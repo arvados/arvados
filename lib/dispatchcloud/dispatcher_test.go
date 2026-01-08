@@ -5,6 +5,7 @@
 package dispatchcloud
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -530,4 +531,64 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
 	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, test.InstanceType(1).ProviderType)
 	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, test.InstanceType(1).Name)
+
+	// Start an http server so we can test InstanceCommand against
+	// s.disp's management API.
+	srv := httptest.NewServer(s.disp)
+	srvurl, _ := url.Parse(srv.URL)
+
+	// Write a config file for InstanceCommand to use.
+	cluster := arvadostest.DefaultCluster(c, "zzzzz")
+	cluster.Services.DispatchCloud.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL(*srvurl): arvados.ServiceInstance{}}
+	cluster.ManagementToken = s.cluster.ManagementToken
+	conffile := c.MkDir() + "config.yml"
+	confdata, err := json.Marshal(arvados.Config{Clusters: map[string]arvados.Cluster{"zzzzz": cluster}})
+	c.Assert(err, check.IsNil)
+	err = os.WriteFile(conffile, confdata, 0666)
+	c.Assert(err, check.IsNil)
+
+	// "instance list"
+	stdout := bytes.NewBuffer(nil)
+	exitcode := InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-header", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Check(stdout.String(), check.Matches, `instance\t.*\n`+
+		`inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\trun\ttype1\tprovidertype1\t0\.123000\t-\n`)
+
+	// "instance hold"
+	stdout.Reset()
+	stderr := bytes.NewBuffer(nil)
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"hold", "-config", conffile, "inst1,providertype1"}, bytes.NewBuffer(nil), stdout, stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Check(stdout.String(), check.Equals, ``)
+	c.Check(stderr.String(), check.Matches, `(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
+
+	stdout.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Check(stdout.String(), check.Matches, `inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\thold\ttype1\tprovidertype1\t0\.123000\t-\n`)
+
+	// "instance drain"
+	stdout.Reset()
+	stderr.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"drain", "-config", conffile, "inst1,providertype1"}, bytes.NewBuffer(nil), stdout, stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Check(stdout.String(), check.Equals, ``)
+	c.Check(stderr.String(), check.Matches, `(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
+
+	// "instance list" should show the instance in drain/shutdown
+	// state, or (if shutdown is fast) missing entirely.
+	stdout.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
+	c.Check(exitcode, check.Equals, 0)
+	if stdout.String() != "" {
+		c.Check(stdout.String(), check.Matches, `inst1,providertype1\t(-|127\.0\.0\.1:\d+)\tshutdown\tdrain\ttype1\tprovidertype1\t0\.123000\t-\n`)
+	}
+
+	// "instance drain" with nonexistent instance ID
+	stdout.Reset()
+	stderr.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"drain", "-config", conffile, "inst404,providertype404"}, bytes.NewBuffer(nil), stdout, stderr)
+	c.Check(exitcode, check.Equals, 1)
+	c.Check(stdout.String(), check.Equals, ``)
+	c.Check(stderr.String(), check.Matches, `(?ms)(.*\n)?inst404,providertype404: 404 Not Found .*\n`)
 }

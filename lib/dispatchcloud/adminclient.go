@@ -40,15 +40,17 @@ func (instanceList) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	}
 	cfg, err := loader.Load()
 	if err != nil {
+		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
+		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	client := http.DefaultClient
 	if len(cluster.Services.DispatchCloud.InternalURLs) == 0 {
-		fmt.Fprintf(stderr, "no Services.DispatchCloud.InternalURLs configured")
+		fmt.Fprintf(stderr, "no Services.DispatchCloud.InternalURLs configured\n")
 		return 1
 	}
 	if *header {
@@ -118,10 +120,12 @@ func (ia instanceAction) RunCommand(prog string, args []string, stdin io.Reader,
 	}
 	cfg, err := loader.Load()
 	if err != nil {
+		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
+		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	client := http.DefaultClient
