@@ -21,7 +21,7 @@ import { getFieldErrors, Validator } from "validators/validators";
  * const [name, setName, nameErrors] = useStateWithValidation('', REQUIRED_LENGTH255_VALIDATION);
  * ```
  */
-export const useStateWithValidation = (value: string, validators: Validator[], fieldName?: string) => {
+export const useStateWithValidation = <T>(value: T, validators: Validator[], fieldName?: string) => {
     const [thisValue, setThisValue] = useState(value);
     const [errors, setErrors] = useState<string[]>(() => getFieldErrors(value, validators, fieldName));
 
