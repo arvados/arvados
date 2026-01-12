@@ -413,6 +413,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	if prices := wkr.instance.PriceHistory(wkr.instType); len(prices) > 0 {
 		j, _ := json.Marshal(prices)
 		stdin = bytes.NewReader(j)
+		cmd += " --stdin-prices"
 	}
 	stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
 	if err != nil {
