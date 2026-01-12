@@ -34,7 +34,7 @@ import { MoveProjectDialog } from "views-components/dialog-forms/move-project-di
 import { MoveCollectionDialog } from "views-components/dialog-forms/move-collection-dialog";
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
 import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
-import { PartialCopyToExistingCollectionDialog } from "views-components/dialog-forms/partial-copy-to-existing-collection-dialog";
+import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
 import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
 import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/partial-move-to-new-collection-dialog";
 import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
@@ -501,7 +501,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
             <DialogCollectionPartialCopyToNewCollection />
-            <PartialCopyToExistingCollectionDialog />
+            <DialogCollectionPartialCopyToExistingCollection />
             <PartialMoveToNewCollectionDialog />
             <PartialMoveToExistingCollectionDialog />
             <PartialMoveToSeparateCollectionsDialog />

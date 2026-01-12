@@ -2,29 +2,73 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
-import { memoize } from "lodash/fp";
-import { FormDialog } from 'components/form-dialog/form-dialog';
+import { compose, Dispatch } from "redux";
+import { connect } from "react-redux";
+import { withDialog } from 'store/dialog/with-dialog';
+import { DialogForm } from "components/dialog-form/dialog-form";
 import { WithDialogProps } from 'store/dialog/with-dialog';
-import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyToExistingCollectionFormData } from 'store/collections/collection-partial-copy-actions';
+import { DialogTitle } from "@mui/material";
+import { CollectionFileSelection } from 'store/collection-panel/collection-panel-files/collection-panel-files-state';
+import { CollectionPartialCopyToExistingCollectionFormData, copyCollectionPartialToExistingCollection, COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION } from 'store/collections/collection-partial-copy-actions';
 import { PickerIdProp } from "store/tree-picker/picker-id";
-import { DirectoryPickerField } from 'views-components/form-fields/collection-form-fields';
+import { DirectoryTreePickerDialogField } from "views-components/projects-tree-picker/tree-picker-field";
+import { useStateWithValidation } from "common/useStateWithValidation";
+import { FILE_OPS_LOCATION_VALIDATION } from "validators/validators";
+import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 
-type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToExistingCollectionFormData>;
+type DialogCollectionPartialCopyProps = WithDialogProps<{ initialFormData: CollectionPartialCopyToExistingCollectionFormData, collectionFileSelection: CollectionFileSelection }> & {
+} & PickerIdProp & {
+    copyCollectionPartialToExistingCollection: (
+        fileSelection: CollectionFileSelection,
+        formData: CollectionPartialCopyToExistingCollectionFormData
+    ) => void
+}
 
-export const DialogCollectionPartialCopyToExistingCollection = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
-    <FormDialog
-        dialogTitle='Copy to existing collection'
-        formFields={CollectionPartialCopyFields(props.pickerId)}
-        submitLabel='Copy files'
-        enableWhenPristine
-        {...props}
-    />;
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    copyCollectionPartialToExistingCollection: (
+        fileSelection: CollectionFileSelection,
+        formData: CollectionPartialCopyToExistingCollectionFormData
+    ) => {
+        dispatch<any>(copyCollectionPartialToExistingCollection(fileSelection, formData));
+    },
+});
 
-const CollectionPartialCopyFields = memoize(
-    (pickerId: string) =>
-        () =>
-            <>
-                <DirectoryPickerField {...{ pickerId }}/>
-            </>);
+export const DialogCollectionPartialCopyToExistingCollection = compose(
+    withDialog(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION),
+    connect(null, mapDispatchToProps)
+)((props: DialogCollectionPartialCopyProps & PickerIdProp) => {
+    const { open, data, copyCollectionPartialToExistingCollection } = props;
+    const [selectedDestination, setSelectedDestination, errs] = useStateWithValidation<FileOperationLocation | null>(null, FILE_OPS_LOCATION_VALIDATION, 'Collection');
+
+    const handleDirectoryChange = (res: FileOperationLocation) => {
+        setSelectedDestination(res);
+    }
+
+    const fields = () => (
+        <>
+            <DialogTitle>Copy Selected Files to Existing Collection</DialogTitle>
+            <DirectoryTreePickerDialogField
+                pickerId={props.pickerId}
+                handleDirectoryChange={handleDirectoryChange}
+            />
+        </>
+    );
+
+
+    return <DialogForm
+                open={open}
+                fields={fields()}
+                submitLabel="Copy Files"
+                onSubmit={(ev)=>{
+                    ev.preventDefault();
+                    if (!!selectedDestination) {
+                        copyCollectionPartialToExistingCollection(data.collectionFileSelection, { destination: selectedDestination});
+                    }
+                }}
+                formErrors={errs}
+                closeDialog={props.closeDialog}
+                clearFormValues={()=> {
+                    setSelectedDestination(null);
+                }}
+            />;
+});

@@ -63,10 +63,6 @@ export const CollectionDescriptionField = () =>
         validate={COLLECTION_DESCRIPTION_VALIDATION}
         label="Description" />;
 
-export const DialogCollectionDescriptionField = () => {
-    // return <RichEditorTextField />
-}
-
 export const CollectionProjectPickerField = (props: PickerIdProp) =>
     <Field
         name="projectUuid"

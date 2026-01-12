@@ -22,7 +22,7 @@ import { getFieldErrors, Validator } from "validators/validators";
  * ```
  */
 export const useStateWithValidation = <T>(value: T, validators: Validator[], fieldName?: string) => {
-    const [thisValue, setThisValue] = useState(value);
+    const [thisValue, setThisValue] = useState<T>(value);
     const [errors, setErrors] = useState<string[]>(() => getFieldErrors(value, validators, fieldName));
 
     useEffect(() => {

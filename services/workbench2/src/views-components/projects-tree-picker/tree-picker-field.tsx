@@ -91,3 +91,38 @@ export const DirectoryTreePickerField = connect(null, projectsTreePickerMapDispa
             </div>;
         }
     });
+
+type DirectoryTreePickerDialogFieldProps = PickerIdProp & {
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
+    handleDirectoryChange: (destination: FileOperationLocation) => void;
+};
+
+export const DirectoryTreePickerDialogField = connect(null, projectsTreePickerMapDispatchToProps)(
+    (props: DirectoryTreePickerDialogFieldProps)=> {
+
+    const handleDirectoryChange = (props: DirectoryTreePickerDialogFieldProps) =>
+            async (_: any, { data }: TreeItem<ProjectsTreePickerItem>) => {
+                const location: FileOperationLocation | undefined = await props.getFileOperationLocation(data);
+                if (location) {
+                    props.handleDirectoryChange(location);
+                } else {
+                    props.handleDirectoryChange({} as FileOperationLocation);
+                }
+            }
+
+    return (
+        <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
+            <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <ProjectsTreePicker
+                    currentUuids={[]}
+                    pickerId={props.pickerId}
+                    toggleItemActive={handleDirectoryChange(props)}
+                    cascadeSelection={false}
+                    options={{ showOnlyOwned: false, showOnlyWritable: true }}
+                    includeCollections
+                    includeDirectories />
+            </div>
+        </div>
+        );
+    }
+);

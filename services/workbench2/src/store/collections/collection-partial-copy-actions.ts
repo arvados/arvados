@@ -142,9 +142,8 @@ const openCopyToExistingDialog = (dispatch: Dispatch, sourceCollection: Collecti
     const initialFormData = {
         destination: {uuid: sourceCollection.uuid, destinationPath: ''}
     };
-    dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: { initialFormData, collectionFileSelection } }));
 }
 
 export const copyCollectionPartialToExistingCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToExistingCollectionFormData) =>
