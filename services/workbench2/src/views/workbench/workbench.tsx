@@ -26,7 +26,7 @@ import { ChangeWorkflowDialog } from "views-components/run-process-dialog/change
 import { CreateProjectDialog } from "views-components/dialog-forms/create-project-dialog";
 import { CreateCollectionDialog } from "views-components/dialog-forms/create-collection-dialog";
 import { CopyCollectionDialog } from "views-components/dialog-copy/dialog-copy";
-import { CopyProcessDialog } from "views-components/dialog-forms/copy-process-dialog";
+import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-rerun";
 import { UpdateCollectionDialog } from "views-components/dialog-forms/update-collection-dialog";
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
 import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
@@ -482,7 +482,6 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <ChangeWorkflowDialog />
             <ContextMenu />
             <CopyCollectionDialog />
-            <CopyProcessDialog />
             <CreateCollectionDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
@@ -490,6 +489,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <CreateUserDialog />
             <CreateExternalCredentialDialog />
             <DialogCollectionPartialCopyToSeparateCollection />
+            <DialogProcessRerun />
             <TokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />
