@@ -111,6 +111,8 @@ func (s *Suite) TestExemptFromDeadline(c *check.C) {
 func (s *Suite) TestLogRequests(c *check.C) {
 	h := AddRequestIDs(LogRequests(
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			time.Sleep(time.Microsecond) // ensure timeWriteBody > 0
 			w.Write([]byte("hello world"))
 		})))
 
