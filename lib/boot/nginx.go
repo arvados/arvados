@@ -104,7 +104,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		vars[cmpt.varname+"SSLPORT"] = port
 	}
 	if portmin, portmax := super.cluster.Services.ContainerWebServices.ExternalPortMin,
-		super.cluster.Services.ContainerWebServices.ExternalPortMax; 0 < portmin && portmin < portmax {
+		super.cluster.Services.ContainerWebServices.ExternalPortMax; 0 < portmin && portmin <= portmax {
 		vars["CONTROLLERLISTENEXTRA"] = fmt.Sprintf("listen %s:%d-%d ssl;", extListenHost, portmin, portmax)
 	}
 	var conftemplate string
