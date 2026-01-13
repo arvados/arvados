@@ -93,6 +93,7 @@ export const DirectoryTreePickerField = connect(null, projectsTreePickerMapDispa
     });
 
 type DirectoryTreePickerDialogFieldProps = PickerIdProp & {
+    currentUuids?: string[];
     getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
     handleDirectoryChange: (destination: FileOperationLocation) => void;
 };
@@ -114,7 +115,7 @@ export const DirectoryTreePickerDialogField = connect(null, projectsTreePickerMa
         <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
             <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <ProjectsTreePicker
-                    currentUuids={[]}
+                    currentUuids={props.currentUuids}
                     pickerId={props.pickerId}
                     toggleItemActive={handleDirectoryChange(props)}
                     cascadeSelection={false}

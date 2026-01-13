@@ -4,7 +4,6 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { ServiceRepository } from 'services/services';
@@ -73,7 +72,6 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
 
                 // Copy files
@@ -110,7 +108,6 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
@@ -150,7 +147,6 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
 
                 // Copy files
@@ -176,7 +172,6 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
             }
         }
@@ -190,14 +185,8 @@ export const openCollectionPartialCopyToSeparateCollectionsDialog = () =>
         if (sourceCollection && selectedItems.length) {
             // Get selected files
             const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
-            // Populate form initial state
-            const initialFormData = {
-                name: sourceCollection.name,
-                projectUuid: undefined
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, initialFormData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: collectionFileSelection }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: {collectionFileSelection, sourceCollectionName: sourceCollection.name} }));
         }
     };
 
@@ -205,7 +194,6 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
 
                 // Copy files
@@ -243,7 +231,6 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             }
         }

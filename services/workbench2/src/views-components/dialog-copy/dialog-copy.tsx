@@ -38,7 +38,7 @@ export const CopyCollectionDialog = compose(
 
 	React.useEffect(() => {
 		setFormErrors([...selectedProjectErrs, ...nameErrs])
-	}, [nameVal, selectedProjectUuid])
+	}, [nameErrs, selectedProjectErrs])
 
 	const fields = () => (
 		<>

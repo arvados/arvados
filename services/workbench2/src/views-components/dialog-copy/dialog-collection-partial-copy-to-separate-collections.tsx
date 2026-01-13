@@ -18,7 +18,7 @@ import { COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS } from 'store/collectio
 import { CollectionFileSelection } from 'store/collection-panel/collection-panel-files/collection-panel-files-state'
 import { getFieldErrors, REQUIRED_VALIDATION } from 'validators/validators'
 
-type DialogCollectionPartialCopyProps = WithDialogProps<CollectionFileSelection> &
+type DialogCollectionPartialCopyProps = WithDialogProps<{ collectionFileSelection: CollectionFileSelection, sourceCollectionName: string }> &
 	PickerIdProp & {
 		copyCollectionPartialToSeparateCollections: (
 			fileSelection: CollectionFileSelection,
@@ -40,6 +40,7 @@ export const DialogCollectionPartialCopyToSeparateCollection = compose(
 	connect(null, mapDispatch),
 )((props: DialogCollectionPartialCopyProps) => {
 	const { open, data } = props
+	const { collectionFileSelection, sourceCollectionName } = data
 	const [selectedProjectUuid, setSelectedProjectUuid] = React.useState<string>('')
 	const [formErrors, setFormErrors] = React.useState<string[]>([])
 
@@ -65,12 +66,13 @@ export const DialogCollectionPartialCopyToSeparateCollection = compose(
 			fields={fields()}
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
 				event.preventDefault()
-				props.copyCollectionPartialToSeparateCollections(data, {
-					name: '',
+				props.copyCollectionPartialToSeparateCollections(collectionFileSelection, {
+					name: sourceCollectionName,
 					projectUuid: selectedProjectUuid,
 				})
 			}}
 			formErrors={formErrors}
+			submitLabel='Create Collections'
 			closeDialog={props.closeDialog}
 			clearFormValues={() => {
 				setSelectedProjectUuid('')

@@ -38,6 +38,7 @@ export const DialogCollectionPartialCopyToExistingCollection = compose(
     connect(null, mapDispatchToProps)
 )((props: DialogCollectionPartialCopyProps & PickerIdProp) => {
     const { open, data, copyCollectionPartialToExistingCollection } = props;
+    const { collectionFileSelection, initialFormData } = data;
     const [selectedDestination, setSelectedDestination, errs] = useStateWithValidation<FileOperationLocation | null>(null, FILE_OPS_LOCATION_VALIDATION, 'Collection');
 
     const handleDirectoryChange = (res: FileOperationLocation) => {
@@ -48,6 +49,7 @@ export const DialogCollectionPartialCopyToExistingCollection = compose(
         <>
             <DialogTitle>Copy Selected Files to Existing Collection</DialogTitle>
             <DirectoryTreePickerDialogField
+                currentUuids={[initialFormData?.destination.uuid || '']}
                 pickerId={props.pickerId}
                 handleDirectoryChange={handleDirectoryChange}
             />
@@ -62,7 +64,7 @@ export const DialogCollectionPartialCopyToExistingCollection = compose(
                 onSubmit={(ev)=>{
                     ev.preventDefault();
                     if (!!selectedDestination) {
-                        copyCollectionPartialToExistingCollection(data.collectionFileSelection, { destination: selectedDestination});
+                        copyCollectionPartialToExistingCollection(collectionFileSelection, { destination: selectedDestination });
                     }
                 }}
                 formErrors={errs}

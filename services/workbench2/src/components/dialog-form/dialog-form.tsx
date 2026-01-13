@@ -46,6 +46,7 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
 
     return (
         <Dialog
+            data-cy="form-dialog"
             open={open}
             onClose={(_, reason) => handleClose(reason)}
 			fullWidth
@@ -59,8 +60,8 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
         >
             {fields}
             <DialogActions>
-                <Button onClick={closeDialog}>Cancel</Button>
-                <Button disabled={formErrors.length > 0} type="submit">
+                <Button data-cy="form-cancel-btn" onClick={closeDialog}>Cancel</Button>
+                <Button data-cy="form-submit-btn" disabled={formErrors.length > 0} type="submit">
                     {submitLabel && submitLabel.length > 0 ? submitLabel : "Submit"}
                 </Button>
             </DialogActions>
