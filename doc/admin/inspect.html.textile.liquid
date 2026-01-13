@@ -41,6 +41,8 @@ The @Host@ field reports the virtual host specified in the incoming HTTP request
 
 The @RemoteAddr@ field reports the source of the incoming TCP connection, which is typically a local address associated with the Nginx proxy service.
 
+The @XForwardedFor@ field reports the value of the @X-Forwarded-For@ header in the request. Assuming well-behaved proxies and client, this is a comma-separated list of IP addresses where the rightmost is the nearest downstream proxy's client and the leftmost is the originating client.
+
 The @Elapsed@ field reports the number of seconds since the incoming HTTP request headers were received.
 
 h2. Example response
@@ -53,6 +55,7 @@ h2. Example response
     "Host": "tordo.arvadosapi.com",
     "URL": "/arvados/v1/groups?order=name+asc&filters=[[%22owner_uuid%22,%22%3D%22,%22zzzzz-tpzed-aaaaaaaaaaaaaaa%22],[%22group_class%22,%22in%22,[%22project%22,%22filter%22]]]",
     "RemoteAddr": "127.0.0.1:55822",
+    "XForwardedFor": "192.168.0.111, 10.0.0.123",
     "Elapsed": 0.006363228
   },
   {
@@ -61,6 +64,7 @@ h2. Example response
     "Host": "tordo.arvadosapi.com",
     "URL": "/arvados/v1/users/current",
     "RemoteAddr": "127.0.0.1:55814",
+    "XForwardedFor": "192.168.0.222, 10.0.0.123",
     "Elapsed": 0.04796585
   }
 ]
