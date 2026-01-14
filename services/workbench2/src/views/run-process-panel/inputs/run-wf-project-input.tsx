@@ -56,7 +56,6 @@ interface ProjectInputComponentState {
     open: boolean;
     hasBeenOpened: boolean;
     defaultProject?: ProjectResource;
-    originalProject?: ProjectResource;
     selectedProject?: ProjectResource;
     targetProject?: ProjectResource;
 }
@@ -91,7 +90,6 @@ const ProjectInputComponent = connect(mapStateToProps)(
             open: false,
             hasBeenOpened: false,
             defaultProject: undefined, // defined in redux as the current project where the workflow will run
-            originalProject: undefined, // selected project when the dialog was opened
             selectedProject: undefined, // current project selected in the dialog
             targetProject: undefined, // set on submit when dialog closes
         };
@@ -193,8 +191,7 @@ const ProjectInputComponent = connect(mapStateToProps)(
                 if (this.state.selectedProject.kind === ResourceKind.PROJECT || this.state.selectedProject.kind === ResourceKind.USER) {
                     this.props.dispatch<any>(runProcessPanelActions.SET_PROCESS_OWNER_UUID(this.state.selectedProject.uuid));
                     this.setState({ targetProject: this.state.selectedProject });
-                }
-                if (this.state.originalProject && this.state.selectedProject.uuid !== this.state.originalProject.uuid) {
+                    // Update redux form value to be submitted
                     this.props.input.onChange(this.state.selectedProject);
                 }
             }
