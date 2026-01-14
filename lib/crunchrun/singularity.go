@@ -17,6 +17,7 @@ import (
 	"os/user"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -517,7 +518,13 @@ func (e *singularityExecutor) InjectCommand(ctx context.Context, detachKeys, use
 	if err != nil {
 		return nil, err
 	}
-	return exec.CommandContext(ctx, "nsenter", append([]string{fmt.Sprintf("--target=%d", target), "--all"}, injectcmd...)...), nil
+	cmd := exec.CommandContext(ctx, "nsenter", append([]string{fmt.Sprintf("--target=%d", target), "--all"}, injectcmd...)...)
+	if e.sudo {
+		cmd.Args = slices.Insert(cmd.Args, 0, cmd.Path)
+		cmd.Path, err = exec.LookPath("sudo")
+		return cmd, err
+	}
+	return cmd, nil
 }
 
 var (
