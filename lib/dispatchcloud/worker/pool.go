@@ -517,6 +517,12 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 		return wkr, false
 	}
 
+	logger := wp.logger.WithFields(logrus.Fields{
+		"InstanceType": it.Name,
+		"Instance":     inst.ID(),
+		"Address":      inst.Address(),
+	})
+
 	state := StateUnknown
 	if _, ok := wp.creating[secret]; ok {
 		state = StateBooting
@@ -528,16 +534,25 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 	// process); otherwise, default to "run". After this,
 	// wkr.idleBehavior is the source of truth, and will only be
 	// changed via SetIdleBehavior().
-	idleBehavior := IdleBehavior(inst.Tags()[wp.tagKeyPrefix+tagKeyIdleBehavior])
+	idleBehaviorTag := inst.Tags()[wp.tagKeyPrefix+tagKeyIdleBehavior]
+	idleBehavior := IdleBehavior(idleBehaviorTag)
 	if !validIdleBehavior[idleBehavior] {
 		idleBehavior = IdleBehaviorRun
 	}
+	// ProviderType is blank if the InstanceType tag did not map
+	// to a configured type.  Presumably this means it was started
+	// by a previous dispatch process and its type has been
+	// removed from our configuration.  It will not be eligible to
+	// run any containers, so we put it in drain state so it shuts
+	// down after the first probe succeeds and (if applicable) any
+	// running containers finish.
+	if it.ProviderType == "" {
+		if idleBehavior != IdleBehaviorHold {
+			idleBehavior = IdleBehaviorDrain
+		}
+		logger.Infof("%sing instance that was tagged with an unrecognized InstanceType and IdleBehavior = %s", idleBehavior, idleBehaviorTag)
+	}
 
-	logger := wp.logger.WithFields(logrus.Fields{
-		"InstanceType": it.Name,
-		"Instance":     inst.ID(),
-		"Address":      inst.Address(),
-	})
 	logger.WithFields(logrus.Fields{
 		"State":        state,
 		"IdleBehavior": idleBehavior,
@@ -1077,8 +1092,10 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		itTag := inst.Tags()[wp.tagKeyPrefix+tagKeyInstanceType]
 		it, ok := wp.instanceTypes[itTag]
 		if !ok {
-			wp.logger.WithField("Instance", inst.ID()).Errorf("unknown InstanceType tag %q --- ignoring", itTag)
-			continue
+			// updateWorker will notice this isn't a real
+			// instance type, and set IdleBehavior to
+			// drain.
+			it.Name = itTag
 		}
 		if wkr, isNew := wp.updateWorker(inst, it); isNew {
 			notify = true
