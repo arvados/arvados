@@ -538,7 +538,8 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	srvurl, _ := url.Parse(srv.URL)
 
 	// Write a config file for InstanceCommand to use.
-	cluster := arvadostest.DefaultCluster(c, "zzzzz")
+	cluster, err := config.DefaultCluster(c, "zzzzz")
+	c.Assert(err, check.IsNil)
 	cluster.Services.DispatchCloud.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL(*srvurl): arvados.ServiceInstance{}}
 	cluster.ManagementToken = s.cluster.ManagementToken
 	conffile := c.MkDir() + "config.yml"

@@ -1,26 +1,27 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: AGPL-3.0
 
-package arvadostest
+package config
 
 import (
 	"bytes"
 	"os"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	. "gopkg.in/check.v1"
 )
 
-func DefaultCluster(c *C, clusterID string) arvados.Cluster {
+func DefaultCluster(c *C, clusterID string) (arvados.Cluster, error) {
 	logger := ctxlog.New(os.Stderr, "text", "info")
 	confdata := []byte(`Clusters: {zzzzz: {}}`)
-	loader := config.NewLoader(bytes.NewBuffer(confdata), logger)
+	loader := NewLoader(bytes.NewBuffer(confdata), logger)
 	loader.SkipLegacy = true
 	loader.Path = "-"
 	cfg, err := loader.Load()
-	c.Assert(err, IsNil)
-	return cfg.Clusters["zzzzz"]
+	if err != nil {
+		return arvados.Cluster{}, err
+	}
+	return cfg.Clusters["zzzzz"], nil
 }
