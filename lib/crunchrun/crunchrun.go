@@ -1885,10 +1885,11 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
 	stdinConfig := flags.Bool("stdin-config", false, "Load config and environment variables from JSON message on stdin")
+	stdinPrices := flags.Bool("stdin-prices", false, "Load instance prices from stdin and notify existing crunch-run processes (only applies in -list mode)")
 	configFile := flags.String("config", arvados.DefaultConfigFile, "filename of cluster config file to try loading if -stdin-config=false (default is $ARVADOS_CONFIG)")
 	sleep := flags.Duration("sleep", 0, "Delay before starting (testing use only)")
 	kill := flags.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
-	list := flags.Bool("list", false, "List UUIDs of existing crunch-run processes (and notify them to use price data passed on stdin)")
+	list := flags.Bool("list", false, "List UUIDs of existing crunch-run processes")
 	enableMemoryLimit := flags.Bool("enable-memory-limit", true, "tell container runtime to limit container's memory usage")
 	enableNetwork := flags.String("container-enable-networking", "default", "enable networking \"always\" (for all containers) or \"default\" (for containers that request it)")
 	networkMode := flags.String("container-network-mode", "default", `Docker network mode for container (use any argument valid for docker --net)`)
@@ -1928,6 +1929,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	case *kill >= 0:
 		return KillProcess(containerUUID, syscall.Signal(*kill), stdout, stderr)
 	case *list:
+		if !*stdinPrices {
+			stdin = nil
+		}
 		return ListProcesses(stdin, stdout, stderr)
 	}
 
