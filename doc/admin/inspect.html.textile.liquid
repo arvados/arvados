@@ -41,7 +41,7 @@ The @Host@ field reports the virtual host specified in the incoming HTTP request
 
 The @RemoteAddr@ field reports the source of the incoming TCP connection, which is typically a local address associated with the Nginx proxy service.
 
-The @XForwardedFor@ field reports the value of the @X-Forwarded-For@ header in the request. Assuming well-behaved proxies and client, this is a comma-separated list of IP addresses where the rightmost is the nearest downstream proxy's client and the leftmost is the originating client.
+The @XForwardedFor@ field reports the value of the "@X-Forwarded-For@ header":https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-For in the request.
 
 The @Elapsed@ field reports the number of seconds since the incoming HTTP request headers were received.
 
