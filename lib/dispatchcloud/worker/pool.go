@@ -534,7 +534,8 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 	// process); otherwise, default to "run". After this,
 	// wkr.idleBehavior is the source of truth, and will only be
 	// changed via SetIdleBehavior().
-	idleBehavior := IdleBehavior(inst.Tags()[wp.tagKeyPrefix+tagKeyIdleBehavior])
+	idleBehaviorTag := inst.Tags()[wp.tagKeyPrefix+tagKeyIdleBehavior]
+	idleBehavior := IdleBehavior(idleBehaviorTag)
 	if !validIdleBehavior[idleBehavior] {
 		idleBehavior = IdleBehaviorRun
 	}
@@ -546,15 +547,10 @@ func (wp *Pool) updateWorker(inst cloud.Instance, it arvados.InstanceType) (*wor
 	// down after the first probe succeeds and (if applicable) any
 	// running containers finish.
 	if it.ProviderType == "" {
-		switch idleBehavior {
-		case IdleBehaviorHold:
-			logger.Info("invalid instance type, but tagged IdleBehavior = hold -- still holding")
-		case IdleBehaviorDrain:
-			logger.Info("invalid instance type, and tagged IdleBehavior = drain -- still draining")
-		default: // IdleBehaviorRun
-			logger.Infof("invalid instance type, and tagged IdleBehavior = %s -- setting IdleBehavior to drain", idleBehavior)
+		if idleBehavior != IdleBehaviorHold {
 			idleBehavior = IdleBehaviorDrain
 		}
+		logger.Infof("%sing instance that was tagged with an unrecognized InstanceType and IdleBehavior = %s", idleBehavior, idleBehaviorTag)
 	}
 
 	logger.WithFields(logrus.Fields{
