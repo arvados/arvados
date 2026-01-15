@@ -2449,3 +2449,16 @@ func dumpAllLogFiles(c *C, cr *ContainerRunner) {
 		c.Log(logFileContent(c, cr, fi.Name()))
 	}
 }
+
+func (s *TestSuite) TestCommand_List(c *C) {
+	err := os.Remove(path.Join(lockdir, brokenfile))
+	if !os.IsNotExist(err) {
+		c.Assert(err, IsNil)
+	}
+	deadlockreader, _ := io.Pipe()
+	var stdout, stderr bytes.Buffer
+	code := Command.RunCommand("crunch-run", []string{"--list"}, deadlockreader, &stdout, &stderr)
+	c.Check(code, Equals, 0)
+	c.Check(stdout.String(), Equals, "")
+	c.Check(stderr.String(), Equals, "")
+}
