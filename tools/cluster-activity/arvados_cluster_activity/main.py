@@ -135,7 +135,7 @@ def get_prometheus_client():
         basic_auth = base64.b64encode(
             f"{prom_user}:{os.environ.get('PROMETHEUS_PASSWORD', '')}".encode('utf-8'),
         ).decode('ascii')
-        headers["Authorization"] = f"Basic {auth}"
+        headers["Authorization"] = f"Basic {basic_auth}"
     else:
         logging.warn("Prometheus credentials not found, not collecting activity from Prometheus")
         return None
