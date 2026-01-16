@@ -119,3 +119,7 @@ outputs:
     type: File
     outputBinding:
       glob: report.html
+  costData:
+    type: File
+    outputBinding:
+      glob: cost.csv
