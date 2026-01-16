@@ -84,11 +84,16 @@ requirements:
 
   EnvVarRequirement:
     envDef:
-      PROMETHEUS_APIKEY: "$(inputs.prometheus_apikey || '')"
-      PROMETHEUS_HOST: "$(inputs.prometheus_host || '')"
-      PROMETHEUS_PASSWORD: "$(inputs.prometheus_password || '')"
-      PROMETHEUS_USER: "$(inputs.prometheus_user || '')"
       REQUESTS_CA_BUNDLE: /etc/arvados/ca-certificates.crt
+
+  InitialWorkDirRequirement:
+    listing:
+      - entryname: prometheus.env
+        entry: |-
+          PROMETHEUS_APIKEY=$(inputs.prometheus_apikey || '')
+          PROMETHEUS_HOST=$(inputs.prometheus_host || '')
+          PROMETHEUS_PASSWORD=$(inputs.prometheus_password || '')
+          PROMETHEUS_USER=$(inputs.prometheus_user || '')
 
 hints:
   # Disable reuse because missing/empty reporting_end parameter means "today",
@@ -101,6 +106,7 @@ hints:
 
 arguments:
   - arv-cluster-activity
+  - "--prometheus-auth=prometheus.env"
   - {prefix: '--start', valueFrom: $(inputs.reporting_start)}
   - {prefix: '--end', valueFrom: $(getDateWithDefault(inputs.reporting_end))}
   - {prefix: '--exclude', valueFrom: $(inputs.exclude)}
