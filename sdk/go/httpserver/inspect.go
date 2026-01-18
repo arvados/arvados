@@ -91,23 +91,25 @@ func Inspect(registry *prometheus.Registry, authToken string, next http.Handler)
 			mtx.Lock()
 			defer mtx.Unlock()
 			type outrec struct {
-				RequestID  string
-				Method     string
-				Host       string
-				URL        string
-				RemoteAddr string
-				Elapsed    float64
+				RequestID     string
+				Method        string
+				Host          string
+				URL           string
+				RemoteAddr    string
+				XForwardedFor string
+				Elapsed       float64
 			}
 			now := time.Now()
 			outrecs := []outrec{}
 			for req, e := range current {
 				outrecs = append(outrecs, outrec{
-					RequestID:  req.Header.Get(HeaderRequestID),
-					Method:     req.Method,
-					Host:       req.Host,
-					URL:        req.URL.String(),
-					RemoteAddr: req.RemoteAddr,
-					Elapsed:    now.Sub(e.startTime).Seconds(),
+					RequestID:     req.Header.Get(HeaderRequestID),
+					Method:        req.Method,
+					Host:          req.Host,
+					URL:           req.URL.String(),
+					RemoteAddr:    req.RemoteAddr,
+					XForwardedFor: req.Header.Get("X-Forwarded-For"),
+					Elapsed:       now.Sub(e.startTime).Seconds(),
 				})
 			}
 			sort.Slice(outrecs, func(i, j int) bool { return outrecs[i].Elapsed < outrecs[j].Elapsed })

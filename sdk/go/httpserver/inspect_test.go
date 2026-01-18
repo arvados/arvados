@@ -24,6 +24,7 @@ func (s *Suite) TestInspect(c *check.C) {
 	handlerReturned := make(chan struct{})
 	reqctx, reqcancel := context.WithCancel(context.Background())
 	longreq := httptest.NewRequest("GET", "/test", nil).WithContext(reqctx)
+	longreq.Header.Set("X-Forwarded-For", "192.168.0.123, 172.16.0.123")
 	go func() {
 		mh.ServeHTTP(httptest.NewRecorder(), longreq)
 		close(handlerReturned)
@@ -50,6 +51,7 @@ func (s *Suite) TestInspect(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(reqs, check.HasLen, 1)
 	c.Check(reqs[0]["URL"], check.Equals, "/test")
+	c.Check(reqs[0]["XForwardedFor"], check.Equals, "192.168.0.123, 172.16.0.123")
 
 	// Request is active, so we should see active request age > 0
 	resp = httptest.NewRecorder()
