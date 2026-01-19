@@ -531,6 +531,16 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
 	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, test.InstanceType(1).ProviderType)
 	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, test.InstanceType(1).Name)
+}
+
+func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
+	s.cluster.ManagementToken = "abcdefgh"
+	Drivers["test"] = s.stubDriver
+	s.disp.setupOnce.Do(s.disp.initialize)
+	go s.disp.run()
+	defer s.disp.Close()
+	ok := s.disp.pool.Create(test.InstanceType(1))
+	c.Check(ok, check.Equals, true)
 
 	// Start an http server so we can test InstanceCommand against
 	// s.disp's management API.
