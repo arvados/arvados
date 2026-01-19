@@ -561,37 +561,44 @@ func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
 	// "instance list"
 	stdout := bytes.NewBuffer(nil)
 	exitcode := InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-header", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
-	c.Check(exitcode, check.Equals, 0)
-	c.Check(stdout.String(), check.Matches, `instance\t.*\n`+
+	c.Check(exitcode, check.Equals, 0)          // `instance list` (after create)
+	c.Check(stdout.String(), check.Matches, ``+ // `instance list` (after create)
+		`instance\t.*\n`+
 		`inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\trun\ttype1\tprovidertype1\t0\.123000\t-\n`)
 
 	// "instance hold"
 	stdout.Reset()
 	stderr := bytes.NewBuffer(nil)
 	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"hold", "-config", conffile, "inst1,providertype1"}, bytes.NewBuffer(nil), stdout, stderr)
-	c.Check(exitcode, check.Equals, 0)
-	c.Check(stdout.String(), check.Equals, ``)
-	c.Check(stderr.String(), check.Matches, `(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
+	c.Check(exitcode, check.Equals, 0)         // `instance hold` should succeed
+	c.Check(stdout.String(), check.Equals, ``) // `instance hold` should output nothing
+	c.Check(stderr.String(), check.Matches,    // `instance hold` should show feedback on stderr
+		`(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
 
 	stdout.Reset()
 	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
-	c.Check(exitcode, check.Equals, 0)
-	c.Check(stdout.String(), check.Matches, `inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\thold\ttype1\tprovidertype1\t0\.123000\t-\n`)
+	c.Check(exitcode, check.Equals, 0)      // `instance list` (after hold) should succeed
+	c.Check(stdout.String(), check.Matches, // `instance list` (after hold) should show instance in hold state
+		`inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\thold\ttype1\tprovidertype1\t0\.123000\t-\n`)
 
 	// "instance drain"
 	stdout.Reset()
 	stderr.Reset()
 	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"drain", "-config", conffile, "inst1,providertype1"}, bytes.NewBuffer(nil), stdout, stderr)
-	c.Check(exitcode, check.Equals, 0)
-	c.Check(stdout.String(), check.Equals, ``)
-	c.Check(stderr.String(), check.Matches, `(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
+	c.Check(exitcode, check.Equals, 0)         // `instance drain` should succeed
+	c.Check(stdout.String(), check.Equals, ``) // `instance drain` should output nothing
+	c.Check(stderr.String(), check.Matches,    // `instance drain` should show feedback on stderr
+		`(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
 
-	// "instance list" should show the instance in drain/shutdown
-	// state, or (if shutdown is fast) missing entirely.
 	stdout.Reset()
 	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
-	c.Check(exitcode, check.Equals, 0)
-	if stdout.String() != "" {
+	c.Check(exitcode, check.Equals, 0) // `instance list` (after drain)
+	if stdout.String() == "" {
+		// Instance already drained/shutdown before we even
+		// got our list.
+	} else {
+		// If the instance is still listed, it should be in
+		// drain/shutdown state.
 		c.Check(stdout.String(), check.Matches, `inst1,providertype1\t(-|127\.0\.0\.1:\d+)\tshutdown\tdrain\ttype1\tprovidertype1\t0\.123000\t-\n`)
 	}
 
@@ -599,7 +606,8 @@ func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
 	stdout.Reset()
 	stderr.Reset()
 	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"drain", "-config", conffile, "inst404,providertype404"}, bytes.NewBuffer(nil), stdout, stderr)
-	c.Check(exitcode, check.Equals, 1)
-	c.Check(stdout.String(), check.Equals, ``)
-	c.Check(stderr.String(), check.Matches, `(?ms)(.*\n)?inst404,providertype404: 404 Not Found .*\n`)
+	c.Check(exitcode, check.Equals, 1)         // `instance drain {bad-id}` should fail
+	c.Check(stdout.String(), check.Equals, ``) // `instance drain {bad-id}` should output nothing
+	c.Check(stderr.String(), check.Matches,    // `instance drain {bad-id}` should 404
+		`(?ms)(.*\n)?inst404,providertype404: 404 Not Found .*\n`)
 }
