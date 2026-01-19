@@ -34,24 +34,26 @@ i-0df614e93e4170ae7	10.253.254.157	booting	run	t3small	t3.small	0.020800	-
 
 h2. Drain instances
 
-@arvados-server instance drain <instance-id> [...]@
+<pre>arvados-server instance drain <instance-id> [instance-id ...]</pre>
 
-Set the indicated instances' idle behavior to @drain@ (see "management API":{{site.baseurl}}/api/dispatch.html).
+Set the indicated instances' idle behavior to @drain@.  Containers currently running will be allowed to continue, but when each instance becomes idle, it will be shut down.
 
 h2. Hold instances
 
-@arvados-server instance hold <instance-id> [...]@
+<pre>arvados-server instance hold <instance-id> [instance-id ...]</pre>
 
-Set the indicated instances' idle behavior to @hold@ (see "management API":{{site.baseurl}}/api/dispatch.html).
+Set the indicated instances' idle behavior to @hold@.  The instances will not be shut down automatically.  Containers currently running will be allowed to continue, but no new containers will be scheduled.
 
 h2. Run instances
 
-@arvados-server instance run <instance-id> [...]@
+<pre>arvados-server instance run <instance-id> [instance-id ...]</pre>
 
-Set the indicated instances' idle behavior to @run@ (see "management API":{{site.baseurl}}/api/dispatch.html).
+Set the indicated instances' idle behavior to @run@ (the normal behavior). When the instances become idle, they will be eligible to run new containers. They will be shut down automatically when the configured idle threshold is reached.
 
 h2. Kill instances
 
-@arvados-server instance kill <instance-id> [...]@
+<pre>arvados-server instance kill [-reason "..."] <instance-id> [instance-id ...]</pre>
 
 Shut down the indicated instances immediately, abandoning/failing any containers they are currently running.
+
+The provided reason string will appear in the dispatcher’s log.
