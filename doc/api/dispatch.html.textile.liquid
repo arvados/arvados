@@ -13,6 +13,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 The cloud dispatcher provides several management/diagnostic APIs, intended to be used by a system administrator.
 
+(Note that for interactive use, the "@arvados-server instance@ subcommand":{{site.baseurl}}/admin/dispatch.html provides a command-line interface for the most commonly used parts of this API.)
+
 These APIs are not normally exposed to external clients. To use them, connect directly to the dispatcher's internal URL (see Services.DispatchCloud.InternalURLs in the cluster config file). All requests must include the cluster's management token (@ManagementToken@ in the cluster config file).
 
 Example:
