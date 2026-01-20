@@ -7,7 +7,6 @@ import {
     reset,
     startSubmit,
     stopSubmit,
-    initialize,
     FormErrors,
     formValueSelector
 } from 'redux-form';
@@ -42,15 +41,14 @@ export const COLLECTION_CREATE_FORM_SELECTOR = formValueSelector(COLLECTION_CREA
 export const openCollectionCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { router } = getState();
+        let ownerUuidToUse = ownerUuid;
         if (!isProjectOrRunProcessRoute(router)) {
             const userUuid = getUserUuid(getState());
             if (!userUuid) { return; }
-            dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid: userUuid }));
-        } else {
-            dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid }));
+            ownerUuidToUse = userUuid;
         }
         dispatch(fileUploaderActions.CLEAR_UPLOAD());
-        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: { ownerUuid } }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: { ownerUuid: ownerUuidToUse } }));
     };
 
 export const createCollection = (data: CollectionCreateFormDialogData) =>

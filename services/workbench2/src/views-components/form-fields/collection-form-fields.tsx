@@ -39,18 +39,22 @@ export const CollectionNameField = connect(
             autoFocus={true} /></span>
     );
 
+type DialogCollectionNameFieldProps = {
+    defaultValue?: string;
+    setValue: (value: string) => void;
+    validators: Validator[];
+}
+
 export const DialogCollectionNameField = connect(
     (state: RootState) => {
         return {
             validators: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
                 COLLECTION_NAME_VALIDATION : COLLECTION_NAME_VALIDATION_ALLOW_SLASH)
         };
-    })((props: {
-        defaultValue: string; setValue: (value: string) => void; validators: Validator[] }) => {
-        const { defaultValue, setValue, validators } = props;
+    })(({ defaultValue, setValue, validators }: DialogCollectionNameFieldProps) => {
         return <DialogTextField
                     label='Collection Name'
-                    defaultValue={defaultValue}
+                    defaultValue={defaultValue || ''}
                     setValue={setValue}
                     validators={validators}
                 />;

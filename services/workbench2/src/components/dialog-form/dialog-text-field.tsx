@@ -41,13 +41,14 @@ const richTextStyles: CustomStyleRulesCallback<RichTextCssRules> = (theme: Arvad
 });
 
 interface DialogTextFieldProps {
+    disabled?: boolean;
     label: string;
     defaultValue: string;
     validators: Validator[];
     setValue: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export const DialogTextField = React.memo(({ label, defaultValue, validators, setValue }: DialogTextFieldProps) => {
+export const DialogTextField = React.memo(({  disabled, label, defaultValue, validators, setValue }: DialogTextFieldProps) => {
     const [thisValue, setThisValue] = React.useState(defaultValue);
     const errs = getFieldErrors(thisValue, validators)
     const prevErr = usePrevious(errs)
@@ -62,6 +63,7 @@ export const DialogTextField = React.memo(({ label, defaultValue, validators, se
 
     return (
         <TextField
+            disabled={disabled}
             value={thisValue}
             onChange={(e) => setThisValue(e.target.value)}
             autoFocus

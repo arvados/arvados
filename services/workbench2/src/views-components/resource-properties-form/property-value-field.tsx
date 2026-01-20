@@ -20,6 +20,8 @@ import { TAG_VALUE_VALIDATION } from 'validators/validators';
 import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
 import { memoize } from 'lodash';
+import { useStateWithValidation } from 'common/useStateWithValidation';
+import { Validator } from 'validators/validators';
 
 interface PropertyKeyProp {
     propertyKeyId: string;
@@ -83,6 +85,59 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
         />
     )} />;
 
+type DialogPropertyValueInputProps = VocabularyProp & {
+    onSelect: (value: string) => void,
+    setValueErrors: (errors: string[]) => void,
+    propertyKeyId: string,
+    value?: string
+};
+
+export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, value: initialValue, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
+    const validationArray = getValueValidation(propertyKeyId, vocabulary);
+    const [value, setValue, valueErrs] = useStateWithValidation(initialValue || '', validationArray, 'Value');
+
+    // Sync internal state when prop value changes
+    React.useEffect(() => {
+        setValue(initialValue || '');
+    }, [initialValue, setValue]);
+
+    React.useEffect(() => {
+        setValueErrors(valueErrs);
+    }, [valueErrs]);
+
+    return <Autocomplete
+        label='Value'
+        items={[]}
+        value={value}
+        error={valueErrs.length > 0}
+        helperText={valueErrs.join('\n')}
+        disabled={!propertyKeyId}
+        suggestions={getSuggestions(value, propertyKeyId, vocabulary)}
+        renderSuggestion={
+            (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
+                ? `${s.label} (${s.synonyms.join('; ')})`
+                : s.label
+        }
+        onSelect={(selectedSuggestion: PropFieldSuggestion) => {
+            if (valueErrs.length === 0) {
+                onSelect(selectedSuggestion.label);
+                setValue(selectedSuggestion.label);
+            }
+        }}
+        onBlur={() => {
+            // Case-insensitive search for the value in the vocabulary
+            const foundValueID = getTagValueID(propertyKeyId, value, vocabulary);
+            if (foundValueID !== '') {
+                setValue(getTagValueLabel(propertyKeyId, foundValueID, vocabulary));
+            }
+        }}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            const newValue = e.currentTarget.value;
+            setValue(newValue);
+        }}
+    />
+};
+
 /**
  * getValidation must be memoized to prevent infinite re-renders due to Field
  * checking it for changes
@@ -97,6 +152,22 @@ const matchTagValues = (propertyKeyId: string, vocabulary: Vocabulary) =>
         getTagValues(propertyKeyId, vocabulary).find(v => !value || v.label === value)
             ? undefined
             : 'Incorrect value';
+
+const createStrictValueValidator = (propertyKeyId: string, vocabulary: Vocabulary): Validator => {
+    const validValues = getTagValues(propertyKeyId, vocabulary).map(value => value.label);
+    const validValueSet = new Set(validValues);
+    
+    return ((value: string) =>
+        validValueSet.has(value) ? undefined : 'Incorrect value'
+    ) as Validator;
+};
+
+const getValueValidation = (propertyKeyId: string, vocabulary: Vocabulary) => {
+    if (isStrictTag(propertyKeyId, vocabulary)) {
+        return [...TAG_VALUE_VALIDATION, createStrictValueValidator(propertyKeyId, vocabulary)];
+    }
+    return TAG_VALUE_VALIDATION;
+};
 
 const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
     const re = new RegExp(escapeRegExp(value), "i");

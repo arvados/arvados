@@ -59,6 +59,7 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
             id: PROJECT_CREATE_FORM_NAME,
             data: {
                 sourcePanel: GroupClass.PROJECT,
+                ownerUuid: ownerUuid,
             }
         }));
     };

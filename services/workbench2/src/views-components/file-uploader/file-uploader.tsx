@@ -33,10 +33,11 @@ const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): 
     onDelete: file => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(file))
 });
 
-export const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
+const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
 
-export const FileUploaderField = (props: WrappedFieldProps & { label?: string }) =>
-    <>
+export const FileUploaderField = (props: WrappedFieldProps & { label?: string }) => {
+    return <>
         <Typography variant='caption'>{props.label}</Typography>
         <FileUploader disabled={false} onDrop={props.input.onChange} />
-    </>;
+    </>
+};
