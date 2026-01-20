@@ -546,7 +546,7 @@ func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
 	s.disp.setupOnce.Do(s.disp.initialize)
 	go s.disp.run()
 	defer s.disp.Close()
-	ok := s.disp.pool.Create(test.InstanceType(1))
+	_, ok := s.disp.pool.Create(test.InstanceType(1))
 	c.Check(ok, check.Equals, true)
 
 	// Start an http server so we can test InstanceCommand against
