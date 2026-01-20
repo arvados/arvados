@@ -21,7 +21,7 @@ import {
     ValidationProp,
     buildProps
 } from 'views-components/resource-properties-form/property-field-common';
-import { TAG_KEY_VALIDATION, Validator } from 'validators/validators';
+import { TAG_KEY_VALIDATION, REQUIRED_LENGTH255_VALIDATION, Validator } from 'validators/validators';
 import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
 import { useStateWithValidation } from 'common/useStateWithValidation';
@@ -74,16 +74,18 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
     )} />;
 
 type DialogPropertyKeyInputProps = VocabularyProp & {
+    showErrors?: boolean
+    skipValidation?: boolean,
+    clearPropertyKeyOnSelect?: boolean,
     onSelect: (value: string) => void,
     setKeyErrors: (errors: string[]) => void,
-    clearPropertyKeyOnSelect?: boolean,
-    value?: string
 };
 
-export const DialogPropertyKeyInput = ({ vocabulary, clearPropertyKeyOnSelect, value: initialValue, onSelect, setKeyErrors }: DialogPropertyKeyInputProps) => {
-    const validationArray = getKeyValidation(vocabulary);
-    const [key, setKey, keyErrs] = useStateWithValidation(initialValue || '', validationArray, 'Key');
+export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation, clearPropertyKeyOnSelect, onSelect, setKeyErrors }: DialogPropertyKeyInputProps) => {
+    const validationArray = skipValidation ? [] : getKeyValidation(vocabulary);
+    const [key, setKey, keyErrs] = useStateWithValidation('', validationArray, 'Key');
 
+    // report errors to parent component
     React.useEffect(() => {
         setKeyErrors(keyErrs);
     }, [keyErrs]);
@@ -92,8 +94,8 @@ export const DialogPropertyKeyInput = ({ vocabulary, clearPropertyKeyOnSelect, v
         label='Key'
         items={[]}
         value={key}
-        error={keyErrs.length > 0}
-        helperText={keyErrs.join('\n')}
+        error={showErrors && keyErrs.length > 0}
+        helperText={showErrors ? keyErrs.join(', ') : undefined}
         suggestions={getSuggestions(key, vocabulary)}
         renderSuggestion={
             (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
@@ -106,10 +108,8 @@ export const DialogPropertyKeyInput = ({ vocabulary, clearPropertyKeyOnSelect, v
             }
         }}
         onSelect={(selectedSuggestion: PropFieldSuggestion) => {
-            if (keyErrs.length === 0) {
-                onSelect(selectedSuggestion.label);
-                setKey(selectedSuggestion.label);
-            }
+            onSelect(selectedSuggestion.label);
+            setKey(selectedSuggestion.label);
         }}
         onBlur={() => {
             // Case-insensitive search for the key in the vocabulary
@@ -142,9 +142,9 @@ const createStrictTagValidator = (vocabulary: Vocabulary): Validator => {
 
 const getKeyValidation = (vocabulary: Vocabulary) => {
     if (vocabulary.strict_tags) {
-        return [...TAG_KEY_VALIDATION, createStrictTagValidator(vocabulary)];
+        return [...REQUIRED_LENGTH255_VALIDATION, createStrictTagValidator(vocabulary)];
     }
-    return TAG_KEY_VALIDATION;
+    return REQUIRED_LENGTH255_VALIDATION;
 }
 
 const matchTags = (vocabulary: Vocabulary) =>

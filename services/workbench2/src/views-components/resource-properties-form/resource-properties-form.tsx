@@ -11,7 +11,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { PropertyKeyField, DialogPropertyKeyInput, PROPERTY_KEY_FIELD_NAME, PROPERTY_KEY_FIELD_ID } from './property-key-field';
 import { PropertyValueField, DialogPropertyValueInput, PROPERTY_VALUE_FIELD_NAME, PROPERTY_VALUE_FIELD_ID } from './property-value-field';
-import { getTagKeyID } from 'models/vocabulary';
+import { getTagKeyID, Vocabulary } from 'models/vocabulary';
 import { ProgressButton } from 'components/progress-button/progress-button';
 import { GridClassKey } from '@mui/material/Grid';
 
@@ -74,17 +74,26 @@ const mapState = (state: RootState) => {
     }
 }
 
-type DialogResourcePropertiesFormProps = WithStyles<any> & {
-    vocabulary: any,
+type DialogResourcePropertiesFormProps = {
+    vocabulary: Vocabulary,
     onSubmit: (event: React.FormEvent<HTMLFormElement>) => void,
 };
 
-export const DialogResourcePropertiesForm = connect(mapState)(({ classes, vocabulary }: DialogResourcePropertiesFormProps) => {
+export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: DialogResourcePropertiesFormProps) => {
     const [properties, setProperties] = React.useState<Record<string, string | string[] | undefined>>({});
+    const [propertyKeyId, setPropertyKeyId] = React.useState<string | undefined>(undefined);
     const [currentKey, setCurrentKey] = React.useState<string | undefined>(undefined);
     const [currentValue, setCurrentValue] = React.useState<string | undefined>(undefined);
     const [keyErrors, setKeyErrors] = React.useState<string[]>([]);
     const [valueErrors, setValueErrors] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        if (currentKey) {
+            setPropertyKeyId(getTagKeyID(currentKey, vocabulary));
+        } else {
+            setPropertyKeyId(undefined);
+        }
+    }, [currentKey]);
 
     const handleAddProperty = (ev) => {
         ev.preventDefault();
@@ -101,11 +110,11 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ classes, vocabu
     };
 
     return <form data-cy='resource-properties-form'>
-        <Grid container spacing={2} classes={classes}>
+        <Grid container spacing={2}>
             <Grid item xs
             data-cy='key-input'>
                 <DialogPropertyKeyInput
-                    value={currentKey}
+                    clearPropertyKeyOnSelect={true}
                     vocabulary={vocabulary}
                     onSelect={setCurrentKey}
                     setKeyErrors={setKeyErrors} />
@@ -113,16 +122,13 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ classes, vocabu
             <Grid item xs
             data-cy='value-input'>
                 <DialogPropertyValueInput
-                    value={currentValue}
-                    propertyKeyId={currentKey ? getTagKeyID(currentKey, vocabulary) : ''}
+                    propertyKeyId={propertyKeyId || ''}
                     vocabulary={vocabulary}
                     onSelect={setCurrentValue}
                     setValueErrors={setValueErrors}
                 />
             </Grid>
             <Grid item>
-                {console.log('>>>keyErrs', keyErrors)}
-                {console.log('>>>valueErrs', valueErrors)}
                 <AddButton
                     data-cy='property-add-btn'
                     disabled={keyErrors.length > 0 || valueErrors.length > 0 || !currentKey || !currentValue}

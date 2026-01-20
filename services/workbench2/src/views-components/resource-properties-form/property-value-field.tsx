@@ -16,7 +16,7 @@ import {
     connectVocabulary,
     buildProps
 } from 'views-components/resource-properties-form/property-field-common';
-import { TAG_VALUE_VALIDATION } from 'validators/validators';
+import { TAG_VALUE_VALIDATION, REQUIRED_LENGTH255_VALIDATION } from 'validators/validators';
 import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
 import { memoize } from 'lodash';
@@ -86,20 +86,23 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
     )} />;
 
 type DialogPropertyValueInputProps = VocabularyProp & {
+    showErrors?: boolean,
+    skipValidation?: boolean,
+    propertyKeyId: string,
     onSelect: (value: string) => void,
     setValueErrors: (errors: string[]) => void,
-    propertyKeyId: string,
-    value?: string
 };
 
-export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, value: initialValue, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
-    const validationArray = getValueValidation(propertyKeyId, vocabulary);
-    const [value, setValue, valueErrs] = useStateWithValidation(initialValue || '', validationArray, 'Value');
+export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, showErrors, skipValidation, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
+    const validationArray = skipValidation ? [] : getValueValidation(propertyKeyId, vocabulary);
+    const [value, setValue, valueErrs] = useStateWithValidation('', validationArray, 'Value');
 
-    // Sync internal state when prop value changes
+    // clear input when property field gets focused
     React.useEffect(() => {
-        setValue(initialValue || '');
-    }, [initialValue, setValue]);
+        if (!propertyKeyId) {
+            setValue('');
+        }
+    }, [propertyKeyId]);
 
     React.useEffect(() => {
         setValueErrors(valueErrs);
@@ -109,8 +112,8 @@ export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, value: ini
         label='Value'
         items={[]}
         value={value}
-        error={valueErrs.length > 0}
-        helperText={valueErrs.join('\n')}
+        error={showErrors && valueErrs.length > 0}
+        helperText={showErrors ? valueErrs.join(', ') : undefined}
         disabled={!propertyKeyId}
         suggestions={getSuggestions(value, propertyKeyId, vocabulary)}
         renderSuggestion={
@@ -119,10 +122,8 @@ export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, value: ini
                 : s.label
         }
         onSelect={(selectedSuggestion: PropFieldSuggestion) => {
-            if (valueErrs.length === 0) {
-                onSelect(selectedSuggestion.label);
-                setValue(selectedSuggestion.label);
-            }
+            onSelect(selectedSuggestion.label);
+            setValue(selectedSuggestion.label);
         }}
         onBlur={() => {
             // Case-insensitive search for the value in the vocabulary
@@ -156,7 +157,7 @@ const matchTagValues = (propertyKeyId: string, vocabulary: Vocabulary) =>
 const createStrictValueValidator = (propertyKeyId: string, vocabulary: Vocabulary): Validator => {
     const validValues = getTagValues(propertyKeyId, vocabulary).map(value => value.label);
     const validValueSet = new Set(validValues);
-    
+
     return ((value: string) =>
         validValueSet.has(value) ? undefined : 'Incorrect value'
     ) as Validator;
@@ -164,9 +165,9 @@ const createStrictValueValidator = (propertyKeyId: string, vocabulary: Vocabular
 
 const getValueValidation = (propertyKeyId: string, vocabulary: Vocabulary) => {
     if (isStrictTag(propertyKeyId, vocabulary)) {
-        return [...TAG_VALUE_VALIDATION, createStrictValueValidator(propertyKeyId, vocabulary)];
+        return [...REQUIRED_LENGTH255_VALIDATION, createStrictValueValidator(propertyKeyId, vocabulary)];
     }
-    return TAG_VALUE_VALIDATION;
+    return REQUIRED_LENGTH255_VALIDATION;
 };
 
 const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
