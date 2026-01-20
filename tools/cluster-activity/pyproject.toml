@@ -34,7 +34,7 @@ requires-python = "~= 3.10"
 
 [project.optional-dependencies]
 prometheus = [
-  "prometheus-api-client",
+  "prometheus-api-client[dataframe] ~= 0.7",
 ]
 
 [project.scripts]
