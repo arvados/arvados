@@ -116,6 +116,7 @@ Example response:
       "provider_instance_type": "Standard_DS1_v2",
       "last_container_uuid": "zzzzz-dz642-vp7scm21telkadq",
       "last_busy": "2020-01-13T15:20:21.775019617Z",
+      "running_container_uuids": ["zzzzz-dz642-vp7scm21telkadq"],
       "worker_state": "running",
       "idle_behavior": "run"
     },
@@ -130,7 +131,7 @@ The @worker_state@ value indicates the instance's capability to run containers.
 * @unknown@: instance was not created by this dispatcher, and a boot probe has not yet succeeded (this state typically appears briefly after the dispatcher restarts).
 * @booting@: cloud provider says the instance exists, but a boot probe has not yet succeeded.
 * @idle@: instance is idle and ready to run a container.
-* @running@: instance is running a container.
+* @running@: instance is running one or more containers.
 * @shutdown@: cloud provider has been instructed to terminate the instance.
 
 The @idle_behavior@ value determines what the dispatcher will do with the instance when it is idle; see hold/drain/run APIs below.
@@ -139,13 +140,13 @@ h3. Hold an instance
 
 @POST /arvados/v1/dispatch/instances/hold?instance_id={instance}@
 
-Set the indicated instance's idle behavior to @hold@. The instance will not be shut down automatically. If a container is currently running, it will be allowed to continue, but no new containers will be scheduled.
+Set the indicated instance's idle behavior to @hold@. The instance will not be shut down automatically. If any containers are currently running, they will be allowed to continue, but no new containers will be scheduled.
 
 h3. Drain an instance
 
 @POST /arvados/v1/dispatch/instances/drain?instance_id={instance}@
 
-Set the indicated instance's idle behavior to @drain@. If a container is currently running, it will be allowed to continue, but when the instance becomes idle, it will be shut down.
+Set the indicated instance's idle behavior to @drain@. If any containers are currently running, they will be allowed to continue, but when the instance becomes idle, it will be shut down.
 
 h3. Resume an instance
 
@@ -159,6 +160,6 @@ h3. Shut down an instance
 
 Terminate the indicated instance.
 
-If a container is running on the instance, it will be killed too; no effort is made to wait for it to end gracefully.
+If any containers are running on the instance, they will be killed too; no effort is made to wait for them to end gracefully.
 
 The provided @reason@ string will appear in the dispatcher's log.
