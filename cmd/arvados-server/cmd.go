@@ -56,6 +56,7 @@ var (
 		"dispatch-lsf":       lsf.DispatchCommand,
 		"dispatch-slurm":     dispatchslurm.Command,
 		"health":             healthCommand,
+		"instance":           dispatchcloud.InstanceCommand,
 		"keep-balance":       keepbalance.Command,
 		"keep-web":           keepweb.Command,
 		"keepproxy":          keepproxy.Command,

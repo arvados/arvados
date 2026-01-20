@@ -64,6 +64,8 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
 1. Vscode: On the left sidebar, select `Extensions` ![](images/Extensions.png)
    1. In `Search Extensions in Marketplace` enter "remote development".
    1. Choose and install the "Remote Development" extension pack from Microsoft
+   1. In `Search Extensions in Marketplace` enter "remote-ssh".
+   1. Choose and install the "Remote - SSH" extension pack from Microsoft
 1. Vscode: On the left sidebar, choose `Remote Explorer` ![](images/RemoteExplorer.png)
    1. At the top of the Remote Explorer panel choose `SSH targets` ![](images/SSHTargets.png)
    1. Click `Add New` ![](images/AddNew.png)
@@ -99,7 +101,7 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Click `Run Task…`
    1. Select `Register or update CWL workflow on Arvados Workbench`
    1. This will create a file called `WORKFLOW_UUID`
-1. Workbench: Go to `+NEW` and select `New project`
+1. Workbench: Go to `Home Projects`, click `+NEW` and select `New project`
    1. Enter a name for the project like "Lesson 1"
    1. You should arrive at the panel for the new project
 1. Workbench: With `Lesson 1` selected
@@ -111,12 +113,11 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. This should take you to a panel showing the workflow run status
 1. Workbench: workflow run status panel
    1. Wait for the badge in the upper right to say `Completed`
-   1. In the lower panel, double click on the `echo` workflow step
+   1. In the subprocesses tab, click on the `echo` workflow step
    1. This will take you to the status panel for the `echo` step
-   1. Click on the three vertical dots in the top-right corner next to `Completed`
-   1. Choose `Log`
+   1. Click the `Logs` tab
    1. This will take you to the log viewer panel
-   1. Under `Event Type` choose `stdout`
+   1. In the `Event Type` dropdown (which should show `Main logs` by default) choose `stdout`
    1. You should see your message
 
 ## 4. Working with input and output files
@@ -163,7 +164,7 @@ The default value for the `message` parameter will taken from the `lesson3/defau
    1. Click on the `Terminal` menu
    1. Click `Run Task…`
    1. Select `Register or update CWL workflow on Arvados Workbench`
-1. Workbench: Go to `+NEW` and select `New project`
+1. Workbench: Go to `Home Projects` then click `+NEW` and select `New project`
    1. Enter a name for the project like "Lesson 3"
    1. You should arrive at the panel for the new project
 1. Workbench: With `Lesson 3` selected
@@ -180,7 +181,7 @@ The default value for the `message` parameter will taken from the `lesson3/defau
 
 The `message` parameter will be taken from the file `lesson4/main-input.yaml`.  This is useful during development.
 
-1. Workbench: Go to `+NEW` and select `New project`
+1. Workbench: Go to `Home Projects` then click `+NEW` and select `New project`
    1. Enter a name for the project like "Lesson 4"
    1. You should arrive at the panel for the new project
    1. Click on `Additional info` in the upper right to expand the `info` panel

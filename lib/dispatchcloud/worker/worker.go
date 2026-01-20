@@ -339,7 +339,15 @@ func (wkr *worker) probeAndUpdate() {
 
 	if len(ctrUUIDs) > 0 {
 		wkr.busy = updateTime
-		wkr.lastUUID = ctrUUIDs[0]
+		if wkr.lastUUID == "" {
+			// If we have never started a container on
+			// this instance ourselves, all ctrUUIDs must
+			// have been started by a previous dispatch
+			// process, and the information about which
+			// one started last is now gone.  So we just
+			// pick one arbitrarily.
+			wkr.lastUUID = ctrUUIDs[0]
+		}
 	} else if len(wkr.running) > 0 {
 		// Actual last-busy time was sometime between wkr.busy
 		// and now. Now is the earliest opportunity to take
@@ -402,6 +410,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	if prices := wkr.instance.PriceHistory(wkr.instType); len(prices) > 0 {
 		j, _ := json.Marshal(prices)
 		stdin = bytes.NewReader(j)
+		cmd += " --stdin-prices"
 	}
 	stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
 	if err != nil {

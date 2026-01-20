@@ -184,8 +184,10 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 }
 
 // ListProcesses lists UUIDs of active crunch-run processes.
-func ListProcesses(stdin io.Reader, stdout, stderr io.Writer) int {
-	if buf, err := io.ReadAll(stdin); err == nil && len(buf) > 0 {
+func ListProcesses(pricesdata io.Reader, stdout, stderr io.Writer) int {
+	if pricesdata == nil {
+		// skip price update
+	} else if buf, err := io.ReadAll(pricesdata); err == nil && len(buf) > 0 {
 		// write latest pricing data to disk where
 		// current/future crunch-run processes can load it
 		fnm := filepath.Join(lockdir, pricesfile)

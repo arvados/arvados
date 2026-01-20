@@ -41,12 +41,16 @@ func (s *singularitySuite) TearDownSuite(c *C) {
 	}
 }
 
-func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
-	// With modern iptables, singularity (as of 4.2.1) cannot
-	// enable networking when invoked by a regular user. Under
-	// arvados-dispatch-cloud, crunch-run runs as root, so it's
-	// OK. For testing, assuming tests are not running as root, we
-	// use sudo -- but only if requested via environment variable.
+// With modern iptables, singularity (as of 4.2.1) cannot enable
+// networking when invoked by a regular user. Under
+// arvados-dispatch-cloud, crunch-run runs as root, so it's OK. For
+// testing, assuming tests are not running as root, we use sudo -- but
+// only if requested via environment variable.
+//
+// This also applies to the "nsenter" command used by Inject: the
+// standard dev/test environment installs nsenter without special
+// privileges, so it is only useful if we are/become root.
+func (s *singularitySuite) useRootOrSkip(c *C) {
 	if os.Getuid() == 0 {
 		// already root
 	} else if os.Getenv("ARVADOS_TEST_PRIVESC") == "sudo" {
@@ -55,17 +59,15 @@ func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
 	} else {
 		c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_PRIVESC=sudo to enable this test")
 	}
+}
+
+func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
+	s.useRootOrSkip(c)
 	s.executorSuite.TestEnableNetwork_Listen(c)
 }
 
 func (s *singularitySuite) TestInject(c *C) {
-	// FIXME #23225: This test ~never runs now that we've gotten away from
-	// `arvados-server install`. Remove the `path` test and implement a better
-	// one.
-	path, err := exec.LookPath("nsenter")
-	if err != nil || path != "/var/lib/arvados/bin/nsenter" {
-		c.Skip("looks like /var/lib/arvados/bin/nsenter is not installed -- re-run `arvados-server install`?")
-	}
+	s.useRootOrSkip(c)
 	s.executorSuite.TestInject(c)
 }
 
