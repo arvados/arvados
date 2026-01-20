@@ -13,6 +13,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 The cloud dispatcher provides several management/diagnostic APIs, intended to be used by a system administrator.
 
+{% include 'notebox_begin' %}
+The "@arvados-server instance@ subcommand":{{site.baseurl}}/admin/dispatch.html provides a command-line interface for the most commonly used parts of this API.
+{% include 'notebox_end' %}
+
 These APIs are not normally exposed to external clients. To use them, connect directly to the dispatcher's internal URL (see Services.DispatchCloud.InternalURLs in the cluster config file). All requests must include the cluster's management token (@ManagementToken@ in the cluster config file).
 
 Example:
@@ -119,6 +123,8 @@ Example response:
 }</pre></notextile>
 
 The @instance@ value is the instance's identifier, assigned by the cloud provider. It can be used with the instance APIs below.
+
+The @last_container_uuid@ value indicates the most recently started container, if any. (It does not necessarily indicate that the container is still running.)
 
 The @worker_state@ value indicates the instance's capability to run containers.
 * @unknown@: instance was not created by this dispatcher, and a boot probe has not yet succeeded (this state typically appears briefly after the dispatcher restarts).
