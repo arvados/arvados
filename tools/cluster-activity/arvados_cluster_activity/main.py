@@ -14,6 +14,11 @@ import os
 import logging
 import re
 
+try:
+    from prometheus_api_client import PrometheusConnect
+except ImportError as e:
+    PrometheusConnect = None
+
 from arvados_cluster_activity.report import ClusterActivityReport, aws_monthly_cost, format_with_suffix_base2
 from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
 
@@ -119,9 +124,7 @@ def print_container_usage(prom, start_time, end_time, metric, label, fn=None):
 
 
 def get_prometheus_client():
-    try:
-        from prometheus_api_client import PrometheusConnect
-    except ImportError as e:
+    if PrometheusConnect is None:
         logging.warn("Failed to import prometheus_api_client client.  Did you include the [prometheus] option when installing the package?  Error was: %s" % e)
         return None
 
@@ -135,7 +138,7 @@ def get_prometheus_client():
         basic_auth = base64.b64encode(
             f"{prom_user}:{os.environ.get('PROMETHEUS_PASSWORD', '')}".encode('utf-8'),
         ).decode('ascii')
-        headers["Authorization"] = f"Basic {auth}"
+        headers["Authorization"] = f"Basic {basic_auth}"
     else:
         logging.warn("Prometheus credentials not found, not collecting activity from Prometheus")
         return None
