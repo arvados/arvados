@@ -344,6 +344,25 @@ func (s *SchedulerSuite) TestPackContainers_DisabledInConfig(c *check.C) {
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 }
 
+// A type-8 instance can fit all 4 containers, but
+// containers-per-instance is limited to 2 by
+// MaxRunningContainersPerInstance config, so we create 2 new
+// instances instead of just 1.
+func (s *SchedulerSuite) TestPackContainers_LimitedInConfig(c *check.C) {
+	// Ensure smallest instance type is type-8
+	for i := range 8 {
+		delete(s.testCluster.InstanceTypes, test.InstanceType(i).Name)
+	}
+	queue, pool := s.setupTestPackContainers(c)
+	s.testCluster.Containers.CloudVMs.MaxRunningContainersPerInstance = 2
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	New(ctx, arvados.NewClientFromEnv(), queue, pool, nil, &s.testCluster).runQueue()
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{
+		test.InstanceType(8), test.InstanceType(8),
+	})
+	c.Check(pool.starts, check.HasLen, 0)
+}
+
 // An existing type-2 instance is in StateUnknown (e.g., it was
 // created by our predecessor and we haven't had a successful probe
 // response yet) so we should only start one new instance. When the
