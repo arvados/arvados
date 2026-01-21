@@ -89,20 +89,18 @@ type DialogPropertyValueInputProps = VocabularyProp & {
     showErrors?: boolean,
     skipValidation?: boolean,
     propertyKeyId: string,
+    clearValueSignal?: {},
     onSelect: (value: string) => void,
     setValueErrors: (errors: string[]) => void,
 };
 
-export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, showErrors, skipValidation, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
+export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, showErrors, skipValidation, clearValueSignal, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
     const validationArray = skipValidation ? [] : getValueValidation(propertyKeyId, vocabulary);
     const [value, setValue, valueErrs] = useStateWithValidation('', validationArray, 'Value');
 
-    // clear input when property field gets focused
     React.useEffect(() => {
-        if (!propertyKeyId) {
             setValue('');
-        }
-    }, [propertyKeyId]);
+    }, [clearValueSignal]);
 
     React.useEffect(() => {
         setValueErrors(valueErrs);

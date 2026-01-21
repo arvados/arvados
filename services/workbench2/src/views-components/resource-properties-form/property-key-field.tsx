@@ -77,11 +77,12 @@ type DialogPropertyKeyInputProps = VocabularyProp & {
     showErrors?: boolean
     skipValidation?: boolean,
     clearPropertyKeyOnSelect?: boolean,
+    sendClearValueSignal?: (signal: {}) => void,
     onSelect: (value: string) => void,
     setKeyErrors: (errors: string[]) => void,
 };
 
-export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation, clearPropertyKeyOnSelect, onSelect, setKeyErrors }: DialogPropertyKeyInputProps) => {
+export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation, clearPropertyKeyOnSelect, onSelect, setKeyErrors, sendClearValueSignal }: DialogPropertyKeyInputProps) => {
     const validationArray = skipValidation ? [] : getKeyValidation(vocabulary);
     const [key, setKey, keyErrs] = useStateWithValidation('', validationArray, 'Key');
 
@@ -105,6 +106,9 @@ export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation,
         onFocus={() => {
             if (clearPropertyKeyOnSelect && key) {
                 setKey('');
+                if (sendClearValueSignal) {
+                    sendClearValueSignal({});
+                }
             }
         }}
         onSelect={(selectedSuggestion: PropFieldSuggestion) => {

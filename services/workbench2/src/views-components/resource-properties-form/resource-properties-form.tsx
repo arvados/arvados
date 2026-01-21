@@ -14,6 +14,7 @@ import { PropertyValueField, DialogPropertyValueInput, PROPERTY_VALUE_FIELD_NAME
 import { getTagKeyID, Vocabulary } from 'models/vocabulary';
 import { ProgressButton } from 'components/progress-button/progress-button';
 import { GridClassKey } from '@mui/material/Grid';
+import { Chips } from 'components/chips/chips'
 
 const AddButton = withStyles(theme => ({
     root: { marginTop: theme.spacing(1) }
@@ -84,6 +85,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
     const [propertyKeyId, setPropertyKeyId] = React.useState<string | undefined>(undefined);
     const [currentKey, setCurrentKey] = React.useState<string | undefined>(undefined);
     const [currentValue, setCurrentValue] = React.useState<string | undefined>(undefined);
+    const [clearValueSignal, sendClearValueSignal] = React.useState<{}>({});
     const [keyErrors, setKeyErrors] = React.useState<string[]>([]);
     const [valueErrors, setValueErrors] = React.useState<string[]>([]);
 
@@ -107,6 +109,25 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
             }
         }
         setCurrentValue(undefined);
+        // sending an epmty object that the DialogPropertyValueInput component can listen to and clear its value
+        sendClearValueSignal({});
+    };
+
+    const onChipsChange = (newValues: string[]) => {
+        const newProperties: Record<string, string | string[] | undefined> = {};
+        for (const chip of newValues) {
+            const [key, value] = chip.split(': ').map(s => s.trim());
+            if (newProperties[key]) {
+                if (Array.isArray(newProperties[key])) {
+                    (newProperties[key] as string[]).push(value);
+                } else {
+                    newProperties[key] = [newProperties[key] as string, value];
+                }
+            } else {
+                newProperties[key] = value;
+            }
+        }
+        setProperties(newProperties);
     };
 
     return <form data-cy='resource-properties-form'>
@@ -117,7 +138,9 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
                     clearPropertyKeyOnSelect={true}
                     vocabulary={vocabulary}
                     onSelect={setCurrentKey}
-                    setKeyErrors={setKeyErrors} />
+                    setKeyErrors={setKeyErrors}
+                    sendClearValueSignal={sendClearValueSignal}
+                />
             </Grid>
             <Grid item xs
             data-cy='value-input'>
@@ -126,6 +149,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
                     vocabulary={vocabulary}
                     onSelect={setCurrentValue}
                     setValueErrors={setValueErrors}
+                    clearValueSignal={clearValueSignal}
                 />
             </Grid>
             <Grid item>
@@ -140,5 +164,27 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
                 </AddButton>
             </Grid>
         </Grid>
+        <Grid>
+            <Chips
+                values={formatChips(properties)}
+                clickable={true}
+                deletable={true}
+                onChange={onChipsChange}
+            />
+        </Grid>
     </form>
 });
+
+const formatChips = (properties: Record<string, string | string[] | undefined>) => {
+    const result: string[] = [];
+    for (const key in properties) {
+        if (!properties[key]) continue;
+        if (typeof properties[key] === 'string') {
+            properties[key] = [properties[key] as string];
+        }
+        for (const value of properties[key]!) {
+            result.push(`${key}: ${value}`)
+        }
+    }
+    return result;
+};
