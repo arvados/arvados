@@ -274,13 +274,13 @@ tryrun:
 		for _, it := range types {
 			eligibleTypes[it.Name] = true
 		}
-		// ready>=0 means instances[ready] is where we should
+		// bestInstIdx>=0 means instances[bestInstIdx] is where we should
 		// try to run ctr (it's one of the eligible instance
 		// types, and has enough resources to accommodate
-		// ctr).  ready<0 means we can't start ctr right now,
+		// ctr).  bestInstIdx<0 means we can't start ctr right now,
 		// all we can do is request a new instance or just
 		// wait.
-		ready := -1
+		bestInstIdx := -1
 		for i, instance := range instances {
 			switch {
 			case instance.WorkerState != worker.StateUnknown &&
@@ -305,29 +305,29 @@ tryrun:
 					// when idle.
 					logger.Infof("BUG? insufficient resources on idle instance %s type %s for container %s: ir %+v ctrr %+v", instance.Instance, instance.ArvadosInstanceType, ctr.UUID, instanceResources[i], ctrResources)
 				}
-			case ready < 0:
+			case bestInstIdx < 0:
 				// first eligible instance found
-				ready = i
-			case len(instance.RunningContainerUUIDs) > len(instances[ready].RunningContainerUUIDs):
+				bestInstIdx = i
+			case len(instance.RunningContainerUUIDs) > len(instances[bestInstIdx].RunningContainerUUIDs):
 				// already found an eligible instance,
 				// but this one has more containers
 				// running, which we prefer (if
 				// workload decreases we want some
 				// busy nodes and some idle nodes so
 				// the idle ones can shut down)
-				ready = i
-			case (instances[ready].WorkerState == worker.StateBooting ||
-				instances[ready].WorkerState == worker.StateUnknown) &&
+				bestInstIdx = i
+			case (instances[bestInstIdx].WorkerState == worker.StateBooting ||
+				instances[bestInstIdx].WorkerState == worker.StateUnknown) &&
 				(instance.WorkerState == worker.StateIdle ||
 					instance.WorkerState == worker.StateRunning):
 				// prefer an idle/running instance
 				// over a (possibly lower-priced)
 				// booting/unprobed instance
-				ready = i
+				bestInstIdx = i
 			}
 		}
-		if ready >= 0 {
-			logger.Tracef("ready instance %s for container %s: instanceResources %v ctrResources %v", instances[ready].Instance, ctr.UUID, instanceResources[ready], ctrResources)
+		if bestInstIdx >= 0 {
+			logger.Tracef("bestInstIdx %d is instance %s for container %s: instanceResources %v ctrResources %v", bestInstIdx, instances[bestInstIdx].Instance, ctr.UUID, instanceResources[bestInstIdx], ctrResources)
 		}
 		// If the pool is not reporting AtCapacity for any of
 		// the eligible instance types, availableOK is true
@@ -354,12 +354,12 @@ tryrun:
 				continue
 			}
 			trying++
-			if ready < 0 && sch.pool.AtQuota() {
+			if bestInstIdx < 0 && sch.pool.AtQuota() {
 				logger.Trace("not starting: AtQuota and no workers with capacity")
 				overquota = sorted[i:]
 				break tryrun
 			}
-			if ready < 0 && !availableOK {
+			if bestInstIdx < 0 && !availableOK {
 				logger.Trace("not locking: AtCapacity and no workers with capacity")
 				continue
 			}
@@ -368,9 +368,9 @@ tryrun:
 				continue
 			}
 			go sch.lockContainer(logger, ctr.UUID)
-			if ready >= 0 {
-				instanceResources[ready] = instanceResources[ready].Sub(ctrResources)
-				instances[ready].RunningContainerUUIDs = append(instances[ready].RunningContainerUUIDs, ctr.UUID)
+			if bestInstIdx >= 0 {
+				instanceResources[bestInstIdx] = instanceResources[bestInstIdx].Sub(ctrResources)
+				instances[bestInstIdx].RunningContainerUUIDs = append(instances[bestInstIdx].RunningContainerUUIDs, ctr.UUID)
 			}
 		case arvados.ContainerStateLocked:
 			if sch.maxContainers > 0 && trying >= sch.maxContainers {
@@ -378,13 +378,13 @@ tryrun:
 				continue
 			}
 			trying++
-			if ready >= 0 {
+			if bestInstIdx >= 0 {
 				// We have a suitable instance type,
 				// so mark it as allocated, and try to
 				// start the container.
-				instanceResources[ready] = instanceResources[ready].Sub(ctrResources)
-				instances[ready].RunningContainerUUIDs = append(instances[ready].RunningContainerUUIDs, ctr.UUID)
-				inst := instances[ready]
+				instanceResources[bestInstIdx] = instanceResources[bestInstIdx].Sub(ctrResources)
+				instances[bestInstIdx].RunningContainerUUIDs = append(instances[bestInstIdx].RunningContainerUUIDs, ctr.UUID)
+				inst := instances[bestInstIdx]
 				logger = logger.WithFields(logrus.Fields{
 					"Instance":     inst.Instance,
 					"InstanceType": inst.ArvadosInstanceType,
