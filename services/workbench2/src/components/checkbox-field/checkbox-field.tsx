@@ -12,6 +12,9 @@ import {
     FormLabel,
     FormHelperText
 } from '@mui/material';
+import { RootState } from 'store/store';
+import { getStorageClasses } from 'common/config';
+import { connect } from 'react-redux';
 
 export const CheckboxField = (props: WrappedFieldProps & { label?: string }) =>
     <FormControlLabel
@@ -77,3 +80,68 @@ export const MultiCheckboxField = (props: WrappedFieldProps & MultiCheckboxField
             <FormHelperText>{props.helperText}</FormHelperText>
         </FormControl>
     ); };
+
+type DialogMultiCheckboxFieldProps = {
+    value: any,
+    name: string,
+    items: string[];
+    defaultValues?: string[];
+    label?: string;
+    minSelection?: number;
+    maxSelection?: number;
+    helperText?: string;
+    onChange: (data: any) => void
+}
+
+const mapState = (state: RootState) => ({
+    items: getStorageClasses(state.auth.config)
+});
+
+export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiCheckboxFieldProps) => {
+    const [value, setValue] = React.useState(props.value);
+
+    const isValid = (items: string[]) => (items.length >= (props.minSelection || 0)) &&
+        (items.length <= (props.maxSelection || items.length));
+
+    if (value.length === 0 && (props.defaultValues || []).length !== 0) {
+        setValue(props.defaultValues ? [...props.defaultValues] : []);
+    }
+
+    return (
+        <FormControl variant="standard" error={!isValid(value)}>
+            <FormLabel component='label'>{props.label}</FormLabel>
+            <FormGroup row>
+            { props.items.map((item, idx) =>
+                <FormControlLabel
+                    key={`label-${idx}`}
+                    control={
+                        <Checkbox
+                            data-cy={`checkbox-${item}`}
+                            key={`control-${idx}`}
+                            name={`${props.name}[${idx}]`}
+                            value={item}
+                            checked={
+                                value.indexOf(item) !== -1 ||
+                                (value.length === 0 &&
+                                    (props.defaultValues || []).indexOf(item) !== -1)
+                            }
+                            onChange={e => {
+                                const newValue = [...props.value];
+                                if (e.target.checked) {
+                                    newValue.push(item);
+                                } else {
+                                    newValue.splice(newValue.indexOf(item), 1);
+                                }
+                                if (!isValid(newValue)) { return; }
+                                return props.onChange(newValue);
+                            }}
+                            disabled={false}
+                            color="primary" />
+                    }
+                    label={item} />) }
+            </FormGroup>
+            <FormHelperText>{props.helperText}</FormHelperText>
+        </FormControl>
+    );
+});
+

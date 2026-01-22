@@ -52,12 +52,14 @@ export const DialogCollectionNameField = connect(
                 COLLECTION_NAME_VALIDATION : COLLECTION_NAME_VALIDATION_ALLOW_SLASH)
         };
     })(({ defaultValue, setValue, validators }: DialogCollectionNameFieldProps) => {
-        return <DialogTextField
-                    label='Collection Name'
-                    defaultValue={defaultValue || ''}
-                    setValue={setValue}
-                    validators={validators}
-                />;
+        return <span data-cy='name-field'>
+            <DialogTextField
+                label='Collection Name'
+                defaultValue={defaultValue || ''}
+                setValue={setValue}
+                validators={validators}
+            />
+        </span>
     })
 
 export const CollectionDescriptionField = () =>
