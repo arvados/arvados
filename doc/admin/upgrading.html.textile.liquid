@@ -32,6 +32,16 @@ h2(#main). development main
 
 "previous: Upgrading to 3.2.0":#v3_2_0
 
+h3. Cloud dispatcher runs multiple containers per instance
+
+The cloud dispatcher will now run multiple containers at once on an instance if it has enough RAM and VCPUs to do so _and_ the instance type is suitable for each container individually.
+
+These conditions can arise in the following cases:
+* the configured @MaximumPriceFactor@ is large enough that an instance type with more than the exact number of VCPUs specified by a container is considered suitable; or
+* no configured instance type has exactly the number of VCPUs specified by a container, _i.e.,_ every suitable instance type has one or more spare VCPUs available to run another container alongside it.
+
+To disable the new behavior and ensure that each container runs on a dedicated instance even in the above cases, set the new configuration entry @Containers.MaxRunningContainersPerInstance@ to @1@.
+
 h3. Configuration URLs are stricter about bracketed addresses
 
 The new version of Go used to build this release has stricter URL parsing: _only_ an IPv6 address can appear inside brackets around the network location of the URL. If your cluster configuration includes URLs with brackets around DNS hostnames or IPv4 addresses, remove those brackets before upgrading.
