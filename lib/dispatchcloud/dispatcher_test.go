@@ -53,8 +53,6 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	s.stubDriver = &test.StubDriver{
 		HostKey:                   hostpriv,
 		AuthorizedKeys:            []ssh.PublicKey{dispatchpub},
-		ErrorRateCreate:           0.1,
-		ErrorRateDestroy:          0.1,
 		MinTimeBetweenCreateCalls: time.Millisecond,
 		QuotaMaxInstances:         10,
 	}
@@ -166,6 +164,8 @@ func (s *DispatcherSuite) arvClientProxy(c *check.C) func(*http.Request) (*url.U
 // artificial errors in order to exercise a variety of code paths.
 func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	Drivers["test"] = s.stubDriver
+	s.stubDriver.ErrorRateCreate = 0.1
+	s.stubDriver.ErrorRateDestroy = 0.1
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
@@ -510,7 +510,6 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	sr := getInstances()
 	c.Check(len(sr.Items), check.Equals, 0)
 
-	s.stubDriver.ErrorRateCreate = 0
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
 	ok := s.disp.pool.Create(test.InstanceType(1))
