@@ -14,7 +14,7 @@ import { PropertyValueField, DialogPropertyValueInput, PROPERTY_VALUE_FIELD_NAME
 import { getTagKeyID, Vocabulary } from 'models/vocabulary';
 import { ProgressButton } from 'components/progress-button/progress-button';
 import { GridClassKey } from '@mui/material/Grid';
-import { Chips } from 'components/chips/chips'
+import { Chips, PropertyChips } from 'components/chips/chips'
 
 const AddButton = withStyles(theme => ({
     root: { marginTop: theme.spacing(1) }
@@ -77,11 +77,12 @@ const mapState = (state: RootState) => {
 
 type DialogResourcePropertiesFormProps = {
     vocabulary: Vocabulary,
+    setChips: React.Dispatch<React.SetStateAction<PropertyChips>>,
     onSubmit: (event: React.FormEvent<HTMLFormElement>) => void,
 };
 
-export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: DialogResourcePropertiesFormProps) => {
-    const [properties, setProperties] = React.useState<Record<string, string | string[] | undefined>>({});
+export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, setChips }: DialogResourcePropertiesFormProps) => {
+    const [properties, setProperties] = React.useState<PropertyChips>({});
     const [propertyKeyId, setPropertyKeyId] = React.useState<string | undefined>(undefined);
     const [currentKey, setCurrentKey] = React.useState<string | undefined>(undefined);
     const [currentValue, setCurrentValue] = React.useState<string | undefined>(undefined);
@@ -96,6 +97,10 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
             setPropertyKeyId(undefined);
         }
     }, [currentKey]);
+
+    React.useEffect(() => {
+        setChips(properties);
+    }, [properties]);
 
     const handleAddProperty = (ev) => {
         ev.preventDefault();
@@ -114,7 +119,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary }: D
     };
 
     const onChipsChange = (newValues: string[]) => {
-        const newProperties: Record<string, string | string[] | undefined> = {};
+        const newProperties: PropertyChips = {};
         for (const chip of newValues) {
             const [key, value] = chip.split(': ').map(s => s.trim());
             if (newProperties[key]) {

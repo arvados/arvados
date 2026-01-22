@@ -6,6 +6,7 @@ import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Chip, Grid } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
+import { getTagKeyID, getTagValueID } from 'models/vocabulary';
 import {
     DragSource,
     DragSourceSpec,
@@ -18,6 +19,8 @@ import {
 } from 'react-dnd';
 import { compose } from 'lodash/fp';
 import { WithStyles } from '@mui/styles';
+import { Vocabulary } from 'models/vocabulary';
+
 interface ChipsProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
@@ -138,3 +141,37 @@ interface CollectedProps {
 interface DraggableChipProps<Value> {
     value: Value;
 }
+
+export type PropertyChips = Record<string, string | string[]>;
+
+export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabulary): PropertyChips => {
+    const vocabularyChips: PropertyChips = {};
+
+    for (const [keyLabel, valueLabel] of Object.entries(chips)) {
+        if (!valueLabel) continue;
+
+        // Get the tag key ID from the human-readable label
+        const tagKeyID = getTagKeyID(keyLabel, vocabulary);
+        if (!tagKeyID) continue;
+
+        if (Array.isArray(valueLabel)) {
+            const vocabularyValues: string[] = [];
+            for (const singleValue of valueLabel) {
+                const tagValueID = getTagValueID(tagKeyID, singleValue, vocabulary);
+                if (tagValueID) {
+                    vocabularyValues.push(tagValueID);
+                }
+            }
+            if (vocabularyValues.length > 0) {
+                vocabularyChips[tagKeyID] = vocabularyValues;
+            }
+        } else {
+            const tagValueID = getTagValueID(tagKeyID, valueLabel, vocabulary);
+            if (tagValueID) {
+                vocabularyChips[tagKeyID] = tagValueID;
+            }
+        }
+    }
+
+    return vocabularyChips;
+};
