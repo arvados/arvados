@@ -46,9 +46,9 @@ digraph {
 
 h2. Scheduling
 
-The dispatcher periodically polls arvados-controller to get a list of containers that are ready to run. Whenever this list changes, the dispatcher runs a scheduling loop that selects a suitable instance type for each container, allocates the highest priority containers to idle instances, requests new instances if needed, and shuts down instances that have been idle for longer than the configured idle timeout. It will run multiple containers on an instance if it has enough RAM and CPUs to do so _and_ the instance type is suitable for each container individually.
+The dispatcher periodically polls arvados-controller to get a list of containers that are ready to run. Whenever this list changes, the dispatcher runs a scheduling loop that determines the set of suitable instance types for each container, allocates the highest priority containers to instances with sufficient unused resources, requests new instances if needed, and shuts down instances that have been idle for longer than the configured idle timeout. It will run multiple containers on an instance if it has enough RAM and CPUs to do so _and_ the instance type is suitable for each container individually.
 
-A suitable instance type is either the lowest-priced instance type with enough resources to run the container, or another instance type with enough resources whose price is within the configured @MaximumPriceFactor@ of the lowest-priced type.
+The lowest-priced instance type with enough resources to run a given container is always suitable. Other instance types that have enough resources to run the container, and whose prices are within @MaximumPriceFactor@ of that lowest-priced type, are also suitable.
 
 h2. Creating instances
 
