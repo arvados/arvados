@@ -1465,6 +1465,11 @@ Clusters:
         # down.
         MaxInstances: 64
 
+        # Maximum number of containers to run at a time on a single
+        # instance when it has enough RAM, CPU, and scratch space to
+        # do so, or 0 for unlimited.
+        MaxRunningContainersPerInstance: 0
+
         # The minimum number of instances expected to be runnable
         # without reaching a provider-imposed quota.
         #

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -169,7 +170,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-			return ChooseInstanceType(s.cluster, ctr)
+			return container.ChooseInstanceType(s.cluster, ctr)
 		},
 		Logger: ctxlog.TestLogger(c),
 	}
@@ -202,8 +203,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		}
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 100 {
-			// trigger scheduler maxConcurrency limit
-			c.Logf("test: requesting 503 in order to trigger maxConcurrency limit")
+			// trigger scheduler maxContainers limit
+			c.Logf("test: requesting 503 in order to trigger maxContainers limit")
 			s.disp.ArvClient.RequestAndDecode(nil, "GET", "503", nil, nil)
 		}
 		if len(waiting) == 0 {
@@ -375,7 +376,7 @@ func (s *DispatcherSuite) TestManagementAPI_Containers(c *check.C) {
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-			return ChooseInstanceType(s.cluster, ctr)
+			return container.ChooseInstanceType(s.cluster, ctr)
 		},
 		Logger: ctxlog.TestLogger(c),
 	}
@@ -435,24 +436,24 @@ func (s *DispatcherSuite) TestManagementAPI_Containers(c *check.C) {
 	expect := `
  0 zzzzz-dz642-000000000000000 (Running) ""
  1 zzzzz-dz642-000000000000001 (Running) ""
- 2 zzzzz-dz642-000000000000002 (Locked) "Waiting in queue at position 1.  Cluster is at capacity for all eligible instance types (type4, type6) and cannot start a new instance right now."
- 3 zzzzz-dz642-000000000000003 (Locked) "Waiting in queue at position 2.  Cluster is at capacity for all eligible instance types (type4, type6) and cannot start a new instance right now."
- 4 zzzzz-dz642-000000000000004 (Queued) "Waiting in queue at position 3.  Cluster is at capacity and cannot start any new instances right now."
- 5 zzzzz-dz642-000000000000005 (Queued) "Waiting in queue at position 4.  Cluster is at capacity and cannot start any new instances right now."
- 6 zzzzz-dz642-000000000000006 (Queued) "Waiting in queue at position 5.  Cluster is at capacity and cannot start any new instances right now."
- 7 zzzzz-dz642-000000000000007 (Queued) "Waiting in queue at position 6.  Cluster is at capacity and cannot start any new instances right now."
- 8 zzzzz-dz642-000000000000008 (Queued) "Waiting in queue at position 7.  Cluster is at capacity and cannot start any new instances right now."
- 9 zzzzz-dz642-000000000000009 (Queued) "Waiting in queue at position 8.  Cluster is at capacity and cannot start any new instances right now."
- 10 zzzzz-dz642-000000000000010 (Queued) "Waiting in queue at position 9.  Cluster is at capacity and cannot start any new instances right now."
- 11 zzzzz-dz642-000000000000011 (Queued) "Waiting in queue at position 10.  Cluster is at capacity and cannot start any new instances right now."
- 12 zzzzz-dz642-000000000000012 (Queued) "Waiting in queue at position 11.  Cluster is at capacity and cannot start any new instances right now."
- 13 zzzzz-dz642-000000000000013 (Queued) "Waiting in queue at position 12.  Cluster is at capacity and cannot start any new instances right now."
- 14 zzzzz-dz642-000000000000014 (Queued) "Waiting in queue at position 13.  Cluster is at capacity and cannot start any new instances right now."
- 15 zzzzz-dz642-000000000000015 (Queued) "Waiting in queue at position 14.  Cluster is at capacity and cannot start any new instances right now."
- 16 zzzzz-dz642-000000000000016 (Queued) "Waiting in queue at position 15.  Cluster is at capacity and cannot start any new instances right now."
- 17 zzzzz-dz642-000000000000017 (Queued) "Waiting in queue at position 16.  Cluster is at capacity and cannot start any new instances right now."
- 18 zzzzz-dz642-000000000000018 (Queued) "Waiting in queue at position 17.  Cluster is at capacity and cannot start any new instances right now."
- 19 zzzzz-dz642-000000000000019 (Queued) "Waiting in queue at position 18.  Cluster is at capacity and cannot start any new instances right now."
+ 2 zzzzz-dz642-000000000000002 (Running) ""
+ 3 zzzzz-dz642-000000000000003 (Locked) "Waiting in queue at position 1.  Cluster is at capacity for all eligible instance types (type4, type6) and cannot start a new instance right now."
+ 4 zzzzz-dz642-000000000000004 (Queued) "Waiting in queue at position 2.  Cluster is at capacity and cannot start any new instances right now."
+ 5 zzzzz-dz642-000000000000005 (Queued) "Waiting in queue at position 3.  Cluster is at capacity and cannot start any new instances right now."
+ 6 zzzzz-dz642-000000000000006 (Queued) "Waiting in queue at position 4.  Cluster is at capacity and cannot start any new instances right now."
+ 7 zzzzz-dz642-000000000000007 (Queued) "Waiting in queue at position 5.  Cluster is at capacity and cannot start any new instances right now."
+ 8 zzzzz-dz642-000000000000008 (Queued) "Waiting in queue at position 6.  Cluster is at capacity and cannot start any new instances right now."
+ 9 zzzzz-dz642-000000000000009 (Queued) "Waiting in queue at position 7.  Cluster is at capacity and cannot start any new instances right now."
+ 10 zzzzz-dz642-000000000000010 (Queued) "Waiting in queue at position 8.  Cluster is at capacity and cannot start any new instances right now."
+ 11 zzzzz-dz642-000000000000011 (Queued) "Waiting in queue at position 9.  Cluster is at capacity and cannot start any new instances right now."
+ 12 zzzzz-dz642-000000000000012 (Queued) "Waiting in queue at position 10.  Cluster is at capacity and cannot start any new instances right now."
+ 13 zzzzz-dz642-000000000000013 (Queued) "Waiting in queue at position 11.  Cluster is at capacity and cannot start any new instances right now."
+ 14 zzzzz-dz642-000000000000014 (Queued) "Waiting in queue at position 12.  Cluster is at capacity and cannot start any new instances right now."
+ 15 zzzzz-dz642-000000000000015 (Queued) "Waiting in queue at position 13.  Cluster is at capacity and cannot start any new instances right now."
+ 16 zzzzz-dz642-000000000000016 (Queued) "Waiting in queue at position 14.  Cluster is at capacity and cannot start any new instances right now."
+ 17 zzzzz-dz642-000000000000017 (Queued) "Waiting in queue at position 15.  Cluster is at capacity and cannot start any new instances right now."
+ 18 zzzzz-dz642-000000000000018 (Queued) "Waiting in queue at position 16.  Cluster is at capacity and cannot start any new instances right now."
+ 19 zzzzz-dz642-000000000000019 (Queued) "Waiting in queue at position 17.  Cluster is at capacity and cannot start any new instances right now."
 `
 	sequence := make(map[string][]string)
 	var summary string
@@ -485,12 +486,16 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	defer s.disp.Close()
 
 	type instance struct {
-		Instance             string
-		WorkerState          string `json:"worker_state"`
-		Price                float64
-		LastContainerUUID    string `json:"last_container_uuid"`
-		ArvadosInstanceType  string `json:"arvados_instance_type"`
-		ProviderInstanceType string `json:"provider_instance_type"`
+		Instance              string
+		Address               string
+		Price                 float64
+		WorkerState           string    `json:"worker_state"`
+		LastContainerUUID     string    `json:"last_container_uuid"`
+		RunningContainerUUIDs []string  `json:"running_container_uuids"`
+		ArvadosInstanceType   string    `json:"arvados_instance_type"`
+		ProviderInstanceType  string    `json:"provider_instance_type"`
+		IdleBehavior          string    `json:"idle_behavior"`
+		LastBusy              time.Time `json:"last_busy"`
 	}
 	type instancesResponse struct {
 		Items []instance
@@ -512,13 +517,13 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
-	ok := s.disp.pool.Create(test.InstanceType(1))
+	_, ok := s.disp.pool.Create(test.InstanceType(1))
 	c.Check(ok, check.Equals, true)
 	<-ch
 
 	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
 		sr = getInstances()
-		if len(sr.Items) > 0 {
+		if len(sr.Items) > 0 && sr.Items[0].Instance != "" {
 			break
 		}
 		time.Sleep(time.Millisecond)
@@ -528,8 +533,10 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
 	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
+	c.Check(sr.Items[0].RunningContainerUUIDs, check.HasLen, 0)
 	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, test.InstanceType(1).ProviderType)
 	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, test.InstanceType(1).Name)
+	c.Check(sr.Items[0].IdleBehavior, check.Equals, "run")
 }
 
 func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
@@ -538,7 +545,7 @@ func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
 	s.disp.setupOnce.Do(s.disp.initialize)
 	go s.disp.run()
 	defer s.disp.Close()
-	ok := s.disp.pool.Create(test.InstanceType(1))
+	_, ok := s.disp.pool.Create(test.InstanceType(1))
 	c.Check(ok, check.Equals, true)
 
 	// Start an http server so we can test InstanceCommand against

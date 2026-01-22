@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -54,7 +55,7 @@ func (instanceList) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		return 1
 	}
 	if *header {
-		fmt.Fprint(stdout, "instance\taddress\tstate\tidle-behavior\tconfig-type\tprovider-type\tprice\tlast-container\n")
+		fmt.Fprint(stdout, "instance\taddress\tstate\tidle-behavior\tconfig-type\tprovider-type\tprice\trunning-containers\n")
 	}
 	for url := range cluster.Services.DispatchCloud.InternalURLs {
 		req, err := http.NewRequest(http.MethodGet, url.String()+"/arvados/v1/dispatch/instances", nil)
@@ -83,10 +84,11 @@ func (instanceList) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			if inst.Address == "" {
 				inst.Address = "-"
 			}
-			if inst.LastContainerUUID == "" {
-				inst.LastContainerUUID = "-"
+			running := "-"
+			if len(inst.RunningContainerUUIDs) > 0 {
+				running = strings.Join(inst.RunningContainerUUIDs, ",")
 			}
-			fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\t%s\t%s\t%f\t%s\n", inst.Instance, inst.Address, inst.WorkerState, inst.IdleBehavior, inst.ArvadosInstanceType, inst.ProviderInstanceType, inst.Price, inst.LastContainerUUID)
+			fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\t%s\t%s\t%f\t%s\n", inst.Instance, inst.Address, inst.WorkerState, inst.IdleBehavior, inst.ArvadosInstanceType, inst.ProviderInstanceType, inst.Price, running)
 		}
 	}
 	return 0

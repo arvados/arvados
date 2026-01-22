@@ -6,11 +6,13 @@ package scheduler
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
 )
@@ -36,15 +38,57 @@ const (
 	schedStatusWaitingClusterCapacity      = "Waiting in queue at position %v.  Cluster is at capacity and cannot start any new instances right now."
 )
 
+func instanceResourcesForInstanceType(it arvados.InstanceType) container.InstanceResources {
+	return container.InstanceResources{
+		VCPUs:   it.VCPUs,
+		RAM:     it.RAM,
+		Scratch: it.Scratch,
+		GPUs:    it.GPU.DeviceCount,
+		GPUVRAM: it.GPU.VRAM,
+	}
+}
+
 // Queue returns the sorted queue from the last scheduling iteration.
 func (sch *Scheduler) Queue() []QueueEnt {
 	ents, _ := sch.lastQueue.Load().([]QueueEnt)
 	return ents
 }
 
+func (sch *Scheduler) instanceSort(a, b worker.InstanceView) bool {
+	if c := a.Price - b.Price; c != 0 {
+		return c < 0
+	}
+	ita := sch.cluster.InstanceTypes[a.ArvadosInstanceType]
+	itb := sch.cluster.InstanceTypes[b.ArvadosInstanceType]
+	if c := ita.VCPUs - itb.VCPUs; c != 0 {
+		return c > 0
+	}
+	if c := ita.RAM - itb.RAM; c != 0 {
+		return c > 0
+	}
+	if c := ita.Scratch - itb.Scratch; c != 0 {
+		return c > 0
+	}
+	if c := strings.Compare(string(a.Instance), string(b.Instance)); c != 0 {
+		return c < 0
+	}
+	return false
+}
+
 func (sch *Scheduler) runQueue() {
 	running := sch.pool.Running()
-	unalloc := sch.pool.Unallocated()
+	instances := sch.pool.Instances()
+	sort.Slice(instances, func(i, j int) bool {
+		return sch.instanceSort(instances[i], instances[j])
+	})
+	// instanceResources[i] tracks the remaining resources on
+	// instances[i].  Resources consumed by already-running
+	// containers are subtracted below.
+	instanceResources := make([]container.InstanceResources, len(instances))
+	for i, instance := range instances {
+		it := sch.cluster.InstanceTypes[instance.ArvadosInstanceType]
+		instanceResources[i] = instanceResourcesForInstanceType(it)
+	}
 
 	totalInstances := 0
 	for _, n := range sch.pool.CountWorkers() {
@@ -91,38 +135,52 @@ func (sch *Scheduler) runQueue() {
 		}
 	})
 
+	containers := map[string]*arvados.Container{}
+	for i := range sorted {
+		containers[sorted[i].Container.UUID] = &sorted[i].Container
+	}
+	for i := range instances {
+		for _, uuid := range instances[i].RunningContainerUUIDs {
+			if containers[uuid] == nil {
+				// Container size unknown.  Assume the
+				// instance has no capacity to spare.
+				instanceResources[i] = container.InstanceResources{}
+				break
+			}
+			rsc := container.InstanceResourcesNeeded(sch.cluster, containers[uuid])
+			instanceResources[i] = instanceResources[i].Sub(rsc)
+		}
+	}
+
 	if t := sch.client.Last503(); t.After(sch.last503time) {
 		// API has sent an HTTP 503 response since last time
 		// we checked. Use current #containers - 1 as
-		// maxConcurrency, i.e., try to stay just below the
+		// maxContainers, i.e., try to stay just below the
 		// level where we see 503s.
 		sch.last503time = t
 		if newlimit := len(running) - 1; newlimit < 1 {
-			sch.maxConcurrency = 1
+			sch.maxContainers = 1
 		} else {
-			sch.maxConcurrency = newlimit
+			sch.maxContainers = newlimit
 		}
-	} else if sch.maxConcurrency > 0 && time.Since(sch.last503time) > quietAfter503 {
+	} else if sch.maxContainers > 0 && time.Since(sch.last503time) > quietAfter503 {
 		// If we haven't seen any 503 errors lately, raise
 		// limit to ~10% beyond the current workload.
 		//
 		// As we use the added 10% to schedule more
 		// containers, len(running) will increase and we'll
 		// push the limit up further. Soon enough,
-		// maxConcurrency will get high enough to schedule the
+		// maxContainers will get high enough to schedule the
 		// entire queue, hit pool quota, or get 503s again.
 		max := len(running)*11/10 + 1
-		if sch.maxConcurrency < max {
-			sch.maxConcurrency = max
+		if sch.maxContainers < max {
+			sch.maxContainers = max
 		}
 	}
 	if sch.last503time.IsZero() {
 		sch.mLast503Time.Set(0)
 	} else {
 		sch.mLast503Time.Set(float64(sch.last503time.Unix()))
-	}
-	if sch.maxInstances > 0 && sch.maxConcurrency > sch.maxInstances {
-		sch.maxConcurrency = sch.maxInstances
 	}
 	if sch.instancesWithinQuota > 0 && sch.instancesWithinQuota < totalInstances {
 		// Evidently it is possible to run this many
@@ -134,21 +192,21 @@ func (sch *Scheduler) runQueue() {
 		// allowed, for the sake of reporting metrics and
 		// calculating max supervisors.
 		//
-		// Now that sch.maxConcurrency is set, we will only
+		// Now that sch.maxContainers is set, we will only
 		// raise it past len(running) by 10%.  This helps
 		// avoid running an inappropriate number of
 		// supervisors when we reach the cloud-imposed quota
 		// (which may be based on # CPUs etc) long before the
 		// configured MaxInstances.
-		if sch.maxConcurrency == 0 || sch.maxConcurrency > totalInstances {
+		if sch.maxContainers == 0 || sch.maxContainers > totalInstances {
 			if totalInstances == 0 {
-				sch.maxConcurrency = 1
+				sch.maxContainers = 1
 			} else {
-				sch.maxConcurrency = totalInstances
+				sch.maxContainers = totalInstances
 			}
 		}
 		sch.instancesWithinQuota = totalInstances
-	} else if sch.instancesWithinQuota > 0 && sch.maxConcurrency > sch.instancesWithinQuota+1 {
+	} else if sch.instancesWithinQuota > 0 && sch.maxContainers > sch.instancesWithinQuota+1 {
 		// Once we've hit a quota error and started tracking
 		// instancesWithinQuota (i.e., it's not zero), we
 		// avoid exceeding that known-working level by more
@@ -160,22 +218,21 @@ func (sch *Scheduler) runQueue() {
 		// driver stops reporting AtQuota, which tends to use
 		// up the max lock/unlock cycles on the next few
 		// containers in the queue, and cause them to fail.
-		sch.maxConcurrency = sch.instancesWithinQuota + 1
+		sch.maxContainers = sch.instancesWithinQuota + 1
 	}
-	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
+	sch.mMaxContainerConcurrency.Set(float64(sch.maxContainers))
 
-	maxSupervisors := int(float64(sch.maxConcurrency) * sch.supervisorFraction)
-	if maxSupervisors < 1 && sch.supervisorFraction > 0 && sch.maxConcurrency > 0 {
+	maxSupervisors := int(float64(sch.maxContainers) * sch.cluster.Containers.CloudVMs.SupervisorFraction)
+	if maxSupervisors < 1 && sch.cluster.Containers.CloudVMs.SupervisorFraction > 0 && sch.maxContainers > 0 {
 		maxSupervisors = 1
 	}
 
 	sch.logger.WithFields(logrus.Fields{
-		"Containers":     len(sorted),
-		"Processes":      len(running),
-		"maxConcurrency": sch.maxConcurrency,
+		"Containers":    len(sorted),
+		"Processes":     len(running),
+		"maxContainers": sch.maxContainers,
 	}).Debug("runQueue")
 
-	dontstart := map[arvados.InstanceType]bool{}
 	var atcapacity = map[string]bool{} // ProviderTypes reported as AtCapacity during this runQueue() invocation
 	var overquota []QueueEnt           // entries that are unmappable because of worker pool quota
 	var overmaxsuper []QueueEnt        // unmappable because max supervisors (these are not included in overquota)
@@ -183,7 +240,7 @@ func (sch *Scheduler) runQueue() {
 
 	// trying is #containers running + #containers we're trying to
 	// start. We stop trying to start more containers if this
-	// reaches the dynamic maxConcurrency limit.
+	// reaches the dynamic maxContainers limit.
 	trying := len(running)
 
 	qpos := 0
@@ -191,7 +248,7 @@ func (sch *Scheduler) runQueue() {
 
 tryrun:
 	for i, ent := range sorted {
-		ctr, types := ent.Container, ent.InstanceTypes
+		ctr, ctrResources, types := ent.Container, ent.InstanceResources, ent.InstanceTypes
 		logger := sch.logger.WithFields(logrus.Fields{
 			"ContainerUUID": ctr.UUID,
 		})
@@ -213,17 +270,64 @@ tryrun:
 			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusSupervisorLimitReached, len(overmaxsuper))
 			continue
 		}
-		// If we have unalloc instances of any of the eligible
-		// instance types, unallocOK is true and unallocType
-		// is the lowest-cost type.
-		var unallocOK bool
-		var unallocType arvados.InstanceType
+		eligibleTypes := map[string]bool{}
 		for _, it := range types {
-			if unalloc[it] > 0 {
-				unallocOK = true
-				unallocType = it
-				break
+			eligibleTypes[it.Name] = true
+		}
+		// bestInstIdx>=0 means instances[bestInstIdx] is where we should
+		// try to run ctr (it's one of the eligible instance
+		// types, and has enough resources to accommodate
+		// ctr).  bestInstIdx<0 means we can't start ctr right now,
+		// all we can do is request a new instance or just
+		// wait.
+		bestInstIdx := -1
+		for i, instance := range instances {
+			switch {
+			case instance.WorkerState != worker.StateUnknown &&
+				instance.WorkerState != worker.StateRunning &&
+				instance.WorkerState != worker.StateBooting &&
+				instance.WorkerState != worker.StateIdle:
+				// Shutdown or invalid state
+			case instance.IdleBehavior != worker.IdleBehaviorRun:
+				// Admin-hold/drain
+			case sch.cluster.Containers.CloudVMs.MaxRunningContainersPerInstance > 0 &&
+				sch.cluster.Containers.CloudVMs.MaxRunningContainersPerInstance <= len(instance.RunningContainerUUIDs):
+				// reached configured limit on #
+				// containers per instance
+			case !eligibleTypes[instance.ArvadosInstanceType]:
+				// incompatible or too expensive
+			case !instanceResources[i].Accommodates(ctrResources):
+				// insufficient spare resources
+				if instance.WorkerState == worker.StateIdle && len(instance.RunningContainerUUIDs) == 0 {
+					// This should be impossible
+					// -- it means the selected
+					// node type is too small even
+					// when idle.
+					logger.Infof("BUG? insufficient resources on idle instance %s type %s for container %s: ir %+v ctrr %+v", instance.Instance, instance.ArvadosInstanceType, ctr.UUID, instanceResources[i], ctrResources)
+				}
+			case bestInstIdx < 0:
+				// first eligible instance found
+				bestInstIdx = i
+			case len(instance.RunningContainerUUIDs) > len(instances[bestInstIdx].RunningContainerUUIDs):
+				// already found an eligible instance,
+				// but this one has more containers
+				// running, which we prefer (if
+				// workload decreases we want some
+				// busy nodes and some idle nodes so
+				// the idle ones can shut down)
+				bestInstIdx = i
+			case (instances[bestInstIdx].WorkerState == worker.StateBooting ||
+				instances[bestInstIdx].WorkerState == worker.StateUnknown) &&
+				(instance.WorkerState == worker.StateIdle ||
+					instance.WorkerState == worker.StateRunning):
+				// prefer an idle/running instance
+				// over a (possibly lower-priced)
+				// booting/unprobed instance
+				bestInstIdx = i
 			}
+		}
+		if bestInstIdx >= 0 {
+			logger.Tracef("bestInstIdx %d is instance %s for container %s: instanceResources %v ctrResources %v", bestInstIdx, instances[bestInstIdx].Instance, ctr.UUID, instanceResources[bestInstIdx], ctrResources)
 		}
 		// If the pool is not reporting AtCapacity for any of
 		// the eligible instance types, availableOK is true
@@ -245,18 +349,18 @@ tryrun:
 		}
 		switch ctr.State {
 		case arvados.ContainerStateQueued:
-			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
-				logger.Tracef("not locking: already at maxConcurrency %d", sch.maxConcurrency)
+			if sch.maxContainers > 0 && trying >= sch.maxContainers {
+				logger.Tracef("not locking: already at maxContainers %d", sch.maxContainers)
 				continue
 			}
 			trying++
-			if !unallocOK && sch.pool.AtQuota() {
-				logger.Trace("not starting: AtQuota and no unalloc workers")
+			if bestInstIdx < 0 && sch.pool.AtQuota() {
+				logger.Trace("not starting: AtQuota and no workers with capacity")
 				overquota = sorted[i:]
 				break tryrun
 			}
-			if !unallocOK && !availableOK {
-				logger.Trace("not locking: AtCapacity and no unalloc workers")
+			if bestInstIdx < 0 && !availableOK {
+				logger.Trace("not locking: AtCapacity and no workers with capacity")
 				continue
 			}
 			if sch.pool.KillContainer(ctr.UUID, "about to lock") {
@@ -264,35 +368,45 @@ tryrun:
 				continue
 			}
 			go sch.lockContainer(logger, ctr.UUID)
-			unalloc[unallocType]--
+			if bestInstIdx >= 0 {
+				instanceResources[bestInstIdx] = instanceResources[bestInstIdx].Sub(ctrResources)
+				instances[bestInstIdx].RunningContainerUUIDs = append(instances[bestInstIdx].RunningContainerUUIDs, ctr.UUID)
+			}
 		case arvados.ContainerStateLocked:
-			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
-				logger.Tracef("not starting: already at maxConcurrency %d", sch.maxConcurrency)
+			if sch.maxContainers > 0 && trying >= sch.maxContainers {
+				logger.Tracef("not starting: already at maxContainers %d", sch.maxContainers)
 				continue
 			}
 			trying++
-			if unallocOK {
+			if bestInstIdx >= 0 {
 				// We have a suitable instance type,
 				// so mark it as allocated, and try to
 				// start the container.
-				unalloc[unallocType]--
-				logger = logger.WithField("InstanceType", unallocType.Name)
-				if dontstart[unallocType] {
-					// We already tried & failed to start
-					// a higher-priority container on the
-					// same instance type. Don't let this
-					// one sneak in ahead of it.
+				instanceResources[bestInstIdx] = instanceResources[bestInstIdx].Sub(ctrResources)
+				instances[bestInstIdx].RunningContainerUUIDs = append(instances[bestInstIdx].RunningContainerUUIDs, ctr.UUID)
+				inst := instances[bestInstIdx]
+				logger = logger.WithFields(logrus.Fields{
+					"Instance":     inst.Instance,
+					"InstanceType": inst.ArvadosInstanceType,
+				})
+				if inst.Instance == "" {
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, inst.ArvadosInstanceType)
+					logger.Trace("not trying to start: selected instance does not have an ID yet")
+					containerAllocatedWorkerBootingCount++
+				} else if inst.WorkerState != worker.StateIdle && inst.WorkerState != worker.StateRunning {
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, inst.ArvadosInstanceType)
+					logger.Tracef("not trying to start: selected instance state=%s", inst.WorkerState)
+					containerAllocatedWorkerBootingCount++
 				} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 					sorted[i].SchedulingStatus = schedStatusWaitingForPreviousAttempt
 					logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
-				} else if sch.pool.StartContainer(unallocType, ctr) {
+				} else if sch.pool.StartContainer(inst.Instance, ctr) {
 					sorted[i].SchedulingStatus = schedStatusPreparingRuntimeEnvironment
 					logger.Trace("StartContainer => true")
 				} else {
-					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, unallocType.Name)
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, inst.ArvadosInstanceType)
 					logger.Trace("StartContainer => false")
-					containerAllocatedWorkerBootingCount += 1
-					dontstart[unallocType] = true
+					containerAllocatedWorkerBootingCount++
 				}
 				continue
 			}
@@ -329,7 +443,8 @@ tryrun:
 				continue
 			}
 			logger = logger.WithField("InstanceType", availableType.Name)
-			if !sch.pool.Create(availableType) {
+			newInstance, ok := sch.pool.Create(availableType)
+			if !ok {
 				// Failed despite not being at quota,
 				// e.g., cloud ops throttled.
 				logger.Trace("pool declined to create new instance")
@@ -345,7 +460,15 @@ tryrun:
 			// yet -- obviously the instance will take
 			// some time to boot and become ready.
 			containerAllocatedWorkerBootingCount += 1
-			dontstart[availableType] = true
+
+			// Insert new entry in instances and
+			// instanceResources.
+			idx := 0
+			for ; idx < len(instances) && sch.instanceSort(instances[idx], newInstance); idx++ {
+			}
+			newInstance.RunningContainerUUIDs = append(newInstance.RunningContainerUUIDs, ctr.UUID)
+			instances = slices.Insert(instances, idx, newInstance)
+			instanceResources = slices.Insert(instanceResources, idx, instanceResourcesForInstanceType(availableType).Sub(ctrResources))
 		}
 	}
 
@@ -408,11 +531,10 @@ tryrun:
 	if len(overquota) > 0 {
 		// Shut down idle workers that didn't get any
 		// containers mapped onto them before we hit quota.
-		for it, n := range unalloc {
-			if n < 1 {
-				continue
+		for _, instance := range instances {
+			if len(instance.RunningContainerUUIDs) == 0 {
+				sch.pool.Shutdown(instance.Instance)
 			}
-			sch.pool.Shutdown(it)
 		}
 	}
 }

@@ -22,12 +22,12 @@ A placeholder @-@ in the @instance@ column indicates that an instance has been r
 
 A placeholder @-@ in the @address@ column indicates that an instance has been requested but has not yet been assigned an IP address by the cloud provider.
 
-A placeholder @-@ in the @last-container@ column indicates that the instance has not yet started a container.
+A placeholder @-@ in the @running-containers@ column indicates that the instance is not running any containers.
 
 Use the @-header@ flag to display column names.
 
 <notextile><pre><code># <span class="userinput">arvados-server instance list -header</span>
-instance	address	state	idle-behavior	config-type	provider-type	price	last-container
+instance	address	state	idle-behavior	config-type	provider-type	price	running-containers
 i-03d59cfcfacf307ff	10.253.254.184	running	run	c5large	c5.large	0.085000	tordo-dz642-r6fz90awybvywr6
 i-0df614e93e4170ae7	10.253.254.157	booting	run	t3small	t3.small	0.020800	-
 </code></pre></notextile>

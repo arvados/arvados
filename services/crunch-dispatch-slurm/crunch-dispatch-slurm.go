@@ -21,7 +21,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
-	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -177,11 +177,11 @@ func (disp *Dispatcher) checkSqueueForOrphans() {
 
 var rePercentAny = regexp.MustCompile(`%.`)
 
-func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error) {
+func (disp *Dispatcher) sbatchArgs(ctr arvados.Container) ([]string, error) {
 	instancetype := ""
 	if disp.cluster == nil {
 		// no instance types configured
-	} else if types, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
+	} else if types, err := container.ChooseInstanceType(disp.cluster, &ctr); err == container.ErrInstanceTypesNotConfigured {
 		// ditto
 	} else if err != nil {
 		return nil, err
@@ -189,25 +189,25 @@ func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error
 		// Note types[0] is the lowest-cost suitable instance type.
 		instancetype = types[0].Name
 	}
-	maxrunminutes := int64(math.Ceil(float64(container.SchedulingParameters.MaxRunTime) / 60))
-	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
-		container.RuntimeConstraints.KeepCacheRAM+
+	maxrunminutes := int64(math.Ceil(float64(ctr.SchedulingParameters.MaxRunTime) / 60))
+	mem := int64(math.Ceil(float64(ctr.RuntimeConstraints.RAM+
+		ctr.RuntimeConstraints.KeepCacheRAM+
 		int64(disp.cluster.Containers.ReserveExtraRAM)) / float64(1048576)))
-	tmp := dispatchcloud.EstimateScratchSpace(&container)
+	tmp := container.EstimateScratchSpace(&ctr)
 	tmp = int64(math.Ceil(float64(tmp) / float64(1048576)))
 	repl := map[string]string{
 		"%%": "%",
-		"%C": fmt.Sprintf("%d", container.RuntimeConstraints.VCPUs),
-		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.GPU.DeviceCount),
+		"%C": fmt.Sprintf("%d", ctr.RuntimeConstraints.VCPUs),
+		"%G": fmt.Sprintf("%d", ctr.RuntimeConstraints.GPU.DeviceCount),
 		"%I": fmt.Sprintf("%s", instancetype),
 		"%M": fmt.Sprintf("%d", mem),
-		"%P": strings.Join(container.SchedulingParameters.Partitions, ","),
+		"%P": strings.Join(ctr.SchedulingParameters.Partitions, ","),
 		"%T": fmt.Sprintf("%d", tmp),
-		"%U": container.UUID,
+		"%U": ctr.UUID,
 		"%W": fmt.Sprintf("%d", maxrunminutes),
 	}
 	argtmpl := disp.cluster.Containers.SLURM.SbatchArgumentsList
-	if container.RuntimeConstraints.GPU.DeviceCount > 0 {
+	if ctr.RuntimeConstraints.GPU.DeviceCount > 0 {
 		argtmpl = append(argtmpl, disp.cluster.Containers.SLURM.SbatchGPUArgumentsList...)
 	}
 	args := []string{fmt.Sprintf("--nice=%d", initialNiceValue), "--no-requeue"}

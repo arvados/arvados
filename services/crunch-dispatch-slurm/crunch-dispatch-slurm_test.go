@@ -22,7 +22,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -358,7 +358,7 @@ func (s *StubbedSuite) TestSbatchArgs_GPU(c *C) {
 }
 
 func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
-	container := arvados.Container{
+	ctr := arvados.Container{
 		UUID:               "123",
 		RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 2},
 		Priority:           1,
@@ -392,7 +392,7 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 			types: map[string]arvados.InstanceType{
 				"a1.tiny": {Name: "a1.tiny", Price: 0.02, RAM: 128000000, VCPUs: 1},
 			},
-			err: dispatchcloud.ConstraintsNotSatisfiableError{},
+			err: container.ConstraintsNotSatisfiableError{},
 		},
 	} {
 		c.Logf("%#v", trial)
@@ -400,12 +400,12 @@ func (s *StubbedSuite) TestSbatchInstanceTypeConstraint(c *C) {
 		s.disp.cluster.Containers.SLURM.SbatchArgumentsList = []string{"--constraint=instancetype=%I"}
 		s.disp.cluster.Containers.SLURM.SbatchGPUArgumentsList = []string{"--gpus=%G"}
 
-		args, err := s.disp.sbatchArgs(container)
+		args, err := s.disp.sbatchArgs(ctr)
 		c.Check(err == nil, Equals, trial.err == nil)
 		if trial.err == nil {
 			c.Check(args, DeepEquals, append([]string{"--nice=10000", "--no-requeue"}, trial.expectArgs...))
 		} else {
-			c.Check(len(err.(dispatchcloud.ConstraintsNotSatisfiableError).AvailableTypes), Equals, len(trial.types))
+			c.Check(len(err.(container.ConstraintsNotSatisfiableError).AvailableTypes), Equals, len(trial.types))
 		}
 	}
 }
