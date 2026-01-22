@@ -50,6 +50,10 @@ The dispatcher periodically polls arvados-controller to get a list of containers
 
 The lowest-priced instance type with enough resources to run a given container is always suitable. Other instance types that have enough resources to run the container, and whose prices are within @MaximumPriceFactor@ of that lowest-priced type, are also suitable.
 
+The dispatcher will select a suitable instance type other than the lowest-priced one when:
+* the lowest-priced instance that is _already running or requested,_ and has sufficient resources, is one of the suitable types (_e.g.,_ it just finished running a container that needed a higher-priced type), whereas in order to use the lowest-priced type the dispatcher would need to request a new instance, or
+* the cloud provider indicates that the lowest-priced suitable type is not available (_e.g.,_ due to a per-instance-type quota restriction).
+
 h2. Creating instances
 
 When creating a new instance, the dispatcher uses the cloud provider’s metadata feature to add a tag with key “InstanceSetID” and a value derived from its Arvados authentication token. This enables the dispatcher to recognize and reconnect to existing instances that belong to it, and continue monitoring existing containers, after a restart or upgrade.
