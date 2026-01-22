@@ -544,6 +544,16 @@ do_test_once() {
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+        if ! compgen -G "$WORKSPACE/$1/*_test.go" >/dev/null; then
+            # Go 1.25, when invoked by Go 1.24 via "toolchain go1.25"
+            # directive, fails with 'go: no such tool "covdata"' when
+            # using $coverflags in a directory that has no tests.  See
+            # https://github.com/golang/go/issues/75031
+            #
+            # Workaround: skip coverflags when 'go test' is a no-op
+            # anyway.
+            coverflags=()
+        fi
         testflags=()
         # We do "go install" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting

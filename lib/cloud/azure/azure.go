@@ -317,8 +317,8 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 	az.dispatcherID = dispatcherID
 	az.namePrefix = fmt.Sprintf("compute-%s-", az.dispatcherID)
 
+	az.stopWg.Add(1)
 	go func() {
-		az.stopWg.Add(1)
 		defer az.stopWg.Done()
 
 		tk := time.NewTicker(5 * time.Minute)
