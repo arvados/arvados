@@ -7,7 +7,7 @@ import { Button, Dialog, DialogActions } from "@mui/material"
 import withStyles, { WithStyles } from "@mui/styles/withStyles/withStyles";
 import { CustomStyleRulesCallback } from "common/custom-theme";
 
-type CssRules = "paper" | "root";
+type CssRules = "paper" | "root" | "actions";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
     root: {
@@ -16,6 +16,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
     paper: {
         width: '800px',
     },
+    actions: {
+        paddingTop: 0,
+        paddingRight: theme.spacing(2),
+        paddingBottom: theme.spacing(2),
+    }
 })
 
 type DialogFormProps = WithStyles<CssRules> & {
@@ -59,7 +64,7 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
             }}
         >
             {fields}
-            <DialogActions>
+            <DialogActions className={classes.actions}>
                 <Button data-cy="form-cancel-btn" onClick={closeDialog}>Cancel</Button>
                 <Button data-cy="form-submit-btn" disabled={formErrors.length > 0} type="submit">
                     {submitLabel && submitLabel.length > 0 ? submitLabel : "Submit"}
