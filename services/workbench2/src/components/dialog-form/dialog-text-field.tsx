@@ -7,7 +7,6 @@ import classNames from "classnames";
 import RichTextEditor from 'react-rte';
 import { TextField, Typography } from "@mui/material";
 import { getFieldErrors, Validator } from "validators/validators";
-import { usePrevious } from "common/usePrevious";
 import { CustomStyleRulesCallback } from "common/custom-theme";
 import { ArvadosTheme } from "common/custom-theme";
 import { WithStyles } from "@mui/styles/withStyles/withStyles";
@@ -51,14 +50,9 @@ interface DialogTextFieldProps {
 export const DialogTextField = React.memo(({  disabled, label, defaultValue, validators, setValue }: DialogTextFieldProps) => {
     const [thisValue, setThisValue] = React.useState(defaultValue);
     const errs = getFieldErrors(thisValue, validators)
-    const prevErr = usePrevious(errs)
 
-    // set parent value when error state changes
-    // necessary to set for submit button disable/enable
     React.useEffect(() => {
-        if (prevErr && Boolean(prevErr.length) !== Boolean(errs.length)) {
             setValue(thisValue.trim())
-        }
     }, [thisValue])
 
     return (
