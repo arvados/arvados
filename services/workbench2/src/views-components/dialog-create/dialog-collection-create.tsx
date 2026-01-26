@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Dispatch } from 'redux';
+import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux'
-import { WithDialogProps } from 'store/dialog/with-dialog';
+import { WithDialogProps, withDialog } from 'store/dialog/with-dialog';
 import { DialogContent, DialogTitle } from '@mui/material/';
 import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
 import {
@@ -21,11 +21,13 @@ import { useStateWithValidation } from 'common/useStateWithValidation';
 import { COLLECTION_NAME_VALIDATION, MAXLENGTH_524288_VALIDATION, REQUIRED_VALIDATION } from 'validators/validators';
 import { DialogRichTextField } from 'components/dialog-form/dialog-text-field';
 import { DialogResourcePropertiesForm } from 'views-components/resource-properties-form/resource-properties-form'
-import { createCollection } from 'store/collections/collection-create-actions';
+import { createCollection } from 'store/workbench/workbench-actions';
 import { PropertyChips, getVocabularyFromChips } from 'components/chips/chips';
 import { RootState } from 'store/store';
 import { DialogMultiCheckboxField } from 'components/checkbox-field/checkbox-field'
 import { DialogFileUploaderField } from '../file-uploader/file-uploader';
+import { Vocabulary } from 'models/vocabulary';
+import { COLLECTION_CREATE_FORM_NAME } from 'store/collections/collection-create-actions';
 
 type CssRules = 'propertiesForm';
 
@@ -44,9 +46,16 @@ const mapDispatch = (dispatch: Dispatch) => ({
     createCollection: (data: CollectionCreateFormDialogData) => dispatch<any>(createCollection(data))
 });
 
-type DialogCollectionProps = WithDialogProps<CollectionCreateFormDialogData> & ReturnType<typeof mapDispatch> & ReturnType<typeof mapState>;
+type DialogCollectionProps = WithDialogProps<CollectionCreateFormDialogData> & {
+    createCollection: (data: CollectionCreateFormDialogData) => void;
+    vocabulary: Vocabulary;
+};
 
-export const DialogCollectionCreate = connect(mapState, mapDispatch)(withStyles(styles)(({ createCollection, data, closeDialog, open, vocabulary, classes }: DialogCollectionProps & WithStyles<CssRules>) =>{
+export const DialogCollectionCreate = compose(
+    connect(mapState, mapDispatch),
+    withStyles(styles),
+    withDialog(COLLECTION_CREATE_FORM_NAME)
+)(({ createCollection, data, closeDialog, open, vocabulary, classes }: DialogCollectionProps & WithStyles<CssRules>) =>{
     const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation('', [...REQUIRED_VALIDATION, ...COLLECTION_NAME_VALIDATION], 'Collection Name');
     const [description, setDescription, descriptionErrs] = useStateWithValidation('', MAXLENGTH_524288_VALIDATION, 'Description');
     const [chips, setChips, chipsErrs] = useStateWithValidation({} as PropertyChips, [], 'Properties');
@@ -60,7 +69,7 @@ export const DialogCollectionCreate = connect(mapState, mapDispatch)(withStyles(
         <>
             <DialogTitle>New collection</DialogTitle>
             <DialogContent>
-                <ResourceParentField ownerUuid={data.ownerUuid} />
+                <ResourceParentField ownerUuid={data ? data.ownerUuid : ''} />
                 <DialogCollectionNameField setValue={setCollectionName} />
                 <DialogRichTextField
                     label="Description"
@@ -86,7 +95,7 @@ export const DialogCollectionCreate = connect(mapState, mapDispatch)(withStyles(
                 />
             </DialogContent>
         </>
-)
+    )
 
     return <DialogForm
         fields={fields()}
@@ -110,5 +119,5 @@ export const DialogCollectionCreate = connect(mapState, mapDispatch)(withStyles(
         }}
         open={open}
     />;
-}));
+});
 
