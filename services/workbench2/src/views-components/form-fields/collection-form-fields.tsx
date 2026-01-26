@@ -41,8 +41,10 @@ export const CollectionNameField = connect(
 
 type DialogCollectionNameFieldProps = {
     defaultValue?: string;
-    setValue: (value: string) => void;
     validators: Validator[];
+    submitErr?: string;
+    setSubmitErr?: (errMsg: string) => void;
+    setValue: (value: string) => void;
 }
 
 export const DialogCollectionNameField = connect(
@@ -51,13 +53,15 @@ export const DialogCollectionNameField = connect(
             validators: (state.auth.config.clusterConfig.Collections.ForwardSlashNameSubstitution === "" ?
                 COLLECTION_NAME_VALIDATION : COLLECTION_NAME_VALIDATION_ALLOW_SLASH)
         };
-    })(({ defaultValue, setValue, validators }: DialogCollectionNameFieldProps) => {
+    })(({ defaultValue, setValue, validators, submitErr, setSubmitErr }: DialogCollectionNameFieldProps) => {
         return <span data-cy='name-field'>
             <DialogTextField
                 label='Collection Name'
                 defaultValue={defaultValue || ''}
                 setValue={setValue}
                 validators={validators}
+                submitErr={submitErr}
+                setSubmitErr={setSubmitErr}
             />
         </span>
     })

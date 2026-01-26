@@ -43,11 +43,11 @@ const mapState = (state: RootState) => ({
 });
 
 const mapDispatch = (dispatch: Dispatch) => ({
-    createCollection: (data: CollectionCreateFormDialogData) => dispatch<any>(createCollection(data))
+    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => dispatch<any>(createCollection(data, setSubmitErr))
 });
 
 type DialogCollectionProps = WithDialogProps<CollectionCreateFormDialogData> & {
-    createCollection: (data: CollectionCreateFormDialogData) => void;
+    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => void;
     vocabulary: Vocabulary;
 };
 
@@ -58,19 +58,20 @@ export const DialogCollectionCreate = compose(
 )(({ createCollection, data, closeDialog, open, vocabulary, classes }: DialogCollectionProps & WithStyles<CssRules>) =>{
     const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation('', [...REQUIRED_VALIDATION, ...COLLECTION_NAME_VALIDATION], 'Collection Name');
     const [description, setDescription, descriptionErrs] = useStateWithValidation('', MAXLENGTH_524288_VALIDATION, 'Description');
-    const [chips, setChips, chipsErrs] = useStateWithValidation({} as PropertyChips, [], 'Properties');
+    const [chips, setChips] = React.useState<PropertyChips>({} as PropertyChips);
     const [formErrors, setFormErrors] = React.useState<string[]>([]);
+    const [submitErr, setSubmitErr] = React.useState<string | undefined>(undefined);
 
     React.useEffect(() => {
-        setFormErrors([...collectionNameErrs, ...descriptionErrs, ...chipsErrs]);
-    }, [collectionNameErrs, descriptionErrs, chipsErrs]);
+        setFormErrors([...collectionNameErrs, ...descriptionErrs]);
+    }, [collectionNameErrs, descriptionErrs]);
 
     const fields = () => (
         <>
             <DialogTitle>New collection</DialogTitle>
             <DialogContent>
                 <ResourceParentField ownerUuid={data ? data.ownerUuid : ''} />
-                <DialogCollectionNameField setValue={setCollectionName} />
+                <DialogCollectionNameField setValue={setCollectionName} submitErr={submitErr} setSubmitErr={setSubmitErr} />
                 <DialogRichTextField
                     label="Description"
                     defaultValue={description}
@@ -108,8 +109,9 @@ export const DialogCollectionCreate = compose(
                 name: collectionName,
                 description: description,
                 storageClassesDesired: [],
-                properties: getVocabularyFromChips(chips, vocabulary)
-            })
+                properties: getVocabularyFromChips(chips, vocabulary),
+            },
+            setSubmitErr);
         }}
         closeDialog={closeDialog}
         clearFormValues={() => {

@@ -453,8 +453,8 @@ export const loadCollection = (uuid: string) =>
         }
     });
 
-export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData) => async (dispatch: Dispatch) => {
-    const collection = await dispatch<any>(collectionCreateActions.createCollection(data));
+export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+    const collection = await dispatch<any>(collectionCreateActions.createCollection(data, setSubmitErr));
     if (collection) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({

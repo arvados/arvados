@@ -3,13 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import {
-    reset,
-    startSubmit,
-    stopSubmit,
-    FormErrors,
-    formValueSelector
-} from 'redux-form';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -36,7 +29,6 @@ export interface CollectionProperties {
 
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 export const COLLECTION_CREATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
-export const COLLECTION_CREATE_FORM_SELECTOR = formValueSelector(COLLECTION_CREATE_FORM_NAME);
 
 export const openCollectionCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -51,23 +43,20 @@ export const openCollectionCreateDialog = (ownerUuid: string) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_CREATE_FORM_NAME, data: { ownerUuid: ownerUuidToUse } }));
     };
 
-export const createCollection = (data: CollectionCreateFormDialogData) =>
+export const createCollection = (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_CREATE_FORM_NAME));
         let newCollection: CollectionResource | undefined;
         try {
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
             newCollection = await services.collectionService.create(data, false);
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
-            dispatch(reset(COLLECTION_CREATE_FORM_NAME));
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
+                setSubmitErr('Collection with the same name already exists.');
             } else {
-                dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
                 const errMsg = e.errors
                     ? e.errors.join('')

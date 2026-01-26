@@ -44,10 +44,12 @@ interface DialogTextFieldProps {
     label: string;
     defaultValue: string;
     validators: Validator[];
+    submitErr?: string;
     setValue: React.Dispatch<React.SetStateAction<string>>;
+    setSubmitErr?: (errMsg: string) => void;
 }
 
-export const DialogTextField = React.memo(({  disabled, label, defaultValue, validators, setValue }: DialogTextFieldProps) => {
+export const DialogTextField = React.memo(({  disabled, label, defaultValue, validators, submitErr, setValue, setSubmitErr }: DialogTextFieldProps) => {
     const [thisValue, setThisValue] = React.useState(defaultValue);
     const errs = getFieldErrors(thisValue, validators)
 
@@ -59,11 +61,14 @@ export const DialogTextField = React.memo(({  disabled, label, defaultValue, val
         <TextField
             disabled={disabled}
             value={thisValue}
-            onChange={(e) => setThisValue(e.target.value)}
+            onChange={(e) => {
+                setThisValue(e.target.value)
+                if (submitErr && setSubmitErr) setSubmitErr('')
+            }}
             autoFocus
             required
-            error={errs.length > 0}
-            helperText={errs.join(', ') || ''}
+            error={errs.length > 0 || !!submitErr}
+            helperText={errs.join(', ') || submitErr || ''}
             margin="dense"
             id="name"
             name="name"
