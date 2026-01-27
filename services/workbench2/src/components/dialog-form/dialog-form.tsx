@@ -28,13 +28,14 @@ type DialogFormProps = WithStyles<CssRules> & {
     fields: React.ReactNode;
     submitLabel?: string;
     formErrors: string[];
+    isSubmitting?: boolean;
     onSubmit: (data: any) => void;
     closeDialog: () => void;
     clearFormValues: () => void;
 }
 
 export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
-    const { open, fields, submitLabel, classes, formErrors, onSubmit, closeDialog, clearFormValues } = props;
+    const { open, fields, submitLabel, classes, formErrors, isSubmitting = false, onSubmit, closeDialog, clearFormValues } = props;
 
     useEffect(() => {
         if (!open) {
@@ -66,7 +67,7 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
             {fields}
             <DialogActions className={classes.actions}>
                 <Button data-cy="form-cancel-btn" onClick={closeDialog}>Cancel</Button>
-                <Button data-cy="form-submit-btn" disabled={formErrors.length > 0} type="submit">
+                <Button data-cy="form-submit-btn" disabled={formErrors.length > 0 || isSubmitting} type="submit">
                     {submitLabel && submitLabel.length > 0 ? submitLabel : "Submit"}
                 </Button>
             </DialogActions>

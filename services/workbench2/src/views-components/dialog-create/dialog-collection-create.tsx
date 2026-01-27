@@ -62,10 +62,20 @@ export const DialogCollectionCreate = compose(
     const [storageClassesDesired, setStorageClassesDesired] = React.useState<string[]>([]);
     const [formErrors, setFormErrors] = React.useState<string[]>([]);
     const [submitErr, setSubmitErr] = React.useState<string | undefined>(undefined);
+    const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
     React.useEffect(() => {
         setFormErrors([...collectionNameErrs, ...descriptionErrs]);
     }, [collectionNameErrs, descriptionErrs]);
+
+    React.useEffect(() => {
+        if (!open) {
+            setIsSubmitting(false);
+        }
+        if (isSubmitting && !submitErr) {
+            setIsSubmitting(false);
+        }
+    }, [open, submitErr]);
 
     const fields = () => (
         <>
@@ -99,8 +109,10 @@ export const DialogCollectionCreate = compose(
         fields={fields()}
         submitLabel='Create a Collection'
         formErrors={formErrors}
+        isSubmitting={isSubmitting}
         onSubmit={(ev) => {
             ev.preventDefault();
+            setIsSubmitting(true);
             createCollection({
                 ownerUuid: data.ownerUuid,
                 name: collectionName,
