@@ -23,7 +23,6 @@ import { Routes } from "routes/routes";
 import { SidePanel } from "views-components/side-panel/side-panel";
 import { ProcessPanel } from "views/process-panel/process-panel";
 import { ChangeWorkflowDialog } from "views-components/run-process-dialog/change-workflow-dialog";
-import { CreateProjectDialog } from "views-components/dialog-forms/create-project-dialog";
 import { DialogCollectionCreate } from "views-components/dialog-create/dialog-collection-create";
 import { CopyCollectionDialog } from "views-components/dialog-copy/dialog-copy";
 import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-rerun";
@@ -116,6 +115,7 @@ import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferen
 import { Dashboard } from "components/dashboard/dashboard";
 import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
 import { CancelProcessDialog } from "views-components/process-cancel-dialog/process-cancel-dialog";
+import { DialogProjectCreate } from "views-components/dialog-create/dialog-project-create";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -483,7 +483,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <ContextMenu />
             <CopyCollectionDialog />
             <DialogCollectionCreate />
-            <CreateProjectDialog />
+            <DialogProjectCreate />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
             <CreateUserDialog />
