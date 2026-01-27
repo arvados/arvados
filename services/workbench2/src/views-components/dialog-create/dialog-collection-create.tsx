@@ -59,6 +59,7 @@ export const DialogCollectionCreate = compose(
     const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation('', [...REQUIRED_VALIDATION, ...COLLECTION_NAME_VALIDATION], 'Collection Name');
     const [description, setDescription, descriptionErrs] = useStateWithValidation('', MAXLENGTH_524288_VALIDATION, 'Description');
     const [chips, setChips] = React.useState<PropertyChips>({} as PropertyChips);
+    const [storageClassesDesired, setStorageClassesDesired] = React.useState<string[]>([]);
     const [formErrors, setFormErrors] = React.useState<string[]>([]);
     const [submitErr, setSubmitErr] = React.useState<string | undefined>(undefined);
 
@@ -84,16 +85,12 @@ export const DialogCollectionCreate = compose(
                     onSubmit={(ev)=> ev.preventDefault()}
                     />
                 <DialogMultiCheckboxField
-                    value={[]}
                     name="storageClassesDesired"
                     defaultValues={['default']}
                     label="Storage Classes"
-                    onChange={() => {}}
+                    onChange={setStorageClassesDesired}
                 />
-                <DialogFileUploaderField
-                    label="Files"
-                    onChange={() => {}}
-                />
+                <DialogFileUploaderField />
             </DialogContent>
         </>
     )
@@ -108,7 +105,7 @@ export const DialogCollectionCreate = compose(
                 ownerUuid: data.ownerUuid,
                 name: collectionName,
                 description: description,
-                storageClassesDesired: [],
+                storageClassesDesired: storageClassesDesired,
                 properties: getVocabularyFromChips(chips, vocabulary),
             },
             setSubmitErr);
@@ -118,6 +115,7 @@ export const DialogCollectionCreate = compose(
             setCollectionName('');
             setDescription('');
             setChips({} as PropertyChips);
+            setStorageClassesDesired([]);
         }}
         open={open}
     />;

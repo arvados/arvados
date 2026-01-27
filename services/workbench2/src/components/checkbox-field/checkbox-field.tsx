@@ -82,7 +82,6 @@ export const MultiCheckboxField = (props: WrappedFieldProps & MultiCheckboxField
     ); };
 
 type DialogMultiCheckboxFieldProps = {
-    value: any,
     name: string,
     items: string[];
     defaultValues?: string[];
@@ -98,7 +97,7 @@ const mapState = (state: RootState) => ({
 });
 
 export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiCheckboxFieldProps) => {
-    const [value, setValue] = React.useState(props.value);
+    const [value, setValue] = React.useState(props.defaultValues || []);
 
     const isValid = (items: string[]) => (items.length >= (props.minSelection || 0)) &&
         (items.length <= (props.maxSelection || items.length));
@@ -111,7 +110,7 @@ export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiChe
         <FormControl variant="standard" error={!isValid(value)}>
             <FormLabel component='label'>{props.label}</FormLabel>
             <FormGroup row>
-            { props.items.map((item, idx) =>
+            {props.items.map((item, idx) =>
                 <FormControlLabel
                     key={`label-${idx}`}
                     control={
@@ -126,7 +125,7 @@ export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiChe
                                     (props.defaultValues || []).indexOf(item) !== -1)
                             }
                             onChange={e => {
-                                const newValue = [...props.value];
+                                const newValue = [...value];
                                 if (e.target.checked) {
                                     newValue.push(item);
                                 } else {
