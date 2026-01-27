@@ -3,14 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import {
-    reset,
-    startSubmit,
-    stopSubmit,
-    initialize,
-    FormErrors,
-    formValueSelector
-} from 'redux-form';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -36,7 +28,6 @@ export interface ProjectProperties {
 
 export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
 export const PROJECT_CREATE_PROPERTIES_FORM_NAME = 'projectCreatePropertiesFormName';
-export const PROJECT_CREATE_FORM_SELECTOR = formValueSelector(PROJECT_CREATE_FORM_NAME);
 
 export const isProjectOrRunProcessRoute = (router: RouterState) => {
     const pathname = router.location ? router.location.pathname : '';
@@ -51,9 +42,6 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         if (!isProjectOrRunProcessRoute(router)) {
             const userUuid = getUserUuid(getState());
             if (!userUuid) { return; }
-            dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid: userUuid }));
-        } else {
-            dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
         }
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_CREATE_FORM_NAME,
@@ -64,25 +52,22 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         }));
     };
 
-export const createProject = (project: Partial<ProjectResource>) =>
+export const createProject = (project: Partial<ProjectResource>, setSubmitErr: (err: string | undefined) => void) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
             dispatch(progressIndicatorActions.START_WORKING(PROJECT_CREATE_FORM_NAME));
             const newProject = await services.projectService.create(project, false);
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
-            dispatch(reset(PROJECT_CREATE_FORM_NAME));
             return newProject;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Project with the same name already exists.' } as FormErrors));
+                setSubmitErr('Project with the same name already exists.');
             } else {
-                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
                 const errMsg = e.errors
                     ? e.errors.join('')
-                    : 'There was an error while creating the collection';
+                    : 'There was an error while creating the project.';
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: errMsg,
                     hideDuration: 2000,

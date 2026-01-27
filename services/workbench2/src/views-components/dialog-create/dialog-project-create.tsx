@@ -43,11 +43,11 @@ const mapState = (state: RootState) => ({
 });
 
 const mapDispatch = (dispatch: Dispatch) => ({
-    createProject: (data: ProjectCreateFormDialogData) => dispatch<any>(createProject(data))
+    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string | undefined) => void) => dispatch<any>(createProject(data, setSubmitErr))
 });
 
 type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass, ownerUuid: string}> & {
-    createProject: (data: ProjectCreateFormDialogData) => void;
+    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string | undefined) => void) => void;
     vocabulary: Vocabulary;
     allowSlash: boolean;
 };
@@ -65,6 +65,20 @@ export const DialogProjectCreate = compose(
     const [users, setUsers] = React.useState<Participant[]>([]);
     const [formErrors, setFormErrors] = React.useState<string[]>([]);
     const [submitErr, setSubmitErr] = React.useState<string | undefined>(undefined);
+    const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+
+    React.useEffect(() => {
+        setFormErrors([...projectNameErrs, ...descriptionErrs]);
+    }, [projectNameErrs, descriptionErrs]);
+
+    React.useEffect(() => {
+        if (!open) {
+            setIsSubmitting(false);
+        }
+        if (isSubmitting && !submitErr) {
+            setIsSubmitting(false);
+        }
+    }, [open, submitErr]);
 
     const sourcePanel = data?.sourcePanel || GroupClass.PROJECT;
     const isGroup = sourcePanel === GroupClass.ROLE;
@@ -122,15 +136,17 @@ export const DialogProjectCreate = compose(
         fields={fields()}
         submitLabel='Create'
         formErrors={formErrors}
+        isSubmitting={isSubmitting}
         onSubmit={(ev) => {
             ev.preventDefault();
+            setIsSubmitting(true);
             const projectData: ProjectCreateFormDialogData = {
                 ownerUuid: data.ownerUuid,
                 name: projectName,
                 description: description,
                 properties: getVocabularyFromChips(chips, vocabulary),
             };
-            createProject(projectData);
+            createProject(projectData, setSubmitErr);
         }}
         closeDialog={closeDialog}
         clearFormValues={() => {
