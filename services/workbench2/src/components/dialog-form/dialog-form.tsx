@@ -6,6 +6,7 @@ import React, { useEffect } from "react"
 import { Button, Dialog, DialogActions } from "@mui/material"
 import withStyles, { WithStyles } from "@mui/styles/withStyles/withStyles";
 import { CustomStyleRulesCallback } from "common/custom-theme";
+import { CircularSuspense } from "components/loading/circular-suspense";
 
 type CssRules = "paper" | "root" | "actions";
 
@@ -67,9 +68,12 @@ export const DialogForm = withStyles(styles)((props: DialogFormProps) => {
             {fields}
             <DialogActions className={classes.actions}>
                 <Button data-cy="form-cancel-btn" onClick={closeDialog}>Cancel</Button>
-                <Button data-cy="form-submit-btn" disabled={formErrors.length > 0 || isSubmitting} type="submit">
-                    {submitLabel && submitLabel.length > 0 ? submitLabel : "Submit"}
-                </Button>
+                <CircularSuspense
+                    showElement={!isSubmitting}
+                    element={<Button data-cy="form-submit-btn" disabled={formErrors.length > 0} type="submit">
+                                {submitLabel && submitLabel.length > 0 ? submitLabel : "Submit"}
+                            </Button>}
+                />
             </DialogActions>
         </Dialog>
     )

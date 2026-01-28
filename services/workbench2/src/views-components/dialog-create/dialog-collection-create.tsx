@@ -61,18 +61,21 @@ export const DialogCollectionCreate = compose(
     const [chips, setChips] = React.useState<PropertyChips>({} as PropertyChips);
     const [storageClassesDesired, setStorageClassesDesired] = React.useState<string[]>([]);
     const [formErrors, setFormErrors] = React.useState<string[]>([]);
-    const [submitErr, setSubmitErr] = React.useState<string | undefined>(undefined);
+    const [submitErr, setSubmitErr] = React.useState<string>('');
     const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
     React.useEffect(() => {
         setFormErrors([...collectionNameErrs, ...descriptionErrs]);
-    }, [collectionNameErrs, descriptionErrs]);
+        if (submitErr) {
+            setFormErrors(prevErrors => [...prevErrors, submitErr]);
+        }
+    }, [collectionNameErrs, descriptionErrs, submitErr]);
 
     React.useEffect(() => {
         if (!open) {
             setIsSubmitting(false);
         }
-        if (isSubmitting && !submitErr) {
+        if (isSubmitting && submitErr) {
             setIsSubmitting(false);
         }
     }, [open, submitErr]);

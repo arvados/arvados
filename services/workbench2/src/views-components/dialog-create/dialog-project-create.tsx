@@ -43,11 +43,11 @@ const mapState = (state: RootState) => ({
 });
 
 const mapDispatch = (dispatch: Dispatch) => ({
-    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string | undefined) => void) => dispatch<any>(createProject(data, setSubmitErr))
+    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => dispatch<any>(createProject(data, setSubmitErr))
 });
 
 type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass, ownerUuid: string}> & {
-    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string | undefined) => void) => void;
+    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => void;
     vocabulary: Vocabulary;
     allowSlash: boolean;
 };
@@ -64,18 +64,21 @@ export const DialogProjectCreate = compose(
     const [chips, setChips] = React.useState<PropertyChips>({} as PropertyChips);
     const [users, setUsers] = React.useState<Participant[]>([]);
     const [formErrors, setFormErrors] = React.useState<string[]>([]);
-    const [submitErr, setSubmitErr] = React.useState<string | undefined>(undefined);
+    const [submitErr, setSubmitErr] = React.useState<string>('');
     const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
     React.useEffect(() => {
         setFormErrors([...projectNameErrs, ...descriptionErrs]);
-    }, [projectNameErrs, descriptionErrs]);
+        if (submitErr) {
+            setFormErrors(prevErrors => [...prevErrors, submitErr]);
+        }
+    }, [projectNameErrs, descriptionErrs, submitErr]);
 
     React.useEffect(() => {
         if (!open) {
             setIsSubmitting(false);
         }
-        if (isSubmitting && !submitErr) {
+        if (isSubmitting && submitErr) {
             setIsSubmitting(false);
         }
     }, [open, submitErr]);
@@ -83,10 +86,6 @@ export const DialogProjectCreate = compose(
     const sourcePanel = data?.sourcePanel || GroupClass.PROJECT;
     const isGroup = sourcePanel === GroupClass.ROLE;
     const title = isGroup ? 'New Group' : 'New Project';
-
-    React.useEffect(() => {
-        setFormErrors([...projectNameErrs, ...descriptionErrs]);
-    }, [projectNameErrs, descriptionErrs]);
 
     const fields = () => (
         <>
@@ -100,7 +99,6 @@ export const DialogProjectCreate = compose(
                     validators={allowSlash ? PROJECT_NAME_VALIDATION_ALLOW_SLASH : PROJECT_NAME_VALIDATION}
                     submitErr={submitErr}
                     setSubmitErr={setSubmitErr}
-
                 />
                 {isGroup && (
                     <ParticipantSelect

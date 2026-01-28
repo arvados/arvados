@@ -52,7 +52,7 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         }));
     };
 
-export const createProject = (project: Partial<ProjectResource>, setSubmitErr: (err: string | undefined) => void) =>
+export const createProject = (project: Partial<ProjectResource>, setSubmitErr: (err: string) => void) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             dispatch(progressIndicatorActions.START_WORKING(PROJECT_CREATE_FORM_NAME));

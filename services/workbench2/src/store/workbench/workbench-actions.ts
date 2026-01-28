@@ -300,7 +300,7 @@ export const loadProject = (uuid: string) =>
         }
     });
 
-export const createProject = (data: projectCreateActions.ProjectCreateFormDialogData, setSubmitErr: (err: string | undefined) => void) => async (dispatch: Dispatch) => {
+export const createProject = (data: projectCreateActions.ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => async (dispatch: Dispatch) => {
     const newProject = await dispatch<any>(projectCreateActions.createProject(data, setSubmitErr));
     if (newProject) {
         dispatch(
