@@ -3,9 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { Dispatch } from 'redux';
 import { ArvadosTheme, CustomStyleRulesCallback } from 'common/custom-theme';
 import withStyles, { WithStyles } from '@mui/styles/withStyles';
 import { Typography, Grid } from '@mui/material';
+import descriptionDialogActions from 'store/description-dialog/description-dialog-actions';
+import { connect } from 'react-redux';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';
 import { WorkflowResource } from 'models/workflow';
@@ -67,13 +70,26 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
+interface DescriptionPreviewDispatchProps {
+    openDescriptionDialog: (uuid: string) => void;
+};
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+    openDescriptionDialog: (uuid: string) => {
+        dispatch<any>(descriptionDialogActions.openDialog(uuid));
+    },
+});
+
 interface DescriptionPreviewDataProps {
     resource: ProjectResource | CollectionResource | WorkflowResource | ContainerRequestResource;
 };
 
-type DescriptionPreviewProps = WithStyles<CssRules> & DescriptionPreviewDataProps;
+type DescriptionPreviewProps = WithStyles<CssRules> & DescriptionPreviewDispatchProps & DescriptionPreviewDataProps;
 
-export const DescriptionPreview =
+export const DescriptionPreview = connect(
+    null,
+    mapDispatchToProps
+)(
     withStyles(styles)((props: DescriptionPreviewProps) => {
         const { classes, resource } = props;
 
@@ -90,10 +106,13 @@ export const DescriptionPreview =
                 />
                 <Typography
                     className={classes.descriptionPreviewMore}
-                    onClick={() => {}}
+                    onClick={() => {
+                        props.openDescriptionDialog(resource.uuid);
+                    }}
                 >
                     Read more...
                 </Typography>
             </Grid>
         );
-    });
+    })
+);
