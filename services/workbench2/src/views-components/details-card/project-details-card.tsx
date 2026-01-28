@@ -20,6 +20,7 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { DescriptionPreview } from './description-preview';
 
 type CssRules =
     | 'root'
@@ -162,6 +163,7 @@ export const ProjectCard = connect(
                     />
                     {isSelected && <MultiselectToolbar toolbarClass={classes.toolbarStyles} />}
                 </Grid>
+                <DescriptionPreview resource={currentResource} />
             </Card>
         );
     })
