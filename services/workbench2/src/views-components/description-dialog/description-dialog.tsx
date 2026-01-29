@@ -47,7 +47,7 @@ export const DescriptionDialogComponent = (props: DescriptionDialogComponentProp
         <Dialog
             open={open}
             onClose={props.closeDialog}
-            maxWidth="lg"
+            maxWidth="md"
             fullWidth={true}
         >
             <DialogContent>

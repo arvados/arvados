@@ -22,6 +22,7 @@ type CssRules =
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     wrapper: {
         // Max height 3 lines at line height 1.5
+        // Updates to maxHeight must be mirrored in overflowButton bottom
         maxHeight: 'calc(0.875rem * 1.5 * 3)',
         overflow: 'hidden',
         position: 'relative',
