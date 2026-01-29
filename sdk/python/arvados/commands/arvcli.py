@@ -113,6 +113,12 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
     """Argument parser for `arv` commands.
     """
     def __init__(self, resource_dictionary, **kwargs):
+        """Arguments:
+            * `resource dictionary`: Dict containing the resources defined in
+            the discovery document; can be obtained as the
+            `_resourceDesc["resources"]` attribute of an Arvados API client
+            object.
+        """
         super().__init__(description="Arvados command line client", **kwargs)
         # Common flags to the main command.
         self.add_argument("-n", "--dry-run", action="store_true",
@@ -155,26 +161,25 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         copy_parser = subparsers.add_parser("copy")
 
         self.subparsers = subparsers
+        self.resource_dictionary = resource_dictionary
+        self._subparser_index = {}
 
-        self.add_resource_subcommands(resource_dictionary)
+        self.add_resource_subcommands()
 
-    def add_resource_subcommands(self, resource_dictionary):
+    def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
         sub-subcommands, and the parameters associated with each method.
-
-        Arguments:
-            * `resource dictionary`: Dict containing the resources defined in
-            the discovery document; can be obtained as the
-            `_resourceDesc["resources"]` attribute of an Arvados API client
-            object.
         """
-        for resource, resource_schema in resource_dictionary.items():
+        for resource, resource_schema in self.resource_dictionary.items():
             subcommand = singularize_resource(resource)
             resource_subparser = self.subparsers.add_parser(
                 subcommand,
                 # For backward compatibility with legacy Ruby CLI client.
                 aliases=["sy"] if subcommand == "sys" else []
             )
+            self._subparser_index[subcommand] = resource_subparser
+            if subcommand == "sys":
+                self._subparser_index["sy"] = resource_subparser
             methods_dict = resource_schema.get("methods")
             if methods_dict:
                 # Create a collection of "sub-subparsers" under the resource
@@ -183,8 +188,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                     title="Methods",
                     dest="method",
                     parser_class=argparse.ArgumentParser,
-                    help="Methods for subcommand {}".format(subcommand),
-                    required=True
+                    help="Methods for subcommand {}".format(subcommand)
                 )
                 for method, method_schema in methods_dict.items():
                     # Add each specific method as a (sub-)subparser with its
@@ -230,6 +234,12 @@ def dispatch(arguments=None):
             ))
             for k, v in vars(args).items():
                 print("{!r}={!r}".format(k, v))
+            help_wanted = "-h" in remaining_args or "--help" in remaining_args
+            if args.method is None or help_wanted:
+                subparser = cmd_parser._subparser_index.get(args.subcommand)
+                if subparser:
+                    subparser.print_help()
+                sys.exit(0 if help_wanted else 2)
             sys.exit(0)
     status = main(remaining_args)
     sys.exit(status)
