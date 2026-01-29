@@ -67,7 +67,7 @@ export const RunProcessBasicForm = reduxForm<RunProcessBasicFormData, RunProcess
                             data-cy='workflow-description'
                             //dangerouslySetInnerHTML is ok here only if description is sanitized,
                             //which it is before it is loaded into the redux store
-                            dangerouslySetInnerHTML={{ __html: props.workflow.description }}
+                            dangerouslySetInnerHTML={{ __html: props.workflow.description || "" }}
                         />
                     )}
                 </Grid>

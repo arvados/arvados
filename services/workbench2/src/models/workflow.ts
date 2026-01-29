@@ -9,7 +9,7 @@ import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParamet
 export interface WorkflowResource extends Resource {
     kind: ResourceKind.WORKFLOW;
     name: string;
-    description: string;
+    description: string | null;
     definition: string;
 }
 export interface WorkflowResourceDefinition {

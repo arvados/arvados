@@ -28,7 +28,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type CollapsibleDescriptionProps = {
-    description: string;
+    description: string | null;
     showDescription: boolean;
 };
 
@@ -37,7 +37,7 @@ export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDesc
     const [fadeDescription, setFadeDescription] = React.useState(!showDescription);
 
     // If description length surpasses this huge limit, we revert to scrolling
-    const expandedHeight = (description.length / 200) * 5000;
+    const expandedHeight = description ? ((description.length / 200) * 5000) : 0;
 
     //prevents jarring pop-in/out animations
     React.useEffect(() => {
@@ -57,7 +57,7 @@ export const CollapsibleDescription = withStyles(styles)((props: CollapsibleDesc
                 style={{ maxHeight: showDescription ? `${expandedHeight}rem` : '20rem' , transition: 'max-height 0.75s' , overflow: showDescription ? 'scroll' : 'hidden' }}
                 //dangerouslySetInnerHTML is ok here only if description is sanitized,
                 //which it is before it is loaded into the redux store
-                dangerouslySetInnerHTML={{ __html: description }}
+                dangerouslySetInnerHTML={{ __html: description || "" }}
             />
         </section>
     );

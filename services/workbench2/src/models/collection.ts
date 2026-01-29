@@ -12,7 +12,7 @@ import {
 export interface CollectionResource extends TrashableResource, ResourceWithProperties {
     kind: ResourceKind.COLLECTION;
     name: string;
-    description: string;
+    description: string | null;
     portableDataHash: string;
     manifestText: string;
     replicationDesired: number;

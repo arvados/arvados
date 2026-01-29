@@ -16,7 +16,7 @@ export interface GroupResource extends TrashableResource, ResourceWithProperties
     kind: ResourceKind.GROUP;
     name: string;
     groupClass: GroupClass | null;
-    description: string;
+    description: string | null;
     ensure_unique_name: boolean;
     canWrite: boolean;
     canManage: boolean;
