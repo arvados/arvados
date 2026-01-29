@@ -15,16 +15,19 @@ import { WorkflowResource } from 'models/workflow';
 import { ContainerRequestResource } from 'models/container-request';
 
 type CssRules =
-    | 'descriptionPreview'
-    | 'descriptionPreviewMore';
+    | 'wrapper'
+    | 'preview'
+    | 'overflowButton';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    descriptionPreview: {
-        position: 'relative',
-        margin: '0 .7rem',
-        // Max height 2 lines + 1.5 margin
-        maxHeight: 'calc(0.875rem * 2 + 0.75rem)',
+    wrapper: {
+        // Max height 3 lines at line height 1.5
+        maxHeight: 'calc(0.875rem * 1.5 * 3)',
         overflow: 'hidden',
+        position: 'relative',
+    },
+    preview: {
+        margin: '0 .7rem',
         // All text small and inline
         '& :is(h1, h2, h3, h4, h5, h6, p)': {
             display: 'inline',
@@ -52,21 +55,28 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             fontWeight: 'bold',
             content: `" —"`,
         },
-        //Add small fade out to bottom
-        '&::before': {
-            content: `""`,
-            width: '100%',
-            height: 'calc(0.875rem + 0.5rem)',
-            position: 'absolute',
-            left: 0,
-            bottom: 0,
-            background: 'linear-gradient(transparent 0, #fff)',
-        },
     },
-    descriptionPreviewMore: {
-        cursor: "pointer",
-        color: '#017ead',
-        margin: '0.25rem .7rem',
+    overflowButton: {
+        cursor: 'pointer',
+        // Avoid taking up more space than necessary
+        lineHeight: 1,
+        // Use contentbox so that vertical text alignment is nice
+        // and to easily add padding to the height
+        boxSizing: 'content-box',
+        // Must use calc to account for margin due to content-box
+        width: 'calc(100% - (0.7rem * 2))',
+        // Start height at font size
+        height: 'calc(0.875rem)',
+        position: 'absolute',
+        // Bottom calc must match wrapper maxHeight
+        bottom: 'calc((100% - calc(0.875rem * 1.5 * 3)) * 10000)',
+        color: theme.palette.primary.main,
+        margin: '0 .7rem',
+        // Added padding for overlapping linear gradient
+        // Bottom padding instead of margin prevents covered content from peeking
+        padding: 'calc(0.875rem * 1.5) 0 0.25rem',
+        // Gradient end should match line height
+        background: 'linear-gradient(transparent 0rem, #fff 0.875rem)',
     },
 });
 
@@ -93,10 +103,10 @@ export const DescriptionPreview = connect(
     withStyles(styles)((props: DescriptionPreviewProps) => {
         const { classes, resource } = props;
 
-        return (
-            <Grid>
+        return resource.description?.length ? (
+            <Grid className={classes.wrapper}>
                 <Typography
-                    className={classes.descriptionPreview}
+                    className={classes.preview}
                     component="div"
                     //dangerouslySetInnerHTML is ok here only if description is sanitized,
                     //which it is before it is loaded into the redux store
@@ -105,7 +115,7 @@ export const DescriptionPreview = connect(
                     }}
                 />
                 <Typography
-                    className={classes.descriptionPreviewMore}
+                    className={classes.overflowButton}
                     onClick={() => {
                         props.openDescriptionDialog(resource.uuid);
                     }}
@@ -113,6 +123,6 @@ export const DescriptionPreview = connect(
                     Read more...
                 </Typography>
             </Grid>
-        );
+        ) : <></>;
     })
 );
