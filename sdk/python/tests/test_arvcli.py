@@ -106,6 +106,7 @@ PARAMETER_TRANSFORM_TESTS = [
         "--no-ensure-unique-name": {
             "dest": "ensure_unique_name",
             "action": "store_false",
+            "default": False,
             "required": False
         }
     }),
