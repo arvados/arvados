@@ -21,9 +21,9 @@ type CssRules =
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     wrapper: {
-        // Max height 3 lines at line height 1.5
+        // Max height 5 lines at line height 1.5
         // Updates to maxHeight must be mirrored in overflowButton bottom
-        maxHeight: 'calc(0.875rem * 1.5 * 3)',
+        maxHeight: 'calc(0.875rem * 1.5 * 5)',
         overflow: 'hidden',
         position: 'relative',
         // Added bottom margin to match space above title
@@ -72,7 +72,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: 'calc(0.875rem)',
         position: 'absolute',
         // Bottom calc must match wrapper maxHeight
-        bottom: 'calc((100% - calc(0.875rem * 1.5 * 3)) * 10000)',
+        bottom: 'calc((100% - calc(0.875rem * 1.5 * 5)) * 10000)',
         color: theme.palette.primary.main,
         margin: '0 1rem',
         // Added padding for overlapping linear gradient
