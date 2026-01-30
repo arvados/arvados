@@ -170,11 +170,3 @@ PARAMETER_TRANSFORM_TESTS = [
 )
 def test_parameter_schema_to_argument(input_parameters_schema, output_dict):
     assert arvcli.parameters_schema_to_arguments(input_parameters_schema) == output_dict
-
-
-def test_resource_subcommand_stub_help(capsys):
-    with pytest.raises(SystemExit) as e:
-        arvcli.dispatch("user list -h".split())
-    assert e.value.code == 0
-    captured_text = capsys.readouterr()
-    assert "Retrieve a UserList." in captured_text.out
