@@ -26,9 +26,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         maxHeight: 'calc(0.875rem * 1.5 * 3)',
         overflow: 'hidden',
         position: 'relative',
+        // Added bottom margin to match space above title
+        margin: '0 0 8px',
     },
     preview: {
-        margin: '0 .7rem',
+        margin: '0 1rem',
         // All text small and inline
         '& :is(h1, h2, h3, h4, h5, h6, p)': {
             display: 'inline',
@@ -72,7 +74,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         // Bottom calc must match wrapper maxHeight
         bottom: 'calc((100% - calc(0.875rem * 1.5 * 3)) * 10000)',
         color: theme.palette.primary.main,
-        margin: '0 .7rem',
+        margin: '0 1rem',
         // Added padding for overlapping linear gradient
         // Bottom padding instead of margin prevents covered content from peeking
         padding: 'calc(0.875rem * 1.5) 0 0.25rem',

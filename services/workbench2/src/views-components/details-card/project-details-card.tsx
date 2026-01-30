@@ -49,7 +49,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     cardHeader: {
         minWidth: '30rem',
-        padding: '0.2rem',
+        padding: '0.2rem 0.4rem 0.2rem 1rem',
     },
     nameSection: {
         display: 'flex',
@@ -62,7 +62,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center',
         margin: 0,
         minHeight: '2.7rem',
-        marginLeft: '.5rem',
     },
     faveIcon: {
         fontSize: '0.8rem',
