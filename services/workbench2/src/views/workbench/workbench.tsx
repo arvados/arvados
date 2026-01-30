@@ -35,7 +35,6 @@ import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files
 import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
 import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
 import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
-import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/partial-move-to-new-collection-dialog";
 import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
 import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
@@ -116,6 +115,7 @@ import { Dashboard } from "components/dashboard/dashboard";
 import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
 import { CancelProcessDialog } from "views-components/process-cancel-dialog/process-cancel-dialog";
 import { DialogProjectCreate } from "views-components/dialog-create/dialog-project-create";
+import { DialogCollectionPartialMoveToNewCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-new-collection";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -502,7 +502,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <PublicKeyDialog />
             <DialogCollectionPartialCopyToNewCollection />
             <DialogCollectionPartialCopyToExistingCollection />
-            <PartialMoveToNewCollectionDialog />
+            <DialogCollectionPartialMoveToNewCollection />
             <PartialMoveToExistingCollectionDialog />
             <PartialMoveToSeparateCollectionsDialog />
             <ProcessInputDialog />

@@ -66,16 +66,14 @@ const openMoveToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionRes
         description: sourceCollection.description,
         projectUuid: undefined
     };
-    dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: { collectionFileSelection, initialFormData} }));
 }
 
 export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialMoveToNewCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
 
                 // Move files
@@ -108,7 +106,6 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             }
         }
