@@ -144,13 +144,8 @@ describe('Collection details panel', () => {
         cy.doMPVTabSelect("Data");
         cy.get('[data-cy=data-table]').should('be.visible');
 
-        // Find and open the test collection
-        cy.contains('[data-cy=data-table-row]', collectionName).rightclick();
-
         // Edit the collection
-        cy.get("[data-cy=context-menu]").within(() => {
-          cy.get('[data-cy="Edit collection"]').click();
-        });
+        cy.doDataExplorerContextAction(collectionName, "Edit collection");
 
         // Change the name in the edit dialog
         const newName = `${collectionName} (edited)`;
@@ -160,10 +155,13 @@ describe('Collection details panel', () => {
         });
 
         // Wait for the update to complete
-        cy.contains('[data-cy=data-table]', newName).should('be.visible');
+        cy.assertDataExplorerContains(newName);
 
-        // open the collection viewer
-        cy.contains(newName).click();
+        // Open the collection
+        cy.doDataExplorerNavigate(newName);
+
+        // Navigate to overview
+        cy.doMPVTabSelect("Overview");
 
         // Verify that the version number has increased
         cy.get('[data-cy=collection-version-number]').should('contain', '2');
