@@ -8443,9 +8443,9 @@ __metadata:
   linkType: hard
 
 "diff@npm:^3.5.0":
-  version: 3.5.0
-  resolution: "diff@npm:3.5.0"
-  checksum: 00842950a6551e26ce495bdbce11047e31667deea546527902661f25cc2e73358967ebc78cf86b1a9736ec3e14286433225f9970678155753a6291c3bca5227b
+  version: 3.5.1
+  resolution: "diff@npm:3.5.1"
+  checksum: 8fadda0a1c9837abb5043422b58d61b5a019c3b45c3d6db7c928c0b47929e10e18198748a823b6a06a58671c5530b0acbf79f6cfb9914a2ae5b67208526d5334
   languageName: node
   linkType: hard
 
