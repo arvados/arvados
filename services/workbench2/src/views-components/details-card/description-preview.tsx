@@ -123,7 +123,7 @@ export const DescriptionPreview = connect(
                         props.openDescriptionDialog(resource.uuid);
                     }}
                 >
-                    Read more...
+                    Read full description...
                 </Typography>
             </Grid>
         ) : <></>;
