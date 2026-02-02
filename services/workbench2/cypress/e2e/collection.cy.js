@@ -820,6 +820,8 @@ describe("Collection panel tests", function () {
                         cy.get("[data-cy=collection-version-browser-select-3]").should("not.exist");
                         cy.get("[data-cy=collection-version-browser-select-1]").click();
                     });
+                // Navigate back to overview tab
+                cy.doMPVTabSelect("Overview");
                 cy.get("[data-cy=details-element]").should("contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "1");
