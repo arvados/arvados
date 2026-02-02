@@ -120,7 +120,7 @@ def test_parameter_schema_to_argument():
     }
     output = [
         (
-            "--no-ensure-unique-name",
+            ("--no-ensure-unique-name",),
             {
                 "dest": "ensure_unique_name",
                 "action": "store_false",
@@ -129,7 +129,7 @@ def test_parameter_schema_to_argument():
             }
         ),
         (
-            "--ensure-unique-name",
+            ("-e", "--ensure-unique-name"),
             {
                 "dest": "ensure_unique_name",
                 "action": "store_true",
@@ -139,7 +139,7 @@ def test_parameter_schema_to_argument():
             }
         ),
         (
-            "--create-system-auth",
+            ("-c", "--create-system-auth"),
             {
                 "type": str,
                 "metavar": "STR",
@@ -149,7 +149,7 @@ def test_parameter_schema_to_argument():
             }
         ),
         (
-            "--offset",
+            ("-o", "--offset"),
             {
                 "type": int,
                 "metavar": "N",
@@ -159,7 +159,7 @@ def test_parameter_schema_to_argument():
             }
         ),
         (
-            "--replace-files",
+            ("-r", "--replace-files"),
             {
                 "type": str,
                 "metavar": "STR",
