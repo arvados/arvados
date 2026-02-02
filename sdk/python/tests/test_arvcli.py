@@ -86,87 +86,88 @@ def test_parameter_key_to_argument_name(key, argument_name):
     assert arvcli.parameter_key_to_argument_name(key) == argument_name
 
 
-PARAMETER_TRANSFORM_TESTS = [
-    ({
+def test_parameter_schema_to_argument():
+    input_parameters_schema = {
         "ensure_unique_name": {
             "type": "boolean",
-            "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
+            "description": "foo.",
             "location": "query",
             "required": False,
             "default": "false"
-        }
-    }, {
-        "--ensure-unique-name": {
-            "dest": "ensure_unique_name",
-            "action": "store_true",
-            "help": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
-            "required": False,
-            "default": False
         },
-        "--no-ensure-unique-name": {
-            "dest": "ensure_unique_name",
-            "action": "store_false",
-            "default": False,
-            "required": False
-        }
-    }),
-    ({
         "create_system_auth": {
             "type": "array",
             "required": False,
             "default": '["all"]',
-            "description": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
+            "description": "bar.",
             "location": "query"
-        }
-    }, {
-        "--create-system-auth": {
-            "type": str,
-            "metavar": "STR",
-            "required": False,
-            "default": '["all"]',
-            "help": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
-        }
-    }),
-    ({
+        },
         "offset": {
             "type": "integer",
             "required": False,
             "default": "0",
-            "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
+            "description": "baz.",
             "location": "query"
-        }
-    }, {
-        "--offset": {
-            "type": int,
-            "metavar": "N",
-            "required": False,
-            "default": 0,
-            "help": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n"
-        }
-    }),
-    ({
+        },
         "replace_files": {
             "type": "object",
-            "description": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
+            "description": "quux",
             "required": False,
             "location": "query",
             "properties": {},
             "additionalProperties": {"type": "string"}
         }
-    }, {
-        "--replace-files": {
-            "type": str,
-            "metavar": "STR",
-            "help": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
-            "required": False,
-        }
-    })
-]
-
-
-@pytest.mark.parametrize(
-    "input_parameters_schema,output_dict",
-    PARAMETER_TRANSFORM_TESTS
-)
-def test_parameter_schema_to_argument(input_parameters_schema, output_dict):
-    assert arvcli.parameters_schema_to_arguments(input_parameters_schema) == output_dict
+    }
+    output = [
+        (
+            "--no-ensure-unique-name",
+            {
+                "dest": "ensure_unique_name",
+                "action": "store_false",
+                "default": False,
+                "required": False
+            }
+        ),
+        (
+            "--ensure-unique-name",
+            {
+                "dest": "ensure_unique_name",
+                "action": "store_true",
+                "help": "foo.",
+                "required": False,
+                "default": False
+            }
+        ),
+        (
+            "--create-system-auth",
+            {
+                "type": str,
+                "metavar": "STR",
+                "required": False,
+                "default": '["all"]',
+                "help": "bar."
+            }
+        ),
+        (
+            "--offset",
+            {
+                "type": int,
+                "metavar": "N",
+                "required": False,
+                "default": 0,
+                "help": "baz."
+            }
+        ),
+        (
+            "--replace-files",
+            {
+                "type": str,
+                "metavar": "STR",
+                "help": "quux",
+                "required": False,
+            }
+        )
+    ]
+    assert list(
+        arvcli.parameters_schema_to_arguments(input_parameters_schema)
+    ) == output

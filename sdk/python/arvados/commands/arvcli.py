@@ -39,8 +39,8 @@ def parameters_schema_to_arguments(parameters_schema):
     the form suitable for constructing a command-line parser.
 
     Arguments:
-        * `parameters_schema`: dictionary defining the parameters as they appear
-          in the discovery document.
+        * `parameters_schema`: dictionary defining the parameters as they
+        appear in the discovery document.
 
     Return value:
         * A dictionary whose keys are transformed into the conventional CLI
@@ -50,7 +50,6 @@ def parameters_schema_to_arguments(parameters_schema):
           "--foo-bar" and "--no-foo-bar" are created, with the latter's action
           inverting the former.
     """
-    arguments = {}
     for parameter_key, parameter_dict in parameters_schema.items():
         parameter_kwargs = {"required": parameter_dict.get("required", False)}
         parameter_kwargs["help"] = parameter_dict.get("description")
@@ -77,7 +76,7 @@ def parameters_schema_to_arguments(parameters_schema):
                 neg_parameter_kwargs["default"] = json.loads(
                     parameter_dict.get("default", "null")
                 )
-                arguments[neg_argument_key] = neg_parameter_kwargs
+                yield neg_argument_key, neg_parameter_kwargs
 
                 parameter_kwargs["action"] = "store_true"
                 parameter_kwargs["dest"] = parameter_key
@@ -86,14 +85,15 @@ def parameters_schema_to_arguments(parameters_schema):
                 parameter_kwargs["type"] = int
                 parameter_kwargs["metavar"] = "N"
                 if "default" in parameter_dict:
-                    parameter_kwargs["default"] = int(parameter_dict["default"])
+                    parameter_kwargs["default"] = int(
+                        parameter_dict["default"]
+                    )
             case _:
                 parameter_kwargs["type"] = str
                 parameter_kwargs["metavar"] = "STR"
                 if "default" in parameter_dict:
                     parameter_kwargs["default"] = parameter_dict["default"]
-        arguments[argument_key] = parameter_kwargs
-    return arguments
+        yield argument_key, parameter_kwargs
 
 
 def parameter_key_to_argument_name(parameter_key: str) -> str:
@@ -193,17 +193,15 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                 for method, method_schema in methods_dict.items():
                     # Add each specific method as a (sub-)subparser with its
                     # associated parameters.
-                    # FIXME: the value of the "description" member doesn't get
-                    # displayed when help is requested from the cmdline, e.g.
-                    # "arvcli.py user list -h"
                     method_parser = method_subparsers.add_parser(
                         method,
                         help=method_schema.get("description")
                     )
-                    parameter_arguments = parameters_schema_to_arguments(
-                        method_schema.get("parameters", {})
-                    )
-                    for parameter_name, kwargs in parameter_arguments.items():
+                    for parameter_name, kwargs in (
+                            parameters_schema_to_arguments(
+                                method_schema.get("parameters", ())
+                            )
+                    ):
                         method_parser.add_argument(parameter_name, **kwargs)
 
 
