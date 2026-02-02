@@ -796,7 +796,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=confirmation-dialog]").should("contain", "Removing file");
                 cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
                 cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
-                cy.doMPVTabSelect("Overview");;
+                cy.doMPVTabSelect("Overview");
                 cy.get("[data-cy=collection-version-number]").should("contain", "2");
 
                 // Click on version number, check version browser. Click on past version.
@@ -836,6 +836,8 @@ describe("Collection panel tests", function () {
                 // Click on "head version" link, confirm that it's the latest version.
                 cy.doMPVTabSelect("Overview");;
                 cy.get("[data-cy=details-element]").contains("head version").click();
+                // Navigate back to overview after changing versions
+                cy.doMPVTabSelect("Overview");
                 cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=read-only-icon]").should("not.exist");
                 cy.get("[data-cy=collection-version-number]").should("contain", "2");
