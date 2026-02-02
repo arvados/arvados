@@ -891,6 +891,8 @@ describe("Collection panel tests", function () {
                 cy.get('[data-title="Restore version"]').click();
                 cy.get("[data-cy=confirmation-dialog]").should("contain", "Restore version");
                 cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                // Navigate back to overview after changing versions
+                cy.doMPVTabSelect("Overview");
                 cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
                 cy.get("[data-cy=collection-version-number]").should("contain", "4");
                 cy.get("[data-cy=collection-details-card]").should("contain", colName);
