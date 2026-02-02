@@ -50,6 +50,7 @@ def parameters_schema_to_arguments(parameters_schema):
           "--foo-bar" and "--no-foo-bar" are created, with the latter's action
           inverting the former.
     """
+    argument_key_abbrevs = set()
     for parameter_key, parameter_dict in parameters_schema.items():
         parameter_kwargs = {"required": parameter_dict.get("required", False)}
         parameter_kwargs["help"] = parameter_dict.get("description")
@@ -60,6 +61,15 @@ def parameters_schema_to_arguments(parameters_schema):
         # NOTE: Currently, enum-like value choices are not implemented, as the
         # enum values cannot be directly inferred from the discover doc.
         argument_key = parameter_key_to_argument_name(parameter_key)
+        for argument_short_key in argument_key.replace("-", ""):
+            if argument_short_key not in argument_key_abbrevs:
+                argument_key_abbrevs.add(argument_short_key)
+                break
+        else:
+            # If the letters of the full argument name are exhausted, fall back
+            # to not using a short argument, indicated by the special value
+            # None:
+            argument_short_key = None
         match parameter_dict.get("type"):
             case "boolean":
                 # Using the 'action="store_true" (or "store_false")' mechanism
@@ -76,7 +86,7 @@ def parameters_schema_to_arguments(parameters_schema):
                 neg_parameter_kwargs["default"] = json.loads(
                     parameter_dict.get("default", "null")
                 )
-                yield neg_argument_key, neg_parameter_kwargs
+                yield (neg_argument_key,), neg_parameter_kwargs
 
                 parameter_kwargs["action"] = "store_true"
                 parameter_kwargs["dest"] = parameter_key
@@ -93,7 +103,10 @@ def parameters_schema_to_arguments(parameters_schema):
                 parameter_kwargs["metavar"] = "STR"
                 if "default" in parameter_dict:
                     parameter_kwargs["default"] = parameter_dict["default"]
-        yield argument_key, parameter_kwargs
+        if argument_short_key is None:
+            yield (argument_key,), parameter_kwargs
+        else:
+            yield (f"-{argument_short_key}", argument_key), parameter_kwargs
 
 
 def parameter_key_to_argument_name(parameter_key: str) -> str:
@@ -197,12 +210,12 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         method,
                         help=method_schema.get("description")
                     )
-                    for parameter_name, kwargs in (
+                    for parameter_names, kwargs in (
                             parameters_schema_to_arguments(
                                 method_schema.get("parameters", ())
                             )
                     ):
-                        method_parser.add_argument(parameter_name, **kwargs)
+                        method_parser.add_argument(*parameter_names, **kwargs)
 
 
 def dispatch(arguments=None):
