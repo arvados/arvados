@@ -7,7 +7,7 @@ import { Dispatch } from 'redux';
 import { ArvadosTheme, CustomStyleRulesCallback } from 'common/custom-theme';
 import withStyles, { WithStyles } from '@mui/styles/withStyles';
 import { Typography, Grid } from '@mui/material';
-import descriptionDialogActions from 'store/description-dialog/description-dialog-actions';
+import { descriptionDialogActions } from 'store/description-dialog/description-dialog-actions';
 import { connect } from 'react-redux';
 import { ProjectResource } from 'models/project';
 import { CollectionResource } from 'models/collection';

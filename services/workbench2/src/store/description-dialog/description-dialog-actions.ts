@@ -20,9 +20,7 @@ export const closeDialog = () =>
         dispatch(dialogActions.CLOSE_DIALOG({id: DESCRIPTION_DIALOG}));
     };
 
-const descriptionDialogActions = {
+export const descriptionDialogActions = {
     openDialog,
     closeDialog
 };
-
-export default descriptionDialogActions;

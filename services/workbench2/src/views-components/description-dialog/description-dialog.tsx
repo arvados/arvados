@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogActions, Button, Typography } from "@mui/m
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { Dispatch, compose } from "redux";
-import descriptionDialogActions, { DESCRIPTION_DIALOG, DescriptionDialogData } from "store/description-dialog/description-dialog-actions";
+import { descriptionDialogActions, DESCRIPTION_DIALOG, DescriptionDialogData } from "store/description-dialog/description-dialog-actions";
 import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
 import { getResource } from "store/resources/resources";
 import { getDialog } from "store/dialog/dialog-reducer";
