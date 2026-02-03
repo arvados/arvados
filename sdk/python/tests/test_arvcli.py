@@ -87,38 +87,65 @@ def test_parameter_key_to_argument_name(key, argument_name):
 
 
 def test_parameter_schema_to_argument():
-    input_parameters_schema = {
-        "ensure_unique_name": {
-            "type": "boolean",
-            "description": "foo.",
-            "location": "query",
-            "required": False,
-            "default": "false"
+    # Based on arvados.container_requests.create with a bogus parameter entry
+    # for integer type, another one for required=True, and bogus descriptions
+    # for brevity.
+    input_method_schema = {
+        "parameters": {
+            "select": {
+                "type": "array",
+                "description": "help-select.",
+                "required": False,
+                "location": "query"
+            },
+            "ensure_unique_name": {
+                "type": "boolean",
+                "description": "help-ensure-unique-name.",
+                "location": "query",
+                "required": False,
+                "default": "false"
+            },
+            "cluster_id": {
+                "type": "string",
+                "description": "help-cluster-id.",
+                "location": "query",
+                "required": False
+            },
+            # Bogus entries
+            "uuid": {
+                "type": "string",
+                "description": "help-uuid.",
+                "required": True,
+                "location": "path"
+
+            },
+            "limit": {
+                "type": "integer",
+                "required": False,
+                "default": "100",
+                "description": "help-limit.",
+                "location": "query"
+            }
         },
-        "create_system_auth": {
-            "type": "array",
-            "required": False,
-            "default": '["all"]',
-            "description": "bar.",
-            "location": "query"
-        },
-        "offset": {
-            "type": "integer",
-            "required": False,
-            "default": "0",
-            "description": "baz.",
-            "location": "query"
-        },
-        "replace_files": {
-            "type": "object",
-            "description": "quux",
-            "required": False,
-            "location": "query",
-            "properties": {},
-            "additionalProperties": {"type": "string"}
+        "request": {
+            "required": True,
+            "properties": {
+                "container_request": {
+                    "$ref": "ContainerRequest"
+                }
+            }
         }
     }
     output = [
+        (
+            ("-s", "--select"),
+            {
+                "type": str,
+                "metavar": "STR",
+                "help": "help-select.",
+                "required": False
+            }
+        ),
         (
             ("--no-ensure-unique-name",),
             {
@@ -133,41 +160,51 @@ def test_parameter_schema_to_argument():
             {
                 "dest": "ensure_unique_name",
                 "action": "store_true",
-                "help": "foo.",
+                "help": "help-ensure-unique-name.",
                 "required": False,
                 "default": False
             }
         ),
         (
-            ("-c", "--create-system-auth"),
+            ("-c", "--cluster-id"),
             {
                 "type": str,
                 "metavar": "STR",
-                "required": False,
-                "default": '["all"]',
-                "help": "bar."
+                "help": "help-cluster-id.",
+                "required": False
+            }
+        ),
+        # Bogus entries
+        (
+            ("-u", "--uuid"),
+            {
+                "type": str,
+                "metavar": "STR",
+                "help": "help-uuid. This option must be specified.",
+                "required": True,
             }
         ),
         (
-            ("-o", "--offset"),
+            ("-l", "--limit"),
             {
                 "type": int,
                 "metavar": "N",
-                "required": False,
-                "default": 0,
-                "help": "baz."
+                "default": 100,
+                "help": "help-limit.",
+                "required": False
             }
         ),
+        # Request parameter
         (
-            ("-r", "--replace-files"),
+            ("-o", "--container-request"),
             {
                 "type": str,
                 "metavar": "STR",
-                "help": "quux",
-                "required": False,
+                "help": "Either a string representing container_request as JSON or a filename from which to read container_request JSON (use '-' to read from stdin). This option must be specified.",
+                "required": True
             }
         )
     ]
     assert list(
-        arvcli.parameters_schema_to_arguments(input_parameters_schema)
+        arvcli.ArvCLIArgumentParser._get_method_options(input_method_schema)
     ) == output
