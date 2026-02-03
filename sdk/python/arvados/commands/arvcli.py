@@ -34,81 +34,6 @@ def singularize_resource(plural: str) -> str:
             return plural.removesuffix("s")
 
 
-def parameters_schema_to_arguments(parameters_schema):
-    """Convert a dictionary containing parameter names and definitions to a
-    the form suitable for constructing a command-line parser.
-
-    Arguments:
-        * `parameters_schema`: dictionary defining the parameters as they
-        appear in the discovery document.
-
-    Return value:
-        * A dictionary whose keys are transformed into the conventional CLI
-          option form "--foo-bar", and the corresponding values are dicts
-          suitable to be passed to the `argparse.ArgumentParser.add_argument()`
-          method as keyword arguments. For boolean parameters, both forms
-          "--foo-bar" and "--no-foo-bar" are created, with the latter's action
-          inverting the former.
-    """
-    argument_key_abbrevs = set()
-    for parameter_key, parameter_dict in parameters_schema.items():
-        parameter_kwargs = {"required": parameter_dict.get("required", False)}
-        parameter_kwargs["help"] = parameter_dict.get("description")
-        # The "type" member refers to one of the JSON values types, out of
-        # string/integer/array/object/boolean.
-        # NOTE: Arrays and objects are treated as strings for Python
-        # argument-parsing purposes.
-        # NOTE: Currently, enum-like value choices are not implemented, as the
-        # enum values cannot be directly inferred from the discover doc.
-        argument_key = parameter_key_to_argument_name(parameter_key)
-        for argument_short_key in argument_key.replace("-", ""):
-            if argument_short_key not in argument_key_abbrevs:
-                argument_key_abbrevs.add(argument_short_key)
-                break
-        else:
-            # If the letters of the full argument name are exhausted, fall back
-            # to not using a short argument, indicated by the special value
-            # None:
-            argument_short_key = None
-        match parameter_dict.get("type"):
-            case "boolean":
-                # Using the 'action="store_true" (or "store_false")' mechanism
-                # results in flag-like action rather than an option that takes
-                # a true or false value. For each bool flag "--foo", also
-                # generate an additional "negative" version "--no-foo".
-                neg_argument_key = parameter_key_to_argument_name(
-                    f"no_{parameter_key}"
-                )
-                neg_parameter_kwargs = {}
-                neg_parameter_kwargs["action"] = "store_false"
-                neg_parameter_kwargs["required"] = False
-                neg_parameter_kwargs["dest"] = parameter_key
-                neg_parameter_kwargs["default"] = json.loads(
-                    parameter_dict.get("default", "null")
-                )
-                yield (neg_argument_key,), neg_parameter_kwargs
-
-                parameter_kwargs["action"] = "store_true"
-                parameter_kwargs["dest"] = parameter_key
-                parameter_kwargs["default"] = neg_parameter_kwargs["default"]
-            case "integer":
-                parameter_kwargs["type"] = int
-                parameter_kwargs["metavar"] = "N"
-                if "default" in parameter_dict:
-                    parameter_kwargs["default"] = int(
-                        parameter_dict["default"]
-                    )
-            case _:
-                parameter_kwargs["type"] = str
-                parameter_kwargs["metavar"] = "STR"
-                if "default" in parameter_dict:
-                    parameter_kwargs["default"] = parameter_dict["default"]
-        if argument_short_key is None:
-            yield (argument_key,), parameter_kwargs
-        else:
-            yield (f"-{argument_short_key}", argument_key), parameter_kwargs
-
-
 def parameter_key_to_argument_name(parameter_key: str) -> str:
     """Convert a parameter key in the discovery document to CLI parameter form.
 
@@ -210,12 +135,130 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         method,
                         help=method_schema.get("description")
                     )
-                    for parameter_names, kwargs in (
-                            parameters_schema_to_arguments(
-                                method_schema.get("parameters", ())
-                            )
+                    for parameter_names, kwargs in self._get_method_options(
+                            method_schema
                     ):
                         method_parser.add_argument(*parameter_names, **kwargs)
+
+    @staticmethod
+    def _get_method_options(method_schema):
+        """Generate command-line options, in the form of "-f/--foo", from the
+        parameters as defined by the API method schema in the discovery
+        document.
+
+        For each key "foo_bar" in the "parameters" field of the method schema,
+        command-line options are created according to its definition as
+        follows.
+
+        If the parameter type is "boolean", a pair of options "--no-foo-bar"
+        and "--foo-bar" are created, with opposite meaning.
+
+        If the parameter type is "integer", the CLI input will be interpreted
+        as a Python int.
+
+        All other parameter types are parsed as Python str.
+
+        The short form of each option will also be created, by taking the first
+        letter of the long form, except when that letter is already used, in
+        which case the second letter will be used, and so on. For example,
+        "--foo-bar" will have short form "-f", unless "-f" is already used for
+        another option, in which case "-o" will be used, etc.
+
+        The "negative" form of boolean options ("--no-foo-bar") will not have
+        separate short forms of their own.
+
+        Arguments:
+            * `method_schema`: dict from the parsed discover document that
+                               defines a method.
+
+        Return value:
+            * A generator that yields tuples in the form of `(names, kwargs)`,
+            where `names` is a one- or two-element tuple and `kwargs` is a
+            dict, suitable to be passed as
+            `argparse.ArgumentParser.add_argument(*names, **kwargs)`.
+        """
+        parameters_schema = method_schema.get("parameters", {}).copy()
+        # If the method comes with the "request" field, add another parameter
+        # based on the sole key in the "properties" dict of that field
+        request_schema = method_schema.get("request")
+        if request_schema is not None and request_schema.get("properties"):
+            for parameter_key in request_schema["properties"].keys():
+                parameters_schema[parameter_key] = {
+                    "type": "string",
+                    "required": request_schema.get("required"),
+                    "description": (
+                        f"Either a string representing {parameter_key} as JSON"
+                        f" or a filename from which to read {parameter_key}"
+                        " JSON (use '-' to read from stdin)."
+                    )
+                }
+        argument_key_abbrevs = set("h")  # prevent conflict with "help"
+        for parameter_key, parameter_dict in parameters_schema.items():
+            parameter_kwargs = {
+                "required": parameter_dict.get("required", False)
+            }
+            parameter_kwargs["help"] = parameter_dict.get("description", "")
+            if parameter_kwargs["required"]:
+                parameter_kwargs["help"] += " This option must be specified."
+            # The "type" member refers to one of the JSON values types, out of
+            # string/integer/array/object/boolean.
+            # NOTE: Arrays and objects are treated as strings for Python
+            # argument-parsing purposes.
+            # NOTE: Currently, enum-like value choices are not implemented, as
+            # the enum values cannot be directly inferred from the discover
+            # doc.
+            argument_key = parameter_key_to_argument_name(parameter_key)
+            for argument_short_key in argument_key.replace("-", ""):
+                if argument_short_key not in argument_key_abbrevs:
+                    argument_key_abbrevs.add(argument_short_key)
+                    break
+            else:
+                # If the letters of the full argument name are exhausted, fall
+                # back to not using a short argument, indicated by the special
+                # value None:
+                argument_short_key = None
+            match parameter_dict.get("type"):
+                case "boolean":
+                    # Using the 'action="store_true" (or "store_false")'
+                    # mechanism results in flag-like action rather than an
+                    # option that takes a true or false value. For each bool
+                    # flag "--foo", also generate an additional "negative"
+                    # version "--no-foo".
+                    neg_argument_key = parameter_key_to_argument_name(
+                        f"no_{parameter_key}"
+                    )
+                    neg_parameter_kwargs = {}
+                    neg_parameter_kwargs["action"] = "store_false"
+                    neg_parameter_kwargs["required"] = False
+                    neg_parameter_kwargs["dest"] = parameter_key
+                    neg_parameter_kwargs["default"] = json.loads(
+                        parameter_dict.get("default", "null")
+                    )
+                    yield (neg_argument_key,), neg_parameter_kwargs
+
+                    parameter_kwargs["action"] = "store_true"
+                    parameter_kwargs["dest"] = parameter_key
+                    parameter_kwargs["default"] = (
+                        neg_parameter_kwargs["default"]
+                    )
+                case "integer":
+                    parameter_kwargs["type"] = int
+                    parameter_kwargs["metavar"] = "N"
+                    if "default" in parameter_dict:
+                        parameter_kwargs["default"] = int(
+                            parameter_dict["default"]
+                        )
+                case _:
+                    parameter_kwargs["type"] = str
+                    parameter_kwargs["metavar"] = "STR"
+                    if "default" in parameter_dict:
+                        parameter_kwargs["default"] = parameter_dict["default"]
+            if argument_short_key is None:
+                yield (argument_key,), parameter_kwargs
+            else:
+                yield (
+                    (f"-{argument_short_key}", argument_key), parameter_kwargs
+                )
 
 
 def dispatch(arguments=None):
