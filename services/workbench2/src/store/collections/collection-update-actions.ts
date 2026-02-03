@@ -27,7 +27,7 @@ import { loadSidePanelTreeProjects, SidePanelTreeCategory } from "store/side-pan
 export interface CollectionUpdateFormDialogData {
     uuid: string;
     name: string;
-    description?: string;
+    description?: string | null;
     storageClassesDesired?: string[];
     properties?: CollectionProperties;
 }

@@ -22,6 +22,7 @@ import { GroupResource } from 'models/group';
 import { UserResource } from 'models/user';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ReadOnlyIcon } from 'components/icon/icon';
+import { DescriptionPreview } from './description-preview';
 
 type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'readOnlyIcon' | 'nameContainer';
 
@@ -135,6 +136,7 @@ export const CollectionCard = connect(
                     />
                     {isSelected && <MultiselectToolbar />}
                 </Grid>
+                <DescriptionPreview resource={currentResource} />
             </Card>
         );
     })

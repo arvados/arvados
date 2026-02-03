@@ -17,6 +17,7 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
 import { WorkflowResource } from 'models/workflow';
+import { DescriptionPreview } from './description-preview';
 
 type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer';
 
@@ -104,6 +105,7 @@ export const WorkflowCard = connect(
                     />
                     {isSelected && <MultiselectToolbar />}
                 </Grid>
+                <DescriptionPreview resource={currentResource} />
             </Card>
         );
     })

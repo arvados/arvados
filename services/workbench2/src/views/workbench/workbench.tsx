@@ -117,6 +117,7 @@ import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferen
 import { Dashboard } from "components/dashboard/dashboard";
 import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
 import { CancelProcessDialog } from "views-components/process-cancel-dialog/process-cancel-dialog";
+import { DescriptionDialog } from "views-components/description-dialog/description-dialog";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -491,6 +492,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <CreateSshKeyDialog />
             <CreateUserDialog />
             <CreateExternalCredentialDialog />
+            <DescriptionDialog />
             <TokenDialog />
             <FileRemoveDialog />
             <FilesUploadCollectionDialog />

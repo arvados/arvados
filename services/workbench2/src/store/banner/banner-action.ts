@@ -23,9 +23,7 @@ export const closeBanner = () =>
         dispatch(bannerReducerActions.CLOSE_BANNER());
     };
 
-const bannerActions = {
+export const bannerActions = {
     openBanner,
     closeBanner
 };
-
-export default bannerActions;

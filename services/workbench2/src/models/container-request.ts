@@ -22,7 +22,7 @@ extends Resource, ResourceWithProperties {
     containerUuid: string | null;
     cumulativeCost: number;
     cwd: string;
-    description: string;
+    description: string | null;
     environment: any;
     expiresAt: string;
     filters: string;

@@ -68,7 +68,14 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
         class extends React.Component<RegisteredWorkflowPanelProps> {
             render() {
                 const { classes, item, inputParams, outputParams, workflowCollection } = this.props;
-                const panelsData: MPVPanelState[] = [{ name: 'Overview' }, { name: 'Runs' }, { name: 'Outputs' }, { name: 'Inputs' }, { name: 'Definition' }];
+                // Set up panels and default tab
+                const panelsData: MPVPanelState[] = [
+                    { name: 'Overview' },
+                    { name: 'Runs', visible: true },
+                    { name: 'Outputs' },
+                    { name: 'Inputs' },
+                    { name: 'Definition' }
+                ];
                 return item ? (
                     <section className={classes.root}>
                         <DetailsCardRoot />

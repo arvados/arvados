@@ -35,7 +35,7 @@ export type ContextMenuResource = {
     name: string;
     uuid: string;
     ownerUuid: string;
-    description?: string;
+    description?: string | null;
     kind: ResourceKind;
     menuKind: ContextMenuKind | string;
     isTrashed?: boolean;

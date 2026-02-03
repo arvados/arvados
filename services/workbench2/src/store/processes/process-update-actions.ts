@@ -15,7 +15,7 @@ import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 export interface ProcessUpdateFormDialogData {
     uuid: string;
     name: string;
-    description?: string;
+    description?: string | null;
 }
 
 export const PROCESS_UPDATE_FORM_NAME = "processUpdateFormName";
