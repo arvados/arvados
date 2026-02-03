@@ -53,6 +53,7 @@ export const DescriptionDialogComponent = (props: DescriptionDialogComponentProp
             <DialogContent>
                 <Typography
                     component="div"
+                    style={{ paddingTop: '20px' }}
                     //dangerouslySetInnerHTML is ok here only if description is sanitized,
                     //which it is before it is loaded into the redux store
                     dangerouslySetInnerHTML={{
