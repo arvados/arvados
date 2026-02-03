@@ -8,7 +8,7 @@ import { connect } from "react-redux";
 import { Badge, MenuItem } from "@mui/material";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { NotificationIcon } from "components/icon/icon";
-import bannerActions from "store/banner/banner-action";
+import { bannerActions } from "store/banner/banner-action";
 import { BANNER_LOCAL_STORAGE_KEY } from "views-components/baner/banner";
 import { RootState } from "store/store";
 import { TOOLTIP_LOCAL_STORAGE_KEY } from "store/tooltips/tooltips-middleware";

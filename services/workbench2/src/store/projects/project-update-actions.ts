@@ -20,7 +20,7 @@ export interface ProjectUpdateFormDialogData {
     uuid: string;
     name: string;
     users?: Participant[];
-    description?: string;
+    description?: string | null;
     properties?: ProjectProperties;
 }
 

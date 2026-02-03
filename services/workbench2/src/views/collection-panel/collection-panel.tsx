@@ -134,9 +134,10 @@ export const CollectionPanel = withStyles(styles)(connect(
             render() {
                 const { classes } = this.props;
                 const { isWritable, item } = this.state;
+                // Set up panels and default tab
                 const panelsData: MPVPanelState[] = [
                     { name: "Overview" },
-                    { name: "Files" },
+                    { name: "Files", visible: true },
                 ];
                 return item
                     ? <section className={classes.root}>

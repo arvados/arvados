@@ -24,6 +24,7 @@ import { Process } from 'store/processes/process';
 import { getProcess } from 'store/processes/process';
 import { PublishedPort } from 'models/container';
 import { ServiceMenu } from './service-menu';
+import { DescriptionPreview } from './description-preview';
 
 type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'nameContainer' | 'buttonContainer' | 'runStatusContainer' | 'runStatusContainerWithServiceButton' | 'actionButton' | 'runButton' | 'cancelButton' | 'serviceButton' | 'runningToolbarStyles';
 
@@ -226,6 +227,7 @@ export const ProcessCard = connect(
                     />
                     {isSelected && <MultiselectToolbar toolbarClass={showServiceMenu ? classes.runningToolbarStyles : undefined} />}
                 </Grid>
+                <DescriptionPreview resource={currentResource.containerRequest} />
             </Card>
         );
     })

@@ -2,19 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState } from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography } from '@mui/material';
+import { Grid } from '@mui/material';
 import { RootState } from 'store/store';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { ArvadosTheme } from 'common/custom-theme';
 import withStyles from '@mui/styles/withStyles';
 import { WithStyles } from '@mui/styles';
 import { getResource } from 'store/resources/resources';
-import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
-import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
-import { CollapsibleDescription } from 'components/collapsible-description/collapsible-description';
 import { CollectionResource } from 'models/collection';
 import { ProjectResource } from 'models/project';
 import { WorkflowResource } from 'models/workflow';
@@ -77,12 +74,6 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ aut
         };
         return null;
     }
-    const hasDescription = resource.description && resource.description.length > 0;
-    const [showDescription, setShowDescription] = useState(false);
-
-    React.useEffect(() => {
-        setShowDescription(false);
-    }, [resource]);
 
     return (
         <section className={classes.root}>
@@ -91,15 +82,6 @@ export const OverviewPanel = connect(mapStateToProps)(withStyles(styles)((({ aut
                     <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={resource.containerCount} />
                 </Grid>}
                 <Grid item xs={12} md={12}>
-                    <DetailsAttribute
-                        label={'Description'}
-                        button={hasDescription
-                                    ? <ExpandChevronRight expanded={showDescription} onClick={() => setShowDescription(!showDescription)} />
-                                    : undefined}>
-                        {hasDescription
-                            ? <CollapsibleDescription description={resource.description} showDescription={showDescription} />
-                            : <Typography>No description available</Typography>}
-                    </DetailsAttribute>
                     <section data-cy='details-element'>
                         {detailsElement}
                     </section>
