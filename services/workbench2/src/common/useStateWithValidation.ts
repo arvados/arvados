@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 import { getFieldErrors, Validator } from "validators/validators";
 
 /**
- * A custom hook that manages state for a string value with automatic field validation.
+ * A custom hook that manages state for a value with automatic field validation.
  *
- * @param value - The initial value for the state
+ * @param initialValue - The initial value for the state
  * @param validators - Array of validator functions to apply to the value
  * @param fieldName - Optional field name to prepend to error messages for better debugging
  * @returns A tuple containing:
@@ -18,12 +18,12 @@ import { getFieldErrors, Validator } from "validators/validators";
  *
  * @example
  * ```tsx
- * const [name, setName, nameErrors] = useStateWithValidation('', REQUIRED_LENGTH255_VALIDATION);
+ * const [name, setName, nameErrors] = useStateWithValidation('', REQUIRED_LENGTH255_VALIDATION, 'Name');
  * ```
  */
-export const useStateWithValidation = <T>(value: T, validators: Validator[], fieldName?: string) => {
-    const [thisValue, setThisValue] = useState<T>(value);
-    const [errors, setErrors] = useState<string[]>(() => getFieldErrors(value, validators, fieldName));
+export const useStateWithValidation = <T>(initialValue: T, validators: Validator[], fieldName?: string) => {
+    const [thisValue, setThisValue] = useState<T>(initialValue);
+    const [errors, setErrors] = useState<string[]>(() => getFieldErrors(thisValue, validators, fieldName));
 
     useEffect(() => {
         const errs = getFieldErrors(thisValue, validators, fieldName);

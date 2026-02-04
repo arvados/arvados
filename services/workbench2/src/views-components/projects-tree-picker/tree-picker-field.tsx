@@ -113,7 +113,7 @@ export const DirectoryTreePickerDialogField = connect(null, projectsTreePickerMa
 
     return (
         <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
-            <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <ProjectsTreePicker
                     currentUuids={props.currentUuids}
                     pickerId={props.pickerId}
