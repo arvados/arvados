@@ -35,7 +35,7 @@ import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files
 import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
 import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
 import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
-import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
+import { DialogCollectionPartialMoveToExistingCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-existing-collection";
 import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
@@ -503,7 +503,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <DialogCollectionPartialCopyToNewCollection />
             <DialogCollectionPartialCopyToExistingCollection />
             <DialogCollectionPartialMoveToNewCollection />
-            <PartialMoveToExistingCollectionDialog />
+            <DialogCollectionPartialMoveToExistingCollection />
             <PartialMoveToSeparateCollectionsDialog />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
