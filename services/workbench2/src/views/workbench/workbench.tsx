@@ -36,7 +36,6 @@ import { DialogCollectionPartialCopyToNewCollection } from "views-components/dia
 import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
 import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
 import { DialogCollectionPartialMoveToExistingCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-existing-collection";
-import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
 import { RemoveExternalCredentialDialog } from "views-components/dialog-remove/external-credential-remove-dialog";
@@ -116,6 +115,7 @@ import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip
 import { CancelProcessDialog } from "views-components/process-cancel-dialog/process-cancel-dialog";
 import { DialogProjectCreate } from "views-components/dialog-create/dialog-project-create";
 import { DialogCollectionPartialMoveToNewCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-new-collection";
+import { DialogCollectionPartialMoveToSeparateCollections } from "views-components/dialog-move/dialog-collection-partial-move-to-separate-collections";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -504,7 +504,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <DialogCollectionPartialCopyToExistingCollection />
             <DialogCollectionPartialMoveToNewCollection />
             <DialogCollectionPartialMoveToExistingCollection />
-            <PartialMoveToSeparateCollectionsDialog />
+            <DialogCollectionPartialMoveToSeparateCollections />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />

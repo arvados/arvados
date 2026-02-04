@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { initialize, startSubmit, stopSubmit } from "redux-form";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
@@ -190,9 +189,8 @@ export const openCollectionPartialMoveToSeparateCollectionsDialog = () =>
                 name: sourceCollection.name,
                 projectUuid: undefined
             };
-            dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: collectionFileSelection }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: { collectionFileSelection, initialData } }));
         }
     };
 
@@ -200,7 +198,6 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
 
                 // Move files
@@ -239,7 +236,6 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             }
         }

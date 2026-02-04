@@ -2,28 +2,82 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
-import { memoize } from "lodash/fp";
-import { FormDialog } from 'components/form-dialog/form-dialog';
-import { CollectionProjectPickerField } from 'views-components/form-fields/collection-form-fields';
-import { WithDialogProps } from 'store/dialog/with-dialog';
-import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialMoveToSeparateCollectionsFormData } from "store/collections/collection-partial-move-actions";
-import { PickerIdProp } from "store/tree-picker/picker-id";
+import React from 'react'
+import { compose, Dispatch } from 'redux'
+import { DialogForm } from 'components/dialog-form/dialog-form'
+import { connect } from 'react-redux'
+import { withDialog } from 'store/dialog/with-dialog'
+import {
+	CollectionPartialMoveToSeparateCollectionsFormData,
+	moveCollectionPartialToSeparateCollections,
+	COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS,
+} from 'store/collections/collection-partial-move-actions'
+import { ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
+import { CollectionFileSelection } from 'store/collection-panel/collection-panel-files/collection-panel-files-state'
+import { WithDialogProps } from 'store/dialog/with-dialog'
+import { PickerIdProp } from 'store/tree-picker/picker-id'
+import { DialogTitle, DialogContent } from '@mui/material'
+import { COLLECTION_PROJECT_VALIDATION } from 'validators/validators'
+import { useStateWithValidation } from 'common/useStateWithValidation'
 
-type DialogCollectionPartialMoveProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialMoveToSeparateCollectionsFormData>;
+type DialogCollectionPartialMoveProps = WithDialogProps<{
+	initialData: CollectionPartialMoveToSeparateCollectionsFormData
+	collectionFileSelection: CollectionFileSelection
+}> &
+	PickerIdProp & {
+		moveCollectionPartialToSeparateCollections: (
+			fileSelection: CollectionFileSelection,
+			formData: CollectionPartialMoveToSeparateCollectionsFormData
+		) => void
+	}
 
-export const DialogCollectionPartialMoveToSeparateCollections = (props: DialogCollectionPartialMoveProps & PickerIdProp) =>
-    <FormDialog
-        dialogTitle='Move to separate collections'
-        formFields={CollectionPartialMoveFields(props.pickerId)}
-        submitLabel='Create collections'
-        {...props}
-    />;
+const mapDispatch = (dispatch: Dispatch) => ({
+	moveCollectionPartialToSeparateCollections: (
+		fileSelection: CollectionFileSelection,
+		formData: CollectionPartialMoveToSeparateCollectionsFormData
+	) => {
+		dispatch<any>(moveCollectionPartialToSeparateCollections(fileSelection, formData))
+	},
+})
 
-const CollectionPartialMoveFields = memoize(
-    (pickerId: string) =>
-        () =>
-            <>
-                <CollectionProjectPickerField {...{ pickerId }} />
-            </>);
+export const DialogCollectionPartialMoveToSeparateCollections = compose(
+	withDialog(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS),
+	connect(null, mapDispatch)
+)((props: DialogCollectionPartialMoveProps) => {
+	const { open, data, pickerId } = props
+	const { initialData, collectionFileSelection } = data
+
+	const [projectUuid, setProjectUuid, projectUuidErrs] = useStateWithValidation(initialData?.projectUuid || '', COLLECTION_PROJECT_VALIDATION, 'Project')
+
+	const fields = () => (
+		<>
+			<DialogTitle>Move to separate collections</DialogTitle>
+			<DialogContent>
+				<ProjectTreePickerDialogField
+					pickerId={pickerId}
+					setSelectedProject={setProjectUuid}
+				/>
+			</DialogContent>
+		</>
+	)
+
+	return (
+		<DialogForm
+			open={open}
+			fields={fields()}
+			submitLabel='Create collections'
+			formErrors={projectUuidErrs}
+			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+				event.preventDefault()
+				props.moveCollectionPartialToSeparateCollections(collectionFileSelection, {
+					name: initialData?.name || '',
+					projectUuid: projectUuid,
+				})
+			}}
+			closeDialog={props.closeDialog}
+			clearFormValues={() => {
+				setProjectUuid('')
+			}}
+		/>
+	)
+})
