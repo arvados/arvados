@@ -208,8 +208,11 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
             # the enum values cannot be directly inferred from the discover
             # doc.
             argument_key = parameter_key_to_argument_name(parameter_key)
-            for argument_short_key in argument_key.replace("-", ""):
-                if argument_short_key not in argument_key_abbrevs:
+            for argument_short_key in argument_key:
+                if (
+                    argument_short_key.isalpha()
+                    and argument_short_key not in argument_key_abbrevs
+                ):
                     argument_key_abbrevs.add(argument_short_key)
                     break
             else:
