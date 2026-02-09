@@ -87,9 +87,9 @@ def test_parameter_key_to_argument_name(key, argument_name):
 
 
 def test_parameter_schema_to_argument():
-    # Based on arvados.container_requests.create with a bogus parameter entry
-    # for integer type, another one for required=True, and bogus descriptions
-    # for brevity.
+    # Largely based on arvados.container_requests.create, but with a fictitious
+    # parameter entry for integer type, another one for required=True, and
+    # also with parameter descriptions replaced by brief strings.
     input_method_schema = {
         "parameters": {
             "select": {
@@ -111,7 +111,7 @@ def test_parameter_schema_to_argument():
                 "location": "query",
                 "required": False
             },
-            # Bogus entries
+            # Fictitious parameters
             "uuid": {
                 "type": "string",
                 "description": "help-uuid.",
@@ -174,7 +174,7 @@ def test_parameter_schema_to_argument():
                 "required": False
             }
         ),
-        # Bogus entries
+        # Fictitious parameters
         (
             ("-u", "--uuid"),
             {
