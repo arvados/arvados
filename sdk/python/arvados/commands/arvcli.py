@@ -35,14 +35,13 @@ def singularize_resource(plural: str) -> str:
 
 
 def parameter_key_to_argument_name(parameter_key: str) -> str:
-    """Convert a parameter key in the discovery document to CLI parameter form.
+    """Convert a parameter key in the discovery document to CLI parameter form,
+    for example, `--foo-bar`.
 
     Arguments:
-        * `parameter_key`: Parameter key in the form as they appear in the
-          discovery document, typically like `foo_bar`.
 
-    Return value:
-        * Parameter in the conventional CLI form, for example, `--foo-bar`.
+    * parameter_key: int -- Parameter key in the form as they appear in the
+      discovery document, typically like `foo_bar`.
     """
     return "--" + parameter_key.replace("_", "-")
 
@@ -52,10 +51,11 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
     """
     def __init__(self, resource_dictionary, **kwargs):
         """Arguments:
-            * `resource dictionary`: Dict containing the resources defined in
-            the discovery document; can be obtained as the
-            `_resourceDesc["resources"]` attribute of an Arvados API client
-            object.
+
+        * resource dictionary: dict --- Dict containing the resources defined
+          in the discovery document; can be obtained as the
+          `_resourceDesc["resources"]` attribute of an Arvados API client
+          object.
         """
         super().__init__(description="Arvados command line client", **kwargs)
         # Common flags to the main command.
@@ -167,15 +167,15 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         The "negative" form of boolean options ("--no-foo-bar") will not have
         separate short forms of their own.
 
-        Arguments:
-            * `method_schema`: dict from the parsed discover document that
-                               defines a method.
+        This  generator yields tuples in the form of `(names, kwargs)`, where
+        `names` is a one- or two-element tuple and `kwargs` is a dict, suitable
+        to be passed as
+        `argparse.ArgumentParser.add_argument(*names, **kwargs)`.
 
-        Return value:
-            * A generator that yields tuples in the form of `(names, kwargs)`,
-            where `names` is a one- or two-element tuple and `kwargs` is a
-            dict, suitable to be passed as
-            `argparse.ArgumentParser.add_argument(*names, **kwargs)`.
+        Arguments:
+
+        * method_schema: dict --- Dict object from the parsed discover document
+          that defines a method.
         """
         parameters_schema = method_schema.get("parameters", {}).copy()
         # If the method comes with the "request" field, add another parameter
