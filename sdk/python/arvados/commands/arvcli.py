@@ -23,125 +23,37 @@ import json
 import arvados
 
 
-def singularize_resource(plural: str) -> str:
-    """Returns the singular form of a resource term in the original plural."""
-    match plural:
-        case "vocabularies":
-            return "vocabulary"
-        case "sys":
-            return "sys"
-        case _:
-            return plural.removesuffix("s")
-
-
-def parameter_key_to_argument_name(parameter_key: str) -> str:
-    """Convert a parameter key in the discovery document to CLI parameter form,
-    for example, `--foo-bar`.
-
-    Arguments:
-
-    * parameter_key: int -- Parameter key in the form as they appear in the
-      discovery document, typically like `foo_bar`.
+class _ArgUtil:
+    """Private namespace class for helpful functions (static methods) that
+    processes the discovery document for the purpose of CLI parser generation.
     """
-    return "--" + parameter_key.replace("_", "-")
-
-
-class ArvCLIArgumentParser(argparse.ArgumentParser):
-    """Argument parser for `arv` commands.
-    """
-    def __init__(self, resource_dictionary, **kwargs):
-        """Arguments:
-
-        * resource dictionary: dict --- Dict containing the resources defined
-          in the discovery document; can be obtained as the
-          `_resourceDesc["resources"]` attribute of an Arvados API client
-          object.
+    @staticmethod
+    def singularize_resource(plural: str) -> str:
+        """Returns the singular form of a resource term in the original
+        plural.
         """
-        super().__init__(description="Arvados command line client", **kwargs)
-        # Common flags to the main command.
-        self.add_argument("-n", "--dry-run", action="store_true",
-                          help="Don't actually do anything")
-        self.add_argument("-v", "--verbose", action="store_true",
-                          help="Print some things on stderr")
-        # Default output format is JSON, while "-s" or "--short" can be
-        # used as a shorthand for "--format=uuid". If both are specified, the
-        # last one takes effect.
-        self.add_argument(
-            "-f", "--format",
-            choices=["json", "yaml", "uuid"],
-            default="json",
-            help="Set output format"
-        )
-        self.add_argument(
-            "-s", "--short",
-            dest="format",
-            action="store_const", const="uuid",
-            help="Return only UUIDs (equivalent to --format=uuid)"
-        )
-
-        subparsers = self.add_subparsers(
-            dest="subcommand",
-            help="Subcommands",
-            required=True,
-            parser_class=functools.partial(
-                argparse.ArgumentParser,
-                add_help=False
-            )
-        )
-
-        keep_parser = subparsers.add_parser("keep")
-        keep_parser.add_argument(
-            "method",
-            choices=["ls", "get", "put", "docker"]
-        )
-
-        ws_parser = subparsers.add_parser("ws")
-        copy_parser = subparsers.add_parser("copy")
-
-        self.subparsers = subparsers
-        self.resource_dictionary = resource_dictionary
-        self._subparser_index = {}
-
-        self.add_resource_subcommands()
-
-    def add_resource_subcommands(self):
-        """Add resources as subcommands, their associated methods as
-        sub-subcommands, and the parameters associated with each method.
-        """
-        for resource, resource_schema in self.resource_dictionary.items():
-            subcommand = singularize_resource(resource)
-            resource_subparser = self.subparsers.add_parser(
-                subcommand,
-                # For backward compatibility with legacy Ruby CLI client.
-                aliases=["sy"] if subcommand == "sys" else []
-            )
-            self._subparser_index[subcommand] = resource_subparser
-            if subcommand == "sys":
-                self._subparser_index["sy"] = resource_subparser
-            methods_dict = resource_schema.get("methods")
-            if methods_dict:
-                # Create a collection of "sub-subparsers" under the resource
-                # subparser for the methods.
-                method_subparsers = resource_subparser.add_subparsers(
-                    title="Methods",
-                    dest="method",
-                    parser_class=argparse.ArgumentParser,
-                    help="Methods for subcommand {}".format(subcommand)
-                )
-                for method, method_schema in methods_dict.items():
-                    # Add each specific method as a (sub-)subparser with its
-                    # associated parameters.
-                    method_parser = method_subparsers.add_parser(
-                        method,
-                        help=method_schema.get("description")
-                    )
-                    for parameter_names, kwargs in self._get_method_options(
-                            method_schema
-                    ):
-                        method_parser.add_argument(*parameter_names, **kwargs)
+        match plural:
+            case "vocabularies":
+                return "vocabulary"
+            case "sys":
+                return "sys"
+            case _:
+                return plural.removesuffix("s")
 
     @staticmethod
-    def _get_method_options(method_schema):
+    def parameter_key_to_argument_name(parameter_key: str) -> str:
+        """Convert a parameter key in the discovery document to CLI parameter
+        form, for example, `--foo-bar`.
+
+        Arguments:
+
+        * parameter_key: str -- Parameter key in the form as they appear in the
+          discovery document, typically like `foo_bar`.
+        """
+        return "--" + parameter_key.replace("_", "-")
+
+    @staticmethod
+    def get_method_options(method_schema):
         """Generate command-line options, in the form of "-f/--foo", from the
         parameters as defined by the API method schema in the discovery
         document.
@@ -207,7 +119,9 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
             # NOTE: Currently, enum-like value choices are not implemented, as
             # the enum values cannot be directly inferred from the discover
             # doc.
-            argument_key = parameter_key_to_argument_name(parameter_key)
+            argument_key = _ArgUtil.parameter_key_to_argument_name(
+                parameter_key
+            )
             for argument_short_key in argument_key:
                 if (
                     argument_short_key.isalpha()
@@ -227,7 +141,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                     # option that takes a true or false value. For each bool
                     # flag "--foo", also generate an additional "negative"
                     # version "--no-foo".
-                    neg_argument_key = parameter_key_to_argument_name(
+                    neg_argument_key = _ArgUtil.parameter_key_to_argument_name(
                         f"no_{parameter_key}"
                     )
                     neg_parameter_kwargs = {}
@@ -262,6 +176,101 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                 yield (
                     (f"-{argument_short_key}", argument_key), parameter_kwargs
                 )
+
+
+class ArvCLIArgumentParser(argparse.ArgumentParser):
+    """Argument parser for `arv` commands.
+    """
+    def __init__(self, resource_dictionary, **kwargs):
+        """Arguments:
+
+        * resource dictionary: dict --- Dict containing the resources defined
+          in the discovery document; can be obtained as the
+          `_resourceDesc["resources"]` attribute of an Arvados API client
+          object.
+        """
+        super().__init__(description="Arvados command line client", **kwargs)
+        # Common flags to the main command.
+        self.add_argument("-n", "--dry-run", action="store_true",
+                          help="Don't actually do anything")
+        self.add_argument("-v", "--verbose", action="store_true",
+                          help="Print some things on stderr")
+        # Default output format is JSON, while "-s" or "--short" can be
+        # used as a shorthand for "--format=uuid". If both are specified, the
+        # last one takes effect.
+        self.add_argument(
+            "-f", "--format",
+            choices=["json", "yaml", "uuid"],
+            default="json",
+            help="Set output format"
+        )
+        self.add_argument(
+            "-s", "--short",
+            dest="format",
+            action="store_const", const="uuid",
+            help="Return only UUIDs (equivalent to --format=uuid)"
+        )
+
+        subparsers = self.add_subparsers(
+            dest="subcommand",
+            help="Subcommands",
+            required=True,
+            parser_class=functools.partial(
+                argparse.ArgumentParser,
+                add_help=False
+            )
+        )
+
+        keep_parser = subparsers.add_parser("keep")
+        keep_parser.add_argument(
+            "method",
+            choices=["ls", "get", "put", "docker"]
+        )
+
+        ws_parser = subparsers.add_parser("ws")
+        copy_parser = subparsers.add_parser("copy")
+
+        self.subparsers = subparsers
+        self.resource_dictionary = resource_dictionary
+        self._subparser_index = {}
+
+        self.add_resource_subcommands()
+
+    def add_resource_subcommands(self):
+        """Add resources as subcommands, their associated methods as
+        sub-subcommands, and the parameters associated with each method.
+        """
+        for resource, resource_schema in self.resource_dictionary.items():
+            subcommand = _ArgUtil.singularize_resource(resource)
+            resource_subparser = self.subparsers.add_parser(
+                subcommand,
+                # For backward compatibility with legacy Ruby CLI client.
+                aliases=["sy"] if subcommand == "sys" else []
+            )
+            self._subparser_index[subcommand] = resource_subparser
+            if subcommand == "sys":
+                self._subparser_index["sy"] = resource_subparser
+            methods_dict = resource_schema.get("methods")
+            if methods_dict:
+                # Create a collection of "sub-subparsers" under the resource
+                # subparser for the methods.
+                method_subparsers = resource_subparser.add_subparsers(
+                    title="Methods",
+                    dest="method",
+                    parser_class=argparse.ArgumentParser,
+                    help="Methods for subcommand {}".format(subcommand)
+                )
+                for method, method_schema in methods_dict.items():
+                    # Add each specific method as a (sub-)subparser with its
+                    # associated parameters.
+                    method_parser = method_subparsers.add_parser(
+                        method,
+                        help=method_schema.get("description")
+                    )
+                    for parameter_names, kwargs in _ArgUtil.get_method_options(
+                            method_schema
+                    ):
+                        method_parser.add_argument(*parameter_names, **kwargs)
 
 
 def dispatch(arguments=None):
