@@ -75,7 +75,7 @@ def test_passthrough_commands_help(subcommand, main_fcn_name):
     ("foo", "foo")  # already singular in form
 ))
 def test_singularizer(plural, singular):
-    assert arvcli.singularize_resource(plural) == singular
+    assert arvcli._ArgUtil.singularize_resource(plural) == singular
 
 
 @pytest.mark.parametrize("key,argument_name", (
@@ -83,7 +83,7 @@ def test_singularizer(plural, singular):
     ("filters", "--filters"),
 ))
 def test_parameter_key_to_argument_name(key, argument_name):
-    assert arvcli.parameter_key_to_argument_name(key) == argument_name
+    assert arvcli._ArgUtil.parameter_key_to_argument_name(key) == argument_name
 
 
 def test_parameter_schema_to_argument():
@@ -206,5 +206,5 @@ def test_parameter_schema_to_argument():
         )
     ]
     assert list(
-        arvcli.ArvCLIArgumentParser._get_method_options(input_method_schema)
+        arvcli._ArgUtil.get_method_options(input_method_schema)
     ) == output
