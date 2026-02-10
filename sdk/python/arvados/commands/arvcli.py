@@ -23,6 +23,49 @@ import json
 import arvados
 
 
+class _ArgTypes:
+    """Private namespace class for JSON-related CLI argument types."""
+    @staticmethod
+    def _validate_type(obj_type, obj):
+        if not isinstance(obj, obj_type):
+            raise ValueError(f"{obj!r} is not of type {obj_type!s}.")
+        return obj
+
+    class JSONStringArg:
+        """JSON input parser with post-parsing validation function. This is
+        similar to `arvados.commands._util.JSONArgument` but without trying
+        to interpret the input value as a file path.
+
+        The __repr__ hook is used by argparse to pretty-print the error message
+        when the input fails validation. It should return a brief
+        human-readable name of the kind of value the argument takes.
+        """
+        def __init__(self, validator=None, pretty_name="JSON"):
+            self.validator = validator if callable(validator) else None
+            self.pretty_name = pretty_name
+
+        def __call__(self, value):
+            try:
+                retval = json.loads(value)
+            except json.JSONDecodeError:
+                raise ValueError(f"input value {value} is not valid JSON.")
+            if self.validator is not None:
+                retval = self.validator(retval)
+            return retval
+
+        def __repr__(self):
+            return self.pretty_name
+
+    json_array = JSONStringArg(
+        validator=functools.partial(_validate_type, list),
+        pretty_name="JSON array"
+    )
+    json_object = JSONStringArg(
+        validator=functools.partial(_validate_type, dict),
+        pretty_name="JSON object"
+    )
+
+
 class _ArgUtil:
     """Private namespace class for helpful functions (static methods) that
     processes the discovery document for the purpose of CLI parser generation.
@@ -114,8 +157,6 @@ class _ArgUtil:
                 parameter_kwargs["help"] += " This option must be specified."
             # The "type" member refers to one of the JSON values types, out of
             # string/integer/array/object/boolean.
-            # NOTE: Arrays and objects are treated as strings for Python
-            # argument-parsing purposes.
             # NOTE: Currently, enum-like value choices are not implemented, as
             # the enum values cannot be directly inferred from the discover
             # doc.
@@ -134,6 +175,8 @@ class _ArgUtil:
                 # back to not using a short argument, indicated by the special
                 # value None:
                 argument_short_key = None
+            if "default" in parameter_dict:
+                parameter_kwargs["default"] = parameter_dict["default"]
             match parameter_dict.get("type"):
                 case "boolean":
                     # Using the 'action="store_true" (or "store_false")'
@@ -161,15 +204,15 @@ class _ArgUtil:
                 case "integer":
                     parameter_kwargs["type"] = int
                     parameter_kwargs["metavar"] = "N"
-                    if "default" in parameter_dict:
-                        parameter_kwargs["default"] = int(
-                            parameter_dict["default"]
-                        )
+                case "array":
+                    parameter_kwargs["type"] = _ArgTypes.json_array
+                    parameter_kwargs["metavar"] = "JSON_ARRAY"
+                case "object":
+                    parameter_kwargs["type"] = _ArgTypes.json_object
+                    parameter_kwargs["metavar"] = "JSON_OBJECT"
                 case _:
                     parameter_kwargs["type"] = str
                     parameter_kwargs["metavar"] = "STR"
-                    if "default" in parameter_dict:
-                        parameter_kwargs["default"] = parameter_dict["default"]
             if argument_short_key is None:
                 yield (argument_key,), parameter_kwargs
             else:
