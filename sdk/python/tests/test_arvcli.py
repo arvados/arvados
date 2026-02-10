@@ -86,7 +86,7 @@ def test_parameter_key_to_argument_name(key, argument_name):
     assert arvcli._ArgUtil.parameter_key_to_argument_name(key) == argument_name
 
 
-def test_parameter_schema_to_argument():
+def test_get_method_options():
     # Largely based on arvados.container_requests.create, but with a fictitious
     # parameter entry for integer type, another one for required=True, and
     # also with parameter descriptions replaced by brief strings.
@@ -140,8 +140,8 @@ def test_parameter_schema_to_argument():
         (
             ("-s", "--select"),
             {
-                "type": str,
-                "metavar": "STR",
+                "type": arvcli._ArgTypes.json_array,
+                "metavar": "JSON_ARRAY",
                 "help": "help-select.",
                 "required": False
             }
@@ -189,7 +189,7 @@ def test_parameter_schema_to_argument():
             {
                 "type": int,
                 "metavar": "N",
-                "default": 100,
+                "default": "100",
                 "help": "help-limit.",
                 "required": False
             }
@@ -208,3 +208,35 @@ def test_parameter_schema_to_argument():
     assert list(
         arvcli._ArgUtil.get_method_options(input_method_schema)
     ) == output
+
+
+@pytest.mark.parametrize("obj_type,obj", (
+    (int, "123"),
+    (list, None),
+    (dict, None),
+    (str, None),
+))
+def test_argtypes_validate_type_can_raise(obj_type, obj):
+    with pytest.raises(ValueError):
+        arvcli._ArgTypes._validate_type(obj_type, obj)
+
+
+def test_argtypes_json_array_matches_list():
+    assert arvcli._ArgTypes.json_array("[]") == []
+
+
+def test_argtypes_json_object_matches_dict():
+    assert arvcli._ArgTypes.json_object("{}") == {}
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    ("foo", '"foo"', '{"foo": null}', '1.0', 'false', 'true', 'null')
+)
+def test_cli_can_intercept_invalid_json_subtype(invalid_value):
+    # --scope takes JSON array
+    cli = "api_client_authorization create_system_auth --scope".split()
+    cli.extend(invalid_value)
+    with pytest.raises(SystemExit) as exit_status:
+        arvcli.dispatch(cli)
+    assert exit_status.value.code == 2
