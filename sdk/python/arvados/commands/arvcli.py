@@ -36,9 +36,9 @@ class _ArgTypes:
         similar to `arvados.commands._util.JSONArgument` but without trying
         to interpret the input value as a file path.
 
-        The __repr__ hook is used by argparse to pretty-print the error message
-        when the input fails validation. It should return a brief
-        human-readable name of the kind of value the argument takes.
+        The "pretty_name" kwarg is used by argparse to pretty-print the error
+        message when the input fails validation. It should be a brief
+        human-readable name for the kind of value that the argument takes.
         """
         def __init__(self, validator=None, pretty_name="JSON"):
             self.validator = validator if callable(validator) else None
@@ -48,13 +48,12 @@ class _ArgTypes:
             try:
                 retval = json.loads(value)
             except json.JSONDecodeError:
-                raise ValueError(f"input value {value} is not valid JSON.")
+                raise argparse.ArgumentTypeError(
+                    f"input value {value!r} is not valid {self.pretty_name}."
+                )
             if self.validator is not None:
                 retval = self.validator(retval)
             return retval
-
-        def __repr__(self):
-            return self.pretty_name
 
     json_array = JSONStringArg(
         validator=functools.partial(_validate_type, list),
