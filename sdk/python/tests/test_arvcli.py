@@ -4,6 +4,7 @@
 
 from unittest import mock
 import pytest
+import argparse
 from arvados.commands import arvcli
 
 
@@ -198,8 +199,8 @@ def test_get_method_options():
         (
             ("-o", "--container-request"),
             {
-                "type": str,
-                "metavar": "STR",
+                "type": arvcli._ArgTypes.json_or_file,
+                "metavar": "{JSON,FILE,-}",
                 "help": "Either a string representing container_request as JSON or a filename from which to read container_request JSON (use '-' to read from stdin). This option must be specified.",
                 "required": True
             }
@@ -208,17 +209,6 @@ def test_get_method_options():
     assert list(
         arvcli._ArgUtil.get_method_options(input_method_schema)
     ) == output
-
-
-@pytest.mark.parametrize("obj_type,obj", (
-    (int, "123"),
-    (list, None),
-    (dict, None),
-    (str, None),
-))
-def test_argtypes_validate_type_can_raise(obj_type, obj):
-    with pytest.raises(ValueError):
-        arvcli._ArgTypes._validate_type(obj_type, obj)
 
 
 def test_argtypes_json_array_matches_list():
