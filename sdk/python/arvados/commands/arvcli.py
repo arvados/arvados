@@ -27,42 +27,112 @@ class _ArgTypes:
     """Private namespace class for JSON-related CLI argument types."""
     @staticmethod
     def _validate_type(obj_type, obj):
-        if not isinstance(obj, obj_type):
-            raise ValueError(f"{obj!r} is not of type {obj_type!s}.")
-        return obj
+        return isinstance(obj, obj_type)
 
     class JSONStringArg:
-        """JSON input parser with post-parsing validation function. This is
-        similar to `arvados.commands._util.JSONArgument` but without trying
-        to interpret the input value as a file path.
+        """Callable JSON input parser with post-parsing validation function.
 
-        The "pretty_name" kwarg is used by argparse to pretty-print the error
-        message when the input fails validation. It should be a brief
-        human-readable name for the kind of value that the argument takes.
+        When called on one string value, returns the result of parsing the
+        value as JSON.
+
+        If the parsing fails, or if the parsing succeeds but the result fails
+        the further validation (if any), raises argparse.ArgumentTypeError with
+        a suitable error message that will be printed to the stderr by
+        argparse.
         """
-        def __init__(self, validator=None, pretty_name="JSON"):
-            self.validator = validator if callable(validator) else None
+        def __init__(self, post_validator=None, pretty_name="JSON"):
+            """Keyword arguments:
+
+            * post_validator: callable --- optional callable that takes the
+              JSON-parsing result and returns a boolean to signal whether the
+              result has passed the further validation.
+
+            * pretty_name: str --- used by argparse to pretty-print the error
+              message when the input fails validation. It should be a brief
+              human-readable name for the kind of value that the argument
+              takes. Default: "JSON".
+            """
+            self.post_validator = (
+                post_validator if callable(post_validator) else None
+            )
             self.pretty_name = pretty_name
 
-        def __call__(self, value):
+        def __call__(self, value: str):
+            is_ok = True
             try:
                 retval = json.loads(value)
             except json.JSONDecodeError:
+                is_ok = False
+            else:
+                if self.post_validator is not None:
+                    is_ok = self.post_validator(retval)
+            if not is_ok:
                 raise argparse.ArgumentTypeError(
-                    f"input value {value!r} is not valid {self.pretty_name}."
+                    f"{value!r} is not valid {self.pretty_name}."
                 )
-            if self.validator is not None:
-                retval = self.validator(retval)
             return retval
 
+    json_any = JSONStringArg()
     json_array = JSONStringArg(
-        validator=functools.partial(_validate_type, list),
+        post_validator=functools.partial(_validate_type, list),
         pretty_name="JSON array"
     )
     json_object = JSONStringArg(
-        validator=functools.partial(_validate_type, dict),
+        post_validator=functools.partial(_validate_type, dict),
         pretty_name="JSON object"
     )
+
+    @staticmethod
+    def json_or_file(value):
+        """Argument type validator that either accepts JSON, or a file whose
+        content can be read and parsed as JSON.
+        """
+        value_is_json = False
+        value_is_path = False
+        try:
+            content = _ArgTypes.json_any(value)
+            value_is_json = True
+        except argparse.ArgumentTypeError:
+            pass
+
+        fh = None
+        if value == "-":
+            fh = sys.stdin
+            value_is_path = True  # technically not path but we get fh anyway.
+        else:
+            try:
+                fh = open(value, "rb")
+                value_is_path = True
+            except OSError:
+                pass
+
+        if value_is_json and value_is_path:
+            fh.close()
+            raise argparse.ArgumentTypeError(
+                f"{value!r} is both valid JSON and a readable file."
+                " Please consider renaming the file."
+            )
+
+        if not (value_is_json or value_is_path):
+            raise argparse.ArgumentTypeError(
+                f"{value!r} is neither valid JSON nor a readable file."
+            )
+
+        if value_is_path:
+            try:
+                content = json.load(fh)
+            except json.JSONDecodeError:
+                fh.close()
+                if value == "-":
+                    msg = "content of standard input is not valid JSON."
+                else:
+                    msg = (
+                        f"{value!r} is neither valid JSON"
+                        " nor a readable file containing valid JSON."
+                    )
+                raise argparse.ArgumentTypeError(msg)
+            fh.close()
+        return content
 
 
 class _ArgUtil:
@@ -138,7 +208,7 @@ class _ArgUtil:
         if request_schema is not None and request_schema.get("properties"):
             for parameter_key in request_schema["properties"].keys():
                 parameters_schema[parameter_key] = {
-                    "type": "string",
+                    "type": "request", # special value for request parameter
                     "required": request_schema.get("required"),
                     "description": (
                         f"Either a string representing {parameter_key} as JSON"
@@ -209,6 +279,9 @@ class _ArgUtil:
                 case "object":
                     parameter_kwargs["type"] = _ArgTypes.json_object
                     parameter_kwargs["metavar"] = "JSON_OBJECT"
+                case "request":
+                    parameter_kwargs["type"] = _ArgTypes.json_or_file
+                    parameter_kwargs["metavar"] = "{JSON,FILE,-}"
                 case _:
                     parameter_kwargs["type"] = str
                     parameter_kwargs["metavar"] = "STR"
