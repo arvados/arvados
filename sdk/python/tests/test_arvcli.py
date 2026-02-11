@@ -5,7 +5,9 @@
 from unittest import mock
 import pytest
 import argparse
+import io
 from arvados.commands import arvcli
+from . import arvados_testutil as tutil
 
 
 def test_global_option_help_followed_by_subcommand():
@@ -223,10 +225,33 @@ def test_argtypes_json_object_matches_dict():
     "invalid_value",
     ("foo", '"foo"', '{"foo": null}', '1.0', 'false', 'true', 'null')
 )
-def test_cli_can_intercept_invalid_json_subtype(invalid_value):
+def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
     # --scope takes JSON array
-    cli = "api_client_authorization create_system_auth --scope".split()
-    cli.extend(invalid_value)
+    cli = ["api_client_authorization", "create_system_auth", "--scope"]
+    cli.append(invalid_value)
     with pytest.raises(SystemExit) as exit_status:
         arvcli.dispatch(cli)
     assert exit_status.value.code == 2
+    captured = capsys.readouterr()
+    assert "not valid JSON array" in captured.err
+
+
+class TestRequestParameter(tutil.ArvadosBaseTestCase):
+    cli = ["collection", "create", "--collection"]
+
+    def test_request_parameter_missing(self):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(self.cli)
+        assert exit_status.value.code == 2
+
+    def test_request_parameter_invalid_json_and_not_file(self):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(self.cli + [""])
+        assert exit_status.value.code == 2
+
+    @mock.patch("sys.stdin", new_callable=io.StringIO)
+    def test_request_parameter_stdin_invalid_json(self, mock_stdin):
+        mock_stdin.write("\n")
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch("collection create --collection -".split())
+        assert exit_status.value.code == 2
