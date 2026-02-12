@@ -112,7 +112,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: theme.spacing(1),
         paddingTop: 0,
         "&:last-child": {
-            paddingBottom: theme.spacing(1),
+            paddingBottom: 0,
         },
     },
     // Card title
@@ -122,16 +122,14 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
-    // Applies to parameters / input collection virtual lists and output collection DE
+    // Applies to parameters / input collection virtual lists and output collection
     tableWrapper: {
-        height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing(6)})`,
+        height: `calc(100% - ${theme.spacing(6)})`,
         overflow: "auto",
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
         flexDirection: "column",
         alignItems: "stretch", // Stretches output collection to full width
-
     },
     // Parameters / input collection virtual list table styles
     virtualListTableRoot: {
