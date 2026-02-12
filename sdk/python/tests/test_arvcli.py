@@ -5,8 +5,11 @@
 from unittest import mock
 import pytest
 import argparse
+import re
 import io
+import os
 import json
+from contextlib import contextmanager
 from arvados.commands import arvcli
 
 
@@ -213,13 +216,110 @@ def test_get_method_options():
     ) == output
 
 
-def test_argtypes_json_array_matches_list():
-    assert arvcli._ArgTypes.json_array("[]") == []
+# Private context manager for cleanly and temporarily switching the working
+# directory.
+@contextmanager
+def _pushd(target):
+    oldpwd = os.getcwd()
+    try:
+        yield os.chdir(target)
+    finally:
+        os.chdir(oldpwd)
 
 
-def test_argtypes_json_object_matches_dict():
-    assert arvcli._ArgTypes.json_object("{}") == {}
+@pytest.mark.usefixtures("tmp_path")
+class TestArgTypes:
+    """Test the private type converter-validators under the arvcli._ArgTypes
+    namespace.
+    """
+    def test_json_array_makes_list(self):
+        assert arvcli._ArgTypes.json_array("[]") == []
 
+    def test_json_object_makes_dict(self):
+        assert arvcli._ArgTypes.json_object("{}") == {}
+
+    @pytest.mark.parametrize("invalid_input", ("{}", '""', "0", "null"))
+    def test_json_array_rejects_non_array(self, invalid_input):
+        with pytest.raises(argparse.ArgumentTypeError):
+            arvcli._ArgTypes.json_array(invalid_input)
+
+    @pytest.mark.parametrize("invalid_input", ("[]", '""', "0", "null"))
+    def test_json_object_rejects_non_object(self, invalid_input):
+        with pytest.raises(argparse.ArgumentTypeError):
+            arvcli._ArgTypes.json_object(invalid_input)
+
+    # Assume that the following valid JSON strings are unlikely to be valid
+    # files that happen to reside there.
+    @pytest.mark.parametrize("valid_json_string", (
+        '"foo"', '{"foo": null}', '1', 'false', 'true', 'null', '[]', '{}',
+        '1.0e-2'
+    ))
+    def test_json_or_file_matches_json_string(self, valid_json_string):
+        result = arvcli._ArgTypes.json_or_file(valid_json_string)
+        assert result == json.loads(valid_json_string)
+
+    # Assume that the following invalid JSON strings are unlikely to be valid
+    # files that happen to reside there.
+    @pytest.mark.parametrize("invalid_json_string", (
+        "", "\n", "[0, 1,]", "{'a': null}"
+    ))
+    def test_json_or_file_rejects_invalid_string(self, invalid_json_string):
+        err_notes = re.escape(
+            f"{invalid_json_string!r}"
+            " is neither valid JSON nor a readable file."
+        )
+        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
+            arvcli._ArgTypes.json_or_file(invalid_json_string)
+
+    @mock.patch("sys.stdin", new_callable=io.StringIO)
+    def test_json_or_file_accepts_stdin_with_valid_json(self, mock_stdin):
+        data = {"foo": "bar"}
+        json.dump(data, mock_stdin)
+        mock_stdin.seek(0)
+        assert data == arvcli._ArgTypes.json_or_file("-")
+
+    @mock.patch("sys.stdin", new_callable=io.StringIO)
+    def test_json_or_file_rejects_stdin_with_invalid_json(self, mock_stdin):
+        err_notes = "content of standard input is not valid JSON."
+        mock_stdin.write("\n")
+        mock_stdin.seek(0)
+        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
+            arvcli._ArgTypes.json_or_file("-")
+
+    def test_json_or_file_loads_file_with_valid_json(self, tmp_path):
+        # It is pretty much guaranteed that the full temp path itself is not
+        # valid JSON.
+        data = {"foo": "bar"}
+        tmp_json_file = tmp_path / "data.json"
+        tmp_json_file.write_text(json.dumps(data))
+        assert data == arvcli._ArgTypes.json_or_file(str(tmp_json_file))
+
+    def test_json_or_file_rejects_file_with_invalid_json(self, tmp_path):
+        # It is pretty much guaranteed that the full temp path itself is not
+        # valid JSON.
+        tmp_file = tmp_path / "data.nonjson"
+        err_notes = re.escape(
+            "%r is neither valid JSON" % str(tmp_file) +
+            " nor a readable file containing valid JSON."
+        )
+        tmp_file.write_text("\n")  # invalid JSON
+        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
+            arvcli._ArgTypes.json_or_file(str(tmp_file))
+
+    def test_json_or_file_rejects_file_name_resembling_json(self, tmp_path):
+        crafted_basename = '"foo"'
+        tmp_file = tmp_path / crafted_basename
+        tmp_file.write_text(" ")  # ensure file exists; content doesn't matter.
+        err_notes = re.escape(
+            f"{crafted_basename!r} is both valid JSON and a readable file."
+            " Please consider renaming the file."
+        )
+        # cd into the temp directory so that we can refer to the file with its
+        # basename (which is valid JSON)
+        with _pushd(tmp_path), pytest.raises(
+            argparse.ArgumentTypeError, match=err_notes
+        ):
+            arvcli._ArgTypes.json_or_file(crafted_basename)
 
 @pytest.mark.parametrize(
     "invalid_value",
@@ -248,22 +348,6 @@ class TestRequestParameterWithCollectionCreateCMD:
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch(self.cli)
         assert exit_status.value.code == 2
-
-    def test_request_parameter_invalid_json_and_not_file(self, capsys):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(self.cli + [""])
-        assert exit_status.value.code == 2
-        captured = capsys.readouterr()
-        assert "neither valid JSON nor a readable file" in captured.err
-
-    @mock.patch("sys.stdin", new_callable=io.StringIO)
-    def test_request_parameter_stdin_invalid_json(self, mock_stdin, capsys):
-        mock_stdin.write("\n")
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(self.cli + ["-"])
-        assert exit_status.value.code == 2
-        captured = capsys.readouterr()
-        assert "content of standard input is not valid JSON" in captured.err
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
     def test_request_parameter_stdin_valid_json(self, mock_stdin):
