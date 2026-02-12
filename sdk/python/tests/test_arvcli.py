@@ -336,7 +336,6 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
     assert "not valid JSON array" in captured.err
 
 
-@pytest.mark.usefixtures("capsys")
 class TestRequestParameterWithCollectionCreateCMD:
     manifest_data = {
         "name": "empty-test",
