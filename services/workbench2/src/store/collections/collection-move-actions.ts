@@ -4,7 +4,6 @@
 
 import { Dispatch } from "redux";
 import { dialogActions } from "store/dialog/dialog-actions";
-import { startSubmit, stopSubmit, initialize, FormErrors } from "redux-form";
 import { ServiceRepository } from "services/services";
 import { RootState } from "store/store";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
@@ -21,13 +20,11 @@ export const COLLECTION_MOVE_FORM_NAME = "collectionMoveFormName";
 export const openMoveCollectionDialog = (resource: { name: string; uuid: string }) => (dispatch: Dispatch) => {
     dispatch<any>(resetPickerProjectTree());
     dispatch<any>(initProjectsTreePicker(COLLECTION_MOVE_FORM_NAME));
-    dispatch(initialize(COLLECTION_MOVE_FORM_NAME, resource));
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_MOVE_FORM_NAME, data: {} }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_MOVE_FORM_NAME, data: resource }));
 };
 
 export const moveCollection =
     (resource: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_MOVE_FORM_NAME));
         let cachedCollection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
             if (!cachedCollection) {
@@ -40,11 +37,7 @@ export const moveCollection =
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(
-                    stopSubmit(COLLECTION_MOVE_FORM_NAME, {
-                        ownerUuid: "A collection with the same name already exists in the target project.",
-                    } as FormErrors)
-                );
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "A collection with the same name already exists in the target project.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not move the collection.", hideDuration: 2000, kind: SnackbarKind.ERROR }));

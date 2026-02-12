@@ -30,7 +30,6 @@ import { UpdateCollectionDialog } from "views-components/dialog-forms/update-col
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
 import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
 import { MoveProjectDialog } from "views-components/dialog-forms/move-project-dialog";
-import { MoveCollectionDialog } from "views-components/dialog-forms/move-collection-dialog";
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
 import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
 import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
@@ -116,6 +115,7 @@ import { CancelProcessDialog } from "views-components/process-cancel-dialog/proc
 import { DialogProjectCreate } from "views-components/dialog-create/dialog-project-create";
 import { DialogCollectionPartialMoveToNewCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-new-collection";
 import { DialogCollectionPartialMoveToSeparateCollections } from "views-components/dialog-move/dialog-collection-partial-move-to-separate-collections";
+import { DialogMoveCollection } from 'views-components/dialog-move/dialog-move-collection';
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -496,7 +496,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <GroupAttributesDialog />
             <GroupMemberAttributesDialog />
             <HelpApiClientAuthorizationDialog />
-            <MoveCollectionDialog />
+            <DialogMoveCollection />
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
