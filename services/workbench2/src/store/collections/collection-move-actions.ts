@@ -14,6 +14,7 @@ import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-p
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { getResource } from "store/resources/resources";
 import { CollectionResource } from "models/collection";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const COLLECTION_MOVE_FORM_NAME = "collectionMoveFormName";
 
@@ -25,6 +26,7 @@ export const openMoveCollectionDialog = (resource: { name: string; uuid: string 
 
 export const moveCollection =
     (resource: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
         let cachedCollection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
             if (!cachedCollection) {
@@ -43,5 +45,7 @@ export const moveCollection =
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not move the collection.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
             }
             return;
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
         }
     };

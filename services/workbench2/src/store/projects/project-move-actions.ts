@@ -14,6 +14,7 @@ import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { loadSidePanelTreeProjects } from "../side-panel-tree/side-panel-tree-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const PROJECT_MOVE_FORM_NAME = "projectMoveFormName";
 
@@ -26,11 +27,12 @@ export const openMoveProjectDialog = (resource: any) => {
 };
 
 export const moveProject = (resource: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const userUuid = getUserUuid(getState());
-    if (!userUuid) {
-        return;
-    }
+    dispatch(progressIndicatorActions.START_WORKING(PROJECT_MOVE_FORM_NAME));
     try {
+        const userUuid = getUserUuid(getState());
+        if (!userUuid) {
+            throw new Error("User UUID not found in state.");
+        }
         const newProject = await services.projectService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
         dispatch(projectPanelDataActions.REQUEST_ITEMS());
 
@@ -45,8 +47,10 @@ export const moveProject = (resource: MoveToFormDialogData) => async (dispatch: 
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Cannot move a project into itself or one of its sub-projects.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         } else {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
-            throw new Error("Could not move the project.");
+            throw new Error(`Could not move the project: ${e instanceof Error ? e.message : "Unknown error."}`);
         }
         return;
+    } finally {
+        dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_MOVE_FORM_NAME));
     }
 };
