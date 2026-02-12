@@ -54,6 +54,7 @@ export interface CollectionPanelFilesProps {
 }
 
 type CssRules =
+    | "filesPanel"
     | "backButton"
     | "backButtonHidden"
     | "pathPanelPathWrapper"
@@ -73,6 +74,7 @@ type CssRules =
     | "rowName"
     | "listItemIcon"
     | "rowActive"
+    | "filesHeader"
     | "pathPanelMenu"
     | "rowSelection"
     | "leftPanelHidden"
@@ -81,9 +83,16 @@ type CssRules =
     | "searchWrapperHidden";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
+    filesPanel: {
+        // This component expects the parent container to be a flexbox
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+    },
     wrapper: {
         display: "flex",
-        minHeight: "600px",
+        flexGrow: 1,
+        flexShrink: 1,
         color: "rgba(0,0,0,0.87)",
         fontSize: "0.875rem",
         fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
@@ -99,8 +108,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     backButtonHidden: {
         display: "none",
     },
+    filesHeader: {
+        flexShrink: 0,
+        flexGrow: 0,
+    },
     dataWrapper: {
-        minHeight: "500px",
+        flexGrow: 1,
     },
     row: {
         display: "flex",
@@ -161,6 +174,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         display: "inline-block",
     },
     leftPanel: {
+        display: 'flex',
+        flexDirection: 'column',
         flex: 0,
         padding: "0 1rem 1rem",
         marginRight: "1rem",
@@ -190,6 +205,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         },
     },
     rightPanel: {
+        display: 'flex',
+        flexDirection: 'column',
         flex: "50%",
         padding: "1rem",
         paddingTop: "0.5rem",
@@ -327,7 +344,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                 setRightSearch("");
             }
             // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [rightKey, rightData]); 
+        }, [rightKey, rightData]);
 
         const currentPDH = (collectionPanel.item || {}).portableDataHash;
         React.useEffect(() => {
@@ -335,12 +352,12 @@ export const CollectionPanelFiles = withStyles(styles)(
                 fetchData([leftKey, rightKey], true);
             }
             // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [currentPDH]); 
+        }, [currentPDH]);
 
         React.useEffect(() => {
             if (rightData) {
                 const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
-                dispatch(setCollectionFiles(filtered, false)); 
+                dispatch(setCollectionFiles(filtered, false));
             }
         }, [rightData, dispatch, rightSearch]);
 
@@ -491,12 +508,13 @@ export const CollectionPanelFiles = withStyles(styles)(
                 props.onOptionsMenuOpen(ev, isWritable);
             },
             // eslint-disable-next-line react-hooks/exhaustive-deps
-            [props.onOptionsMenuOpen] 
+            [props.onOptionsMenuOpen]
         );
 
         return (
             <div
                 data-cy="collection-files-panel"
+                className={classes.filesPanel}
                 onClick={handleClick}
                 ref={parentRef}
             >
@@ -533,23 +551,25 @@ export const CollectionPanelFiles = withStyles(styles)(
                         className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}
                         data-cy="collection-files-left-panel"
                     >
-                        <Tooltip
-                            title="Go back"
-                            className={path.length > 1 ? classes.backButton : classes.backButtonHidden}
-                        >
-                            <IconButton
-                                onClick={() => setPath(state => [...state.slice(0, state.length - 1)])}
-                                size="large">
-                                <BackIcon />
-                            </IconButton>
-                        </Tooltip>
-                        <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
-                            <SearchInput
-                                selfClearProp={leftKey}
-                                label="Search"
-                                value={leftSearch}
-                                onSearch={setLeftSearch}
-                            />
+                        <div className={classes.filesHeader}>
+                            <Tooltip
+                                title="Go back"
+                                className={path.length > 1 ? classes.backButton : classes.backButtonHidden}
+                            >
+                                <IconButton
+                                    onClick={() => setPath(state => [...state.slice(0, state.length - 1)])}
+                                    size="large">
+                                    <BackIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
+                                <SearchInput
+                                    selfClearProp={leftKey}
+                                    label="Search"
+                                    value={leftSearch}
+                                    onSearch={setLeftSearch}
+                                />
+                            </div>
                         </div>
                         <div className={classes.dataWrapper}>
                             {leftData.length > 0 ? (
@@ -608,29 +628,31 @@ export const CollectionPanelFiles = withStyles(styles)(
                         className={classes.rightPanel}
                         data-cy="collection-files-right-panel"
                     >
-                        <div className={classes.searchWrapper}>
-                            <SearchInput
-                                selfClearProp={rightKey}
-                                label="Search"
-                                value={rightSearch}
-                                onSearch={setRightSearch}
-                            />
+                        <div className={classes.filesHeader}>
+                            <div className={classes.searchWrapper}>
+                                <SearchInput
+                                    selfClearProp={rightKey}
+                                    label="Search"
+                                    value={rightSearch}
+                                    onSearch={setRightSearch}
+                                />
+                            </div>
+                            {isWritable && (
+                                <Button
+                                    className={classes.uploadButton}
+                                    data-cy="upload-button"
+                                    onClick={() => {
+                                        onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
+                                    }}
+                                    variant="contained"
+                                    color="primary"
+                                    size="small"
+                                >
+                                    <DownloadIcon className={classes.uploadIcon} />
+                                    Upload data
+                                </Button>
+                            )}
                         </div>
-                        {isWritable && (
-                            <Button
-                                className={classes.uploadButton}
-                                data-cy="upload-button"
-                                onClick={() => {
-                                    onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
-                                }}
-                                variant="contained"
-                                color="primary"
-                                size="small"
-                            >
-                                <DownloadIcon className={classes.uploadIcon} />
-                                Upload data
-                            </Button>
-                        )}
                         <div className={classes.dataWrapper}>
                             {rightData && !isLoading ? (
                                 <AutoSizer defaultHeight={500}>

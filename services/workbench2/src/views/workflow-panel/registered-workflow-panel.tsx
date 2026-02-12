@@ -52,6 +52,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     filesCard: {
         padding: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
     },
 });
 
