@@ -29,7 +29,7 @@ import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-
 import { UpdateCollectionDialog } from "views-components/dialog-forms/update-collection-dialog";
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
 import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
-import { MoveProjectDialog } from "views-components/dialog-forms/move-project-dialog";
+import { DialogMoveProject } from "views-components/dialog-move/dialog-move-project";
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
 import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
 import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
@@ -497,7 +497,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <GroupMemberAttributesDialog />
             <HelpApiClientAuthorizationDialog />
             <DialogMoveCollection />
-            <MoveProjectDialog />
+            <DialogMoveProject />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
             <DialogCollectionPartialCopyToNewCollection />
