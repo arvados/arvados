@@ -6,8 +6,8 @@ from unittest import mock
 import pytest
 import argparse
 import io
+import json
 from arvados.commands import arvcli
-from . import arvados_testutil as tutil
 
 
 def test_global_option_help_followed_by_subcommand():
@@ -236,7 +236,12 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
     assert "not valid JSON array" in captured.err
 
 
-class TestRequestParameter(tutil.ArvadosBaseTestCase):
+@pytest.mark.usefixtures("capsys")
+class TestRequestParameterWithCollectionCreateCMD:
+    manifest_data = {
+        "name": "empty-test",
+        "manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:empty\n"
+    }
     cli = ["collection", "create", "--collection"]
 
     def test_request_parameter_missing(self):
@@ -244,14 +249,28 @@ class TestRequestParameter(tutil.ArvadosBaseTestCase):
             arvcli.dispatch(self.cli)
         assert exit_status.value.code == 2
 
-    def test_request_parameter_invalid_json_and_not_file(self):
+    def test_request_parameter_invalid_json_and_not_file(self, capsys):
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch(self.cli + [""])
         assert exit_status.value.code == 2
+        captured = capsys.readouterr()
+        assert "neither valid JSON nor a readable file" in captured.err
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
-    def test_request_parameter_stdin_invalid_json(self, mock_stdin):
+    def test_request_parameter_stdin_invalid_json(self, mock_stdin, capsys):
         mock_stdin.write("\n")
         with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch("collection create --collection -".split())
+            arvcli.dispatch(self.cli + ["-"])
         assert exit_status.value.code == 2
+        captured = capsys.readouterr()
+        assert "content of standard input is not valid JSON" in captured.err
+
+    @mock.patch("sys.stdin", new_callable=io.StringIO)
+    def test_request_parameter_stdin_valid_json(self, mock_stdin):
+        # TODO: to be fleshed out when API calls are implemented: check actual
+        # return-data from API server.
+        json.dump(self.manifest_data, mock_stdin)
+        mock_stdin.seek(0)
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(self.cli + ["-"])
+        assert exit_status.value.code == 0
