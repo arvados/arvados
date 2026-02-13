@@ -244,8 +244,11 @@ class _ArgUtil:
                 # back to not using a short argument, indicated by the special
                 # value None:
                 argument_short_key = None
-            if "default" in parameter_dict:
-                parameter_kwargs["default"] = parameter_dict["default"]
+            default = parameter_dict.get("default")
+            if default is not None:
+                parameter_kwargs["default"] = default
+                if parameter_dict.get("type") != "boolean":
+                    parameter_kwargs["help"] += f" Default: {default!s}."
             match parameter_dict.get("type"):
                 case "boolean":
                     # Using the 'action="store_true" (or "store_false")'
