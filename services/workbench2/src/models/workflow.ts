@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource, ResourceKind } from "./resource";
-import { safeLoad } from 'js-yaml';
+import yaml from 'js-yaml';
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 
 export interface WorkflowResource extends Resource {
@@ -140,7 +140,7 @@ export type WorkflowInputsData = {
     [key: string]: boolean | number | string | File | Directory | SecretInclude;
 };
 export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResourceDefinition => {
-    const definition = safeLoad(workflow.definition);
+    const definition = yaml.load(workflow.definition);
     return definition;
 };
 

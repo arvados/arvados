@@ -5,7 +5,7 @@
 import React from 'react';
 import { WorkflowResource } from "models/workflow";
 import { WorkflowFactory } from "cwlts/models";
-import * as yaml from 'js-yaml';
+import yaml from 'js-yaml';
 import "lib/cwl-svg/assets/styles/themes/rabix-dark/theme.css";
 import "lib/cwl-svg/plugins/port-drag/theme.dark.css";
 import "lib/cwl-svg/plugins/selection/theme.dark.css";
@@ -25,7 +25,7 @@ export class WorkflowGraph extends React.Component<WorkflowGraphProps, {}> {
     private svgRoot: React.RefObject<SVGSVGElement> = React.createRef();
 
     setGraph() {
-        const graphs = yaml.safeLoad(this.props.workflow.definition, { json: true });
+        const graphs = yaml.load(this.props.workflow.definition, { json: true });
 
         let workflowGraph = graphs;
         if (graphs.$graph) {
