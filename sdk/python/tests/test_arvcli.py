@@ -196,7 +196,7 @@ def test_get_method_options():
                 "type": int,
                 "metavar": "N",
                 "default": "100",
-                "help": "help-limit.",
+                "help": "help-limit. Default: 100.",
                 "required": False
             }
         ),
