@@ -264,8 +264,16 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         self.subparsers = subparsers
         self.resource_dictionary = resource_dictionary
         self._subparser_index = {}
+        self._subcommand_to_resource = {}
 
         self.add_resource_subcommands()
+
+        if "sys" in self._subparser_index:
+            self._subparser_index["sy"] = self._subparser_index["sys"]
+        if "sys" in self._subcommand_to_resource:
+            self._subcommand_to_resource["sy"] = (
+                self._subcommand_to_resource["sys"]
+            )
 
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
@@ -273,14 +281,13 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         """
         for resource, resource_schema in self.resource_dictionary.items():
             subcommand = _ArgUtil.singularize_resource(resource)
+            self._subcommand_to_resource[subcommand] = resource
             resource_subparser = self.subparsers.add_parser(
                 subcommand,
                 # For backward compatibility with legacy Ruby CLI client.
                 aliases=["sy"] if subcommand == "sys" else []
             )
             self._subparser_index[subcommand] = resource_subparser
-            if subcommand == "sys":
-                self._subparser_index["sy"] = resource_subparser
             methods_dict = resource_schema.get("methods")
             if methods_dict:
                 # Create a collection of "sub-subparsers" under the resource

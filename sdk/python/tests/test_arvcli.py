@@ -10,6 +10,7 @@ import io
 import os
 import json
 from contextlib import contextmanager
+import arvados
 from arvados.commands import arvcli
 
 
@@ -82,6 +83,17 @@ def test_passthrough_commands_help(subcommand, main_fcn_name):
 ))
 def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
+
+
+def test_cli_parser_has_singular_plural_mapping():
+    api_client = arvados.api("v1")
+    cmd_parser = arvcli.ArvCLIArgumentParser(
+        api_client._resourceDesc["resources"]
+    )
+    for resource in cmd_parser.resource_dictionary.keys():
+        k = arvcli._ArgUtil.singularize_resource(resource)
+        assert cmd_parser._subcommand_to_resource[k] == resource
+    assert cmd_parser._subcommand_to_resource["sy"] == cmd_parser._subcommand_to_resource["sys"]
 
 
 @pytest.mark.parametrize("key,argument_name", (
@@ -247,6 +259,7 @@ class TestArgTypes:
     def test_json_object_rejects_non_object(self, invalid_input):
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.json_object(invalid_input)
+
 
 
 @pytest.mark.parametrize(
