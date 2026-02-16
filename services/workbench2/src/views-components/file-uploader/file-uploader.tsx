@@ -44,11 +44,12 @@ export const FileUploaderField = (props: WrappedFieldProps & { label?: string })
 
 type DialogFileUploaderFieldProps = {
     label?: string,
+    onDrop?: (files: File[]) => void;
 }
 
 export const DialogFileUploaderField = (props: DialogFileUploaderFieldProps) => {
     return <>
         <Typography variant='caption'>{props.label}</Typography>
-        <FileUploader disabled={false} />
+        <FileUploader disabled={false} onDrop={props.onDrop} />
     </>
 };

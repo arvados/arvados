@@ -8,7 +8,6 @@ import { ServiceRepository } from 'services/services';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
-import { reset, startSubmit, stopSubmit } from 'redux-form';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import * as WorkbenchActions from 'store/workbench/workbench-actions';
 
@@ -24,7 +23,6 @@ export const uploadCollectionFiles = (collectionUuid: string, targetLocation?: s
 export const COLLECTION_UPLOAD_FILES_DIALOG = 'uploadCollectionFilesDialog';
 
 export const openUploadCollectionFilesDialog = (targetLocation?: string) => (dispatch: Dispatch) => {
-    dispatch(reset(COLLECTION_UPLOAD_FILES_DIALOG));
     dispatch(fileUploaderActions.CLEAR_UPLOAD());
     dispatch<any>(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPLOAD_FILES_DIALOG, data: { targetLocation } }));
 };
@@ -35,7 +33,6 @@ export const submitCollectionFiles = (targetLocation?: string) =>
         if (currentCollection) {
             try {
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
-                dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
                 await dispatch<any>(uploadCollectionFiles(currentCollection.uuid, targetLocation));
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -43,15 +40,14 @@ export const submitCollectionFiles = (targetLocation?: string) =>
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             } catch (e) {
-                dispatch(stopSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Error uploading file(s). See console for details.',
                     hideDuration: 4000,
                     kind: SnackbarKind.ERROR
                 }));
+            } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
             }
         }
