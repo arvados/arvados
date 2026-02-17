@@ -6,7 +6,7 @@ import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Chip, Grid } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
-import { getTagKeyID, getTagValueID } from 'models/vocabulary';
+import { getTagKeyID, getTagValueID, getTagKeyLabel, getTagValueLabel } from 'models/vocabulary';
 import {
     DragSource,
     DragSourceSpec,
@@ -174,4 +174,11 @@ export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabul
     }
 
     return vocabularyChips;
+};
+
+export const getChipsFromVocabulary = (properties: Record<string, string | string[] | undefined>, vocabulary: Vocabulary): PropertyChips => {
+    return properties ? Object.entries(properties).reduce((acc, [key, value]) => ({
+        ...acc,
+        [getTagKeyLabel(key, vocabulary)]: Array.isArray(value)? value.map(v => getTagValueLabel(key, v, vocabulary)) : getTagValueLabel(key, value || '', vocabulary)
+    }), {} as PropertyChips) : {} as PropertyChips;
 };

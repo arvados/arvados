@@ -26,7 +26,7 @@ import { ChangeWorkflowDialog } from "views-components/run-process-dialog/change
 import { DialogCollectionCreate } from "views-components/dialog-create/dialog-collection-create";
 import { CopyCollectionDialog } from "views-components/dialog-copy/dialog-copy";
 import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-rerun";
-import { UpdateCollectionDialog } from "views-components/dialog-forms/update-collection-dialog";
+import { DialogCollectionUpdate } from 'views-components/dialog-update/dialog-collection-update';
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
 import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
 import { DialogMoveProject } from "views-components/dialog-move/dialog-move-project";
@@ -530,7 +530,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <SharingDialog />
             <NotFoundDialog />
             <Snackbar />
-            <UpdateCollectionDialog />
+            <DialogCollectionUpdate />
             <UpdateProcessDialog />
             <UpdateProjectDialog />
             <UpdateExternalCredentialDialog />

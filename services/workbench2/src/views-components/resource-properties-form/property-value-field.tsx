@@ -133,6 +133,9 @@ export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, showErrors
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
             const newValue = e.currentTarget.value;
             setValue(newValue);
+            if (vocabulary.tags[propertyKeyId] && vocabulary.tags[propertyKeyId].strict === false) {
+                onSelect(newValue);
+            }
         }}
     />
 };

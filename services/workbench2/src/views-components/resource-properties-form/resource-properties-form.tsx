@@ -76,13 +76,14 @@ const mapState = (state: RootState) => {
 }
 
 type DialogResourcePropertiesFormProps = {
+    initialProperties?: PropertyChips;
     vocabulary: Vocabulary,
     setChips: React.Dispatch<React.SetStateAction<PropertyChips>>,
     onSubmit: (event: React.FormEvent<HTMLFormElement>) => void,
 };
 
-export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, setChips }: DialogResourcePropertiesFormProps) => {
-    const [properties, setProperties] = React.useState<PropertyChips>({});
+export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, setChips, initialProperties }: DialogResourcePropertiesFormProps) => {
+    const [properties, setProperties] = React.useState<PropertyChips>(initialProperties || {});
     const [propertyKeyId, setPropertyKeyId] = React.useState<string | undefined>(undefined);
     const [currentKey, setCurrentKey] = React.useState<string | undefined>(undefined);
     const [currentValue, setCurrentValue] = React.useState<string | undefined>(undefined);
