@@ -43,7 +43,8 @@ gem 'acts_as_api'
 
 gem 'passenger', '~> 6.0.26'
 
-gem 'minitest', '~> 5.0'
+# minitest 5.26.2 dropped Ruby 3.0.
+gem 'minitest', '5.26.1'
 
 gem 'andand'
 
