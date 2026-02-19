@@ -208,6 +208,40 @@ class _ArgUtil:
                     (f"-{argument_short_key}", argument_key), parameter_kwargs
                 )
 
+    class NestedNamespace(argparse.Namespace):
+        """Nestable namespace that support setting an attribute with dots in
+        its name, so that argparse-based argument parser may store parsing
+        results in nested namespaces.
+
+        Example:
+
+        ns = NestedNamespace()
+        setattr(ns, "a.b", "foo")
+        ns.a.b  # "foo"
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--foo-bar", dest="foo.bar")
+        parser.parse_args(["--foo-bar", "spam"], namespace=ns)
+        ns.foo.bar  # "spam"
+        """
+        def __setattr__(self, name, value):
+            attr_head, *attr_tail = name.split(".", 1)
+            if not attr_head:
+                raise AttributeError(f"invalid attribute: {name!r}")
+            if not attr_tail or not attr_tail[0]:
+                # Terminate setattr recursion.
+                super().__setattr__(attr_head, value)
+            else:
+                # Could have used "getattr(self, attr_head, type(self)())" but
+                # that would have eager-evaluated the new object "type(self)()"
+                # anyway, which can be wasteful.
+                try:
+                    next_ns = getattr(self, attr_head)
+                except AttributeError:
+                    next_ns = type(self)()
+                super().__setattr__(attr_head, next_ns)
+                setattr(next_ns, attr_tail[0], value)
+
 
 class ArvCLIArgumentParser(argparse.ArgumentParser):
     """Argument parser for `arv` commands.

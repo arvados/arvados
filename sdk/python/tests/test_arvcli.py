@@ -228,6 +228,49 @@ def test_get_method_options():
     ) == output
 
 
+class TestArgUtilNestedNamespace:
+    def setup_method(self):
+        self.ns = arvcli._ArgUtil.NestedNamespace()
+
+    def teardown_method(self):
+        self.ns = None
+
+    def test_dotless_name_dot_syntax(self):
+        self.ns.foo = "bar"
+        assert self.ns.foo == "bar"
+
+    def test_dotless_name_setattr(self):
+        setattr(self.ns, "foo", "bar")
+        assert self.ns.foo == "bar"
+
+    def test_one_dot(self):
+        setattr(self.ns, "foo.bar", "bar")
+        assert self.ns.foo.bar == "bar"
+
+    def test_two_dots(self):
+        setattr(self.ns, "foo.bar.baz", "bar")
+        assert self.ns.foo.bar.baz == "bar"
+
+    def test_trailing_dot(self):
+        setattr(self.ns, "foo.bar.baz.", "bar")
+        assert self.ns.foo.bar.baz == "bar"
+
+    def test_consecutive_dots(self):
+        with pytest.raises(AttributeError):
+            setattr(self.ns, "foo.bar..baz", "bar")
+
+    def test_integrate_with_argparse(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--foo-bar", dest="foo.bar")
+        parser.parse_args(["--foo-bar", "spam"], namespace=self.ns)
+        assert self.ns.foo.bar == "spam"
+
+    def test_vars(self):
+        setattr(self.ns, "foo.bar", "bar")
+        setattr(self.ns, "foo.baz", "baz")
+        assert vars(self.ns.foo) == {"bar": "bar", "baz": "baz"}
+
+
 # Private context manager for cleanly and temporarily switching the working
 # directory.
 @contextmanager
