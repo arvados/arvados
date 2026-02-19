@@ -376,8 +376,9 @@ export const moveProjectRunner =
             dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_MOVE_FORM_NAME));
         };
 
-export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
-    const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data));
+export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+    const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data, setSubmitErr));
+    console.log('>>>updatedProject', updatedProject)
     if (updatedProject) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
@@ -391,8 +392,8 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
     }
 };
 
-export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
-    const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data));
+export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+    const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data, setSubmitErr));
     if (updatedGroup) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({

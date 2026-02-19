@@ -54,22 +54,23 @@ export const DialogCollectionUpdate = compose(
     withStyles(styles),
     withDialog(COLLECTION_UPDATE_FORM_NAME)
 )(({ data, closeDialog, open, vocabulary, storageClasses, classes, updateCollection }: DialogCollectionProps & WithStyles<CssRules>) => {
-        const [initialData, setInitialData] = useState<CollectionUpdateFormDialogData>(data);
+        const initialData = data || { uuid: '', name: '', description: '', properties: {}, storageClassesDesired: [] };
         const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation(initialData.name || '', COLLECTION_NAME_VALIDATION, 'Collection Name');
         const [description, setDescription, descriptionErrs] = useStateWithValidation(initialData.description || '', COLLECTION_DESCRIPTION_VALIDATION, 'Description');
         const [chips, setChips] = useState<PropertyChips>(getChipsFromVocabulary(initialData.properties || {}, vocabulary));
-        const [storageClassesDesired, setStorageClassesDesired] = useState<string[]>(storageClasses || ['default']);
+        const [storageClassesDesired, setStorageClassesDesired] = useState<string[]>(initialData.storageClassesDesired || storageClasses || ['default']);
         const [formErrors, setFormErrors] = useState<string[]>([]);
         const [submitErr, setSubmitErr] = useState<string>('');
         const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
         useEffect(() => {
-            if (data.name) setCollectionName(data.name);
-            if (data.description) setDescription(data.description);
-            if (data.properties) setChips(getChipsFromVocabulary(data.properties, vocabulary));
-            if (data.storageClassesDesired) setStorageClassesDesired(data.storageClassesDesired);
-            setInitialData(data);
-        }, [data.name, data.description, data.properties, data.storageClassesDesired]);
+            if (data) {
+                setCollectionName(data.name || '');
+                setDescription(data.description || '');
+                setChips(getChipsFromVocabulary(data.properties || {}, vocabulary));
+                setStorageClassesDesired(data.storageClassesDesired || storageClasses || ['default']);
+            }
+        }, [data, vocabulary, storageClasses]);
 
         useEffect(() => {
             setFormErrors([...collectionNameErrs, ...descriptionErrs]);

@@ -28,7 +28,7 @@ import { CopyCollectionDialog } from "views-components/dialog-copy/dialog-copy";
 import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-rerun";
 import { DialogCollectionUpdate } from 'views-components/dialog-update/dialog-collection-update';
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
-import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
+import { DialogProjectUpdate } from 'views-components/dialog-update/dialog-project-update';
 import { DialogMoveProject } from "views-components/dialog-move/dialog-move-project";
 import { DialogCollectionFilesUpload } from 'views-components/dialog-upload/dialog-collection-files-upload';
 import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
@@ -532,7 +532,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <Snackbar />
             <DialogCollectionUpdate />
             <UpdateProcessDialog />
-            <UpdateProjectDialog />
+            <DialogProjectUpdate />
             <UpdateExternalCredentialDialog />
             <UserAttributesDialog />
             <DeactivateDialog />

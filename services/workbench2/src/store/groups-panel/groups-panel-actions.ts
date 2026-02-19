@@ -81,19 +81,18 @@ export const openRemoveGroupDialog = (uuid: string, numOfGroups = 1) =>
 export const openGroupUpdateDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const group = getResource<GroupResource>(uuid)(getState().resources);
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, group));
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_UPDATE_FORM_NAME,
             data: {
                 sourcePanel: GroupClass.ROLE,
+                ...group,
             }
         }));
     };
 
-export const updateGroup = (project: ProjectUpdateFormDialogData) =>
+export const updateGroup = (project: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = project.uuid || '';
-        dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
             const updatedGroup = await services.groupsService.update(
                 uuid,
@@ -105,14 +104,12 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
                 false
             );
             dispatch(GroupsPanelActions.REQUEST_ITEMS());
-            dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedGroup;
         } catch (e) {
-            dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
+                setSubmitErr('Group with the same name already exists.');
             }
             return ;
         }
