@@ -39,40 +39,62 @@ class _ArgTypes:
         the further validation (if any), raises argparse.ArgumentTypeError with
         a suitable error message that will be printed to the stderr by
         argparse.
+
+        By default, when initialized without any keyword arguments, it
+        functions as a simple JSON loader.
         """
-        def __init__(self, post_validator=None, pretty_name="JSON"):
+        def __init__(
+                self, loader=None, post_validator=None, pretty_name="JSON"
+        ):
             """Keyword arguments:
+
+            * loader: callable --- optional callable that is used to load the
+              value passed to `__call__()`. By default, `json.loads` is used,
+              but you may supply your own loader to handle exceptions. The
+              loader shall raise ValueError (of which json.JSONDecodeError is a
+              subtype) to signal failure to handle the input value, or raise
+              argparse.ArgumentTypeError directly for finer-grained control of
+              messaging.
 
             * post_validator: callable --- optional callable that takes the
               JSON-parsing result and returns a boolean to signal whether the
-              result has passed the further validation.
+              result has passed the further validation. In addition, any of
+              `TypeError`, `ValueError`, or `argparse.ArgumentTypeError` may be
+              raised to signify validation failure.
 
             * pretty_name: str --- used by argparse to pretty-print the error
               message when the input fails validation. It should be a brief
               human-readable name for the kind of value that the argument
-              takes. Default: "JSON".
+              takes. Default: `"JSON"`.
             """
+            self.loader = loader if callable(loader) else json.loads
             self.post_validator = (
                 post_validator if callable(post_validator) else None
             )
-            self.pretty_name = pretty_name
+            self.pretty_name = pretty_name or "JSON"
 
         def __call__(self, value: str):
             is_ok = True
+            callback_exc = None
             try:
-                retval = json.loads(value)
-            except json.JSONDecodeError:
+                retval = self.loader(value)
+            except ValueError as err:
                 is_ok = False
+                callback_exc = err
             else:
                 if self.post_validator is not None:
-                    is_ok = self.post_validator(retval)
+                    try:
+                        is_ok = self.post_validator(retval)
+                    except (
+                        ValueError, TypeError, argparse.ArgumentTypeError
+                    ) as err:
+                        callback_exc = err
             if not is_ok:
                 raise argparse.ArgumentTypeError(
                     f"{value!r} is not valid {self.pretty_name}."
-                )
+                ) from callback_exc
             return retval
 
-    json_any = JSONStringArg()
     json_array = JSONStringArg(
         post_validator=functools.partial(_validate_type, list),
         pretty_name="JSON array"
@@ -83,16 +105,17 @@ class _ArgTypes:
     )
 
     @staticmethod
-    def json_or_file(value):
-        """Argument type validator that either accepts JSON, or a file whose
-        content can be read and parsed as JSON.
+    def json_or_file_loader(value):
+        """Loader function that accepts either a JSON string, or a file whose
+        content can be read and parsed as JSON (including "-" which represents
+        the standard input).
         """
         value_is_json = False
         value_is_path = False
         try:
-            content = _ArgTypes.json_any(value)
+            content = json.loads(value)
             value_is_json = True
-        except argparse.ArgumentTypeError:
+        except json.JSONDecodeError:
             pass
 
         fh = None
@@ -122,7 +145,6 @@ class _ArgTypes:
             try:
                 content = json.load(fh)
             except json.JSONDecodeError:
-                fh.close()
                 if value == "-":
                     msg = "content of standard input is not valid JSON."
                 else:
@@ -131,8 +153,11 @@ class _ArgTypes:
                         " nor a readable file containing valid JSON."
                     )
                 raise argparse.ArgumentTypeError(msg)
-            fh.close()
+            finally:
+                fh.close()
         return content
+
+    json_or_file = JSONStringArg(loader=json_or_file_loader)
 
 
 class _ArgUtil:
@@ -208,7 +233,7 @@ class _ArgUtil:
         if request_schema is not None and request_schema.get("properties"):
             for parameter_key in request_schema["properties"].keys():
                 parameters_schema[parameter_key] = {
-                    "type": "request", # special value for request parameter
+                    "type": "request",  # special value for request parameter
                     "required": request_schema.get("required"),
                     "description": (
                         f"Either a string representing {parameter_key} as JSON"
