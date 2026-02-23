@@ -12,6 +12,7 @@ import os
 import re
 import signal
 import sys
+import functools
 
 import typing as t
 
@@ -124,44 +125,182 @@ def validate_filters(filters):
     return filters
 
 
-class JSONArgument:
-    """Parse a JSON file from a command line argument string or path
+class JSONStringArgument:
+    """Callable JSON input parser with post-parsing validation function.
 
-    JSONArgument objects can be called with a string and return an arbitrary
-    object. First it will try to decode the string as JSON. If that fails, it
-    will try to open a file at the path named by the string, and decode it as
-    JSON. If that fails, it raises ValueError with more detail.
-
-    This is designed to be used as an argparse argument type.
-    Typical usage looks like:
+    This is designed to be used as an argparse argument type. Typical usage
+    looks like:
 
         parser = argparse.ArgumentParser()
-        parser.add_argument('--object', type=JSONArgument(), ...)
+        parser.add_argument('--object', type=JSONStringArgument(), ...)
 
-    You can construct JSONArgument with an optional validation function. If
-    given, it is called with the object decoded from user input, and its
-    return value replaces it. It should raise ValueError if there is a problem
-    with the input. (argparse turns ValueError into a useful error message.)
+    When called on one string value, returns the result of parsing the value as
+    JSON.
 
-        filters_type = JSONArgument(validate_filters)
-        parser.add_argument('--filters', type=filters_type, ...)
+    If the parsing fails, or if the parsing succeeds but the result fails the
+    further validation (if any), raises argparse.ArgumentTypeError with a
+    suitable error message that will be printed to the stderr by argparse.
+
+    The behavior may be further customized by providing the "validator" or
+    "loader" callback functions; see the __init__ method documentation for
+    details.
+
+    By default, when initialized without any keyword arguments, it functions as
+    a simple JSON loader.
     """
-    def __init__(self, validator=None):
-        self.validator = validator
+    def __init__(
+        self,
+        validator: t.Optional[t.Callable[[t.Any], t.Any]] = None,
+        loader: t.Optional[t.Callable[[str], t.Any]] = None,
+        pretty_name: str = "JSON"
+    ):
+        """Keyword arguments:
 
-    def __call__(self, value):
+        * validator: callable --- optional callable that takes the JSON-parsing
+          result (Python object) as input and performs additional validation
+          after JSON-parsing. It should raise TypeError or ValueError to signal
+          validation failure, and return the validated object (possibly
+          modified) when validation succeeds. Its return value will become the
+          return value of __call__() (i.e. type conversion for the input
+          argument value). In addition, it may raise argparse.ArgumentTypeError
+          directly for finer-grained control of messaging.
+
+        * loader: callable --- optional callable that is used to load the
+          value passed to __call__(). By default, json.loads is used, but you
+          may supply your own loader to handle exceptions. The loader should
+          raise ValueError (of which json.JSONDecodeError is a subtype) to
+          signal failure to handle the input value, or raise
+          argparse.ArgumentTypeError directly for finer-grained control of
+          messaging.
+
+        * pretty_name: str --- used by argparse to pretty-print the error
+          message when the input fails validation. It should be a brief
+          human-readable name for the kind of value that the argument takes.
+          Default: "JSON".
+        """
+        self.loader = loader if callable(loader) else json.loads
+        self.post_validator = validator if callable(validator) else None
+        self.pretty_name = pretty_name or "JSON"
+
+    def __call__(self, value: str):
+        is_ok = True
+        callback_exc_msg = ""
         try:
-            retval = json.loads(value)
-        except json.JSONDecodeError:
-            try:
-                with open(value, 'rb') as json_file:
-                    retval = json.load(json_file)
-            except json.JSONDecodeError as error:
-                raise ValueError(f"error decoding JSON from file {value!r}: {error}") from None
-            except (FileNotFoundError, ValueError):
-                raise ValueError(f"not a valid JSON string or file path: {value!r}") from None
-            except OSError as error:
-                raise ValueError(f"error reading JSON file path {value!r}: {error.strerror}") from None
-        if self.validator is not None:
-            retval = self.validator(retval)
+            retval = self.loader(value)
+        except ValueError as err:  # This covers json.JSONDecodeError too.
+            is_ok = False
+            calback_exc_msg = str(err)
+        else:
+            if self.post_validator is not None:
+                try:
+                    retval = self.post_validator(retval)
+                except (ValueError, TypeError) as err:
+                    is_ok = False
+                    callback_exc_msg = str(err)
+        if not is_ok:
+            msg = f"{value!r} is not valid {self.pretty_name}."
+            if callback_exc_msg:
+                msg += f" Further info: {callback_exc_msg}"
+            raise argparse.ArgumentTypeError(msg) from None
         return retval
+
+
+def json_or_file_loader(value: str):
+    """Loader function that accepts either a JSON string, or a file whose
+    content can be read and parsed as JSON (including "-" which represents the
+    standard input). This is intended to be used as a custom loader function
+    for JSONStringArgument.
+    """
+    value_is_json = False
+    value_is_path = False
+    try:
+        content = json.loads(value)
+        value_is_json = True
+    except json.JSONDecodeError:
+        pass
+
+    fh = None
+    fh_open_error_msg = ""
+    if value == "-":
+        fh = sys.stdin
+        value_is_path = True  # technically not path but we get fh anyway.
+    else:
+        try:
+            fh = open(value, "rb")
+            value_is_path = True
+        # For "FileNotFoundError" (a specific subtype of OSError) we don't need
+        # to print the redundant "further info" (the path); "ValueError"
+        # indicates illegal characters in path and wouldn't contain much useful
+        # info.
+        except (FileNotFoundError, ValueError):
+            pass
+        # Other kinds of OSError typically indicate bona-fide file-access
+        # error for existing file.
+        except OSError as exc:
+            fh_open_error_msg = str(exc)
+
+    if value_is_json and value_is_path:
+        assert value != "-"
+        fh.close()
+        raise argparse.ArgumentTypeError(
+            f"{value!r} is both valid JSON and a readable file."
+            " Please consider renaming the file."
+        ) from None
+
+    if not (value_is_json or value_is_path):
+        msg = f"{value!r} is neither valid JSON nor a readable file."
+        if fh_open_error_msg:
+            msg += f" Further info when opening file: {fh_open_error_msg}"
+        raise argparse.ArgumentTypeError(msg) from None
+
+    if value_is_path:
+        try:
+            content = json.load(fh)
+        except json.JSONDecodeError:
+            if value == "-":
+                msg = "content of standard input is not valid JSON."
+            else:
+                msg = (
+                    f"{value!r} is neither valid JSON"
+                    " nor a readable file containing valid JSON."
+                )
+            raise argparse.ArgumentTypeError(msg) from None
+        finally:
+            if value != "-":
+                fh.close()
+
+    return content
+
+
+JSONArgument = functools.partial(
+    JSONStringArgument, loader=json_or_file_loader
+)
+JSONArgument.__doc__ = """
+Parse a JSON file from a command line argument string or path
+
+JSONArgument objects can be called with a string and return an arbitrary
+object. First it will try to decode the string as JSON. If that fails, it will
+try to open a file at the path named by the string, and decode its content as
+JSON. Or, if the input is the string "-" (a single dash), it will read the
+standard input and try to decode the content as JSON.
+
+You can construct JSONArgument with an optional validation function. If given,
+it is called with the Python object decoded from the input JSON string. The
+return value of the validation function replaces the original JSON-decoded
+object. The validation function should raise ValueError or TypeError,
+preferablly with a suitable message, if the object fails validation.
+Alternatively, it can directly raise argparse.ArgumentTypeError for
+finer-grained error message control.
+
+Typical usage with argparse looks like:
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--object',
+        type=JSONArgument(/...optional validation function.../),
+        ...
+    )
+
+Please see the documentation for JSONStringArgument for more details about the
+optional validation function.
+"""
