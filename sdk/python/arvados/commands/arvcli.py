@@ -21,143 +21,26 @@ import argparse
 import functools
 import json
 import arvados
+import arvados.commands._util as cmd_util
 
 
 class _ArgTypes:
     """Private namespace class for JSON-related CLI argument types."""
     @staticmethod
     def _validate_type(obj_type, obj):
-        return isinstance(obj, obj_type)
+        if isinstance(obj, obj_type):
+            return obj
+        raise ValueError(f"{obj!r} is not of type {obj_type!s}.")
 
-    class JSONStringArg:
-        """Callable JSON input parser with post-parsing validation function.
-
-        When called on one string value, returns the result of parsing the
-        value as JSON.
-
-        If the parsing fails, or if the parsing succeeds but the result fails
-        the further validation (if any), raises argparse.ArgumentTypeError with
-        a suitable error message that will be printed to the stderr by
-        argparse.
-
-        By default, when initialized without any keyword arguments, it
-        functions as a simple JSON loader.
-        """
-        def __init__(
-                self, loader=None, post_validator=None, pretty_name="JSON"
-        ):
-            """Keyword arguments:
-
-            * loader: callable --- optional callable that is used to load the
-              value passed to `__call__()`. By default, `json.loads` is used,
-              but you may supply your own loader to handle exceptions. The
-              loader shall raise ValueError (of which json.JSONDecodeError is a
-              subtype) to signal failure to handle the input value, or raise
-              argparse.ArgumentTypeError directly for finer-grained control of
-              messaging.
-
-            * post_validator: callable --- optional callable that takes the
-              JSON-parsing result and returns a boolean to signal whether the
-              result has passed the further validation. In addition, any of
-              `TypeError`, `ValueError`, or `argparse.ArgumentTypeError` may be
-              raised to signify validation failure.
-
-            * pretty_name: str --- used by argparse to pretty-print the error
-              message when the input fails validation. It should be a brief
-              human-readable name for the kind of value that the argument
-              takes. Default: `"JSON"`.
-            """
-            self.loader = loader if callable(loader) else json.loads
-            self.post_validator = (
-                post_validator if callable(post_validator) else None
-            )
-            self.pretty_name = pretty_name or "JSON"
-
-        def __call__(self, value: str):
-            is_ok = True
-            callback_exc = None
-            try:
-                retval = self.loader(value)
-            except ValueError as err:
-                is_ok = False
-                callback_exc = err
-            else:
-                if self.post_validator is not None:
-                    try:
-                        is_ok = self.post_validator(retval)
-                    except (
-                        ValueError, TypeError, argparse.ArgumentTypeError
-                    ) as err:
-                        callback_exc = err
-            if not is_ok:
-                raise argparse.ArgumentTypeError(
-                    f"{value!r} is not valid {self.pretty_name}."
-                ) from callback_exc
-            return retval
-
-    json_array = JSONStringArg(
-        post_validator=functools.partial(_validate_type, list),
+    json_array = cmd_util.JSONStringArgument(
+        validator=functools.partial(_validate_type, list),
         pretty_name="JSON array"
     )
-    json_object = JSONStringArg(
-        post_validator=functools.partial(_validate_type, dict),
+
+    json_object = cmd_util.JSONStringArgument(
+        validator=functools.partial(_validate_type, dict),
         pretty_name="JSON object"
     )
-
-    @staticmethod
-    def json_or_file_loader(value):
-        """Loader function that accepts either a JSON string, or a file whose
-        content can be read and parsed as JSON (including "-" which represents
-        the standard input).
-        """
-        value_is_json = False
-        value_is_path = False
-        try:
-            content = json.loads(value)
-            value_is_json = True
-        except json.JSONDecodeError:
-            pass
-
-        fh = None
-        if value == "-":
-            fh = sys.stdin
-            value_is_path = True  # technically not path but we get fh anyway.
-        else:
-            try:
-                fh = open(value, "rb")
-                value_is_path = True
-            except OSError:
-                pass
-
-        if value_is_json and value_is_path:
-            fh.close()
-            raise argparse.ArgumentTypeError(
-                f"{value!r} is both valid JSON and a readable file."
-                " Please consider renaming the file."
-            )
-
-        if not (value_is_json or value_is_path):
-            raise argparse.ArgumentTypeError(
-                f"{value!r} is neither valid JSON nor a readable file."
-            )
-
-        if value_is_path:
-            try:
-                content = json.load(fh)
-            except json.JSONDecodeError:
-                if value == "-":
-                    msg = "content of standard input is not valid JSON."
-                else:
-                    msg = (
-                        f"{value!r} is neither valid JSON"
-                        " nor a readable file containing valid JSON."
-                    )
-                raise argparse.ArgumentTypeError(msg)
-            finally:
-                fh.close()
-        return content
-
-    json_or_file = JSONStringArg(loader=json_or_file_loader)
 
 
 class _ArgUtil:
@@ -308,7 +191,7 @@ class _ArgUtil:
                     parameter_kwargs["type"] = _ArgTypes.json_object
                     parameter_kwargs["metavar"] = "JSON_OBJECT"
                 case "request":
-                    parameter_kwargs["type"] = _ArgTypes.json_or_file
+                    parameter_kwargs["type"] = cmd_util.JSONArgument
                     parameter_kwargs["metavar"] = "{JSON,FILE,-}"
                 case _:
                     parameter_kwargs["type"] = str
