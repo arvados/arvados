@@ -143,6 +143,12 @@ def test_get_method_options():
                 "default": "100",
                 "description": "help-limit.",
                 "location": "query"
+            },
+            "filters": {
+                "type": "array",
+                "required": False,
+                "description": "help-filters.",
+                "location": "query"
             }
         },
         "request": {
@@ -212,6 +218,18 @@ def test_get_method_options():
                 "required": False
             }
         ),
+        (
+            # NOTE: IRL, --filters parameter doesn't appear for methods that
+            # have the request parameter. This is purely used for testing
+            # schema-to-argparser conversion.
+            ("-f", "--filters"),
+            {
+                "type": arvcli._ArgTypes.json_filter,
+                "metavar": "{JSON,FILE,-}",
+                "help": "help-filters. This can be a filename from which to read JSON (use '-' to read from stdin).",
+                "required": False
+            }
+        ),
         # Request parameter
         (
             ("-o", "--container-request"),
@@ -259,7 +277,6 @@ class TestArgTypes:
     def test_json_object_rejects_non_object(self, invalid_input):
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.json_object(invalid_input)
-
 
 
 @pytest.mark.parametrize(
