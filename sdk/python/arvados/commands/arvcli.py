@@ -42,10 +42,14 @@ class _ArgTypes:
         pretty_name="JSON object"
     )
 
+    json_filter = cmd_util.JSONArgument(
+        validator=cmd_util.validate_filters,
+        pretty_name="Arvados API filter"
+    )
+
     json_body = cmd_util.JSONArgument(
         validator=json_object.post_validator,
         pretty_name="JSON request body object"
-    )
 
 
 class _ArgUtil:
@@ -190,8 +194,22 @@ class _ArgUtil:
                     parameter_kwargs["type"] = int
                     parameter_kwargs["metavar"] = "N"
                 case "array":
-                    parameter_kwargs["type"] = _ArgTypes.json_array
-                    parameter_kwargs["metavar"] = "JSON_ARRAY"
+                    # The filters parameter is only used with "getter" methods
+                    # that doesn't send a request body (which is exclusive to
+                    # "creator"/"updater" methods). This means it's generally
+                    # safe to use the "json_filter" type converter which can
+                    # read from the stdin; it wouldn't conflict with the
+                    # request body parameter which can also read the stdin.
+                    if parameter_key == "filters":
+                        parameter_kwargs["type"] = _ArgTypes.json_filter
+                        parameter_kwargs["metavar"] = "{JSON,FILE,-}"
+                        parameter_kwargs["help"] += (
+                            " This can be a filename from which to read"
+                            " JSON (use '-' to read from stdin)."
+                        )
+                    else:
+                        parameter_kwargs["type"] = _ArgTypes.json_array
+                        parameter_kwargs["metavar"] = "JSON_ARRAY"
                 case "object":
                     parameter_kwargs["type"] = _ArgTypes.json_object
                     parameter_kwargs["metavar"] = "JSON_OBJECT"
