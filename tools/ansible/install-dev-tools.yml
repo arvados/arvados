@@ -113,7 +113,6 @@
       vars:
         task_name: Install common build tools
         package_names:
-          - ca-certificates
           - curl
           - diffutils
           - findutils
