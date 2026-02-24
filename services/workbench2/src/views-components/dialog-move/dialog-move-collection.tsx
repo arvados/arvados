@@ -14,15 +14,16 @@ import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog'
 import { PickerIdProp } from 'store/tree-picker/picker-id'
 import { DialogTitle, DialogContent } from '@mui/material'
 import { useStateWithValidation } from 'common/useStateWithValidation'
-import { moveCollection, COLLECTION_MOVE_FORM_NAME } from 'store/collections/collection-move-actions'
+import { COLLECTION_MOVE_FORM_NAME } from 'store/collections/collection-move-actions'
+import { moveCollectionRunner } from 'store/workbench/workbench-actions'
 
 type DialogMoveCollectionProps = WithDialogProps<MoveToFormDialogData> & PickerIdProp & {
-	moveCollection: (data: MoveToFormDialogData) => void
+	moveCollections: (data: MoveToFormDialogData) => void
 }
 
 const mapDispatch = (dispatch: Dispatch) => ({
-	moveCollection: (data: MoveToFormDialogData) => {
-		dispatch<any>(moveCollection(data))
+	moveCollections: (data: MoveToFormDialogData) => {
+		dispatch<any>(moveCollectionRunner(data))
 	},
 })
 
@@ -41,6 +42,7 @@ export const DialogMoveCollection = compose(
 			<DialogContent>
 				<ProjectTreePickerDialogField
 					pickerId={pickerId}
+					currentUuids={data?.uuid ? [data.uuid] : undefined}
 					setSelectedProject={setOwnerUuid}
 				/>
 			</DialogContent>
@@ -55,7 +57,7 @@ export const DialogMoveCollection = compose(
 			formErrors={ownerUuidErrs}
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
 				event.preventDefault()
-				props.moveCollection({
+				props.moveCollections({
 					ownerUuid: ownerUuid,
 					uuid: initialData.uuid || '',
 					name: initialData.name || '',

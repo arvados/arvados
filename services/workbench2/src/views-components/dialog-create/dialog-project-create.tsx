@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useState, useEffect} from 'react';
 import { DialogTitle, DialogContent, FormGroup, FormLabel } from '@mui/material';
 import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
@@ -18,7 +18,8 @@ import { useStateWithValidation } from 'common/useStateWithValidation';
 import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH, PROJECT_DESCRIPTION_VALIDATION, REQUIRED_VALIDATION, MAXLENGTH_524288_VALIDATION } from 'validators/validators';
 import { DialogTextField, DialogRichTextField } from 'components/dialog-form/dialog-text-field';
 import { DialogResourcePropertiesForm } from 'views-components/resource-properties-form/resource-properties-form';
-import { createProject } from 'store/workbench/workbench-actions';
+import { createProjectRunner } from 'store/workbench/workbench-actions';
+import { createGroupRunner, GroupCreateFormDialogData } from 'store/groups-panel/groups-panel-actions';
 import { PropertyChips, getVocabularyFromChips } from 'components/chips/chips';
 import { RootState } from 'store/store';
 import { Vocabulary } from 'models/vocabulary';
@@ -43,11 +44,13 @@ const mapState = (state: RootState) => ({
 });
 
 const mapDispatch = (dispatch: Dispatch) => ({
-    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => dispatch<any>(createProject(data, setSubmitErr))
+    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => dispatch<any>(createProjectRunner(data, setSubmitErr)),
+    createGroup: (data: GroupCreateFormDialogData, setSubmitErr: (err: string) => void) => dispatch<any>(createGroupRunner(data, setSubmitErr))
 });
 
 type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass, ownerUuid: string}> & {
     createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => void;
+    createGroup: (data: GroupCreateFormDialogData, setSubmitErr: (err: string) => void) => void;
     vocabulary: Vocabulary;
     allowSlash: boolean;
 };
@@ -56,25 +59,25 @@ export const DialogProjectCreate = compose(
     connect(mapState, mapDispatch),
     withStyles(styles),
     withDialog(PROJECT_CREATE_FORM_NAME)
-)(({ createProject, data, closeDialog, open, vocabulary, allowSlash, classes }: DialogProjectProps & WithStyles<CssRules>) => {
+)(({ createProject, createGroup, data, closeDialog, open, vocabulary, allowSlash, classes }: DialogProjectProps & WithStyles<CssRules>) => {
     const [projectName, setProjectName, projectNameErrs] = useStateWithValidation('',
         [...REQUIRED_VALIDATION, ...(allowSlash ? PROJECT_NAME_VALIDATION_ALLOW_SLASH : PROJECT_NAME_VALIDATION)],
         'Project Name');
     const [description, setDescription, descriptionErrs] = useStateWithValidation('', MAXLENGTH_524288_VALIDATION, 'Description');
-    const [chips, setChips] = React.useState<PropertyChips>({} as PropertyChips);
-    const [users, setUsers] = React.useState<Participant[]>([]);
-    const [formErrors, setFormErrors] = React.useState<string[]>([]);
-    const [submitErr, setSubmitErr] = React.useState<string>('');
-    const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+    const [chips, setChips] = useState<PropertyChips>({} as PropertyChips);
+    const [users, setUsers] = useState<Participant[]>([]);
+    const [formErrors, setFormErrors] = useState<string[]>([]);
+    const [submitErr, setSubmitErr] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setFormErrors([...projectNameErrs, ...descriptionErrs]);
         if (submitErr) {
             setFormErrors(prevErrors => [...prevErrors, submitErr]);
         }
     }, [projectNameErrs, descriptionErrs, submitErr]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!open) {
             setIsSubmitting(false);
         }
@@ -91,23 +94,27 @@ export const DialogProjectCreate = compose(
         <>
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
-                <ResourceParentField ownerUuid={data ? data.ownerUuid : ''} />
-                <DialogTextField
-                    label={isGroup ? "Group Name" : "Project Name"}
-                    defaultValue={projectName}
-                    setValue={setProjectName}
-                    validators={allowSlash ? PROJECT_NAME_VALIDATION_ALLOW_SLASH : PROJECT_NAME_VALIDATION}
-                    submitErr={submitErr}
-                    setSubmitErr={setSubmitErr}
-                />
-                {isGroup && (
-                    <ParticipantSelect
-                        onlyPeople
-                        label='Search for users to add to the group'
-                        items={users}
-                        onSelect={(user: Participant) => setUsers([...users, user])}
-                        onDelete={(index: number) => setUsers(users.filter((_, i) => i !== index))}
+                {(isGroup === false) && <ResourceParentField ownerUuid={data ? data.ownerUuid : ''} />}
+                <div data-cy="name-field">
+                    <DialogTextField
+                        label={isGroup ? "Group Name" : "Project Name"}
+                        defaultValue={projectName}
+                        setValue={setProjectName}
+                        validators={allowSlash ? PROJECT_NAME_VALIDATION_ALLOW_SLASH : PROJECT_NAME_VALIDATION}
+                        submitErr={submitErr}
+                        setSubmitErr={setSubmitErr}
                     />
+                </div>
+                {isGroup && (
+                    <div data-cy="users-field">
+                        <ParticipantSelect
+                            onlyPeople
+                            label='Search for users to add to the group'
+                            items={users}
+                            onSelect={(user: Participant) => setUsers([...users, user])}
+                            onDelete={(index: number) => setUsers(users.filter((_, i) => i !== index))}
+                        />
+                    </div>
                 )}
                 <div className={classes.description}>
                     <DialogRichTextField
@@ -130,6 +137,26 @@ export const DialogProjectCreate = compose(
         </>
     );
 
+    const submitFunc = () => {
+        if (isGroup) {
+            const groupData: GroupCreateFormDialogData = {
+                name: projectName,
+                description: description,
+                properties: getVocabularyFromChips(chips, vocabulary),
+                users,
+            };
+            createGroup(groupData, setSubmitErr);
+        } else {
+            const projectData: ProjectCreateFormDialogData = {
+                ownerUuid: data.ownerUuid,
+                name: projectName,
+                description: description,
+                properties: getVocabularyFromChips(chips, vocabulary),
+            };
+            createProject(projectData, setSubmitErr);
+        }
+    }
+
     return <DialogForm
         fields={fields()}
         submitLabel='Create'
@@ -138,13 +165,7 @@ export const DialogProjectCreate = compose(
         onSubmit={(ev) => {
             ev.preventDefault();
             setIsSubmitting(true);
-            const projectData: ProjectCreateFormDialogData = {
-                ownerUuid: data.ownerUuid,
-                name: projectName,
-                description: description,
-                properties: getVocabularyFromChips(chips, vocabulary),
-            };
-            createProject(projectData, setSubmitErr);
+            submitFunc();
         }}
         closeDialog={closeDialog}
         clearFormValues={() => {

@@ -33,7 +33,7 @@ export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogD
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME, data: resource }));
     };
 
-export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
+export const updateCollection = (collection: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
@@ -43,7 +43,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
             description: collection.description,
-            properties: collection.properties }, false
+            properties: {...collection.properties, ...(cachedCollection || {}).properties} }, false
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
@@ -61,6 +61,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                setSubmitErr('Collection with the same name already exists.');
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Collection with the same name already exists.',
                     hideDuration: 2000,
@@ -71,6 +72,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
                 const errMsg = e.errors
                     ? e.errors.join('')
                     : 'There was an error while updating the collection';
+                setSubmitErr(errMsg);
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: errMsg,
                     hideDuration: 2000,

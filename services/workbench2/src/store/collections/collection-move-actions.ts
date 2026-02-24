@@ -15,6 +15,7 @@ import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { getResource } from "store/resources/resources";
 import { CollectionResource } from "models/collection";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { matchProjectRoute } from "routes/routes";
 
 export const COLLECTION_MOVE_FORM_NAME = "collectionMoveFormName";
 
@@ -33,7 +34,9 @@ export const moveCollection =
                 cachedCollection = await services.collectionService.get(resource.uuid);
             }
             const collection = await services.collectionService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
-            dispatch(projectPanelDataActions.REQUEST_ITEMS());
+            if (matchProjectRoute(getState().router.location.pathname)) {
+                dispatch(projectPanelDataActions.REQUEST_ITEMS());
+            }
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
             return { ...cachedCollection, ...collection };
         } catch (e) {

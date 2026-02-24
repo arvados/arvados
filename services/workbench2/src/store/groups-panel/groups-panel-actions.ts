@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { reset, startSubmit, stopSubmit, FormErrors, initialize } from 'redux-form';
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { RootState } from 'store/store';
@@ -33,7 +32,6 @@ export const loadGroupsPanel = () => (dispatch: Dispatch) => {
 
 export const openCreateGroupDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(initialize(PROJECT_CREATE_FORM_NAME, {}));
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_CREATE_FORM_NAME,
             data: {
@@ -115,9 +113,17 @@ export const updateGroup = (project: ProjectUpdateFormDialogData, setSubmitErr: 
         }
     };
 
-export const createGroup = ({ name, users = [], description, properties }: ProjectUpdateFormDialogData) =>
+export type GroupCreateFormDialogData = {
+    name: string;
+    description: string;
+    properties: {
+        [key: string]: string | string[];
+    };
+    users: { uuid: string, name: string }[];
+};
+
+export const createGroupRunner = ({ name, users = [], description, properties }: GroupCreateFormDialogData, setSubmitErr: (err: string) => void) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
-        dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
             const newGroup = await groupsService.create({
                 name,
@@ -134,7 +140,6 @@ export const createGroup = ({ name, users = [], description, properties }: Proje
                 });
             }
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
-            dispatch(reset(PROJECT_CREATE_FORM_NAME));
             dispatch<any>(loadGroupsPanel());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `${newGroup.name} group has been created`,
@@ -144,7 +149,7 @@ export const createGroup = ({ name, users = [], description, properties }: Proje
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
+                setSubmitErr('Group with the same name already exists.');
             }
             return;
         }

@@ -14,15 +14,16 @@ import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog'
 import { PickerIdProp } from 'store/tree-picker/picker-id'
 import { DialogTitle, DialogContent } from '@mui/material'
 import { useStateWithValidation } from 'common/useStateWithValidation'
-import { moveProject, PROJECT_MOVE_FORM_NAME } from 'store/projects/project-move-actions'
+import { PROJECT_MOVE_FORM_NAME } from 'store/projects/project-move-actions'
+import { moveProjectRunner } from 'store/workbench/workbench-actions'
 
 type DialogMoveProjectProps = WithDialogProps<MoveToFormDialogData> & PickerIdProp & {
-    moveProject: (data: MoveToFormDialogData) => void
+    moveProjects: (data: MoveToFormDialogData,) => void
 }
 
 const mapDispatch = (dispatch: Dispatch) => ({
-    moveProject: (data: MoveToFormDialogData) => {
-        dispatch<any>(moveProject(data))
+    moveProjects: (data: MoveToFormDialogData) => {
+        dispatch<any>(moveProjectRunner(data))
     },
 })
 
@@ -32,8 +33,14 @@ export const DialogMoveProject = compose(
 )((props: DialogMoveProjectProps) => {
     const { open, data, pickerId } = props
     const initialData = data || { ownerUuid: '' }
-
     const [ownerUuid, setOwnerUuid, ownerUuidErrs] = useStateWithValidation('', MOVE_TO_VALIDATION, 'Owner')
+    const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+
+    React.useEffect(() => {
+            if (!open) {
+                setIsSubmitting(false);
+            }
+        }, [open]);
 
     const fields = () => (
         <>
@@ -51,11 +58,13 @@ export const DialogMoveProject = compose(
         <DialogForm
             open={open}
             fields={fields()}
+            isSubmitting={isSubmitting}
             submitLabel='Move'
             formErrors={ownerUuidErrs}
             onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
                 event.preventDefault()
-                props.moveProject({
+                setIsSubmitting(true);
+                props.moveProjects({
                     ownerUuid: ownerUuid,
                     uuid: initialData.uuid || '',
                     name: initialData.name || '',

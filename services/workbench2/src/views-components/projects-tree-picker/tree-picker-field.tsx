@@ -15,6 +15,7 @@ import { Dispatch } from "redux";
 
 type TreePickerDialogProps = {
     pickerId: string;
+    currentUuids?: string[];
     setSelectedProject: (uuid: string) => void;
 }
 
@@ -38,6 +39,7 @@ export const ProjectTreePickerDialogField = (props: TreePickerDialogProps) =>
         <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ProjectsTreePicker
                 pickerId={props.pickerId}
+                currentUuids={props.currentUuids}
                 toggleItemActive={(_: any, { id }) => props.setSelectedProject(id)}
                 cascadeSelection={false}
                 options={{ showOnlyOwned: false, showOnlyWritable: true }} />

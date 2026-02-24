@@ -97,17 +97,17 @@ const mapState = (state: RootState) => ({
 });
 
 export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiCheckboxFieldProps) => {
-    const [value, setValue] = React.useState(props.defaultValues || []);
+    const [selectedClasses, setSelectedClasses] = React.useState(props.defaultValues || []);
 
     const isValid = (items: string[]) => (items.length >= (props.minSelection || 0)) &&
         (items.length <= (props.maxSelection || items.length));
 
-    if (value.length === 0 && (props.defaultValues || []).length !== 0) {
-        setValue(props.defaultValues ? [...props.defaultValues] : []);
+    if (selectedClasses.length === 0 && (props.defaultValues || []).length !== 0) {
+        setSelectedClasses(props.defaultValues ? [...props.defaultValues] : []);
     }
 
     return (
-        <FormControl variant="standard" error={!isValid(value)}>
+        <FormControl variant="standard" error={!isValid(selectedClasses)}>
             <FormLabel component='label'>{props.label}</FormLabel>
             <FormGroup row>
             {props.items.map((item, idx) =>
@@ -119,20 +119,17 @@ export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiChe
                             key={`control-${idx}`}
                             name={`${props.name}[${idx}]`}
                             value={item}
-                            checked={
-                                value.indexOf(item) !== -1 ||
-                                (value.length === 0 &&
-                                    (props.defaultValues || []).indexOf(item) !== -1)
-                            }
+                            checked={selectedClasses.includes(item)}
                             onChange={e => {
-                                const newValue = [...value];
+                                const newSelection = [...selectedClasses];
                                 if (e.target.checked) {
-                                    newValue.push(item);
+                                    newSelection.push(item);
                                 } else {
-                                    newValue.splice(newValue.indexOf(item), 1);
+                                    newSelection.splice(newSelection.indexOf(item), 1);
                                 }
-                                if (!isValid(newValue)) { return; }
-                                return props.onChange(newValue);
+                                if (!isValid(newSelection)) { return; }
+                                setSelectedClasses(newSelection);
+                                return props.onChange(newSelection);
                             }}
                             disabled={false}
                             color="primary" />

@@ -139,7 +139,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
     return <form data-cy='resource-properties-form'>
         <Grid container spacing={2}>
             <Grid item xs
-            data-cy='key-input'>
+            data-cy='property-field-key'>
                 <DialogPropertyKeyInput
                     clearPropertyKeyOnSelect={true}
                     vocabulary={vocabulary}
@@ -149,7 +149,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
                 />
             </Grid>
             <Grid item xs
-            data-cy='value-input'>
+            data-cy='property-field-value'>
                 <DialogPropertyValueInput
                     propertyKeyId={propertyKeyId || ''}
                     vocabulary={vocabulary}

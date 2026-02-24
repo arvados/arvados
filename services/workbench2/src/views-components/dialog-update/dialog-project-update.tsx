@@ -5,7 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { ProjectUpdateFormDialogData, updateProject, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
+import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
+import { updateProjectRunner } from 'store/workbench/workbench-actions'
 import { updateGroup } from 'store/groups-panel/groups-panel-actions';
 import { DialogForm } from 'components/dialog-form/dialog-form';
 import { DialogTextField, DialogRichTextField } from 'components/dialog-form/dialog-text-field';
@@ -37,7 +38,7 @@ const mapState = (state: RootState) => ({
 
 const mapDispatch = (dispatch: Dispatch) => ({
     updateProject: (data: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
-        dispatch<any>(updateProject(data, setSubmitErr)),
+        dispatch<any>(updateProjectRunner(data, setSubmitErr)),
     updateGroup: (data: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
         dispatch<any>(updateGroup(data, setSubmitErr))
 });
@@ -64,7 +65,7 @@ export const DialogProjectUpdate = compose(
 
         const sourcePanel = data?.sourcePanel || GroupClass.PROJECT;
             const isGroup = sourcePanel === GroupClass.ROLE;
-            const title = isGroup ? 'New Group' : 'New Project';
+            const title = isGroup ? 'Edit Group' : 'Edit Project';
 
         useEffect(() => {
             if (data) {

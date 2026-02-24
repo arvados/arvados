@@ -387,8 +387,8 @@ Cypress.Commands.add("loginAs", (user, preserveLocalStorage = false) => {
     cy.get("div#root").should("not.contain", "Your account is inactive");
 });
 
-Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName, newDescription, isProject = true) => {
-    cy.get(container).contains(oldName).rightclick();
+Cypress.Commands.add("testEditProjectOrCollection", (containerElement, oldName, newName, newDescription, isProject = true) => {
+    cy.get(containerElement).contains(oldName).rightclick();
     cy.get("[data-cy=context-menu]")
         .contains(isProject ? "Edit project" : "Edit collection")
         .click();
@@ -400,7 +400,7 @@ Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName
         cy.get("[data-cy=form-submit-btn]").click();
     });
 
-    cy.get(container).contains(newName).rightclick();
+    cy.get(containerElement).contains(newName).rightclick();
     cy.get("[data-cy=context-menu]")
         .contains(isProject ? "Edit project" : "Edit collection")
         .click();

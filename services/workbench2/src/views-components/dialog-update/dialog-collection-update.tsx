@@ -40,7 +40,7 @@ const mapState = (state: RootState) => ({
 
 const mapDispatch = (dispatch: Dispatch) => ({
     updateCollection: (data: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
-        dispatch<any>(updateCollection(data))
+        dispatch<any>(updateCollection(data, setSubmitErr))
 });
 
 type DialogCollectionProps = WithDialogProps<CollectionUpdateFormDialogData> & {
@@ -70,7 +70,7 @@ export const DialogCollectionUpdate = compose(
                 setChips(getChipsFromVocabulary(data.properties || {}, vocabulary));
                 setStorageClassesDesired(data.storageClassesDesired || storageClasses || ['default']);
             }
-        }, [data, vocabulary, storageClasses]);
+        }, [data]);
 
         useEffect(() => {
             setFormErrors([...collectionNameErrs, ...descriptionErrs]);
@@ -117,7 +117,7 @@ export const DialogCollectionUpdate = compose(
                     <DialogMultiCheckboxField
                         name="storageClassesDesired"
                         defaultValues={storageClassesDesired}
-                        label="Storage Classes"
+                        label="Storage classes"
                         onChange={setStorageClassesDesired}
                         minSelection={1}
                         helperText='At least one class should be selected'

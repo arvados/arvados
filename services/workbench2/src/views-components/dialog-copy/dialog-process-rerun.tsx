@@ -11,7 +11,7 @@ import { ProjectTreePickerDialogField } from 'views-components/projects-tree-pic
 import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from 'validators/validators';
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
 import { PickerIdProp } from 'store/tree-picker/picker-id';
-import { copyProcess } from 'store/workbench/workbench-actions';
+import { copyProcessRunner } from 'store/workbench/workbench-actions';
 import { DialogTitle, DialogContent } from '@mui/material';
 import { DialogTextField } from 'components/dialog-form/dialog-text-field';
 import { useStateWithValidation } from 'common/useStateWithValidation';
@@ -23,7 +23,7 @@ type ProcessRerunFormDialogProps = WithDialogProps<CopyFormDialogData> & PickerI
 
 const mapDispatch = (dispatch: Dispatch) => ({
     copyProcess: (data: CopyFormDialogData) => {
-        dispatch<any>(copyProcess(data));
+        dispatch<any>(copyProcessRunner(data));
     }
 });
 
@@ -32,10 +32,8 @@ export const DialogProcessRerun = compose(
     connect(null, mapDispatch))
     ((props: ProcessRerunFormDialogProps) => {
         const { open, data, pickerId, copyProcess } = props;
-
         const [name, setName, nameErrs] = useStateWithValidation(data.name || '', COPY_NAME_VALIDATION, 'Name');
         const [ownerUuid, setOwnerUuid, ownerUuidErrs] = useStateWithValidation(data.ownerUuid || '', COPY_FILE_VALIDATION, 'Project');
-
         const [formErrors, setFormErrors] = React.useState<string[]>([]);
 
         React.useEffect(() => {

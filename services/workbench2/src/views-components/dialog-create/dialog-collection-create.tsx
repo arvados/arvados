@@ -21,7 +21,7 @@ import { useStateWithValidation } from 'common/useStateWithValidation';
 import { COLLECTION_NAME_VALIDATION, MAXLENGTH_524288_VALIDATION, REQUIRED_VALIDATION } from 'validators/validators';
 import { DialogRichTextField } from 'components/dialog-form/dialog-text-field';
 import { DialogResourcePropertiesForm } from 'views-components/resource-properties-form/resource-properties-form'
-import { createCollection } from 'store/workbench/workbench-actions';
+import { createCollectionRunner } from 'store/workbench/workbench-actions';
 import { PropertyChips, getVocabularyFromChips } from 'components/chips/chips';
 import { RootState } from 'store/store';
 import { DialogMultiCheckboxField } from 'components/checkbox-field/checkbox-field'
@@ -43,7 +43,7 @@ const mapState = (state: RootState) => ({
 });
 
 const mapDispatch = (dispatch: Dispatch) => ({
-    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => dispatch<any>(createCollection(data, setSubmitErr))
+    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => dispatch<any>(createCollectionRunner(data, setSubmitErr))
 });
 
 type DialogCollectionProps = WithDialogProps<CollectionCreateFormDialogData> & {
@@ -100,7 +100,7 @@ export const DialogCollectionCreate = compose(
                 <DialogMultiCheckboxField
                     name="storageClassesDesired"
                     defaultValues={['default']}
-                    label="Storage Classes"
+                    label="Storage classes"
                     onChange={setStorageClassesDesired}
                 />
                 <DialogFileUploaderField />

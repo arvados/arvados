@@ -104,11 +104,9 @@ export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation,
                 : s.label
         }
         onFocus={() => {
-            if (clearPropertyKeyOnSelect && key) {
-                setKey('');
-                if (sendClearValueSignal) {
-                    sendClearValueSignal({});
-                }
+            setKey('');
+            if (clearPropertyKeyOnSelect && key && sendClearValueSignal) {
+                sendClearValueSignal({});
             }
         }}
         onSelect={(selectedSuggestion: PropFieldSuggestion) => {
@@ -119,7 +117,9 @@ export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation,
             // Case-insensitive search for the key in the vocabulary
             const foundKeyID = getTagKeyID(key, vocabulary);
             if (foundKeyID !== '') {
-                setKey(getTagKeyLabel(foundKeyID, vocabulary));
+                const foundKeyLabel = getTagKeyLabel(foundKeyID, vocabulary);
+                setKey(foundKeyLabel);
+                onSelect(foundKeyLabel);
             }
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {

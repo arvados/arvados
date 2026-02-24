@@ -46,7 +46,6 @@ export const DialogCollectionPartialMoveToExistingCollection = compose(
 )((props: DialogCollectionPartialMoveProps) => {
 	const { open, data, pickerId } = props
 	const { initialFormData, collectionFileSelection } = data
-
 	const [destination, setDestination, destinationErrs] = useStateWithValidation(initialFormData?.destination || {}, FILE_OPS_LOCATION_VALIDATION, 'Destination')
 
 	const fields = () => (
@@ -55,6 +54,7 @@ export const DialogCollectionPartialMoveToExistingCollection = compose(
 			<DialogContent>
 				<DirectoryTreePickerDialogField
 					pickerId={pickerId}
+					currentUuids={[initialFormData?.destination.uuid || '']}
 					handleDirectoryChange={setDestination}
 				/>
 			</DialogContent>

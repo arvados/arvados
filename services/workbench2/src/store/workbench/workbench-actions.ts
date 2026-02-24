@@ -91,7 +91,7 @@ import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processe
 import { PROJECT_MOVE_FORM_NAME } from "store/projects/project-move-actions";
 import { DataTableFetchMode } from "components/data-table/data-table";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
-
+import { matchProjectRoute } from "routes/routes";
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
 import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
 import { searchResultsPanelColumns } from "views/search-results-panel/search-results-panel-view";
@@ -300,7 +300,7 @@ export const loadProject = (uuid: string) =>
         }
     });
 
-export const createProject = (data: projectCreateActions.ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => async (dispatch: Dispatch) => {
+export const createProjectRunner = (data: projectCreateActions.ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => async (dispatch: Dispatch) => {
     const newProject = await dispatch<any>(projectCreateActions.createProject(data, setSubmitErr));
     if (newProject) {
         dispatch(
@@ -373,12 +373,12 @@ export const moveProjectRunner =
             }
             if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
             await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_MOVE_FORM_NAME));
         };
 
-export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+export const updateProjectRunner = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
     const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data, setSubmitErr));
-    console.log('>>>updatedProject', updatedProject)
     if (updatedProject) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
@@ -392,7 +392,7 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
     }
 };
 
-export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+export const updateGroupRunner = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
     const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data, setSubmitErr));
     if (updatedGroup) {
         dispatch(
@@ -454,7 +454,7 @@ export const loadCollection = (uuid: string) =>
         }
     });
 
-export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+export const createCollectionRunner = (data: collectionCreateActions.CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
     const collection = await dispatch<any>(collectionCreateActions.createCollection(data, setSubmitErr));
     if (collection) {
         dispatch(
@@ -524,15 +524,16 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
 export const moveCollectionRunner =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            const state = getState();
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
-            const checkedList = getState().multiselect.checkedList;
+            const checkedList = state.multiselect.checkedList;
             const uuidsToMove: string[] = selectedToArray(checkedList);
 
             //if no items in checkedlist && no items passed in, default to normal context menu behavior
             if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
 
             const collectionsToMove: MoveableResource[] = uuidsToMove
-                .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
+                .map(uuid => getResource(uuid)(state.resources) as MoveableResource)
                 .filter(resource => resource.kind === ResourceKind.COLLECTION);
 
             for (const collection of collectionsToMove) {
@@ -554,7 +555,9 @@ export const moveCollectionRunner =
                     const oldCollection: MoveToFormDialogData = { name: collection.name, uuid: collection.uuid, ownerUuid: data.ownerUuid };
                     const movedCollection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
                     dispatch<any>(updateResources([movedCollection]));
-                    dispatch<any>(reloadProjectMatchingUuid([movedCollection.ownerUuid]));
+                    if (matchProjectRoute(state.router.location.pathname)) {
+                        dispatch<any>(reloadProjectMatchingUuid([movedCollection.ownerUuid]));
+                    }
                     dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: "Collection has been moved.",
@@ -573,6 +576,7 @@ export const moveCollectionRunner =
                 }
             }
 
+            dispatch<any>(loadSidePanelTreeProjects(data.ownerUuid));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
         };
 
@@ -626,7 +630,7 @@ export const loadRegisteredWorkflow = (uuid: string) =>
         }
     });
 
-export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) => async (dispatch: Dispatch) => {
+export const updateProcessRunner = (data: processUpdateActions.ProcessUpdateFormDialogData) => async (dispatch: Dispatch) => {
     try {
         const process = await dispatch<any>(processUpdateActions.updateProcess(data));
         if (process) {
@@ -651,7 +655,7 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
     }
 };
 
-export const copyProcess = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const copyProcessRunner = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     try {
         const process = await dispatch<any>(processCopyActions.copyProcess(data));
         dispatch<any>(updateResources([process]));
