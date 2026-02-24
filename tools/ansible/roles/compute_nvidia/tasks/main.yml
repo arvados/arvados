@@ -48,17 +48,24 @@
       - libnvidia-container-tools
       - nvidia-container-toolkit
 
-# crunch-run has its own CUDA initialization code.
-# We prefer to use that over NVIDIA's.
-- name: Query nvidia-persistenced.service
+# NVIDIA packages include some services that are appropriate for desktops etc.
+# but not compute nodes. Query which ones are installed and disable all found.
+- name: Query NVIDIA services to disable
   become: yes
   ansible.builtin.systemd_service:
-    name: nvidia-persistenced.service
-  register: nvidia_persistenced
+    name: "{{ item }}"
+  loop:
+    # This path triggers driver reloads when packages are upgraded.
+    # That's not expected to happen on compute nodes.
+    - nvidia-cdi-refresh.path
+    # crunch-run has its own CUDA initialization code.
+    # We prefer to use that over NVIDIA's.
+    - nvidia-persistenced.service
+  register: nvidia_services
 
-- name: Disable nvidia-persistenced.service
-  when: "nvidia_persistenced.status.LoadState != 'not-found'"
+- name: Disable unneeded NVIDIA services
   become: yes
   ansible.builtin.systemd_service:
-    name: nvidia-persistenced.service
+    name: "{{ item.Id }}"
     enabled: false
+  loop: "{{ nvidia_services.results|map(attribute='status')|selectattr('LoadState', '!=', 'not-found') }}"
