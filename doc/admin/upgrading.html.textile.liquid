@@ -30,7 +30,7 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
-"previous: Upgrading to 3.2.0":#v3_2_0
+"previous: Upgrading to 3.2.1":#v3_2_1
 
 h3. Cloud dispatcher runs multiple containers per instance
 
@@ -41,6 +41,10 @@ These conditions can arise in the following cases:
 * no configured instance type has exactly the number of VCPUs specified by a container, _i.e.,_ every suitable instance type has one or more spare VCPUs available to run another container alongside it.
 
 To disable the new behavior and ensure that each container runs on a dedicated instance even in the above cases, set the new configuration entry @Containers.MaxRunningContainersPerInstance@ to @1@.
+
+h2(#v3_2_1). v3.2.1 (2026-03-02)
+
+"previous: Upgrading to 3.2.0":#v3_2_0
 
 h3. Configuration URLs are stricter about bracketed addresses
 
