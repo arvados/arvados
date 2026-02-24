@@ -293,7 +293,8 @@ SALT_VERSION="3006"
 ARVADOS_TAG="b99b332f932fd75fe30e1a894c6f5ee674303593"
 POSTGRES_TAG="cb05500e1dbea2c24cc29ea6831417f638853587"
 POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
-NGINX_TAG="v2.8.1"
+NGINX_TAG="bca3cdbeda232c978a3e25c3ab8ca7bb6898845f"
+NGINX_URL="https://github.com/arvados/nginx-formula.git"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.5"
 LETSENCRYPT_TAG="v3.2.0"
@@ -456,8 +457,8 @@ test -d locale && ( cd locale && git fetch ) \
 
 echo "...nginx"
 test -d nginx && ( cd nginx && git fetch ) \
-  || git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
-( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" )
+  || git clone --quiet ${NGINX_URL} ${F_DIR}/nginx
+( cd nginx && git checkout --quiet "${NGINX_TAG}" )
 
 echo "...postgres"
 test -d postgres && ( cd postgres && git fetch ) \
@@ -488,14 +489,6 @@ echo "...arvados"
 test -d arvados && ( cd arvados && git fetch ) \
   || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 ( cd arvados && git checkout --quiet "${ARVADOS_TAG}" )
-
-# Ensure the controller readiness probe waits for nginx to be fully
-# configured and reloaded (with the controller SSL vhost on the
-# ExternalURL port), not just for the controller service itself.
-#
-# Change nginx formula from 'listen' to 'watch' so nginx reloads
-# in-order when server configs change (listen defers to end of run).
-sed -i 's/- listen:/- watch:/' nginx/nginx/servers.sls
 
 if [ "x${VAGRANT:-}" = "xyes" ]; then
   EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"
