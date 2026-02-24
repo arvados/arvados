@@ -30,7 +30,7 @@ class _ArgTypes:
     def _validate_type(obj_type, obj):
         if isinstance(obj, obj_type):
             return obj
-        raise ValueError(f"{obj!r} is not of type {obj_type!s}.")
+        raise ValueError
 
     json_array = cmd_util.JSONStringArgument(
         validator=functools.partial(_validate_type, list),
@@ -166,6 +166,7 @@ class _ArgUtil:
                 parameter_kwargs["default"] = default
                 if parameter_dict.get("type") != "boolean":
                     parameter_kwargs["help"] += f" Default: {default!s}."
+            parameter_kwargs["dest"] = f"method_parameters.{parameter_key}"
             match parameter_dict.get("type"):
                 case "boolean":
                     # Using the 'action="store_true" (or "store_false")'
@@ -179,14 +180,13 @@ class _ArgUtil:
                     neg_parameter_kwargs = {}
                     neg_parameter_kwargs["action"] = "store_false"
                     neg_parameter_kwargs["required"] = False
-                    neg_parameter_kwargs["dest"] = parameter_key
+                    neg_parameter_kwargs["dest"] = parameter_kwargs["dest"]
                     neg_parameter_kwargs["default"] = json.loads(
                         parameter_dict.get("default", "null")
                     )
                     yield (neg_argument_key,), neg_parameter_kwargs
 
                     parameter_kwargs["action"] = "store_true"
-                    parameter_kwargs["dest"] = parameter_key
                     parameter_kwargs["default"] = (
                         neg_parameter_kwargs["default"]
                     )
@@ -216,6 +216,7 @@ class _ArgUtil:
                 case "request":
                     parameter_kwargs["type"] = _ArgTypes.json_body
                     parameter_kwargs["metavar"] = "{JSON,FILE,-}"
+                    parameter_kwargs["dest"] = "method_parameters.body"
                 case _:
                     parameter_kwargs["type"] = str
                     parameter_kwargs["metavar"] = "STR"
@@ -274,10 +275,14 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         """
         super().__init__(description="Arvados command line client", **kwargs)
         # Common flags to the main command.
-        self.add_argument("-n", "--dry-run", action="store_true",
-                          help="Don't actually do anything")
-        self.add_argument("-v", "--verbose", action="store_true",
-                          help="Print some things on stderr")
+        self.add_argument(
+            "-n", "--dry-run", action="store_true",
+            help="Don't actually do anything"
+        )
+        self.add_argument(
+            "-v", "--verbose", action="store_true",
+            help="Print some things on stderr"
+        )
         # Default output format is JSON, while "-s" or "--short" can be
         # used as a shorthand for "--format=uuid". If both are specified, the
         # last one takes effect.
@@ -366,7 +371,10 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
 def dispatch(arguments=None):
     api_client = arvados.api("v1")
     cmd_parser = ArvCLIArgumentParser(api_client._resourceDesc["resources"])
-    args, remaining_args = cmd_parser.parse_known_args(arguments)
+    arg_ns = _ArgUtil.NestedNamespace()
+    args, remaining_args = cmd_parser.parse_known_args(
+        arguments, namespace=arg_ns
+    )
 
     match args.subcommand:
         case "keep":

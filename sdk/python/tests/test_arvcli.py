@@ -165,6 +165,7 @@ def test_get_method_options():
             ("-s", "--select"),
             {
                 "type": arvcli._ArgTypes.json_array,
+                "dest": "method_parameters.select",
                 "metavar": "JSON_ARRAY",
                 "help": "help-select.",
                 "required": False
@@ -173,7 +174,7 @@ def test_get_method_options():
         (
             ("--no-ensure-unique-name",),
             {
-                "dest": "ensure_unique_name",
+                "dest": "method_parameters.ensure_unique_name",
                 "action": "store_false",
                 "default": False,
                 "required": False
@@ -182,7 +183,7 @@ def test_get_method_options():
         (
             ("-e", "--ensure-unique-name"),
             {
-                "dest": "ensure_unique_name",
+                "dest": "method_parameters.ensure_unique_name",
                 "action": "store_true",
                 "help": "help-ensure-unique-name.",
                 "required": False,
@@ -193,6 +194,7 @@ def test_get_method_options():
             ("-c", "--cluster-id"),
             {
                 "type": str,
+                "dest": "method_parameters.cluster_id",
                 "metavar": "STR",
                 "help": "help-cluster-id.",
                 "required": False
@@ -203,6 +205,7 @@ def test_get_method_options():
             ("-u", "--uuid"),
             {
                 "type": str,
+                "dest": "method_parameters.uuid",
                 "metavar": "STR",
                 "help": "help-uuid. This option must be specified.",
                 "required": True,
@@ -212,6 +215,7 @@ def test_get_method_options():
             ("-l", "--limit"),
             {
                 "type": int,
+                "dest": "method_parameters.limit",
                 "metavar": "N",
                 "default": "100",
                 "help": "help-limit. Default: 100.",
@@ -225,6 +229,7 @@ def test_get_method_options():
             ("-f", "--filters"),
             {
                 "type": arvcli._ArgTypes.json_filter,
+                "dest": "method_parameters.filters",
                 "metavar": "{JSON,FILE,-}",
                 "help": "help-filters. This can be a filename from which to read JSON (use '-' to read from stdin).",
                 "required": False
@@ -235,6 +240,7 @@ def test_get_method_options():
             ("-o", "--container-request"),
             {
                 "type": arvcli._ArgTypes.json_body,
+                "dest": "method_parameters.body",
                 "metavar": "{JSON,FILE,-}",
                 "help": "Either a string representing container_request as JSON or a filename from which to read container_request JSON (use '-' to read from stdin). This option must be specified.",
                 "required": True
@@ -277,27 +283,33 @@ class TestArgUtilNestedNamespace:
         with pytest.raises(AttributeError):
             setattr(self.ns, "foo.bar..baz", "bar")
 
-    def test_integrate_with_argparse(self):
+    def test_equality(self):
+        setattr(self.ns, "foo.bar", "bar")
+        other_ns = arvcli._ArgUtil.NestedNamespace()
+        setattr(other_ns, "foo.bar", "bar")
+        assert self.ns == other_ns
+
+    def test_integrate_with_argparse_parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("--foo-bar", dest="foo.bar")
         parser.parse_args(["--foo-bar", "spam"], namespace=self.ns)
+        assert self.ns.foo.bar == "spam"
+
+    def test_integrate_with_argparse_parse_remaining_args(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--foo-bar", dest="foo.bar")
+        args, remaining_args = parser.parse_known_args(
+            ["--foo-bar", "spam", "--baz", "quux"],
+            namespace=self.ns
+        )
+        assert args == self.ns
+        assert remaining_args == ["--baz", "quux"]
         assert self.ns.foo.bar == "spam"
 
     def test_vars(self):
         setattr(self.ns, "foo.bar", "bar")
         setattr(self.ns, "foo.baz", "baz")
         assert vars(self.ns.foo) == {"bar": "bar", "baz": "baz"}
-
-
-# Private context manager for cleanly and temporarily switching the working
-# directory.
-@contextmanager
-def _pushd(target):
-    oldpwd = os.getcwd()
-    try:
-        yield os.chdir(target)
-    finally:
-        os.chdir(oldpwd)
 
 
 @pytest.mark.usefixtures("tmp_path")
