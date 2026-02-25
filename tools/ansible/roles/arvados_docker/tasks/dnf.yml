@@ -1,0 +1,44 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Clean-up Docker package pins
+  become: yes
+  community.general.dnf_versionlock:
+    name:
+      - containerd.io
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+    state: absent
+  when: "arvados_compute_pin_packages|bool"
+
+- name: Install current Docker package pins
+  become: yes
+  community.general.dnf_versionlock:
+    name:
+      - containerd.io-{{ docker_dnf_pin_version['containerd.io'] }}
+      - docker-ce-{{ docker_dnf_pin_version['docker-ce'] }}
+      - docker-ce-cli-{{ docker_dnf_pin_version['docker-ce-cli'] }}
+      - docker-ce-rootless-extras-{{ docker_dnf_pin_version['docker-ce-rootless-extras'] }}
+    state: present
+  when: "arvados_compute_pin_packages|bool"
+
+- name: Install Docker repository
+  become: yes
+  ansible.builtin.yum_repository:
+    name: docker
+    description: Docker-CE repository
+    baseurl: "{{ docker_dnf_url }}/$releasever/$basearch/stable"
+    gpgcheck: true
+    gpgkey: "{{ docker_dnf_url }}/gpg"
+
+- name: Install Docker packages
+  become: yes
+  ansible.builtin.dnf:
+    name:
+      - containerd.io
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+    state: latest
