@@ -290,10 +290,10 @@ VERSION="latest"
 SALT_VERSION="3006"
 
 # Other formula versions we depend on
-ARVADOS_TAG="b99b332f932fd75fe30e1a894c6f5ee674303593"
-POSTGRES_TAG="cb05500e1dbea2c24cc29ea6831417f638853587"
+ARVADOS_TAG="525eb46bd46efd89a174d8b790d3219cd35ba149"
+POSTGRES_TAG="0081fa32e85e6fda0a00d9a5241e70b4bf10e506"
 POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
-NGINX_TAG="bca3cdbeda232c978a3e25c3ab8ca7bb6898845f"
+NGINX_TAG="4e2d832dae6ecf8f47dc4b46e29faa3c5907edc2"
 NGINX_URL="https://github.com/arvados/nginx-formula.git"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.5"
