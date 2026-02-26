@@ -204,7 +204,7 @@ def test_get_method_options():
         (
             ("-o", "--container-request"),
             {
-                "type": arvcli.cmd_util.JSONArgument,
+                "type": arvcli._ArgTypes.json_body,
                 "metavar": "{JSON,FILE,-}",
                 "help": "Either a string representing container_request as JSON or a filename from which to read container_request JSON (use '-' to read from stdin). This option must be specified.",
                 "required": True

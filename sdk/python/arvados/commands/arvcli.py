@@ -42,6 +42,11 @@ class _ArgTypes:
         pretty_name="JSON object"
     )
 
+    json_body = cmd_util.JSONArgument(
+        validator=json_object.post_validator,
+        pretty_name="JSON request body object"
+    )
+
 
 class _ArgUtil:
     """Private namespace class for helpful functions (static methods) that
@@ -191,7 +196,7 @@ class _ArgUtil:
                     parameter_kwargs["type"] = _ArgTypes.json_object
                     parameter_kwargs["metavar"] = "JSON_OBJECT"
                 case "request":
-                    parameter_kwargs["type"] = cmd_util.JSONArgument
+                    parameter_kwargs["type"] = _ArgTypes.json_body
                     parameter_kwargs["metavar"] = "{JSON,FILE,-}"
                 case _:
                     parameter_kwargs["type"] = str
