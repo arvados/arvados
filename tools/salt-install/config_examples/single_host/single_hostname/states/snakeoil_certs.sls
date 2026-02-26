@@ -10,7 +10,6 @@
 {%- set orig_cert_dir = salt['pillar.get']('extra_custom_certs_dir', '/srv/salt/certs')  %}
 
 include:
-  - nginx.passenger
   - nginx.config
   - nginx.service
 
