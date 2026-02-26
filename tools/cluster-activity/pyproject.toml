@@ -35,6 +35,10 @@ requires-python = "~= 3.10"
 [project.optional-dependencies]
 prometheus = [
   "prometheus-api-client[dataframe] ~= 0.7",
+  # Our code calls Pandas methods directly, so we want to make sure we
+  # retain API compatibility. The requirement from prometheus-api-client
+  # is too broad to do that.
+  "pandas ~= 2.3.3",
 ]
 
 [project.scripts]
