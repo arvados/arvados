@@ -50,6 +50,7 @@ class _ArgTypes:
     json_body = cmd_util.JSONArgument(
         validator=json_object.post_validator,
         pretty_name="JSON request body object"
+    )
 
 
 class _ArgUtil:
@@ -368,6 +369,52 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         method_parser.add_argument(*parameter_names, **kwargs)
 
 
+def _handle_resource_call(args, remaining_args, cmd_parser, api_client):
+    resource = cmd_parser._subcommand_to_resource.get(args.subcommand)
+    if resource is not None:
+        help_wanted = "-h" in remaining_args or "--help" in remaining_args
+        if args.method is None or help_wanted:
+            subparser = cmd_parser._subparser_index.get(args.subcommand)
+            if subparser:
+                subparser.print_help(
+                    file=(sys.stdout if help_wanted else sys.stderr)
+                )
+            sys.exit(0 if help_wanted else 2)
+
+        arv_object = getattr(getattr(api_client, resource)(), args.method)(
+            **vars(args.method_parameters)
+        ).execute()
+
+        match args.format:
+            case "json":
+                json.dump(arv_object, sys.stdout, indent=1)
+                sys.stdout.write("\n")
+            case "yaml":
+                from ruamel.yaml import YAML
+                yaml = YAML(typ="safe", pure=True)
+                yaml.default_flow_style = False
+                yaml.dump(arv_object, sys.stdout)
+            case "uuid":
+                if (
+                        arv_object["kind"].endswith("List")
+                        and arv_object.get("items")
+                ):
+                    for item in arv_object["items"]:
+                        print(item["uuid"])
+                else:
+                    obj_uuid = arv_object.get("uuid")
+                    if obj_uuid is None:
+                        print(
+                            "Response did not include a uuid:",
+                            json.dumps(arv_object, indent=1),
+                            sep="\n",
+                            file=sys.stderr
+                        )
+                        sys.exit(1)
+                    print(obj_uuid)
+        sys.exit(0)
+
+
 def dispatch(arguments=None):
     api_client = arvados.api("v1")
     cmd_parser = ArvCLIArgumentParser(api_client._resourceDesc["resources"])
@@ -375,6 +422,9 @@ def dispatch(arguments=None):
     args, remaining_args = cmd_parser.parse_known_args(
         arguments, namespace=arg_ns
     )
+
+    # If it's about a resource method, handle it then exit.
+    _handle_resource_call(args, remaining_args, cmd_parser, api_client)
 
     match args.subcommand:
         case "keep":
@@ -391,20 +441,6 @@ def dispatch(arguments=None):
             from arvados.commands.ws import main
         case "copy":
             from arvados.commands.arv_copy import main
-        case _:
-            # FIXME
-            print("Called API resource {!r}, method {!r}".format(
-                args.subcommand, args.method
-            ))
-            for k, v in vars(args).items():
-                print("{!r}={!r}".format(k, v))
-            help_wanted = "-h" in remaining_args or "--help" in remaining_args
-            if args.method is None or help_wanted:
-                subparser = cmd_parser._subparser_index.get(args.subcommand)
-                if subparser:
-                    subparser.print_help()
-                sys.exit(0 if help_wanted else 2)
-            sys.exit(0)
     status = main(remaining_args)
     sys.exit(status)
 
