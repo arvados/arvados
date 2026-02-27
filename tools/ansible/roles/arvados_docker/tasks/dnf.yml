@@ -2,28 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Clean-up Docker package pins
-  become: yes
-  community.general.dnf_versionlock:
-    name:
-      - containerd.io
-      - docker-ce
-      - docker-ce-cli
-      - docker-ce-rootless-extras
-    state: absent
-  when: "arvados_compute_pin_packages|bool"
-
-- name: Install current Docker package pins
-  become: yes
-  community.general.dnf_versionlock:
-    name:
-      - containerd.io-{{ docker_dnf_pin_version['containerd.io'] }}
-      - docker-ce-{{ docker_dnf_pin_version['docker-ce'] }}
-      - docker-ce-cli-{{ docker_dnf_pin_version['docker-ce-cli'] }}
-      - docker-ce-rootless-extras-{{ docker_dnf_pin_version['docker-ce-rootless-extras'] }}
-    state: present
-  when: "arvados_compute_pin_packages|bool"
-
 - name: Install Docker repository
   become: yes
   ansible.builtin.yum_repository:
@@ -33,12 +11,86 @@
     gpgcheck: true
     gpgkey: "{{ docker_dnf_url }}/gpg"
 
+# We compute the whole list so that dependant package versions
+# can be resolved correctly in the same dnf transaction.
+- set_fact:
+    docker_packages: []
+- name: Build s list of packages to be installed their optional version specs
+  set_fact:
+    docker_packages: >-
+      {{
+        docker_packages + [
+          item.key ~
+          (
+            '-' ~ item.value
+            if item.value
+            else ''
+          )
+        ]
+      }}
+  loop: "{{ docker_dnf_packages | dict2items }}"
+
+# We compute the whole list here so that the versionlock result is just
+# one entry, making it easier to work with.
+- name: Build a list of pinned packages with their version specs
+  set_fact:
+    versionlock_list: >-
+      {{
+        docker_dnf_packages
+        | dict2items
+        | selectattr('value', 'truthy')
+        | map(attribute='key')
+        | zip(
+            docker_dnf_packages
+            | dict2items
+            | selectattr('value', 'truthy')
+            | map(attribute='value')
+          )
+        | map('join', '-')
+        | list
+      }}
+  when: "arvados_compute_pin_packages|bool"
+
+- name: Install current Docker package pins
+  become: yes
+  community.general.dnf_versionlock:
+    name: "{{ versionlock_list }}"
+    state: present
+    raw: true
+  when: "arvados_compute_pin_packages|bool"
+  register: versionlock_result
+
+# Builds a regex from all the requested package names and uses it as a
+# filter to select which of the candidates for deletion are ours.
+- name: Build a list of versionlock entries candidate for deletion
+  set_fact:
+    versionlock_stale: >-
+      {{
+        versionlock_result.locklist_pre
+        | difference(versionlock_list)
+        | select(
+            'match',
+            '^(' ~ (
+              docker_dnf_packages.keys()
+              | map('regex_escape')
+              | join('|')
+            ) ~ ')-[^-]+$'
+          )
+        | list
+      }}
+  when: "arvados_compute_pin_packages|bool"
+
+- name: Clean up stale versionlock entries
+  become: yes
+  community.general.dnf_versionlock:
+    name: "{{ versionlock_stale }}"
+    state: absent
+    raw: true
+  when: "arvados_compute_pin_packages|bool and versionlock_stale|length > 0"
+
 - name: Install Docker packages
   become: yes
   ansible.builtin.dnf:
-    name:
-      - containerd.io
-      - docker-ce
-      - docker-ce-cli
-      - docker-ce-rootless-extras
+    name: "{{ docker_packages }}"
     state: latest
+    allow_downgrade: true
