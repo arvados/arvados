@@ -8,3 +8,7 @@ arvados_ansible_venv_dir: /opt/arvados-ansible
 # The user that will install Galaxy collections.
 # If this is not set (the default), collection installation is skipped.
 arvados_ansible_galaxy_user: null
+
+# Arvados developers must get the oldest version in order to build Docker
+# images for the oldest distros
+arvados_ansible_minimum_version: true
