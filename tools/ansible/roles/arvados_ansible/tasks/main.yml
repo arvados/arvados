@@ -14,7 +14,7 @@
     dest: "{{ requirements_tempfile.path }}"
 
 - name: Install minimum Ansible version for Arvados development
-  when: "{{ arvados_ansible_minimum_version|bool }}"
+  when: arvados_ansible_minimum_version|bool
   ansible.builtin.replace:
     path: "{{ requirements_tempfile.path }}"
     regexp: "^ansible-core\\s*>="
