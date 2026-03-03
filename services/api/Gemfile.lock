@@ -218,7 +218,7 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.4)
-    nokogiri (1.17.2-x86_64-linux)
+    nokogiri (1.19.1-x86_64-linux-gnu)
       racc (~> 1.4)
     oj (3.16.11)
       bigdecimal (>= 3.0)
@@ -362,7 +362,7 @@ DEPENDENCIES
   mocha
   multi_json (~> 1.0)
   net-imap (~> 0.4.0)
-  nokogiri (~> 1.17.0)
+  nokogiri (~> 1.19.1)
   oj
   optimist
   passenger (~> 6.0.26)
