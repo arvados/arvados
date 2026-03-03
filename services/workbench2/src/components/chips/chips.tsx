@@ -131,6 +131,20 @@ export const Chips = withStyles(styles)(
         }
     });
 
+export const formatChips = (properties: Record<string, string | string[] | undefined>) => {
+    const result: string[] = [];
+    for (const key in properties) {
+        if (!properties[key]) continue;
+        if (typeof properties[key] === 'string') {
+            properties[key] = [properties[key] as string];
+        }
+        for (const value of properties[key]!) {
+            result.push(`${key}: ${value}`)
+        }
+    }
+    return result;
+};
+
 interface CollectedProps {
     connectDragSource: ConnectDragSource;
     connectDropTarget: ConnectDropTarget;

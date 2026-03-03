@@ -5,31 +5,17 @@
 import React from 'react';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
-import { formValueSelector, InjectedFormProps } from 'redux-form';
 import { Grid } from '@mui/material';
-import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { PropertyKeyField, DialogPropertyKeyInput, PROPERTY_KEY_FIELD_NAME, PROPERTY_KEY_FIELD_ID } from './property-key-field';
-import { PropertyValueField, DialogPropertyValueInput, PROPERTY_VALUE_FIELD_NAME, PROPERTY_VALUE_FIELD_ID } from './property-value-field';
+import { DialogPropertyKeyInput, PROPERTY_KEY_FIELD_NAME, PROPERTY_KEY_FIELD_ID } from './property-key-field';
+import { DialogPropertyValueInput, PROPERTY_VALUE_FIELD_NAME, PROPERTY_VALUE_FIELD_ID } from './property-value-field';
 import { getTagKeyID, Vocabulary } from 'models/vocabulary';
 import { ProgressButton } from 'components/progress-button/progress-button';
-import { GridClassKey } from '@mui/material/Grid';
-import { Chips, PropertyChips } from 'components/chips/chips'
+import { Chips, PropertyChips, formatChips } from 'components/chips/chips'
 
 const AddButton = withStyles(theme => ({
     root: { marginTop: theme.spacing(1) }
 }))(ProgressButton);
-
-const mapStateToProps = (state: RootState) => {
-    return {
-        applySelector: (selector) => selector(state, 'key', 'value', 'keyID', 'valueID')
-    }
-}
-
-interface ApplySelector {
-    applySelector: (selector) => any;
-}
-
 export interface ResourcePropertiesFormData {
     uuid: string;
     [PROPERTY_KEY_FIELD_NAME]: string;
@@ -38,36 +24,6 @@ export interface ResourcePropertiesFormData {
     [PROPERTY_VALUE_FIELD_ID]: string;
     clearPropertyKeyOnSelect?: boolean;
 }
-
-type ResourcePropertiesFormProps = {uuid: string; clearPropertyKeyOnSelect?: boolean } & InjectedFormProps<ResourcePropertiesFormData, {uuid: string;}> & WithStyles<GridClassKey> & ApplySelector;
-
-export const ResourcePropertiesForm = connect(mapStateToProps)(({ handleSubmit, change, submitting, invalid, classes, uuid, clearPropertyKeyOnSelect, applySelector,  ...props }: ResourcePropertiesFormProps ) => {
-    change('uuid', uuid); // Sets the uuid field to the uuid of the resource.
-    const propertyValue = applySelector(formValueSelector(props.form));
-    return <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
-        <Grid container spacing={2} classes={classes}>
-            <Grid item xs
-            data-cy='key-input'>
-                <PropertyKeyField clearPropertyKeyOnSelect />
-            </Grid>
-            <Grid item xs
-            data-cy='value-input'>
-                <PropertyValueField />
-            </Grid>
-            <Grid item>
-                <AddButton
-                    data-cy='property-add-btn'
-                    disabled={invalid || !(propertyValue.key && propertyValue.value)}
-                    loading={submitting}
-                    color='primary'
-                    variant='contained'
-                    type='submit'>
-                    Add
-                </AddButton>
-            </Grid>
-        </Grid>
-    </form>}
-);
 
 const mapState = (state: RootState) => {
     return {
@@ -180,17 +136,3 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
         </Grid>
     </form>
 });
-
-const formatChips = (properties: Record<string, string | string[] | undefined>) => {
-    const result: string[] = [];
-    for (const key in properties) {
-        if (!properties[key]) continue;
-        if (typeof properties[key] === 'string') {
-            properties[key] = [properties[key] as string];
-        }
-        for (const value of properties[key]!) {
-            result.push(`${key}: ${value}`)
-        }
-    }
-    return result;
-};
