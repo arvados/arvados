@@ -394,6 +394,9 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
         assert self.collection_uuid_pattern.match(actual["uuid"])
+        # Output ends in newline but not in extraneous newlines or other
+        # whitespace characters.
+        assert re.match(r"(?s).*\S?\n$", captured.out)
 
     def test_request_body_file_valid_json_out_yaml(self, tmp_path, capsys):
         f = tmp_path / "body.json"
@@ -407,6 +410,9 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
         assert self.collection_uuid_pattern.match(actual["uuid"])
+        # Output ends in newline but not in extraneous newlines or other
+        # whitespace characters.
+        assert re.match(r"(?s).*\S?\n$", captured.out)
 
     def test_request_body_file_valid_json_out_short(self, tmp_path, capsys):
         f = tmp_path / "body.json"
@@ -416,6 +422,9 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert exit_status.value.code == 0
         captured = capsys.readouterr()
         assert not captured.err
+        # Output ends in newline but not in extraneous newlines or other
+        # whitespace characters.
+        assert re.match(r"(?s).*\S?\n$", captured.out)
         assert self.collection_uuid_pattern.match(captured.out.rstrip())
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
@@ -458,6 +467,9 @@ def test_invalid_request(tmp_path, capsys):
     captured = capsys.readouterr()
     assert not captured.out
     assert re.search(r"\breq-[0-9a-z]{20}\b", captured.err)
+    # Error output ends in newline but not in extraneous newlines or other
+    # whitespace characters.
+    assert re.match(r"(?s).*\S?\n$", captured.err)
 
 
 # The "config get" command doesn't take any parameter.
