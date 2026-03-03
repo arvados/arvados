@@ -11,86 +11,31 @@
     gpgcheck: true
     gpgkey: "{{ docker_dnf_url }}/gpg"
 
-# We compute the whole list so that dependant package versions
-# can be resolved correctly in the same dnf transaction.
-- set_fact:
-    docker_packages: []
-- name: Build s list of packages to be installed their optional version specs
-  set_fact:
-    docker_packages: >-
-      {{
-        docker_packages + [
-          item.key ~
-          (
-            '-' ~ item.value
-            if item.value
-            else ''
-          )
-        ]
-      }}
-  loop: "{{ docker_dnf_packages | dict2items }}"
-
-# We compute the whole list here so that the versionlock result is just
-# one entry, making it easier to work with.
-- name: Build a list of pinned packages with their version specs
-  set_fact:
-    versionlock_list: >-
-      {{
-        docker_dnf_packages
-        | dict2items
-        | selectattr('value', 'truthy')
-        | map(attribute='key')
-        | zip(
-            docker_dnf_packages
-            | dict2items
-            | selectattr('value', 'truthy')
-            | map(attribute='value')
-          )
-        | map('join', '-')
-        | list
-      }}
-  when: "arvados_compute_pin_packages|bool"
-
-- name: Install current Docker package pins
+- when: "arvados_compute_pin_packages|bool"
   become: yes
-  community.general.dnf_versionlock:
-    name: "{{ versionlock_list }}"
-    state: present
-    raw: true
-  when: "arvados_compute_pin_packages|bool"
-  register: versionlock_result
+  block:
+    - name: Install current Docker dnf package pins
+      community.general.dnf_versionlock:
+        name: "{{ docker_dnf_packages|items|map('join', '-')|list }}"
+        state: present
+      register: docker_dnf_versionlock
 
-# Builds a regex from all the requested package names and uses it as a
-# filter to select which of the candidates for deletion are ours.
-- name: Build a list of versionlock entries candidate for deletion
-  set_fact:
-    versionlock_stale: >-
-      {{
-        versionlock_result.locklist_pre
-        | difference(versionlock_list)
-        | select(
-            'match',
-            '^(' ~ (
-              docker_dnf_packages.keys()
-              | map('regex_escape')
-              | join('|')
-            ) ~ ')-[^-]+$'
-          )
-        | list
-      }}
-  when: "arvados_compute_pin_packages|bool"
-
-- name: Clean up stale versionlock entries
-  become: yes
-  community.general.dnf_versionlock:
-    name: "{{ versionlock_stale }}"
-    state: absent
-    raw: true
-  when: "arvados_compute_pin_packages|bool and versionlock_stale|length > 0"
+    - name: Clean-up Docker dnf package pins
+      vars:
+        # Names of packages with changed locks
+        locked_pkgs: "{{ docker_dnf_versionlock.specs_toadd|map('regex_replace', '-[^-]+-[^-]+$', '')|unique }}"
+        # Regexp to match all locks on locked_pkgs
+        lock_re: "^({{ locked_pkgs|map('regex_escape')|join('|') }})-[^-]+-[^-]+$"
+        # All locks for locked_pkgs that weren't just added
+        old_locks: "{{ docker_dnf_versionlock.locklist_post|select('match', lock_re)|reject('in', docker_dnf_versionlock.specs_toadd)|list }}"
+      when: "old_locks is truthy"
+      community.general.dnf_versionlock:
+        name: "{{ old_locks }}"
+        state: absent
 
 - name: Install Docker packages
   become: yes
   ansible.builtin.dnf:
-    name: "{{ docker_packages }}"
+    name: "{{ docker_dnf_packages|list }}"
     state: latest
     allow_downgrade: true
