@@ -437,24 +437,27 @@ class TestRequestBodyWithCollectionCreateCMD:
         )
 
 
-@mock.patch("sys.stdin", new_callable=io.StringIO)
-def test_invalid_request(mock_stdin):
+@pytest.mark.usefixtures("tmp_path", "capsys")
+def test_invalid_request(tmp_path, capsys):
     manifest_data = TestRequestBodyWithCollectionCreateCMD.manifest_data
-    # replace_files does not reference manifest data in body.
+    f = tmp_path / "body.json"
+    f.write_text(json.dumps(manifest_data))
+    # request will be invalid because replace_files does not reference manifest
+    # data in body.
     replace_files = json.dumps({"/foo": "current/bar"})
-    json.dump(manifest_data, mock_stdin)
-    mock_stdin.seek(0)
     with pytest.raises(SystemExit) as exit_status:
         arvcli.dispatch([
             "collection",
             "create",
             "--collection",
-            "-",
+            f"{f!s}",
             "--replace-files",
             replace_files
         ])
-    # TODO: more detailed error presentation
     assert exit_status.value.code == 1
+    captured = capsys.readouterr()
+    assert not captured.out
+    assert re.search(r"\breq-[0-9a-z]{20}\b", captured.err)
 
 
 # The "config get" command doesn't take any parameter.
@@ -472,5 +475,5 @@ class TestConfigGet:
         captured = capsys.readouterr()
         assert not captured.out
         err = io.StringIO(captured.err)
-        assert err.readline().strip() == "Response did not include a uuid:"
+        assert err.readline().rstrip() == "Error: response did not include a uuid:"
         assert json.load(err)
