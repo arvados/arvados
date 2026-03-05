@@ -191,8 +191,7 @@ arvados_workbench:
 #    # `roles/arvados_postgresql/defaults/main.yml`.
 
 # arvados_shell host(s) have all client tools installed so cluster users can
-# access a complete client environment via SSH or webshell.
-# (Note the Ansible installer does not currently deploy webshell.)
+# access a complete client environment via SSH or similar.
 #arvados_shell:
 #  hosts:
 #    shell.arvados.example:
