@@ -201,6 +201,14 @@ arvados_workbench:
 #      # a different hostname externally, set `arvados_shell_hostname` like this:
 #      #arvados_shell_hostname: shellhost.arvados.example
 
+
+### Centralized logging ###
+# The installer can set up Prometheus to collect logs from all Arvados services
+# and report metrics.
+# This is especially helpful to collate logs on multi-node installs.
+# The Arvados cluster activity report can use these metrics to report additional
+# information about cluster health.
+
 # arvados_loki host(s) will have Loki installed from the Grafana APT repository.
 # The required Loki configuration file is defined by `arvados_loki_config_file`.
 #arvados_loki:
