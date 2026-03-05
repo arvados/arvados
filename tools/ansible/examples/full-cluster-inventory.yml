@@ -211,9 +211,20 @@ arvados_workbench:
 
 # arvados_loki host(s) will have Loki installed from the Grafana APT repository.
 # The required Loki configuration file is defined by `arvados_loki_config_file`.
+# Typically this should be installed on all nodes running Arvados services as
+# illustrated in the example below.
 #arvados_loki:
-#  hosts:
-#    api.arvados.example:
+#  children:
+#    arvados_api:
+#    arvados_controller:
+#    arvados_websocket:
+#    arvados_keepstore:
+#    arvados_keepbalance:
+#    arvados_keepproxy:
+#    arvados_keep_web:
+#    arvados_workbench:
+#    arvados_dispatch_cloud:
+#    arvados_dispatch_local:
 #  vars:
 #    arvados_loki_config_file: /PATH/TO/config.yml
 
