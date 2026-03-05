@@ -232,7 +232,7 @@ arvados_workbench:
 # The required Alloy configuration file is defined by `arvados_alloy_config_file`.
 #arvados_alloy:
 #  hosts:
-#    api.arvados.example:
+#    prometheus.arvados.example:
 #  vars:
 #    arvados_alloy_config_file: /PATH/TO/config.alloy
 
@@ -240,7 +240,7 @@ arvados_workbench:
 # The required Grafana configuration file is defined by `arvados_grafana_config_file`.
 #arvados_grafana:
 #  hosts:
-#    api.arvados.example:
+#    prometheus.arvados.example:
 #  vars:
 #    arvados_grafana_config_file: /PATH/TO/grafana.ini
 
@@ -248,6 +248,6 @@ arvados_workbench:
 # The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
 #arvados_prometheus:
 #  hosts:
-#    api.arvados.example:
+#    prometheus.arvados.example:
 #  vars:
 #    arvados_prometheus_config_file: /PATH/TO/prometheus.yml
