@@ -120,7 +120,6 @@
 
 - name: Set up Loki
   hosts: arvados_loki
-  serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_loki
