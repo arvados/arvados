@@ -3940,7 +3940,7 @@
           "id": "arvados.vocabularies.get",
           "path": "vocabulary",
           "httpMethod": "GET",
-          "description": "Get this cluster's configured vocabulary definition.\n\nRefer to [metadata vocabulary documentation][] for details.\n\n[metadata vocabulary documentation]: https://doc.aravdos.org/admin/metadata-vocabulary.html\n\n",
+          "description": "Get this cluster's configured vocabulary definition.\n\nRefer to [metadata vocabulary documentation][] for details.\n\n[metadata vocabulary documentation]: https://doc.arvados.org/admin/metadata-vocabulary.html\n\n",
           "parameters": {},
           "parameterOrder": [],
           "response": {},
