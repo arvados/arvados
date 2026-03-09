@@ -19,6 +19,10 @@ distro_bootstrap_dnf_command: "dnf --quiet --assumeyes"
 distro_bootstrap_dnf_packages:
   # acl is a core Linux utility and required to use become_user.
   - acl
+  # Required by versionlock
+  - dnf
+  # Required by community.general.dnf_versionlock
+  - dnf-plugin-versionlock
   # Required by ansible.builtin.dnf
   - python3-dnf
   # Required to use become_user.

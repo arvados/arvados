@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# NOTE: This role is being used with `gather_facts: no` in order to
+# install Ansible's own dependencies.
+
 - name: Get distribution IDs
   ansible.builtin.raw: ". /etc/os-release && printf '%s\\n' $ID $ID_LIKE"
   register: distro_ids
