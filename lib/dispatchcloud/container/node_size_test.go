@@ -244,6 +244,10 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 		"cheap_gpu_rocm": {Price: 1.9, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu_rocm",
 			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1103", DriverVersion: "6.2", VRAM: 8 * GiB}},
 
+		// Unspecified VRAM was supported in Arvados 3.1 for backwards
+		// compatibility with old "CUDA" configuration. Arvados 3.3 dropped
+		// support for "CUDA" configuration completely, so this is no longer
+		// treated specially. See the test case noted below.
 		"unspecified_vram": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "unspecified_vram",
 			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1104", DriverVersion: "6.2", VRAM: 0}},
 
@@ -343,7 +347,9 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				DriverVersion:  "6.2",
 				VRAM:           2000000000,
 			},
-			SelectedInstance: "unspecified_vram",
+			// This returned "unspecified_vram" from Arvados 3.1 until 3.3.
+			// Now we check there is no suitable instance type.
+			SelectedInstance: "",
 		},
 		GPUTestCase{
 			GPU: arvados.GPURuntimeConstraints{

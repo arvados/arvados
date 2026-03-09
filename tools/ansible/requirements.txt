@@ -9,7 +9,12 @@
 #
 #      pip install -c requirements.txt ansible-core
 
-ansible-core ~= 2.16.14
+# The oldest version we support must be able to manage nodes with the oldest
+# version of Python on all Arvados-supported distributions.
+# As of March 2026 that's Python 3.6 on RHEL 8.
+# The newest version we support is the newest version we've tested playbooks
+# on. It should be supported by Ansible upstream.
+ansible-core >= 2.16.0, < 2.21
 docker ~= 7.0
 
 # It's not required for any playbook, but if you want to automate creating or

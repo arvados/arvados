@@ -1742,7 +1742,7 @@ Clusters:
           DeviceCount: 1
 
           # The amount of VRAM per GPU
-          VRAM: 8000000000
+          VRAM: 8MiB
 
     StorageClasses:
 

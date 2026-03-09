@@ -13,6 +13,13 @@
     src: requirements.txt
     dest: "{{ requirements_tempfile.path }}"
 
+- name: Install minimum Ansible version for Arvados development
+  when: arvados_ansible_minimum_version|bool
+  ansible.builtin.replace:
+    path: "{{ requirements_tempfile.path }}"
+    regexp: "^ansible-core\\s*>="
+    replace: "ansible-core ~="
+
 - name: Install Ansible virtualenv
   become: yes
   ansible.builtin.pip:
