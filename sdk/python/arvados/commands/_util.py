@@ -151,7 +151,7 @@ class JSONStringArgument:
     def __init__(
         self,
         validator: t.Optional[t.Callable[[t.Any], t.Any]] = None,
-        loader: t.Optional[t.Callable[[str], t.Any]] = None,
+        loader: t.Callable[[str], t.Any] = json.loads,
         pretty_name: str = "JSON"
     ):
         """Keyword arguments:
@@ -178,29 +178,26 @@ class JSONStringArgument:
           human-readable name for the kind of value that the argument takes.
           Default: "JSON".
         """
-        self.loader = loader if callable(loader) else json.loads
-        self.post_validator = validator if callable(validator) else None
+        self.loader = loader
+        self.post_validator = validator
         self.pretty_name = pretty_name or "JSON"
 
     def __call__(self, value: str):
-        is_ok = True
-        callback_exc_msg = ""
+        failure = None
         try:
             retval = self.loader(value)
         except ValueError as err:  # This covers json.JSONDecodeError too.
-            is_ok = False
-            calback_exc_msg = str(err)
+            failure = err
         else:
             if self.post_validator is not None:
                 try:
                     retval = self.post_validator(retval)
                 except (ValueError, TypeError) as err:
-                    is_ok = False
-                    callback_exc_msg = str(err)
-        if not is_ok:
-            msg = f"{value!r} is not valid {self.pretty_name}."
-            if callback_exc_msg:
-                msg += f" Further info: {callback_exc_msg}"
+                    failure = err
+        if failure is not None:
+            msg = f"{value!r} is not valid {self.pretty_name}"
+            if str(failure):
+                msg += f": {failure!s}"
             raise argparse.ArgumentTypeError(msg) from None
         return retval
 

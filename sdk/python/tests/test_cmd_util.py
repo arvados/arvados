@@ -102,6 +102,7 @@ class ValidateFiltersTestCase(unittest.TestCase):
 def verbatim(text):
     return "^" + re.escape(text) + "$"
 
+
 JSON_OBJECTS = (
     None,
     123,
@@ -112,15 +113,27 @@ JSON_OBJECTS = (
 )
 INVALID_JSON = ("", "\n", "\0", "foo", "[0, 1,]", "{", "'foo'")
 
+
 class TestJSONStringArgument:
 
     def test_init_loader_not_callable(self):
-        parser = cmd_util.JSONStringArgument(loader=1)
-        assert parser.loader == json.loads
+        bad_arg_type = cmd_util.JSONStringArgument(loader=1)
+        with pytest.raises(TypeError, match='is not callable'):
+            bad_arg_type('"foo"')
 
     def test_init_validator_not_callable(self):
-        parser = cmd_util.JSONStringArgument(validator=1)
-        assert parser.post_validator is None
+        value = '"foo"'
+        bad_fcn = 1
+        bad_fcn_type_name = type(bad_fcn).__name__
+        arg_type_name = "test widget"
+        msg_match = re.escape(
+            f"{value!r} is not valid {arg_type_name}:"
+            f" {bad_fcn_type_name!r} object is not callable"
+        )
+        bad_arg_type = cmd_util.JSONStringArgument(
+            validator=bad_fcn, pretty_name=arg_type_name)
+        with pytest.raises(argparse.ArgumentTypeError, match=msg_match):
+            bad_arg_type(value)
 
     def test_init_pretty_name_false(self):
         parser = cmd_util.JSONStringArgument(pretty_name=False)
@@ -132,13 +145,12 @@ class TestJSONStringArgument:
         parser = cmd_util.JSONStringArgument()
         assert parser(value) == expected
 
-
     @pytest.mark.parametrize("value", INVALID_JSON)
     def test_plain_invalid(self, value):
         parser = cmd_util.JSONStringArgument()
         with pytest.raises(
             argparse.ArgumentTypeError,
-            match=verbatim(f"{value!r} is not valid JSON.")
+            match="^" + re.escape(fr"{value!r} is not valid JSON") + r"\b.*$"
         ):
             parser(value)
 
@@ -152,9 +164,15 @@ class TestJSONStringArgument:
         loader = functools.partial(json.loads, parse_constant=reject)
         parser = cmd_util.JSONStringArgument(loader=loader)
         value = "NaN"
+        # Obtain detailed error message produced by the callback.
+        try:
+            loader(value)
+        except json.JSONDecodeError as err:
+            loader_err_msg = str(err)
+
         with pytest.raises(
             argparse.ArgumentTypeError,
-            match=verbatim(f"{value!r} is not valid JSON.")
+            match=verbatim(f"{value!r} is not valid JSON: {loader_err_msg}")
         ):
             parser(value)
 
@@ -162,12 +180,14 @@ class TestJSONStringArgument:
         (False, "0"), (True, "1")
     ))
     def test_custom_validator_pretty_name(self, expected_valid, value):
-        further_msg = "{0!s} is small."
+        further_msg = "{0!s} is small"
         name = "big JSON number"
+
         def is_big(number):
             if number < 1:
                 raise ValueError(further_msg.format(number))
             return number
+
         parser = cmd_util.JSONStringArgument(
             validator=is_big, pretty_name=name
         )
@@ -177,8 +197,8 @@ class TestJSONStringArgument:
             with pytest.raises(
                 argparse.ArgumentTypeError,
                 match=verbatim(
-                    f"{value!r} is not valid {name}."
-                    f" Further info: {further_msg.format(json.loads(value))}"
+                    f"{value!r} is not valid {name}: "
+                    + further_msg.format(json.loads(value))
                 )
             ):
                 parser(value)
@@ -409,21 +429,22 @@ class TestJSONArgumentValidation:
         # JSON parsing (of the JSON string '{}') and replacing it with the
         # arbitrary object "value".
         parser = cmd_util.JSONArgument(lambda _: copy.deepcopy(value))
-        assert parser('{}') ==  value
+        assert parser('{}') == value
 
     @pytest.mark.parametrize("value", JSON_OBJECTS)
     def test_exception_raised_from_validator(self, value):
         pretty_name = "type for testing"
         json_value = json.dumps(value)
         err_detail = f"{json_value} fails validation"
+
         def raise_func(_):
             raise ValueError(err_detail)
+
         parser = cmd_util.JSONArgument(
             validator=raise_func, pretty_name=pretty_name
         )
         err_notes = verbatim(
-            f"{json_value!r} is not valid {pretty_name}."
-            f" Further info: {err_detail}"
+            f"{json_value!r} is not valid {pretty_name}: {err_detail}"
         )
         with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
             parser(json_value)
@@ -458,7 +479,7 @@ class TestJSONArgumentValidation:
         # Check that the detailed validation error message is attached to the
         # argparse-generated message.
         err_notes = verbatim(
-            f"{input_str!r} is not valid filter. Further info: {validation_err}"
+            f"{input_str!r} is not valid filter: {validation_err}"
         )
         with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
             parser(input_str)
