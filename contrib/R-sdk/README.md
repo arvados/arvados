@@ -63,7 +63,7 @@ This parameter can be set at any time using `setNumRetries`
 arv$setNumRetries(5)
 ```
 
-### Working with Aravdos projects
+### Working with Arvados projects
 
 ##### Create project:
 

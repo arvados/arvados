@@ -955,7 +955,7 @@ Refer to the [replace_segments reference][] for details.
 
 Refer to [metadata vocabulary documentation][] for details.
 
-[metadata vocabulary documentation]: https://doc.aravdos.org/admin/metadata-vocabulary.html
+[metadata vocabulary documentation]: https://doc.arvados.org/admin/metadata-vocabulary.html
 
 ",
           parameters: {
