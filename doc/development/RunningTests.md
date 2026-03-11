@@ -4,17 +4,11 @@
 
 # Running tests
 
-{{toc}}
-
 The arvados git repository has a `run-tests.sh` script which tests (nearly) all of the components in the source tree. Jenkins at https://ci.arvados.org uses this exact script, so running it *before pushing a new main* is a good way to predict whether Jenkins will fail your build and start pestering you by IRC.
 
 ## Background
 
-You have the arvados source tree at `~/arvados` and you might have local modifications.
-
-## Install prerequisites
-
-Follow instructions at \[\[Hacking prerequisites\]\]: “Install dev environment”, etc. Don’t miss creating the Postgres database, docker groups, etc.
+You have [installed prerequisites](Prerequisites.md) following that guide. You have the arvados source tree at `~/arvados` and you might have local modifications.
 
 ## Environment
 
@@ -260,7 +254,7 @@ You can now run the “qr1hi” diagnostics tests using the following command:
 
 React uses a lot of filesystem watchers (via inotify). The default number of watched files is relatively low at 8192. Increase that with:
 
-echo fs.inotify.max_user_watches=524288 \| sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+    echo fs.inotify.max_user_watches=524288 \| sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
 ### Docker
 

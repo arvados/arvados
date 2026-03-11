@@ -6,8 +6,6 @@
 
 The rules are always up for debate. However, when debate is needed, it should happen outside the source tree. In other words, if the rules are wrong, first debate the rules at sprint retrospective, then fix the rules, then follow the new rules.
 
-{{toc}}
-
 ## Ready to implement checklist
 
 Before starting full implementation, please fill out this template with information about pre-planning:
@@ -66,8 +64,8 @@ Stakeholders include the rest of the engineering team, as well as designers, sal
 
 Make sure your name and email address are correct.
 
-- Use `git config --global user.email foo`example.com@ et al.
-- It’s a little unfortunate to have commits with author `foo`myworkstation.local@ but not bad enough to rewrite history, so fix this before you push!
+- Use `git config --global user.email foo@example.com` et al.
+- It’s a little unfortunate to have commits with author `foo@myworkstation.local` but not bad enough to rewrite history, so fix this before you push!
 
 Refer to a story number in the first (summary) line of each commit comment. This first line should be \<80 chars long, and should be followed by a blank line.
 
@@ -92,9 +90,9 @@ If further background or explanation is needed, separate it from the summary wit
 
 - Example: “Users found it confusing that the boxes had different colors even though they represented the same kinds of things.”
 
-**Every commit** (even merge commits) must have a DCO sign-off. See \[\[Developer Certificate Of Origin\]\].
+**Every commit** (even merge commits) must have a DCO sign-off. See [Developer Certificate Of Origin](DCO.md).
 
-- Example: <code>Arvados-DCO-1.1-Signed-off-by: Joe Smith \<joe.smith@example.com\></code>
+- Example: `Arvados-DCO-1.1-Signed-off-by: Alex Doe <alex.doe@example.com>`
 
 Full examples:
 
@@ -123,9 +121,7 @@ Full examples:
 
 ## Copyright headers
 
-Each Arvados component is released either under the AGPL 3.0 license or the Apache 2.0 license. Documentation is licensed under CC-BY-SA-3.0. See the \[\[Arvados Licenses FAQ\]\] for the rationale behind this system.
-
-Every file must start with a copyright header that follows this format:
+Each Arvados component is released either under the AGPL 3.0 license or the Apache 2.0 license. Documentation is licensed under CC-BY-SA-3.0. Every file must start with a copyright header that follows this format:
 
 Code under the [AGPLv3 license](http://www.gnu.org/licenses/agpl-3.0.en.html) (this example uses Go formatting):
 
@@ -165,7 +161,7 @@ No TAB characters in source files. [Except go programs.](https://golang.org/cmd/
 
 - Emacs: add to `~/.emacs` → `(setq-default indent-tabs-mode nil)`
 - Vim: add to `~/.vimrc` → `:set expandtab`
-- See \[\[Coding Standards#Git setup\|Git setup\]\] below
+- See [Git setup](#Git setup) below.
 
 No long (\>80 column) lines, except
 
@@ -202,19 +198,19 @@ gofmt, golint, etc., and https://github.com/golang/go/wiki/CodeReviewComments
 
 Use `%w` when wrapping an error with fmt.Errorf(), so errors.As() can access the wrapped error.
 
-    <code class="go">
-            if err != nil {
-                    return fmt.Errorf("could not swap widgets: %w", err)
-            }
-    </code>
+```go
+if err != nil {
+        return fmt.Errorf("could not swap widgets: %w", err)
+}
+```
 
 Use `(logrus.FieldLogger)WithError()` (instead of `Logf("blah: %s", err)`) when logging an error.
 
-    <code class="go">
-            if err != nil {
-                    logger.WithError(err).Warn("error swapping widgets")
-            }
-    </code>
+```go
+if err != nil {
+        logger.WithError(err).Warn("error swapping widgets")
+}
+```
 
 ## Ruby
 

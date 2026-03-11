@@ -2,8 +2,6 @@
 [comment]: # ()
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)
 
-{{\>toc}}
-
 # Hacking prerequisites
 
 This page describes how to install all the software necessary to develop Arvados and run tests.
@@ -43,7 +41,9 @@ If you run your development system in a virtual machine, it needs some permissio
 
 You will need the Arvados source code to follow this process.
 
-    <code class="sh">$ git clone https://git.arvados.org/arvados.git</code>
+```sh
+$ git clone https://git.arvados.org/arvados.git
+```
 
 If you want to switch to a specific branch or revision like `3.2-release`, do that here.
 
@@ -55,7 +55,9 @@ Install Ansible following the instructions in `arvados/tools/ansible/README.md`.
 
 Make a copy of the default test configuration:
 
-    <code class="sh">$ cp arvados/tools/ansible/files/default-test-config.yml ~/zzzzz-config.yml</code>
+```sh
+$ cp arvados/tools/ansible/files/default-test-config.yml ~/zzzzz-config.yml
+```
 
 You can copy the file to a different location if you like. This page will use `~/zzzzz-config.yml` as the placeholder path throughout.
 
@@ -67,38 +69,40 @@ The playbook will always install the `postgresql` server package. It will **not*
 
 An inventory file tells Ansible what host(s) to manage, how to connect to them, and what settings they use. Write an inventory file to `~/zzzzz-inventory.yml` like this:
 
-    <code class="yaml">arvados_test_all:
-      # This is the list of host(s) where we're installing the test environment.
-      # This example installs on the same system running Ansible.
-      # If you want to manage remote hosts, you can write your own host list:
-      # <https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html>
-      hosts:
-        localhost:
-          ansible_connection: local
-      vars:
-        # The path to the Arvados cluster configuration you wrote in the previous section.
-        arvados_config_file: "{{ lookup('env', 'HOME') }}/zzzzz-config.yml"
+```yaml
+arvados_test_all:
+  # This is the list of host(s) where we're installing the test environment.
+  # This example installs on the same system running Ansible.
+  # If you want to manage remote hosts, you can write your own host list:
+  # <https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html>
+  hosts:
+    localhost:
+      ansible_connection: local
+  vars:
+    # The path to the Arvados cluster configuration you wrote in the previous section.
+    arvados_config_file: "{{ lookup('env', 'HOME') }}/zzzzz-config.yml"
 
-        # The primary user doing Arvados development and tests.
-        # This user will be added to the `docker` group.
-        # It defaults to the name of the user running `ansible-playbook`.
-        # If you want to configure a different user, set that here:
-        #arvados_dev_user: USERNAME
+    # The primary user doing Arvados development and tests.
+    # This user will be added to the `docker` group.
+    # It defaults to the name of the user running `ansible-playbook`.
+    # If you want to configure a different user, set that here:
+    #arvados_dev_user: USERNAME
 
-        # By default, the playbook installs old versions of Python and Ruby from source.
-        # This helps you make sure you don't accidentally use too-new features during
-        # development. If you're sure you don't need that—for example, you specifically
-        # want to test a distribution's packaged version—set this flag:
-        #arvados_dev_from_pkgs: true
-    </code>
+    # By default, the playbook installs old versions of Python and Ruby from source.
+    # This helps you make sure you don't accidentally use too-new features during
+    # development. If you're sure you don't need that—for example, you specifically
+    # want to test a distribution's packaged version—set this flag:
+    #arvados_dev_from_pkgs: true
+```
 
 ### Run the playbook
 
 The basic command to run the playbook is:
 
-    <code class="sh">$ cd arvados/tools/ansible
-    $ ansible-playbook -K -i ~/zzzzz-inventory.yml install-dev-tools.yml
-    </code>
+```sh
+$ cd arvados/tools/ansible
+$ ansible-playbook -K -i ~/zzzzz-inventory.yml install-dev-tools.yml
+```
 
 When you are prompted for the `BECOME password:`, enter the password for your user account on the development host that lets you run `sudo` commands.
 
@@ -106,24 +110,28 @@ When you are prompted for the `BECOME password:`, enter the password for your us
 
 After the playbook runs successfully, you should be able to run the Arvados tests from a source checkout on your development host. e.g.,
 
-    <code class="sh">$ cd arvados
-    $ mkdir -p tmp/run-tests
-    $ WORKSPACE="$PWD" build/run-tests.sh --temp "$PWD/tmp/run-tests" --interactive
-    </code>
+```sh
+$ cd arvados
+$ mkdir -p tmp/run-tests
+$ WORKSPACE="$PWD" build/run-tests.sh --temp "$PWD/tmp/run-tests" --interactive
+```
 
-Refer to \[\[Running tests\]\] for details.
+Refer to [Running tests](RunningTests.md) for details.
 
 ### Troubleshooting
 
 The playbook writes your database configuration at `~/.config/arvados/config.yml` and sets up a hook `/etc/profile.d/arvados-test.sh` to set your `CONFIGSRC` environment variable to that directory. If most tests fail with a database connection error, check that this variable is set:
 
-    <code class="sh">$ echo "${CONFIGSRC:-UNSET}"</code>
-    /home/you/.config/arvados
+```sh
+$ echo "${CONFIGSRC:-UNSET}"
+/home/you/.config/arvados
+```
 
 If that reports `UNSET`, add a line to set `CONFIGSRC="$HOME/.config/arvados"` to your shell configuration, or set it manually when you run `run-tests.sh`:
 
-    <code class="sh">$ WORKSPACE="$PWD" CONFIGSRC="$HOME/.config/arvados" build/run-tests.sh ...
-    </code>
+```sh
+$ WORKSPACE="$PWD" CONFIGSRC="$HOME/.config/arvados" build/run-tests.sh ...
+```
 
 ### Notes
 
