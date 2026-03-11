@@ -12,9 +12,7 @@ You must have a system running a supported distribution. That system can be inst
 
 ### Supported distributions
 
-As of December 2025/Arvados 3.2, these instructions and the entire test suite are known to work on Debian 12 “bookworm.”
-
-The Ansible playbook works on Debian 13 “trixie” but some test suites fail because of configuration drift.
+As of March 2026/Arvados 3.2, these instructions and the entire test suite are known to work on Debian 12 "bookworm" and Debian 13 “trixie.”
 
 You may try to run these instructions and tests on Ubuntu 22.04 “jammy”/24.04 “noble,” but they have not been tested and you may find some bugs throughout.
 
@@ -42,7 +40,7 @@ If you run your development system in a virtual machine, it needs some permissio
 You will need the Arvados source code to follow this process.
 
 ```sh
-$ git clone https://git.arvados.org/arvados.git
+$ git clone https://github.com/arvados/arvados.git
 ```
 
 If you want to switch to a specific branch or revision like `3.2-release`, do that here.
