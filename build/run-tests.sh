@@ -12,7 +12,7 @@ $(basename $0): Install and test Arvados components.
 Exit non-zero if any tests fail.
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename $0) [options]
+        $0 [options]
 
 Options:
 
@@ -79,6 +79,13 @@ PYTHONPATH=
 GEMHOME=
 R_LIBS=
 export LANG=en_US.UTF-8
+# Many install steps will fail if we're not in a Git checkout, so this is a
+# safe default.
+if [[ -d "${WORKSPACE:=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)}" ]]; then
+    export WORKSPACE
+else
+    unset WORKSPACE
+fi
 # googleapiclient raises a FutureWarning if you use a recent version with the
 # last supported version of Python. That interferes with tests that check CLI
 # tool stderr. Filter it out, filling in default warnings if needed.
