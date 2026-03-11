@@ -6,79 +6,9 @@
 
 The rules are always up for debate. However, when debate is needed, it should happen outside the source tree. In other words, if the rules are wrong, first debate the rules at sprint retrospective, then fix the rules, then follow the new rules.
 
-## Ready to implement checklist
+## Git commit messages
 
-Before starting full implementation, please fill out this template with information about pre-planning:
-
-    * Goals and scope of the ticket are clear to the assigned developer and assigned reviewer.
-    ** _comments_
-    * New or changed UX/UX has a mockup and has gotten feedback from stakeholders.
-    ** _comments_
-    * If part of a larger project, ticket is linked to upstream and downstream tasks.
-    ** _comments_
-
-UX/UX stands for “User Interface / User Experience”. This includes new or modified GUI elements in workbench and as well as usability elements of command line tools.
-
-Mockups can consist of a wireframe sketched using a drawing tool (e.g. https://excalidraw.com/) or a coding a non-functional prototype focusing on visual design and avoiding implement behavior and uses hardcoded values.
-
-Stakeholders include the rest of the engineering team, as well as designers, salespeople, customers and other end users as appropriate. In this process, the assigned developer presents the mockup, makes note of any feedback, and then based on their judgement either: alters the mockup, iterates on feedback, or begins implementation.
-
-## Ready to merge checklist
-
-Before asking for a branch review, please fill out this template with information about the branch.
-
-<u>template begins below, replace the bits between \< \></u>
-
-    <00000-branch-title> @ commit:<git hash>
-
-    <https://ci.arvados.org/... (link to developer test job on jenkins)>
-
-    _Note each item completed with additional detail if necessary.  If an item is irrelevant to a specific branch, briefly explain why._
-
-    * All agreed upon points are implemented / addressed.  Describe changes from pre-implementation design.
-    ** _comments_
-    * Anything not implemented (discovered or discussed during work) has a follow-up story.
-    ** _comments_
-    * Code is tested and passing, both automated and manual, what manual testing was done is described.
-    ** _comments_
-    * The tested code incorporates recent main branch changes.
-    ** _confirm_ ("Incorporates" = merged or rebased. "Recent" = 2-3 working days. The more active development on this component is, the more important it is to be based on recent main to avoid surprising test failures post-merge.)
-    * New or changed UI/UX has gotten feedback from stakeholders.
-    ** _comments_
-    * Documentation has been updated.
-    ** _comments_
-    * Behaves appropriately at the intended scale (describe intended scale).
-    ** _comments_
-    * Considered backwards and forwards compatibility issues between client and server.
-    ** _comments_
-    * Follows our "coding standards":https://dev.arvados.org/projects/arvados/wiki/Coding_Standards and "GUI style guidelines.":https://dev.arvados.org/projects/arvados/wiki/Coding_Standards#GUI-Design-Guidelines-Workbench-2
-    ** _comments_
-
-    <Additional detail about what, why and how this branch changes the code>
-
-UI/UX stands for “User Interface / User Experience”. This includes new or modified GUI elements in workbench and as well as usability elements of command line tools.
-
-Stakeholders include the rest of the engineering team, as well as designers, salespeople, customers and other end users as appropriate. In this process, the assigned developer demos the new feature, makes note of any feedback, and then based on their judgement either: implements the changes, provides a reason why the feedback cannot be acted on, or discusses how to handle the feedback with the assigned reviewer and/or product manager.
-
-## Git commits
-
-Make sure your name and email address are correct.
-
-- Use `git config --global user.email foo@example.com` et al.
-- It’s a little unfortunate to have commits with author `foo@myworkstation.local` but not bad enough to rewrite history, so fix this before you push!
-
-Refer to a story number in the first (summary) line of each commit comment. This first line should be \<80 chars long, and should be followed by a blank line.
-
-- `1234: Remove useless button.`
-
-**When merging/committing to master,** refer to the story number in a way Redmine will notice. Redmine will list these commits/merges on the story page itself.
-
-- `closes #1234`, or
-- `refs #1234`, or
-- `no issue #` if no Redmine issue is especially relevant.
-
-Use descriptive commit comments.
-
+- Prefix the summary line with the issue number this addresses.
 - Describe the delta between the old and new tree. If possible, describe the delta in **behavior** rather than the source code itself.
 - Good: “1234: Support use of spaces in filenames.”
 - Good: “1234: Fix crash when user_id is nil.”
@@ -90,7 +20,7 @@ If further background or explanation is needed, separate it from the summary wit
 
 - Example: “Users found it confusing that the boxes had different colors even though they represented the same kinds of things.”
 
-**Every commit** (even merge commits) must have a DCO sign-off. See [Developer Certificate Of Origin](DCO.md).
+**Every commit** (including merge commits) must have a DCO sign-off. See `CONTRIBUTING.md` for the full terms of what this means.
 
 - Example: `Arvados-DCO-1.1-Signed-off-by: Alex Doe <alex.doe@example.com>`
 
@@ -118,40 +48,6 @@ Full examples:
         refs #12108
 
         Arvados-DCO-1.1-Signed-off-by: Tom Clegg <tom@curoverse.com>
-
-## Copyright headers
-
-Each Arvados component is released either under the AGPL 3.0 license or the Apache 2.0 license. Documentation is licensed under CC-BY-SA-3.0. Every file must start with a copyright header that follows this format:
-
-Code under the [AGPLv3 license](http://www.gnu.org/licenses/agpl-3.0.en.html) (this example uses Go formatting):
-
-    // Copyright (C) The Arvados Authors. All rights reserved.
-    //
-    // SPDX-License-Identifier: AGPL-3.0
-
-Code under the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0) (this example uses Python formatting):
-
-    # Copyright (C) The Arvados Authors. All rights reserved.
-    #
-    # SPDX-License-Identifier: Apache-2.0
-
-Documentation under the [Creative Commons Attribution-Share Alike 3.0 United States license](https://creativecommons.org/licenses/by-sa/3.0/us/) (this example uses textile formatting):
-
-    ###. Copyright (C) The Arvados Authors. All rights reserved.
-    ....
-    .... SPDX-License-Identifier: CC-BY-SA-3.0
-
-When adding a new file to a component, use the same license as the other files of the component.
-
-When adding a new component, choose either the AGPL or Apache license. Generally speaking, the Apache license is only used for components where integrations in proprietary code must be possible (e.g. our SDKs), though this is not a hard rule. When uncertain which license to choose for a new component, ask on the IRC channel or mailing list.
-
-When adding a file in a format that does not support the addition of a copyright header (e.g. in a binary format like an image), add the path to the .licenseignore file in the root of the source tree. This should be done sparingly, and must be discussed explicitly as part of code review. The file must be available under a license that is compatible with the rest of the Arvados code base.
-
-When adding a file that originates from an external source under a different license, add the appropriate SPDX line for that license. This is exceptional, and must be discussed explicitly as part of code review. Not every license is compatible with the rest of the Arvados code base.
-
-There is a helper script at https://github.com/arvados/arvados/blob/master/build/check-copyright-notices that can be used to check - and optionally, fix - the copyright headers in the Arvados source tree.
-
-The actual git hook that enforces the copyright headers lives at https://github.com/arvados/arvados-dev/blob/master/git/hooks/check-copyright-headers.rb
 
 ## Source code formatting
 
