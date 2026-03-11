@@ -106,17 +106,47 @@ When you are prompted for the `BECOME password:`, enter the password for your us
 
 `ansible-playbook` has many options to control how it runs that you can add if you like. Refer to [the `ansible-playbook` documentation](https://docs.ansible.com/ansible/latest/cli/ansible-playbook.html) for more information.
 
-After the playbook runs successfully, you should be able to run the Arvados tests from a source checkout on your development host. e.g.,
+## Run Arvados tests
+
+After the playbook runs successfully, you should be able to run the Arvados tests from a source checkout on your development host. This document will walk you through setting up and running a single test suite to verify your setup. `cd` to your Arvados checkout and run:
 
 ```sh
-$ cd arvados
 $ mkdir -p tmp/run-tests
-$ WORKSPACE="$PWD" build/run-tests.sh --temp "$PWD/tmp/run-tests" --interactive
+$ build/run-tests.sh --temp "$PWD/tmp/run-tests" --interactive
 ```
 
-Refer to [Running tests](RunningTests.md) for details.
+This will install baseline prerequisites, then list commands and test targets, then prompt you with:
 
-### Troubleshooting
+    What next? install deps
+
+Accept that command. It will install the rest of the dependencies to run a test cluster, then report:
+
+    All test suites passed.
+
+Now we can run a test suite. The controller tests are good because they interact with a test cluster but not much else. At the `What next?` prompt, enter `test lib/controller`, and you'll see the test cluster start:
+
+    What next? test lib/controller
+    Starting API, controller, keepproxy, keep-web, ws, and nginx ssl proxy...
+
+You'll see logs from individual services, then, hopefully, the controller tests starting and passing:
+
+    ======= test lib/controller
+    ok  	git.arvados.org/arvados.git/lib/controller	64.679s	coverage: 82.0% of statements
+    ======= test lib/controller -- 68s
+    Pass: lib/controller tests (68s)
+    All test suites passed.
+
+Refer to [Running tests](RunningTests.md) for details about running specific test suites, test selection, and other features.
+
+## Troubleshooting
+
+If the playbook succeeds but you can't get tests running, there might be a disconnect between your shell configuration and what the system expects. This section documents some places you can look.
+
+### Dependencies in `$PATH`
+
+The playbook will install symlinks for Go, Node, Python, Ruby, Singularity, and Yarn under `/usr/local/bin`. The actual tools are installed under `/opt`. When you run Arvados tests or other development tools, you must ensure `/usr/local/bin` appears in your `$PATH` before any directories with other versions like `/usr/bin`.
+
+### Arvados `$CONFIGSRC`
 
 The playbook writes your database configuration at `~/.config/arvados/config.yml` and sets up a hook `/etc/profile.d/arvados-test.sh` to set your `CONFIGSRC` environment variable to that directory. If most tests fail with a database connection error, check that this variable is set:
 
@@ -128,9 +158,5 @@ $ echo "${CONFIGSRC:-UNSET}"
 If that reports `UNSET`, add a line to set `CONFIGSRC="$HOME/.config/arvados"` to your shell configuration, or set it manually when you run `run-tests.sh`:
 
 ```sh
-$ WORKSPACE="$PWD" CONFIGSRC="$HOME/.config/arvados" build/run-tests.sh ...
+$ CONFIGSRC="$HOME/.config/arvados" build/run-tests.sh ...
 ```
-
-### Notes
-
-The playbook will install symlinks for Go, Node, Python, Ruby, Singularity, and Yarn under `/usr/local/bin`. The actual tools are installed under `/opt`. If you need different versions of these tools for other work on this system, you’ll need to customize your `PATH` environment variable so the Arvados versions are found first when you’re doing Arvados work.
