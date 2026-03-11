@@ -51,23 +51,16 @@ Full examples:
 
 ## Source code formatting
 
-(Unless otherwise specified by style guide…)
+These are general baseline rules except when a language-specific guide specifies otherwise.
 
-No TAB characters in source files. [Except go programs.](https://golang.org/cmd/gofmt/)
+No TAB characters in source files [except Go](https://golang.org/cmd/gofmt/).
 
-- Emacs: add to `~/.emacs` → `(setq-default indent-tabs-mode nil)`
-- Vim: add to `~/.vimrc` → `:set expandtab`
-- See [Git setup](#Git setup) below.
+- For Emacs, add `(setq-default indent-tabs-mode nil)` to `~/.emacs`.
+- For Vim, add `:set expandtab` to `~/.vimrc`.
 
-No long (\>80 column) lines, except
+Avoid long (\>100 column) lines.
 
-- when the alternative is really clunky
-- in Go where Google style guide prevails, and e.g., [function and method calls should not be separated based solely on line length](https://google.github.io/styleguide/go/decisions#function-formatting)
-
-No whitespace at the end of lines. Make git-diff show you:
-
-git config color.diff.whitespace “red reverse”  
-git diff —check
+No whitespace at the end of lines unless technically required (like Markdown line breaks).
 
 ## What to include
 
@@ -90,7 +83,7 @@ If you fix up existing indentation/formatting, do that in a separate commit.
 
 ## Go
 
-gofmt, golint, etc., and https://github.com/golang/go/wiki/CodeReviewComments
+Follow gofmt, golint, etc., and <https://github.com/golang/go/wiki/CodeReviewComments>
 
 Use `%w` when wrapping an error with fmt.Errorf(), so errors.As() can access the wrapped error.
 
@@ -110,7 +103,7 @@ if err != nil {
 
 ## Ruby
 
-https://github.com/bbatsov/ruby-style-guide
+Follow <https://github.com/bbatsov/ruby-style-guide>
 
 ## Python
 
@@ -120,7 +113,7 @@ For code, follow [PEP 8](https://peps.python.org/pep-0008/).
 
 When you add functions, methods, or attributes that SDK users should not use, their name should start with a leading underscore. This is a common convention to signal that an interface is not intended to be public. Anything named this way will be excluded from our SDK web documentation by default.
 
-You’re encouraged to add type annotations to functions and methods. As of May 2024 these are purely for documentation: we are not type checking any of our Python. Note that your annotations must be understood by the oldest version of Python we currently support (3.8).
+You’re encouraged to add type annotations to functions and methods. As of May 2024 these are purely for documentation: we are not type checking any of our Python. Note that your annotations must be understood by the oldest version of Python we currently support (3.10).
 
 ### Python docstrings
 
@@ -128,105 +121,64 @@ Public classes, methods, and functions should all have docstrings. The content o
 
 Format docstrings with Markdown and follow these style rules:
 
-\* Document function argument lists after the high-level description following this format for each argument:
+* Document function argument lists after the high-level description following this format for each argument:
 
-    * name: type --- Description
+        * name: type --- Description
 
-Use exactly three minus-hyphens to get an em dash in the web rendering. Provide a helpful type hint whenever practical. The type hint should be written in “modern” style:
+   Use exactly three minus-hyphens to get an em dash in the web rendering. Provide a helpful type hint whenever practical. The type hint should be written in “modern” style with builtin subscripting and type union syntax, like `list[str | bytes]`.
 
-Use builtin subscripting from PEP 585/Python 3.9, like `dict[str, str]`, `list[tuple[int, str]]`
+   Use fully qualified names for custom types. This way pdoc hyperlinks them.
 
-Use type union syntax from PEP 604/Python 3.10, like `int | None`, `list[str | bytes]`
+* When something is deprecated, write a `.. WARNING:: Deprecated` admonition immediately after the first line. Its text should explain that the thing is deprecated, and suggest what to use instead. For example:
 
-Use fully qualified names for custom types. This way pdoc hyperlinks them.
+        def add(a, b):
+            """Add two things.
 
-\* When something is deprecated, write a `.. WARNING:: Deprecated` admonition immediately after the first line. Its text should explain that the thing is deprecated, and suggest what to use instead. For example:
+            .. WARNING:: Deprecated
+               This function is deprecated. Use the `+` operator instead.
 
-    def add(a, b):
-        """Add two things.
+            …
+            """
 
-        .. WARNING:: Deprecated
-           This function is deprecated. Use the `+` operator instead.
+   You can similarly note private methods with `.. ATTENTION:: Internal`.
+
+* Mark up all identifiers outside the type hint with backticks. When the identifier exists in the current module, use the short name. Otherwise, use the fully-qualified name. Our web documentation will automatically link these identifiers to their corresponding documentation.
+
+* Mark up links using Markdown’s footnote style. For example:
+
+        """Python docstring following [PEP 257][pep257].
+
+
+        """
+
+   This looks best in plaintext. A descriptive identifier is nice if you can keep it short, but if that’s challenging, plain ordinals are fine too.
+
+* Mark up headers (e.g., in a module docstring) using underline style. For example:
+
+        """Generic utility module
+
+        Filesystem functions
+        --------------------
+
+        …
+
+        Regular expressions
+        -------------------
 
         …
         """
 
-You can similarly note private methods with `.. ATTENTION:: Internal`.
-
-\* Mark up all identifiers outside the type hint with backticks. When the identifier exists in the current module, use the short name. Otherwise, use the fully-qualified name. Our web documentation will automatically link these identifiers to their corresponding documentation.
-
-\* Mark up links using Markdown’s footnote style. For example:
-
-    """Python docstring following [PEP 257][pep257].
-
-
-    """
-
-This looks best in plaintext. A descriptive identifier is nice if you can keep it short, but if that’s challenging, plain ordinals are fine too.
-
-\* Mark up headers (e.g., in a module docstring) using underline style. For example:
-
-    """Generic utility module
-
-    Filesystem functions
-    --------------------
-
-    …
-
-    Regular expressions
-    -------------------
-
-    …
-    """
-
-This looks best in plaintext.
+   This looks best in plaintext.
 
 The goal of these style rules is to provide a readable, consistent appearance whether people read the documentation in plain text (e.g., using `pydoc`) or their browser (as rendered by `pdoc`).
 
 ## JavaScript
 
-Follow the Airbnb Javascript coding style guide unless otherwise stated:  
-https://github.com/airbnb/javascript
+We already have 4-space indents everywhere, so do that.
 
-We already have 4-space indents everywhere, though, so do that.
+Other than that, follow the [Airbnb Javascript coding style](https://github.com/airbnb/javascript) guide unless otherwise stated.
 
-## Git setup
-
-Configure git to prevent you from committing whitespace errors.
-
-    git config --global core.whitespace tab-in-indent,trailing-space
-    git config --global apply.whitespace error
-
-Add a DCO sign-off to the default commit message.
-
-    cd .../arvados
-    printf '\n\nArvados-DCO-1.1-Signed-off-by: %s <%s>\n' "$(git config user.name)" "$(git config user.email)" >~/.arvados-dco.txt
-    git config commit.template ~/.arvados-dco.txt
-
-Add a DCO sign-off and “refs \#xxxx” comment (referencing the issue# in the name of the branch being merged) to the default merge commit message.
-
-    cd .../arvados
-    cat >.git/hooks/prepare-commit-msg <<'EOF'
-    #!/bin/sh
-
-    case "$2,$3" in
-        merge,)
-            br=$(head -n1 ${1})
-            n=$(echo "${br}" | egrep -o '[0-9]+')
-            exec >${1}
-            echo "${br}"
-            echo
-            echo "refs #${n}"
-            echo
-            echo "Arvados-DCO-1.1-Signed-off-by: $(git config user.name) <$(git config user.email)>"
-            ;;
-        *)
-            ;;
-    esac
-    EOF
-    chmod +x .git/hooks/prepare-commit-msg
-
-## GUI Design Guidelines (Workbench 2)
+## Workbench Design Guidelines
 
 ### Font Sizes
 
@@ -266,9 +218,9 @@ This should be able to be-resized up to 200% without loss of content or function
 
 Preferred Icon Repositories:
 
-- https://v5.mui.com/material-ui/material-icons/
-- https://materialdesignicons.com/
-- https://fontawesome.com/v5/search
+- <https://v5.mui.com/material-ui/material-icons/>
+- <https://materialdesignicons.com/>
+- <https://fontawesome.com/v5/search>
 
 ### Buttons
 
