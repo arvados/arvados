@@ -56,7 +56,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbarWrapper: {
         flexShrink: 1,
-        marginRight: theme.spacing(1),
+        marginRight: theme.spacing(0.5),
         marginTop: '-5px',
         marginBottom: '-5px',
         zIndex: 1000,
