@@ -49,7 +49,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
 
     React.useEffect(() => {
         if (currentKey) {
-            setPropertyKeyId(getTagKeyID(currentKey, vocabulary));
+            setPropertyKeyId(vocabulary.strict_tags ? getTagKeyID(currentKey, vocabulary) : currentKey);
         } else {
             setPropertyKeyId(undefined);
         }

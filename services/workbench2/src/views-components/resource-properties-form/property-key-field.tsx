@@ -125,6 +125,9 @@ export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation,
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
             const newValue = e.currentTarget.value;
             setKey(newValue);
+            if (vocabulary.strict_tags === false) {
+                onSelect(newValue);
+            }
         }}
     />
 };
