@@ -208,65 +208,70 @@ def json_or_file_loader(value: str):
     standard input). This is intended to be used as a custom loader function
     for JSONStringArgument.
     """
-    value_is_json = False
-    value_is_path = False
-    try:
-        content = json.loads(value)
-        value_is_json = True
-    except json.JSONDecodeError:
-        pass
-
     fh = None
-    fh_open_error_msg = ""
+    no_file_error = None
     if value == "-":
         fh = sys.stdin
-        value_is_path = True  # technically not path but we get fh anyway.
     else:
         try:
             fh = open(value, "rb")
-            value_is_path = True
-        # For "FileNotFoundError" (a specific subtype of OSError) we don't need
-        # to print the redundant "further info" (the path); "ValueError"
-        # indicates illegal characters in path and wouldn't contain much useful
-        # info.
-        except (FileNotFoundError, ValueError):
+        except FileNotFoundError as err:
+            no_file_error = err
+        except ValueError:
+            # Input contains character that cannot appear in path; the
+            # reasonable explanation is that it's not intended as a path.
             pass
-        # Other kinds of OSError typically indicate bona-fide file-access
-        # error for existing file.
-        except OSError as exc:
-            fh_open_error_msg = str(exc)
+        except OSError as err:
+            # Directly report this external condition.
+            raise err from None
 
-    if value_is_json and value_is_path:
-        assert value != "-"
-        fh.close()
-        raise argparse.ArgumentTypeError(
-            f"{value!r} is both valid JSON and a readable file."
-            " Please consider renaming the file."
-        ) from None
-
-    if not (value_is_json or value_is_path):
-        msg = f"{value!r} is neither valid JSON nor a readable file."
-        if fh_open_error_msg:
-            msg += f" Further info when opening file: {fh_open_error_msg}"
-        raise argparse.ArgumentTypeError(msg) from None
-
-    if value_is_path:
+    # Handle as path.
+    if fh is not None:
+        # Corner case first.
         try:
-            content = json.load(fh)
+            retval = json.loads(value)
         except json.JSONDecodeError:
+            pass
+        else:
+            assert value != "-"
+            fh.close()
+            raise argparse.ArgumentTypeError(
+                f"{value!r} is both valid JSON and a readable file."
+                " Please consider renaming the file."
+            ) from None
+        # Main handling logic.
+        try:
+            retval = json.load(fh)
+        except json.JSONDecodeError as json_error:
             if value == "-":
-                msg = "content of standard input is not valid JSON."
+                msg = "Content of standard input is not valid JSON"
             else:
-                msg = (
-                    f"{value!r} is neither valid JSON"
-                    " nor a readable file containing valid JSON."
-                )
+                msg = f"Content of file {value!r} is not valid JSON"
+            msg += f": {json_error!s}"
             raise argparse.ArgumentTypeError(msg) from None
+        else:
+            return retval
         finally:
             if value != "-":
                 fh.close()
 
-    return content
+    # Handle as string.
+    try:
+        retval = json.loads(value)
+    except json.JSONDecodeError as json_error:
+        if no_file_error is not None:
+            # In user-facing error message, mention the fact that we've tried
+            # but failed to find it as file (may help discover typo or
+            # moved/deleted file when path is intended).
+            msg = (
+                f"{value!r} is not a readable file or valid JSON"
+                f" [JSON decoding error: {json_error!s}]"
+            )
+        else:
+            msg = f"{value!r} is not valid JSON: {json_error!s}"
+        raise argparse.ArgumentTypeError(msg) from None
+    else:
+        return retval
 
 
 JSONArgument = functools.partial(

@@ -99,8 +99,15 @@ class ValidateFiltersTestCase(unittest.TestCase):
 
 
 # Used for matching verbatim error messages.
-def verbatim(text):
+def verbatim(text: str) -> str:
     return "^" + re.escape(text) + "$"
+
+
+def _get_json_decode_error(text: str) -> str:
+    try:
+        json.loads(text)
+    except json.JSONDecodeError as err:
+        return str(err)
 
 
 JSON_OBJECTS = (
@@ -148,9 +155,10 @@ class TestJSONStringArgument:
     @pytest.mark.parametrize("value", INVALID_JSON)
     def test_plain_invalid(self, value):
         parser = cmd_util.JSONStringArgument()
+        details = _get_json_decode_error(value)
         with pytest.raises(
             argparse.ArgumentTypeError,
-            match="^" + re.escape(fr"{value!r} is not valid JSON") + r"\b.*$"
+            match=verbatim(f"{value!r} is not valid JSON: {details}")
         ):
             parser(value)
 
@@ -273,24 +281,25 @@ class TestJsonOrFileLoader:
 
     @pytest.mark.parametrize("input_value", INVALID_JSON)
     def test_reject_invalid_stdin_content(self, input_value):
+        details = _get_json_decode_error(input_value)
+        err_notes = verbatim(
+            f"Content of standard input is not valid JSON: {details}"
+        )
         with unittest.mock.patch(
             "sys.stdin", new_callable=io.StringIO
         ) as mock_stdin:
             mock_stdin.write(input_value)
             mock_stdin.seek(0)
-            with pytest.raises(
-                argparse.ArgumentTypeError,
-                match=verbatim("content of standard input is not valid JSON.")
-            ):
+            with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
                 cmd_util.json_or_file_loader("-")
 
     @pytest.mark.parametrize("value", INVALID_JSON)
     def test_reject_file_with_invalid_json(self, tmp_path, value):
         f = tmp_path / "test.not-json"
         f.write_text(value)
+        details = _get_json_decode_error(value)
         err_notes = verbatim(
-            f"{str(f)!r} is neither valid JSON"
-            " nor a readable file containing valid JSON."
+            f"Content of file {str(f)!r} is not valid JSON: {details}"
         )
         with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
             cmd_util.json_or_file_loader(str(f))
@@ -306,56 +315,35 @@ class TestJsonOrFileLoader:
         check_fd = _CountOpenFDs()
         # cd into the temp directory so that we can refer to the file with its
         # basename (which is valid JSON)
-        with _pushd(tmp_path), check_fd, pytest.raises(
+        with pytest.raises(
             argparse.ArgumentTypeError, match=err_notes
-        ):
+        ), check_fd, _pushd(tmp_path):
             cmd_util.json_or_file_loader(crafted_basename)
         check_fd.assert_no_leak()
 
-    def test_path_resembles_json_but_is_not_readable_file(self, tmp_path):
+    def test_path_resembles_json_and_is_not_readable_file(self, tmp_path):
         # Input is both valid JSON string and existing directory (not readable
-        # file). The JSON-string interpretation takes precedence.
-        # TODO: consider emitting a warning?
+        # file). The resemblance of file name to JSON should not matter; it is
+        # treated as just another OSError case, and we expect that the
+        # offending path appears in the exception details.
         crafted_name = '"bar"'
         tmp_dir = tmp_path / crafted_name
         os.mkdir(tmp_dir)
         # cd into the temp directory so that we can refer to the subdir with
         # its name (which is valid JSON)
-        with _pushd(tmp_path):
-            content = cmd_util.json_or_file_loader(crafted_name)
-        assert content == json.loads(crafted_name)
-
-    def test_not_json_and_not_path(self):
-        # This is a simple "file not found" case (open() raises
-        # FileNotFoundError), and the error message should not contain "further
-        # info", which would've been redundant.
-        with tempfile.NamedTemporaryFile() as gone_file:
-            path = gone_file.name
-        err_notes = verbatim(
-            f"{str(path)!r} is neither valid JSON nor a readable file."
-        )
-        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
-            cmd_util.json_or_file_loader(path)
-
-    def test_not_json_and_illegal_path(self):
-        # Null byte in path, illegal on almost all platforms. Trying to open
-        # such path will cause ValueError, which doesn't cause "further info"
-        # to be printed.
-        path = "\0"
-        err_notes = verbatim(
-            f"{str(path)!r} is neither valid JSON nor a readable file."
-        )
-        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
-            cmd_util.json_or_file_loader(path)
+        with pytest.raises(
+            IsADirectoryError,  # A subclass of OSError.
+            match=f"^.*: {re.escape(repr(crafted_name))}"
+        ), _pushd(tmp_path):
+            cmd_util.json_or_file_loader(crafted_name)
 
     def test_not_json_and_is_directory(self, tmp_path):
         path = tmp_path / "subdir"
         os.mkdir(path)
-        err_notes = "(?i)^" + re.escape(
-            f"{str(path)!r} is neither valid JSON nor a readable file."
-            " Further info when opening file:"
-        ) + r".+Is a directory\b.*$"
-        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
+        with pytest.raises(
+            IsADirectoryError,
+            match=f"^.*: {re.escape(repr(str(path)))}"
+        ):
             cmd_util.json_or_file_loader(str(path))
 
     def test_not_json_and_file_unreadable(self):
@@ -370,11 +358,32 @@ class TestJsonOrFileLoader:
             finally:
                 os.chmod(bad_file.fileno(), 0o600)
 
-        err_notes = "(?i)^" + re.escape(
-            f"{path!r} is neither valid JSON nor a readable file."
-            " Further info when opening file:"
-        ) + r".+Permission denied\b.*$"
-        with pytest.raises(argparse.ArgumentTypeError, match=err_notes), ctx():
+        with pytest.raises(
+            PermissionError,  # A subclass of OSError
+            match=f"^.*: {re.escape(repr(path))}"
+        ), ctx():
+            cmd_util.json_or_file_loader(path)
+
+    def test_not_json_and_not_path(self):
+        # This is a simple "file not found" case (open() raises
+        # FileNotFoundError), and the error message should not contain the path
+        # in the trailing part.
+        with tempfile.NamedTemporaryFile() as gone_file:
+            path = gone_file.name
+        details = _get_json_decode_error(path)
+        err_notes = verbatim(
+            f"{path!r} is not a readable file or valid JSON"
+            f" [JSON decoding error: {details}]"
+        )
+        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
+            cmd_util.json_or_file_loader(path)
+
+    def test_not_json_and_illegal_path(self):
+        # Null byte in path, illegal on almost all platforms.
+        path = "\0"
+        details = _get_json_decode_error(path)
+        err_notes = verbatim(f"{path!r} is not valid JSON: {details}")
+        with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
             cmd_util.json_or_file_loader(path)
 
 
@@ -414,9 +423,9 @@ class TestJSONArgument:
     def test_argument_path_not_json(self, path):
         if path is None:
             path = self.json_file.name
+        details = _get_json_decode_error(str(path))
         err_notes = verbatim(
-            f"{str(path)!r} is neither valid JSON"
-            " nor a readable file containing valid JSON."
+            f"Content of file {str(path)!r} is not valid JSON: {details}"
         )
         with pytest.raises(argparse.ArgumentTypeError, match=err_notes):
             self.parser(str(path))
