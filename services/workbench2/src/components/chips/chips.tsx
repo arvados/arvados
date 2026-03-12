@@ -160,13 +160,14 @@ export type PropertyChips = Record<string, string | string[]>;
 
 export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabulary): PropertyChips => {
     const vocabularyChips: PropertyChips = {};
+    const strictMode = vocabulary.strict_tags === true;
 
     for (const [keyLabel, valueLabel] of Object.entries(chips)) {
         if (!valueLabel) continue;
 
-        // Get the tag key ID from the human-readable label
-        const tagKeyID = getTagKeyID(keyLabel, vocabulary);
-        if (!tagKeyID) continue;
+        const mappedTagKeyID = getTagKeyID(keyLabel, vocabulary);
+        const tagKeyID = mappedTagKeyID || keyLabel;
+        if (strictMode && !mappedTagKeyID) continue;
 
         if (Array.isArray(valueLabel)) {
             const vocabularyValues: string[] = [];
@@ -174,6 +175,10 @@ export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabul
                 const tagValueID = getTagValueID(tagKeyID, singleValue, vocabulary);
                 if (tagValueID) {
                     vocabularyValues.push(tagValueID);
+                    continue;
+                }
+                if (!strictMode) {
+                    vocabularyValues.push(singleValue);
                 }
             }
             if (vocabularyValues.length > 0) {
@@ -183,6 +188,8 @@ export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabul
             const tagValueID = getTagValueID(tagKeyID, valueLabel, vocabulary);
             if (tagValueID) {
                 vocabularyChips[tagKeyID] = tagValueID;
+            } else if (!strictMode) {
+                vocabularyChips[tagKeyID] = valueLabel;
             }
         }
     }
