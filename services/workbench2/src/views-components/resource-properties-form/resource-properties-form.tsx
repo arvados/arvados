@@ -59,19 +59,22 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
         setChips(properties);
     }, [properties]);
 
-    const handleAddProperty = (ev) => {
-        ev.preventDefault();
-        if (currentKey && currentValue) {
-            if (Array.isArray(properties[currentKey])) {
-                setProperties({...properties, [currentKey]: [...(properties[currentKey] as string[]), currentValue]});
-            } else if (properties[currentKey]) {
-                setProperties({...properties, [currentKey]: [properties[currentKey] as string, currentValue]});
-            } else {
-                setProperties({...properties, [currentKey]: currentValue});
-            }
+    const addPropertyValue = (prev: PropertyChips, key: string, value: string): PropertyChips => {
+        const existing = prev[key];
+        if (Array.isArray(existing)) {
+            return existing.includes(value) ? prev : { ...prev, [key]: [...existing, value] };
         }
+        if (typeof existing === 'string') {
+            return existing === value ? prev : { ...prev, [key]: [existing, value] };
+        }
+        return { ...prev, [key]: value };
+    };
+
+    const handleAddProperty = (ev: React.FormEvent) => {
+        ev.preventDefault();
+        if (!currentKey || !currentValue) return;
+        setProperties(prev => addPropertyValue(prev, currentKey, currentValue));
         setCurrentValue(undefined);
-        // sending an epmty object that the DialogPropertyValueInput component can listen to and clear its value
         sendClearValueSignal({});
     };
 
@@ -126,7 +129,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
                 </AddButton>
             </Grid>
         </Grid>
-        <Grid>
+        <Grid data-cy='resource-properties-list'>
             <Chips
                 values={formatChips(properties)}
                 clickable={true}
