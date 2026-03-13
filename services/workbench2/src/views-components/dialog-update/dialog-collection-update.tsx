@@ -23,6 +23,7 @@ import { Vocabulary } from 'models/vocabulary';
 import { getStorageClasses } from 'common/config';
 import { COLLECTION_UPDATE_FORM_NAME } from 'store/collections/collection-update-actions';
 import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
+import { isEqual } from 'lodash';
 
 type CssRules = 'propertiesForm';
 
@@ -55,13 +56,21 @@ export const DialogCollectionUpdate = compose(
     withDialog(COLLECTION_UPDATE_FORM_NAME)
 )(({ data, closeDialog, open, vocabulary, storageClasses, classes, updateCollection }: DialogCollectionProps & WithStyles<CssRules>) => {
         const initialData = data || { uuid: '', name: '', description: '', properties: {}, storageClassesDesired: [] };
+        const initialProperties = initialData.properties || {};
+        const initialStorageClassesDesired = initialData.storageClassesDesired || storageClasses || ['default'];
         const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation(initialData.name || '', COLLECTION_NAME_VALIDATION, 'Collection Name');
         const [description, setDescription, descriptionErrs] = useStateWithValidation(initialData.description || '', COLLECTION_DESCRIPTION_VALIDATION, 'Description');
-        const [chips, setChips] = useState<PropertyChips>(getChipsFromVocabulary(initialData.properties || {}, vocabulary));
-        const [storageClassesDesired, setStorageClassesDesired] = useState<string[]>(initialData.storageClassesDesired || storageClasses || ['default']);
+        const [chips, setChips] = useState<PropertyChips>(getChipsFromVocabulary(initialProperties, vocabulary));
+        const [storageClassesDesired, setStorageClassesDesired] = useState<string[]>(initialStorageClassesDesired);
         const [formErrors, setFormErrors] = useState<string[]>([]);
         const [submitErr, setSubmitErr] = useState<string>('');
         const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+        const currentProperties = getVocabularyFromChips(chips, vocabulary);
+        const submitDisabled = !collectionNameErrs.length && !descriptionErrs.length &&
+            collectionName === (initialData.name || '') &&
+            description === (initialData.description || '') &&
+            isEqual(currentProperties, initialProperties) &&
+            isEqual(storageClassesDesired, initialStorageClassesDesired);
 
         useEffect(() => {
             if (data) {
@@ -131,6 +140,7 @@ export const DialogCollectionUpdate = compose(
                 fields={fields()}
                 submitLabel='Save'
                 formErrors={formErrors}
+                submitDisabled={submitDisabled}
                 isSubmitting={isSubmitting}
                 onSubmit={(ev) => {
                     ev.preventDefault();
@@ -140,7 +150,7 @@ export const DialogCollectionUpdate = compose(
                         name: collectionName,
                         description: description,
                         storageClassesDesired: storageClassesDesired,
-                        properties:  getVocabularyFromChips(chips, vocabulary),
+                        properties: currentProperties,
                     }, setSubmitErr);
                 }}
                 closeDialog={closeDialog}

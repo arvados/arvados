@@ -90,29 +90,13 @@ type DialogRichTextFieldProps = {
 
 export const DialogRichTextField = withStyles(richTextStyles)((props: WithStyles<RichTextCssRules> & DialogRichTextFieldProps) => {
     const [rteValue, setRteValue] = useState(RichTextEditor.createValueFromString(props.defaultValue, 'html'));
-    const [isFocused, setIsFocused] = useState(false);
-    const [hasChanged, setHasChanged] = useState(false);
     const plainTextValue: string = rteValue.getEditorState().getCurrentContent().getPlainText().trim();
     const htmlValue: string = plainTextValue ? rteValue.toString('html') : '';
     const fieldErrors = getFieldErrors(plainTextValue, props.validators);
 
         useEffect(() => {
             props.setValue(htmlValue);
-        }, []);
-
-        useEffect(() => {
-            if (isFocused && hasChanged) {
-                props.setValue(htmlValue);
-            }
-        }, [isFocused, htmlValue]);
-
-        useEffect(() => {
-            if (isFocused) setHasChanged(true);
-        }, [plainTextValue]);
-
-        const onFocus = () => {
-            setIsFocused(true);
-        }
+        }, [htmlValue, props]);
 
         const showError = () => fieldErrors.length > 0
 
@@ -123,8 +107,6 @@ export const DialogRichTextField = withStyles(richTextStyles)((props: WithStyles
                     onChange={(value) => {
                         setRteValue(value);
                     }}
-                    onBlur={() => setIsFocused(false)}
-                    onFocus={onFocus}
                     placeholder={props.label} />
                     {showError() &&
                         <Typography>

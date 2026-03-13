@@ -22,6 +22,7 @@ import { RootState } from 'store/store';
 import { Vocabulary } from 'models/vocabulary';
 import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
 import { GroupClass } from 'models/group';
+import { isEqual } from 'lodash';
 
 type CssRules = 'propertiesForm';
 
@@ -56,9 +57,10 @@ export const DialogProjectUpdate = compose(
     withDialog(PROJECT_UPDATE_FORM_NAME)
 )(({ data, closeDialog, open, vocabulary, allowSlash, classes, updateProject, updateGroup }: DialogProjectProps & WithStyles<CssRules>) => {
         const initialData = data || { uuid: '', name: '', description: '', properties: {} };
+    const initialProperties = initialData.properties || {};
         const [projectName, setProjectName, projectNameErrs] = useStateWithValidation(initialData.name || '', PROJECT_NAME_VALIDATION, 'Project Name');
         const [description, setDescription, descriptionErrs] = useStateWithValidation(initialData.description || '', PROJECT_DESCRIPTION_VALIDATION, 'Description');
-        const [chips, setChips] = useState<PropertyChips>(getChipsFromVocabulary(initialData.properties || {}, vocabulary));
+    const [chips, setChips] = useState<PropertyChips>(getChipsFromVocabulary(initialProperties, vocabulary));
         const [formErrors, setFormErrors] = useState<string[]>([]);
         const [submitErr, setSubmitErr] = useState<string>('');
         const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -66,6 +68,11 @@ export const DialogProjectUpdate = compose(
         const sourcePanel = data?.sourcePanel || GroupClass.PROJECT;
             const isGroup = sourcePanel === GroupClass.ROLE;
             const title = isGroup ? 'Edit Group' : 'Edit Project';
+        const currentProperties = getVocabularyFromChips(chips, vocabulary);
+        const submitDisabled = !projectNameErrs.length && !descriptionErrs.length &&
+            projectName === (initialData.name || '') &&
+            description === (initialData.description || '') &&
+            isEqual(currentProperties, initialProperties);
 
         useEffect(() => {
             if (data) {
@@ -128,6 +135,7 @@ export const DialogProjectUpdate = compose(
                 fields={fields()}
                 submitLabel='Save'
                 formErrors={formErrors}
+                submitDisabled={submitDisabled}
                 isSubmitting={isSubmitting}
                 onSubmit={(ev) => {
                     ev.preventDefault();
@@ -137,7 +145,7 @@ export const DialogProjectUpdate = compose(
                         uuid: initialData.uuid,
                         name: projectName,
                         description: description,
-                        properties: getVocabularyFromChips(chips, vocabulary),
+                        properties: currentProperties,
                     }, setSubmitErr);
                 }}
                 closeDialog={closeDialog}
