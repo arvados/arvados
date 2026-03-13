@@ -49,7 +49,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
 
     React.useEffect(() => {
         if (currentKey) {
-            setPropertyKeyId(vocabulary.strict_tags ? getTagKeyID(currentKey, vocabulary) : currentKey);
+            setPropertyKeyId(getTagKeyID(currentKey, vocabulary));
         } else {
             setPropertyKeyId(undefined);
         }
@@ -111,6 +111,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
             data-cy='property-field-value'>
                 <DialogPropertyValueInput
                     propertyKeyId={propertyKeyId || ''}
+                    propertyKeyName={currentKey || ''}
                     vocabulary={vocabulary}
                     onSelect={setCurrentValue}
                     setValueErrors={setValueErrors}

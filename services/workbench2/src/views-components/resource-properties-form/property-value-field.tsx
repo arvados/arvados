@@ -89,12 +89,13 @@ type DialogPropertyValueInputProps = VocabularyProp & {
     showErrors?: boolean,
     skipValidation?: boolean,
     propertyKeyId: string,
+    propertyKeyName?: string,
     clearValueSignal?: {},
     onSelect: (value: string) => void,
     setValueErrors: (errors: string[]) => void,
 };
 
-export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, showErrors, skipValidation, clearValueSignal, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
+export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, showErrors, skipValidation, clearValueSignal, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
     const validationArray = skipValidation ? [] : getValueValidation(propertyKeyId, vocabulary);
     const [value, setValue, valueErrs] = useStateWithValidation('', validationArray, 'Value');
 
@@ -106,13 +107,17 @@ export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, showErrors
         setValueErrors(valueErrs);
     }, [valueErrs]);
 
+    const hasVocabularyKey = propertyKeyId.length > 0;
+    const allowArbitraryValue = vocabulary.strict_tags === false && !!propertyKeyName;
+    const isDisabled = !(hasVocabularyKey || allowArbitraryValue);
+
     return <Autocomplete
         label='Value'
         items={[]}
         value={value}
         error={showErrors && valueErrs.length > 0}
         helperText={showErrors ? valueErrs.join(', ') : undefined}
-        disabled={!propertyKeyId.length}
+        disabled={isDisabled}
         suggestions={getSuggestions(value, propertyKeyId, vocabulary)}
         renderSuggestion={
             (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
