@@ -26,15 +26,15 @@ If someone has submitted a pull request, you can create a local branch from it b
 $ git fetch github "pull/PRNUM/head:BRANCHNAME"
 ```
 
-`PRNUM` is the pull request ID number at the end of the GitHub URL. `BRANCHNAME` is any name you want to give it. You're encouraged to follow the Arvados convention of `PRNUM-brief-description`.
+`PRNUM` is the pull request ID number at the end of the GitHub URL. `BRANCHNAME` is any name you want to give to the local branch. You're encouraged to follow the Arvados convention of `PRNUM-brief-description`.
 
-## Reviewing a Pull Request
+## Review a Pull Request
 
 Reviewing a pull request is about verifying that the branch follows all our [coding standards](CodingStandards.md). You should be able to verify that the ready-to-merge checklist is complete and accurate: the branch does what it says, tests pass, it follows our style, etc.
 
 If you notice scale issues, bugs, missing documentation, etc., you can bring that up as part of the review and it should be addressed. However, the *point* of review is *not* to try to find problems. The *point* is to verify that the branch solves a problem and the code is maintainable.
 
-## Merging a Pull Request
+## Merge a Pull Request
 
 When a branch passes review, it should be merged to `main`. Core engineers can (and normally do) merge their own branches. Contributions from others need to be merged by a core engineer. Either way, the process is:
 
