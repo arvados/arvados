@@ -17,7 +17,7 @@ See [documentation about the publishing API we use](https://central.sonatype.org
 
 [Log into Sonatype](https://central.sonatype.com/usertoken) and under the account menu select “User Tokens” to review and manage tokens. Our current Jenkins token is stored in gopass as `curii-systems/websites/oss.sonatype.org/jenkins`.
 
-## gradle.properties
+## `gradle.properties`
 
 To upload to Sonatype, you need the token (see above) and a secret key. You must upload a GPG-signed package. All these parameters are set in `gradle.properties` which we keep as a Jenkins secret. Note that the property values after the equals sign should not be quoted. I’m not certain if spaces are allowed around the equals sign, but currently it works with no extra spaces.
 

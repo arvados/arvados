@@ -289,16 +289,18 @@ Check that webshell works properly.
 
 ### Peer federation
 
-2 or more clusters are configured with a ‘Remoteclusters’ entry in config.yml.
+2 or more clusters are configured with a `RemoteClusters` entry in `config.yml`.
 
 ### Login cluster federation
 
-2 or more clusters are configured with a ‘Remoteclusters’ entry in config.yml. One of the clusters is the ‘login cluster’, which means the **other** clusters have a section like this in their config (clsr1 is the login cluster):
+2 or more clusters are configured with a `RemoteClusters` entry in `config.yml`. One of the clusters is the ‘login cluster’, which means the **other** clusters have a section like this in their config (clsr1 is the login cluster):
 
-    Clusters:
-      clsr2:
-        Login:
-          LoginCluster: clsr1
+```yaml
+Clusters:
+  clsr2:
+    Login:
+      LoginCluster: clsr1
+```
 
 #### Groups
 

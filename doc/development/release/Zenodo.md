@@ -5,7 +5,7 @@
 # Updating Zenodo Version of Arvados after Release
 
 1.  Download a `.zip` of your new Arvados release from [GitHub Releases](https://github.com/arvados/arvados/tags)
-2.  Log in to [Zenodo](https://zenodo.org/) using the credentials from `gopass "curii-systems/zenodo.org/sysadmin+zenodo`curii.com”@
+2.  Log in to [Zenodo](https://zenodo.org/) using the credentials from `gopass "curii-systems/zenodo.org/sysadmin+zenodo@curii.com"`
 3.  Go to the [Arvados record](https://zenodo.org/records/15213491) and press the the New Version button  
     (Using new versions lets us use the overarching DOI for our `citations.md` and keep all the versions together on Zenodo)
 4.  In the form, update the following:
