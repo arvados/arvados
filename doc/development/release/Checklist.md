@@ -18,174 +18,35 @@ Meta-process:
 1.  Periodically review this documented process reflects our actual process & update it
 2.  When steps are added/changed/rearranged/removed, be sure to update [`cmd/art/TASKS` in the `arvados-dev` repository](https://dev.arvados.org/projects/arvados/repository/arvados-dev/revisions/main/show/cmd/art).
 
-<table>
-<thead>
-<tr class="header">
-<th>Step</th>
-<th>Who</th>
-<th>What</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>0</td>
-<td>engineering</td>
-<td>Build new features, refine good code into great code</td>
-</tr>
-<tr class="even">
-<td>1</td>
-<td>ops</td>
-<td><a href="https://ci.arvados.org/view/All/job/packer-build-compute-image/">Build a new tordo compute image</a> against the latest development packages.<br />
-<a href="https://dev.arvados.org/projects/ops/wiki/Updating_clusters">Update the tordo configuration</a> and test it with a couple representative workflows (at least one bioinformatics workflow and one S3 download workflow).<br />
-If everything works well, update version pins based on the versions installed in the new image. Update:</td>
-</tr>
-<tr class="odd">
-<td>2</td>
-<td>engineering</td>
-<td>Prepare release branch on the <code>arvados</code> and <code>arvados-formula</code> repositories. For major releases, this means branching a new <code>X.Y-staging</code> from main. For minor releases, this means cherry-picking features onto the existing <code>X.Y-staging</code> branch. Ensure that Redmine issues for features or bugfixes that are appearing for the first time in this version are associated with the correct release (for major releases, use <code>art redmine issues find-and-associate</code>).</td>
-</tr>
-<tr class="even">
-<td>3</td>
-<td>engineering</td>
-<td>Ensure that the release staging branch passes automated tests on Jenkins.</td>
-</tr>
-<tr class="odd">
-<td>4</td>
-<td>engineering</td>
-<td>Review release branch to make sure all commits that need to be in the release are in the release. If new commits are added, resume checklist from step 3.</td>
-</tr>
-<tr class="even">
-<td>5</td>
-<td>product mgr</td>
-<td>Write release notes and publish them <a href="https://www-dev.arvados.org/releases/">on the www-dev site</a>.</td>
-</tr>
-<tr class="odd">
-<td>6</td>
-<td>everyone</td>
-<td>Review release notes</td>
-</tr>
-<tr class="even">
-<td>7</td>
-<td>product mgr</td>
-<td>Create a Redmine release for the next patch release after the current one.</td>
-</tr>
-<tr class="odd">
-<td>8</td>
-<td>release eng</td>
-<td>Build release candidate packages with version “X.Y.Z~rcN-1” using the Jenkins job <a href="https://ci.arvados.org/job/build-and-publish-rc-packages/">build-and-publish-rc-packages</a>. Add a comment on the release ticket identifying the Git commit hash used for the build, and link to your Jenkins run.</td>
-</tr>
-<tr class="even">
-<td>9</td>
-<td>release eng</td>
-<td>Publish release candidate <code>arvados/jobs</code> Docker image using <a href="https://ci.arvados.org/job/docker-jobs-image-release/">docker-jobs-image-release</a></td>
-</tr>
-<tr class="odd">
-<td>10</td>
-<td>ops</td>
-<td>Test installer formula / provision scripts with RC packages. Run the <a href="https://ci.arvados.org/job/test-provision/">test-provision Jenkins job</a> where <code>git_hash</code> is your <code>X.Y-staging</code> commit and <code>RELEASE</code> is <code>testing</code>.</td>
-</tr>
-<tr class="even">
-<td>11</td>
-<td>ops</td>
-<td>Update pirca to use the RC packages: <a href="https://ci.arvados.org/job/packer-build-compute-image/">build a new compute image</a>, <a href="https://dev.arvados.org/projects/ops/wiki/Updating_clusters">update the Arvados version in Salt</a> and deploy.<br />
-After Salt updates the cluster, check that your new version deployed successfully by running <code>arvados-server version</code> and then <code>arvados-server check</code> to verify other running services have the same version.</td>
-</tr>
-<tr class="odd">
-<td>12</td>
-<td>bfx</td>
-<td>Run <a href="https://ci.arvados.org/job/run-tests-cwl-suite/">CWL integration tests</a> and <a href="https://workbench.pirca.arvadosapi.com/workflows/pirca-7fd4e-ut5n6r2ydl6o6kj">fastq-to-gvcf pipeline</a> on pirca ([[more about running fastq-to-gvcf]]).<br />
-After the workflow succeeds, check the versions reported at the top of the workflow logs to verify it ran your RC for crunch-run, arv-mount, and a-c-r.</td>
-</tr>
-<tr class="even">
-<td>13</td>
-<td>engineering</td>
-<td>Perform final manual testing based on risk assessment, the release notes and <a href="https://dev.arvados.org/projects/arvados/wiki/Manual_testing_plan">manual testing plan</a>. This should involve at least a “smell check” to confirm that key features, improvements or bug fixes intended to appear in the release are present and behave as intended.</td>
-</tr>
-<tr class="odd">
-<td>14</td>
-<td>product mgr</td>
-<td>Approve RC for release</td>
-</tr>
-<tr class="even">
-<td>15</td>
-<td>release eng</td>
-<td>Publish Ruby gems using <a href="https://ci.arvados.org/job/build-publish-packages-python-ruby/">build-publish-packages-python-ruby</a> with <strong>only</strong> the <code>BUILD_RUBY</code> box checked.</td>
-</tr>
-<tr class="odd">
-<td>16</td>
-<td>release eng</td>
-<td>On the <code>X.Y-staging</code> branch, update these files to refer to the release version: </td>
-</tr>
-<tr class="even">
-<td>17</td>
-<td>release eng</td>
-<td>Build final release packages with version “X.Y.Z-1” using the Jenkins job <a href="https://ci.arvados.org/job/build-and-publish-rc-packages/">build-and-publish-rc-packages</a>. Add a comment on the release ticket identifying the Git commit hash used for the build, and link to your Jenkins run.</td>
-</tr>
-<tr class="odd">
-<td>18</td>
-<td>release eng</td>
-<td>Publish stable release <code>arvados/jobs</code> Docker image using <a href="https://ci.arvados.org/job/docker-jobs-image-release/">docker-jobs-image-release</a></td>
-</tr>
-<tr class="even">
-<td>19</td>
-<td>release eng</td>
-<td>Push packages to stable repos using <a href="https://ci.arvados.org/job/publish-packages-to-stable-repo/">publish-packages-to-stable-repo</a> (<a href="https://dev.arvados.org/projects/ops/wiki/Promoting_Packages_to_Stable)">more info</a></td>
-</tr>
-<tr class="odd">
-<td>20</td>
-<td>release eng</td>
-<td>Publish Python packages using <a href="https://ci.arvados.org/job/build-publish-packages-python-ruby/">build-publish-packages-python-ruby</a> with <strong>only</strong> the <code>BUILD_PYTHON</code> box checked.</td>
-</tr>
-<tr class="even">
-<td>21</td>
-<td>release eng</td>
-<td>Publish Java package using <a href="https://ci.arvados.org/job/build-java-sdk/">build-java-sdk</a> and following [[Releasing Java SDK packages]]</td>
-</tr>
-<tr class="odd">
-<td>22</td>
-<td>release eng</td>
-<td>Publish R package using <a href="https://ci.arvados.org/job/build-package-r/">build-package-r</a></td>
-</tr>
-<tr class="even">
-<td>23</td>
-<td>release eng</td>
-<td>Tag the commits in each repo used to build the release in Git. Create an annotated tag (<code>git tag --annotate</code>) with a message like “Release notes at https://arvados.org/release-notes/X.Y.Z/” That makes the <a href="https://github.com/arvados/arvados/releases">GitHub releases page</a> look good. See <a href="https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes">GitHub documentation for more details about how to automate releases</a>.<br />
-Create or fast forward the <code>X.Y-release</code> branch to match <code>X.Y-staging</code>.<br />
-Cherry-pick the upgrade notes commit (from step 2) onto <code>main</code>.</td>
-</tr>
-<tr class="odd">
-<td>24</td>
-<td>release eng</td>
-<td>Ensure new release is published on https://doc.arvados.org/.<br />
-Ensure that release notes &amp; any other materials are pointing to correct version of the docs.<br />
-(If anything goes wrong, see https://dev.arvados.org/projects/arvados-private/wiki/Docarvadosorg_deployment)</td>
-</tr>
-<tr class="even">
-<td>25</td>
-<td>ops</td>
-<td>Update pirca and jutro to the new stable release: <a href="https://ci.arvados.org/job/packer-build-compute-image/">build new compute images</a>, <a href="https://dev.arvados.org/projects/ops/wiki/Updating_clusters">update the Arvados version in Salt</a> and deploy.</td>
-</tr>
-<tr class="odd">
-<td>26</td>
-<td>product mgr</td>
-<td>Merge release notes (step 6) from “develop” branch to “main” branch of the <code>arvados-www</code> Git repository and check that the https://arvados.org front page is updated</td>
-</tr>
-<tr class="even">
-<td>27</td>
-<td>product mgr</td>
-<td>Send out the release notes via MailChimp, tweet from the Arvados account, announce on the Discourse forum, Matrix, etc.</td>
-</tr>
-<tr class="odd">
-<td>28</td>
-<td>release eng</td>
-<td>In Jenkins:</td>
-</tr>
-<tr class="even">
-<td>29</td>
-<td>release eng</td>
-<td>Add the release to <a href="https://doi.org/10.5281/zenodo.6382942">doi:10.5281/zenodo.6382942</a><br />
-[[Updating Zenodo Version of Arvados after Release]]<br />
-https://zenodo.org/record/6382943</td>
-</tr>
-</tbody>
-</table>
+| Step | Who         | What                                                 |
+|------|-------------|------------------------------------------------------|
+|   0  | engineering | Build new features, refine good code into great code |
+|   1  | ops         | [Build a new tordo compute image](https://ci.arvados.org/view/All/job/packer-build-compute-image/) against the latest development packages.<br>[Update the tordo configuration](https://dev.arvados.org/projects/ops/wiki/Updating_clusters) and test it with a couple representative workflows (at least one bioinformatics workflow and one S3 download workflow).<br>If everything works well, update version pins based on the versions installed in the new image. Update:<br>* `tools/ansible/roles/arvados_docker/files/arvados-docker.pref`<br>* `tools/ansible/roles/compute_amd_rocm/defaults/main.yml` (update `arvados_compute_amd_rocm_version`)<br>* `tools/ansible/roles/compute_nvidia/files/arvados-nvidia.pref` |
+|   2  | engineering | Prepare release branch on the `arvados` and `arvados-formula` repositories. For major releases, this means branching a new `X.Y-staging` from main. For minor releases, this means cherry-picking features onto the existing `X.Y-staging` branch. Ensure that Redmine issues for features or bugfixes that are appearing for the first time in this version are associated with the correct release (for major releases, use `art redmine issues find-and-associate`). |
+|   3  | engineering | Ensure that the release staging branch passes automated tests on Jenkins.<br>* [developer-run-tests](https://ci.arvados.org/job/developer-run-tests/)<br>* [developer-run-tests-doc-sdk-java-R](https://ci.arvados.org/job/developer-run-tests-doc-sdk-java-R/)<br>* [arvados-cwl-conformance-tests](https://ci.arvados.org/job/arvados-cwl-conformance-tests/) |
+|   4  | engineering | Review release branch to make sure all commits that need to be in the release are in the release. If new commits are added, resume checklist from step 3. |
+|   5  | product mgr | Write release notes and publish them [on the www-dev site](https://www-dev.arvados.org/releases/). |
+|   6  | everyone    | Review release notes |
+|   7  | product mgr | Create a Redmine release for the next patch release after the current one. |
+|   8  | release eng | Build release candidate packages with version `X.Y.Z~rcN-1` using the Jenkins job [build-and-publish-rc-packages](https://ci.arvados.org/job/build-and-publish-rc-packages/). Add a comment on the release ticket identifying the Git commit hash used for the build, and link to your Jenkins run. |
+|   9  | release eng | Publish release candidate `arvados/jobs` Docker image using [docker-jobs-image-release](https://ci.arvados.org/job/docker-jobs-image-release/) |
+|   10 | ops         | Test installer formula / provision scripts with RC packages. Run the [test-provision Jenkins job](https://ci.arvados.org/job/test-provision/) where `git_hash` is your `X.Y-staging` commit and `RELEASE` is `testing`. |
+|   11 | ops         | Update pirca to use the RC packages: [build a new compute image](https://ci.arvados.org/job/packer-build-compute-image/), [update the Arvados version in Salt](https://dev.arvados.org/projects/ops/wiki/Updating_clusters) and deploy.<br>After Salt updates the cluster, check that your new version deployed successfully by running `arvados-server version` and then `arvados-server check` to verify other running services have the same version. |
+|   12 | bfx         | Run [CWL integration tests](https://ci.arvados.org/job/run-tests-cwl-suite/) and [fastq-to-gvcf pipeline](https://workbench.pirca.arvadosapi.com/workflows/pirca-7fd4e-ut5n6r2ydl6o6kj) on pirca ([more about running fastq-to-gvcf](/projects/arvados/wiki/More_about_running_fastq-to-gvcf)).<br>After the workflow succeeds, check the versions reported at the top of the workflow logs to verify it ran your RC for crunch-run, arv-mount, and a-c-r. |
+|   13 | engineering | Perform final manual testing based on risk assessment, the release notes and [manual testing plan](https://dev.arvados.org/projects/arvados/wiki/Manual_testing_plan). This should involve at least a "smell check" to confirm that key features, improvements or bug fixes intended to appear in the release are present and behave as intended. |
+|   14 | product mgr | Approve RC for release |
+|   15 | release eng | Publish Ruby gems using [build-publish-packages-python-ruby](https://ci.arvados.org/job/build-publish-packages-python-ruby/) with **only** the `BUILD_RUBY` box checked. |
+|   16 | release eng | On the `X.Y-staging` branch, update these files to refer to the release version:<br>* `doc/admin/upgrading.html.textile.liquid` the "Upgrading Arvados and Release notes" doc page with the version and date of the release.<br>* `contrib/arvados-bootstrap/pyproject.toml`, update `project.version` and `project.dependencies`<br>* `contrib/R-sdk/DESCRIPTION`, update `Version:`<br>* `services/api/Gemfile` to depend on the newly published Arvados gem and run `bundle install` to update `Gemfile.lock`<br>* `tools/ansible/roles/arvados_apt/defaults/main.yml` update `arvados_pin_version` |
+|   17 | release eng | Build final release packages with version `X.Y.Z-1` using the Jenkins job [build-and-publish-rc-packages](https://ci.arvados.org/job/build-and-publish-rc-packages/). Add a comment on the release ticket identifying the Git commit hash used for the build, and link to your Jenkins run. |
+|   18 | release eng | Publish stable release `arvados/jobs` Docker image using [docker-jobs-image-release](https://ci.arvados.org/job/docker-jobs-image-release/) |
+|   19 | release eng | Push packages to stable repos using [publish-packages-to-stable-repo](https://ci.arvados.org/job/publish-packages-to-stable-repo/) ([more info](https://dev.arvados.org/projects/ops/wiki/Promoting_Packages_to_Stable)) |
+|   20 | release eng | Publish Python packages using [build-publish-packages-python-ruby](https://ci.arvados.org/job/build-publish-packages-python-ruby/) with **only** the `BUILD_PYTHON` box checked. |
+|   21 | release eng | Publish Java package using [build-java-sdk](https://ci.arvados.org/job/build-java-sdk/) and following [Releasing Java SDK packages](/projects/arvados/wiki/Releasing_Java_SDK_packages) |
+|   22 | release eng | Publish R package using [build-package-r](https://ci.arvados.org/job/build-package-r/) |
+|   23 | release eng | Tag the commits in each repo used to build the release in Git. Create an annotated tag (`git tag --annotate`) with a message like "Release notes at https://arvados.org/release-notes/X.Y.Z/" That makes the [GitHub releases page](https://github.com/arvados/arvados/releases) look good. See [GitHub documentation for more details about how to automate releases](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes).<br>Create or fast forward the `X.Y-release` branch to match `X.Y-staging`.<br>Cherry-pick the upgrade notes commit (from step 2) onto `main`. |
+|   24 | release eng | Ensure new release is published on https://doc.arvados.org/.<br>Ensure that release notes & any other materials are pointing to correct version of the docs.<br>(If anything goes wrong, see https://dev.arvados.org/projects/arvados-private/wiki/Docarvadosorg_deployment) |
+|   25 | ops         | Update pirca and jutro to the new stable release: [build new compute images](https://ci.arvados.org/job/packer-build-compute-image/), [update the Arvados version in Salt](https://dev.arvados.org/projects/ops/wiki/Updating_clusters) and deploy. |
+|   26 | product mgr | Merge release notes (step 6) from "develop" branch to "main" branch of the `arvados-www` Git repository and check that the https://arvados.org front page is updated |
+|   27 | product mgr | Send out the release notes via MailChimp, tweet from the Arvados account, announce on the Discourse forum, Matrix, etc. |
+|   28 | release eng | In Jenkins:<br>* For each test from step 3, go to "Job Config History" and record on the release ticket the timestamp of the configuration used to test the release<br>* Go to [Manage Jenkins > Clouds > gce2 > Configure](https://ci.arvados.org/manage/cloud/gce-gce2/configure) and record the VM image tagged "tests" used for jenkins workers to run the tests for the release (should be something like jenkins-image-arvados-tests-YYYYMMDDHHMMSS) on the release ticket<br>* Go to [packer-build-jenkins-image-arvados-tests history](https://ci.arvados.org/job/packer-build-jenkins-image-arvados-tests/) and record on the release ticket the Jenkins job used to build the above VM image. |
+|   29 | release eng | Add the release to [doi:10.5281/zenodo.6382942](https://doi.org/10.5281/zenodo.6382942)<br>[Updating Zenodo Version of Arvados after Release](Zenodo.md)<br>[https://zenodo.org/record/6382943](https://zenodo.org/record/6382943) |
