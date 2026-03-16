@@ -11,7 +11,7 @@ The rules are always up for debate. However, when debate is needed, it should ha
 - Prefix the summary line with the issue number this addresses.
 - Describe the delta between the old and new tree. If possible, describe the delta in **behavior** rather than the source code itself.
 - Good: “1234: Support use of spaces in filenames.”
-- Good: “1234: Fix crash when user_id is nil.”
+- Good: “1234: Fix crash when user\_id is nil.”
 - Less good: “Add some controller methods.” (What do they do?)
 - Less good: “More progress on UI branch.” (What is different?)
 - Less good: “Incorporate Tom’s suggestions.” (Who cares whose suggestions — what changed?)
@@ -71,7 +71,7 @@ No commented-out blocks of code that have been replaced or obsoleted.
 
 No commented-out debug statements.
 
-- If the debug statements are likely to be needed in the future, use a logging facility that can be enabled at run time. `logger.debug "foo"`
+- If the debug statements are likely to be needed in the future, use a logging facility that can be enabled at run time.
 
 ## Style mismatch
 
@@ -85,11 +85,11 @@ If you fix up existing indentation/formatting, do that in a separate commit.
 
 Follow gofmt, golint, etc., and <https://github.com/golang/go/wiki/CodeReviewComments>
 
-Use `%w` when wrapping an error with fmt.Errorf(), so errors.As() can access the wrapped error.
+Use `%w` when wrapping an error with `fmt.Errorf()`, so `errors.As()` can access the wrapped error.
 
 ```go
 if err != nil {
-        return fmt.Errorf("could not swap widgets: %w", err)
+	return fmt.Errorf("could not swap widgets: %w", err)
 }
 ```
 
@@ -97,7 +97,7 @@ Use `(logrus.FieldLogger)WithError()` (instead of `Logf("blah: %s", err)`) when 
 
 ```go
 if err != nil {
-        logger.WithError(err).Warn("error swapping widgets")
+	logger.WithError(err).Warn("error swapping widgets")
 }
 ```
 
