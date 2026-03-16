@@ -119,11 +119,13 @@ This will install baseline prerequisites, then list commands and test targets, t
 
     What next? install deps
 
-Accept that command. It will install the rest of the dependencies to run a test cluster, then report:
+Accept that command. It will install the rest of the dependencies that are necessary for running a test cluster, then report:
 
     All test suites passed.
 
-Now we can run a test suite. The controller tests are good because they interact with a test cluster but not much else. At the `What next?` prompt, enter `test lib/controller`, and you'll see the test cluster start:
+At this stage, this message simply means that the "install deps" command has succeeded.
+
+Now we can run a test suite. The controller tests are a good first example, because they interact with a test cluster but not much else. At the `What next?` prompt, enter `test lib/controller`, and you'll see the test cluster start:
 
     What next? test lib/controller
     Starting API, controller, keepproxy, keep-web, ws, and nginx ssl proxy...
@@ -148,14 +150,16 @@ The playbook will install symlinks for Go, Node, Python, Ruby, Singularity, and 
 
 ### Arvados `$CONFIGSRC`
 
-The playbook writes your database configuration at `~/.config/arvados/config.yml` and sets up a hook `/etc/profile.d/arvados-test.sh` to set your `CONFIGSRC` environment variable to that directory. If most tests fail with a database connection error, check that this variable is set:
+The playbook writes the Arvados test cluster's database configuration at `~/.config/arvados/config.yml`, and sets up a hook `/etc/profile.d/arvados-test.sh` to set your `CONFIGSRC` environment variable to that file's base directory. If most tests fail with a database connection error, check that this variable is set:
 
 ```sh
 $ echo "${CONFIGSRC:-UNSET}"
 /home/you/.config/arvados
 ```
 
-If that reports `UNSET`, add a line to set `CONFIGSRC="$HOME/.config/arvados"` to your shell configuration, or set it manually when you run `run-tests.sh`:
+If that reports `UNSET`, first check if you're using a stale shell session started before the Ansible playbook run. You may need to log out of that session and start a new one.
+
+If that doesn't work, you may add a line to set `CONFIGSRC="$HOME/.config/arvados"` to your shell configuration, or set it manually when you run `run-tests.sh`:
 
 ```sh
 $ CONFIGSRC="$HOME/.config/arvados" build/run-tests.sh ...
