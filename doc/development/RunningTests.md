@@ -21,11 +21,11 @@ This will display help with a list of commands and test targets. When you run wi
 
 ### Dealing with state
 
-Before you change `run-tests.sh` itself—including pulling changes from other developers—you should end any interactive sessions.
+Before you change `run-tests.sh` itself—including pulling changes from other developers—you should end any interactive test sessions.
 
-If you make changes to a low-library library or SDK and want to see how it affects dependent tests, `install` your changed component, then `test` the dependents.
+If you make changes to a low-level library or SDK and want to see how it affects dependent tests, `install` your changed component, then `test` the dependents.
 
-If you make changes to a cluster component and want to see how it affects tests, `reset` the test cluster, then `test` the components you're interested in.
+If you make changes to a cluster component and want to see how they affect tests, `reset` the test cluster, then `test` the components you're interested in.
 
 If you want to clean your `--temp` directory—because you pulled a bad dependency or just want to recover some disk space—it is safe to end any interactive sessions, remove it, then `mkdir` it again.
 
@@ -48,7 +48,7 @@ Most Go packages use gocheck. Use gocheck command line args like `-check.f` to s
 
 #### Python
 
-If what you really want to do is focus on failing or newly-added tests, consider passing the appropriate switches to do that:
+Tests for Python components run under pytest. If what you really want to do is to focus on failing or newly-added tests, consider passing the appropriate switches to do that:
 
       -x, --exitfirst       Exit instantly on first error or failed test
       --lf, --last-failed   Rerun only the tests that failed at the last run (or
@@ -157,7 +157,7 @@ Variable    | Value
 `CONFIGSRC` | A directory with an Arvados cluster `config.yml`. Tests will read `Clusters.zzzzz.PostgreSQL.Connection` from that file to determine how to connect to the test database. If not set, the tests will use default connection settings.
 `WORKSPACE` | A directory with an Arvados Git checkout. Defaults to what Git reports for `run-tests.sh` itself.
 
-`run-tests.sh` cleans `ARVADOS` variables from the environment to help ensure consistent test execution. These variables are helpful, but you must pass them as arguments to `run-tests.sh` and not in the environment directly.
+`run-tests.sh` cleans the `ARVADOS_[…]` variables from the environment to help ensure consistent test execution. Sometimes you may want to set these variables nonetheless, but then you must pass them as arguments to `run-tests.sh` rather than export them to the environment directly.
 
 Variable               | Value
 -----------------------|------------------------------------------------------
@@ -201,7 +201,7 @@ Non-interactive (headless) tests can be run with the targets:
 
 ### Troubleshooting
 
-#### Missing X server or \$DISPLAY
+#### Missing X server or `$DISPLAY`
 
 Run:
 
