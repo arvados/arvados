@@ -6,19 +6,62 @@ package keepweb
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"golang.org/x/mod/semver"
 	check "gopkg.in/check.v1"
 )
+
+// cadaverOptions stores the version of cadaver this system runs and parameters
+// to vary test execution based on that.
+type cadaverOptions struct {
+	version   string
+	renameCmd string
+	renameLog string
+}
+
+// Run `cadaver --version` and build cadaverOptions based on its output.
+func newCadaverOptions(c *check.C) *cadaverOptions {
+	stdout, err := exec.Command("cadaver", "--version").Output()
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 255 {
+		err = nil // `cadaver --version` normally exits 255. Ignore that.
+	}
+	c.Assert(err, check.IsNil,
+		check.Commentf("running `cadaver --version` failed"))
+
+	match := regexp.MustCompile(`(?m)^cadaver\s+(\d+\.\d+)\b`).FindSubmatch(stdout)
+	c.Assert(match, check.NotNil,
+		check.Commentf("no version number found in `cadaver --version` output"))
+	version := "v" + string(match[1])
+	c.Assert(semver.IsValid(version), check.Equals, true,
+		check.Commentf("cadaver version number found but not valid (bug in our regexp?)"))
+
+	var renameCmd, renameLog string
+	if semver.Compare(version, "v0.26") < 0 {
+		renameCmd = "move"
+		renameLog = "Moving"
+	} else {
+		renameCmd = "rename"
+		renameLog = "Renaming"
+	}
+	return &cadaverOptions{
+		version:   version,
+		renameCmd: renameCmd,
+		renameLog: renameLog,
+	}
+}
 
 func (s *IntegrationSuite) TestCadaverHTTPAuth(c *check.C) {
 	s.testCadaver(c, arvadostest.ActiveToken, func(newCollection arvados.Collection) (string, string, string) {
@@ -77,6 +120,11 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	readPath, writePath, pdhPath := pathFunc(newCollection)
 
 	matchToday := time.Now().Format("Jan +2")
+
+	if s.cadaverOpts == nil {
+		s.cadaverOpts = newCadaverOptions(c)
+		c.Assert(s.cadaverOpts, check.NotNil)
+	}
 
 	type testcase struct {
 		path           string
@@ -185,13 +233,13 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir1/ newdir1x/\n",
-			match: `(?ms).*Moving .* succeeded.*`,
+			cmd:   s.cadaverOpts.renameCmd + " newdir1/ newdir1x/\n",
+			match: `(?ms).*` + s.cadaverOpts.renameLog + ` .* succeeded.*`,
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir1x newdir1\n",
-			match: `(?ms).*Moving .* succeeded.*`,
+			cmd:   s.cadaverOpts.renameCmd + " newdir1x newdir1\n",
+			match: `(?ms).*` + s.cadaverOpts.renameLog + ` .* succeeded.*`,
 		},
 		{
 			path:  writePath,

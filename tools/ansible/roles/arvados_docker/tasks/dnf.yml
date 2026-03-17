@@ -1,0 +1,41 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Docker repository
+  become: yes
+  ansible.builtin.yum_repository:
+    name: docker
+    description: Docker-CE repository
+    baseurl: "{{ docker_dnf_url }}/$releasever/$basearch/stable"
+    gpgcheck: true
+    gpgkey: "{{ docker_dnf_url }}/gpg"
+
+- when: "arvados_compute_pin_packages|bool"
+  become: yes
+  block:
+    - name: Install current Docker dnf package pins
+      community.general.dnf_versionlock:
+        name: "{{ docker_dnf_packages|items|map('join', '-')|list }}"
+        state: present
+      register: docker_dnf_versionlock
+
+    - name: Clean-up Docker dnf package pins
+      vars:
+        # Names of packages with changed locks
+        locked_pkgs: "{{ docker_dnf_versionlock.specs_toadd|map('regex_replace', '-[^-]+-[^-]+$', '')|unique }}"
+        # Regexp to match all locks on locked_pkgs
+        lock_re: "^({{ locked_pkgs|map('regex_escape')|join('|') }})-[^-]+-[^-]+$"
+        # All locks for locked_pkgs that weren't just added
+        old_locks: "{{ docker_dnf_versionlock.locklist_post|select('match', lock_re)|reject('in', docker_dnf_versionlock.specs_toadd)|list }}"
+      when: "old_locks is truthy"
+      community.general.dnf_versionlock:
+        name: "{{ old_locks }}"
+        state: absent
+
+- name: Install Docker packages
+  become: yes
+  ansible.builtin.dnf:
+    name: "{{ docker_dnf_packages|list }}"
+    state: latest
+    allow_downgrade: true

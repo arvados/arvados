@@ -531,31 +531,32 @@ type ContainersConfig struct {
 type CloudVMsConfig struct {
 	Enable bool
 
-	BootProbeCommand               string
-	InstanceInitCommand            string
-	DeployRunnerBinary             string
-	DeployRunnerDirectory          string
-	DeployPublicKey                bool
-	ImageID                        string
-	MaxCloudOpsPerSecond           int
-	MaxProbesPerSecond             int
-	MaxConcurrentInstanceCreateOps int
-	MaxInstances                   int
-	InitialQuotaEstimate           int
-	SupervisorFraction             float64
-	PollInterval                   Duration
-	ProbeInterval                  Duration
-	SSHPort                        string
-	SyncInterval                   Duration
-	TimeoutBooting                 Duration
-	TimeoutIdle                    Duration
-	TimeoutProbe                   Duration
-	TimeoutShutdown                Duration
-	TimeoutSignal                  Duration
-	TimeoutStaleRunLock            Duration
-	TimeoutTERM                    Duration
-	ResourceTags                   map[string]string
-	TagKeyPrefix                   string
+	BootProbeCommand                string
+	InstanceInitCommand             string
+	DeployRunnerBinary              string
+	DeployRunnerDirectory           string
+	DeployPublicKey                 bool
+	ImageID                         string
+	MaxCloudOpsPerSecond            int
+	MaxProbesPerSecond              int
+	MaxConcurrentInstanceCreateOps  int
+	MaxRunningContainersPerInstance int
+	MaxInstances                    int
+	InitialQuotaEstimate            int
+	SupervisorFraction              float64
+	PollInterval                    Duration
+	ProbeInterval                   Duration
+	SSHPort                         string
+	SyncInterval                    Duration
+	TimeoutBooting                  Duration
+	TimeoutIdle                     Duration
+	TimeoutProbe                    Duration
+	TimeoutShutdown                 Duration
+	TimeoutSignal                   Duration
+	TimeoutStaleRunLock             Duration
+	TimeoutTERM                     Duration
+	ResourceTags                    map[string]string
+	TagKeyPrefix                    string
 
 	Driver           string
 	DriverParameters json.RawMessage

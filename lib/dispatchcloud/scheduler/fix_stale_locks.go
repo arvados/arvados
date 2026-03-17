@@ -14,14 +14,14 @@ import (
 // fixStaleLocks waits for any already-locked containers (i.e., locked
 // by a prior dispatcher process) to appear on workers as the worker
 // pool recovers its state. It unlocks any that still remain when all
-// workers are recovered or shutdown, or its timer
-// (sch.staleLockTimeout) expires.
+// workers are recovered or shutdown, or its timer (StaleLockTimeout)
+// expires.
 func (sch *Scheduler) fixStaleLocks() {
 	wp := sch.pool.Subscribe()
 	defer sch.pool.Unsubscribe(wp)
 
 	var stale []string
-	timeout := time.NewTimer(sch.staleLockTimeout)
+	timeout := time.NewTimer(time.Duration(sch.cluster.Containers.StaleLockTimeout))
 waiting:
 	for sch.pool.CountWorkers()[worker.StateUnknown] > 0 {
 		running := sch.pool.Running()

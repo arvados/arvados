@@ -157,8 +157,12 @@ class ContainerRequest < ArvadosModel
       # get container lock first, then lock current container request
       # (same order as Container#handle_completed). Locking always
       # reloads the Container and ContainerRequest records.
+      #
+      # If the container is already finalized, there is no need to
+      # lock or reload it.  Locking the container row unnecessarily
+      # can cause excessive database contention, see #23382.
       c = Container.find_by_uuid(container_uuid)
-      c.lock! if !c.nil?
+      c.lock! if !c.nil? && !c.final?
       self.lock!
 
       if !c.nil? && container_uuid != c.uuid
@@ -173,7 +177,8 @@ class ContainerRequest < ArvadosModel
 
       if !c.nil?
         if state == Committed && c.final?
-          # The current container is
+          # The assigned container is final, so finalize this
+          # container request.
           act_as_system_user do
             leave_modified_by_user_alone do
               finalize!
@@ -385,7 +390,11 @@ class ContainerRequest < ArvadosModel
       end
       while true
         c = Container.resolve(self)
-        c.lock!
+        # If container is not final, we need to lock it to avoid
+        # missing CR finalization in a race with container completion.
+        # If container is final, locking can cause excessive database
+        # contention, see #23382.
+        c.lock! unless c.final?
         if c.state == Container::Cancelled
           # Lost a race, we have a lock on the container but the
           # container was cancelled in a different request, restart
@@ -812,8 +821,14 @@ class ContainerRequest < ArvadosModel
 
   def update_priority
     return unless saved_change_to_state? || saved_change_to_priority? || saved_change_to_container_uuid?
-    update_priorities container_uuid_before_last_save if !container_uuid_before_last_save.nil? and container_uuid_before_last_save != self.container_uuid
-    update_priorities self.container_uuid if self.container_uuid
+    if container_uuid_before_last_save &&
+       container_uuid_before_last_save != container_uuid &&
+       !Container.find_by_uuid(container_uuid_before_last_save).andand.state.in?([Container::Complete, Container::Cancelled])
+      update_priorities(container_uuid_before_last_save)
+    end
+    if container_uuid && !container.andand.final?
+      update_priorities(container_uuid)
+    end
   end
 
   def set_requesting_container_uuid

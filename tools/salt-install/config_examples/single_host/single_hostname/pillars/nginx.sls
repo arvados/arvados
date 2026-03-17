@@ -3,32 +3,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-{%- set passenger_pkg = 'nginx-mod-http-passenger'
-                          if grains.osfinger in ('CentOS Linux-7') else
-                        'libnginx-mod-http-passenger' %}
-{%- set passenger_mod = '/usr/lib64/nginx/modules/ngx_http_passenger_module.so'
-                          if grains.osfinger in ('CentOS Linux-7',) else
-                        '/usr/lib/nginx/modules/ngx_http_passenger_module.so' %}
-
 ### NGINX
 nginx:
-  __NGINX_INSTALL_SOURCE__: true
-  lookup:
-    passenger_package: {{ passenger_pkg }}
-
   ### SERVER
   server:
     config:
       env: GEM_HOME
-      # As we now differentiate where passenger is required or not, we need to
-      # load this module conditionally, so we add this conditional just to use
-      # the same pillar file
-      {% if "install_from_phusionpassenger" == "__NGINX_INSTALL_SOURCE__" %}
-      # This is required to get the passenger module loaded
-      # In Debian it can be done with this
-      # include: 'modules-enabled/*.conf'
-      load_module: {{ passenger_mod }}
-      {% endif %}
       worker_processes: 4
 
   ### SNIPPETS

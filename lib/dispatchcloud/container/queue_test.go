@@ -6,7 +6,6 @@ package container
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -43,13 +42,18 @@ func (suite *IntegrationSuite) TearDownTest(c *check.C) {
 }
 
 func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
-	typeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
-		return []arvados.InstanceType{{Name: "testType"}}, nil
+	cluster := arvados.IntegrationTestCluster()
+	cluster.InstanceTypes = map[string]arvados.InstanceType{
+		"testType": {
+			Name:    "testType",
+			VCPUs:   8,
+			RAM:     16 << 30,
+			Scratch: 300 << 30,
+		},
 	}
 
 	client := arvados.NewClientFromEnv()
-	cq := NewQueue(logger(), nil, typeChooser, client)
+	cq := NewQueue(logger(), nil, cluster, client)
 
 	err := cq.Update()
 	c.Check(err, check.IsNil)
@@ -112,19 +116,18 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 }
 
 func (suite *IntegrationSuite) TestCancel_NoInstanceType(c *check.C) {
-	errorTypeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-		// Make sure the relevant container fields are
-		// actually populated.
-		c.Check(ctr.ContainerImage, check.Equals, "test")
-		c.Check(ctr.RuntimeConstraints.VCPUs, check.Equals, 4)
-		c.Check(ctr.RuntimeConstraints.RAM, check.Equals, int64(12000000000))
-		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
-		c.Check(ctr.Mounts["/var/spool/cwl"].Capacity, check.Equals, int64(24000000000))
-		return nil, errors.New("no suitable instance type")
+	cluster := arvados.IntegrationTestCluster()
+	cluster.InstanceTypes = map[string]arvados.InstanceType{
+		"testType": {
+			Name:    "testType",
+			VCPUs:   4,
+			RAM:     16 << 30,
+			Scratch: 1 << 20, // insufficient, 24 GB needed
+		},
 	}
 
 	client := arvados.NewClientFromEnv()
-	cq := NewQueue(logger(), nil, errorTypeChooser, client)
+	cq := NewQueue(logger(), nil, cluster, client)
 
 	go failIfContainerAppearsInQueue(c, cq, arvadostest.QueuedContainerUUID)
 
@@ -141,7 +144,7 @@ func (suite *IntegrationSuite) TestCancel_NoInstanceType(c *check.C) {
 		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 		return err == nil && ctr.State == arvados.ContainerStateCancelled
 	})
-	c.Check(ctr.RuntimeStatus["error"], check.Equals, `no suitable instance type`)
+	c.Check(ctr.RuntimeStatus["error"], check.Equals, "constraints not satisfiable by any configured instance type")
 }
 
 func (suite *IntegrationSuite) TestCancel_InvalidMountsField(c *check.C) {
@@ -156,11 +159,17 @@ func (suite *IntegrationSuite) TestCancel_InvalidMountsField(c *check.C) {
 	// Note this setup gets cleaned up by the database reset in
 	// TearDownTest.
 
-	typeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-		return []arvados.InstanceType{}, nil
+	cluster := arvados.IntegrationTestCluster()
+	cluster.InstanceTypes = map[string]arvados.InstanceType{
+		"testType": {
+			Name:    "testType",
+			VCPUs:   4,
+			RAM:     16 << 30,
+			Scratch: 100 << 30,
+		},
 	}
 	client := arvados.NewClientFromEnv()
-	cq := NewQueue(logger(), nil, typeChooser, client)
+	cq := NewQueue(logger(), nil, cluster, client)
 
 	go failIfContainerAppearsInQueue(c, cq, arvadostest.QueuedContainerUUID)
 

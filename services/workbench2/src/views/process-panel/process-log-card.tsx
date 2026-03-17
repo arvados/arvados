@@ -29,7 +29,7 @@ import { DefaultView } from 'components/default-view/default-view';
 import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
-type CssRules = 'card' | 'content' | 'title' | 'iconHeader' | 'header' | 'namePlate' | 'toolbar' | 'root' | 'logViewer' | 'logViewerContainer';
+type CssRules = 'card' | 'content' | 'title' | 'iconHeader' | 'header' | 'namePlate' | 'toolbarWrapper' | 'toolbar' | 'root' | 'logViewer' | 'logViewerContainer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -48,17 +48,21 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingRight: '320px',
     },
     namePlate: {
         display: 'flex',
         paddingTop: theme.spacing(1),
         paddingLeft: theme.spacing(1),
     },
-    toolbar: {
-        position: 'fixed',
-        right: theme.spacing(4),
+    toolbarWrapper: {
+        flexShrink: 1,
+        marginRight: theme.spacing(0.5),
+        marginTop: '-5px',
+        marginBottom: '-5px',
         zIndex: 1000,
+    },
+    toolbar: {
+        justifyContent: 'flex-end',
     },
     content: {
         padding: theme.spacing(0),
@@ -118,12 +122,12 @@ export const ProcessLogsCard = withStyles(styles)(
                     <div className={classes.header}>
                         <div className={classes.namePlate}>
                             <LogIcon className={classes.iconHeader} />
-                                <Typography noWrap variant='h6' className={classes.title}>
-                                    Logs
-                                </Typography>
-                                </div>
-                                <div className={classes.toolbar}>
-                            <Grid container direction='row' alignItems='center'>
+                            <Typography noWrap variant='h6' className={classes.title}>
+                                Logs
+                            </Typography>
+                        </div>
+                        <div className={classes.toolbarWrapper}>
+                            <Grid container direction='row' alignItems='center' className={classes.toolbar}>
                                 <Grid item>
                                     <ProcessLogForm selectedFilter={selectedFilter} filters={filters} onChange={onLogFilterChange} />
                                 </Grid>

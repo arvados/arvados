@@ -39,9 +39,10 @@ var _ = check.Suite(&IntegrationSuite{})
 
 // IntegrationSuite tests need an API server and a keep-web server
 type IntegrationSuite struct {
-	testServer *httptest.Server
-	handler    *handler
-	ctx        context.Context
+	testServer  *httptest.Server
+	handler     *handler
+	ctx         context.Context
+	cadaverOpts *cadaverOptions
 }
 
 func (s *IntegrationSuite) TestNoToken(c *check.C) {

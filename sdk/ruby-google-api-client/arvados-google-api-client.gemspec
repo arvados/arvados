@@ -35,8 +35,8 @@ Gem::Specification.new do |s|
   # signet 0.20.0 dropped Ruby 3.0.
   s.add_runtime_dependency 'signet', '~> 0.19.0'
   # faraday 2.9.0 dropped Ruby 2.7.
-  # faraday 2.13.4 is the highest minor version we've tested.
-  s.add_runtime_dependency 'faraday', '~> 2.13.0'
+  # faraday 2.14.1 is the highest minor version we've tested.
+  s.add_runtime_dependency 'faraday', '~> 2.14.1'
   # faraday-multipart 1.0.1 dropped Ruby 2.4, but 1.0.2 added it back.
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
   # faraday-gzip 3.0.0 dropped Ruby 2.

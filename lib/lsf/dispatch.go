@@ -20,7 +20,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
-	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -174,7 +174,8 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	if ctr.State != dispatch.Locked {
 		// already started by prior invocation
 	} else if _, ok := disp.lsfqueue.Lookup(ctr.UUID); !ok {
-		if _, err := dispatchcloud.ChooseInstanceType(disp.Cluster, &ctr); errors.As(err, &dispatchcloud.ConstraintsNotSatisfiableError{}) {
+		_, err := container.ChooseInstanceType(disp.Cluster, &ctr)
+		if err != nil && err != container.ErrInstanceTypesNotConfigured {
 			err := disp.arvDispatcher.Arv.Update("containers", ctr.UUID, arvadosclient.Dict{
 				"container": map[string]interface{}{
 					"runtime_status": map[string]string{
@@ -191,7 +192,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		cmd := []string{disp.Cluster.Containers.CrunchRunCommand}
 		cmd = append(cmd, "--runtime-engine="+disp.Cluster.Containers.RuntimeEngine)
 		cmd = append(cmd, disp.Cluster.Containers.CrunchRunArgumentsList...)
-		err := disp.submit(ctr, cmd)
+		err = disp.submit(ctr, cmd)
 		if err != nil {
 			return err
 		}
@@ -295,16 +296,16 @@ func (disp *dispatcher) bkill(ctr arvados.Container) {
 	}
 }
 
-func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) {
+func (disp *dispatcher) bsubArgs(ctr arvados.Container) ([]string, error) {
 	args := []string{"bsub"}
 
-	tmp := int64(math.Ceil(float64(dispatchcloud.EstimateScratchSpace(&container)) / 1048576))
-	vcpus := container.RuntimeConstraints.VCPUs
-	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
-		container.RuntimeConstraints.KeepCacheRAM+
+	tmp := int64(math.Ceil(float64(container.EstimateScratchSpace(&ctr)) / 1048576))
+	vcpus := ctr.RuntimeConstraints.VCPUs
+	mem := int64(math.Ceil(float64(ctr.RuntimeConstraints.RAM+
+		ctr.RuntimeConstraints.KeepCacheRAM+
 		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
 
-	maxruntime := time.Duration(container.SchedulingParameters.MaxRunTime) * time.Second
+	maxruntime := time.Duration(ctr.SchedulingParameters.MaxRunTime) * time.Second
 	if maxruntime == 0 {
 		maxruntime = disp.Cluster.Containers.LSF.MaxRunTimeDefault.Duration()
 	}
@@ -318,15 +319,15 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		"%C": fmt.Sprintf("%d", vcpus),
 		"%M": fmt.Sprintf("%d", mem),
 		"%T": fmt.Sprintf("%d", tmp),
-		"%U": container.UUID,
-		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.GPU.DeviceCount),
+		"%U": ctr.UUID,
+		"%G": fmt.Sprintf("%d", ctr.RuntimeConstraints.GPU.DeviceCount),
 		"%W": fmt.Sprintf("%d", maxrunminutes),
 	}
 
 	re := regexp.MustCompile(`%.`)
 	var substitutionErrors string
 	argumentTemplate := disp.Cluster.Containers.LSF.BsubArgumentsList
-	if container.RuntimeConstraints.GPU.DeviceCount > 0 {
+	if ctr.RuntimeConstraints.GPU.DeviceCount > 0 {
 		argumentTemplate = append(argumentTemplate, disp.Cluster.Containers.LSF.BsubGPUArguments...)
 	}
 	for idx, a := range argumentTemplate {

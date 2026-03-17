@@ -8,9 +8,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arvados-bootstrap"
-version = "3.2.0"
+version = "3.2.1"
 dependencies = [
-  "arvados-python-client == 3.2.0",
+  "arvados-python-client == 3.2.1",
 ]
 description = "Tools to bootstrap an Arvados cluster"
 authors = [

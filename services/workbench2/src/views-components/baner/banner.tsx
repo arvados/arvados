@@ -9,7 +9,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import bannerActions from "store/banner/banner-action";
+import { bannerActions } from "store/banner/banner-action";
 import { ArvadosTheme } from "common/custom-theme";
 import servicesProvider from "common/service-provider";
 import { Dispatch } from "redux";

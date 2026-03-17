@@ -12,7 +12,7 @@ $(basename $0): Install and test Arvados components.
 Exit non-zero if any tests fail.
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename $0) [options]
+        $0 [options]
 
 Options:
 
@@ -79,6 +79,13 @@ PYTHONPATH=
 GEMHOME=
 R_LIBS=
 export LANG=en_US.UTF-8
+# Many install steps will fail if we're not in a Git checkout, so this is a
+# safe default.
+if [[ -d "${WORKSPACE:=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)}" ]]; then
+    export WORKSPACE
+else
+    unset WORKSPACE
+fi
 # googleapiclient raises a FutureWarning if you use a recent version with the
 # last supported version of Python. That interferes with tests that check CLI
 # tool stderr. Filter it out, filling in default warnings if needed.
@@ -544,6 +551,16 @@ do_test_once() {
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+        if ! compgen -G "$WORKSPACE/$1/*_test.go" >/dev/null; then
+            # Go 1.25, when invoked by Go 1.24 via "toolchain go1.25"
+            # directive, fails with 'go: no such tool "covdata"' when
+            # using $coverflags in a directory that has no tests.  See
+            # https://github.com/golang/go/issues/75031
+            #
+            # Workaround: skip coverflags when 'go test' is a no-op
+            # anyway.
+            coverflags=()
+        fi
         testflags=()
         # We do "go install" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting

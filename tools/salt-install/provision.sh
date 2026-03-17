@@ -290,10 +290,11 @@ VERSION="latest"
 SALT_VERSION="3006"
 
 # Other formula versions we depend on
-ARVADOS_TAG="453c263c1424294d24a937e700357d479d49126b"
-POSTGRES_TAG="a7c48f5ca0b6c90feb4b24a3106e79ee2ce9baed"
+ARVADOS_TAG="525eb46bd46efd89a174d8b790d3219cd35ba149"
+POSTGRES_TAG="0081fa32e85e6fda0a00d9a5241e70b4bf10e506"
 POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
-NGINX_TAG="v2.8.1"
+NGINX_TAG="4e2d832dae6ecf8f47dc4b46e29faa3c5907edc2"
+NGINX_URL="https://github.com/arvados/nginx-formula.git"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.5"
 LETSENCRYPT_TAG="v3.2.0"
@@ -456,8 +457,8 @@ test -d locale && ( cd locale && git fetch ) \
 
 echo "...nginx"
 test -d nginx && ( cd nginx && git fetch ) \
-  || git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
-( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" )
+  || git clone --quiet ${NGINX_URL} ${F_DIR}/nginx
+( cd nginx && git checkout --quiet "${NGINX_TAG}" )
 
 echo "...postgres"
 test -d postgres && ( cd postgres && git fetch ) \
@@ -602,7 +603,7 @@ fi
 # and its dependencies
 if [ -z "${ROLES:-}" ]; then
   # States
-  echo "    - nginx.passenger" >> ${STATES_TOP}
+  echo "    - nginx" >> ${STATES_TOP}
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${STATES_TOP} || echo "    - extra.aws_credentials" >> ${STATES_TOP}
@@ -652,17 +653,13 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_keepproxy_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_keepweb_configuration" >> ${PILLARS_TOP}
-  echo "    - nginx_passenger" >> ${PILLARS_TOP}
+  echo "    - nginx" >> ${PILLARS_TOP}
   echo "    - nginx_websocket_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_webshell_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_workbench2_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_workbench_configuration" >> ${PILLARS_TOP}
   echo "    - logrotate_wb1" >> ${PILLARS_TOP}
   echo "    - postgresql" >> ${PILLARS_TOP}
-
-  # We need to tweak the Nginx's pillar depending whether we want plan nginx or nginx+passenger
-  NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-  sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
 
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
@@ -870,11 +867,7 @@ else
       "controller")
         ### States ###
         grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
-        if grep -q "    - nginx.*$" ${STATES_TOP}; then
-          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
-        else
-          echo "    - nginx.passenger" >> ${STATES_TOP}
-        fi
+        grep -q "    - nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
         echo "    - extra.passenger_rvm" >> ${STATES_TOP}
         echo "    - extra.railsapi_passenger_configs" >> ${STATES_TOP}
         grep -q "^    - postgres\\.client$" ${STATES_TOP} || echo "    - postgres.client" >> ${STATES_TOP}
@@ -903,7 +896,7 @@ else
         grep -q "logrotate_api" ${PILLARS_TOP}            || echo "    - logrotate_api" >> ${PILLARS_TOP}
         grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
         grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
-        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
+        grep -q "nginx" ${PILLARS_TOP}                    || echo "    - nginx" >> ${PILLARS_TOP}
         grep -q "nginx_snippets" ${PILLARS_TOP}           || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
         grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
@@ -933,9 +926,6 @@ else
             grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
-        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
-        NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         ### States ###
@@ -1021,8 +1011,6 @@ else
             grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
-        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
-        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "shell")
         # States

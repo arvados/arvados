@@ -116,6 +116,7 @@ import { DialogProjectCreate } from "views-components/dialog-create/dialog-proje
 import { DialogCollectionPartialMoveToNewCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-new-collection";
 import { DialogCollectionPartialMoveToSeparateCollections } from "views-components/dialog-move/dialog-collection-partial-move-to-separate-collections";
 import { DialogMoveCollection } from 'views-components/dialog-move/dialog-move-collection';
+import { DescriptionDialog } from "views-components/description-dialog/description-dialog";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
 
@@ -490,6 +491,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <CreateExternalCredentialDialog />
             <DialogCollectionPartialCopyToSeparateCollection />
             <DialogProcessRerun />
+            <DescriptionDialog />
             <TokenDialog />
             <FileRemoveDialog />
             <DialogCollectionFilesUpload />

@@ -16,7 +16,7 @@ server {
 {% if arvados_nginx_service_key == "Controller" %}
 {% set external_port_min = arvados_cluster.Services.ContainerWebServices.ExternalPortMin|default(0) %}
 {% set external_port_max = arvados_cluster.Services.ContainerWebServices.ExternalPortMax|default(0) %}
-{% if 0 < external_port_min < external_port_max %}
+{% if 0 < external_port_min <= external_port_max %}
   listen       {{ external_port_min }}-{{ external_port_max }} ssl;
 {% endif %}
 {% endif %}

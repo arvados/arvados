@@ -23,8 +23,6 @@ import (
 // load at the cost of increased under light load.
 const queuedContainersTarget = 100
 
-type typeChooser func(*arvados.Container) ([]arvados.InstanceType, error)
-
 // An APIClient performs Arvados API requests. It is typically an
 // *arvados.Client.
 type APIClient interface {
@@ -37,9 +35,10 @@ type QueueEnt struct {
 	// The container to run. Only the UUID, State, Priority,
 	// RuntimeConstraints, ContainerImage, SchedulingParameters,
 	// and CreatedAt fields are populated.
-	Container     arvados.Container      `json:"container"`
-	InstanceTypes []arvados.InstanceType `json:"instance_types"`
-	FirstSeenAt   time.Time              `json:"first_seen_at"`
+	Container         arvados.Container      `json:"container"`
+	InstanceResources InstanceResources      `json:"instance_resources"`
+	InstanceTypes     []arvados.InstanceType `json:"instance_types"`
+	FirstSeenAt       time.Time              `json:"first_seen_at"`
 }
 
 // String implements fmt.Stringer by returning the queued container's
@@ -62,9 +61,9 @@ func (c *QueueEnt) String() string {
 // A Queue's Update method should be called periodically to keep the
 // cache up to date.
 type Queue struct {
-	logger     logrus.FieldLogger
-	chooseType typeChooser
-	client     APIClient
+	logger  logrus.FieldLogger
+	cluster *arvados.Cluster
+	client  APIClient
 
 	auth    *arvados.APIClientAuthorization
 	current map[string]QueueEnt
@@ -87,10 +86,10 @@ type Queue struct {
 // NewQueue returns a new Queue. When a new container appears in the
 // Arvados cluster's queue during Update, chooseType will be called to
 // assign an appropriate arvados.InstanceType for the queue entry.
-func NewQueue(logger logrus.FieldLogger, reg *prometheus.Registry, chooseType typeChooser, client APIClient) *Queue {
+func NewQueue(logger logrus.FieldLogger, reg *prometheus.Registry, cluster *arvados.Cluster, client APIClient) *Queue {
 	cq := &Queue{
 		logger:      logger,
-		chooseType:  chooseType,
+		cluster:     cluster,
 		client:      client,
 		current:     map[string]QueueEnt{},
 		subscribers: map[<-chan struct{}]chan struct{}{},
@@ -257,7 +256,8 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		}
 		return
 	}
-	types, err := cq.chooseType(&ctr)
+	resources := InstanceResourcesNeeded(cq.cluster, &ctr)
+	types, err := ChooseInstanceType(cq.cluster, &ctr)
 
 	// Avoid wasting memory on a large Mounts attr (we don't need
 	// it after choosing type).
@@ -284,7 +284,7 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		"Priority":      ctr.Priority,
 		"InstanceTypes": typeNames,
 	}).Info("adding container to queue")
-	cq.current[uuid] = QueueEnt{Container: ctr, InstanceTypes: types, FirstSeenAt: time.Now()}
+	cq.current[uuid] = QueueEnt{Container: ctr, InstanceResources: resources, InstanceTypes: types, FirstSeenAt: time.Now()}
 }
 
 func (cq *Queue) cancelUnsatisfiableContainer(ctr arvados.Container, errorString string) {

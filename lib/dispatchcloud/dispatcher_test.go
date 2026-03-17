@@ -5,6 +5,7 @@
 package dispatchcloud
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -52,8 +54,6 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	s.stubDriver = &test.StubDriver{
 		HostKey:                   hostpriv,
 		AuthorizedKeys:            []ssh.PublicKey{dispatchpub},
-		ErrorRateCreate:           0.1,
-		ErrorRateDestroy:          0.1,
 		MinTimeBetweenCreateCalls: time.Millisecond,
 		QuotaMaxInstances:         10,
 	}
@@ -165,10 +165,12 @@ func (s *DispatcherSuite) arvClientProxy(c *check.C) func(*http.Request) (*url.U
 // artificial errors in order to exercise a variety of code paths.
 func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	Drivers["test"] = s.stubDriver
+	s.stubDriver.ErrorRateCreate = 0.1
+	s.stubDriver.ErrorRateDestroy = 0.1
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-			return ChooseInstanceType(s.cluster, ctr)
+			return container.ChooseInstanceType(s.cluster, ctr)
 		},
 		Logger: ctxlog.TestLogger(c),
 	}
@@ -201,8 +203,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		}
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 100 {
-			// trigger scheduler maxConcurrency limit
-			c.Logf("test: requesting 503 in order to trigger maxConcurrency limit")
+			// trigger scheduler maxContainers limit
+			c.Logf("test: requesting 503 in order to trigger maxContainers limit")
 			s.disp.ArvClient.RequestAndDecode(nil, "GET", "503", nil, nil)
 		}
 		if len(waiting) == 0 {
@@ -374,7 +376,7 @@ func (s *DispatcherSuite) TestManagementAPI_Containers(c *check.C) {
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
-			return ChooseInstanceType(s.cluster, ctr)
+			return container.ChooseInstanceType(s.cluster, ctr)
 		},
 		Logger: ctxlog.TestLogger(c),
 	}
@@ -434,24 +436,24 @@ func (s *DispatcherSuite) TestManagementAPI_Containers(c *check.C) {
 	expect := `
  0 zzzzz-dz642-000000000000000 (Running) ""
  1 zzzzz-dz642-000000000000001 (Running) ""
- 2 zzzzz-dz642-000000000000002 (Locked) "Waiting in queue at position 1.  Cluster is at capacity for all eligible instance types (type4, type6) and cannot start a new instance right now."
- 3 zzzzz-dz642-000000000000003 (Locked) "Waiting in queue at position 2.  Cluster is at capacity for all eligible instance types (type4, type6) and cannot start a new instance right now."
- 4 zzzzz-dz642-000000000000004 (Queued) "Waiting in queue at position 3.  Cluster is at capacity and cannot start any new instances right now."
- 5 zzzzz-dz642-000000000000005 (Queued) "Waiting in queue at position 4.  Cluster is at capacity and cannot start any new instances right now."
- 6 zzzzz-dz642-000000000000006 (Queued) "Waiting in queue at position 5.  Cluster is at capacity and cannot start any new instances right now."
- 7 zzzzz-dz642-000000000000007 (Queued) "Waiting in queue at position 6.  Cluster is at capacity and cannot start any new instances right now."
- 8 zzzzz-dz642-000000000000008 (Queued) "Waiting in queue at position 7.  Cluster is at capacity and cannot start any new instances right now."
- 9 zzzzz-dz642-000000000000009 (Queued) "Waiting in queue at position 8.  Cluster is at capacity and cannot start any new instances right now."
- 10 zzzzz-dz642-000000000000010 (Queued) "Waiting in queue at position 9.  Cluster is at capacity and cannot start any new instances right now."
- 11 zzzzz-dz642-000000000000011 (Queued) "Waiting in queue at position 10.  Cluster is at capacity and cannot start any new instances right now."
- 12 zzzzz-dz642-000000000000012 (Queued) "Waiting in queue at position 11.  Cluster is at capacity and cannot start any new instances right now."
- 13 zzzzz-dz642-000000000000013 (Queued) "Waiting in queue at position 12.  Cluster is at capacity and cannot start any new instances right now."
- 14 zzzzz-dz642-000000000000014 (Queued) "Waiting in queue at position 13.  Cluster is at capacity and cannot start any new instances right now."
- 15 zzzzz-dz642-000000000000015 (Queued) "Waiting in queue at position 14.  Cluster is at capacity and cannot start any new instances right now."
- 16 zzzzz-dz642-000000000000016 (Queued) "Waiting in queue at position 15.  Cluster is at capacity and cannot start any new instances right now."
- 17 zzzzz-dz642-000000000000017 (Queued) "Waiting in queue at position 16.  Cluster is at capacity and cannot start any new instances right now."
- 18 zzzzz-dz642-000000000000018 (Queued) "Waiting in queue at position 17.  Cluster is at capacity and cannot start any new instances right now."
- 19 zzzzz-dz642-000000000000019 (Queued) "Waiting in queue at position 18.  Cluster is at capacity and cannot start any new instances right now."
+ 2 zzzzz-dz642-000000000000002 (Running) ""
+ 3 zzzzz-dz642-000000000000003 (Locked) "Waiting in queue at position 1.  Cluster is at capacity for all eligible instance types (type4, type6) and cannot start a new instance right now."
+ 4 zzzzz-dz642-000000000000004 (Queued) "Waiting in queue at position 2.  Cluster is at capacity and cannot start any new instances right now."
+ 5 zzzzz-dz642-000000000000005 (Queued) "Waiting in queue at position 3.  Cluster is at capacity and cannot start any new instances right now."
+ 6 zzzzz-dz642-000000000000006 (Queued) "Waiting in queue at position 4.  Cluster is at capacity and cannot start any new instances right now."
+ 7 zzzzz-dz642-000000000000007 (Queued) "Waiting in queue at position 5.  Cluster is at capacity and cannot start any new instances right now."
+ 8 zzzzz-dz642-000000000000008 (Queued) "Waiting in queue at position 6.  Cluster is at capacity and cannot start any new instances right now."
+ 9 zzzzz-dz642-000000000000009 (Queued) "Waiting in queue at position 7.  Cluster is at capacity and cannot start any new instances right now."
+ 10 zzzzz-dz642-000000000000010 (Queued) "Waiting in queue at position 8.  Cluster is at capacity and cannot start any new instances right now."
+ 11 zzzzz-dz642-000000000000011 (Queued) "Waiting in queue at position 9.  Cluster is at capacity and cannot start any new instances right now."
+ 12 zzzzz-dz642-000000000000012 (Queued) "Waiting in queue at position 10.  Cluster is at capacity and cannot start any new instances right now."
+ 13 zzzzz-dz642-000000000000013 (Queued) "Waiting in queue at position 11.  Cluster is at capacity and cannot start any new instances right now."
+ 14 zzzzz-dz642-000000000000014 (Queued) "Waiting in queue at position 12.  Cluster is at capacity and cannot start any new instances right now."
+ 15 zzzzz-dz642-000000000000015 (Queued) "Waiting in queue at position 13.  Cluster is at capacity and cannot start any new instances right now."
+ 16 zzzzz-dz642-000000000000016 (Queued) "Waiting in queue at position 14.  Cluster is at capacity and cannot start any new instances right now."
+ 17 zzzzz-dz642-000000000000017 (Queued) "Waiting in queue at position 15.  Cluster is at capacity and cannot start any new instances right now."
+ 18 zzzzz-dz642-000000000000018 (Queued) "Waiting in queue at position 16.  Cluster is at capacity and cannot start any new instances right now."
+ 19 zzzzz-dz642-000000000000019 (Queued) "Waiting in queue at position 17.  Cluster is at capacity and cannot start any new instances right now."
 `
 	sequence := make(map[string][]string)
 	var summary string
@@ -484,12 +486,16 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	defer s.disp.Close()
 
 	type instance struct {
-		Instance             string
-		WorkerState          string `json:"worker_state"`
-		Price                float64
-		LastContainerUUID    string `json:"last_container_uuid"`
-		ArvadosInstanceType  string `json:"arvados_instance_type"`
-		ProviderInstanceType string `json:"provider_instance_type"`
+		Instance              string
+		Address               string
+		Price                 float64
+		WorkerState           string    `json:"worker_state"`
+		LastContainerUUID     string    `json:"last_container_uuid"`
+		RunningContainerUUIDs []string  `json:"running_container_uuids"`
+		ArvadosInstanceType   string    `json:"arvados_instance_type"`
+		ProviderInstanceType  string    `json:"provider_instance_type"`
+		IdleBehavior          string    `json:"idle_behavior"`
+		LastBusy              time.Time `json:"last_busy"`
 	}
 	type instancesResponse struct {
 		Items []instance
@@ -509,16 +515,15 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	sr := getInstances()
 	c.Check(len(sr.Items), check.Equals, 0)
 
-	s.stubDriver.ErrorRateCreate = 0
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
-	ok := s.disp.pool.Create(test.InstanceType(1))
+	_, ok := s.disp.pool.Create(test.InstanceType(1))
 	c.Check(ok, check.Equals, true)
 	<-ch
 
 	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
 		sr = getInstances()
-		if len(sr.Items) > 0 {
+		if len(sr.Items) > 0 && sr.Items[0].Instance != "" {
 			break
 		}
 		time.Sleep(time.Millisecond)
@@ -528,6 +533,87 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
 	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
+	c.Check(sr.Items[0].RunningContainerUUIDs, check.HasLen, 0)
 	c.Check(sr.Items[0].ProviderInstanceType, check.Equals, test.InstanceType(1).ProviderType)
 	c.Check(sr.Items[0].ArvadosInstanceType, check.Equals, test.InstanceType(1).Name)
+	c.Check(sr.Items[0].IdleBehavior, check.Equals, "run")
+}
+
+func (s *DispatcherSuite) TestManagementCommand_Instances(c *check.C) {
+	s.cluster.ManagementToken = "abcdefgh"
+	Drivers["test"] = s.stubDriver
+	s.disp.setupOnce.Do(s.disp.initialize)
+	go s.disp.run()
+	defer s.disp.Close()
+	_, ok := s.disp.pool.Create(test.InstanceType(1))
+	c.Check(ok, check.Equals, true)
+
+	// Start an http server so we can test InstanceCommand against
+	// s.disp's management API.
+	srv := httptest.NewServer(s.disp)
+	srvurl, _ := url.Parse(srv.URL)
+
+	// Write a config file for InstanceCommand to use.
+	cluster, err := config.DefaultCluster(c, "zzzzz")
+	c.Assert(err, check.IsNil)
+	cluster.Services.DispatchCloud.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL(*srvurl): arvados.ServiceInstance{}}
+	cluster.ManagementToken = s.cluster.ManagementToken
+	conffile := c.MkDir() + "config.yml"
+	confdata, err := json.Marshal(arvados.Config{Clusters: map[string]arvados.Cluster{"zzzzz": cluster}})
+	c.Assert(err, check.IsNil)
+	err = os.WriteFile(conffile, confdata, 0666)
+	c.Assert(err, check.IsNil)
+
+	// "instance list"
+	stdout := bytes.NewBuffer(nil)
+	exitcode := InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-header", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
+	c.Check(exitcode, check.Equals, 0)          // `instance list` (after create)
+	c.Check(stdout.String(), check.Matches, ``+ // `instance list` (after create)
+		`instance\t.*\n`+
+		`inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\trun\ttype1\tprovidertype1\t0\.123000\t-\n`)
+
+	// "instance hold"
+	stdout.Reset()
+	stderr := bytes.NewBuffer(nil)
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"hold", "-config", conffile, "inst1,providertype1"}, bytes.NewBuffer(nil), stdout, stderr)
+	c.Check(exitcode, check.Equals, 0)         // `instance hold` should succeed
+	c.Check(stdout.String(), check.Equals, ``) // `instance hold` should output nothing
+	c.Check(stderr.String(), check.Matches,    // `instance hold` should show feedback on stderr
+		`(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
+
+	stdout.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
+	c.Check(exitcode, check.Equals, 0)      // `instance list` (after hold) should succeed
+	c.Check(stdout.String(), check.Matches, // `instance list` (after hold) should show instance in hold state
+		`inst1,providertype1\t(-|127\.0\.0\.1:\d+)\t(booting|idle)\thold\ttype1\tprovidertype1\t0\.123000\t-\n`)
+
+	// "instance drain"
+	stdout.Reset()
+	stderr.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"drain", "-config", conffile, "inst1,providertype1"}, bytes.NewBuffer(nil), stdout, stderr)
+	c.Check(exitcode, check.Equals, 0)         // `instance drain` should succeed
+	c.Check(stdout.String(), check.Equals, ``) // `instance drain` should output nothing
+	c.Check(stderr.String(), check.Matches,    // `instance drain` should show feedback on stderr
+		`(?ms)(.*\n)?inst1,providertype1: 200 OK .*\n`)
+
+	stdout.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"list", "-config", conffile}, bytes.NewBuffer(nil), stdout, os.Stderr)
+	c.Check(exitcode, check.Equals, 0) // `instance list` (after drain)
+	if stdout.String() == "" {
+		// Instance already drained/shutdown before we even
+		// got our list.
+	} else {
+		// If the instance is still listed, it should be in
+		// drain/shutdown state.
+		c.Check(stdout.String(), check.Matches, `inst1,providertype1\t(-|127\.0\.0\.1:\d+)\tshutdown\tdrain\ttype1\tprovidertype1\t0\.123000\t-\n`)
+	}
+
+	// "instance drain" with nonexistent instance ID
+	stdout.Reset()
+	stderr.Reset()
+	exitcode = InstanceCommand.RunCommand("arvados-server instance", []string{"drain", "-config", conffile, "inst404,providertype404"}, bytes.NewBuffer(nil), stdout, stderr)
+	c.Check(exitcode, check.Equals, 1)         // `instance drain {bad-id}` should fail
+	c.Check(stdout.String(), check.Equals, ``) // `instance drain {bad-id}` should output nothing
+	c.Check(stderr.String(), check.Matches,    // `instance drain {bad-id}` should 404
+		`(?ms)(.*\n)?inst404,providertype404: 404 Not Found .*\n`)
 }

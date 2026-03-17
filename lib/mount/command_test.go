@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,88 +20,88 @@ import (
 var _ = check.Suite(&CmdSuite{})
 
 type CmdSuite struct {
-	mnt string
+	mnt    string
+	stderr *bytes.Buffer
 }
 
 func (s *CmdSuite) SetUpTest(c *check.C) {
 	tmpdir, err := ioutil.TempDir("", "")
 	c.Assert(err, check.IsNil)
 	s.mnt = tmpdir
+	s.stderr = bytes.NewBuffer(nil)
 }
 
 func (s *CmdSuite) TearDownTest(c *check.C) {
-	c.Check(os.RemoveAll(s.mnt), check.IsNil)
+	c.Assert(os.RemoveAll(s.mnt), check.IsNil)
 }
 
 func (s *CmdSuite) TestMount(c *check.C) {
-	exited := make(chan int)
-	stdin := bytes.NewBufferString("stdin")
-	stdout := bytes.NewBuffer(nil)
-	stderr := bytes.NewBuffer(nil)
-	mountCmd := mountCommand{ready: make(chan struct{})}
-	ready := false
-	go func() {
-		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", s.mnt}, stdin, stdout, stderr)
-	}()
-	go func() {
-		<-mountCmd.ready
-		ready = true
+	s.mountAndCheck(c, []string{}, func() {
+		mntF, err := os.Open(s.mnt)
+		c.Assert(err, check.IsNil)
+		dirsGot, err := mntF.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		dirsWant := []string{"by_id", "home", "users"}
+		sort.Strings(dirsGot)
+		sort.Strings(dirsWant)
+		c.Check(dirsGot, check.DeepEquals, dirsWant)
+		mntF.Close()
 
 		f, err := os.Open(s.mnt + "/by_id/" + arvadostest.FooCollection)
-		if c.Check(err, check.IsNil) {
-			dirnames, err := f.Readdirnames(-1)
-			c.Check(err, check.IsNil)
-			c.Check(dirnames, check.DeepEquals, []string{"foo"})
-			f.Close()
-		}
+		c.Assert(err, check.IsNil)
+		dirnames, err := f.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
+		f.Close()
 
 		buf, err := ioutil.ReadFile(s.mnt + "/by_id/" + arvadostest.FooCollection + "/.arvados#collection")
-		if c.Check(err, check.IsNil) {
-			var m map[string]interface{}
-			err = json.Unmarshal(buf, &m)
-			c.Check(err, check.IsNil)
-			c.Check(m["manifest_text"], check.Matches, `\. acbd.* 0:3:foo\n`)
-		}
+		c.Assert(err, check.IsNil)
+		var m map[string]interface{}
+		err = json.Unmarshal(buf, &m)
+		c.Assert(err, check.IsNil)
+		c.Assert(m["manifest_text"], check.Matches, `\. acbd.* 0:3:foo\n`)
 
 		_, err = os.Open(s.mnt + "/by_id/zzzzz-4zz18-does-not-exist")
-		c.Check(os.IsNotExist(err), check.Equals, true)
+		c.Assert(os.IsNotExist(err), check.Equals, true)
+	})
+	c.Assert(s.stderr.String(), check.Equals, "")
+}
 
-		c.Check(stderr.String(), check.Equals, "")
+func (s *CmdSuite) TestMountById(c *check.C) {
+	s.mountAndCheck(c, []string{"--mount-by-id", "by_id_test_1", "--mount-by-id", "by_id_test_2"}, func() {
+		mntF, err := os.Open(s.mnt)
+		c.Assert(err, check.IsNil)
+		dirsGot, err := mntF.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		dirsWant := []string{"by_id_test_1", "by_id_test_2"}
+		sort.Strings(dirsGot)
+		sort.Strings(dirsWant)
+		c.Check(dirsGot, check.DeepEquals, dirsWant)
+		mntF.Close()
 
-		ok := mountCmd.Unmount()
-		c.Check(ok, check.Equals, true)
+		f_1, err := os.Open(s.mnt + "/by_id_test_1/" + arvadostest.FooCollection)
+		c.Assert(err, check.IsNil)
+		dirnames, err := f_1.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
 
-	}()
-	select {
-	case <-time.After(5 * time.Second):
-		c.Fatal("timed out")
-	case errCode, ok := <-exited:
-		c.Check(ok, check.Equals, true)
-		c.Check(errCode, check.Equals, 0)
-	}
-	c.Check(ready, check.Equals, true)
-	c.Check(stdout.String(), check.Equals, "")
-	// stdin should not have been read
-	c.Check(stdin.String(), check.Equals, "stdin")
+		f_2, err := os.Open(s.mnt + "/by_id_test_2/" + arvadostest.FooCollection)
+		c.Assert(err, check.IsNil)
+		dirnames, err = f_2.Readdirnames(-1)
+		c.Assert(err, check.IsNil)
+		c.Assert(dirnames, check.DeepEquals, []string{"foo"})
+
+		f_1.Close()
+		f_2.Close()
+	})
 }
 
 func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
-	exited := make(chan int)
-	stdin := bytes.NewBufferString("stdin")
-	stdout := bytes.NewBuffer(nil)
-	stderr := bytes.NewBuffer(nil)
-	mountCmd := mountCommand{ready: make(chan struct{})}
-	go func() {
-		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", "--crunchstat-interval", "0.01", s.mnt}, stdin, stdout, stderr)
-	}()
-	go func() {
-		<-mountCmd.ready
-
+	s.mountAndCheck(c, []string{"--crunchstat-interval", "0.01"}, func() {
 		data := make([]byte, 2048)
 		for i := range data {
 			data[i] = byte(i % 256)
 		}
-
 		collectionPath := s.mnt + "/by_id/" + arvadostest.FooCollection + "/testfile"
 
 		os.WriteFile(collectionPath, data, 0644)
@@ -108,25 +109,45 @@ func (s *CmdSuite) TestCrunchstatLogger(c *check.C) {
 		time.Sleep(20 * time.Millisecond)
 
 		// Check that any logging has occurred
-		logs := stderr.String()
-		c.Check(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
-		c.Check(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
+		logs := s.stderr.String()
+		c.Assert(strings.Contains(logs, "blkio:0:0 2048 write 2048 read"), check.Equals, true)
+		c.Assert(strings.Contains(logs, "crunchstat: fuseop:open 1 count"), check.Equals, true)
+	})
+	// Check that logging has stopped after unmount
+	len1 := s.stderr.Len()
+	time.Sleep(100 * time.Millisecond)
+	len2 := s.stderr.Len()
+	c.Assert(len1, check.Equals, len2)
+}
 
-		ok := mountCmd.Unmount()
-		c.Check(ok, check.Equals, true)
-
-		// Check that logging has stopped
-		stderrLen1 := stderr.Len()
-		time.Sleep(100 * time.Millisecond)
-		stderrLen2 := stderr.Len()
-		c.Check(stderrLen2, check.Equals, stderrLen1)
+func (s *CmdSuite) mountAndCheck(c *check.C, testArgs []string, testFunc func()) {
+	exited := make(chan int)
+	stdin := bytes.NewBufferString("stdin")
+	stdout := bytes.NewBuffer(nil)
+	mountCmd := mountCommand{ready: make(chan struct{})}
+	ready := false
+	args := append(append([]string{}, testArgs...), "-experimental", s.mnt)
+	go func() {
+		exited <- mountCmd.RunCommand("test mount", args, stdin, stdout, s.stderr)
 	}()
-
+	go func() {
+		<-mountCmd.ready
+		defer func() {
+			ok := mountCmd.Unmount()
+			c.Assert(ok, check.Equals, true)
+		}()
+		testFunc()
+		ready = true
+	}()
 	select {
 	case <-time.After(5 * time.Second):
 		c.Fatal("timed out")
 	case errCode, ok := <-exited:
-		c.Check(ok, check.Equals, true)
-		c.Check(errCode, check.Equals, 0)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(errCode, check.Equals, 0)
 	}
+	c.Assert(ready, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "")
+	// stdin should not have been read
+	c.Assert(stdin.String(), check.Equals, "stdin")
 }

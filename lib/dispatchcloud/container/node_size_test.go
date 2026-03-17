@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package dispatchcloud
+package container
 
 import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -244,6 +244,10 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 		"cheap_gpu_rocm": {Price: 1.9, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu_rocm",
 			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1103", DriverVersion: "6.2", VRAM: 8 * GiB}},
 
+		// Unspecified VRAM was supported in Arvados 3.1 for backwards
+		// compatibility with old "CUDA" configuration. Arvados 3.3 dropped
+		// support for "CUDA" configuration completely, so this is no longer
+		// treated specially. See the test case noted below.
 		"unspecified_vram": {Price: 2.0, RAM: 2 * GiB, VCPUs: 4, Scratch: 2 * GiB, Name: "unspecified_vram",
 			GPU: arvados.GPUFeatures{Stack: "rocm", DeviceCount: 1, HardwareTarget: "gfx1104", DriverVersion: "6.2", VRAM: 0}},
 
@@ -343,7 +347,9 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				DriverVersion:  "6.2",
 				VRAM:           2000000000,
 			},
-			SelectedInstance: "unspecified_vram",
+			// This returned "unspecified_vram" from Arvados 3.1 until 3.3.
+			// Now we check there is no suitable instance type.
+			SelectedInstance: "",
 		},
 		GPUTestCase{
 			GPU: arvados.GPURuntimeConstraints{
@@ -377,4 +383,22 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 			c.Check(err, check.Not(check.IsNil))
 		}
 	}
+}
+
+func (*NodeSizeSuite) TestInstanceResources(c *check.C) {
+	c.Check(InstanceResources{VCPUs: 2}.Sub(InstanceResources{VCPUs: 0}).sharedVCPUUsed, check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2}.Sub(InstanceResources{VCPUs: 1}).sharedVCPUUsed, check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Sub(InstanceResources{VCPUs: 0}).sharedVCPUUsed, check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Sub(InstanceResources{VCPUs: 1}).sharedVCPUUsed, check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2}.Accommodates(InstanceResources{VCPUs: 2}), check.Equals, true)
+	// once sharedVCPUUsed is set, r.Accommodates(r2)==false when
+	// r.VCPUs==r2.VCPUs.
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 2}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 1}), check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 2, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, true)
+	c.Check(InstanceResources{VCPUs: 1, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 1}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 1, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, true)
+	// once VCPUs is 0, r.Accommodates(...) returns false.
+	c.Check(InstanceResources{VCPUs: 0, sharedVCPUUsed: true}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, false)
+	c.Check(InstanceResources{VCPUs: 0}.Accommodates(InstanceResources{VCPUs: 0}), check.Equals, false)
 }
