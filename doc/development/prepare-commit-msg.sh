@@ -10,22 +10,26 @@ set -e
 set -u
 
 msgfile="$1"; shift
+trailer="$(git interpret-trailers --trailer arvados </dev/null 2>/dev/null | grep @ || :)"
 
-case "${1:-}" in
-    merge)
-        new_msg="$(mktemp --tmpdir="$(dirname "$msgfile")" commit-XXXXXX.txt)"
-        trap 'rm -f "$new_msg"' EXIT INT TERM QUIT
-        gawk -f - -- "$msgfile" >"$new_msg" <<'EOF'
-{ print; }
+new_msg="$(mktemp --tmpdir="$(dirname "$msgfile")" commit-XXXXXX.txt)"
+trap 'rm -f "$new_msg"' EXIT INT TERM QUIT
+gawk -f - -v source="${1:-}" -v trailer="$trailer" -- "$msgfile" >"$new_msg" <<'EOF'
+BEGIN { $0=trailer; trailer_key=$1; }
+function write_trailer() {
+  if (trailer) {
+    if (last1 != trailer_key) { print ""; }
+    print trailer;
+    trailer="";
+  }
+}
+END { write_trailer(); }
+($0 == trailer) { trailer=""; }
+((last1 == trailer_key && $1 != trailer_key) ||
+ $1 == "#" || $1 == "---" || $1 == "diff") { write_trailer(); }
+{ print; last1=$1; }
 (NR == 1 && $1 == "Merge" && match($0, "['/]([0-9]+)-", ma)) {
     printf("\nRefs #%s.\n", ma[1]);
 }
 EOF
-        mv -f "$new_msg" "$msgfile"
-        ;;
-esac
-
-if git config trailer.arvados.cmd >/dev/null; then
-    git interpret-trailers --in-place --trailer arvados "$msgfile"
-fi
-exit 0
+mv -f "$new_msg" "$msgfile"
