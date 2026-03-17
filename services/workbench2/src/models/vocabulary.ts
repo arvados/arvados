@@ -55,7 +55,7 @@ export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary:
                 l => l.label.toLowerCase() === tagValueLabel.toLowerCase()) !== undefined)
             || '';
     };
-    if (vocabulary.strict_tags === false) {
+    if (vocabulary.strict_tags === false && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].labels) {
         return tagValueLabel;
     }
     return '';
