@@ -16,7 +16,7 @@ import { PermissionService } from 'services/permission-service/permission-servic
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
 import { PROJECT_CREATE_FORM_NAME } from 'store/projects/project-create-actions';
-import { selectedToArray, isRoleGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar';
+import { selectedToArray, isRoleGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar.utils';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 

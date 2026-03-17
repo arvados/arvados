@@ -13,7 +13,7 @@ import { TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
 import { setSelectedResourceUuid, setIsSelectedResourceInDataExplorer } from "store/selected-resource/selected-resource-actions";
-import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
+import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar.utils";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { fetchProcessStatusCounts } from "store/subprocess-panel/subprocess-panel-actions";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";

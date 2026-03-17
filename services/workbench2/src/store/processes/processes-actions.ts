@@ -22,7 +22,7 @@ import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { ContainerRequestState } from "models/container-request";
 import { FilterBuilder } from "services/api/filter-builder";
-import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
+import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar.utils";
 import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { CommonResourceServiceError } from "services/common-service/common-resource-service";

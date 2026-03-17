@@ -90,7 +90,7 @@ import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-pan
 import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
 import { PROJECT_MOVE_FORM_NAME } from "store/projects/project-move-actions";
 import { DataTableFetchMode } from "components/data-table/data-table";
-import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
+import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar.utils";
 import { matchProjectRoute } from "routes/routes";
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
 import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
@@ -99,7 +99,7 @@ import { linkPanelColumns } from "views/link-panel/link-panel-root";
 import { userPanelColumns } from "views/user-panel/user-panel";
 import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
 import { groupsPanelColumns } from "views/groups-panel/groups-panel";
-import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel";
+import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel-columns";
 import { publicFavoritePanelColumns } from "views/public-favorites-panel/public-favorites-panel";
 import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
 import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
