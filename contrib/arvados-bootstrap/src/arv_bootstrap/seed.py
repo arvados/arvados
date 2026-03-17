@@ -310,7 +310,7 @@ The name of a log level like `debug`, `info`, `warning`, or `error`
     parser.add_argument(
         '--object-base', '--base',
         metavar='BASE_JSON',
-        type=cmd_util.JSONArgument(validate_mapping),
+        type=cmd_util.JSONArgument(validate_mapping, "JSON object"),
         help="""
 JSON object or path to set common attributes for all created objects.
 If not set, will try to read `arvados_seed_object.json` in each directory.
@@ -318,7 +318,7 @@ If not set, will try to read `arvados_seed_object.json` in each directory.
     parser.add_argument(
         '--parameters', '--params',
         metavar='PARAMS_JSON',
-        type=cmd_util.JSONArgument(validate_mapping),
+        type=cmd_util.JSONArgument(validate_mapping, "JSON object"),
         help="""
 JSON object or path to set parameters when creating objects.
 If not set, will try to read `arvados_seed_parameters.json` in each directory.

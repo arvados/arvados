@@ -4,6 +4,12 @@
 
 from unittest import mock
 import pytest
+import argparse
+import re
+import io
+import os
+import json
+from contextlib import contextmanager
 from arvados.commands import arvcli
 
 
@@ -12,21 +18,21 @@ def test_global_option_help_followed_by_subcommand():
     the -h option is consumed by the parser, and the help message is printed,
     followed by normal exit.
     """
-    parser = arvcli.ArvCLIArgumentParser()
+    parser = arvcli.ArvCLIArgumentParser({})
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["-h", "foo"])
     assert exit_status.value.code == 0
 
 
 def test_no_subcommand():
-    parser = arvcli.ArvCLIArgumentParser()
+    parser = arvcli.ArvCLIArgumentParser({})
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["-s"])
     assert exit_status.value.code == 2
 
 
 def test_invalid_subcommand():
-    parser = arvcli.ArvCLIArgumentParser()
+    parser = arvcli.ArvCLIArgumentParser({})
     with pytest.raises(SystemExit) as exit_status:
         parser.parse_known_args(["foo"])
     assert exit_status.value.code == 2
@@ -65,3 +71,217 @@ def test_passthrough_commands_help(subcommand, main_fcn_name):
         with pytest.raises(SystemExit):
             arvcli.dispatch([*subcommand.split(), "-h"])
         s.assert_called_with(["-h"])
+
+
+@pytest.mark.parametrize("plural,singular", (
+    ("container_requests", "container_request"),
+    ("vocabularies", "vocabulary"),
+    ("sys", "sys"),
+    ("Foos", "Foo"),  # generic nonce word that ends in "-s"
+    ("foo", "foo")  # already singular in form
+))
+def test_singularizer(plural, singular):
+    assert arvcli._ArgUtil.singularize_resource(plural) == singular
+
+
+@pytest.mark.parametrize("key,argument_name", (
+    ("ensure_unique_name", "--ensure-unique-name"),
+    ("filters", "--filters"),
+))
+def test_parameter_key_to_argument_name(key, argument_name):
+    assert arvcli._ArgUtil.parameter_key_to_argument_name(key) == argument_name
+
+
+def test_get_method_options():
+    # Largely based on arvados.container_requests.create, but with a fictitious
+    # parameter entry for integer type, another one for required=True, and
+    # also with parameter descriptions replaced by brief strings.
+    input_method_schema = {
+        "parameters": {
+            "select": {
+                "type": "array",
+                "description": "help-select.",
+                "required": False,
+                "location": "query"
+            },
+            "ensure_unique_name": {
+                "type": "boolean",
+                "description": "help-ensure-unique-name.",
+                "location": "query",
+                "required": False,
+                "default": "false"
+            },
+            "cluster_id": {
+                "type": "string",
+                "description": "help-cluster-id.",
+                "location": "query",
+                "required": False
+            },
+            # Fictitious parameters
+            "uuid": {
+                "type": "string",
+                "description": "help-uuid.",
+                "required": True,
+                "location": "path"
+
+            },
+            "limit": {
+                "type": "integer",
+                "required": False,
+                "default": "100",
+                "description": "help-limit.",
+                "location": "query"
+            }
+        },
+        "request": {
+            "required": True,
+            "properties": {
+                "container_request": {
+                    "$ref": "ContainerRequest"
+                }
+            }
+        }
+    }
+    output = [
+        (
+            ("-s", "--select"),
+            {
+                "type": arvcli._ArgTypes.json_array,
+                "metavar": "JSON_ARRAY",
+                "help": "help-select.",
+                "required": False
+            }
+        ),
+        (
+            ("--no-ensure-unique-name",),
+            {
+                "dest": "ensure_unique_name",
+                "action": "store_false",
+                "default": False,
+                "required": False
+            }
+        ),
+        (
+            ("-e", "--ensure-unique-name"),
+            {
+                "dest": "ensure_unique_name",
+                "action": "store_true",
+                "help": "help-ensure-unique-name.",
+                "required": False,
+                "default": False
+            }
+        ),
+        (
+            ("-c", "--cluster-id"),
+            {
+                "type": str,
+                "metavar": "STR",
+                "help": "help-cluster-id.",
+                "required": False
+            }
+        ),
+        # Fictitious parameters
+        (
+            ("-u", "--uuid"),
+            {
+                "type": str,
+                "metavar": "STR",
+                "help": "help-uuid. This option must be specified.",
+                "required": True,
+            }
+        ),
+        (
+            ("-l", "--limit"),
+            {
+                "type": int,
+                "metavar": "N",
+                "default": "100",
+                "help": "help-limit. Default: 100.",
+                "required": False
+            }
+        ),
+        # Request parameter
+        (
+            ("-o", "--container-request"),
+            {
+                "type": arvcli._ArgTypes.json_body,
+                "metavar": "{JSON,FILE,-}",
+                "help": "Either a string representing container_request as JSON or a filename from which to read container_request JSON (use '-' to read from stdin). This option must be specified.",
+                "required": True
+            }
+        )
+    ]
+    assert list(
+        arvcli._ArgUtil.get_method_options(input_method_schema)
+    ) == output
+
+
+# Private context manager for cleanly and temporarily switching the working
+# directory.
+@contextmanager
+def _pushd(target):
+    oldpwd = os.getcwd()
+    try:
+        yield os.chdir(target)
+    finally:
+        os.chdir(oldpwd)
+
+
+@pytest.mark.usefixtures("tmp_path")
+class TestArgTypes:
+    """Test the private type converter-validators under the arvcli._ArgTypes
+    namespace.
+    """
+    def test_json_array_makes_list(self):
+        assert arvcli._ArgTypes.json_array("[]") == []
+
+    def test_json_object_makes_dict(self):
+        assert arvcli._ArgTypes.json_object("{}") == {}
+
+    @pytest.mark.parametrize("invalid_input", ("{}", '""', "0", "null"))
+    def test_json_array_rejects_non_array(self, invalid_input):
+        with pytest.raises(argparse.ArgumentTypeError):
+            arvcli._ArgTypes.json_array(invalid_input)
+
+    @pytest.mark.parametrize("invalid_input", ("[]", '""', "0", "null"))
+    def test_json_object_rejects_non_object(self, invalid_input):
+        with pytest.raises(argparse.ArgumentTypeError):
+            arvcli._ArgTypes.json_object(invalid_input)
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    ("foo", '"foo"', '{"foo": null}', '1.0', 'false', 'true', 'null')
+)
+def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
+    # --scope takes JSON array
+    cli = ["api_client_authorization", "create_system_auth", "--scope"]
+    cli.append(invalid_value)
+    with pytest.raises(SystemExit) as exit_status:
+        arvcli.dispatch(cli)
+    assert exit_status.value.code == 2
+    captured = capsys.readouterr()
+    assert "not valid JSON array" in captured.err
+
+
+class TestRequestParameterWithCollectionCreateCMD:
+    manifest_data = {
+        "name": "empty-test",
+        "manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:empty\n"
+    }
+    cli = ["collection", "create", "--collection"]
+
+    def test_request_parameter_missing(self):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(self.cli)
+        assert exit_status.value.code == 2
+
+    @mock.patch("sys.stdin", new_callable=io.StringIO)
+    def test_request_parameter_stdin_valid_json(self, mock_stdin):
+        # TODO: to be fleshed out when API calls are implemented: check actual
+        # return-data from API server.
+        json.dump(self.manifest_data, mock_stdin)
+        mock_stdin.seek(0)
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(self.cli + ["-"])
+        assert exit_status.value.code == 0

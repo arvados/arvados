@@ -117,11 +117,15 @@ subdirectories named after their portable data hash
         mounts = self.add_argument_group("Mount custom layout and filtering")
         mounts.add_argument(
             '--filters',
-            type=arv_cmd.JSONArgument(arv_cmd.validate_filters),
+            type=arv_cmd.JSONArgument(
+                validator=arv_cmd.validate_filters,
+                pretty_name="Arvados API filter"
+            ),
             help="""
 Filters to apply to all project, shared, and tag directory contents.
-Pass filters as either a JSON string or a path to a JSON file.
-The JSON object should be a list of filters in Arvados API list filter syntax.
+Pass filters as either a JSON string or a path to a JSON file (use "-" for
+standard input). The JSON object should be a list of filters in Arvados API
+list filter syntax.
 """,
         )
         mounts.add_argument(
