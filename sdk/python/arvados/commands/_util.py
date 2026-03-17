@@ -222,8 +222,8 @@ def json_or_file_loader(value: str):
             # reasonable explanation is that it's not intended as a path.
             pass
         except OSError as err:
-            # Directly report this external condition.
-            raise err from None
+            # Terminate early; str(err) will contain path.
+            raise argparse.ArgumentTypeError(str(err)) from None
 
     # Handle as path.
     if fh is not None:

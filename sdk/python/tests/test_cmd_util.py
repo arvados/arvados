@@ -332,7 +332,7 @@ class TestJsonOrFileLoader:
         # cd into the temp directory so that we can refer to the subdir with
         # its name (which is valid JSON)
         with pytest.raises(
-            IsADirectoryError,  # A subclass of OSError.
+            argparse.ArgumentTypeError,
             match=f"^.*: {re.escape(repr(crafted_name))}"
         ), _pushd(tmp_path):
             cmd_util.json_or_file_loader(crafted_name)
@@ -341,7 +341,7 @@ class TestJsonOrFileLoader:
         path = tmp_path / "subdir"
         os.mkdir(path)
         with pytest.raises(
-            IsADirectoryError,
+            argparse.ArgumentTypeError,
             match=f"^.*: {re.escape(repr(str(path)))}"
         ):
             cmd_util.json_or_file_loader(str(path))
@@ -359,7 +359,7 @@ class TestJsonOrFileLoader:
                 os.chmod(bad_file.fileno(), 0o600)
 
         with pytest.raises(
-            PermissionError,  # A subclass of OSError
+            argparse.ArgumentTypeError,
             match=f"^.*: {re.escape(repr(path))}"
         ), ctx():
             cmd_util.json_or_file_loader(path)
