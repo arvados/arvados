@@ -160,7 +160,7 @@ export type PropertyChips = Record<string, string | string[]>;
 
 export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabulary): PropertyChips => {
     const vocabularyChips: PropertyChips = {};
-    const strictMode = vocabulary.strict_tags === true;
+    const strictMode = vocabulary?.strict_tags === true;
 
     for (const [keyLabel, valueLabel] of Object.entries(chips)) {
         if (!valueLabel) continue;

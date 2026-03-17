@@ -14,7 +14,6 @@ import { TCheckedList } from "components/data-table/data-table";
 import { extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 import { isUserGroup } from "models/group";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
@@ -100,7 +99,7 @@ export const MultiselectToolbar = connect(
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [toggleTrashAction]
+                ? [require("views-components/context-menu/action-sets/project-action-set").toggleTrashAction as ContextMenuAction]
                 : selectActionsByKind(currentResourceKinds as ContextMenuKind[]).filter((action) =>
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
