@@ -1,0 +1,43 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install awscli
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - awscli
+      - jq
+
+- name: Install aws secret script
+  become: yes
+  ansible.builtin.copy:
+    src: arvados-aws-secret.sh
+    dest: /usr/local/sbin/arvados-aws-secret.sh
+    owner: root
+    group: root
+    mode: 0755
+  register: aws_secret_script_copy
+
+- name: Write arvados_aws_secret service definitions
+  become: yes
+  ansible.builtin.template:
+    src: arvados_aws_secret.service.j2
+    dest: /etc/systemd/system/arvados_aws_secret.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Add symlink from password_secret_connector service to arvados_aws_secret
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: /etc/systemd/system/arvados_aws_secret.service
+    dest: /etc/systemd/system/password_secret_connector.service
+
+- name: Start and enable arvados_aws_secret.service
+  become: yes
+  ansible.builtin.systemd_service:
+    name: arvados_aws_secret.service
+    state: "{{ 'restarted' if aws_secret_script_copy.changed else 'started' }}"
+    enabled: true

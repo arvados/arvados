@@ -243,3 +243,35 @@ def internal_addrs(svc_config: Config) -> ListenAddress:
         addr
     except NameError:
         raise ValueError("no valid InternalURLs in service configuration") from None
+
+
+@FilterModule.register
+def systemd_env_quote(value: str) -> str:
+    """Escapes necessary characters for systemd env usage
+
+    Given an env value, returns an escaped string ready for use in a systemd
+    unit. The consumer should add quotes around the env key and value if needed.
+    """
+    # Standard systemd escapes based on
+    # https://www.freedesktop.org/software/systemd/man/latest/systemd.syntax.html#Quoting
+    value = value.replace("\\", "\\\\")
+    value = value.replace('"', '\\"')
+    value = value.replace('\'', '\\\'')
+    value = value.replace("%", "%%")
+    # Transform newlines into multi line value
+    value = value.replace("\n", "\\\n")
+    return value
+
+
+@FilterModule.register
+def systemd_exec_quote(value: str) -> str:
+    """Escapes necessary characters for systemd ExecStart usage
+
+    Given a string value, returns an escaped string ready for use in a systemd
+    ExecStart line. The consumer should wrap in quotes as necessary.
+    """
+    # Start with basic systemd quote
+    value = systemd_env_quote(value)
+    # Additionally escape $
+    value = value.replace("$", "$$")
+    return value
