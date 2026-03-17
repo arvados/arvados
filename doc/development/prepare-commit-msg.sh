@@ -27,9 +27,16 @@ END { write_trailer(); }
 ($0 == trailer) { trailer=""; }
 ((last1 == trailer_key && $1 != trailer_key) ||
  $1 == "#" || $1 == "---" || $1 == "diff") { write_trailer(); }
-{ print; last1=$1; }
-(NR == 1 && $1 == "Merge" && match($0, "['/]([0-9]+)-", ma)) {
-    printf("\nRefs #%s.\n", ma[1]);
+(NR == 1 && $1 == "Merge" && $(NF - 1) == "branch") {
+  match($NF, /[[:punct:]]([0-9]+)[[:punct:]]/, bmatch);
+  sub(/^'.*\//, "'", $NF);
+  print "Merge branch", $NF;
+  if (RSTART) {
+    printf("%sRefs #%s.%s", ORS, bmatch[1], ORS);
+  }
+  last1=$1;
+  next;
 }
+{ print; last1=$1; }
 EOF
 mv -f "$new_msg" "$msgfile"
