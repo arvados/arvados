@@ -118,6 +118,7 @@ import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action"
 import { loadRecentlyVisited } from "store/recently-visited/recently-visited-actions";
 import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service"
 import { COLLECTION_MOVE_FORM_NAME } from "store/collections/collection-move-actions";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -485,35 +486,46 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
         await copySingleCollection({ ...collection, ownerUuid: data.ownerUuid } as CollectionCopyResource);
     }
 
-    async function copySingleCollection(copyToProject: CollectionCopyResource) {
-        const newName = collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
+    async function copySingleCollection(sourceCollection: CollectionCopyResource) {
+        const newName = collectionsToCopy.length === 1 ? data.name : `Copy of: ${sourceCollection.name}`;
         try {
-            const collection = await dispatch<any>(
+            const newCollection = await dispatch<any>(
                 collectionCopyActions.copyCollection({
-                    ...copyToProject,
+                    ...sourceCollection,
                     name: newName,
                 })
             );
-            if (copyToProject && collection) {
-                await dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
+            if (sourceCollection && newCollection) {
+                await dispatch<any>(reloadProjectMatchingUuid([sourceCollection.uuid]));
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: "Collection has been copied.",
                         hideDuration: 3000,
                         kind: SnackbarKind.SUCCESS,
-                        link: collection.ownerUuid,
+                        link: newCollection.ownerUuid,
                     })
                 );
-                dispatch<any>(deselectOne(copyToProject.uuid));
+                dispatch<any>(deselectOne(sourceCollection.uuid));
             }
         } catch (e) {
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: e.message,
-                    hideDuration: 2000,
-                    kind: SnackbarKind.ERROR,
-                })
-            );
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "A collection with the same name already exists in the target project.",
+                        hideDuration: 3000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            } else {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                )
+            }
         }
         dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
     }
