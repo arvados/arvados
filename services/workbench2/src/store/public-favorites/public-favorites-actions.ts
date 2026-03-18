@@ -5,7 +5,7 @@
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { Dispatch } from "redux";
 import { RootState } from "../store";
-import { checkPublicFavorite } from "./public-favorites-reducer";
+import { checkPublicFavorite } from "./public-favorites";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";

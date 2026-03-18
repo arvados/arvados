@@ -33,7 +33,7 @@ import { RootState } from 'store/store';
 import { createTree } from 'models/tree';
 import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from 'store/public-favorites-panel/public-favorites-action';
-import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
+import { PublicFavoritesState } from "store/public-favorites/public-favorites";
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
