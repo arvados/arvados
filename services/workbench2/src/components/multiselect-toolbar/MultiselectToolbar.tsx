@@ -13,7 +13,7 @@ import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
 import { getResource, ResourcesState } from "store/resources/resources";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { usesDetailsCard, selectedToArray, selectedToKindSet, isRoleGroupResource } from "./MultiselectToolbar.utils";
+import { usesDetailsCard, selectedToArray, selectedToKindSet } from "./MultiselectToolbar.utils";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";

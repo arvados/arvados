@@ -43,7 +43,6 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
     const [propertyKeyId, setPropertyKeyId] = React.useState<string | undefined>(undefined);
     const [currentKey, setCurrentKey] = React.useState<string | undefined>(undefined);
     const [currentValue, setCurrentValue] = React.useState<string | undefined>(undefined);
-    const [clearValueSignal, sendClearValueSignal] = React.useState<{}>({});
     const [keyErrors, setKeyErrors] = React.useState<string[]>([]);
     const [valueErrors, setValueErrors] = React.useState<string[]>([]);
 
@@ -60,6 +59,7 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
     }, [properties]);
 
     const addPropertyValue = (prev: PropertyChips, key: string, value: string): PropertyChips => {
+        console.log('>>> Adding property to chips:', key, ':', value);
         const existing = prev[key];
         if (Array.isArray(existing)) {
             return existing.includes(value) ? prev : { ...prev, [key]: [...existing, value] };
@@ -72,10 +72,10 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
 
     const handleAddProperty = (ev: React.FormEvent) => {
         ev.preventDefault();
+        console.log('>>> Adding property', currentKey, ':', currentValue);
         if (!currentKey || !currentValue) return;
         setProperties(prev => addPropertyValue(prev, currentKey, currentValue));
         setCurrentValue(undefined);
-        sendClearValueSignal({});
     };
 
     const onChipsChange = (newValues: string[]) => {
@@ -104,7 +104,8 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
                     vocabulary={vocabulary}
                     onSelect={setCurrentKey}
                     setKeyErrors={setKeyErrors}
-                    sendClearValueSignal={sendClearValueSignal}
+                    // used to clear the value field when a new key is selected
+                    setCurrentValue={setCurrentValue}
                 />
             </Grid>
             <Grid item xs
@@ -113,9 +114,9 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
                     propertyKeyId={propertyKeyId || ''}
                     propertyKeyName={currentKey || ''}
                     vocabulary={vocabulary}
+                    currentValue={currentValue}
                     onSelect={setCurrentValue}
                     setValueErrors={setValueErrors}
-                    clearValueSignal={clearValueSignal}
                 />
             </Grid>
             <Grid item>

@@ -73,16 +73,31 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
         />
     )} />;
 
+const handleChange = (
+    formName: string,
+    { onChange }: WrappedFieldInputProps,
+    { dispatch }: WrappedFieldMetaProps,
+    value: string) => {
+        // Properties' values are dependant on the keys, if any value is
+        // pre-existant, a change on the property key should mean that the
+        // previous value is invalid, so we better reset the whole form before
+        // setting the new tag key.
+        dispatch(reset(formName));
+
+        onChange(value);
+        dispatch(change(formName, PROPERTY_KEY_FIELD_NAME, value));
+    };
+
 type DialogPropertyKeyInputProps = VocabularyProp & {
     showErrors?: boolean
     skipValidation?: boolean,
     clearPropertyKeyOnSelect?: boolean,
-    sendClearValueSignal?: (signal: {}) => void,
+    setCurrentValue?: (value: string | undefined) => void,
     onSelect: (value: string) => void,
     setKeyErrors: (errors: string[]) => void,
 };
 
-export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation, clearPropertyKeyOnSelect, onSelect, setKeyErrors, sendClearValueSignal }: DialogPropertyKeyInputProps) => {
+export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation, clearPropertyKeyOnSelect, onSelect, setKeyErrors, setCurrentValue }: DialogPropertyKeyInputProps) => {
     const validationArray = skipValidation ? [] : getKeyValidation(vocabulary);
     const [key, setKey, keyErrs] = useStateWithValidation('', validationArray, 'Key');
 
@@ -90,6 +105,14 @@ export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation,
     React.useEffect(() => {
         setKeyErrors(keyErrs);
     }, [keyErrs]);
+
+    const handleSetKey = (newKey: string) => {
+        if (setCurrentValue) {
+            setCurrentValue(undefined);
+        }
+        setKey(newKey);
+        onSelect(newKey);
+    }
 
     return <Autocomplete
         label='Key'
@@ -105,28 +128,28 @@ export const DialogPropertyKeyInput = ({ vocabulary, showErrors, skipValidation,
         }
         onFocus={() => {
             setKey('');
-            if (clearPropertyKeyOnSelect && key && sendClearValueSignal) {
-                sendClearValueSignal({});
+            onSelect('');
+            if (clearPropertyKeyOnSelect && key && setCurrentValue) {
+                setCurrentValue(undefined);
             }
         }}
         onSelect={(selectedSuggestion: PropFieldSuggestion) => {
-            onSelect(selectedSuggestion.label);
-            setKey(selectedSuggestion.label);
+            handleSetKey(selectedSuggestion.label);
         }}
         onBlur={() => {
             // Case-insensitive search for the key in the vocabulary
             const foundKeyID = getTagKeyID(key, vocabulary);
             if (foundKeyID !== '') {
                 const foundKeyLabel = getTagKeyLabel(foundKeyID, vocabulary);
-                setKey(foundKeyLabel);
-                onSelect(foundKeyLabel);
+                handleSetKey(foundKeyLabel);
             }
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
             const newValue = e.currentTarget.value;
-            setKey(newValue);
             if (vocabulary.strict_tags === false) {
-                onSelect(newValue);
+                handleSetKey(newValue);
+            } else {
+                setKey(newValue);
             }
         }}
     />
@@ -166,18 +189,3 @@ const getSuggestions = (value: string, vocabulary: Vocabulary): PropFieldSuggest
         tag => (tag.label !== value && re.test(tag.label)) ||
             (tag.synonyms && tag.synonyms.some(s => re.test(s))));
 };
-
-const handleChange = (
-    formName: string,
-    { onChange }: WrappedFieldInputProps,
-    { dispatch }: WrappedFieldMetaProps,
-    value: string) => {
-        // Properties' values are dependant on the keys, if any value is
-        // pre-existant, a change on the property key should mean that the
-        // previous value is invalid, so we better reset the whole form before
-        // setting the new tag key.
-        dispatch(reset(formName));
-
-        onChange(value);
-        dispatch(change(formName, PROPERTY_KEY_FIELD_NAME, value));
-    };
