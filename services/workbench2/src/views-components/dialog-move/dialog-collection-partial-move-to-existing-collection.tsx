@@ -54,7 +54,7 @@ export const DialogCollectionPartialMoveToExistingCollection = compose(
 			<DialogContent>
 				<DirectoryTreePickerDialogField
 					pickerId={pickerId}
-					currentUuids={[initialFormData?.destination.uuid || '']}
+					currentUuids={initialFormData?.destination.uuid ? [initialFormData.destination.uuid] : []}
 					handleDirectoryChange={setDestination}
 				/>
 			</DialogContent>

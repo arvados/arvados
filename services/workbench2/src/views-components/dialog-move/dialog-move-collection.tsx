@@ -42,7 +42,7 @@ export const DialogMoveCollection = compose(
 			<DialogContent>
 				<ProjectTreePickerDialogField
 					pickerId={pickerId}
-					currentUuids={data?.uuid ? [data.uuid] : undefined}
+					currentUuids={data?.uuid ? [data.uuid] : []}
 					setSelectedProject={setOwnerUuid}
 				/>
 			</DialogContent>

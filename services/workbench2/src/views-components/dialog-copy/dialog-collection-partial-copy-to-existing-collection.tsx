@@ -49,7 +49,7 @@ export const DialogCollectionPartialCopyToExistingCollection = compose(
         <>
             <DialogTitle>Copy Selected Files to Existing Collection</DialogTitle>
             <DirectoryTreePickerDialogField
-                currentUuids={[initialFormData?.destination.uuid || '']}
+                currentUuids={initialFormData?.destination.uuid ? [initialFormData.destination.uuid] : []}
                 pickerId={props.pickerId}
                 handleDirectoryChange={handleDirectoryChange}
             />

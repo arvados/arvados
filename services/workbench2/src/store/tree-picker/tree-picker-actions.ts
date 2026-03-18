@@ -1055,8 +1055,8 @@ export type FileOperationLocation = {
 export const isFileOperationLocation = (obj: any): obj is FileOperationLocation => {
     return obj && typeof obj === 'object' &&
         typeof obj.name === 'string' &&
-        typeof obj.uuid === 'string' &&
-        typeof obj.subpath === 'string';
+        typeof obj.uuid === 'string' && obj.uuid.length > 0 &&
+        typeof obj.subpath === 'string' && obj.subpath.length > 0;
 }
 
 export const getFileOperationLocation = (item: ProjectsTreePickerItem) =>
