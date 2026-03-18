@@ -6,7 +6,7 @@ import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
 import { FileViewerAction } from 'views-components/context-menu/actions/file-viewer-action';
 import { getNodeValue } from "models/tree";
-import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 import { getInlineFileUrl, sanitizeToken, isInlineFileUrlSafe } from "./helpers";
 
 const mapStateToProps = (state: RootState) => {

@@ -14,7 +14,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 import { updateResources } from 'store/resources/resources-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { CollectionResource } from 'models/collection';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';

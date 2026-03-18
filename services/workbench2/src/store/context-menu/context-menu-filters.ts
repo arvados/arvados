@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { RootState } from "store/store";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { getUserAccountStatus, UserAccountStatus } from "store/users/users-actions";
 import { matchMyAccountRoute, matchUserProfileRoute } from "routes/routes";
 

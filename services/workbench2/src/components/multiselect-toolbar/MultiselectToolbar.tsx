@@ -17,7 +17,8 @@ import { usesDetailsCard, selectedToArray, selectedToKindSet } from "./Multisele
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
-import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
+import { sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
 import { getMenuActionSetByKind } from "common/menu-action-set-actions";
 import { intersection } from "lodash";

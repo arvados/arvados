@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { ContextMenuItem } from "components/context-menu/context-menu";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 
 export enum ContextMenuActionNames {
     ACCOUNT_SETTINGS = 'Account settings',

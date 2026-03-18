@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { navigateTo } from "store/navigation/navigation-action";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";

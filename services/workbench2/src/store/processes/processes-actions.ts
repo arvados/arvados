@@ -24,7 +24,7 @@ import { ContainerRequestState } from "models/container-request";
 import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar.utils";
 import { Resource, ResourceKind } from "models/resource";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { getProcessPanelCurrentUuid } from "store/process-panel/process-panel";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
@@ -308,7 +308,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
     //if checkedlist has items, use them
     const checkedList = getState().multiselect.checkedList;
     const uuidsToRemove: string[] = selectedToArray(checkedList);
-    
+
     //if no items in checkedlist, default to normal context menu behavior
     if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
 

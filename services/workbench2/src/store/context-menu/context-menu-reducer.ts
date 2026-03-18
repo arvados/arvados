@@ -2,18 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { contextMenuActions, ContextMenuAction, ContextMenuResource } from "./context-menu-actions";
-
-export interface ContextMenuState {
-    open: boolean;
-    position: ContextMenuPosition;
-    resource?: ContextMenuResource;
-}
-
-export interface ContextMenuPosition {
-    x: number;
-    y: number;
-}
+import { ContextMenuState } from "store/context-menu/context-menu";
+import { contextMenuActions, ContextMenuAction } from "store/context-menu/context-menu-actions";
 
 const initialState = {
     open: false,
@@ -26,4 +16,3 @@ export const contextMenuReducer = (state: ContextMenuState = initialState, actio
         OPEN_CONTEXT_MENU: ({ resource, position }) => ({ open: true, resource, position }),
         CLOSE_CONTEXT_MENU: () => ({ ...state, open: false })
     });
-

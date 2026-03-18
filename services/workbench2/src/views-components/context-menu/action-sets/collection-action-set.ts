@@ -33,7 +33,7 @@ import { openRestoreCollectionVersionDialog } from "store/collections/collection
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 
 const toggleFavoriteAction: ContextMenuAction = {
     component: ToggleFavoriteAction,

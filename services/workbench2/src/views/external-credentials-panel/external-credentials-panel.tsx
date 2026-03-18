@@ -28,9 +28,8 @@ import { createTree } from "models/tree";
 import { ResourcesState, getResource } from "store/resources/resources";
 import { toggleOne } from "store/multiselect/multiselect-actions";
 import { ExternalCredential } from "models/external-credential";
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource, ContextMenuKind } from "store/context-menu/context-menu";
 import { openContextMenuAndSelect } from "store/context-menu/context-menu-actions";
-import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 
 type CssRules = "toolbar" | "button" | "root";
 

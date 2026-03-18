@@ -10,7 +10,7 @@ import { snackbarActions } from "store/snackbar/snackbar-actions";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { SnackbarKind } from "store/snackbar/snackbar-actions";
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { getResource } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 

@@ -21,7 +21,7 @@ import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { ResourceKind, Resource } from 'models/resource';
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar.utils";

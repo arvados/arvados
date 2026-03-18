@@ -9,7 +9,7 @@ import { bindDataExplorerActions } from "store/data-explorer/data-explorer-actio
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { CreateExternalCredentialFormDialogData, UpdateExternalCredentialFormDialogData } from "store/external-credentials/external-credential-dialog-data";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { getCheckedListUuids } from "store/multiselect/multiselect-actions";
 import { FormErrors, initialize, reset, startSubmit, stopSubmit } from "redux-form";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";

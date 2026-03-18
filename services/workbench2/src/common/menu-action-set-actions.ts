@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuResource, ContextMenuKind } from "store/context-menu/context-menu";
 import { sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 
 const menuActionSets = new Map<string, ContextMenuActionSet>();

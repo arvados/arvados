@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { RenameIcon, AdvancedIcon, DeleteForever, CopyIcon } from "components/icon/icon";
 import { openRemoveExternalCredentialDialog, openExternalCredentialUpdateDialog } from "store/external-credentials/external-credentials-actions";

@@ -6,7 +6,7 @@ import { TCheckedList } from "components/data-table/data-table";
 import { extractUuidKind } from "models/resource";
 import { isUserGroup } from "models/group";
 import { getResource, ResourcesState } from "store/resources/resources";
-import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 
 const detailsCardPaths = [
     '/projects',

@@ -8,9 +8,8 @@ import withStyles from '@mui/styles/withStyles';
 import { DefaultTransformOrigin, createAnchorAt } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 import { RootState } from "store/store";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource, ContextMenuState } from "store/context-menu/context-menu";
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
-import { ContextMenuState } from "store/context-menu/context-menu-reducer";
 import { ArvadosTheme } from "common/custom-theme";
 import { CustomStyleRulesCallback } from "common/custom-theme";
 

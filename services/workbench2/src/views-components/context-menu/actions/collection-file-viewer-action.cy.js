@@ -6,7 +6,7 @@ import React from 'react';
 import configureMockStore from 'redux-mock-store'
 import { Provider } from 'react-redux';
 import { CollectionFileViewerAction } from './collection-file-viewer-action';
-import { ContextMenuKind } from '../menu-item-sort';
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 import { createTree, initTreeNode, setNode } from "models/tree";
 import { getInlineFileUrl, sanitizeToken } from "./helpers";
 

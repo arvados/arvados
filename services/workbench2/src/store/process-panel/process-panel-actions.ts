@@ -24,7 +24,7 @@ import { CommandInputParameter, getIOParamId, WorkflowInputsData } from "models/
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
 import { OutputDetails, NodeInstanceType, NodeInfo, UsageReport } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { OutputDataUpdate } from "./process-panel-reducer";
 import { updateResources } from "store/resources/resources-actions";
 import { ContainerResource } from "models/container";
