@@ -22,6 +22,7 @@ import { resourceToMenuKind } from "common/resource-to-menu-kind";
 import { getMenuActionSetByKind } from "common/menu-action-set-actions";
 import { intersection } from "lodash";
 import { matchTrashRoute } from "routes/routes";
+import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
@@ -87,7 +88,7 @@ export const MultiselectToolbar = connect(
 
         const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [require("views-components/context-menu/action-sets/project-action-set").toggleTrashAction as ContextMenuAction]
+                ? [toggleTrashAction]
                 : selectActionsByKind(currentResourceKinds as ContextMenuKind[]).filter((action) =>
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
