@@ -103,7 +103,7 @@ import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } 
 import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel-columns';
 import { collectionContentAddressPanelColumns } from 'views/collection-content-address-panel/collection-content-address-panel-columns';
 import { subprocessPanelColumns } from 'views/subprocess-panel/subprocess-panel-columns';
-import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
+import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel-columns";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
 import { trashPanelColumns } from "views/trash-panel/trash-panel";
