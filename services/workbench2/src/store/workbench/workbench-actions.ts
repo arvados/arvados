@@ -112,7 +112,7 @@ import { favoritePanelColumns } from 'views/favorite-panel/favorite-panel-column
 import { loadUserPreferencesPanel } from "store/user-preferences/user-preferences-actions";
 import { loadExternalCredentials } from "store/external-credentials/external-credentials-actions";
 import { externalCredentialsActions } from "store/external-credentials/external-credentials-actions";
-import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel";
+import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel-columns";
 import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action";
 import { loadRecentlyVisited } from "store/recently-visited/recently-visited-actions";
 import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service";

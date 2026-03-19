@@ -7,24 +7,15 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { Grid, Button } from "@mui/material";
-import { camelCase, noop } from "lodash";
+import { noop } from "lodash";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { ArvadosTheme } from "common/custom-theme";
 import { EXTERNAL_CREDENTIALS_PANEL, openNewExternalCredentialDialog } from "store/external-credentials/external-credentials-actions";
-import {
-    ResourceNameNoLink,
-    ResourceExpiresAtDate,
-    RenderResourceStringField,
-    RenderScopes,
-    RenderDescriptionInTD,
-} from "views-components/data-explorer/renderers";
 import { FolderKeyIcon, AddIcon } from "components/icon/icon";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { RootState } from "store/store";
-import { createTree } from "models/tree";
 import { ResourcesState, getResource } from "store/resources/resources";
 import { toggleOne } from "store/multiselect/multiselect-actions";
 import { ExternalCredential } from "models/external-credential";
@@ -46,67 +37,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         boxShadow: "0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)",
     },
 });
-
-export enum ExternalCredentialsPanelColumnNames {
-    NAME = "Name",
-    DESCRIPTION = "Description",
-    EXTERNAL_ID = "External ID",
-    CREDENTIAL_CLASS = "Credential class",
-    EXPIRES_AT = "Expires at",
-    SCOPES = "Scopes",
-}
-
-export const externalCredentialsPanelColumns: DataColumns<string, ExternalCredential> = [
-    {
-        name: ExternalCredentialsPanelColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: "name" },
-        filters: createTree(),
-        render: uuid => <ResourceNameNoLink uuid={uuid} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.DESCRIPTION,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <RenderDescriptionInTD uuid={uuid} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.CREDENTIAL_CLASS,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid =>
-            <RenderResourceStringField<ExternalCredential>
-                uuid={uuid}
-                field={camelCase(ExternalCredentialsPanelColumnNames.CREDENTIAL_CLASS) as keyof ExternalCredential} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.EXTERNAL_ID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid =>
-            <RenderResourceStringField<ExternalCredential>
-                uuid={uuid}
-                field={camelCase(ExternalCredentialsPanelColumnNames.EXTERNAL_ID) as keyof ExternalCredential} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.EXPIRES_AT,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceExpiresAtDate uuid={uuid} />,
-    },
-    {
-        name: ExternalCredentialsPanelColumnNames.SCOPES,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <RenderScopes uuid={uuid} />,
-    },
-];
 
 interface ExternalCredentialsPanelDataProps {
     resources: ResourcesState;
