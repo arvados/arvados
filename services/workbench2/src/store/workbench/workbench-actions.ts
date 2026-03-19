@@ -96,7 +96,7 @@ import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with
 import { workflowPanelColumns } from 'views/workflow-panel/workflow-panel-columns';
 import { searchResultsPanelColumns } from 'views/search-results-panel/search-results-panel-columns';
 import { linkPanelColumns } from 'views/link-panel/link-panel-columns';
-import { userPanelColumns } from "views/user-panel/user-panel";
+import { userPanelColumns } from 'views/user-panel/user-panel-columns';
 import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
 import { groupsPanelColumns } from "views/groups-panel/groups-panel";
 import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel-columns";

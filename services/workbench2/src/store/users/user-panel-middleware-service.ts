@@ -16,7 +16,7 @@ import { ListArguments, ListResults } from 'services/common-service/common-servi
 import { userBindedActions } from 'store/users/users-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { UserResource } from 'models/user';
-import { UserPanelColumnNames } from 'views/user-panel/user-panel';
+import { UserPanelColumnNames } from 'views/user-panel/user-panel-columns';
 import { BuiltinGroups, getBuiltinGroupUuid } from 'models/group';
 import { LinkClass } from 'models/link';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
