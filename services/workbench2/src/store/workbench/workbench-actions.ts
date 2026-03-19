@@ -108,7 +108,7 @@ import { userProfileGroupsColumns } from 'views/user-profile-panel/user-profile-
 import { workflowProcessesPanelColumns } from 'views/workflow-panel/workflow-processes-panel-columns';
 import { trashPanelColumns } from 'views/trash-panel/trash-panel-columns';
 import { projectPanelDataColumns, projectPanelRunColumns } from "views/project-panel/project-panel-columns";
-import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
+import { favoritePanelColumns } from 'views/favorite-panel/favorite-panel-columns';
 import { loadUserPreferencesPanel } from "store/user-preferences/user-preferences-actions";
 import { loadExternalCredentials } from "store/external-credentials/external-credentials-actions";
 import { externalCredentialsActions } from "store/external-credentials/external-credentials-actions";

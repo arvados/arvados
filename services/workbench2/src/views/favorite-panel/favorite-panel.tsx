@@ -8,20 +8,11 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from 'components/data-table/data-column';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { ResourceKind } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
-import {
-    ProcessStatus,
-    ResourceFileSize,
-    ResourceLastModifiedDate,
-    ResourceName,
-    ResourceOwnerWithName,
-    ResourceType
-} from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
 import {
     openContextMenuAndSelect,
@@ -31,8 +22,6 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { ContainerRequestState } from "models/container-request";
 import { FavoritesState } from 'store/favorites/favorites-reducer';
 import { RootState } from 'store/store';
-import { createTree } from 'models/tree';
-import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
@@ -58,63 +47,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export enum FavoritePanelColumnNames {
-    NAME = "Name",
-    STATUS = "Status",
-    TYPE = "Type",
-    OWNER = "Owner",
-    FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified"
-}
-
 export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
-
-export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = [
-    {
-        name: FavoritePanelColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
-    },
-    {
-        name: "Status",
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ProcessStatus uuid={uuid} />
-    },
-    {
-        name: FavoritePanelColumnNames.TYPE,
-        selected: true,
-        configurable: true,
-        filters: getSimpleObjectTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />
-    },
-    {
-        name: FavoritePanelColumnNames.OWNER,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
-    },
-    {
-        name: FavoritePanelColumnNames.FILE_SIZE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
-    },
-    {
-        name: FavoritePanelColumnNames.LAST_MODIFIED,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
-    }
-];
 
 interface FavoritePanelDataProps {
     currentItemId: string | undefined;

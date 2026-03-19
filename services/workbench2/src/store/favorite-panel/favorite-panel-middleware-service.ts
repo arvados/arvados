@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
-import { FavoritePanelColumnNames } from "views/favorite-panel/favorite-panel";
+import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel-columns';
 import { RootState } from "../store";
 import { getUserUuid } from "common/getuser";
 import { DataColumns } from "components/data-table/data-column";
