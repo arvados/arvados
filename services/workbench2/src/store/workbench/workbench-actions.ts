@@ -105,7 +105,7 @@ import { collectionContentAddressPanelColumns } from 'views/collection-content-a
 import { subprocessPanelColumns } from 'views/subprocess-panel/subprocess-panel-columns';
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel-columns";
 import { userProfileGroupsColumns } from 'views/user-profile-panel/user-profile-panel-columns';
-import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
+import { workflowProcessesPanelColumns } from 'views/workflow-panel/workflow-processes-panel-columns';
 import { trashPanelColumns } from "views/trash-panel/trash-panel";
 import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
 import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
