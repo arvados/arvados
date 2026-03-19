@@ -29,13 +29,10 @@ import { PROFILE_EMAIL_VALIDATION, PROFILE_URL_VALIDATION } from "validators/val
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
 import { DetailsIcon, GroupsIcon, MoreVerticalIcon } from 'components/icon/icon';
-import { DataColumns } from 'components/data-table/data-column';
-import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible, UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
-import { createTree } from 'models/tree';
+import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { DefaultView } from 'components/default-view/default-view';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
-import { PermissionResource } from 'models/permission';
 
 type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon' | 'userProfileFormMessage';
 
@@ -117,57 +114,11 @@ const RoleTypes = [
 
 type UserProfilePanelRootProps = InjectedFormProps<{}> & UserProfilePanelRootActionProps & UserProfilePanelRootDataProps & DispatchProp & WithStyles<CssRules>;
 
-export enum UserProfileGroupsColumnNames {
-    NAME = "Name",
-    PERMISSION = "Permission",
-    VISIBLE = "Visible to other members",
-    UUID = "UUID",
-    REMOVE = "Remove",
-}
-
 enum TABS {
     PROFILE = "PROFILE",
     GROUPS = "GROUPS",
 
 }
-
-export const userProfileGroupsColumns: DataColumns<string, PermissionResource> = [
-    {
-        name: UserProfileGroupsColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid} />
-    },
-    {
-        name: UserProfileGroupsColumnNames.PERMISSION,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
-    },
-    {
-        name: UserProfileGroupsColumnNames.VISIBLE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
-    },
-    {
-        name: UserProfileGroupsColumnNames.UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
-    },
-    {
-        name: UserProfileGroupsColumnNames.REMOVE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
-    },
-];
 
 const ReadOnlyField = withStyles(styles)(
     (props: ({ label: string, input: { value: string } }) & WithStyles<CssRules>) => (

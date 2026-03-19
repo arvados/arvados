@@ -104,7 +104,7 @@ import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-
 import { collectionContentAddressPanelColumns } from 'views/collection-content-address-panel/collection-content-address-panel-columns';
 import { subprocessPanelColumns } from 'views/subprocess-panel/subprocess-panel-columns';
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel-columns";
-import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
+import { userProfileGroupsColumns } from 'views/user-profile-panel/user-profile-panel-columns';
 import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
 import { trashPanelColumns } from "views/trash-panel/trash-panel";
 import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
