@@ -21,14 +21,6 @@ import { ResourceKind } from 'models/resource';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { connect } from 'react-redux';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { DataColumns, SortDirection } from 'components/data-table/data-column';
-import { createTree } from 'models/tree';
-import {
-    ResourceName,
-    ResourceOwnerName,
-    ResourceLastModifiedDate,
-    ResourceStatus
-} from 'views-components/data-explorer/renderers';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
 import { CollectionResource } from 'models/collection';
@@ -57,46 +49,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: `calc(100% - ${theme.spacing(7)})`,
     },
 });
-
-enum CollectionContentAddressPanelColumnNames {
-    COLLECTION_WITH_THIS_ADDRESS = "Collection with this address",
-    STATUS = "Status",
-    LOCATION = "Location",
-    LAST_MODIFIED = "Last modified"
-}
-
-export const collectionContentAddressPanelColumns: DataColumns<string, CollectionResource> = [
-    {
-        name: CollectionContentAddressPanelColumnNames.COLLECTION_WITH_THIS_ADDRESS,
-        selected: true,
-        configurable: true,
-        sort: {direction: SortDirection.NONE, field: "uuid"},
-        filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
-    },
-    {
-        name: CollectionContentAddressPanelColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid} />
-    },
-    {
-        name: CollectionContentAddressPanelColumnNames.LOCATION,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceOwnerName uuid={uuid} />
-    },
-    {
-        name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,
-        selected: true,
-        configurable: true,
-        sort: {direction: SortDirection.DESC, field: "modifiedAt"},
-        filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
-    }
-];
 
 interface CollectionContentAddressPanelActionProps {
     onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, uuid: string) => void;

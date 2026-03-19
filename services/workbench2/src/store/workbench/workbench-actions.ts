@@ -101,7 +101,7 @@ import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorizati
 import { groupsPanelColumns } from 'views/groups-panel/groups-panel-columns';
 import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel-columns";
 import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel-columns';
-import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
+import { collectionContentAddressPanelColumns } from 'views/collection-content-address-panel/collection-content-address-panel-columns';
 import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
