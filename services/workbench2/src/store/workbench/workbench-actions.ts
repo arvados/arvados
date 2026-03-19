@@ -100,7 +100,7 @@ import { userPanelColumns } from 'views/user-panel/user-panel-columns';
 import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorization-panel/api-client-authorization-panel-columns';
 import { groupsPanelColumns } from 'views/groups-panel/groups-panel-columns';
 import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel-columns";
-import { publicFavoritePanelColumns } from "views/public-favorites-panel/public-favorites-panel";
+import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel-columns';
 import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
 import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
