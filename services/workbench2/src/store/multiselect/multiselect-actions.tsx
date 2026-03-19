@@ -112,9 +112,11 @@ export const removeDisabledButton = (buttonName: string) => {
     };
 };
 
-export const getResourcesFromCheckedList = (state: RootState) => {
+export const getResourcesFromCheckedList = (state: RootState): GroupContentsResource[] => {
     const checkedList = getCheckedListUuids(state);
-    const resources = checkedList.map(uuid => getResource<GroupContentsResource>(uuid)(state.resources));
+    const resources = checkedList
+        .map(uuid => getResource<GroupContentsResource>(uuid)(state.resources))
+        .filter((resource): resource is GroupContentsResource => !!resource);
     return resources;
 };
 
