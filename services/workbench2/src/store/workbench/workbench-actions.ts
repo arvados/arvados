@@ -92,6 +92,7 @@ import { PROJECT_MOVE_FORM_NAME } from "store/projects/project-move-actions";
 import { DataTableFetchMode } from "components/data-table/data-table";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar.utils";
 import { matchProjectRoute } from "routes/routes";
+// When importing columns, make sure not to import anything that imports DataExplorer to avoid cyclic imports
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
 import { workflowPanelColumns } from 'views/workflow-panel/workflow-panel-columns';
 import { searchResultsPanelColumns } from 'views/search-results-panel/search-results-panel-columns';
