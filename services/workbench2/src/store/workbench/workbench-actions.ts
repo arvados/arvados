@@ -93,7 +93,7 @@ import { DataTableFetchMode } from "components/data-table/data-table";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar.utils";
 import { matchProjectRoute } from "routes/routes";
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
-import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
+import { workflowPanelColumns } from 'views/workflow-panel/workflow-panel-columns';
 import { searchResultsPanelColumns } from 'views/search-results-panel/search-results-panel-columns';
 import { linkPanelColumns } from "views/link-panel/link-panel-root";
 import { userPanelColumns } from "views/user-panel/user-panel";
