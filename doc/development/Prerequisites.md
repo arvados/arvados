@@ -111,8 +111,8 @@ When you are prompted for the `BECOME password:`, enter the password for your us
 After the playbook runs successfully, you should be able to run the Arvados tests from a source checkout on your development host. This document will walk you through setting up and running a single test suite to verify your setup. `cd` to your Arvados checkout and run:
 
 ```sh
-$ mkdir -p tmp/run-tests
-$ build/run-tests.sh --temp "$PWD/tmp/run-tests" --interactive
+$ mkdir -p ~/.cache/arvados-test
+$ build/run-tests.sh --temp ~/.cache/arvados-test --interactive
 ```
 
 This will install baseline prerequisites, then list commands and test targets, then prompt you with:

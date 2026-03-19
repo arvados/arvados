@@ -13,8 +13,8 @@ This document assumes you have [installed a development environment](Prerequisit
 Most developers want to run tests with `--temp` and `--interactive`:
 
 ```sh
-$ mkdir -p tmp/run-tests
-$ build/run-tests.sh --temp "$PWD/tmp/run-tests" --interactive
+$ mkdir -p ~/.cache/arvados-test
+$ build/run-tests.sh --temp ~/.cache/arvados-test --interactive
 ```
 
 This will display help with a list of commands and test targets. When you run with a fresh temp directory, the tool will probably prompt you to `install deps`. You should do this to install dependencies to the temp directory.
