@@ -9,11 +9,7 @@ import { Grid, Button } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataColumns, SortDirection } from 'components/data-table/data-column';
-import { GroupMembersCount, ResourceUuid } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
-import { ResourceName } from 'views-components/data-explorer/renderers';
-import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
 import { ContextMenuKind } from 'store/context-menu/context-menu';
@@ -35,37 +31,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: theme.spacing(2),
     }
 });
-
-export enum GroupsPanelColumnNames {
-    GROUP = "Name",
-    UUID = "UUID",
-    MEMBERS = "Members",
-}
-
-export const groupsPanelColumns: DataColumns<string, GroupResource> = [
-    {
-        name: GroupsPanelColumnNames.GROUP,
-        selected: true,
-        configurable: true,
-        sort: {direction: SortDirection.ASC, field: "name"},
-        filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
-    },
-    {
-        name: GroupsPanelColumnNames.UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid} />,
-    },
-    {
-        name: GroupsPanelColumnNames.MEMBERS,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <GroupMembersCount uuid={uuid} />,
-    },
-];
 
 const mapStateToProps = (state: RootState) => {
     return {
