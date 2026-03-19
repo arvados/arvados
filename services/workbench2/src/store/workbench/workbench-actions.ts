@@ -94,7 +94,7 @@ import { selectedToArray, selectedToKindSet } from "components/multiselect-toolb
 import { matchProjectRoute } from "routes/routes";
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
 import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
-import { searchResultsPanelColumns } from "views/search-results-panel/search-results-panel-view";
+import { searchResultsPanelColumns } from 'views/search-results-panel/search-results-panel-columns';
 import { linkPanelColumns } from "views/link-panel/link-panel-root";
 import { userPanelColumns } from "views/user-panel/user-panel";
 import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
@@ -116,7 +116,7 @@ import { externalCredentialsActions } from "store/external-credentials/external-
 import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel";
 import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action";
 import { loadRecentlyVisited } from "store/recently-visited/recently-visited-actions";
-import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service"
+import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service";
 import { COLLECTION_MOVE_FORM_NAME } from "store/collections/collection-move-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 
