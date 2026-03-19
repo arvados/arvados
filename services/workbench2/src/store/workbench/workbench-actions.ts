@@ -102,7 +102,7 @@ import { groupsPanelColumns } from 'views/groups-panel/groups-panel-columns';
 import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel-columns";
 import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel-columns';
 import { collectionContentAddressPanelColumns } from 'views/collection-content-address-panel/collection-content-address-panel-columns';
-import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
+import { subprocessPanelColumns } from 'views/subprocess-panel/subprocess-panel-columns';
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
