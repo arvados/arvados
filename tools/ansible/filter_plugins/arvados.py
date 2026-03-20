@@ -245,17 +245,15 @@ def internal_addrs(svc_config: Config) -> ListenAddress:
         raise ValueError("no valid InternalURLs in service configuration") from None
 
 
-@FilterModule.register
-def systemd_env_quote(value: str) -> str:
-    """Escapes necessary characters for systemd env usage
+def systemd_escape(value: str) -> str:
+    """Internal helper to handle basic systemd escapes
 
-    Given an env value, returns an escaped string ready for use in a systemd
-    unit. The consumer should add quotes around the env key and value if needed.
+    Pass in a string, returns an escaped string
     """
     # Standard systemd escapes based on
     # https://www.freedesktop.org/software/systemd/man/latest/systemd.syntax.html#Quoting
-    value = value.translate(str.maketrans({
-        # Escape quotes
+    return value.translate(str.maketrans({
+        # Escape backslashes and quotes
         '\\': '\\\\',
         '\"': '\\\"',
         '\'': '\\\'',
@@ -264,18 +262,28 @@ def systemd_env_quote(value: str) -> str:
         # Transform newlines into multi line value
         '\n': '\\\n'
     }))
-    return value
+
+
+@FilterModule.register
+def systemd_env_quote(value: str) -> str:
+    """Escapes necessary characters for systemd env usage
+
+    Given an string value, returns a quoted and escaped string ready for use in
+    a systemd env directive.
+    """
+    value = systemd_escape(value)
+    return f'"{value}"'
 
 
 @FilterModule.register
 def systemd_exec_quote(value: str) -> str:
     """Escapes necessary characters for systemd ExecStart usage
 
-    Given a string value, returns an escaped string ready for use in a systemd
-    ExecStart line. The consumer should wrap in quotes as necessary.
+    Given a string value, returns a quoted and escaped string ready for use in
+    a systemd ExecStart directive.
     """
-    # Start with basic systemd quote
-    value = systemd_env_quote(value)
-    # Additionally escape $
+    # Start with basic systemd escape
+    value = systemd_escape(value)
+    # Additionally escape $ for exec
     value = value.replace('$', '$$')
-    return value
+    return f'"{value}"'
