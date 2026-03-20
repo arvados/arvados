@@ -12,6 +12,8 @@ import json
 from contextlib import contextmanager
 import arvados
 from arvados.commands import arvcli
+from ruamel.yaml import YAML
+yaml = YAML(typ="safe", pure=True)
 
 
 def test_global_option_help_followed_by_subcommand():
@@ -234,6 +236,7 @@ def test_get_method_options():
         (
             ("-o", "--container-request"),
             {
+                "dest": "body",
                 "type": arvcli._ArgTypes.json_body,
                 "metavar": "{JSON,FILE,-}",
                 "help": "Either a string representing container_request as JSON or a filename from which to read container_request JSON (use '-' to read from stdin). This option must be specified.",
@@ -283,24 +286,68 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
     assert "not valid JSON array" in captured.err
 
 
-class TestRequestParameterWithCollectionCreateCMD:
+@pytest.mark.usefixtures("capsys", "tmp_path")
+class TestRequestBodyWithCollectionCreateCMD:
+    collection_test_name = "empty-test"
     manifest_data = {
-        "name": "empty-test",
+        "name": collection_test_name,
         "manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:empty\n"
     }
+    collection_uuid_pattern = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
     cli = ["collection", "create", "--collection"]
 
-    def test_request_parameter_missing(self):
+    def teardown_method(self):
+        # Remove the collection by name after each test method invocation.
+        api_client = arvados.api("v1")
+        collection_list_obj = api_client.collections().list(
+            filters=f'[["name", "=", "{self.collection_test_name}"]]'
+        ).execute()
+        for item in collection_list_obj.get("items", []):
+            item_uuid = item.get("uuid")
+            if item_uuid is not None:
+                api_client.collections().delete(uuid=item_uuid).execute()
+
+    def test_request_body_missing(self, capsys):
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch(self.cli)
         assert exit_status.value.code == 2
+        captured = capsys.readouterr()
+        assert captured.err
+        assert not captured.out
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
-    def test_request_parameter_stdin_valid_json(self, mock_stdin):
-        # TODO: to be fleshed out when API calls are implemented: check actual
-        # return-data from API server.
+    def test_request_body_stdin_valid_json(self, mock_stdin, capsys):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch(self.cli + ["-"])
         assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        actual = json.loads(captured.out)
+        assert actual["kind"] == "arvados#collection"
+        assert actual["name"] == self.manifest_data["name"]
+        assert self.collection_uuid_pattern.match(actual["uuid"])
+
+    def test_request_body_file_valid_json_out_yaml(self, tmp_path, capsys):
+        f = tmp_path / "body.json"
+        f.write_text(json.dumps(self.manifest_data))
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["--format", "yaml"] + self.cli + [f"{f!s}"])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        actual = yaml.load(captured.out)
+        assert actual["kind"] == "arvados#collection"
+        assert actual["name"] == self.manifest_data["name"]
+        assert self.collection_uuid_pattern.match(actual["uuid"])
+
+    def test_request_body_file_valid_json_out_short(self, tmp_path, capsys):
+        f = tmp_path / "body.json"
+        f.write_text(json.dumps(self.manifest_data))
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["-s"] + self.cli + [f"{f!s}"])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        assert self.collection_uuid_pattern.match(captured.out.rstrip())
