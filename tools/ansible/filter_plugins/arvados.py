@@ -254,12 +254,16 @@ def systemd_env_quote(value: str) -> str:
     """
     # Standard systemd escapes based on
     # https://www.freedesktop.org/software/systemd/man/latest/systemd.syntax.html#Quoting
-    value = value.replace("\\", "\\\\")
-    value = value.replace('"', '\\"')
-    value = value.replace('\'', '\\\'')
-    value = value.replace("%", "%%")
-    # Transform newlines into multi line value
-    value = value.replace("\n", "\\\n")
+    value = value.translate(str.maketrans({
+        # Escape quotes
+        '\\': '\\\\',
+        '\"': '\\\"',
+        '\'': '\\\'',
+        # Escape percent sign
+        '%': '%%',
+        # Transform newlines into multi line value
+        '\n': '\\\n'
+    }))
     return value
 
 
@@ -273,5 +277,5 @@ def systemd_exec_quote(value: str) -> str:
     # Start with basic systemd quote
     value = systemd_env_quote(value)
     # Additionally escape $
-    value = value.replace("$", "$$")
+    value = value.replace('$', '$$')
     return value
