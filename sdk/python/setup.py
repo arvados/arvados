@@ -87,7 +87,7 @@ setuptools.setup(
         'google-auth',
         'httplib2 >= 0.9.2',
         'pycurl >= 7.19.5.1',
-        'ruamel.yaml >= 0.16, < 0.20',
+        'ruamel.yaml >= 0.16, < 0.19',
         'websockets >= 11.0',
     ],
 )
