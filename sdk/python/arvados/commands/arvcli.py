@@ -378,7 +378,7 @@ def _handle_resource_call(args, remaining_args, cmd_parser, api_client):
         match args.format:
             case "json":
                 json.dump(result, sys.stdout, indent=1)
-                sys.stdout.write("\n")
+                print()
             case "yaml":
                 from ruamel.yaml import YAML
                 yaml = YAML(typ="safe", pure=True)
