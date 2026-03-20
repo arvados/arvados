@@ -370,3 +370,42 @@ class TestRequestBodyWithCollectionCreateCMD:
             fr"^\./foo {self.md5_empty}\+0\+A[0-9a-f]{{40}}@[0-9a-f]{{8}} 0:0:bar\.txt\n$",
             actual["manifest_text"]
         )
+
+
+@mock.patch("sys.stdin", new_callable=io.StringIO)
+def test_invalid_request(mock_stdin):
+    manifest_data = TestRequestBodyWithCollectionCreateCMD.manifest_data
+    # replace_files does not reference manifest data in body.
+    replace_files = json.dumps({"/foo": "current/bar"})
+    json.dump(manifest_data, mock_stdin)
+    mock_stdin.seek(0)
+    with pytest.raises(SystemExit) as exit_status:
+        arvcli.dispatch([
+            "collection",
+            "create",
+            "--collection",
+            "-",
+            "--replace-files",
+            replace_files
+        ])
+    # TODO: more detailed error presentation
+    assert exit_status.value.code == 1
+
+
+# The "config get" command doesn't take any parameter.
+class TestConfigGet:
+    def test_config_get(self):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["config", "get"])
+        assert exit_status.value.code == 0
+
+    @pytest.mark.usefixtures("capsys")
+    def test_config_get_uuid(self, capsys):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["--format", "uuid", "config", "get"])
+        assert exit_status.value.code == 1
+        captured = capsys.readouterr()
+        assert not captured.out
+        err = io.StringIO(captured.err)
+        assert err.readline().strip() == "Response did not include a uuid:"
+        assert json.load(err)
