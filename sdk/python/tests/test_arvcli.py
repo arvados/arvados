@@ -288,10 +288,11 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
 
 @pytest.mark.usefixtures("capsys", "tmp_path")
 class TestRequestBodyWithCollectionCreateCMD:
+    md5_empty = "d41d8cd98f00b204e9800998ecf8427e"
     collection_test_name = "empty-test"
     manifest_data = {
         "name": collection_test_name,
-        "manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:empty\n"
+        "manifest_text": f". {md5_empty}+0 0:0:empty\n"
     }
     collection_uuid_pattern = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
     cli = ["collection", "create", "--collection"]
@@ -351,3 +352,21 @@ class TestRequestBodyWithCollectionCreateCMD:
         captured = capsys.readouterr()
         assert not captured.err
         assert self.collection_uuid_pattern.match(captured.out.rstrip())
+
+    @mock.patch("sys.stdin", new_callable=io.StringIO)
+    def test_replace_files(self, mock_stdin, capsys):
+        json.dump(self.manifest_data, mock_stdin)
+        mock_stdin.seek(0)
+        replace_files = json.dumps({
+            "/foo/bar.txt": "manifest_text/empty"
+        })
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(self.cli + ["-", "--replace-files", replace_files])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        actual = json.loads(captured.out)
+        assert re.match(
+            fr"^\./foo {self.md5_empty}\+0\+A[0-9a-f]{{40}}@[0-9a-f]{{8}} 0:0:bar\.txt\n$",
+            actual["manifest_text"]
+        )
