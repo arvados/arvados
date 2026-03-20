@@ -246,17 +246,6 @@ def test_get_method_options():
     ) == output
 
 
-# Private context manager for cleanly and temporarily switching the working
-# directory.
-@contextmanager
-def _pushd(target):
-    oldpwd = os.getcwd()
-    try:
-        yield os.chdir(target)
-    finally:
-        os.chdir(oldpwd)
-
-
 @pytest.mark.usefixtures("tmp_path")
 class TestArgTypes:
     """Test the private type converter-validators under the arvcli._ArgTypes
