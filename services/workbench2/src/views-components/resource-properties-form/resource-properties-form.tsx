@@ -59,7 +59,6 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
     }, [properties]);
 
     const addPropertyValue = (prev: PropertyChips, key: string, value: string): PropertyChips => {
-        console.log('>>> Adding property to chips:', key, ':', value);
         const existing = prev[key];
         if (Array.isArray(existing)) {
             return existing.includes(value) ? prev : { ...prev, [key]: [...existing, value] };
@@ -72,7 +71,6 @@ export const DialogResourcePropertiesForm = connect(mapState)(({ vocabulary, set
 
     const handleAddProperty = (ev: React.FormEvent) => {
         ev.preventDefault();
-        console.log('>>> Adding property', currentKey, ':', currentValue);
         if (!currentKey || !currentValue) return;
         setProperties(prev => addPropertyValue(prev, currentKey, currentValue));
         setCurrentValue(undefined);
