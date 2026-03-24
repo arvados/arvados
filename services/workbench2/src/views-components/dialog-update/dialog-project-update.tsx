@@ -45,8 +45,8 @@ const mapDispatch = (dispatch: Dispatch) => ({
 });
 
 type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass} & ProjectUpdateFormDialogData> & {
-    updateProject: (data: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => void;
-    updateGroup: (data: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => void;
+    updateProject: (data: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => Promise<void>;
+    updateGroup: (data: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => Promise<void>;
     vocabulary: Vocabulary;
     allowSlash: boolean;
 };
@@ -89,14 +89,20 @@ export const DialogProjectUpdate = compose(
             }
         }, [projectNameErrs, descriptionErrs, submitErr]);
 
-        useEffect(() => {
-            if (!open) {
+        const handleSubmit = (ev) => {
+            ev.preventDefault();
+            setIsSubmitting(true);
+            const updateFn = sourcePanel === GroupClass.ROLE ? updateGroup : updateProject;
+            updateFn({
+                    uuid: initialData.uuid,
+                    name: projectName,
+                    description: description,
+                    properties: currentProperties,
+                }, setSubmitErr
+            ).finally(() => {
                 setIsSubmitting(false);
-            }
-            if (isSubmitting && submitErr) {
-                setIsSubmitting(false);
-            }
-        }, [open, submitErr]);
+            });
+        };
 
         const fields = () => (
             <>
@@ -137,17 +143,7 @@ export const DialogProjectUpdate = compose(
                 formErrors={formErrors}
                 submitDisabled={submitDisabled}
                 isSubmitting={isSubmitting}
-                onSubmit={(ev) => {
-                    ev.preventDefault();
-                    setIsSubmitting(true);
-                    const updateFn = sourcePanel === GroupClass.ROLE ? updateGroup : updateProject;
-                    updateFn({
-                        uuid: initialData.uuid,
-                        name: projectName,
-                        description: description,
-                        properties: currentProperties,
-                    }, setSubmitErr);
-                }}
+                onSubmit={handleSubmit}
                 closeDialog={closeDialog}
                 clearFormValues={() => {
                     setProjectName('');

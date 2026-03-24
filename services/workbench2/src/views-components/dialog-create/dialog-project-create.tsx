@@ -49,8 +49,8 @@ const mapDispatch = (dispatch: Dispatch) => ({
 });
 
 type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass, ownerUuid: string}> & {
-    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => void;
-    createGroup: (data: GroupCreateFormDialogData, setSubmitErr: (err: string) => void) => void;
+    createProject: (data: ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => Promise<void>;
+    createGroup: (data: GroupCreateFormDialogData, setSubmitErr: (err: string) => void) => Promise<void>;
     vocabulary: Vocabulary;
     allowSlash: boolean;
 };
@@ -76,15 +76,6 @@ export const DialogProjectCreate = compose(
             setFormErrors(prevErrors => [...prevErrors, submitErr]);
         }
     }, [projectNameErrs, descriptionErrs, submitErr]);
-
-    useEffect(() => {
-        if (!open) {
-            setIsSubmitting(false);
-        }
-        if (isSubmitting && submitErr) {
-            setIsSubmitting(false);
-        }
-    }, [open, submitErr]);
 
     const sourcePanel = data?.sourcePanel || GroupClass.PROJECT;
     const isGroup = sourcePanel === GroupClass.ROLE;
@@ -145,7 +136,10 @@ export const DialogProjectCreate = compose(
                 properties: getVocabularyFromChips(chips, vocabulary),
                 users,
             };
-            createGroup(groupData, setSubmitErr);
+            createGroup(groupData, setSubmitErr)
+                .finally(() => {
+                    setIsSubmitting(false);
+                });
         } else {
             const projectData: ProjectCreateFormDialogData = {
                 ownerUuid: data.ownerUuid,
@@ -153,7 +147,10 @@ export const DialogProjectCreate = compose(
                 description: description,
                 properties: getVocabularyFromChips(chips, vocabulary),
             };
-            createProject(projectData, setSubmitErr);
+            createProject(projectData, setSubmitErr)
+                .finally(() => {
+                    setIsSubmitting(false);
+                });
         }
     }
 

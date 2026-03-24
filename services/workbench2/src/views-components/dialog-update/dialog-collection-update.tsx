@@ -45,7 +45,7 @@ const mapDispatch = (dispatch: Dispatch) => ({
 });
 
 type DialogCollectionProps = WithDialogProps<CollectionUpdateFormDialogData> & {
-    updateCollection: (data: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => void;
+    updateCollection: (data: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => Promise<void>;
     vocabulary: Vocabulary;
     storageClasses: string[];
 };
@@ -88,14 +88,20 @@ export const DialogCollectionUpdate = compose(
             }
         }, [collectionNameErrs, descriptionErrs, submitErr]);
 
-        useEffect(() => {
-            if (!open) {
+        const handleSubmit = (ev) => {
+            ev.preventDefault();
+            setIsSubmitting(true);
+            updateCollection({
+                    uuid: initialData.uuid,
+                    name: collectionName,
+                    description: description,
+                    storageClassesDesired: storageClassesDesired,
+                    properties: currentProperties,
+                }, setSubmitErr
+            ).finally(() => {
                 setIsSubmitting(false);
-            }
-            if (isSubmitting && submitErr) {
-                setIsSubmitting(false);
-            }
-        }, [open, submitErr]);
+            });
+        };
 
         const fields = () => (
             <>
@@ -142,17 +148,7 @@ export const DialogCollectionUpdate = compose(
                 formErrors={formErrors}
                 submitDisabled={submitDisabled}
                 isSubmitting={isSubmitting}
-                onSubmit={(ev) => {
-                    ev.preventDefault();
-                    setIsSubmitting(true);
-                    updateCollection({
-                        uuid: initialData.uuid,
-                        name: collectionName,
-                        description: description,
-                        storageClassesDesired: storageClassesDesired,
-                        properties: currentProperties,
-                    }, setSubmitErr);
-                }}
+                onSubmit={handleSubmit}
                 closeDialog={closeDialog}
                 clearFormValues={() => {
                     setCollectionName('');

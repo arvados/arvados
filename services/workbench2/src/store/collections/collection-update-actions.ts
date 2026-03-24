@@ -34,7 +34,7 @@ export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogD
     };
 
 export const updateCollection = (collection: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
 

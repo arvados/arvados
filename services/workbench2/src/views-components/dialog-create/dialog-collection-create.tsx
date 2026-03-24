@@ -47,7 +47,7 @@ const mapDispatch = (dispatch: Dispatch) => ({
 });
 
 type DialogCollectionProps = WithDialogProps<CollectionCreateFormDialogData> & {
-    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => void;
+    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => Promise<void>;
     vocabulary: Vocabulary;
 };
 
@@ -71,14 +71,21 @@ export const DialogCollectionCreate = compose(
         }
     }, [collectionNameErrs, descriptionErrs, submitErr]);
 
-    React.useEffect(() => {
-        if (!open) {
+    const handleSubmit = (ev) => {
+        ev.preventDefault();
+        setIsSubmitting(true);
+        createCollection({
+                ownerUuid: data.ownerUuid,
+                name: collectionName,
+                description: description,
+                storageClassesDesired: storageClassesDesired,
+                properties: getVocabularyFromChips(chips, vocabulary),
+            },
+            setSubmitErr
+        ).finally(() => {
             setIsSubmitting(false);
-        }
-        if (isSubmitting && submitErr) {
-            setIsSubmitting(false);
-        }
-    }, [open, submitErr]);
+        });
+    };
 
     const fields = () => (
         <>
@@ -113,18 +120,7 @@ export const DialogCollectionCreate = compose(
         submitLabel='Create a Collection'
         formErrors={formErrors}
         isSubmitting={isSubmitting}
-        onSubmit={(ev) => {
-            ev.preventDefault();
-            setIsSubmitting(true);
-            createCollection({
-                ownerUuid: data.ownerUuid,
-                name: collectionName,
-                description: description,
-                storageClassesDesired: storageClassesDesired,
-                properties: getVocabularyFromChips(chips, vocabulary),
-            },
-            setSubmitErr);
-        }}
+        onSubmit={handleSubmit}
         closeDialog={closeDialog}
         clearFormValues={() => {
             setCollectionName('');
@@ -135,4 +131,3 @@ export const DialogCollectionCreate = compose(
         open={open}
     />;
 });
-
