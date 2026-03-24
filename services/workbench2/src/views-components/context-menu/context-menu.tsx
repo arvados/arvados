@@ -4,7 +4,8 @@
 
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { contextMenuActions, ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { contextMenuActions } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
 import { ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
@@ -45,7 +46,3 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
 });
 
 export const ContextMenu = connect(mapStateToProps, mapDispatchToProps)(ContextMenuComponent);
-
-
-
-

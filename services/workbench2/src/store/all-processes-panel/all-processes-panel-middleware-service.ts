@@ -13,7 +13,7 @@ import { DataColumns } from "components/data-table/data-column";
 import {
     serializeOnlyProcessTypeFilters
 } from "../resource-type-filters/resource-type-filters";
-import { AllProcessesPanelColumnNames } from "views/all-processes-panel/all-processes-panel";
+import { AllProcessesPanelColumnNames } from "views/all-processes-panel/all-processes-panel-columns";
 import { ProcessesMiddlewareService } from "store/processes/processes-middleware-service";
 import { ContainerRequestResource } from 'models/container-request';
 

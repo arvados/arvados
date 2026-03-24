@@ -8,7 +8,7 @@ import {
     getDataExplorerColumnFilters,
     listResultsToDataExplorerItemsMeta,
 } from "store/data-explorer/data-explorer-middleware-service";
-import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
+import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-columns";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { DataColumns, SortDirection } from "components/data-table/data-column";

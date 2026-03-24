@@ -23,7 +23,7 @@ import {
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
-import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
+import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-columns';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';

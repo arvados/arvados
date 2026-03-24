@@ -106,14 +106,6 @@ export const processResourceActionSet: ContextMenuActionSet = [
                 dispatch<any>(openProcessUpdateDialog(resources[0]));
             },
         },
-        // removed until auto-move children is implemented
-        // {
-        //     icon: MoveToIcon,
-        //     name: ContextMenuActionNames.MOVE_TO,
-        //     execute: (dispatch, resources) => {
-        //         dispatch<any>(openMoveProcessDialog(resources[0]));
-        //     },
-        // },
         {
             name: ContextMenuActionNames.REMOVE,
             icon: DeleteForever,

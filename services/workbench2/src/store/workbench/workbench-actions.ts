@@ -46,11 +46,11 @@ import * as projectMoveActions from "store/projects/project-move-actions";
 import * as projectUpdateActions from "store/projects/project-update-actions";
 import * as collectionCreateActions from "store/collections/collection-create-actions";
 import * as collectionCopyActions from "store/collections/collection-copy-actions";
+import { COLLECTION_COPY_FORM_NAME } from "store/collections/collection-copy-actions";
 import * as collectionMoveActions from "store/collections/collection-move-actions";
-import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
-
+import { dialogActions } from "store/dialog/dialog-actions";
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { loadProcessPanel } from "store/process-panel/process-panel-actions";
 import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
@@ -88,35 +88,37 @@ import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
 import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
-
+import { PROJECT_MOVE_FORM_NAME } from "store/projects/project-move-actions";
 import { DataTableFetchMode } from "components/data-table/data-table";
-import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
-
+import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar.utils";
+import { matchProjectRoute } from "routes/routes";
+// When importing columns, make sure not to import anything that imports DataExplorer to avoid cyclic imports
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
-import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
-import { searchResultsPanelColumns } from "views/search-results-panel/search-results-panel-view";
-import { linkPanelColumns } from "views/link-panel/link-panel-root";
-import { userPanelColumns } from "views/user-panel/user-panel";
-import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
-import { groupsPanelColumns } from "views/groups-panel/groups-panel";
-import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel";
-import { publicFavoritePanelColumns } from "views/public-favorites-panel/public-favorites-panel";
-import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
-import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
-import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
-import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
-import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
-import { trashPanelColumns } from "views/trash-panel/trash-panel";
-import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
-import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
-import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
+import { workflowPanelColumns } from 'views/workflow-panel/workflow-panel-columns';
+import { searchResultsPanelColumns } from 'views/search-results-panel/search-results-panel-columns';
+import { linkPanelColumns } from 'views/link-panel/link-panel-columns';
+import { userPanelColumns } from 'views/user-panel/user-panel-columns';
+import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorization-panel/api-client-authorization-panel-columns';
+import { groupsPanelColumns } from 'views/groups-panel/groups-panel-columns';
+import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel-columns";
+import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel-columns';
+import { collectionContentAddressPanelColumns } from 'views/collection-content-address-panel/collection-content-address-panel-columns';
+import { subprocessPanelColumns } from 'views/subprocess-panel/subprocess-panel-columns';
+import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel-columns";
+import { userProfileGroupsColumns } from 'views/user-profile-panel/user-profile-panel-columns';
+import { workflowProcessesPanelColumns } from 'views/workflow-panel/workflow-processes-panel-columns';
+import { trashPanelColumns } from 'views/trash-panel/trash-panel-columns';
+import { projectPanelDataColumns, projectPanelRunColumns } from "views/project-panel/project-panel-columns";
+import { favoritePanelColumns } from 'views/favorite-panel/favorite-panel-columns';
 import { loadUserPreferencesPanel } from "store/user-preferences/user-preferences-actions";
 import { loadExternalCredentials } from "store/external-credentials/external-credentials-actions";
 import { externalCredentialsActions } from "store/external-credentials/external-credentials-actions";
-import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel";
+import { externalCredentialsPanelColumns } from "views/external-credentials-panel/external-credentials-panel-columns";
 import { loadRecentWorkflows } from "store/recent-wf-runs/recent-wf-runs-action";
 import { loadRecentlyVisited } from "store/recently-visited/recently-visited-actions";
-import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service"
+import { loadFavoritePins } from "store/favorite-pins/favorite-pins-middleware-service";
+import { COLLECTION_MOVE_FORM_NAME } from "store/collections/collection-move-actions";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
@@ -299,8 +301,8 @@ export const loadProject = (uuid: string) =>
         }
     });
 
-export const createProject = (data: projectCreateActions.ProjectCreateFormDialogData) => async (dispatch: Dispatch) => {
-    const newProject = await dispatch<any>(projectCreateActions.createProject(data));
+export const createProjectRunner = (data: projectCreateActions.ProjectCreateFormDialogData, setSubmitErr: (err: string) => void) => async (dispatch: Dispatch) => {
+    const newProject = await dispatch<any>(projectCreateActions.createProject(data, setSubmitErr));
     if (newProject) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
@@ -314,11 +316,12 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
     }
 };
 
-export const moveProject =
+export const moveProjectRunner =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            dispatch(progressIndicatorActions.START_WORKING(PROJECT_MOVE_FORM_NAME));
             const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+            const uuidsToMove: string[] = selectedToArray(checkedList);
 
             //if no items in checkedlist default to normal context menu behavior
             if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -371,10 +374,12 @@ export const moveProject =
             }
             if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
             await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
+            dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_MOVE_FORM_NAME));
         };
 
-export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
-    const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data));
+export const updateProjectRunner = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+    const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data, setSubmitErr));
     if (updatedProject) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
@@ -388,8 +393,8 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
     }
 };
 
-export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
-    const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data));
+export const updateGroupRunner = (data: projectUpdateActions.ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+    const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data, setSubmitErr));
     if (updatedGroup) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
@@ -450,8 +455,8 @@ export const loadCollection = (uuid: string) =>
         }
     });
 
-export const createCollection = (data: collectionCreateActions.CollectionCreateFormDialogData) => async (dispatch: Dispatch) => {
-    const collection = await dispatch<any>(collectionCreateActions.createCollection(data));
+export const createCollectionRunner = (data: collectionCreateActions.CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => async (dispatch: Dispatch) => {
+    const collection = await dispatch<any>(collectionCreateActions.createCollection(data, setSubmitErr));
     if (collection) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
@@ -465,9 +470,10 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
     }
 };
 
-export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const checkedList = getState().multiselect.checkedList;
-    const uuidsToCopy: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+    const uuidsToCopy: string[] = selectedToArray(checkedList);
+    dispatch(progressIndicatorActions.START_WORKING(COLLECTION_COPY_FORM_NAME));
 
     //if no items in checkedlist && no items passed in, default to normal context menu behavior
     if (!uuidsToCopy.length) uuidsToCopy.push(data.uuid);
@@ -480,52 +486,66 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
         await copySingleCollection({ ...collection, ownerUuid: data.ownerUuid } as CollectionCopyResource);
     }
 
-    async function copySingleCollection(copyToProject: CollectionCopyResource) {
-        const newName = data.fromContextMenu || collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
+    async function copySingleCollection(sourceCollection: CollectionCopyResource) {
+        const newName = collectionsToCopy.length === 1 ? data.name : `Copy of: ${sourceCollection.name}`;
         try {
-            const collection = await dispatch<any>(
+            const newCollection = await dispatch<any>(
                 collectionCopyActions.copyCollection({
-                    ...copyToProject,
+                    ...sourceCollection,
                     name: newName,
-                    fromContextMenu: collectionsToCopy.length === 1 ? true : data.fromContextMenu,
                 })
             );
-            if (copyToProject && collection) {
-                await dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
+            if (sourceCollection && newCollection) {
+                await dispatch<any>(reloadProjectMatchingUuid([sourceCollection.uuid]));
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: "Collection has been copied.",
                         hideDuration: 3000,
                         kind: SnackbarKind.SUCCESS,
-                        link: collection.ownerUuid,
+                        link: newCollection.ownerUuid,
                     })
                 );
-                dispatch<any>(deselectOne(copyToProject.uuid));
+                dispatch<any>(deselectOne(sourceCollection.uuid));
             }
         } catch (e) {
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: e.message,
-                    hideDuration: 2000,
-                    kind: SnackbarKind.ERROR,
-                })
-            );
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "A collection with the same name already exists in the target project.",
+                        hideDuration: 3000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            } else {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                )
+            }
         }
+        dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
     }
     dispatch(projectPanelDataActions.REQUEST_ITEMS());
+    dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
 };
 
-export const moveCollection =
+export const moveCollectionRunner =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-            const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
+            const state = getState();
+            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
+            const checkedList = state.multiselect.checkedList;
+            const uuidsToMove: string[] = selectedToArray(checkedList);
 
             //if no items in checkedlist && no items passed in, default to normal context menu behavior
             if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
 
             const collectionsToMove: MoveableResource[] = uuidsToMove
-                .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
+                .map(uuid => getResource(uuid)(state.resources) as MoveableResource)
                 .filter(resource => resource.kind === ResourceKind.COLLECTION);
 
             for (const collection of collectionsToMove) {
@@ -547,7 +567,9 @@ export const moveCollection =
                     const oldCollection: MoveToFormDialogData = { name: collection.name, uuid: collection.uuid, ownerUuid: data.ownerUuid };
                     const movedCollection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
                     dispatch<any>(updateResources([movedCollection]));
-                    dispatch<any>(reloadProjectMatchingUuid([movedCollection.ownerUuid]));
+                    if (matchProjectRoute(state.router.location.pathname)) {
+                        dispatch<any>(reloadProjectMatchingUuid([movedCollection.ownerUuid]));
+                    }
                     dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: "Collection has been moved.",
@@ -565,6 +587,9 @@ export const moveCollection =
                     );
                 }
             }
+
+            dispatch<any>(loadSidePanelTreeProjects(data.ownerUuid));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
         };
 
 export const loadProcess = (uuid: string) =>
@@ -617,7 +642,7 @@ export const loadRegisteredWorkflow = (uuid: string) =>
         }
     });
 
-export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) => async (dispatch: Dispatch) => {
+export const updateProcessRunner = (data: processUpdateActions.ProcessUpdateFormDialogData) => async (dispatch: Dispatch) => {
     try {
         const process = await dispatch<any>(processUpdateActions.updateProcess(data));
         if (process) {
@@ -642,59 +667,7 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
     }
 };
 
-export const moveProcess =
-    (data: MoveToFormDialogData, isSecondaryMove = false) =>
-        async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-            const checkedList = getState().multiselect.checkedList;
-            const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
-
-            //if no items in checkedlist && no items passed in, default to normal context menu behavior
-            if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
-
-            const processesToMove: MoveableResource[] = uuidsToMove
-                .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
-                .filter(resource => resource.kind === ResourceKind.PROCESS);
-
-            for (const process of processesToMove) {
-                await moveSingleProcess(process);
-            }
-
-            //omly propagate if this call is the original
-            if (!isSecondaryMove) {
-                const kindsToMove: Set<string> = selectedToKindSet(checkedList);
-                kindsToMove.delete(ResourceKind.PROCESS);
-
-                kindsToMove.forEach(kind => {
-                    secondaryMove[kind](data, true)(dispatch, getState, services);
-                });
-            }
-
-            async function moveSingleProcess(process: MoveableResource) {
-                try {
-                    const oldProcess: MoveToFormDialogData = { name: process.name, uuid: process.uuid, ownerUuid: data.ownerUuid };
-                    const movedProcess = await dispatch<any>(processMoveActions.moveProcess(oldProcess));
-                    dispatch<any>(updateResources([movedProcess]));
-                    dispatch<any>(reloadProjectMatchingUuid([movedProcess.ownerUuid]));
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: "Process has been moved.",
-                            hideDuration: 2000,
-                            kind: SnackbarKind.SUCCESS,
-                        })
-                    );
-                } catch (e) {
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: e.message,
-                            hideDuration: 2000,
-                            kind: SnackbarKind.ERROR,
-                        })
-                    );
-                }
-            }
-        };
-
-export const copyProcess = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const copyProcessRunner = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     try {
         const process = await dispatch<any>(processCopyActions.copyProcess(data));
         dispatch<any>(updateResources([process]));
@@ -901,7 +874,7 @@ const groupContentsHandlers = unionize(groupContentsHandlersRecord);
 
 type GroupContentsHandler = UnionOf<typeof groupContentsHandlers>;
 
-type CollectionCopyResource = Resource & { name: string; fromContextMenu: boolean };
+type CollectionCopyResource = Resource & { name: string; };
 
 type MoveableResource = Resource & { name: string };
 
@@ -911,7 +884,6 @@ type MoveFunc = (
 ) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>;
 
 const secondaryMove: Record<string, MoveFunc> = {
-    [ResourceKind.PROJECT]: moveProject,
-    [ResourceKind.PROCESS]: moveProcess,
-    [ResourceKind.COLLECTION]: moveCollection,
+    [ResourceKind.PROJECT]: moveProjectRunner,
+    [ResourceKind.COLLECTION]: moveCollectionRunner,
 };

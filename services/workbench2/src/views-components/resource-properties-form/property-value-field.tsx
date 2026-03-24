@@ -16,10 +16,12 @@ import {
     connectVocabulary,
     buildProps
 } from 'views-components/resource-properties-form/property-field-common';
-import { TAG_VALUE_VALIDATION } from 'validators/validators';
+import { TAG_VALUE_VALIDATION, REQUIRED_LENGTH255_VALIDATION } from 'validators/validators';
 import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
 import { memoize } from 'lodash';
+import { useStateWithValidation } from 'common/useStateWithValidation';
+import { Validator } from 'validators/validators';
 
 interface PropertyKeyProp {
     propertyKeyId: string;
@@ -83,6 +85,70 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
         />
     )} />;
 
+type DialogPropertyValueInputProps = VocabularyProp & {
+    showErrors?: boolean,
+    skipValidation?: boolean,
+    propertyKeyId: string,
+    propertyKeyName?: string,
+    currentValue?: string,
+    onSelect: (value: string) => void,
+    setValueErrors: (errors: string[]) => void,
+};
+
+export const DialogPropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, currentValue, showErrors, skipValidation, onSelect, setValueErrors }: DialogPropertyValueInputProps) => {
+    const validationArray = skipValidation ? [] : getValueValidation(propertyKeyId, vocabulary);
+    const [value, setValue, valueErrs] = useStateWithValidation(currentValue || '', validationArray, 'Value');
+    const prevValue = React.useRef(currentValue);
+
+    React.useEffect(() => {
+        if (prevValue.current && prevValue.current?.length > 0 && (currentValue?.length === 0 || currentValue === undefined)) {
+            setValue('');
+        }
+        prevValue.current = currentValue;
+    }, [propertyKeyName, currentValue]);
+
+    React.useEffect(() => {
+        setValueErrors(valueErrs);
+    }, [valueErrs]);
+
+    const hasVocabularyKey = propertyKeyId.length > 0;
+    const allowArbitraryValue = vocabulary.strict_tags === false && !!propertyKeyName;
+    const isDisabled = !(hasVocabularyKey || allowArbitraryValue);
+
+    return <Autocomplete
+        label='Value'
+        items={[]}
+        value={value}
+        error={showErrors && valueErrs.length > 0}
+        helperText={showErrors ? valueErrs.join(', ') : undefined}
+        disabled={isDisabled}
+        suggestions={getSuggestions(value, propertyKeyId, vocabulary)}
+        renderSuggestion={
+            (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
+                ? `${s.label} (${s.synonyms.join('; ')})`
+                : s.label
+        }
+        onSelect={(selectedSuggestion: PropFieldSuggestion) => {
+            onSelect(selectedSuggestion.label);
+            setValue(selectedSuggestion.label);
+        }}
+        onBlur={() => {
+            // Case-insensitive search for the value in the vocabulary
+            const foundValueID = getTagValueID(propertyKeyId, value, vocabulary);
+            if (foundValueID !== '') {
+                setValue(getTagValueLabel(propertyKeyId, foundValueID, vocabulary));
+            }
+        }}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            const newValue = e.currentTarget.value;
+            setValue(newValue);
+            if (vocabulary.strict_tags === false || (vocabulary.tags[propertyKeyId] && vocabulary.tags[propertyKeyId].strict === false)) {
+                onSelect(newValue);
+            }
+        }}
+    />
+};
+
 /**
  * getValidation must be memoized to prevent infinite re-renders due to Field
  * checking it for changes
@@ -97,6 +163,22 @@ const matchTagValues = (propertyKeyId: string, vocabulary: Vocabulary) =>
         getTagValues(propertyKeyId, vocabulary).find(v => !value || v.label === value)
             ? undefined
             : 'Incorrect value';
+
+const createStrictValueValidator = (propertyKeyId: string, vocabulary: Vocabulary): Validator => {
+    const validValues = getTagValues(propertyKeyId, vocabulary).map(value => value.label);
+    const validValueSet = new Set(validValues);
+
+    return ((value: string) =>
+        validValueSet.has(value) ? undefined : 'Incorrect value'
+    ) as Validator;
+};
+
+const getValueValidation = (propertyKeyId: string, vocabulary: Vocabulary) => {
+    if (isStrictTag(propertyKeyId, vocabulary)) {
+        return [...REQUIRED_LENGTH255_VALIDATION, createStrictValueValidator(propertyKeyId, vocabulary)];
+    }
+    return REQUIRED_LENGTH255_VALIDATION;
+};
 
 const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
     const re = new RegExp(escapeRegExp(value), "i");

@@ -3,23 +3,31 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { InjectedFormProps, Field } from 'redux-form';
-import { WithDialogProps } from 'store/dialog/with-dialog';
-import { CollectionCreateFormDialogData, COLLECTION_CREATE_FORM_NAME } from 'store/collections/collection-create-actions';
-import { FormDialog } from 'components/form-dialog/form-dialog';
+import { Dispatch, compose } from 'redux';
+import { connect } from 'react-redux'
+import { WithDialogProps, withDialog } from 'store/dialog/with-dialog';
+import { DialogContent, DialogTitle } from '@mui/material/';
+import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
 import {
-    CollectionNameField,
-    CollectionDescriptionField,
-    CollectionStorageClassesField
+    DialogCollectionNameField,
 } from 'views-components/form-fields/collection-form-fields';
-import { FileUploaderField } from '../file-uploader/file-uploader';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
-import { CreateCollectionPropertiesForm } from 'views-components/collection-properties/create-collection-properties-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { FormGroup, FormLabel } from '@mui/material';
+import { FormLabel } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
+import { DialogForm } from 'components/dialog-form/dialog-form';
+import { useStateWithValidation } from 'common/useStateWithValidation';
+import { COLLECTION_NAME_VALIDATION, MAXLENGTH_524288_VALIDATION, REQUIRED_VALIDATION } from 'validators/validators';
+import { DialogRichTextField } from 'components/dialog-form/dialog-text-field';
+import { DialogResourcePropertiesForm } from 'views-components/resource-properties-form/resource-properties-form'
+import { createCollectionRunner } from 'store/workbench/workbench-actions';
+import { PropertyChips, getVocabularyFromChips } from 'components/chips/chips';
+import { RootState } from 'store/store';
+import { DialogMultiCheckboxField } from 'components/checkbox-field/checkbox-field'
+import { DialogFileUploaderField } from '../file-uploader/file-uploader';
+import { Vocabulary } from 'models/vocabulary';
+import { COLLECTION_CREATE_FORM_NAME } from 'store/collections/collection-create-actions';
 
 type CssRules = 'propertiesForm';
 
@@ -30,34 +38,96 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
 });
 
-type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
+const mapState = (state: RootState) => ({
+    vocabulary: state.properties.vocabulary
+});
 
-export const DialogCollectionCreate = (props: DialogCollectionProps) =>
-    <FormDialog
-        dialogTitle='New collection'
-        formFields={CollectionAddFields as any}
-        submitLabel='Create a Collection'
-        {...props}
-    />;
+const mapDispatch = (dispatch: Dispatch) => ({
+    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => dispatch<any>(createCollectionRunner(data, setSubmitErr))
+});
 
-const CreateCollectionPropertiesList = resourcePropertiesList(COLLECTION_CREATE_FORM_NAME);
+type DialogCollectionProps = WithDialogProps<CollectionCreateFormDialogData> & {
+    createCollection: (data: CollectionCreateFormDialogData, setSubmitErr: (errMsg: string) => void) => Promise<void>;
+    vocabulary: Vocabulary;
+};
 
-const CollectionAddFields = withStyles(styles)(
-    ({ classes }: WithStyles<CssRules>) => <span>
-        <ResourceParentField />
-        <CollectionNameField />
-        <CollectionDescriptionField />
-        <div className={classes.propertiesForm}>
+export const DialogCollectionCreate = compose(
+    connect(mapState, mapDispatch),
+    withStyles(styles),
+    withDialog(COLLECTION_CREATE_FORM_NAME)
+)(({ createCollection, data, closeDialog, open, vocabulary, classes }: DialogCollectionProps & WithStyles<CssRules>) =>{
+    const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation('', [...REQUIRED_VALIDATION, ...COLLECTION_NAME_VALIDATION], 'Collection Name');
+    const [description, setDescription, descriptionErrs] = useStateWithValidation('', MAXLENGTH_524288_VALIDATION, 'Description');
+    const [chips, setChips] = React.useState<PropertyChips>({} as PropertyChips);
+    const [storageClassesDesired, setStorageClassesDesired] = React.useState<string[]>([]);
+    const [formErrors, setFormErrors] = React.useState<string[]>([]);
+    const [submitErr, setSubmitErr] = React.useState<string>('');
+    const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+
+    React.useEffect(() => {
+        setFormErrors([...collectionNameErrs, ...descriptionErrs]);
+        if (submitErr) {
+            setFormErrors(prevErrors => [...prevErrors, submitErr]);
+        }
+    }, [collectionNameErrs, descriptionErrs, submitErr]);
+
+    const handleSubmit = (ev) => {
+        ev.preventDefault();
+        setIsSubmitting(true);
+        createCollection({
+                ownerUuid: data.ownerUuid,
+                name: collectionName,
+                description: description,
+                storageClassesDesired: storageClassesDesired,
+                properties: getVocabularyFromChips(chips, vocabulary),
+            },
+            setSubmitErr
+        ).finally(() => {
+            setIsSubmitting(false);
+        });
+    };
+
+    const fields = () => (
+        <>
+            <DialogTitle>New collection</DialogTitle>
+            <DialogContent>
+                <ResourceParentField ownerUuid={data ? data.ownerUuid : ''} />
+                <DialogCollectionNameField setValue={setCollectionName} submitErr={submitErr} setSubmitErr={setSubmitErr} />
+                <DialogRichTextField
+                    label="Description"
+                    defaultValue={description}
+                    setValue={setDescription}
+                    validators={MAXLENGTH_524288_VALIDATION}
+                />
             <FormLabel>Properties</FormLabel>
-            <FormGroup>
-                <CreateCollectionPropertiesForm />
-                <CreateCollectionPropertiesList />
-            </FormGroup>
-        </div>
-        <CollectionStorageClassesField defaultClasses={['default']} />
-        <Field
-            name='files'
-            label='Files'
-            component={FileUploaderField} />
-    </span>);
+                <DialogResourcePropertiesForm
+                    setChips={setChips}
+                    onSubmit={(ev)=> ev.preventDefault()}
+                    />
+                <DialogMultiCheckboxField
+                    name="storageClassesDesired"
+                    defaultValues={['default']}
+                    label="Storage classes"
+                    onChange={setStorageClassesDesired}
+                />
+                <DialogFileUploaderField />
+            </DialogContent>
+        </>
+    )
 
+    return <DialogForm
+        fields={fields()}
+        submitLabel='Create a Collection'
+        formErrors={formErrors}
+        isSubmitting={isSubmitting}
+        onSubmit={handleSubmit}
+        closeDialog={closeDialog}
+        clearFormValues={() => {
+            setCollectionName('');
+            setDescription('');
+            setChips({} as PropertyChips);
+            setStorageClassesDesired([]);
+        }}
+        open={open}
+    />;
+});

@@ -10,26 +10,15 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from "react-router";
 import { DataTableFilterItem } from "components/data-table-filters/data-table-filters";
-import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { ResourceKind } from "models/resource";
 import { ArvadosTheme } from "common/custom-theme";
 import { ALL_PROCESSES_PANEL_ID } from "store/all-processes-panel/all-processes-panel-action";
-import {
-    ProcessStatus,
-    ResourceName,
-    ResourceOwnerWithName,
-    ResourceType,
-    ContainerRunTime,
-    ResourceCreatedAtDate,
-} from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
 import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { navigateTo } from "store/navigation/navigation-action";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { ContainerRequestState } from "models/container-request";
 import { RootState } from "store/store";
-import { createTree } from "models/tree";
-import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getProcess } from "store/processes/process";
 import { ResourcesState } from "store/resources/resources";
 import { toggleOne } from "store/multiselect/multiselect-actions";
@@ -50,66 +39,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export enum AllProcessesPanelColumnNames {
-    NAME = "Name",
-    STATUS = "Status",
-    TYPE = "Type",
-    OWNER = "Owner",
-    CREATED_AT = "Created at",
-    RUNTIME = "Run Time",
-}
-
 export interface AllProcessesPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
-
-export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResource> = [
-    {
-        name: AllProcessesPanelColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: "name" },
-        filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />,
-    },
-    {
-        name: AllProcessesPanelColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        mutuallyExclusiveFilters: true,
-        filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid} />,
-    },
-    {
-        name: AllProcessesPanelColumnNames.TYPE,
-        selected: true,
-        configurable: true,
-        filters: getInitialProcessTypeFilters(),
-        render: uuid => <ResourceType uuid={uuid} />,
-    },
-    {
-        name: AllProcessesPanelColumnNames.OWNER,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />,
-    },
-    {
-        name: AllProcessesPanelColumnNames.CREATED_AT,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.DESC, field: "createdAt" },
-        filters: createTree(),
-        render: uuid => <ResourceCreatedAtDate uuid={uuid} />,
-    },
-    {
-        name: AllProcessesPanelColumnNames.RUNTIME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ContainerRunTime uuid={uuid} />,
-    },
-];
 
 interface AllProcessesPanelDataProps {
     resources: ResourcesState;

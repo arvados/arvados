@@ -12,7 +12,7 @@ import { fileUploaderActions, getFileUploaderState } from 'store/file-uploader/f
 import { WrappedFieldProps } from 'redux-form';
 import { Typography } from '@mui/material';
 
-export type FileUploaderProps = Pick<FileUploadProps, 'disabled' | 'onDrop'>;
+export type FileUploaderProps = Pick<FileUploadProps, 'disabled'> & { onDrop?: FileUploadProps['onDrop'] };
 
 const mapStateToProps = (state: RootState, { disabled }: FileUploaderProps): Pick<FileUploadProps, 'files' | 'disabled'> => ({
     disabled,
@@ -24,19 +24,32 @@ const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): 
         const state = dispatch<any>(getFileUploaderState());
         if (files.length > 0 && state.length === 0) {
             dispatch(fileUploaderActions.SET_UPLOAD_FILES(files));
-            onDrop(files);
+            onDrop?.(files);
         } else if (files.length > 0 && state.length > 0) {
             dispatch(fileUploaderActions.UPDATE_UPLOAD_FILES(files));
-            onDrop(files);
+            onDrop?.(files);
         }
     },
     onDelete: file => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(file))
 });
 
-export const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
+const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
 
-export const FileUploaderField = (props: WrappedFieldProps & { label?: string }) =>
-    <>
+export const FileUploaderField = (props: WrappedFieldProps & { label?: string }) => {
+    return <>
         <Typography variant='caption'>{props.label}</Typography>
         <FileUploader disabled={false} onDrop={props.input.onChange} />
-    </>;
+    </>
+};
+
+type DialogFileUploaderFieldProps = {
+    label?: string,
+    onDrop?: (files: File[]) => void;
+}
+
+export const DialogFileUploaderField = (props: DialogFileUploaderFieldProps) => {
+    return <>
+        <Typography variant='caption'>{props.label}</Typography>
+        <FileUploader disabled={false} onDrop={props.onDrop} />
+    </>
+};

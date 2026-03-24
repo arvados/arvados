@@ -11,19 +11,19 @@ import withStyles from '@mui/styles/withStyles';
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
-import { extractUuidKind } from "models/resource";
 import { getResource, ResourcesState } from "store/resources/resources";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
-import { isUserGroup } from "models/group";
+import { usesDetailsCard, selectedToArray, selectedToKindSet } from "./MultiselectToolbar.utils";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
-import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
+import { sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 import { resourceToMenuKind } from "common/resource-to-menu-kind";
 import { getMenuActionSetByKind } from "common/menu-action-set-actions";
 import { intersection } from "lodash";
 import { matchTrashRoute } from "routes/routes";
+import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 
 type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
@@ -71,17 +71,6 @@ type MultiselectToolbarActionProps = {
 type MultiselectToolbarRecievedProps = {
     forceMultiSelectMode?: boolean;
     toolbarClass?: string;
-}
-
-const detailsCardPaths = [
-    '/projects',
-    '/workflows',
-    '/collections',
-    '/processes',
-]
-
-export const usesDetailsCard = (location: string): boolean => {
-    return detailsCardPaths.some(path => location.includes(path))
 }
 
 type MultiselectToolbarProps = MultiselectToolbarDataProps & MultiselectToolbarActionProps & MultiselectToolbarRecievedProps & WithStyles<CssRules>;
@@ -179,31 +168,6 @@ function preventRerender(prevProps: MultiselectToolbarProps, nextProps: Multisel
     }
     return true;
 }
-
-export function selectedToArray(checkedList: TCheckedList): Array<string> {
-    const arrayifiedSelectedList: Array<string> = [];
-    for (const [key, value] of Object.entries(checkedList)) {
-        if (value === true) {
-            arrayifiedSelectedList.push(key);
-        }
-    }
-    return arrayifiedSelectedList;
-}
-
-export function selectedToKindSet(checkedList: TCheckedList, resources: ResourcesState = {}): Set<string> {
-    const setifiedList = new Set<string>();
-    for (const [key, value] of Object.entries(checkedList)) {
-        if (value === true) {
-            isRoleGroupResource(key, resources) ? setifiedList.add(ContextMenuKind.GROUPS) : setifiedList.add(extractUuidKind(key) as string);
-        }
-    }
-    return setifiedList;
-}
-
-export const isRoleGroupResource = (uuid: string, resources: ResourcesState): boolean => {
-    const resource = getResource(uuid)(resources);
-    return isUserGroup(resource);
-};
 
 function selectActionsByKind(currentResourceKinds: ContextMenuKind[]): ContextMenuAction[] {
     if (currentResourceKinds.length === 0) return [];

@@ -3,24 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useCallback, useState } from 'react';
-import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { extractUuidKind, ResourceKind } from 'models/resource';
 import { ContainerRequestState } from 'models/container-request';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
-import {
-    ResourceCluster,
-    ResourceFileSize,
-    ResourceLastModifiedDate,
-    ResourceName,
-    ResourceOwnerWithName,
-    ResourceStatus,
-    ResourceType
-} from 'views-components/data-explorer/renderers';
+import { ResourceCluster } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
-import { createTree } from 'models/tree';
-import { getInitialSearchTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { SearchResultsPanelProps } from "./search-results-panel";
 import { Routes } from 'routes/routes';
 import { Link } from 'react-router-dom';
@@ -30,17 +19,6 @@ import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getSearchSessions } from 'store/search-bar/search-bar-actions';
 import { camelCase } from 'lodash';
-import { GroupContentsResource } from 'services/groups-service/groups-service';
-
-export enum SearchResultsPanelColumnNames {
-    CLUSTER = "Cluster",
-    NAME = "Name",
-    STATUS = "Status",
-    TYPE = 'Type',
-    OWNER = "Owner",
-    FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified"
-}
 
 export type CssRules = 'siteManagerLink' | 'searchResults';
 
@@ -57,60 +35,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
-
-export const searchResultsPanelColumns: DataColumns<string, GroupContentsResource> = [
-    {
-        name: SearchResultsPanelColumnNames.CLUSTER,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid: string) => <ResourceCluster uuid={uuid} />
-    },
-    {
-        name: SearchResultsPanelColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: "name" },
-        filters: createTree(),
-        render: (uuid: string) => <ResourceName uuid={uuid} />
-    },
-    {
-        name: SearchResultsPanelColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceStatus uuid={uuid} />
-    },
-    {
-        name: SearchResultsPanelColumnNames.TYPE,
-        selected: true,
-        configurable: true,
-        filters: getInitialSearchTypeFilters(),
-        render: (uuid: string) => <ResourceType uuid={uuid} />,
-    },
-    {
-        name: SearchResultsPanelColumnNames.OWNER,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceOwnerWithName uuid={uuid} />
-    },
-    {
-        name: SearchResultsPanelColumnNames.FILE_SIZE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
-    },
-    {
-        name: SearchResultsPanelColumnNames.LAST_MODIFIED,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.DESC, field: "modifiedAt" },
-        filters: createTree(),
-        render: uuid => <ResourceLastModifiedDate uuid={uuid} />
-    }
-];
 
 export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
     (props: SearchResultsPanelProps & WithStyles<CssRules, true>) => {
@@ -150,13 +74,11 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                     setItemPath(tmpPath);
                 }
             })();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
         const onItemClick = useCallback((uuid) => {
             setSelectedItem(uuid);
             props.onItemClick(uuid);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [props.onItemClick]);
 
         return <span data-cy='search-results' className={props.classes.searchResults}>

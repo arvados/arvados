@@ -2,28 +2,81 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
-import { memoize } from "lodash/fp";
-import { FormDialog } from 'components/form-dialog/form-dialog';
-import { CollectionProjectPickerField } from 'views-components/form-fields/collection-form-fields';
-import { WithDialogProps } from 'store/dialog/with-dialog';
-import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyToSeparateCollectionsFormData } from 'store/collections/collection-partial-copy-actions';
-import { PickerIdProp } from "store/tree-picker/picker-id";
+import React from 'react'
+import { connect } from 'react-redux'
+import { compose, Dispatch } from 'redux'
+import { DialogTitle } from '@mui/material'
+import { withDialog, WithDialogProps } from 'store/dialog/with-dialog'
+import { ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
+import { DialogForm } from 'components/dialog-form/dialog-form'
+import {
+	CollectionPartialCopyToSeparateCollectionsFormData,
+	copyCollectionPartialToSeparateCollections,
+} from 'store/collections/collection-partial-copy-actions'
+import { PickerIdProp } from 'store/tree-picker/picker-id'
+import { COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS } from 'store/collections/collection-partial-copy-actions'
+import { CollectionFileSelection } from 'store/collection-panel/collection-panel-files/collection-panel-files-state'
+import { getFieldErrors, REQUIRED_VALIDATION } from 'validators/validators'
 
-type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToSeparateCollectionsFormData>;
+type DialogCollectionPartialCopyProps = WithDialogProps<{ collectionFileSelection: CollectionFileSelection, sourceCollectionName: string }> &
+	PickerIdProp & {
+		copyCollectionPartialToSeparateCollections: (
+			fileSelection: CollectionFileSelection,
+			formData: CollectionPartialCopyToSeparateCollectionsFormData
+		) => void
+	}
 
-export const DialogCollectionPartialCopyToSeparateCollection = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
-    <FormDialog
-        dialogTitle='Copy to separate collections'
-        formFields={CollectionPartialCopyFields(props.pickerId)}
-        submitLabel='Create collections'
-        {...props}
-    />;
+const mapDispatch = (dispatch: Dispatch) => ({
+	copyCollectionPartialToSeparateCollections: (
+		fileSelection: CollectionFileSelection,
+		formData: CollectionPartialCopyToSeparateCollectionsFormData
+	) => {
+		dispatch<any>(copyCollectionPartialToSeparateCollections(fileSelection, formData))
+	},
+})
 
-const CollectionPartialCopyFields = memoize(
-    (pickerId: string) =>
-        () =>
-            <>
-                <CollectionProjectPickerField {...{ pickerId }} />
-            </>);
+export const DialogCollectionPartialCopyToSeparateCollection = compose(
+	withDialog(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS),
+	connect(null, mapDispatch),
+)((props: DialogCollectionPartialCopyProps) => {
+	const { open, data } = props
+	const { collectionFileSelection, sourceCollectionName } = data
+	const [selectedProjectUuid, setSelectedProjectUuid] = React.useState<string>('')
+	const [formErrors, setFormErrors] = React.useState<string[]>([])
+
+	const fieldErrors = getFieldErrors(selectedProjectUuid, REQUIRED_VALIDATION, 'Project')
+
+	React.useEffect(() => {
+		setFormErrors([...fieldErrors])
+	}, [selectedProjectUuid])
+
+	const fields = () => (
+		<>
+			<DialogTitle>Copy Selected Files to Separate Collections</DialogTitle>
+			<ProjectTreePickerDialogField
+				pickerId={props.pickerId}
+				setSelectedProject={setSelectedProjectUuid}
+			/>
+		</>
+	)
+
+	return (
+		<DialogForm
+			open={open}
+			fields={fields()}
+			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+				event.preventDefault()
+				props.copyCollectionPartialToSeparateCollections(collectionFileSelection, {
+					name: sourceCollectionName,
+					projectUuid: selectedProjectUuid,
+				})
+			}}
+			formErrors={formErrors}
+			submitLabel='Create Collections'
+			closeDialog={props.closeDialog}
+			clearFormValues={() => {
+				setSelectedProjectUuid('')
+			}}
+		/>
+	)
+})

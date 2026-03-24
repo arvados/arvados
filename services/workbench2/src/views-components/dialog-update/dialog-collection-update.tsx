@@ -2,22 +2,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
-import { InjectedFormProps } from 'redux-form';
-import { WithDialogProps } from 'store/dialog/with-dialog';
-import { CollectionUpdateFormDialogData, COLLECTION_UPDATE_FORM_NAME } from 'store/collections/collection-update-actions';
-import { FormDialog } from 'components/form-dialog/form-dialog';
-import {
-    CollectionNameField,
-    CollectionDescriptionField,
-    CollectionStorageClassesField
-} from 'views-components/form-fields/collection-form-fields';
-import { UpdateCollectionPropertiesForm } from 'views-components/collection-properties/update-collection-properties-form';
+import React, { useEffect, useState } from 'react';
+import { compose, Dispatch } from 'redux';
+import { connect } from 'react-redux';
+import { CollectionUpdateFormDialogData, updateCollection } from 'store/collections/collection-update-actions';
+import { DialogForm } from 'components/dialog-form/dialog-form';
+import { DialogCollectionNameField } from 'views-components/form-fields/collection-form-fields';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { FormGroup, FormLabel } from '@mui/material';
+import { FormGroup, FormLabel, DialogTitle, DialogContent } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
+import { useStateWithValidation } from 'common/useStateWithValidation';
+import { COLLECTION_NAME_VALIDATION, COLLECTION_DESCRIPTION_VALIDATION } from 'validators/validators';
+import { DialogRichTextField } from 'components/dialog-form/dialog-text-field';
+import { DialogResourcePropertiesForm } from 'views-components/resource-properties-form/resource-properties-form';
+import { PropertyChips, getVocabularyFromChips, getChipsFromVocabulary } from 'components/chips/chips';
+import { RootState } from 'store/store';
+import { DialogMultiCheckboxField } from 'components/checkbox-field/checkbox-field';
+import { Vocabulary } from 'models/vocabulary';
+import { getStorageClasses } from 'common/config';
+import { COLLECTION_UPDATE_FORM_NAME } from 'store/collections/collection-update-actions';
+import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
+import { isEqual } from 'lodash';
 
 type CssRules = 'propertiesForm';
 
@@ -28,28 +34,130 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
 });
 
-type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionUpdateFormDialogData>;
+const mapState = (state: RootState) => ({
+    vocabulary: state.properties.vocabulary,
+    storageClasses: getStorageClasses(state.auth.config)
+});
 
-export const DialogCollectionUpdate = (props: DialogCollectionProps) =>
-    <FormDialog
-        dialogTitle='Edit Collection'
-        formFields={CollectionEditFields as any}
-        submitLabel='Save'
-        {...props}
-    />;
+const mapDispatch = (dispatch: Dispatch) => ({
+    updateCollection: (data: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
+        dispatch<any>(updateCollection(data, setSubmitErr))
+});
 
-const UpdateCollectionPropertiesList = resourcePropertiesList(COLLECTION_UPDATE_FORM_NAME);
+type DialogCollectionProps = WithDialogProps<CollectionUpdateFormDialogData> & {
+    updateCollection: (data: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) => Promise<void>;
+    vocabulary: Vocabulary;
+    storageClasses: string[];
+};
 
-const CollectionEditFields = withStyles(styles)(
-    ({ classes }: WithStyles<CssRules>) => <span>
-        <CollectionNameField />
-        <CollectionDescriptionField />
-        <div className={classes.propertiesForm}>
-            <FormLabel>Properties</FormLabel>
-            <FormGroup>
-                <UpdateCollectionPropertiesForm />
-                <UpdateCollectionPropertiesList />
-            </FormGroup>
-        </div>
-        <CollectionStorageClassesField />
-    </span>);
+export const DialogCollectionUpdate = compose(
+    connect(mapState, mapDispatch),
+    withStyles(styles),
+    withDialog(COLLECTION_UPDATE_FORM_NAME)
+)(({ data, closeDialog, open, vocabulary, storageClasses, classes, updateCollection }: DialogCollectionProps & WithStyles<CssRules>) => {
+        const initialData = data || { uuid: '', name: '', description: '', properties: {}, storageClassesDesired: [] };
+        const initialProperties = initialData.properties || {};
+        const initialStorageClassesDesired = initialData.storageClassesDesired || storageClasses || ['default'];
+        const [collectionName, setCollectionName, collectionNameErrs] = useStateWithValidation(initialData.name || '', COLLECTION_NAME_VALIDATION, 'Collection Name');
+        const [description, setDescription, descriptionErrs] = useStateWithValidation(initialData.description || '', COLLECTION_DESCRIPTION_VALIDATION, 'Description');
+        const [chips, setChips] = useState<PropertyChips>(getChipsFromVocabulary(initialProperties, vocabulary));
+        const [storageClassesDesired, setStorageClassesDesired] = useState<string[]>(initialStorageClassesDesired);
+        const [formErrors, setFormErrors] = useState<string[]>([]);
+        const [submitErr, setSubmitErr] = useState<string>('');
+        const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+        const currentProperties = getVocabularyFromChips(chips, vocabulary);
+        const submitDisabled = !collectionNameErrs.length && !descriptionErrs.length &&
+            collectionName === (initialData.name || '') &&
+            description === (initialData.description || '') &&
+            isEqual(currentProperties, initialProperties) &&
+            isEqual(storageClassesDesired, initialStorageClassesDesired);
+
+        useEffect(() => {
+            if (data) {
+                setCollectionName(data.name || '');
+                setDescription(data.description || '');
+                setChips(getChipsFromVocabulary(data.properties || {}, vocabulary));
+                setStorageClassesDesired(data.storageClassesDesired || storageClasses || ['default']);
+            }
+        }, [data]);
+
+        useEffect(() => {
+            setFormErrors([...collectionNameErrs, ...descriptionErrs]);
+            if (submitErr) {
+                setFormErrors(prevErrors => [...prevErrors, submitErr]);
+            }
+        }, [collectionNameErrs, descriptionErrs, submitErr]);
+
+        const handleSubmit = (ev) => {
+            ev.preventDefault();
+            setIsSubmitting(true);
+            updateCollection({
+                    uuid: initialData.uuid,
+                    name: collectionName,
+                    description: description,
+                    storageClassesDesired: storageClassesDesired,
+                    properties: currentProperties,
+                }, setSubmitErr
+            ).finally(() => {
+                setIsSubmitting(false);
+            });
+        };
+
+        const fields = () => (
+            <>
+                <DialogTitle>Edit Collection</DialogTitle>
+                <DialogContent>
+                    <DialogCollectionNameField
+                        setValue={setCollectionName}
+                        defaultValue={initialData.name}
+                        submitErr={submitErr}
+                        setSubmitErr={setSubmitErr}
+                    />
+                    <DialogRichTextField
+                        label="Description"
+                        defaultValue={description}
+                        setValue={setDescription}
+                        validators={COLLECTION_DESCRIPTION_VALIDATION}
+                    />
+                    <div className={classes.propertiesForm}>
+                        <FormLabel>Properties</FormLabel>
+                        <FormGroup>
+                            <DialogResourcePropertiesForm
+                                initialProperties={getChipsFromVocabulary(initialData.properties || {}, vocabulary)}
+                                setChips={setChips}
+                                onSubmit={(ev) => ev.preventDefault()}
+                            />
+                        </FormGroup>
+                    </div>
+                    <DialogMultiCheckboxField
+                        name="storageClassesDesired"
+                        defaultValues={storageClassesDesired}
+                        label="Storage classes"
+                        onChange={setStorageClassesDesired}
+                        minSelection={1}
+                        helperText='At least one class should be selected'
+                    />
+                </DialogContent>
+            </>
+        );
+
+        return (
+            <DialogForm
+                fields={fields()}
+                submitLabel='Save'
+                formErrors={formErrors}
+                submitDisabled={submitDisabled}
+                isSubmitting={isSubmitting}
+                onSubmit={handleSubmit}
+                closeDialog={closeDialog}
+                clearFormValues={() => {
+                    setCollectionName('');
+                    setDescription('');
+                    setChips({} as PropertyChips);
+                    setStorageClassesDesired([]);
+                }}
+                open={open}
+            />
+        );
+    }
+);

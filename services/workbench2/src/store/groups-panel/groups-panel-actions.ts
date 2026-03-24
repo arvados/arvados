@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { reset, startSubmit, stopSubmit, FormErrors, initialize } from 'redux-form';
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { RootState } from 'store/store';
@@ -17,7 +16,7 @@ import { PermissionService } from 'services/permission-service/permission-servic
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
 import { PROJECT_CREATE_FORM_NAME } from 'store/projects/project-create-actions';
-import { selectedToArray, isRoleGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar';
+import { selectedToArray, isRoleGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar.utils';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 
@@ -33,7 +32,6 @@ export const loadGroupsPanel = () => (dispatch: Dispatch) => {
 
 export const openCreateGroupDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(initialize(PROJECT_CREATE_FORM_NAME, {}));
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_CREATE_FORM_NAME,
             data: {
@@ -81,19 +79,18 @@ export const openRemoveGroupDialog = (uuid: string, numOfGroups = 1) =>
 export const openGroupUpdateDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const group = getResource<GroupResource>(uuid)(getState().resources);
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, group));
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_UPDATE_FORM_NAME,
             data: {
                 sourcePanel: GroupClass.ROLE,
+                ...group,
             }
         }));
     };
 
-export const updateGroup = (project: ProjectUpdateFormDialogData) =>
+export const updateGroup = (project: ProjectUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = project.uuid || '';
-        dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
             const updatedGroup = await services.groupsService.update(
                 uuid,
@@ -105,22 +102,28 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
                 false
             );
             dispatch(GroupsPanelActions.REQUEST_ITEMS());
-            dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedGroup;
         } catch (e) {
-            dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
+                setSubmitErr('Group with the same name already exists.');
             }
             return ;
         }
     };
 
-export const createGroup = ({ name, users = [], description, properties }: ProjectUpdateFormDialogData) =>
+export type GroupCreateFormDialogData = {
+    name: string;
+    description: string;
+    properties: {
+        [key: string]: string | string[];
+    };
+    users: { uuid: string, name: string }[];
+};
+
+export const createGroupRunner = ({ name, users = [], description, properties }: GroupCreateFormDialogData, setSubmitErr: (err: string) => void) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
-        dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
             const newGroup = await groupsService.create({
                 name,
@@ -137,7 +140,6 @@ export const createGroup = ({ name, users = [], description, properties }: Proje
                 });
             }
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
-            dispatch(reset(PROJECT_CREATE_FORM_NAME));
             dispatch<any>(loadGroupsPanel());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `${newGroup.name} group has been created`,
@@ -147,7 +149,7 @@ export const createGroup = ({ name, users = [], description, properties }: Proje
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
+                setSubmitErr('Group with the same name already exists.');
             }
             return;
         }

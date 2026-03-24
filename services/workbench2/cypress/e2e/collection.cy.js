@@ -145,10 +145,10 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=property-field-key]").within(() => {
                         cy.get("input").type("Color");
                     });
-                    cy.get("[data-cy=property-field-value]").within(() => {
+                    cy.get("[data-cy=property-field-value]").click().within(() => {
                         cy.get("input").type("Magenta");
                     });
-                    cy.root().submit();
+                    cy.get("[data-cy=property-add-btn]").click();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
                 cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
@@ -159,7 +159,7 @@ describe("Collection panel tests", function () {
                     .its("body")
                     .as("collection")
                     .then(function () {
-                        expect(this.collection.properties.IDTAGCOLORS).to.equal("IDVALCOLORS3");
+                        expect(this.collection.properties.IDTAGCOLORS).to.deep.equal(["IDVALCOLORS3"]);
                     });
                 // Confirm the property is displayed on the UI.
                 cy.get("[data-cy=resource-properties").should("contain", "Color: Magenta");
@@ -200,10 +200,10 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=property-field-key]").within(() => {
                         cy.get("input").type("Color");
                     });
-                    cy.get("[data-cy=property-field-value]").within(() => {
+                    cy.get("[data-cy=property-field-value]").click().within(() => {
                         cy.get("input").type("Magenta");
                     });
-                    cy.root().submit();
+                    cy.get("[data-cy=property-add-btn]").click();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
                 cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
@@ -214,13 +214,11 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=property-field-key]").within(() => {
                         cy.get("input").type("sIzE");
                     });
-                    cy.get("[data-cy=property-field-value]").within(() => {
-                        cy.get("input").type("sMaLL");
+                    cy.get("[data-cy=property-field-value]").click().within(() => {
+                        cy.get("input").type("sMaLL{enter}");
                     });
-                    // simulate tabbing out of the value field
-                    cy.focused().tab();
+                    cy.get("[data-cy=property-add-btn]").click();
                     cy.waitForDom();
-                    cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
                 cy.get("[data-cy=form-dialog]").should("contain", "Size: S");
@@ -233,8 +231,8 @@ describe("Collection panel tests", function () {
                     .its("body")
                     .as("collection")
                     .then(function () {
-                        expect(this.collection.properties.IDTAGCOLORS).to.equal("IDVALCOLORS3");
-                        expect(this.collection.properties.IDTAGSIZES).to.equal("IDVALSIZES2");
+                        expect(this.collection.properties.IDTAGCOLORS).to.deep.equal(["IDVALCOLORS3"]);
+                        expect(this.collection.properties.IDTAGSIZES).to.deep.equal(["IDVALSIZES2"]);
                     });
 
                 // Confirm properties display on the UI.
@@ -1182,10 +1180,10 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=property-field-key]").within(() => {
                 cy.get("input").type("Color");
             });
-            cy.get("[data-cy=property-field-value]").within(() => {
+            cy.get("[data-cy=property-field-value]").click().within(() => {
                 cy.get("input").type("Magenta");
             });
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
         });
         // Confirm proper vocabulary labels are displayed on the UI.
         cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
@@ -1220,7 +1218,7 @@ describe("Collection panel tests", function () {
             .as("collections")
             .then(function () {
                 expect(this.collections).to.have.lengthOf(1);
-                expect(this.collections[0].properties).to.have.property("IDTAGCOLORS", "IDVALCOLORS3");
+                expect(this.collections[0].properties["IDTAGCOLORS"]).to.deep.equal(["IDVALCOLORS3"]);
             });
     });
 
@@ -1309,7 +1307,7 @@ describe("Collection panel tests", function () {
                     cy.get('[data-cy=drag-and-drop]').upload(content, 'foo/bar/baz/qux');
                     cy.get("[data-cy=form-submit-btn]").click();
                     cy.get("[data-cy=form-submit-btn]").should("not.exist");
-                    cy.get('[data-subfolder-path="foo"]').should('exist').click();
+                    cy.waitForDom().get("[data-cy=collection-files-panel]").contains("foo").should("exist").click();
                     cy.get('[data-subfolder-path="bar"]').should('exist').click();
                     cy.get('[data-subfolder-path="baz"]').should('exist').click();
                 })

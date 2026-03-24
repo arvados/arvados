@@ -37,7 +37,6 @@ import { getProcess, Process, getProcessStatus, getProcessStatusStyles, getProce
 import { ArvadosTheme } from "common/custom-theme";
 import { compose, Dispatch } from "redux";
 import { WorkflowResource, isWorkflowResource } from "models/workflow";
-import { ResourceStatus as WorkflowStatus } from "views/workflow-panel/workflow-panel-view";
 import { getUuidPrefix, openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { getUserFullname, getUserDisplayName, User, UserResource, isUserResource } from "models/user";
@@ -66,6 +65,12 @@ import { CustomTheme } from "common/custom-theme";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
 import { isContainerRequestResource } from "models/container-request";
+
+enum WorkflowStatus {
+    PUBLIC = "Public",
+    PRIVATE = "Private",
+    SHARED = "Shared"
+}
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

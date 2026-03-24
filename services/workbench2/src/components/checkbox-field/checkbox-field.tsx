@@ -12,6 +12,9 @@ import {
     FormLabel,
     FormHelperText
 } from '@mui/material';
+import { RootState } from 'store/store';
+import { getStorageClasses } from 'common/config';
+import { connect } from 'react-redux';
 
 export const CheckboxField = (props: WrappedFieldProps & { label?: string }) =>
     <FormControlLabel
@@ -77,3 +80,64 @@ export const MultiCheckboxField = (props: WrappedFieldProps & MultiCheckboxField
             <FormHelperText>{props.helperText}</FormHelperText>
         </FormControl>
     ); };
+
+type DialogMultiCheckboxFieldProps = {
+    name: string,
+    items: string[];
+    defaultValues?: string[];
+    label?: string;
+    minSelection?: number;
+    maxSelection?: number;
+    helperText?: string;
+    onChange: (data: any) => void
+}
+
+const mapState = (state: RootState) => ({
+    items: getStorageClasses(state.auth.config)
+});
+
+export const DialogMultiCheckboxField = connect(mapState)((props: DialogMultiCheckboxFieldProps) => {
+    const [selectedClasses, setSelectedClasses] = React.useState(props.defaultValues || []);
+
+    const isValid = (items: string[]) => (items.length >= (props.minSelection || 0)) &&
+        (items.length <= (props.maxSelection || items.length));
+
+    if (selectedClasses.length === 0 && (props.defaultValues || []).length !== 0) {
+        setSelectedClasses(props.defaultValues ? [...props.defaultValues] : []);
+    }
+
+    return (
+        <FormControl variant="standard" error={!isValid(selectedClasses)}>
+            <FormLabel component='label'>{props.label}</FormLabel>
+            <FormGroup row>
+            {props.items.map((item, idx) =>
+                <FormControlLabel
+                    key={`label-${idx}`}
+                    control={
+                        <Checkbox
+                            data-cy={`checkbox-${item}`}
+                            key={`control-${idx}`}
+                            name={`${props.name}[${idx}]`}
+                            value={item}
+                            checked={selectedClasses.includes(item)}
+                            onChange={e => {
+                                const newSelection = [...selectedClasses];
+                                if (e.target.checked) {
+                                    newSelection.push(item);
+                                } else {
+                                    newSelection.splice(newSelection.indexOf(item), 1);
+                                }
+                                if (!isValid(newSelection)) { return; }
+                                setSelectedClasses(newSelection);
+                                return props.onChange(newSelection);
+                            }}
+                            disabled={false}
+                            color="primary" />
+                    }
+                    label={item} />) }
+            </FormGroup>
+            <FormHelperText>{props.helperText}</FormHelperText>
+        </FormControl>
+    );
+});
+

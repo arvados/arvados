@@ -68,6 +68,7 @@ describe('Page not found tests', function() {
         cy.get('[data-cy=project-panel]').contains("test-project").click();
 
         cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+        cy.contains('button[aria-selected="true"]', 'Workflow Runs').should('exist');
         cy.contains('No workflow runs found').should('exist');
     });
 });

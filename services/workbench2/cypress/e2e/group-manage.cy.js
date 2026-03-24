@@ -337,11 +337,11 @@ describe('Group manage tests', function() {
             cy.get("[data-cy=property-field-key]").within(() => {
                 cy.get("input").type("Color");
             });
-            cy.get("[data-cy=property-field-value]").within(() => {
+            cy.get("[data-cy=property-field-value]").click().within(() => {
                 cy.get("input").type("Magenta");
             });
             // Submit new property
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
         });
 
         // Submit new group
@@ -365,11 +365,11 @@ describe('Group manage tests', function() {
             cy.get("[data-cy=property-field-key]").within(() => {
                 cy.get("input").type("Animal");
             });
-            cy.get("[data-cy=property-field-value]").within(() => {
+            cy.get("[data-cy=property-field-value]").click().within(() => {
                 cy.get("input").type("Dog");
             });
             // Submit new property
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
         });
         // Submit edited group
         cy.get('[data-cy=form-dialog]').within(() => {

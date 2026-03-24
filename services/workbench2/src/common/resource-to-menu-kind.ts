@@ -9,7 +9,7 @@ import { getResource } from 'store/resources/resources';
 import { Resource, ResourceKind } from 'models/resource';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { GroupResource, GroupClass, isGroupResource, isUserGroup, isGroupMemberLink, isBuiltinGroup } from 'models/group';
-import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 import { getProcess, isProcessCancelable } from 'store/processes/process';
 import { isCollectionResource } from 'models/collection';
 import { ResourcesState } from 'store/resources/resources';

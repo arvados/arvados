@@ -470,7 +470,6 @@ export const CollectionPanelFiles = withStyles(styles)(
                     onItemMenuOpen(event, item, isWritable);
                 }
             },
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             [path, setPath, collectionPanelFiles, isWritable]
         );
 

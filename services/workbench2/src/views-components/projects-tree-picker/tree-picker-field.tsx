@@ -13,6 +13,12 @@ import { FileOperationLocation, getFileOperationLocation, SEARCH_PROJECT_ID_PREF
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 
+type TreePickerDialogProps = {
+    pickerId: string;
+    currentUuids?: string[];
+    setSelectedProject: (uuid: string) => void;
+}
+
 export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
         <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -28,6 +34,18 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
         </div>
     </div>;
 
+export const ProjectTreePickerDialogField = (props: TreePickerDialogProps) =>
+    <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
+        <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <ProjectsTreePicker
+                pickerId={props.pickerId}
+                currentUuids={props.currentUuids}
+                toggleItemActive={(_: any, { id }) => props.setSelectedProject(id)}
+                cascadeSelection={false}
+                options={{ showOnlyOwned: false, showOnlyWritable: true }} />
+        </div>
+    </div>;
+
 const handleChange = (props: WrappedFieldProps) =>
     (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
         if (id.startsWith(SEARCH_PROJECT_ID_PREFIX)) {
@@ -36,22 +54,6 @@ const handleChange = (props: WrappedFieldProps) =>
             props.input.onChange(id);
         }
     }
-
-export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
-    <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
-        <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ProjectsTreePicker
-                pickerId={props.pickerId}
-                toggleItemActive={handleChange(props)}
-                cascadeSelection={false}
-                options={{ showOnlyOwned: false, showOnlyWritable: true }}
-                includeCollections />
-            {props.meta.dirty && props.meta.error &&
-                <Typography variant='caption' color='error'>
-                    {props.meta.error}
-                </Typography>}
-        </div>
-    </div>;
 
 type ProjectsTreePickerActionProps = {
     getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
@@ -91,3 +93,39 @@ export const DirectoryTreePickerField = connect(null, projectsTreePickerMapDispa
             </div>;
         }
     });
+
+type DirectoryTreePickerDialogFieldProps = PickerIdProp & {
+    currentUuids?: string[];
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
+    handleDirectoryChange: (destination: FileOperationLocation) => void;
+};
+
+export const DirectoryTreePickerDialogField = connect(null, projectsTreePickerMapDispatchToProps)(
+    (props: DirectoryTreePickerDialogFieldProps)=> {
+
+    const handleDirectoryChange = (props: DirectoryTreePickerDialogFieldProps) =>
+            async (_: any, { data }: TreeItem<ProjectsTreePickerItem>) => {
+                const location: FileOperationLocation | undefined = await props.getFileOperationLocation(data);
+                if (location) {
+                    props.handleDirectoryChange(location);
+                } else {
+                    props.handleDirectoryChange({} as FileOperationLocation);
+                }
+            }
+
+    return (
+        <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
+            <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <ProjectsTreePicker
+                    currentUuids={props.currentUuids}
+                    pickerId={props.pickerId}
+                    toggleItemActive={handleDirectoryChange(props)}
+                    cascadeSelection={false}
+                    options={{ showOnlyOwned: false, showOnlyWritable: true }}
+                    includeCollections
+                    includeDirectories />
+            </div>
+        </div>
+        );
+    }
+);

@@ -15,7 +15,7 @@ import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
-import { TrashPanelColumnNames } from "views/trash-panel/trash-panel";
+import { TrashPanelColumnNames } from 'views/trash-panel/trash-panel-columns';
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";

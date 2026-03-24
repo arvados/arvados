@@ -102,7 +102,6 @@ export const CollectionCard = connect(
         useEffect(() => {
             const isWritable = checkIsWritable(currentResource, itemOwner, currentUserUUID, isFrozen);
             setIsWritable(isWritable);
-            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [currentResource, currentUserUUID, isFrozen]);
 
         return (

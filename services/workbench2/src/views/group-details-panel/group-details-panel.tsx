@@ -6,9 +6,6 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { getResource } from 'store/resources/resources';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataColumns } from 'components/data-table/data-column';
-import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourcePermissionsDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
-import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
@@ -20,8 +17,15 @@ import withStyles from '@mui/styles/withStyles';
 import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
-import { PermissionResource } from 'models/permission';
 import { getUserUuid } from 'common/getuser';
+import {
+    GroupDetailsPanelMembersColumnNames,
+    GroupDetailsPanelPermissionsColumnNames,
+    groupDetailsMembersPanelColumns,
+    groupDetailsPermissionsPanelColumns,
+} from './group-details-panel-columns';
+
+export { GroupDetailsPanelMembersColumnNames, GroupDetailsPanelPermissionsColumnNames, groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns };
 
 type CssRules = "root" | "content";
 
@@ -35,100 +39,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-export enum GroupDetailsPanelMembersColumnNames {
-    FULL_NAME = "Name",
-    USERNAME = "Username",
-    STATUS = "Account Status",
-    VISIBLE = "Visible to other members",
-    PERMISSION = "Permission",
-    REMOVE = "Remove",
-}
-
-export enum GroupDetailsPanelPermissionsColumnNames {
-    NAME = "Name",
-    PERMISSION = "Permission",
-    UUID = "UUID",
-    REMOVE = "Remove",
-}
-
 const MEMBERS_DEFAULT_MESSAGE = 'Members list is empty.';
 const PERMISSIONS_DEFAULT_MESSAGE = 'Permissions list is empty.';
-
-export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionResource> = [
-    {
-        name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTail uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.USERNAME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailUsername uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailAccountStatus uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.VISIBLE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.PERMISSION,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.REMOVE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkDelete uuid={uuid} />
-    },
-];
-
-export const groupDetailsPermissionsPanelColumns: DataColumns<string, PermissionResource> = [
-    {
-        name: GroupDetailsPanelPermissionsColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkHead uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelPermissionsColumnNames.UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourcePermissionsDelete uuid={uuid} />
-    },
-];
 
 const mapStateToProps = (state: RootState) => {
     const groupUuid = getCurrentGroupDetailsPanelUuid(state.properties);

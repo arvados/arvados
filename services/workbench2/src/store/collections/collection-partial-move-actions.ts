@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { initialize, startSubmit, stopSubmit } from "redux-form";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { navigateTo } from "store/navigation/navigation-action";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
@@ -66,16 +65,14 @@ const openMoveToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionRes
         description: sourceCollection.description,
         projectUuid: undefined
     };
-    dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: { collectionFileSelection, initialFormData} }));
 }
 
 export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialMoveToNewCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
 
                 // Move files
@@ -108,7 +105,6 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             }
         }
@@ -140,16 +136,14 @@ const openMoveToExistingDialog = (dispatch: Dispatch, sourceCollection: Collecti
     const initialFormData = {
         destination: {uuid: sourceCollection.uuid, path: ''}
     };
-    dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, data: { collectionFileSelection, initialFormData } }));
 }
 
 export const moveCollectionPartialToExistingCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialMoveToExistingCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
 
                 // Move files
@@ -177,7 +171,6 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             }
         }
@@ -196,9 +189,8 @@ export const openCollectionPartialMoveToSeparateCollectionsDialog = () =>
                 name: sourceCollection.name,
                 projectUuid: undefined
             };
-            dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: collectionFileSelection }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: { collectionFileSelection, initialData } }));
         }
     };
 
@@ -206,7 +198,6 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
 
                 // Move files
@@ -245,7 +236,6 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             }
         }

@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { ContextMenuPosition } from "./context-menu-reducer";
-import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
+import { ContextMenuPosition, ContextMenuKind, ContextMenuResource } from "store/context-menu/context-menu";
 import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { getResource } from "../resources/resources";
@@ -30,25 +29,6 @@ export const contextMenuActions = unionize({
 });
 
 export type ContextMenuAction = UnionOf<typeof contextMenuActions>;
-
-export type ContextMenuResource = {
-    name: string;
-    uuid: string;
-    ownerUuid: string;
-    description?: string | null;
-    kind: ResourceKind;
-    menuKind: ContextMenuKind | string;
-    isTrashed?: boolean;
-    isEditable?: boolean;
-    outputUuid?: string;
-    workflowUuid?: string;
-    isAdmin?: boolean;
-    isFrozen?: boolean;
-    storageClassesDesired?: string[];
-    properties?: { [key: string]: string | string[] };
-    isMulti?: boolean;
-    fromContextMenu?: boolean;
-};
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;
 

@@ -46,7 +46,8 @@ export const isStrictTag = (tagKeyID: string, vocabulary: Vocabulary) => {
 };
 
 export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary: Vocabulary) => {
-    if (tagKeyID && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values) {
+    // if labels and keys are present in vocabulary, strict_tags is irreleveant
+    if (vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values) {
         const values = vocabulary.tags[tagKeyID].values!;
         return Object.keys(values).find(k =>
             (k.toLowerCase() === tagValueLabel.toLowerCase())
@@ -54,6 +55,9 @@ export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary:
                 l => l.label.toLowerCase() === tagValueLabel.toLowerCase()) !== undefined)
             || '';
     };
+    if (vocabulary.strict_tags === false && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].labels) {
+        return tagValueLabel;
+    }
     return '';
 };
 

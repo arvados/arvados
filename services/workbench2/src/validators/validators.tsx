@@ -9,49 +9,80 @@ import { isRemoteHost } from "./is-remote-host";
 import { validFileName, validFilePath, validName, validNameAllowSlash } from "./valid-name";
 import { isZipFilename } from './is-zip-filename';
 import { isValidFutureDate } from './is-valid-future-date';
+import { isValidFileOpsLocation } from './is-valid-file-ops-location';
 
-export const TAG_KEY_VALIDATION = [maxLength(255)];
-export const TAG_VALUE_VALIDATION = [maxLength(255)];
+export type Validator = <T>(value: T) => string | undefined;
 
-export const PROJECT_NAME_VALIDATION = [fieldRequire, validName, maxLength(255)];
-export const PROJECT_NAME_VALIDATION_ALLOW_SLASH = [fieldRequire, validNameAllowSlash, maxLength(255)];
-export const PROJECT_DESCRIPTION_VALIDATION = [maxLength(524_288)];
+/**
+ * Validates a field value against an array of validation functions and returns error messages.
+ *
+ * @param value - The value to validate
+ * @param validationArray - Array of validator functions to apply to the value
+ * @param fieldName - Optional field name to prepend to error messages for better debugging
+ * @returns Array of validation error messages. Empty array if no errors.
+ *
+ * @example
+ * ```tsx
+ * const errors = getFieldErrors('', [fieldRequire, maxLength(255)], 'Name');
+ * // Returns: ['Name: This field is required'] if value is empty
+ * ```
+ */
+export const getFieldErrors = (value: unknown, validationArray: Validator[], fieldName?: string): string[] => {
+  const errMessages: string[] = [];
+  for (const validation of validationArray) {
+    const result = validation(value);
+    const errorMsg = result ? (fieldName ? `${fieldName}: ${result}` : result) : null;
+    if (errorMsg) {
+      errMessages.push(errorMsg);
+    }
+  }
+  return errMessages;
+}
 
-export const COLLECTION_NAME_VALIDATION = [fieldRequire, validName, maxLength(255)];
-export const COLLECTION_NAME_VALIDATION_ALLOW_SLASH = [fieldRequire, validNameAllowSlash, maxLength(255)];
-export const COLLECTION_DESCRIPTION_VALIDATION = [maxLength(524_288)];
-export const COLLECTION_PROJECT_VALIDATION = [fieldRequire];
+export const TAG_KEY_VALIDATION: Validator[] = [maxLength(255)];
+export const TAG_VALUE_VALIDATION: Validator[] = [maxLength(255)];
 
-export const COPY_NAME_VALIDATION = [fieldRequire, maxLength(255)];
-export const COPY_FILE_VALIDATION = [fieldRequire];
-export const RENAME_FILE_VALIDATION = [fieldRequire, validFilePath];
-export const DOWNLOAD_ZIP_VALIDATION = [fieldRequire, isZipFilename, validFileName];
+export const PROJECT_NAME_VALIDATION: Validator[] = [fieldRequire, validName, maxLength(255)];
+export const PROJECT_NAME_VALIDATION_ALLOW_SLASH: Validator[] = [fieldRequire, validNameAllowSlash, maxLength(255)];
+export const PROJECT_DESCRIPTION_VALIDATION: Validator[] = [maxLength(524_288)];
 
-export const MOVE_TO_VALIDATION = [fieldRequire];
+export const COLLECTION_NAME_VALIDATION: Validator[] = [fieldRequire, validName, maxLength(255)];
+export const COLLECTION_NAME_VALIDATION_ALLOW_SLASH: Validator[] = [fieldRequire, validNameAllowSlash, maxLength(255)];
+export const COLLECTION_DESCRIPTION_VALIDATION: Validator[] = [maxLength(524_288)];
+export const COLLECTION_PROJECT_VALIDATION: Validator[] = [fieldRequire];
 
-export const PROCESS_NAME_VALIDATION = [fieldRequire, maxLength(255)];
-export const PROCESS_DESCRIPTION_VALIDATION = [maxLength(255)];
+export const COPY_NAME_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
+export const COPY_FILE_VALIDATION: Validator[] = [fieldRequire];
+export const RENAME_FILE_VALIDATION: Validator[] = [fieldRequire, validFilePath];
+export const DOWNLOAD_ZIP_VALIDATION: Validator[] = [fieldRequire, isZipFilename, validFileName];
 
-export const REPOSITORY_NAME_VALIDATION = [fieldRequire, maxLength(255)];
+export const MOVE_TO_VALIDATION: Validator[] = [fieldRequire];
 
-export const USER_EMAIL_VALIDATION = [fieldRequire, maxLength(255)];
-export const PROFILE_EMAIL_VALIDATION = [maxLength(255)];
-export const PROFILE_URL_VALIDATION = [maxLength(255)];
-export const USER_LENGTH_VALIDATION = [maxLength(255)];
+export const PROCESS_NAME_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
+export const PROCESS_DESCRIPTION_VALIDATION: Validator[] = [maxLength(255)];
 
-export const SSH_KEY_PUBLIC_VALIDATION = [fieldRequire, isRsaKey, maxLength(1024)];
-export const SSH_KEY_NAME_VALIDATION = [fieldRequire, maxLength(255)];
+export const REPOSITORY_NAME_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
 
-export const SITE_MANAGER_REMOTE_HOST_VALIDATION = [fieldRequire, isRemoteHost, maxLength(255)];
+export const USER_EMAIL_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
+export const PROFILE_EMAIL_VALIDATION: Validator[] = [maxLength(255)];
+export const PROFILE_URL_VALIDATION: Validator[] = [maxLength(255)];
+export const USER_LENGTH_VALIDATION: Validator[] = [maxLength(255)];
 
-export const MY_ACCOUNT_VALIDATION = [fieldRequire];
+export const SSH_KEY_PUBLIC_VALIDATION: Validator[] = [fieldRequire, isRsaKey, maxLength(1024)];
+export const SSH_KEY_NAME_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
 
-export const CHOOSE_VM_VALIDATION = [fieldRequire];
+export const SITE_MANAGER_REMOTE_HOST_VALIDATION: Validator[] = [fieldRequire, isRemoteHost, maxLength(255)];
 
-export const REQUIRED_VALIDATION = [fieldRequire];
+export const MY_ACCOUNT_VALIDATION: Validator[] = [fieldRequire];
+export const CHOOSE_VM_VALIDATION: Validator[] = [fieldRequire];
 
-export const LENGTH255_VALIDATION = [maxLength(255)];
-export const REQUIRED_LENGTH255_VALIDATION = [fieldRequire, maxLength(255)];
-export const REQUIRED_VALIDNAME_LENGTH255_VALIDATION = [fieldRequire, validName, maxLength(255)];
+export const REQUIRED_VALIDATION: Validator[] = [fieldRequire];
 
-export const DATE_VALIDATION = [isValidFutureDate];
+export const LENGTH255_VALIDATION: Validator[] = [maxLength(255)];
+export const REQUIRED_LENGTH255_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
+export const REQUIRED_VALIDNAME_LENGTH255_VALIDATION: Validator[] = [fieldRequire, validName, maxLength(255)];
+export const MAXLENGTH_524288_VALIDATION: Validator[] = [maxLength(524_288)];
+
+export const DATE_VALIDATION: Validator[] = [isValidFutureDate];
+
+export const FILE_OPS_LOCATION_VALIDATION: Validator[] = [isValidFileOpsLocation];

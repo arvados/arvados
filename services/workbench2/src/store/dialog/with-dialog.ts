@@ -31,7 +31,7 @@ export const mapStateToProps =
     (id: string) =>
     <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {
         const dialog = state.dialog[id];
-        return dialog ? dialog : { open: false, data: emptyData };
+        return dialog ? dialog : { open: false, data: emptyData as T };
     };
 
 export const mapDispatchToProps =

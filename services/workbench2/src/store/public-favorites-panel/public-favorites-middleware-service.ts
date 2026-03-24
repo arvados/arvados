@@ -10,7 +10,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { resourcesActions } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
-import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel';
+import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel-columns';
 import { publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
 import { DataColumns } from 'components/data-table/data-column';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';

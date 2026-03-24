@@ -5,15 +5,15 @@
 import React from "react";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { Field } from "redux-form";
 import { ResourcesState, getResource } from "store/resources/resources";
 import { GroupResource } from "models/group";
-import { TextField } from "components/text-field/text-field";
 import { getUserUuid } from "common/getuser";
+import { DialogTextField } from "components/dialog-form/dialog-text-field";
 
 interface ResourceParentFieldProps {
     resources: ResourcesState;
     userUuid: string|undefined;
+    ownerUuid: string;
 }
 
 export const ResourceParentField = connect(
@@ -23,22 +23,26 @@ export const ResourceParentField = connect(
             userUuid: getUserUuid(state),
         };
     })
-    ((props: ResourceParentFieldProps) =>
-        <span data-cy='parent-field'><Field
-            name='ownerUuid'
-            disabled={true}
-            label='Parent project'
-            format={
-                (value, name) => {
-                    if (value === props.userUuid) {
-                        return 'Home project';
-                    }
-                    const rsc = getResource<GroupResource>(value)(props.resources);
-                    if (rsc !== undefined) {
-                        return `${rsc.name} (${rsc.uuid})`;
-                    }
-                    return value;
-                }
+    ((props: ResourceParentFieldProps) => {
+        const format = (value: string) => {
+            if (value === props.userUuid) {
+                return 'Home project';
             }
-            component={TextField as any} /></span>
-    );
+            const rsc = getResource<GroupResource>(value)(props.resources);
+            if (rsc !== undefined) {
+                return `${rsc.name} (${rsc.uuid})`;
+            }
+            return value;
+        }
+
+        return <span data-cy='parent-field'>
+            <DialogTextField
+                label='Parent project'
+                validators={[]}
+                defaultValue={format(props.ownerUuid || '')}
+                setValue={() => { /* no-op */ }}
+                disabled={true}
+            />
+        </span>
+    }
+);

@@ -4,7 +4,6 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
-import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { ServiceRepository } from 'services/services';
@@ -15,7 +14,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 import { updateResources } from 'store/resources/resources-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { CollectionResource } from 'models/collection';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
@@ -42,7 +41,7 @@ export const openCollectionPartialCopyToNewCollectionDialog = (resource: Context
         const sourceCollection = getState().collectionPanel.item;
 
         if (sourceCollection) {
-            openCopyToNewDialog(dispatch, sourceCollection, [resource]);
+            openCopyPartialToNewDialog(dispatch, sourceCollection, [resource]);
         }
     };
 
@@ -52,11 +51,11 @@ export const openCollectionPartialCopyMultipleToNewCollectionDialog = () =>
         const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
 
         if (sourceCollection && selectedItems.length) {
-            openCopyToNewDialog(dispatch, sourceCollection, selectedItems);
+            openCopyPartialToNewDialog(dispatch, sourceCollection, selectedItems);
         }
     };
 
-const openCopyToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
+const openCopyPartialToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
     // Get selected files
     const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
     // Populate form initial state
@@ -65,16 +64,14 @@ const openCopyToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionRes
         description: sourceCollection.description,
         projectUuid: undefined
     };
-    dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: { collectionFileSelection, initialFormData } }));
 };
 
 export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToNewCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
 
                 // Copy files
@@ -111,7 +108,6 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
@@ -143,16 +139,14 @@ const openCopyToExistingDialog = (dispatch: Dispatch, sourceCollection: Collecti
     const initialFormData = {
         destination: {uuid: sourceCollection.uuid, destinationPath: ''}
     };
-    dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, initialFormData));
     dispatch<any>(resetPickerProjectTree());
-    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: collectionFileSelection }));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: { initialFormData, collectionFileSelection } }));
 }
 
 export const copyCollectionPartialToExistingCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToExistingCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
 
                 // Copy files
@@ -178,7 +172,6 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
             }
         }
@@ -192,14 +185,8 @@ export const openCollectionPartialCopyToSeparateCollectionsDialog = () =>
         if (sourceCollection && selectedItems.length) {
             // Get selected files
             const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
-            // Populate form initial state
-            const initialFormData = {
-                name: sourceCollection.name,
-                projectUuid: undefined
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, initialFormData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: collectionFileSelection }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: {collectionFileSelection, sourceCollectionName: sourceCollection.name} }));
         }
     };
 
@@ -207,7 +194,6 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (fileSelection.collection) {
             try {
-                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
 
                 // Copy files
@@ -245,7 +231,6 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
-                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             }
         }

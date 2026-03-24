@@ -79,7 +79,7 @@ describe("GroupsPanelMiddlewareService", () => {
         // When
         await store.dispatch(dataExplorerActions.REQUEST_ITEMS({id: GROUPS_PANEL_ID}));
         // Wait for async fetching of group count promises to resolve
-        await new Promise(setImmediate);
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         // Expect
         expect(axiosInst.get).to.be.calledThrice;
@@ -136,7 +136,7 @@ describe("GroupsPanelMiddlewareService", () => {
         // When
         await store.dispatch(dataExplorerActions.REQUEST_ITEMS({id: GROUPS_PANEL_ID}));
         // Wait for async fetching of group count promises to resolve
-        await new Promise(setImmediate);
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         // Expect
         expect(axiosInst.get).to.be.calledThrice;

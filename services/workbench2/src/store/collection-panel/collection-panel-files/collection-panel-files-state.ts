@@ -4,7 +4,7 @@
 
 import { Tree, TreeNode, mapTreeValues, getNodeValue, getNodeDescendants } from 'models/tree';
 import { CollectionFile, CollectionDirectory, CollectionFileType } from 'models/collection-file';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { CollectionResource } from 'models/collection';
 
 export type CollectionPanelFilesState = Tree<CollectionPanelDirectory | CollectionPanelFile>;

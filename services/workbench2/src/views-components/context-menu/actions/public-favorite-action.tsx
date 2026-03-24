@@ -7,7 +7,7 @@ import { ListItemIcon, ListItemText, ListItem, Tooltip, IconButton, Typography }
 import { PublicFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
+import { PublicFavoritesState } from "store/public-favorites/public-favorites";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { componentItemStyles, ComponentCssRules } from "../component-item-styles";

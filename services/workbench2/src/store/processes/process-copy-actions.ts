@@ -4,7 +4,6 @@
 
 import { Dispatch } from 'redux';
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { initialize, startSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
@@ -24,15 +23,13 @@ export const openCopyProcessDialog =
             dispatch<any>(resetPickerProjectTree());
             dispatch<any>(initProjectsTreePicker(PROCESS_COPY_FORM_NAME));
             const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, uuid: resource.uuid, ownerUuid: '' };
-            dispatch<any>(initialize(PROCESS_COPY_FORM_NAME, initialData));
-            dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_COPY_FORM_NAME, data: {} }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_COPY_FORM_NAME, data: initialData }));
         } else {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process not found', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
 export const copyProcess = (resource: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(startSubmit(PROCESS_COPY_FORM_NAME));
     try {
         const process = await services.containerRequestService.get(resource.uuid);
         const {

@@ -6,6 +6,7 @@ import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Chip, Grid } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
+import { getTagKeyID, getTagValueID, getTagKeyLabel, getTagValueLabel } from 'models/vocabulary';
 import {
     DragSource,
     DragSourceSpec,
@@ -18,6 +19,8 @@ import {
 } from 'react-dnd';
 import { compose } from 'lodash/fp';
 import { WithStyles } from '@mui/styles';
+import { Vocabulary } from 'models/vocabulary';
+
 interface ChipsProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
@@ -128,6 +131,20 @@ export const Chips = withStyles(styles)(
         }
     });
 
+export const formatChips = (properties: Record<string, string | string[] | undefined>) => {
+    const result: string[] = [];
+    for (const key in properties) {
+        if (!properties[key]) continue;
+        if (typeof properties[key] === 'string') {
+            properties[key] = [properties[key] as string];
+        }
+        for (const value of properties[key]!) {
+            result.push(`${key}: ${value}`)
+        }
+    }
+    return result;
+};
+
 interface CollectedProps {
     connectDragSource: ConnectDragSource;
     connectDropTarget: ConnectDropTarget;
@@ -138,3 +155,51 @@ interface CollectedProps {
 interface DraggableChipProps<Value> {
     value: Value;
 }
+
+export type PropertyChips = Record<string, string | string[]>;
+
+export const getVocabularyFromChips = (chips: PropertyChips, vocabulary: Vocabulary): PropertyChips => {
+    const vocabularyChips: PropertyChips = {};
+    const strictMode = vocabulary?.strict_tags === true;
+
+    for (const [keyLabel, valueLabel] of Object.entries(chips)) {
+        if (!valueLabel) continue;
+
+        const mappedTagKeyID = getTagKeyID(keyLabel, vocabulary);
+        const tagKeyID = mappedTagKeyID || keyLabel;
+        if (strictMode && !mappedTagKeyID) continue;
+
+        if (Array.isArray(valueLabel)) {
+            const vocabularyValues: string[] = [];
+            for (const singleValue of valueLabel) {
+                const tagValueID = getTagValueID(tagKeyID, singleValue, vocabulary);
+                if (tagValueID) {
+                    vocabularyValues.push(tagValueID);
+                    continue;
+                }
+                if (!strictMode) {
+                    vocabularyValues.push(singleValue);
+                }
+            }
+            if (vocabularyValues.length > 0) {
+                vocabularyChips[tagKeyID] = vocabularyValues;
+            }
+        } else {
+            const tagValueID = getTagValueID(tagKeyID, valueLabel, vocabulary);
+            if (tagValueID) {
+                vocabularyChips[tagKeyID] = tagValueID;
+            } else if (!strictMode) {
+                vocabularyChips[tagKeyID] = valueLabel;
+            }
+        }
+    }
+
+    return vocabularyChips;
+};
+
+export const getChipsFromVocabulary = (properties: Record<string, string | string[] | undefined>, vocabulary: Vocabulary): PropertyChips => {
+    return properties ? Object.entries(properties).reduce((acc, [key, value]) => ({
+        ...acc,
+        [getTagKeyLabel(key, vocabulary)]: Array.isArray(value)? value.map(v => getTagValueLabel(key, v, vocabulary)) : getTagValueLabel(key, value || '', vocabulary)
+    }), {} as PropertyChips) : {} as PropertyChips;
+};

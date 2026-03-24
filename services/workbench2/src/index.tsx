@@ -21,7 +21,7 @@ import { CustomTheme } from "common/custom-theme";
 import { fetchConfig } from "common/config";
 import servicesProvider from "common/service-provider";
 import { addMenuActionSet } from "common/menu-action-set-actions";
-import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
+import { ContextMenuKind } from 'store/context-menu/context-menu';
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
 import {
     filterGroupActionSet,

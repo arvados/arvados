@@ -3,13 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import {
-    FormErrors,
-    formValueSelector,
-    initialize,
-    startSubmit,
-    stopSubmit
-} from 'redux-form';
 import { RootState } from "store/store";
 import { collectionPanelActions } from "store/collection-panel/collection-panel-action";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -34,18 +27,15 @@ export interface CollectionUpdateFormDialogData {
 
 export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
 export const COLLECTION_UPDATE_PROPERTIES_FORM_NAME = "collectionUpdatePropertiesFormName";
-export const COLLECTION_UPDATE_FORM_SELECTOR = formValueSelector(COLLECTION_UPDATE_FORM_NAME);
 
 export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogData) =>
     (dispatch: Dispatch) => {
-        dispatch(initialize(COLLECTION_UPDATE_FORM_NAME, resource));
-        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME, data: {} }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME, data: resource }));
     };
 
-export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const updateCollection = (collection: CollectionUpdateFormDialogData, setSubmitErr: (errMsg: string) => void) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
-        dispatch(startSubmit(COLLECTION_UPDATE_FORM_NAME));
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
 
         const cachedCollection = getResource<CollectionResource>(collection.uuid)(getState().resources);
@@ -53,7 +43,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
             description: collection.description,
-            properties: collection.properties }, false
+            properties: {...collection.properties, ...(cachedCollection || {}).properties} }, false
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
@@ -71,12 +61,18 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
+                setSubmitErr('Collection with the same name already exists.');
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Collection with the same name already exists.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR
+                }));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
                 const errMsg = e.errors
                     ? e.errors.join('')
                     : 'There was an error while updating the collection';
+                setSubmitErr(errMsg);
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: errMsg,
                     hideDuration: 2000,

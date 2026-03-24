@@ -146,7 +146,6 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
 
     useEffect(() => {
         setInitialVisibility(getInitialVisibility(panelStates, children as []));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [(children as []).length]);
 
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(initialVisibility);
@@ -159,7 +158,6 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
     useEffect(() => {
         setPanelVisibility(initialVisibility);
         setSelectedPanel(initialVisibility.indexOf(true));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentRoute, initialVisibility]);
 
     let panels: JSX.Element[] = [];

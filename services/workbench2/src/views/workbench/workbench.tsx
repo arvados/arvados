@@ -23,23 +23,18 @@ import { Routes } from "routes/routes";
 import { SidePanel } from "views-components/side-panel/side-panel";
 import { ProcessPanel } from "views/process-panel/process-panel";
 import { ChangeWorkflowDialog } from "views-components/run-process-dialog/change-workflow-dialog";
-import { CreateProjectDialog } from "views-components/dialog-forms/create-project-dialog";
-import { CreateCollectionDialog } from "views-components/dialog-forms/create-collection-dialog";
-import { CopyCollectionDialog, CopyMultiCollectionDialog } from "views-components/dialog-forms/copy-collection-dialog";
-import { CopyProcessDialog } from "views-components/dialog-forms/copy-process-dialog";
-import { UpdateCollectionDialog } from "views-components/dialog-forms/update-collection-dialog";
+import { DialogCollectionCreate } from "views-components/dialog-create/dialog-collection-create";
+import { CopyCollectionDialog } from "views-components/dialog-copy/dialog-copy";
+import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-rerun";
+import { DialogCollectionUpdate } from 'views-components/dialog-update/dialog-collection-update';
 import { UpdateProcessDialog } from "views-components/dialog-forms/update-process-dialog";
-import { UpdateProjectDialog } from "views-components/dialog-forms/update-project-dialog";
-import { MoveProcessDialog } from "views-components/dialog-forms/move-process-dialog";
-import { MoveProjectDialog } from "views-components/dialog-forms/move-project-dialog";
-import { MoveCollectionDialog } from "views-components/dialog-forms/move-collection-dialog";
-import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
-import { PartialCopyToNewCollectionDialog } from "views-components/dialog-forms/partial-copy-to-new-collection-dialog";
-import { PartialCopyToExistingCollectionDialog } from "views-components/dialog-forms/partial-copy-to-existing-collection-dialog";
-import { PartialCopyToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-copy-to-separate-collections-dialog";
-import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/partial-move-to-new-collection-dialog";
-import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
-import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
+import { DialogProjectUpdate } from 'views-components/dialog-update/dialog-project-update';
+import { DialogMoveProject } from "views-components/dialog-move/dialog-move-project";
+import { DialogCollectionFilesUpload } from 'views-components/dialog-upload/dialog-collection-files-upload';
+import { DialogCollectionPartialCopyToNewCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-new-collection";
+import { DialogCollectionPartialCopyToExistingCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-existing-collection";
+import { DialogCollectionPartialCopyToSeparateCollection } from "views-components/dialog-copy/dialog-collection-partial-copy-to-separate-collections";
+import { DialogCollectionPartialMoveToExistingCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-existing-collection";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
 import { RemoveExternalCredentialDialog } from "views-components/dialog-remove/external-credential-remove-dialog";
@@ -117,6 +112,10 @@ import { UserPreferencesPanel } from "views/user-preferences-panel/user-preferen
 import { Dashboard } from "components/dashboard/dashboard";
 import { DownloadFilesAsZipDialog } from "views-components/download-files-as-zip/download-files-as-zip";
 import { CancelProcessDialog } from "views-components/process-cancel-dialog/process-cancel-dialog";
+import { DialogProjectCreate } from "views-components/dialog-create/dialog-project-create";
+import { DialogCollectionPartialMoveToNewCollection } from "views-components/dialog-move/dialog-collection-partial-move-to-new-collection";
+import { DialogCollectionPartialMoveToSeparateCollections } from "views-components/dialog-move/dialog-collection-partial-move-to-separate-collections";
+import { DialogMoveCollection } from 'views-components/dialog-move/dialog-move-collection';
 import { DescriptionDialog } from "views-components/description-dialog/description-dialog";
 
 type CssRules = "root" | "container" | "splitter" | "splitterSidePanel" | "splitterDetails" | "asidePanel" | "contentWrapper" | "content";
@@ -484,32 +483,30 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <ChangeWorkflowDialog />
             <ContextMenu />
             <CopyCollectionDialog />
-            <CopyMultiCollectionDialog />
-            <CopyProcessDialog />
-            <CreateCollectionDialog />
-            <CreateProjectDialog />
+            <DialogCollectionCreate />
+            <DialogProjectCreate />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />
             <CreateUserDialog />
             <CreateExternalCredentialDialog />
+            <DialogCollectionPartialCopyToSeparateCollection />
+            <DialogProcessRerun />
             <DescriptionDialog />
             <TokenDialog />
             <FileRemoveDialog />
-            <FilesUploadCollectionDialog />
+            <DialogCollectionFilesUpload />
             <GroupAttributesDialog />
             <GroupMemberAttributesDialog />
             <HelpApiClientAuthorizationDialog />
-            <MoveCollectionDialog />
-            <MoveProcessDialog />
-            <MoveProjectDialog />
+            <DialogMoveCollection />
+            <DialogMoveProject />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
-            <PartialCopyToNewCollectionDialog />
-            <PartialCopyToExistingCollectionDialog />
-            <PartialCopyToSeparateCollectionsDialog />
-            <PartialMoveToNewCollectionDialog />
-            <PartialMoveToExistingCollectionDialog />
-            <PartialMoveToSeparateCollectionsDialog />
+            <DialogCollectionPartialCopyToNewCollection />
+            <DialogCollectionPartialCopyToExistingCollection />
+            <DialogCollectionPartialMoveToNewCollection />
+            <DialogCollectionPartialMoveToExistingCollection />
+            <DialogCollectionPartialMoveToSeparateCollections />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />
@@ -535,9 +532,9 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <SharingDialog />
             <NotFoundDialog />
             <Snackbar />
-            <UpdateCollectionDialog />
+            <DialogCollectionUpdate />
             <UpdateProcessDialog />
-            <UpdateProjectDialog />
+            <DialogProjectUpdate />
             <UpdateExternalCredentialDialog />
             <UserAttributesDialog />
             <DeactivateDialog />

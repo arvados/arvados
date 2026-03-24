@@ -10,7 +10,7 @@ import { snackbarActions } from "store/snackbar/snackbar-actions";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { SnackbarKind } from "store/snackbar/snackbar-actions";
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from "store/context-menu/context-menu";
 import { getResource } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 
@@ -112,9 +112,11 @@ export const removeDisabledButton = (buttonName: string) => {
     };
 };
 
-export const getResourcesFromCheckedList = (state: RootState) => {
+export const getResourcesFromCheckedList = (state: RootState): GroupContentsResource[] => {
     const checkedList = getCheckedListUuids(state);
-    const resources = checkedList.map(uuid => getResource<GroupContentsResource>(uuid)(state.resources));
+    const resources = checkedList
+        .map(uuid => getResource<GroupContentsResource>(uuid)(state.resources))
+        .filter((resource): resource is GroupContentsResource => !!resource);
     return resources;
 };
 

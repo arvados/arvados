@@ -2,63 +2,87 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
-import { memoize } from "lodash/fp";
-import { InjectedFormProps, Field } from "redux-form";
-import { WithDialogProps } from "store/dialog/with-dialog";
-import { FormDialog } from "components/form-dialog/form-dialog";
-import { ProjectTreePickerField } from "views-components/projects-tree-picker/tree-picker-field";
-import { COPY_NAME_VALIDATION, COPY_FILE_VALIDATION } from "validators/validators";
-import { TextField } from "components/text-field/text-field";
-import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
-import { PickerIdProp } from "store/tree-picker/picker-id";
+import React from 'react'
+import { compose, Dispatch } from 'redux'
+import { connect } from 'react-redux'
+import { DialogTitle, DialogContent } from '@mui/material'
+import { WithDialogProps, withDialog } from 'store/dialog/with-dialog'
+import { ProjectTreePickerDialogField } from 'views-components/projects-tree-picker/tree-picker-field'
+import { COPY_NAME_VALIDATION, REQUIRED_VALIDATION } from 'validators/validators'
+import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog'
+import { PickerIdProp } from 'store/tree-picker/picker-id'
+import { copyCollectionRunner } from 'store/workbench/workbench-actions'
+import { COLLECTION_COPY_FORM_NAME } from 'store/collections/collection-copy-actions'
+import { DialogForm } from 'components/dialog-form/dialog-form'
+import { DialogTextField } from 'components/dialog-form/dialog-text-field'
+import { useStateWithValidation } from 'common/useStateWithValidation'
 
-type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CopyFormDialogData>;
+type CopyDialogProps = WithDialogProps<CopyFormDialogData> &
+	PickerIdProp & {
+		selectedCollectionUuid: string | undefined
+		copyCollection: (data: CopyFormDialogData) => void
+	}
 
-export const DialogCopy = (props: CopyFormDialogProps & PickerIdProp) => {
-    return (
-        <FormDialog
-            dialogTitle="Make a copy"
-            formFields={CopyDialogFields(props.pickerId)}
-            submitLabel="Copy"
-            {...props}
-        />
-    );
-};
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+	copyCollection: (data: CopyFormDialogData) => dispatch<any>(copyCollectionRunner(data)),
+})
 
-const CopyDialogFields = memoize((pickerId: string) => () => (
-    <>
-        <Field
-            name="name"
-            component={TextField as any}
-            validate={COPY_NAME_VALIDATION}
-            label="Enter a new name for the copy"
-        />
-        <Field
-            name="ownerUuid"
-            component={ProjectTreePickerField}
-            validate={COPY_FILE_VALIDATION}
-            pickerId={pickerId}
-        />
-    </>
-));
+export const CopyCollectionDialog = compose(
+	withDialog(COLLECTION_COPY_FORM_NAME),
+	connect(null, mapDispatchToProps)
+)((props: CopyDialogProps) => {
+	const { open, data, pickerId } = props
+	const [nameVal, setNameVal, nameErrs] = useStateWithValidation(data.name || '', COPY_NAME_VALIDATION, 'Name')
+	const [selectedProjectUuid, setSelectedProjectUuid, selectedProjectErrs] = useStateWithValidation('', REQUIRED_VALIDATION, 'Project')
+	const [formErrors, setFormErrors] = React.useState<string[]>([])
 
-export const DialogMultiCopy = (props: CopyFormDialogProps & PickerIdProp) => {
-    return (
-        <FormDialog
-            dialogTitle="Make Copies"
-            formFields={CopyMultiDialogFields(props.pickerId)}
-            submitLabel="Copy"
-            {...props}
-        />
-    );
-};
+	React.useEffect(() => {
+		setFormErrors([...selectedProjectErrs, ...nameErrs])
+	}, [nameErrs, selectedProjectErrs])
 
-const CopyMultiDialogFields = memoize((pickerId: string) => () => (
-    <Field
-        name="ownerUuid"
-        component={ProjectTreePickerField}
-        validate={COPY_FILE_VALIDATION}
-        pickerId={pickerId}
-    />
-));
+	const fields = () => (
+		<>
+			{data.isSingleResource ? (
+				<>
+					<DialogTitle>Make a copy</DialogTitle>
+					<DialogContent>
+						<DialogTextField
+                            label="Enter a new name for the copy"
+							defaultValue={data.name}
+							setValue={setNameVal}
+							validators={COPY_NAME_VALIDATION}
+						/>
+					</DialogContent>
+				</>
+			) : (
+				<DialogTitle>Make copies</DialogTitle>
+			)}
+			<ProjectTreePickerDialogField
+				pickerId={pickerId}
+				setSelectedProject={setSelectedProjectUuid}
+			/>
+		</>
+	)
+
+	return (
+		<DialogForm
+			open={open}
+			fields={fields()}
+			submitLabel='Copy Collection'
+			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+				event.preventDefault()
+				props.copyCollection({
+					name: nameVal,
+					uuid: data.uuid,
+					ownerUuid: selectedProjectUuid,
+				})
+			}}
+			formErrors={formErrors}
+			closeDialog={props.closeDialog}
+			clearFormValues={() => {
+				setSelectedProjectUuid('')
+				setNameVal('')
+			}}
+		/>
+	)
+})
