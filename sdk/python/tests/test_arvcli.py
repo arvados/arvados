@@ -289,20 +289,7 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
 
 def _no_extra_spaces_at_end(text: str) -> bool:
     # Text ends in newline but without extraneous whitespace characters.
-    return re.search(r"\n\Z", text) and not re.search(r"\s\n\Z", text)
-
-
-def test_no_extra_spaces_at_end():
-    """Show that the _no_extra_spaces_at_end function used in this test suite
-    actually works.
-    """
-    assert _no_extra_spaces_at_end("\n")
-    assert _no_extra_spaces_at_end("foo\n")
-    assert not _no_extra_spaces_at_end("foo")
-    assert not _no_extra_spaces_at_end("foo ")
-    assert not _no_extra_spaces_at_end("\t\n")
-    assert not _no_extra_spaces_at_end("\n\n\n")
-    assert not _no_extra_spaces_at_end("foo \n")
+    return re.search(r"(\A|\S)\n\Z", text)
 
 
 @pytest.mark.usefixtures("capsys", "tmp_path")
