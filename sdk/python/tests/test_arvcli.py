@@ -286,6 +286,24 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
     assert "not valid JSON array" in captured.err
 
 
+def _no_extra_spaces_at_end(text: str) -> bool:
+    # Text ends in newline but without extraneous whitespace characters.
+    return re.search(r"\n\Z", text) and not re.search(r"\s\n\Z", text)
+
+
+def test_no_extra_spaces_at_end():
+    """Show that the _no_extra_spaces_at_end function used in this test suite
+    actually works.
+    """
+    assert _no_extra_spaces_at_end("\n")
+    assert _no_extra_spaces_at_end("foo\n")
+    assert not _no_extra_spaces_at_end("foo")
+    assert not _no_extra_spaces_at_end("foo ")
+    assert not _no_extra_spaces_at_end("\t\n")
+    assert not _no_extra_spaces_at_end("\n\n\n")
+    assert not _no_extra_spaces_at_end("foo \n")
+
+
 @pytest.mark.usefixtures("capsys", "tmp_path")
 class TestRequestBodyWithCollectionCreateCMD:
     md5_empty = "d41d8cd98f00b204e9800998ecf8427e"
@@ -329,9 +347,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
         assert self.collection_uuid_pattern.match(actual["uuid"])
-        # Output ends in newline but not in extraneous newlines or other
-        # whitespace characters.
-        assert re.match(r"(?s).*\S?\n$", captured.out)
+        assert _no_extra_spaces_at_end(captured.out)
 
     def test_request_body_file_valid_json_out_yaml(self, tmp_path, capsys):
         f = tmp_path / "body.json"
@@ -345,9 +361,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
         assert self.collection_uuid_pattern.match(actual["uuid"])
-        # Output ends in newline but not in extraneous newlines or other
-        # whitespace characters.
-        assert re.match(r"(?s).*\S?\n$", captured.out)
+        assert _no_extra_spaces_at_end(captured.out)
 
     def test_request_body_file_valid_json_out_short(self, tmp_path, capsys):
         f = tmp_path / "body.json"
@@ -357,9 +371,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert exit_status.value.code == 0
         captured = capsys.readouterr()
         assert not captured.err
-        # Output ends in newline but not in extraneous newlines or other
-        # whitespace characters.
-        assert re.match(r"(?s).*\S?\n$", captured.out)
+        assert _no_extra_spaces_at_end(captured.out)
         assert self.collection_uuid_pattern.match(captured.out.rstrip())
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
@@ -402,9 +414,7 @@ def test_invalid_request(tmp_path, capsys):
     captured = capsys.readouterr()
     assert not captured.out
     assert re.search(r"\breq-[0-9a-z]{20}\b", captured.err)
-    # Error output ends in newline but not in extraneous newlines or other
-    # whitespace characters.
-    assert re.match(r"(?s).*\S?\n$", captured.err)
+    assert _no_extra_spaces_at_end(captured.err)
 
 
 # The "config get" command doesn't take any parameter.
