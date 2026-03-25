@@ -31,7 +31,8 @@ class _ArgTypes:
     def _validate_type(obj_type, obj):
         if isinstance(obj, obj_type):
             return obj
-        raise ValueError
+        # No details to raise; caller handles error messaging with pretty_name.
+        raise ValueError()
 
     json_array = cmd_util.JSONStringArgument(
         validator=functools.partial(_validate_type, list),
