@@ -392,29 +392,26 @@ class TestRequestBodyWithCollectionCreateCMD:
             actual["manifest_text"]
         )
 
-
-@pytest.mark.usefixtures("tmp_path", "capsys")
-def test_invalid_request(tmp_path, capsys):
-    manifest_data = TestRequestBodyWithCollectionCreateCMD.manifest_data
-    f = tmp_path / "body.json"
-    f.write_text(json.dumps(manifest_data))
-    # request will be invalid because replace_files does not reference manifest
-    # data in body.
-    replace_files = json.dumps({"/foo": "current/bar"})
-    with pytest.raises(SystemExit) as exit_status:
-        arvcli.dispatch([
-            "collection",
-            "create",
-            "--collection",
-            f"{f!s}",
-            "--replace-files",
-            replace_files
-        ])
-    assert exit_status.value.code == 1
-    captured = capsys.readouterr()
-    assert not captured.out
-    assert re.search(r"\breq-[0-9a-z]{20}\b", captured.err)
-    assert _no_extra_spaces_at_end(captured.err)
+    def test_invalid_request(self, tmp_path, capsys):
+        f = tmp_path / "body.json"
+        f.write_text(json.dumps(self.manifest_data))
+        # request will be invalid because replace_files does not reference
+        # manifest data in body.
+        replace_files = json.dumps({"/foo": "current/bar"})
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "collection",
+                "create",
+                "--collection",
+                f"{f!s}",
+                "--replace-files",
+                replace_files
+            ])
+        assert exit_status.value.code == 1
+        captured = capsys.readouterr()
+        assert not captured.out
+        assert re.search(r"\breq-[0-9a-z]{20}\b", captured.err)
+        assert _no_extra_spaces_at_end(captured.err)
 
 
 # The "config get" command doesn't take any parameter.
