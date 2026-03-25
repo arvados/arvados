@@ -12,6 +12,7 @@ import json
 from contextlib import contextmanager
 import arvados
 from arvados.commands import arvcli
+from . import run_test_server
 from ruamel.yaml import YAML
 yaml = YAML(typ="safe", pure=True)
 
@@ -316,15 +317,7 @@ class TestRequestBodyWithCollectionCreateCMD:
     cli = ["collection", "create", "--collection"]
 
     def teardown_method(self):
-        # Remove the collection by name after each test method invocation.
-        api_client = arvados.api("v1")
-        collection_list_obj = api_client.collections().list(
-            filters=f'[["name", "=", "{self.collection_test_name}"]]'
-        ).execute()
-        for item in collection_list_obj.get("items", []):
-            item_uuid = item.get("uuid")
-            if item_uuid is not None:
-                api_client.collections().delete(uuid=item_uuid).execute()
+        run_test_server.reset()
 
     def test_request_body_missing(self, capsys):
         with pytest.raises(SystemExit) as exit_status:
