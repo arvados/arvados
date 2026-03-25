@@ -357,7 +357,7 @@ def _handle_resource_call(args, resource, api_client):
         # the Ruby 'arv' command upon error.
         msg = str(err)
         request_id = method_call.headers.get("X-Request-Id")
-        if request_id and not re.match(
+        if request_id and not re.search(
             rf"\b{re.escape(request_id)}\b", msg
         ):
             msg += f" ({request_id})"
