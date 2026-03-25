@@ -87,6 +87,9 @@ setuptools.setup(
         'google-auth',
         'httplib2 >= 0.9.2',
         'pycurl >= 7.19.5.1',
+        # As of 636a597c, sdk/cwl depends on cwltool == 3.1.20240508115724,
+        # which also has the following ruamel.yaml dependency; see
+        # https://github.com/common-workflow-language/cwltool/blob/3.1.20240508115724/setup.py#L127
         'ruamel.yaml >= 0.16, < 0.19',
         'websockets >= 11.0',
     ],
