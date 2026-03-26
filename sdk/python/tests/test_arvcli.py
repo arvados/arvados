@@ -17,6 +17,9 @@ from ruamel.yaml import YAML
 yaml = YAML(typ="safe", pure=True)
 
 
+COLLECTION_UUID_PATTERN = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
+
+
 def test_global_option_help_followed_by_subcommand():
     """When called as arvcli.py -h [subcommand], the subcommand is ignored,
     the -h option is consumed by the parser, and the help message is printed,
@@ -332,7 +335,7 @@ class TestSameFlagInTwoPlaces:
         assert not captured.err
         for line in captured.out.split("\n"):
             if line:
-                assert re.match(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$", line)
+                assert COLLECTION_UUID_PATTERN.match(line)
 
 
 def _no_extra_spaces_at_end(text: str) -> bool:
@@ -348,7 +351,6 @@ class TestRequestBodyWithCollectionCreateCMD:
         "name": collection_test_name,
         "manifest_text": f". {md5_empty}+0 0:0:empty\n"
     }
-    collection_uuid_pattern = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
     cli = ["collection", "create", "--collection"]
 
     def teardown_method(self):
@@ -374,7 +376,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         actual = json.loads(captured.out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
-        assert self.collection_uuid_pattern.match(actual["uuid"])
+        assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
         assert _no_extra_spaces_at_end(captured.out)
 
     def test_request_body_file_valid_json_out_yaml(self, tmp_path, capsys):
@@ -388,7 +390,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         actual = yaml.load(captured.out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
-        assert self.collection_uuid_pattern.match(actual["uuid"])
+        assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
         assert _no_extra_spaces_at_end(captured.out)
 
     def test_request_body_file_valid_json_out_short(self, tmp_path, capsys):
@@ -400,7 +402,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         captured = capsys.readouterr()
         assert not captured.err
         assert _no_extra_spaces_at_end(captured.out)
-        assert self.collection_uuid_pattern.match(captured.out.rstrip())
+        assert COLLECTION_UUID_PATTERN.match(captured.out.rstrip())
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
     def test_replace_files(self, mock_stdin, capsys):
