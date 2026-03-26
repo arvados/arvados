@@ -16,12 +16,12 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 """
 
 
-import sys
-import re
 import argparse
 import functools
 import importlib
 import json
+import re
+import sys
 import arvados
 import arvados.commands._util as cmd_util
 

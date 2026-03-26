@@ -2,19 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from unittest import mock
-import pytest
 import argparse
+from contextlib import contextmanager
 import re
 import io
-import os
 import json
-from contextlib import contextmanager
+from unittest import mock
+import pytest
+from ruamel.yaml import YAML
+yaml = YAML(typ="safe", pure=True)
+
 import arvados
 from arvados.commands import arvcli
 from . import run_test_server
-from ruamel.yaml import YAML
-yaml = YAML(typ="safe", pure=True)
 
 
 COLLECTION_UUID_PATTERN = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
