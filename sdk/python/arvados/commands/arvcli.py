@@ -20,6 +20,7 @@ import sys
 import re
 import argparse
 import functools
+import importlib
 import json
 import arvados
 import arvados.commands._util as cmd_util
@@ -241,6 +242,14 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         "subcommand",
         "method"
     ))
+    external_command_modules = {
+        "keep ls": "arvados.commands.ls",
+        "keep get": "arvados.commands.get",
+        "keep put": "arvados.commands.put",
+        "keep docker": "arvados.commands.keepdocker",
+        "ws": "arvados.commands.ws",
+        "copy": "arvados.commands.arv_copy"
+    }
 
     def __init__(self, resource_dictionary, **kwargs):
         """Arguments:
@@ -250,7 +259,11 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
           `_resourceDesc["resources"]` attribute of an Arvados API client
           object.
         """
-        super().__init__(description="Arvados command line client", **kwargs)
+        super().__init__(
+            description="Arvados command line client",
+            allow_abbrev=False,
+            **kwargs
+        )
         # Common flags to the main command.
         self.add_argument("-n", "--dry-run", action="store_true",
                           help="Don't actually do anything")
@@ -278,7 +291,8 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
             required=True,
             parser_class=functools.partial(
                 argparse.ArgumentParser,
-                add_help=False
+                add_help=False,
+                allow_abbrev=False
             )
         )
 
@@ -325,7 +339,10 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                 method_subparsers = resource_subparser.add_subparsers(
                     title="Methods",
                     dest="method",
-                    parser_class=argparse.ArgumentParser,
+                    parser_class=functools.partial(
+                        argparse.ArgumentParser,
+                        allow_abbrev=False
+                    ),
                     help="Methods for subcommand {}".format(subcommand)
                 )
                 for method, method_schema in methods_dict.items():
@@ -341,7 +358,69 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         method_parser.add_argument(*parameter_names, **kwargs)
 
 
-def _handle_resource_call(args, resource, api_client):
+def _handle_external_command(cmd_parser, args, remaining_args):
+    """If CLI-parsing results indicate a subcommand that should be handled by
+    an external module, do that by importing the module and calling its main()
+    function with the rest of the arguments, followed by exiting with the
+    return value of that main() function. Otherwise, this function does
+    nothing.
+    """
+    subcommand = getattr(args, "subcommand", "")
+    method = getattr(args, "method", "")
+    if method:
+        key = f"{subcommand} {method}"
+    else:
+        key = subcommand
+    module_name = cmd_parser.external_command_modules.get(key)
+    if module_name is not None:
+        external_mod = importlib.import_module(module_name)
+        sys.exit(external_mod.main(remaining_args))
+
+
+def _handle_resource_method(cmd_parser, args, remaining_args, api_client):
+    """If CLI-parsing results indicate an API resource command, do additional
+    CLI housekeeping. If there are unrecognized items in remaining_args, exit
+    with error messages and status 2. Otherwise, perform API call.
+    """
+    resource = cmd_parser._subcommand_to_resource.get(args.subcommand)
+    if resource is None:
+        return
+
+    subparser = cmd_parser._subparser_index.get(args.subcommand)
+    # This is to work around an issue with nested subparsers being unable to
+    # show subcommand-level help (while help generation for the leafmost,
+    # method-level subparser works as expected). For example,
+    # "arvcli.py resouce method -h" will be handled by the leafmost parser
+    # first and the code will not reach here. However, "arvcli.py resource -h"
+    # is handled manually here.
+    help_wanted = "-h" in remaining_args or "--help" in remaining_args
+    if args.method is None or help_wanted:
+        subparser.print_help(
+            file=(sys.stdout if help_wanted else sys.stderr)
+        )
+        sys.exit(0 if help_wanted else 2)
+    # Any further remaining args indicate either malformed or unrecognized
+    # global args (e.g. "arvcli.py --bad-arg resource method") or undefined
+    # parameters to a valid resouce-method combination.
+    elif remaining_args:
+        print(
+            "Error: unrecognized command-line arguments:",
+            ", ".join(remaining_args),
+            file=sys.stderr
+        )
+        print(
+            f"Try: {sys.argv[0]} --help",
+            f"     {sys.argv[0]} {args.subcommand} {args.method} --help",
+            sep="\n",
+            file=sys.stderr
+        )
+        sys.exit(2)
+    else:
+        _call_resource_method(api_client, args, resource)
+
+
+def _call_resource_method(api_client, args, resource):
+    """Prepare API request, send it, and analyze/format result."""
     arv_resource = getattr(api_client, resource)()
     arv_method = getattr(arv_resource, args.method)
     method_call = arv_method(**{
@@ -399,37 +478,8 @@ def dispatch(arguments=None):
     cmd_parser = ArvCLIArgumentParser(api_client._resourceDesc["resources"])
     args, remaining_args = cmd_parser.parse_known_args(arguments)
 
-    # Is this an API resouce call?
-    resource = cmd_parser._subcommand_to_resource.get(args.subcommand)
-    if resource is not None:
-        help_wanted = "-h" in remaining_args or "--help" in remaining_args
-        if args.method is None or help_wanted:
-            subparser = cmd_parser._subparser_index.get(args.subcommand)
-            subparser.print_help(
-                file=(sys.stdout if help_wanted else sys.stderr)
-            )
-            sys.exit(0 if help_wanted else 2)
-        else:
-            # This handler always exits.
-            _handle_resource_call(args, resource, api_client)
-
-    match args.subcommand:
-        case "keep":
-            match args.method:
-                case "ls":
-                    from arvados.commands.ls import main
-                case "get":
-                    from arvados.commands.get import main
-                case "put":
-                    from arvados.commands.put import main
-                case "docker":
-                    from arvados.commands.keepdocker import main
-        case "ws":
-            from arvados.commands.ws import main
-        case "copy":
-            from arvados.commands.arv_copy import main
-    status = main(remaining_args)
-    sys.exit(status)
+    _handle_external_command(cmd_parser, args, remaining_args)
+    _handle_resource_method(cmd_parser, args, remaining_args, api_client)
 
 
 if __name__ == "__main__":
