@@ -309,6 +309,32 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
     assert "not valid JSON array" in captured.err
 
 
+@pytest.mark.usefixtures("capsys")
+class TestSameFlagInTwoPlaces:
+    def test_s_flag(self):
+        # As parameter to the resource method, "-s" is for "--select"
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["-s", "collection", "list", "-s", '["name"]'])
+        # API call should be made, and command should fail as expected.
+        assert exit_status.value.code == 1
+
+    def test_f_flag(self, capsys):
+        # As parameter to the resource method, "-f" is for "--filters"
+        active_user = run_test_server.fixture("users")["active"]["uuid"]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "-f", "uuid",
+                "collection", "list",
+                "-f", json.dumps([["owner_uuid", "=", active_user]])
+            ])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        for line in captured.out.split("\n"):
+            if line:
+                assert re.match(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$", line)
+
+
 def _no_extra_spaces_at_end(text: str) -> bool:
     # Text ends in newline but without extraneous whitespace characters.
     return re.search(r"(\A|\S)\n\Z", text)
