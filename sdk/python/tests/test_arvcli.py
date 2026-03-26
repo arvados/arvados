@@ -277,8 +277,8 @@ class TestArgTypes:
     ("foo", '"foo"', '{"foo": null}', '1.0', 'false', 'true', 'null')
 )
 def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
-    # --scope takes JSON array
-    cli = ["api_client_authorization", "create_system_auth", "--scope"]
+    # --scopes takes JSON array
+    cli = ["api_client_authorization", "create_system_auth", "--scopes"]
     cli.append(invalid_value)
     with pytest.raises(SystemExit) as exit_status:
         arvcli.dispatch(cli)
