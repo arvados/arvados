@@ -458,7 +458,23 @@ def _call_resource_method(api_client, args, resource):
                     and result.get("items")
             ):
                 for item in result["items"]:
-                    print(item["uuid"])
+                    # The received items may have the "uuid" field filtered out
+                    # by the "--select" parameter. The ruby "arv" command
+                    # simply outputs blank lines, which is not desirable.
+                    obj_uuid = item.get("uuid")
+                    if obj_uuid is None:
+                        print(
+                            (
+                                "Error: at least one item in response did not"
+                                " include a uuid. The full response was:"
+                            ),
+                            json.dumps(result, indent=1),
+                            sep="\n",
+                            file=sys.stderr
+                        )
+                        sys.exit(1)
+                    else:
+                        print(item["uuid"])
             else:
                 obj_uuid = result.get("uuid")
                 if obj_uuid is None:

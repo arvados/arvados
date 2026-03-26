@@ -416,6 +416,18 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert _no_extra_spaces_at_end(captured.err)
 
 
+@pytest.mark.usefixtures("capsys")
+def test_uuid_output_with_list_items_having_no_uuid(capsys):
+    with pytest.raises(SystemExit) as exit_status:
+        arvcli.dispatch([
+            "--format", "uuid", "collection", "list", "--select", '["name"]',
+        ])
+    assert exit_status.value.code == 1
+    captured = capsys.readouterr()
+    assert not captured.out
+    assert "did not include a uuid" in captured.err
+
+
 # The "config get" command doesn't take any parameter.
 class TestConfigGet:
     def test_config_get(self):
