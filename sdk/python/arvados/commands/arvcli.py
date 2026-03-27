@@ -341,7 +341,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         argparse.ArgumentParser,
                         allow_abbrev=False
                     ),
-                    help="Methods for subcommand {}".format(subcommand)
+                    help=f"Methods for subcommand {subcommand}"
                 )
                 for method, method_schema in methods_dict.items():
                     # Add each specific method as a (sub-)subparser with its
