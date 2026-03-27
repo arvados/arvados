@@ -166,10 +166,8 @@ class _ArgUtil:
                 # value None:
                 argument_short_key = None
             default = parameter_dict.get("default")
-            if default is not None:
-                parameter_kwargs["default"] = default
-                if parameter_dict.get("type") != "boolean":
-                    parameter_kwargs["help"] += f" Default: {default!s}."
+            if default is not None and parameter_dict.get("type") != "boolean":
+                parameter_kwargs["help"] += f" Default: {default}."
             match parameter_dict.get("type"):
                 case "boolean":
                     # Using the 'action="store_true" (or "store_false")'
@@ -185,7 +183,7 @@ class _ArgUtil:
                     neg_parameter_kwargs["required"] = False
                     neg_parameter_kwargs["dest"] = parameter_key
                     neg_parameter_kwargs["default"] = json.loads(
-                        parameter_dict.get("default", "null")
+                        default if default is not None else "null"
                     )
                     yield (neg_argument_key,), neg_parameter_kwargs
 

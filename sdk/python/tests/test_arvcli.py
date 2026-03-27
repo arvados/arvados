@@ -241,7 +241,6 @@ def test_get_method_options():
             {
                 "type": int,
                 "metavar": "N",
-                "default": "100",
                 "help": "help-limit. Default: 100.",
                 "required": False
             }
@@ -454,6 +453,35 @@ def test_uuid_output_with_list_items_having_no_uuid(capsys):
     captured = capsys.readouterr()
     assert not captured.out
     assert "did not include a uuid" in captured.err
+
+
+@pytest.mark.usefixtures("capsys")
+class TestDefaultValuesForAPICalls:
+    resources = arvados.api("v1")._resourceDesc["resources"]
+
+    @classmethod
+    def get_default(cls, resource, method, parameter):
+        default = cls.resources[resource]["methods"][method]["parameters"][parameter].get("default", "null")
+        return json.loads(default)
+
+    def test_no_override_default_parameter_value(self, capsys):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["user", "list"])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        result = json.loads(captured.out)
+        assert result["limit"] == self.get_default("users", "list", "limit")
+
+    def test_override_default_parameter_value(self, capsys):
+        limit = 1
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["user", "list", "--limit", str(limit)])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        assert not captured.err
+        result = json.loads(captured.out)
+        assert result["limit"] == limit
 
 
 # The "config get" command doesn't take any parameter.
