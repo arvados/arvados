@@ -8,6 +8,7 @@ import re
 import io
 import json
 from unittest import mock
+import ciso8601
 import pytest
 from ruamel.yaml import YAML
 yaml = YAML(typ="safe", pure=True)
@@ -501,3 +502,103 @@ class TestConfigGet:
         err = io.StringIO(captured.err)
         assert err.readline().rstrip() == "Error: response did not include a uuid:"
         assert json.load(err)
+
+
+@pytest.mark.usefixtures("capsys")
+class TestApiClientAuthorizationsResource:
+    users = run_test_server.fixture("users")
+    auths = run_test_server.fixture("api_client_authorizations")
+    me = "active"
+
+    def setup_method(self):
+        run_test_server.reset()
+        run_test_server.authorize_with(self.me)
+
+    def teardown_method(self):
+        run_test_server.reset()
+
+    @classmethod
+    def assert_same_api_auth(cls, fix: dict, result: dict):
+        """Compare an API auth fixture as loaded by run_test_server.fixture()
+        to a result returned by the API.
+        """
+        assert fix["uuid"] == result["uuid"]
+        assert fix["api_token"] == result["api_token"]
+        # Resolve user name in fixture to owner_uuid. "Cheat" by looking up the
+        # users fixtures directly.
+        owner_uuid = cls.users[fix["user"]]["uuid"]
+        assert owner_uuid == result["owner_uuid"]
+        # Resolve date. The date field in the fixture is timezone-naïve, so we
+        # have to coerce away the timezone information for comparability.
+        result_expires_at = ciso8601.parse_datetime_as_naive(
+            result["expires_at"]
+        )
+        assert fix["expires_at"] == result_expires_at
+        assert fix.get("scopes", ["all"]) == result["scopes"]
+
+    def test_create(self, capsys):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "api_client_authorization", "create",
+                "--api-client-authorization", "{}"
+            ])
+        assert exit_status.value.code == 0
+
+    @pytest.mark.parametrize("name", (
+        "active", "active_noscope", "active_userlist"
+    ))
+    def test_get(self, name, capsys):
+        fix = self.auths[name]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "api_client_authorization", "get",
+                "--uuid", fix["uuid"]
+            ])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        result = json.loads(captured.out)
+        self.assert_same_api_auth(fix, result)
+
+    def test_delete(self, capsys):
+        fix = self.auths["active_noscope"]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "api_client_authorization", "delete",
+                "--uuid", fix["uuid"]
+            ])
+        assert exit_status.value.code == 0
+        # Clear the output buffers.
+        captured = capsys.readouterr()
+        # The same token should be gone.
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "api_client_authorization", "get",
+                "--uuid", fix["uuid"]
+            ])
+        assert exit_status.value.code == 1
+        captured = capsys.readouterr()
+        assert "path not found" in captured.err.lower()
+
+    def test_update(self, capsys):
+        fix = self.auths["active_noscope"]
+        delta = {"scopes": ["all"]}
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "api_client_authorization", "update",
+                "--uuid", fix["uuid"],
+                "--api-client-authorization", json.dumps(delta)
+            ])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        result = json.loads(captured.out)
+        fix.update(delta)
+        self.assert_same_api_auth(fix, result)
+
+    def test_current(self, capsys):
+        fix = self.auths[self.me]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch(["api_client_authorization", "current"])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        result = json.loads(captured.out)
+        self.assert_same_api_auth(fix, result)
