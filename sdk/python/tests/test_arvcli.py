@@ -126,11 +126,11 @@ def test_parameter_key_to_argument_name(key, argument_name):
         run_test_server.fixture("collections")["foo_file"]["uuid"]
     ]
 ))
-def test_cli_arg_parser_no_prefix_matching(args):
+def test_cli_arg_parser_prefix_matching(args):
     # See: https://docs.python.org/3.10/library/argparse.html#prefix-matching
     with pytest.raises(SystemExit) as exit_status:
         arvcli.dispatch(args)
-    assert exit_status.value.code == 2
+    assert exit_status.value.code == 0
 
 
 def test_get_method_options():

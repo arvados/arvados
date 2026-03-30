@@ -257,11 +257,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
           `_resourceDesc["resources"]` attribute of an Arvados API client
           object.
         """
-        super().__init__(
-            description="Arvados command line client",
-            allow_abbrev=False,
-            **kwargs
-        )
+        super().__init__(description="Arvados command line client", **kwargs)
         # Common flags to the main command.
         self.add_argument("-n", "--dry-run", action="store_true",
                           help="Don't actually do anything")
@@ -290,7 +286,6 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
             parser_class=functools.partial(
                 argparse.ArgumentParser,
                 add_help=False,
-                allow_abbrev=False
             )
         )
 
@@ -337,10 +332,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                 method_subparsers = resource_subparser.add_subparsers(
                     title="Methods",
                     dest="method",
-                    parser_class=functools.partial(
-                        argparse.ArgumentParser,
-                        allow_abbrev=False
-                    ),
+                    parser_class=argparse.ArgumentParser,
                     help=f"Methods for subcommand {subcommand}"
                 )
                 for method, method_schema in methods_dict.items():
