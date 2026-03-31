@@ -444,6 +444,65 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert _no_extra_spaces_at_end(captured.err)
 
 
+def _parse_simple_stream(manifest: str) -> dict[str, str]:
+    """Extract the digest, size, and path from a simple, one-file stream from
+    a manifest text, following the format used in the API service test fixture
+    data (see services/api/test/fixtures/collections.yml; e.g.
+    `manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"`).
+    """
+    stream_pattern = re.compile(
+        r"(?a)\A(\.(/[^/\s]+)*)"  # stream-name
+        r" (?P<digest>[0-9a-f]{32})\+(?P<size>[0-9]+)"  # locator as digest+size
+        r" [0-9]+:(?P=size):(?P<filename>[^\s]+)\n\Z"
+    )
+    m = stream_pattern.match(manifest)
+    return m.groupdict() if m is not None else {}
+
+
+@pytest.mark.usefixtures("capsys")
+class TestCollectionUpdateWithReplaceFiles:
+
+    def teardown_method(self):
+        run_test_server.reset()
+
+    def test_delete_file(self, capsys):
+        target = run_test_server.fixture("collections")["foo_file"]["uuid"]
+        replace = json.dumps({"/foo": ""})
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "collection", "update",
+                "--uuid", target,
+                "--collection", "{}",
+                "--replace-files", replace
+            ])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        result = json.loads(captured.out)
+        assert not result["manifest_text"]
+
+    def test_add_file_from_other(self, capsys):
+        foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
+        bar_pdh = run_test_server.fixture("collections")["bar_file"]["portable_data_hash"]
+        bar_manifest = run_test_server.fixture("collections")["bar_file"]["manifest_text"]
+        replace = json.dumps({"/bar": f"{bar_pdh}/bar"})
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "collection", "update",
+                "--uuid", foo_uuid,
+                "--collection", "{}",
+                "--replace-files", replace
+            ])
+        assert exit_status.value.code == 0
+        captured = capsys.readouterr()
+        result = json.loads(captured.out)
+        # Quick and dirty check that the file "bar" is now in the manifest.
+        bar_elements = _parse_simple_stream(bar_manifest)
+        bar_locator_part = f"{bar_elements['digest']}+{bar_elements['size']}"
+        assert bar_locator_part in result["manifest_text"]
+        bar_file_part = f":{bar_elements['size']}:{bar_elements['filename']}"
+        assert bar_file_part in result["manifest_text"]
+
+
 @pytest.mark.usefixtures("capsys")
 def test_uuid_output_with_list_items_having_no_uuid(capsys):
     with pytest.raises(SystemExit) as exit_status:
