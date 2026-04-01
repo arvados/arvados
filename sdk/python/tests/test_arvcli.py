@@ -461,17 +461,17 @@ def _parse_simple_stream(manifest: str) -> dict[str, str]:
 
 @pytest.mark.usefixtures("capsys")
 class TestCollectionUpdateWithReplaceFiles:
+    foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
 
     def teardown_method(self):
         run_test_server.reset()
 
     def test_delete_file(self, capsys):
-        target = run_test_server.fixture("collections")["foo_file"]["uuid"]
         replace = json.dumps({"/foo": ""})
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch([
                 "collection", "update",
-                "--uuid", target,
+                "--uuid", self.foo_uuid,
                 "--collection", "{}",
                 "--replace-files", replace
             ])
@@ -481,14 +481,13 @@ class TestCollectionUpdateWithReplaceFiles:
         assert not result["manifest_text"]
 
     def test_add_file_from_other(self, capsys):
-        foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
         bar_pdh = run_test_server.fixture("collections")["bar_file"]["portable_data_hash"]
         bar_manifest = run_test_server.fixture("collections")["bar_file"]["manifest_text"]
         replace = json.dumps({"/bar": f"{bar_pdh}/bar"})
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch([
                 "collection", "update",
-                "--uuid", foo_uuid,
+                "--uuid", self.foo_uuid,
                 "--collection", "{}",
                 "--replace-files", replace
             ])
@@ -501,6 +500,24 @@ class TestCollectionUpdateWithReplaceFiles:
         assert bar_locator_part in result["manifest_text"]
         bar_file_part = f":{bar_elements['size']}:{bar_elements['filename']}"
         assert bar_file_part in result["manifest_text"]
+
+    def test_atomic_rename_and_replace(self):
+        # See https://doc.arvados.org/main/api/methods/collections.html#replace_files-rename-and-replace
+        replace = json.dumps({
+            "/foo": "manifest_text/empty",
+            "/old_foo": "current/foo"
+        })
+        collection = json.dumps({
+            "manifest_text": TestRequestBodyWithCollectionCreateCMD.manifest_data["manifest_text"]
+        })
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "collection", "update",
+                "--uuid", self.foo_uuid,
+                "--collection", collection,
+                "--replace-files", replace
+            ])
+        assert exit_status.value.code == 0
 
 
 @pytest.mark.usefixtures("capsys")
