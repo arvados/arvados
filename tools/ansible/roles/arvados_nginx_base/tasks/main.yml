@@ -85,15 +85,6 @@
     mode: 0644
   notify: restart nginx
 
-- name: Create Arvados nginx TLS directory
-  become: yes
-  ansible.builtin.file:
-    state: directory
-    path: /etc/nginx/arvados-certs
-    owner: root
-    group: www-data
-    mode: 0750
-
 - name: Enable nginx service
   become: yes
   ansible.builtin.systemd_service:

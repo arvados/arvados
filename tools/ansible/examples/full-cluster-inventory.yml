@@ -33,20 +33,34 @@ all:
     # cluster configuration.
     arvados_tls:
       Controller:
-        cert: /PATH/TO/controller.pem
-        key: /PATH/TO/controller.key
-        # Set `remote` to `true` if the `cert` and `key` files already exist on
-        # the hosts running this service (for example, because they're already
-        # deployed by another service).
-        remote: false
+        cert:
+          # Path to the certificate on the managed node
+          path: /PATH/TO/controller.pem
+          # All of the following parameters are optional.
+          # Omit src for the `cert` and `key` files if they already exist on
+          # the hosts running this service (for example, because they're already
+          # deployed by another service).
+          src: /PATH/TO/controller.pem
+          owner: root
+          group: ssl-cert
+          mode: "0640" # mode must be quoted
+        key:
+          # path to the private key on the managed node
+          path: /PATH/TO/controller.key
+          # Also takes optional src, owner, group, and mode like cert
+          src: /PATH/TO/controller.key
+          owner: root
+          group: ssl-cert
+          mode: "0640" # mode must be quoted
       # Settings from this `Default` section will be used for any service that
       # does not have a specific configuration in `arvados_tls`. This is handy
       # to use if you have a wildcard certificate that can be used by most/all
       # of your cluster services.
       #Default:
-      #  cert: /PATH/TO/arvados-cluster.pem
-      #  key: /PATH/TO/arvados-cluster.key
-      #  remote: false
+      #  cert:
+      #    path: /PATH/TO/arvados-cluster.pem
+      #  key:
+      #    path: /PATH/TO/arvados-cluster.key
 
     # `arvados_nginx_internal_networks` is a map of netmasks that should be
     # considered "internal" to the Arvados cluster. For each netmask key, if its

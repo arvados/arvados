@@ -1,0 +1,27 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: "Copy {{ item }} file from control node"
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ tls_source[item].src }}"
+    dest: "{{ tls_source[item].path }}"
+    owner: "{{ tls_source[item].owner|default(omit) }}"
+    group: "{{ tls_source[item].group|default(omit) }}"
+    mode: "{{ tls_source[item].mode|default('0640') }}"
+  when: tls_source[item].src is defined
+  notify:
+    - restart nginx
+
+- name: "Eusre {{ item }} file exists and set attributes"
+  become: yes
+  ansible.builtin.file:
+    state: file
+    dest: "{{ tls_source[item].path }}"
+    owner: "{{ tls_source[item].owner|default(omit) }}"
+    group: "{{ tls_source[item].group|default(omit) }}"
+    mode: "{{ tls_source[item].mode|default('0640') }}"
+  when: tls_source[item].src is not defined
+  notify:
+    - restart nginx
