@@ -338,6 +338,80 @@ class TestSameFlagInTwoPlaces:
                 assert COLLECTION_UUID_PATTERN.match(line)
 
 
+class TestCommonMethods:
+    """Basic tests that sample the common methods -- get, list, create, update,
+    delete -- with different resources and global CLI options.
+    """
+    @classmethod
+    def setup_class(cls):
+        run_test_server.reset()
+
+    @classmethod
+    def teardown_class(cls):
+        run_test_server.reset()
+
+    def test_container_request_get_yaml(self):
+        fix = run_test_server.fixture("container_requests")["queued"]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "--format", "yaml",
+                "container_request", "get",
+                "--uuid", fix["uuid"]
+            ])
+        assert exit_status.value.code == 0
+
+    def test_group_list_format_json_common_args(self):
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "--format", "json",
+                "group", "list",
+                "--offset", "1",
+                "--limit", "10",
+                "--filters", json.dumps([["group_class", "=", "project"]]),
+                "--count=none",
+                "--order", '["modified_at desc"]',
+                "--select", '["uuid", "name", "modified_at"]'
+            ])
+        assert exit_status.value.code == 0
+
+    def test_link_create_format_uuid(self):
+        me = run_test_server.fixture("users")["active"]
+        project = run_test_server.fixture("groups")["private"]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "--format", "uuid",
+                "link", "create",
+                "--link", json.dumps({
+                    "link_class": "star",
+                    "owner_uuid": me["uuid"],
+                    "tail_uuid": me["uuid"],
+                    "head_uuid": project["uuid"]
+                })
+            ])
+        assert exit_status.value.code == 0
+
+    def test_user_update(self):
+        me = run_test_server.fixture("users")["active"]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "user", "update",
+                "--uuid", me["uuid"],
+                "--user", json.dumps({
+                    "email": "no-reply@test.example"
+                })
+            ])
+        assert exit_status.value.code == 0
+
+    def test_authorized_key_delete(self):
+        key = run_test_server.fixture("authorized_keys")["active"]
+        with pytest.raises(SystemExit) as exit_status:
+            arvcli.dispatch([
+                "authorized_key", "delete",
+                "--uuid", key["uuid"]
+            ])
+        assert exit_status.value.code == 0
+
+
 def _no_extra_spaces_at_end(text: str) -> bool:
     # Text ends in newline but without extraneous whitespace characters.
     return re.search(r"(\A|\S)\n\Z", text)
