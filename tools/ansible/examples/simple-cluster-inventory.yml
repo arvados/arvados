@@ -36,7 +36,7 @@ arvados_cluster_host:
           path: /etc/ssl/certs/ssl-cert-snakeoil.pem
           # If you have `cert` and `key` files on the host running Ansible and
           # want to install them for Arvados services on the cluster host,
-          # set `src` on `cert` and `key`.
+          # set `src` for `cert` and `key`.
           # src: /PATH/TO/arvados-cluster.pem
         key:
           path: /etc/ssl/private/ssl-cert-snakeoil.key
