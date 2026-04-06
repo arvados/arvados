@@ -12,7 +12,7 @@
 - name: Bootstrap apt packages
   when: "'debian' in distro_ids.stdout_lines"
   become: yes
-  ansible.builtin.raw: "{{ distro_bootstrap_apt_command }} {{ item }}"
+  ansible.builtin.raw: "env DEBIAN_FRONTEND=noninteractive {{ distro_bootstrap_apt_command }} {{ item }}"
   loop:
     - update
     - "install {{ distro_bootstrap_apt_packages|map('quote')|join(' ') }}"
