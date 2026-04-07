@@ -293,14 +293,18 @@ def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
 @pytest.mark.usefixtures("capsys")
 class TestSameFlagInTwoPlaces:
     def test_s_flag(self):
-        # As parameter to the resource method, "-s" is for "--select"
+        # As "global" parameter, "-s" is for "--short" (display UUID[s] in
+        # output only).  As parameter to the resource method, the second "-s"
+        # is for "--select", which limits the output attributes. By not
+        # selecting the "uuid" attribute, there will be no UUIDs to display.
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch(["-s", "collection", "list", "-s", '["name"]'])
         # API call should be made, and command should fail as expected.
         assert exit_status.value.code == 1
 
     def test_f_flag(self, capsys):
-        # As parameter to the resource method, "-f" is for "--filters"
+        # As "global" parameter, "-f" is for "--format", which takes one arg
+        # value. As parameter to the resource method, "-f" is for "--filters"
         active_user = run_test_server.fixture("users")["active"]["uuid"]
         with pytest.raises(SystemExit) as exit_status:
             arvcli.dispatch([
