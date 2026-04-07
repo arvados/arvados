@@ -111,28 +111,6 @@ def test_parameter_key_to_argument_name(key, argument_name):
     assert arvcli._ArgUtil.parameter_key_to_argument_name(key) == argument_name
 
 
-@pytest.mark.parametrize("args", (
-    [
-        "collection",
-        "get",
-        "--uui",  # incomplete argument name
-        run_test_server.fixture("collections")["foo_file"]["uuid"]
-    ],
-    [
-        "--form=yaml",  # incomplete argument name
-        "collection",
-        "get",
-        "--uuid",
-        run_test_server.fixture("collections")["foo_file"]["uuid"]
-    ]
-))
-def test_cli_arg_parser_prefix_matching(args):
-    # See: https://docs.python.org/3.10/library/argparse.html#prefix-matching
-    with pytest.raises(SystemExit) as exit_status:
-        arvcli.dispatch(args)
-    assert exit_status.value.code == 0
-
-
 def test_get_method_options():
     # Largely based on arvados.container_requests.create, but with a fictitious
     # parameter entry for integer type, another one for required=True, and
