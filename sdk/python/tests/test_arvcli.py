@@ -253,7 +253,6 @@ def test_get_method_options():
     ) == output
 
 
-@pytest.mark.usefixtures("tmp_path")
 class TestArgTypes:
     """Test the private type converter-validators under the arvcli._ArgTypes
     namespace.
@@ -275,47 +274,55 @@ class TestArgTypes:
             arvcli._ArgTypes.json_object(invalid_input)
 
 
+@pytest.fixture
+def run_arvcli(capsys):
+
+    def the_run(cli_args):
+        with pytest.raises(SystemExit) as exc:
+            arvcli.dispatch(cli_args)
+        captured = capsys.readouterr()
+        return exc.value.code, captured.out, captured.err
+
+    return the_run
+
+
 @pytest.mark.parametrize(
     "invalid_value",
     ("foo", '"foo"', '{"foo": null}', '1.0', 'false', 'true', 'null')
 )
-def test_cli_can_intercept_invalid_json_subtype(invalid_value, capsys):
+def test_cli_can_intercept_invalid_json_subtype(invalid_value, run_arvcli):
     # --scopes takes JSON array
     cli = ["api_client_authorization", "create_system_auth", "--scopes"]
     cli.append(invalid_value)
-    with pytest.raises(SystemExit) as exit_status:
-        arvcli.dispatch(cli)
-    assert exit_status.value.code == 2
-    captured = capsys.readouterr()
-    assert "not valid JSON array" in captured.err
+    exit_code, out, err = run_arvcli(cli)
+    assert exit_code == 2
+    assert "not valid JSON array" in err
 
 
-@pytest.mark.usefixtures("capsys")
 class TestSameFlagInTwoPlaces:
-    def test_s_flag(self):
+    def test_s_flag(self, run_arvcli):
         # As "global" parameter, "-s" is for "--short" (display UUID[s] in
         # output only).  As parameter to the resource method, the second "-s"
         # is for "--select", which limits the output attributes. By not
         # selecting the "uuid" attribute, there will be no UUIDs to display.
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["-s", "collection", "list", "-s", '["name"]'])
+        exit_code, out, err = run_arvcli(
+            ["-s", "collection", "list", "-s", '["name"]']
+        )
         # API call should be made, and command should fail as expected.
-        assert exit_status.value.code == 1
+        assert exit_code == 1
 
-    def test_f_flag(self, capsys):
+    def test_f_flag(self, run_arvcli):
         # As "global" parameter, "-f" is for "--format", which takes one arg
         # value. As parameter to the resource method, "-f" is for "--filters"
         active_user = run_test_server.fixture("users")["active"]["uuid"]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "-f", "uuid",
-                "collection", "list",
-                "-f", json.dumps([["owner_uuid", "=", active_user]])
-            ])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        for line in captured.out.split("\n"):
+        exit_code, out, err = run_arvcli([
+            "-f", "uuid",
+            "collection", "list",
+            "-f", json.dumps([["owner_uuid", "=", active_user]])
+        ])
+        assert exit_code == 0
+        assert not err
+        for line in out.split("\n"):
             if line:
                 assert COLLECTION_UUID_PATTERN.match(line)
 
@@ -332,66 +339,61 @@ class TestCommonMethods:
     def teardown_class(cls):
         run_test_server.reset()
 
-    def test_container_request_get_yaml(self):
+    def test_container_request_get_yaml(self, run_arvcli):
         fix = run_test_server.fixture("container_requests")["queued"]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "--format", "yaml",
-                "container_request", "get",
-                "--uuid", fix["uuid"]
-            ])
-        assert exit_status.value.code == 0
+        exit_code, out, err = run_arvcli([
+            "--format", "yaml",
+            "container_request", "get",
+            "--uuid", fix["uuid"]
+        ])
+        assert exit_code == 0
 
-    def test_group_list_format_json_common_args(self):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "--format", "json",
-                "group", "list",
-                "--offset", "1",
-                "--limit", "10",
-                "--filters", json.dumps([["group_class", "=", "project"]]),
-                "--count=none",
-                "--order", '["modified_at desc"]',
-                "--select", '["uuid", "name", "modified_at"]'
-            ])
-        assert exit_status.value.code == 0
+    def test_group_list_format_json_common_args(self, run_arvcli):
+        exit_code, out, err = run_arvcli([
+            "--format", "json",
+            "group", "list",
+            "--offset", "1",
+            "--limit", "10",
+            "--filters", json.dumps([["group_class", "=", "project"]]),
+            "--count=none",
+            "--order", '["modified_at desc"]',
+            "--select", '["uuid", "name", "modified_at"]'
+        ])
+        assert exit_code == 0
 
-    def test_link_create_format_uuid(self):
+    def test_link_create_format_uuid(self, run_arvcli):
         me = run_test_server.fixture("users")["active"]
         project = run_test_server.fixture("groups")["private"]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "--format", "uuid",
-                "link", "create",
-                "--link", json.dumps({
-                    "link_class": "star",
-                    "owner_uuid": me["uuid"],
-                    "tail_uuid": me["uuid"],
-                    "head_uuid": project["uuid"]
-                })
-            ])
-        assert exit_status.value.code == 0
+        exit_code, out, err = run_arvcli([
+            "--format", "uuid",
+            "link", "create",
+            "--link", json.dumps({
+                "link_class": "star",
+                "owner_uuid": me["uuid"],
+                "tail_uuid": me["uuid"],
+                "head_uuid": project["uuid"]
+            })
+        ])
+        assert exit_code == 0
 
-    def test_user_update(self):
+    def test_user_update(self, run_arvcli):
         me = run_test_server.fixture("users")["active"]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "user", "update",
-                "--uuid", me["uuid"],
-                "--user", json.dumps({
-                    "email": "no-reply@test.example"
-                })
-            ])
-        assert exit_status.value.code == 0
+        exit_code, out, err = run_arvcli([
+            "user", "update",
+            "--uuid", me["uuid"],
+            "--user", json.dumps({
+                "email": "no-reply@test.example"
+            })
+        ])
+        assert exit_code == 0
 
-    def test_authorized_key_delete(self):
+    def test_authorized_key_delete(self, run_arvcli):
         key = run_test_server.fixture("authorized_keys")["active"]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "authorized_key", "delete",
-                "--uuid", key["uuid"]
-            ])
-        assert exit_status.value.code == 0
+        exit_code, out, err = run_arvcli([
+            "authorized_key", "delete",
+            "--uuid", key["uuid"]
+        ])
+        assert exit_code == 0
 
 
 def _no_extra_spaces_at_end(text: str) -> bool:
@@ -399,7 +401,6 @@ def _no_extra_spaces_at_end(text: str) -> bool:
     return re.search(r"(\A|\S)\n\Z", text)
 
 
-@pytest.mark.usefixtures("capsys", "tmp_path")
 class TestRequestBodyWithCollectionCreateCMD:
     md5_empty = "d41d8cd98f00b204e9800998ecf8427e"
     collection_test_name = "empty-test"
@@ -416,92 +417,84 @@ class TestRequestBodyWithCollectionCreateCMD:
     def teardown_class(self):
         run_test_server.reset()
 
-    def test_request_body_missing(self, capsys):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(self.cli)
-        assert exit_status.value.code == 2
-        captured = capsys.readouterr()
-        assert captured.err
-        assert not captured.out
+    def test_request_body_missing(self, run_arvcli):
+        exit_code, out, err = run_arvcli(self.cli)
+        assert exit_code == 2
+        assert err
+        assert not out
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
-    def test_request_body_stdin_valid_json(self, mock_stdin, capsys):
+    def test_request_body_stdin_valid_json(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(self.cli + ["-"])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        actual = json.loads(captured.out)
+        exit_code, out, err = run_arvcli(self.cli + ["-"])
+        assert exit_code == 0
+        assert not err
+        actual = json.loads(out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
         assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
-        assert _no_extra_spaces_at_end(captured.out)
+        assert _no_extra_spaces_at_end(out)
 
-    def test_request_body_file_valid_json_out_yaml(self, tmp_path, capsys):
+    def test_request_body_file_valid_json_out_yaml(self, tmp_path, run_arvcli):
         f = tmp_path / "body.json"
         f.write_text(json.dumps(self.manifest_data))
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["--format", "yaml"] + self.cli + [f"{f!s}"])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        actual = yaml.load(captured.out)
+        exit_code, out, err = run_arvcli(
+            ["--format", "yaml"] + self.cli + [f"{f!s}"]
+        )
+        assert exit_code == 0
+        assert not err
+        actual = yaml.load(out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
         assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
-        assert _no_extra_spaces_at_end(captured.out)
+        assert _no_extra_spaces_at_end(out)
 
-    def test_request_body_file_valid_json_out_short(self, tmp_path, capsys):
+    def test_request_body_file_valid_json_out_short(self, tmp_path, run_arvcli):
         f = tmp_path / "body.json"
         f.write_text(json.dumps(self.manifest_data))
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["-s"] + self.cli + [f"{f!s}"])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        assert _no_extra_spaces_at_end(captured.out)
-        assert COLLECTION_UUID_PATTERN.match(captured.out.rstrip())
+        exit_code, out, err = run_arvcli(["-s"] + self.cli + [f"{f!s}"])
+        assert exit_code == 0
+        assert not err
+        assert _no_extra_spaces_at_end(out)
+        assert COLLECTION_UUID_PATTERN.match(out.rstrip())
 
     @mock.patch("sys.stdin", new_callable=io.StringIO)
-    def test_replace_files(self, mock_stdin, capsys):
+    def test_replace_files(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
         replace_files = json.dumps({
             "/foo/bar.txt": "manifest_text/empty"
         })
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(self.cli + ["-", "--replace-files", replace_files])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        actual = json.loads(captured.out)
+        exit_code, out, err = run_arvcli(
+            self.cli + ["-", "--replace-files", replace_files]
+        )
+        assert exit_code == 0
+        assert not err
+        actual = json.loads(out)
         assert re.match(
             fr"^\./foo {self.md5_empty}\+0\+A[0-9a-f]{{40}}@[0-9a-f]{{8}} 0:0:bar\.txt\n$",
             actual["manifest_text"]
         )
 
-    def test_invalid_request(self, tmp_path, capsys):
+    def test_invalid_request(self, tmp_path, run_arvcli):
         f = tmp_path / "body.json"
         f.write_text(json.dumps(self.manifest_data))
         # request will be invalid because replace_files does not reference
         # manifest data in body.
         replace_files = json.dumps({"/foo": "current/bar"})
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "collection",
-                "create",
-                "--collection",
-                f"{f!s}",
-                "--replace-files",
-                replace_files
-            ])
-        assert exit_status.value.code == 1
-        captured = capsys.readouterr()
-        assert not captured.out
-        assert re.search(r"\breq-[0-9a-z]{20}\b", captured.err)
-        assert _no_extra_spaces_at_end(captured.err)
+        exit_code, out, err = run_arvcli([
+            "collection",
+            "create",
+            "--collection",
+            f"{f!s}",
+            "--replace-files",
+            replace_files
+        ])
+        assert exit_code == 1
+        assert not out
+        assert re.search(r"\breq-[0-9a-z]{20}\b", err)
+        assert _no_extra_spaces_at_end(err)
 
 
 def _parse_simple_stream(manifest: str) -> dict[str, str]:
@@ -519,7 +512,6 @@ def _parse_simple_stream(manifest: str) -> dict[str, str]:
     return m.groupdict() if m is not None else {}
 
 
-@pytest.mark.usefixtures("capsys")
 class TestCollectionUpdateWithReplaceFiles:
     foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
 
@@ -530,34 +522,30 @@ class TestCollectionUpdateWithReplaceFiles:
     def teardown_class(self):
         run_test_server.reset()
 
-    def test_delete_file(self, capsys):
+    def test_delete_file(self, run_arvcli):
         replace = json.dumps({"/foo": ""})
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "collection", "update",
-                "--uuid", self.foo_uuid,
-                "--collection", "{}",
-                "--replace-files", replace
-            ])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        result = json.loads(captured.out)
+        exit_code, out, err = run_arvcli([
+            "collection", "update",
+            "--uuid", self.foo_uuid,
+            "--collection", "{}",
+            "--replace-files", replace
+        ])
+        assert exit_code == 0
+        result = json.loads(out)
         assert not result["manifest_text"]
 
-    def test_add_file_from_other(self, capsys):
+    def test_add_file_from_other(self, run_arvcli):
         bar_pdh = run_test_server.fixture("collections")["bar_file"]["portable_data_hash"]
         bar_manifest = run_test_server.fixture("collections")["bar_file"]["manifest_text"]
         replace = json.dumps({"/bar": f"{bar_pdh}/bar"})
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "collection", "update",
-                "--uuid", self.foo_uuid,
-                "--collection", "{}",
-                "--replace-files", replace
-            ])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        result = json.loads(captured.out)
+        exit_code, out, err = run_arvcli([
+            "collection", "update",
+            "--uuid", self.foo_uuid,
+            "--collection", "{}",
+            "--replace-files", replace
+        ])
+        assert exit_code == 0
+        result = json.loads(out)
         # Quick and dirty check that the file "bar" is now in the manifest.
         bar_elements = _parse_simple_stream(bar_manifest)
         bar_locator_part = f"{bar_elements['digest']}+{bar_elements['size']}"
@@ -565,7 +553,7 @@ class TestCollectionUpdateWithReplaceFiles:
         bar_file_part = f":{bar_elements['size']}:{bar_elements['filename']}"
         assert bar_file_part in result["manifest_text"]
 
-    def test_atomic_rename_and_replace(self):
+    def test_atomic_rename_and_replace(self, run_arvcli):
         # See https://doc.arvados.org/main/api/methods/collections.html#replace_files-rename-and-replace
         replace = json.dumps({
             "/foo": "manifest_text/empty",
@@ -574,29 +562,24 @@ class TestCollectionUpdateWithReplaceFiles:
         collection = json.dumps({
             "manifest_text": TestRequestBodyWithCollectionCreateCMD.manifest_data["manifest_text"]
         })
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "collection", "update",
-                "--uuid", self.foo_uuid,
-                "--collection", collection,
-                "--replace-files", replace
-            ])
-        assert exit_status.value.code == 0
-
-
-@pytest.mark.usefixtures("capsys")
-def test_uuid_output_with_list_items_having_no_uuid(capsys):
-    with pytest.raises(SystemExit) as exit_status:
-        arvcli.dispatch([
-            "--format", "uuid", "collection", "list", "--select", '["name"]',
+        exit_code, out, err = run_arvcli([
+            "collection", "update",
+            "--uuid", self.foo_uuid,
+            "--collection", collection,
+            "--replace-files", replace
         ])
-    assert exit_status.value.code == 1
-    captured = capsys.readouterr()
-    assert not captured.out
-    assert "did not include a uuid" in captured.err
+        assert exit_code == 0
 
 
-@pytest.mark.usefixtures("capsys")
+def test_uuid_output_with_list_items_having_no_uuid(run_arvcli):
+    exit_code, out, err = run_arvcli([
+        "--format", "uuid", "collection", "list", "--select", '["name"]',
+    ])
+    assert exit_code == 1
+    assert not out
+    assert "did not include a uuid" in err
+
+
 class TestDefaultValuesForAPICalls:
     resources = arvados.api("v1")._resourceDesc["resources"]
 
@@ -605,46 +588,39 @@ class TestDefaultValuesForAPICalls:
         default = cls.resources[resource]["methods"][method]["parameters"][parameter].get("default", "null")
         return json.loads(default)
 
-    def test_no_override_default_parameter_value(self, capsys):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["user", "list"])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        result = json.loads(captured.out)
+    def test_no_override_default_parameter_value(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["user", "list"])
+        assert exit_code == 0
+        assert not err
+        result = json.loads(out)
         assert result["limit"] == self.get_default("users", "list", "limit")
 
-    def test_override_default_parameter_value(self, capsys):
+    def test_override_default_parameter_value(self, run_arvcli):
         limit = 1
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["user", "list", "--limit", str(limit)])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        assert not captured.err
-        result = json.loads(captured.out)
+        exit_code, out, err = run_arvcli(
+            ["user", "list", "--limit", str(limit)]
+        )
+        assert exit_code == 0
+        assert not err
+        result = json.loads(out)
         assert result["limit"] == limit
 
 
 # The "config get" command doesn't take any parameter.
 class TestConfigGet:
-    def test_config_get(self):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["config", "get"])
-        assert exit_status.value.code == 0
+    def test_config_get(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["config", "get"])
+        assert exit_code == 0
 
-    @pytest.mark.usefixtures("capsys")
-    def test_config_get_uuid(self, capsys):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["--format", "uuid", "config", "get"])
-        assert exit_status.value.code == 1
-        captured = capsys.readouterr()
-        assert not captured.out
-        err = io.StringIO(captured.err)
+    def test_config_get_uuid(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["--format", "uuid", "config", "get"])
+        assert exit_code == 1
+        assert not out
+        err = io.StringIO(err)
         assert err.readline().rstrip() == "Error: response did not include a uuid:"
         assert json.load(err)
 
 
-@pytest.mark.usefixtures("capsys")
 class TestApiClientAuthorizationsResource:
     users = run_test_server.fixture("users")
     auths = run_test_server.fixture("api_client_authorizations")
@@ -677,69 +653,56 @@ class TestApiClientAuthorizationsResource:
         assert fix["expires_at"] == result_expires_at
         assert fix.get("scopes", ["all"]) == result["scopes"]
 
-    def test_create(self, capsys):
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "api_client_authorization", "create",
-                "--api-client-authorization", "{}"
-            ])
-        assert exit_status.value.code == 0
+    def test_create(self, run_arvcli):
+        exit_code, out, err = run_arvcli([
+            "api_client_authorization", "create",
+            "--api-client-authorization", "{}"
+        ])
+        assert exit_code == 0
 
     @pytest.mark.parametrize("name", (
         "active", "active_noscope", "active_userlist"
     ))
-    def test_get(self, name, capsys):
+    def test_get(self, name, run_arvcli):
         fix = self.auths[name]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "api_client_authorization", "get",
-                "--uuid", fix["uuid"]
-            ])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        result = json.loads(captured.out)
+        exit_code, out, err = run_arvcli(
+            ["api_client_authorization", "get", "--uuid", fix["uuid"]]
+        )
+        assert exit_code == 0
+        result = json.loads(out)
         self.assert_same_api_auth(fix, result)
 
-    def test_delete(self, capsys):
+    def test_delete(self, run_arvcli):
         fix = self.auths["active_noscope"]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "api_client_authorization", "delete",
-                "--uuid", fix["uuid"]
-            ])
-        assert exit_status.value.code == 0
-        # Clear the output buffers.
-        captured = capsys.readouterr()
+        exit_code, out, err = run_arvcli(
+            ["api_client_authorization", "delete", "--uuid", fix["uuid"]]
+        )
+        assert exit_code == 0
         # The same token should be gone.
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "api_client_authorization", "get",
-                "--uuid", fix["uuid"]
-            ])
-        assert exit_status.value.code == 1
-        captured = capsys.readouterr()
-        assert "path not found" in captured.err.lower()
+        exit_code, out, err = run_arvcli(
+            ["api_client_authorization", "get", "--uuid", fix["uuid"]]
+        )
+        assert exit_code == 1
+        assert "path not found" in err.lower()
 
-    def test_update(self, capsys):
+    def test_update(self, run_arvcli):
         fix = self.auths["active_noscope"]
         delta = {"scopes": ["all"]}
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch([
-                "api_client_authorization", "update",
-                "--uuid", fix["uuid"],
-                "--api-client-authorization", json.dumps(delta)
-            ])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        result = json.loads(captured.out)
+        exit_code, out, err = run_arvcli([
+            "api_client_authorization", "update",
+            "--uuid", fix["uuid"],
+            "--api-client-authorization", json.dumps(delta)
+        ])
+        assert exit_code == 0
+        result = json.loads(out)
         fix.update(delta)
         self.assert_same_api_auth(fix, result)
 
     def test_current(self, capsys):
         fix = self.auths[self.me]
-        with pytest.raises(SystemExit) as exit_status:
-            arvcli.dispatch(["api_client_authorization", "current"])
-        assert exit_status.value.code == 0
-        captured = capsys.readouterr()
-        result = json.loads(captured.out)
+        exit_code, out, err = run_arvcli(
+            ["api_client_authorization", "current"]
+        )
+        assert exit_code == 0
+        result = json.loads(out)
         self.assert_same_api_auth(fix, result)
