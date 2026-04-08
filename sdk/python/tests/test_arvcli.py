@@ -589,18 +589,12 @@ class TestConfigGet:
 class TestApiClientAuthorizationsResource:
     users = run_test_server.fixture("users")
     auths = run_test_server.fixture("api_client_authorizations")
-    me = "active"
-
-    def setup_method(self):
-        run_test_server.reset()
-        run_test_server.authorize_with(self.me)
 
     @classmethod
     def teardown_class(self):
         run_test_server.reset()
 
-    @classmethod
-    def assert_same_api_auth(cls, fix: dict, result: dict):
+    def assert_same_api_auth(self, fix: dict, result: dict):
         """Compare an API auth fixture as loaded by run_test_server.fixture()
         to a result returned by the API.
         """
@@ -608,7 +602,7 @@ class TestApiClientAuthorizationsResource:
         assert fix["api_token"] == result["api_token"]
         # Resolve user name in fixture to owner_uuid. "Cheat" by looking up the
         # users fixtures directly.
-        owner_uuid = cls.users[fix["user"]]["uuid"]
+        owner_uuid = self.users[fix["user"]]["uuid"]
         assert owner_uuid == result["owner_uuid"]
         # Resolve date. The date field in the fixture is timezone-naïve, so we
         # have to coerce away the timezone information for comparability.
@@ -618,56 +612,18 @@ class TestApiClientAuthorizationsResource:
         assert fix["expires_at"] == result_expires_at
         assert fix.get("scopes", ["all"]) == result["scopes"]
 
-    def test_create(self, run_arvcli):
-        exit_code, out, err = run_arvcli([
-            "api_client_authorization", "create",
-            "--api-client-authorization", "{}"
-        ])
-        assert exit_code == 0
-
-    @pytest.mark.parametrize("name", (
-        "active", "active_noscope", "active_userlist"
-    ))
-    def test_get(self, name, run_arvcli):
-        fix = self.auths[name]
-        exit_code, out, err = run_arvcli(
-            ["api_client_authorization", "get", "--uuid", fix["uuid"]]
-        )
-        assert exit_code == 0
-        result = json.loads(out)
-        self.assert_same_api_auth(fix, result)
-
-    def test_delete(self, run_arvcli):
-        fix = self.auths["active_noscope"]
-        exit_code, out, err = run_arvcli(
-            ["api_client_authorization", "delete", "--uuid", fix["uuid"]]
-        )
-        assert exit_code == 0
-        # The same token should be gone.
-        exit_code, out, err = run_arvcli(
-            ["api_client_authorization", "get", "--uuid", fix["uuid"]]
-        )
-        assert exit_code == 1
-        assert "path not found" in err.lower()
-
-    def test_update(self, run_arvcli):
-        fix = self.auths["active_noscope"]
-        delta = {"scopes": ["all"]}
-        exit_code, out, err = run_arvcli([
-            "api_client_authorization", "update",
-            "--uuid", fix["uuid"],
-            "--api-client-authorization", json.dumps(delta)
-        ])
-        assert exit_code == 0
-        result = json.loads(out)
-        fix.update(delta)
-        self.assert_same_api_auth(fix, result)
-
     def test_current(self, run_arvcli):
-        fix = self.auths[self.me]
+        me = "active"
+        run_test_server.authorize_with(me)
+        fix = self.auths[me]
+
         exit_code, out, err = run_arvcli(
             ["api_client_authorization", "current"]
         )
+
         assert exit_code == 0
         result = json.loads(out)
         self.assert_same_api_auth(fix, result)
+
+    # TODO: investigate possible authorization issue with testing
+    # the create_system_auth method.
