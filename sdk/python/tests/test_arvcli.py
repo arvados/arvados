@@ -698,7 +698,7 @@ class TestApiClientAuthorizationsResource:
         fix.update(delta)
         self.assert_same_api_auth(fix, result)
 
-    def test_current(self, capsys):
+    def test_current(self, run_arvcli):
         fix = self.auths[self.me]
         exit_code, out, err = run_arvcli(
             ["api_client_authorization", "current"]
