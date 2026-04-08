@@ -329,7 +329,8 @@ class TestSameFlagInTwoPlaces:
 
 class TestCommonMethods:
     """Basic tests that sample the common methods -- get, list, create, update,
-    delete -- with different resources and global CLI options.
+    delete -- with different resources and global CLI options. Basic sanity
+    checks are performed from the results of these calls.
     """
     @classmethod
     def setup_class(cls):
@@ -347,6 +348,12 @@ class TestCommonMethods:
             "--uuid", fix["uuid"]
         ])
         assert exit_code == 0
+        result = yaml.load(out)
+        attrs = (
+            "name", "container_image", "owner_uuid", "command", "output_path"
+        )
+        for attr in attrs:
+            assert result[attr] == fix[attr]
 
     def test_group_list_format_json_common_args(self, run_arvcli):
         exit_code, out, err = run_arvcli([
@@ -360,6 +367,8 @@ class TestCommonMethods:
             "--select", '["uuid", "name", "modified_at"]'
         ])
         assert exit_code == 0
+        result = json.loads(out)
+        assert result["kind"] == "arvados#groupList"
 
     def test_link_create_format_uuid(self, run_arvcli):
         me = run_test_server.fixture("users")["active"]
@@ -375,17 +384,20 @@ class TestCommonMethods:
             })
         ])
         assert exit_code == 0
+        assert re.match(r"^[0-9a-z]{5}-o0j2j-[0-9a-z]{15}$", out)
 
     def test_user_update(self, run_arvcli):
         me = run_test_server.fixture("users")["active"]
+        my_email = "no-reply@test.example"
         exit_code, out, err = run_arvcli([
             "user", "update",
             "--uuid", me["uuid"],
-            "--user", json.dumps({
-                "email": "no-reply@test.example"
-            })
+            "--user", json.dumps({"email": my_email})
         ])
         assert exit_code == 0
+        result = json.loads(out)
+        assert result["uuid"] == me["uuid"]
+        assert result["email"] == my_email
 
     def test_authorized_key_delete(self, run_arvcli):
         key = run_test_server.fixture("authorized_keys")["active"]
@@ -394,6 +406,13 @@ class TestCommonMethods:
             "--uuid", key["uuid"]
         ])
         assert exit_code == 0
+        # Same key is gone.
+        exit_code, out, err = run_arvcli([
+            "authorized_key", "get",
+            "--uuid", key["uuid"]
+        ])
+        assert exit_code == 1
+        assert "404 not found" in err.lower()
 
 
 def _no_extra_spaces_at_end(text: str) -> bool:
