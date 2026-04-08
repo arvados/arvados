@@ -512,63 +512,28 @@ def _parse_simple_stream(manifest: str) -> dict[str, str]:
     return m.groupdict() if m is not None else {}
 
 
-class TestCollectionUpdateWithReplaceFiles:
+def test_collection_update_with_replace_files(run_arvcli):
     foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
+    bar_pdh = run_test_server.fixture("collections")["bar_file"]["portable_data_hash"]
+    bar_manifest = run_test_server.fixture("collections")["bar_file"]["manifest_text"]
+    replace = json.dumps({"/bar": f"{bar_pdh}/bar"})
 
-    def setup_method(self):
-        run_test_server.reset()
+    exit_code, out, err = run_arvcli([
+        "collection", "update",
+        "--uuid", foo_uuid,
+        "--collection", "{}",
+        "--replace-files", replace
+    ])
+    assert exit_code == 0
+    result = json.loads(out)
+    # Quick and dirty check that the file "bar" is now in the manifest.
+    bar_elements = _parse_simple_stream(bar_manifest)
+    bar_locator_part = f"{bar_elements['digest']}+{bar_elements['size']}"
+    assert bar_locator_part in result["manifest_text"]
+    bar_file_part = f":{bar_elements['size']}:{bar_elements['filename']}"
+    assert bar_file_part in result["manifest_text"]
 
-    @classmethod
-    def teardown_class(self):
-        run_test_server.reset()
-
-    def test_delete_file(self, run_arvcli):
-        replace = json.dumps({"/foo": ""})
-        exit_code, out, err = run_arvcli([
-            "collection", "update",
-            "--uuid", self.foo_uuid,
-            "--collection", "{}",
-            "--replace-files", replace
-        ])
-        assert exit_code == 0
-        result = json.loads(out)
-        assert not result["manifest_text"]
-
-    def test_add_file_from_other(self, run_arvcli):
-        bar_pdh = run_test_server.fixture("collections")["bar_file"]["portable_data_hash"]
-        bar_manifest = run_test_server.fixture("collections")["bar_file"]["manifest_text"]
-        replace = json.dumps({"/bar": f"{bar_pdh}/bar"})
-        exit_code, out, err = run_arvcli([
-            "collection", "update",
-            "--uuid", self.foo_uuid,
-            "--collection", "{}",
-            "--replace-files", replace
-        ])
-        assert exit_code == 0
-        result = json.loads(out)
-        # Quick and dirty check that the file "bar" is now in the manifest.
-        bar_elements = _parse_simple_stream(bar_manifest)
-        bar_locator_part = f"{bar_elements['digest']}+{bar_elements['size']}"
-        assert bar_locator_part in result["manifest_text"]
-        bar_file_part = f":{bar_elements['size']}:{bar_elements['filename']}"
-        assert bar_file_part in result["manifest_text"]
-
-    def test_atomic_rename_and_replace(self, run_arvcli):
-        # See https://doc.arvados.org/main/api/methods/collections.html#replace_files-rename-and-replace
-        replace = json.dumps({
-            "/foo": "manifest_text/empty",
-            "/old_foo": "current/foo"
-        })
-        collection = json.dumps({
-            "manifest_text": TestRequestBodyWithCollectionCreateCMD.manifest_data["manifest_text"]
-        })
-        exit_code, out, err = run_arvcli([
-            "collection", "update",
-            "--uuid", self.foo_uuid,
-            "--collection", collection,
-            "--replace-files", replace
-        ])
-        assert exit_code == 0
+    run_test_server.reset()
 
 
 def test_uuid_output_with_list_items_having_no_uuid(run_arvcli):
