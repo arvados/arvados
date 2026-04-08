@@ -409,7 +409,11 @@ class TestRequestBodyWithCollectionCreateCMD:
     }
     cli = ["collection", "create", "--collection"]
 
-    def teardown_method(self):
+    def setup_method(self):
+        run_test_server.reset()
+
+    @classmethod
+    def teardown_class(self):
         run_test_server.reset()
 
     def test_request_body_missing(self, capsys):
@@ -519,7 +523,11 @@ def _parse_simple_stream(manifest: str) -> dict[str, str]:
 class TestCollectionUpdateWithReplaceFiles:
     foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
 
-    def teardown_method(self):
+    def setup_method(self):
+        run_test_server.reset()
+
+    @classmethod
+    def teardown_class(self):
         run_test_server.reset()
 
     def test_delete_file(self, capsys):
@@ -646,7 +654,8 @@ class TestApiClientAuthorizationsResource:
         run_test_server.reset()
         run_test_server.authorize_with(self.me)
 
-    def teardown_method(self):
+    @classmethod
+    def teardown_class(self):
         run_test_server.reset()
 
     @classmethod
