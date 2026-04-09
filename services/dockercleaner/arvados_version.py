@@ -16,6 +16,8 @@ import setuptools.command.build
 
 SETUP_DIR = Path(__file__).absolute().parent
 VERSION_SCRIPT_PATH = PurePath('build', 'version-at-commit.sh')
+# Built by ArvadosPythonPackage.register
+ARVADOS_PYTHON_MODULES: dict[str, 'ArvadosPythonPackage'] = {}
 
 ### Metadata generation
 
@@ -31,6 +33,21 @@ class ArvadosPythonPackage:
         '~dev': '.dev',
         '~rc': 'rc',
     }
+
+    @classmethod
+    def register(
+            cls,
+            package_name: str,
+            module_name: str,
+            src_path: PurePath | str,
+            *dependencies: str,
+    ) -> 'ArvadosPythonPackage':
+        if not isinstance(src_path, PurePath):
+            src_path = PurePosixPath(src_path)
+        deps = [ARVADOS_PYTHON_MODULES[key] for key in dependencies]
+        this_pkg = cls(package_name, module_name, src_path, deps)
+        ARVADOS_PYTHON_MODULES[package_name] = this_pkg
+        return this_pkg
 
     def version_file_path(self):
         return PurePath(self.module_name, '_version.py')
@@ -125,52 +142,53 @@ class ArvadosPythonPackage:
 
 ### Package database
 
-_PYSDK = ArvadosPythonPackage(
+ArvadosPythonPackage.register(
     'arvados-python-client',
     'arvados',
-    PurePath('sdk', 'python'),
-    [],
-)
-_CRUNCHSTAT_SUMMARY = ArvadosPythonPackage(
+    'sdk/python',
+),
+ArvadosPythonPackage.register(
     'crunchstat_summary',
     'crunchstat_summary',
-    PurePath('tools', 'crunchstat-summary'),
-    [_PYSDK],
+    'tools/crunchstat-summary',
+    'arvados-python-client',
 )
-ARVADOS_PYTHON_MODULES = {mod.package_name: mod for mod in [
-    _PYSDK,
-    _CRUNCHSTAT_SUMMARY,
-    ArvadosPythonPackage(
-        'arvados-cluster-activity',
-        'arvados_cluster_activity',
-        PurePath('tools', 'cluster-activity'),
-        [_PYSDK],
-    ),
-    ArvadosPythonPackage(
-        'arvados-cwl-runner',
-        'arvados_cwl',
-        PurePath('sdk', 'cwl'),
-        [_PYSDK, _CRUNCHSTAT_SUMMARY],
-    ),
-    ArvadosPythonPackage(
-        'arvados-docker-cleaner',
-        'arvados_docker',
-        PurePath('services', 'dockercleaner'),
-        [],
-    ),
-    ArvadosPythonPackage(
-        'arvados_fuse',
-        'arvados_fuse',
-        PurePath('services', 'fuse'),
-        [_PYSDK],
-    ),
-    ArvadosPythonPackage(
-        'arvados-user-activity',
-        'arvados_user_activity',
-        PurePath('tools', 'user-activity'),
-        [_PYSDK],
-    ),
-]}
+ArvadosPythonPackage.register(
+    'arvados-cluster-activity',
+    'arvados_cluster_activity',
+    'tools/cluster-activity',
+    'arvados-python-client',
+)
+ArvadosPythonPackage.register(
+    'arvados-cwl-runner',
+    'arvados_cwl',
+    'sdk/cwl',
+    'arvados-python-client',
+    'crunchstat_summary',
+)
+ArvadosPythonPackage.register(
+    'arvados_fuse',
+    'arvados_fuse',
+    'services/fuse',
+    'arvados-python-client',
+)
+ArvadosPythonPackage.register(
+    'arvados-user-activity',
+    'arvados_user_activity',
+    'tools/user-activity',
+    'arvados-python-client',
+)
+ArvadosPythonPackage.register(
+    'arvados-tools',
+    'NO SRCDIR',
+    'tools/python-metapackage',
+    *ARVADOS_PYTHON_MODULES,
+)
+ArvadosPythonPackage.register(
+    'arvados-docker-cleaner',
+    'arvados_docker',
+    'services/dockercleaner',
+)
 
 ### setuptools integration
 

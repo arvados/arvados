@@ -39,6 +39,8 @@ docker/config.yml
 /tools/cluster-activity/dist/
 /tools/crunchstat-summary/build/
 /tools/crunchstat-summary/dist/
+/tools/python-metapackage/build/
+/tools/python-metapackage/dist/
 /tools/user-activity/build/
 /tools/user-activity/dist/
 *#*
