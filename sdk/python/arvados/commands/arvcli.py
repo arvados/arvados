@@ -22,6 +22,7 @@ import importlib
 import json
 import re
 import sys
+from typing import NoReturn
 import arvados
 import arvados.commands._util as cmd_util
 
@@ -348,69 +349,19 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         method_parser.add_argument(*parameter_names, **kwargs)
 
 
-def _handle_external_command(cmd_parser, args, remaining_args):
-    """If CLI-parsing results indicate a subcommand that should be handled by
-    an external module, do that by importing the module and calling its main()
-    function with the rest of the arguments, followed by exiting with the
-    return value of that main() function. Otherwise, this function does
-    nothing.
+def _handle_external_command(module_name: str, args: list[str]) -> NoReturn:
+    """Import the external module for the subcommand, call the module's
+    `main()` function with given arguments, and exit with the main function's
+    return value as the exit status code.
     """
-    subcommand = getattr(args, "subcommand", "")
-    method = getattr(args, "method", "")
-    if method:
-        key = f"{subcommand} {method}"
-    else:
-        key = subcommand
-    module_name = cmd_parser.external_command_modules.get(key)
-    if module_name is not None:
-        external_mod = importlib.import_module(module_name)
-        sys.exit(external_mod.main(remaining_args))
+    external_mod = importlib.import_module(module_name)
+    sys.exit(external_mod.main(args))
 
 
-def _handle_resource_method(cmd_parser, args, remaining_args, api_client):
-    """If CLI-parsing results indicate an API resource command, do additional
-    CLI housekeeping. If there are unrecognized items in remaining_args, exit
-    with error messages and status 2. Otherwise, perform API call.
+def _handle_resource_method(api_client, resource, args) -> NoReturn:
+    """Prepare API request by resource name and the already-parsed arguments,
+    send the request, and analyze & print out the result.
     """
-    resource = cmd_parser._subcommand_to_resource.get(args.subcommand)
-    if resource is None:
-        return
-
-    subparser = cmd_parser._subparser_index.get(args.subcommand)
-    # This is to work around an issue with nested subparsers being unable to
-    # show subcommand-level help (while help generation for the leafmost,
-    # method-level subparser works as expected). For example,
-    # "arvcli.py resouce method -h" will be handled by the leafmost parser
-    # first and the code will not reach here. However, "arvcli.py resource -h"
-    # is handled manually here.
-    help_wanted = "-h" in remaining_args or "--help" in remaining_args
-    if args.method is None or help_wanted:
-        subparser.print_help(
-            file=(sys.stdout if help_wanted else sys.stderr)
-        )
-        sys.exit(0 if help_wanted else 2)
-    # Any further remaining args indicate either malformed or unrecognized
-    # global args (e.g. "arvcli.py --bad-arg resource method") or undefined
-    # parameters to a valid resouce-method combination.
-    elif remaining_args:
-        print(
-            "Error: unrecognized command-line arguments:",
-            ", ".join(remaining_args),
-            file=sys.stderr
-        )
-        print(
-            f"Try: {sys.argv[0]} --help",
-            f"     {sys.argv[0]} {args.subcommand} {args.method} --help",
-            sep="\n",
-            file=sys.stderr
-        )
-        sys.exit(2)
-    else:
-        _call_resource_method(api_client, args, resource)
-
-
-def _call_resource_method(api_client, args, resource):
-    """Prepare API request, send it, and analyze/format result."""
     arv_resource = getattr(api_client, resource)()
     arv_method = getattr(arv_resource, args.method)
     method_call = arv_method(**{
@@ -484,8 +435,56 @@ def dispatch(arguments=None):
     cmd_parser = ArvCLIArgumentParser(api_client._resourceDesc["resources"])
     args, remaining_args = cmd_parser.parse_known_args(arguments)
 
-    _handle_external_command(cmd_parser, args, remaining_args)
-    _handle_resource_method(cmd_parser, args, remaining_args, api_client)
+    # There's always args.subcommand if we reach here, because "subcommand" is
+    # required by the parser. But "method" may be absent, as is in the case of
+    # external commands like "ws" or "copy".
+    method = getattr(args, "method", "")
+
+    # Are we calling an external command?
+    ext_module = cmd_parser.external_command_modules.get(
+        f"{args.subcommand} {method}" if method else args.subcommand
+    )
+    if ext_module is not None:
+        _handle_external_command(ext_module, remaining_args)  # Exits.
+
+    # Are we doing an API resource call?
+    resource = cmd_parser._subcommand_to_resource.get(args.subcommand)
+    if resource is not None:
+        # This is to work around an issue with nested subparsers being unable
+        # to show subcommand-level help (while help generation for the
+        # leafmost, method-level subparser works as expected). For example,
+        # "arvcli.py resouce method -h" will be handled by the leafmost parser
+        # first and the code will not reach here if that is the CLI given.
+        # However, "arvcli.py resource -h" is handled manually here.
+        help_wanted = "-h" in remaining_args or "--help" in remaining_args
+        if not method or help_wanted:
+            subparser = cmd_parser._subparser_index[args.subcommand]
+            subparser.print_help(
+                file=(sys.stdout if help_wanted else sys.stderr)
+            )
+            sys.exit(0 if help_wanted else 2)
+        # Any further remaining args indicate either malformed or unrecognized
+        # global args (e.g. "arvcli.py --bad-arg resource method") or undefined
+        # parameters to a valid resouce-method combination.
+        elif remaining_args:
+            print(
+                "Error: unrecognized command-line arguments:",
+                ", ".join(remaining_args),
+                file=sys.stderr
+            )
+            print(
+                f"Try: {sys.argv[0]} --help",
+                f"     {sys.argv[0]} {args.subcommand} {method} --help",
+                sep="\n",
+                file=sys.stderr
+            )
+            sys.exit(2)
+        else:
+            _handle_resource_method(api_client, resource, args)  # Exits.
+
+    # TODO: Other types of commands are not yet implemented ("create" and
+    # "edit"). The code immediately below is not reachable.
+    raise RuntimeError("Unexpected arguments: {arguments!r}")
 
 
 if __name__ == "__main__":
