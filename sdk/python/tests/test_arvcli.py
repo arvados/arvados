@@ -303,13 +303,16 @@ class TestSameFlagInTwoPlaces:
     def test_s_flag(self, run_arvcli):
         # As "global" parameter, "-s" is for "--short" (display UUID[s] in
         # output only).  As parameter to the resource method, the second "-s"
-        # is for "--select", which limits the output attributes. By not
-        # selecting the "uuid" attribute, there will be no UUIDs to display.
+        # is for "--select", which limits the output attributes.
+        # For a counterexample, see the function
+        # test_uuid_output_with_list_items_having_no_uuid()
         exit_code, out, err = run_arvcli(
-            ["-s", "collection", "list", "-s", '["name"]']
+            ["-s", "collection", "list", "-s", '["uuid"]']
         )
-        # API call should be made, and command should fail as expected.
-        assert exit_code == 1
+        assert exit_code == 0
+        for line in out.split("\n"):
+            if line:
+                assert COLLECTION_UUID_PATTERN.match(line)
 
     def test_f_flag(self, run_arvcli):
         # As "global" parameter, "-f" is for "--format", which takes one arg
