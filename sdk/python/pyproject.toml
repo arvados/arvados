@@ -35,7 +35,7 @@ requires-python = "~= 3.10"
 [project.urls]
 Homepage = "https://arvados.org"
 Documentation = "https://doc.arvados.org"
-Repository = "https://git.arvados.org/arvados.git"
+Repository = "https://github.com/arvados/arvados"
 Issues = "https://dev.arvados.org/projects/arvados/issues"
 Changelog = "https://arvados.org/releases/"
 

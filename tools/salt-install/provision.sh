@@ -487,7 +487,7 @@ test -d logrotate && ( cd logrotate && git fetch ) \
 
 echo "...arvados"
 test -d arvados && ( cd arvados && git fetch ) \
-  || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
+  || git clone --quiet https://github.com/arvados/arvados-formula ${F_DIR}/arvados
 ( cd arvados && git checkout --quiet "${ARVADOS_TAG}" )
 
 if [ "x${VAGRANT:-}" = "xyes" ]; then
