@@ -38,7 +38,7 @@ arvados-docker-cleaner = "arvados_docker.cleaner:main"
 Homepage = "https://arvados.org"
 Documentation = "https://doc.arvados.org"
 Repository = "https://github.com/arvados/arvados"
-Issues = "https://dev.arvados.org/projects/arvados/issues"
+Issues = "https://github.com/arvados/arvados/issues"
 Changelog = "https://arvados.org/releases/"
 
 [tool.setuptools.data-files]
