@@ -9,7 +9,7 @@
 #' for exaplme actions like creating, updating, moving or removing are possible.
 #'
 #' @seealso
-#' https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R
+#' https://github.com/arvados/arvados/tree/main/contrib/R-sdk
 #'
 #' @export
 
