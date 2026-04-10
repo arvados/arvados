@@ -43,8 +43,8 @@ arv-seed = "arv_bootstrap.seed:main"
 [project.urls]
 Homepage = "https://arvados.org"
 Documentation = "https://doc.arvados.org"
-Repository = "https://git.arvados.org/arvados.git"
-Issues = "https://dev.arvados.org/projects/arvados/issues"
+Repository = "https://github.com/arvados/arvados"
+Issues = "https://github.com/arvados/arvados/issues"
 Changelog = "https://arvados.org/releases/"
 
 [tool.setuptools.packages.find]

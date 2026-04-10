@@ -20,7 +20,7 @@
 #' @seealso \itemize{
 #' \item https://arvados.org
 #' \item https://doc.arvados.org/sdk/R/index.html
-#' \item https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R}
+#' \item https://github.com/arvados/arvados/tree/main/contrib/R-sdk}
 #'
 #' @name ArvadosR
 NULL

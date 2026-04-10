@@ -372,7 +372,7 @@ Visit [Arvados Community and Getting Help](https://doc.arvados.org/user/getting_
 
 ## Reporting bugs
 
-[Report a bug](https://dev.arvados.org/projects/arvados/issues/new) on [dev.arvados.org](https://dev.arvados.org).
+[Report an issue on GitHub](https://github.com/arvados/arvados/issues/new)
 
 ## Licensing
 

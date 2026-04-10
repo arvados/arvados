@@ -4,10 +4,10 @@
 
 # Arvados install with Saltstack
 
-##### About
+## About
 
 This directory holds a small script to help you get Arvados up and running, using the
-[Saltstack arvados-formula](https://git.arvados.org/arvados-formula.git)
+[Saltstack arvados-formula](https://github.com/arvados/arvados-formula)
 in master-less mode.
 
 There are a few preset examples that you can use:

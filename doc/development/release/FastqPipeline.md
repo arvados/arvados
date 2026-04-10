@@ -7,7 +7,7 @@
 When we do releases, we run a test pipeline that is intended to be representative of a bioinformatics workload.
 
 1. Deploy the version of `arvados-cwl-runner` that you want to test and make sure that the corresponding `arvados/jobs` image [has been built and uploaded to docker hub](https://ci.arvados.org/view/Release%20Pipeline/job/docker-jobs-image-release/) or built using the `arvados/build/build-dev-docker-jobs-image.sh` script and uploaded using `arv-keepdocker`.
-2. Clone https://git.arvados.org/arvados-tutorial.git/
+2. Clone <https://github.com/arvados/arvados-tutorial/>
 3. Create an Arvados project for the test run
 4. `cd arvados/tutorial/WGS-processing`
 5. Run the following command: `arvados-cwl-runner --no-wait --disable-reuse --project-uuid <my project> cwl/wgs-processing-wf.cwl yml/wgs-processing-wf-chr19.yml`

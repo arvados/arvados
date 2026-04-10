@@ -273,7 +273,7 @@ h3. Python SDK reorganization of internal classes and modules
 
 We have reorganized the Python SDK to make it clearer which APIs are intended to be public, and make it easier to find documentation for them. As part of this work, some modules that only included internal support code have been moved, most notably @arvados.diskcache@, @arvados.http_to_keep@, and @arvados.timer@.
 
-If you need immediate access to these modules, you can find them under @arvados._internal@, but we do not intend to support them as part of our public SDK API, so they may change or be removed entirely in future versions. If you've written client software that relies on these modules, please "file an issue":https://dev.arvados.org/projects/arvados/issues/new to let us know so we can figure out how best to support you.
+If you need immediate access to these modules, you can find them under @arvados._internal@, but we do not intend to support them as part of our public SDK API, so they may change or be removed entirely in future versions. If you've written client software that relies on these modules, please "file an issue":https://github.com/arvados/arvados/issues/new to let us know so we can figure out how best to support you.
 
 h3. Virtual environments inside distribution Python packages have moved
 
