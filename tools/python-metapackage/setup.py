@@ -12,7 +12,9 @@ arv_mod = arvados_version['ARVADOS_PYTHON_MODULES']['arvados-tools']
 version = arv_mod.get_version()
 setuptools.setup(
     install_requires=[
-        *arv_mod.iter_dependencies(version=version),
+        *arv_mod.iter_dependencies(version=version, extras={
+            'arvados-cluster-activity': ['prometheus'],
+        }),
     ],
     version=version,
 )

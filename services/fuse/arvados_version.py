@@ -134,10 +134,16 @@ class ArvadosPythonPackage:
         dep_ver, match_count = re.subn(r'\.dev(0|[1-9][0-9]*)$', '.dev0', version, 1)
         return ('~=' if match_count else '==', dep_ver)
 
-    def iter_dependencies(self, workdir=SETUP_DIR, version=None):
+    def iter_dependencies(self, workdir=SETUP_DIR, version=None, extras=None):
+        if extras is None:
+            extras = {}
         dep_op, dep_ver = self.get_dependencies_version(workdir, version)
         for dep in self.dependencies:
-            yield f'{dep.package_name} {dep_op} {dep_ver}'
+            try:
+                dep_extras = f'[{",".join(extras[dep.package_name])}]'
+            except KeyError:
+                dep_extras = ''
+            yield f'{dep.package_name}{dep_extras} {dep_op} {dep_ver}'
 
 
 ### Package database
