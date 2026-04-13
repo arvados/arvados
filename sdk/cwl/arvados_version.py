@@ -58,7 +58,20 @@ class ArvadosPythonPackage:
             # This will raise ValueError if they're not related,
             # in which case we don't want to use this $WORKSPACE.
             workdir.relative_to(workspace)
-        except (KeyError, ValueError):
+        except KeyError:
+            # $WORKSPACE isn't set. Fall back to the Git worktree toplevel.
+            try:
+                git_proc = subprocess.run(
+                    ['git', 'rev-parse', '--show-toplevel'],
+                    capture_output=True,
+                    check=True,
+                    cwd=workdir,
+                    text=True,
+                )
+                workspace = Path(git_proc.stdout.removesuffix('\n'))
+            except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+                return None
+        except ValueError:
             return None
         if (workspace / VERSION_SCRIPT_PATH).exists():
             return workspace
