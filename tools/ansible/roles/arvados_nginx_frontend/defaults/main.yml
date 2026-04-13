@@ -25,6 +25,8 @@ arvados_nginx_proxy_headers:
   X-Forwarded-Proto: "https"
   X-Real-IP: "$remote_addr"
 
+tls_source: "{{ arvados_tls.get(arvados_nginx_service_key, arvados_tls.Default) }}"
+
 # This mapping provides additional names for specific services like keep-web.
 # Each key is the name of a service in the Arvados cluster configuration, like
 # WebDAV. The value is a list of strings with additional server names.
