@@ -37,10 +37,10 @@ arvados_cluster_host:
           # If you have `cert` and `key` files on the host running Ansible and
           # want to install them for Arvados services on the cluster host,
           # set `src` for `cert` and `key`.
-          # src: /PATH/TO/arvados-cluster.pem
+          #src: /PATH/TO/arvados-cluster.pem
         key:
           path: /etc/ssl/private/ssl-cert-snakeoil.key
-          # src: /PATH/TO/arvados-cluster.key
+          #src: /PATH/TO/arvados-cluster.key
 
     # `arvados_apt_suites` identifies which set of Arvados packages to install.
     # By default it will get the latest official release. You can set this to
