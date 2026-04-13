@@ -37,21 +37,21 @@ all:
           # Path to the certificate on the managed node
           path: /PATH/TO/controller.pem
           # All of the following parameters are optional.
-          # Omit src for the `cert` and `key` files if they already exist on
-          # the hosts running this service (for example, because they're already
-          # deployed by another service).
-          src: /PATH/TO/controller.pem
-          owner: root
-          group: ssl-cert
-          mode: "0640" # mode must be quoted
+          # Set src for the `cert` and `key` files to deploy them from the
+          # controller node to the hosts running this service. Otherwise, they
+          # will be assumed to be at the specified paths.
+          #src: /PATH/TO/controller.pem
+          #owner: root
+          #group: ssl-cert
+          #mode: "0640" # mode must be quoted
         key:
           # path to the private key on the managed node
           path: /PATH/TO/controller.key
           # Also takes optional src, owner, group, and mode like cert
-          src: /PATH/TO/controller.key
-          owner: root
-          group: ssl-cert
-          mode: "0640" # mode must be quoted
+          #src: /PATH/TO/controller.key
+          #owner: root
+          #group: ssl-cert
+          #mode: "0640" # mode must be quoted
       # Settings from this `Default` section will be used for any service that
       # does not have a specific configuration in `arvados_tls`. This is handy
       # to use if you have a wildcard certificate that can be used by most/all

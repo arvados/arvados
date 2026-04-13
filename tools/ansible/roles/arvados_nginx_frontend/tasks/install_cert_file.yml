@@ -14,7 +14,7 @@
   notify:
     - restart nginx
 
-- name: "Eusre {{ item }} file exists and set attributes"
+- name: "Ensure {{ item }} file exists and set attributes"
   become: yes
   ansible.builtin.file:
     state: file
