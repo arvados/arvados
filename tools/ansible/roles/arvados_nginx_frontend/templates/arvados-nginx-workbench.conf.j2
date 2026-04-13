@@ -13,8 +13,8 @@ server {
 {% endfor %}
     ;
 
-  ssl_certificate      /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.cert;
-  ssl_certificate_key  /etc/nginx/arvados-certs/{{ arvados_nginx_service_key }}.key;
+  ssl_certificate      {{ tls_source.cert.path }};
+  ssl_certificate_key  {{ tls_source.key.path }};
 
   index  index.html;
 
