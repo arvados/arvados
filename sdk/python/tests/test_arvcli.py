@@ -329,13 +329,6 @@ class TestSameFlagInTwoPlaces:
         assert all(COLLECTION_UUID_PATTERN.match(line) for line in lines)
 
 
-@pytest.fixture
-def reset_test_server_db():
-    """Fixture version of run_test_server.reset()."""
-    yield
-    run_test_server.reset()
-
-
 class TestCommonMethods:
     """Basic tests that sample the common methods -- get, list, create, update,
     delete -- with different resources and global CLI options. Basic sanity
