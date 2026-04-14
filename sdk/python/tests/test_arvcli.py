@@ -309,9 +309,10 @@ class TestSameFlagInTwoPlaces:
             ["-s", "collection", "list", "-s", '["uuid"]']
         )
         assert exit_code == 0
-        for line in out.split("\n"):
-            if line:
-                assert COLLECTION_UUID_PATTERN.match(line)
+        assert out
+        assert all(
+            COLLECTION_UUID_PATTERN.match(line) for line in out.splitlines()
+        )
 
     def test_f_flag(self, run_arvcli):
         # As "global" parameter, "-f" is for "--format", which takes one arg
@@ -324,9 +325,11 @@ class TestSameFlagInTwoPlaces:
         ])
         assert exit_code == 0
         assert not err
-        for line in out.split("\n"):
-            if line:
-                assert COLLECTION_UUID_PATTERN.match(line)
+        lines = out.splitlines()
+        assert out
+        assert all(
+            COLLECTION_UUID_PATTERN.match(line) for line in out.splitlines()
+        )
 
 
 @pytest.fixture
