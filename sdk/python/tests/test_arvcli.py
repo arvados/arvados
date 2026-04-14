@@ -420,7 +420,7 @@ class TestCommonMethods:
 
 def _no_extra_spaces_at_end(text: str) -> bool:
     # Text ends in newline but without extraneous whitespace characters.
-    return re.search(r"(\A|\S)\n\Z", text)
+    return re.search(r"(\A|\S)\n\Z", text) is not None
 
 
 class TestRequestBodyWithCollectionCreateCMD:
