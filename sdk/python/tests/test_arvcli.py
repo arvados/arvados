@@ -533,6 +533,14 @@ def _parse_simple_stream(manifest: str) -> dict[str, str]:
     return m.groupdict() if m is not None else {}
 
 
+@pytest.fixture
+def reset_test_server_db():
+    """Fixture version of run_test_server.reset()."""
+    yield
+    run_test_server.reset()
+
+
+@pytest.mark.usefixtures("reset_test_server_db")
 def test_collection_update_with_replace_files(run_arvcli):
     foo_uuid = run_test_server.fixture("collections")["foo_file"]["uuid"]
     bar_pdh = run_test_server.fixture("collections")["bar_file"]["portable_data_hash"]
@@ -553,8 +561,6 @@ def test_collection_update_with_replace_files(run_arvcli):
     assert bar_locator_part in result["manifest_text"]
     bar_file_part = f":{bar_elements['size']}:{bar_elements['filename']}"
     assert bar_file_part in result["manifest_text"]
-
-    run_test_server.reset()
 
 
 def test_uuid_output_with_list_items_having_no_uuid(run_arvcli):
