@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-from contextlib import contextmanager
 import re
 import io
 import json
