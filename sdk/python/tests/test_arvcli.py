@@ -329,18 +329,18 @@ class TestSameFlagInTwoPlaces:
                 assert COLLECTION_UUID_PATTERN.match(line)
 
 
+@pytest.fixture
+def reset_test_server_db():
+    """Fixture version of run_test_server.reset()."""
+    yield
+    run_test_server.reset()
+
+
 class TestCommonMethods:
     """Basic tests that sample the common methods -- get, list, create, update,
     delete -- with different resources and global CLI options. Basic sanity
     checks are performed from the results of these calls.
     """
-    @classmethod
-    def setup_class(cls):
-        run_test_server.reset()
-
-    @classmethod
-    def teardown_class(cls):
-        run_test_server.reset()
 
     def test_container_request_get_yaml(self, run_arvcli):
         fix = run_test_server.fixture("container_requests")["queued"]
@@ -372,6 +372,7 @@ class TestCommonMethods:
         result = json.loads(out)
         assert result["kind"] == "arvados#groupList"
 
+    @pytest.mark.usefixtures("reset_test_server_db")
     def test_link_create_format_uuid(self, run_arvcli):
         me = run_test_server.fixture("users")["active"]
         project = run_test_server.fixture("groups")["private"]
@@ -388,6 +389,7 @@ class TestCommonMethods:
         assert exit_code == 0
         assert re.match(r"^[0-9a-z]{5}-o0j2j-[0-9a-z]{15}$", out)
 
+    @pytest.mark.usefixtures("reset_test_server_db")
     def test_user_update(self, run_arvcli):
         me = run_test_server.fixture("users")["active"]
         my_email = "no-reply@test.example"
@@ -401,6 +403,7 @@ class TestCommonMethods:
         assert result["uuid"] == me["uuid"]
         assert result["email"] == my_email
 
+    @pytest.mark.usefixtures("reset_test_server_db")
     def test_authorized_key_delete(self, run_arvcli):
         key = run_test_server.fixture("authorized_keys")["active"]
         exit_code, out, err = run_arvcli([
@@ -531,13 +534,6 @@ def _parse_simple_stream(manifest: str) -> dict[str, str]:
     )
     m = stream_pattern.match(manifest)
     return m.groupdict() if m is not None else {}
-
-
-@pytest.fixture
-def reset_test_server_db():
-    """Fixture version of run_test_server.reset()."""
-    yield
-    run_test_server.reset()
 
 
 @pytest.mark.usefixtures("reset_test_server_db")
