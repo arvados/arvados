@@ -9,7 +9,7 @@ help:
 	@echo >&2
 	@echo >&2 "More info:"
 	@echo >&2 "  Installing              --> http://doc.arvados.org/install"
-	@echo >&2 "  Developing/contributing --> https://dev.arvados.org"
+	@echo >&2 "  Developing/contributing --> https://github.com/arvados/arvados"
 	@echo >&2 "  Project home            --> https://arvados.org"
 	@echo >&2
 	@false

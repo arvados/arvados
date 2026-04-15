@@ -74,8 +74,6 @@ All participants are expected to abide by the [Arvados Code of Conduct](CODE_OF_
 
 See [CONTRIBUTING](CONTRIBUTING.md) for information about Arvados development and how to contribute to the Arvados project.
 
-The [development road map](https://dev.arvados.org/issues/gantt?utf8=%E2%9C%93&set_filter=1&gantt=1&f%5B%5D=project_id&op%5Bproject_id%5D=%3D&v%5Bproject_id%5D%5B%5D=49&f%5B%5D=&zoom=1) outlines some of the project priorities over the next twelve months.
-
 # Licensing
 
 Arvados is Free Software.  See [COPYING](COPYING) for information about the open source licenses used in Arvados.

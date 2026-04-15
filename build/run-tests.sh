@@ -63,7 +63,7 @@ CONFIGSRC=path Dir with config.yml file containing PostgreSQL section
 
 More information and background:
 
-https://dev.arvados.org/projects/arvados/wiki/Running_tests
+https://github.com/arvados/arvados/blob/main/doc/development/RunningTests.md
 EOF
 
 # First make sure to remove any ARVADOS_ variables from the calling
