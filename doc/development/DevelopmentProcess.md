@@ -18,15 +18,21 @@ origin	git@git.arvados.org:arvados.git (fetch)
 origin	git@git.arvados.org:arvados.git (push)
 ```
 
-## Fetch a GitHub Pull Request as a Branch
+## Fetch GitHub Pull Requests as Branches
 
-If someone has submitted a pull request, you can create a local branch from it by running:
+GitHub tracks pull requests under `refs/pull/`. You can configure Git to map these to your local repository when you fetch GitHub:
+
+```sh
+$ git config set --append remote.github.fetch '+refs/pull/*:refs/remotes/ghpr/*'
+```
+
+Now after you fetch, you can refer to pull request #123 as `ghpr/123/head`.
+
+If you prefer to fetch pull requests individually, the command to do that is:
 
 ```sh
 $ git fetch github "pull/PRNUM/head:BRANCHNAME"
 ```
-
-`PRNUM` is the pull request ID number at the end of the GitHub URL. `BRANCHNAME` is any name you want to give to the local branch. You're encouraged to follow the Arvados convention of `PRNUM-brief-description`.
 
 ## Review a Pull Request
 
