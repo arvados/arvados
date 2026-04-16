@@ -6426,7 +6426,7 @@ __metadata:
     cypress-wait-until: ^3.0.1
     date-fns: ^2.28.0
     debounce: 1.2.0
-    dompurify: ^3.2.5
+    dompurify: ^3.4.0
     dotenv: ^10.0.0
     dotenv-expand: ^5.1.0
     eslint: ^8.3.0
@@ -8680,15 +8680,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.2.5":
-  version: 3.2.5
-  resolution: "dompurify@npm:3.2.5"
+"dompurify@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "dompurify@npm:3.4.0"
   dependencies:
     "@types/trusted-types": ^2.0.7
   dependenciesMeta:
     "@types/trusted-types":
       optional: true
-  checksum: bd3b40810cc74312970dc6b99d38450ec839c81fb56c27d2c1b815ce0206b73e9cd4fe2e9021f735a1aaebf017990a63e6454e7d9c893f72b365b94d030ec9c4
+  checksum: 8c4286d3d379c6133ff2951d73d946974ef079f5d651d66cf90c1a6e57d8d2d304e7bc18280d27c38835200bbe03877fd93fb22f9f1fb9e086d68ffcd2d5dd16
   languageName: node
   linkType: hard
 
