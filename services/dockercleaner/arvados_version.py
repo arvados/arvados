@@ -16,6 +16,8 @@ import setuptools.command.build
 
 SETUP_DIR = Path(__file__).absolute().parent
 VERSION_SCRIPT_PATH = PurePath('build', 'version-at-commit.sh')
+# Built by ArvadosPythonPackage.register
+ARVADOS_PYTHON_MODULES: dict[str, 'ArvadosPythonPackage'] = {}
 
 ### Metadata generation
 
@@ -32,6 +34,21 @@ class ArvadosPythonPackage:
         '~rc': 'rc',
     }
 
+    @classmethod
+    def register(
+            cls,
+            package_name: str,
+            module_name: str,
+            src_path: PurePath | str,
+            *dependencies: str,
+    ) -> 'ArvadosPythonPackage':
+        if not isinstance(src_path, PurePath):
+            src_path = PurePosixPath(src_path)
+        deps = [ARVADOS_PYTHON_MODULES[key] for key in dependencies]
+        this_pkg = cls(package_name, module_name, src_path, deps)
+        ARVADOS_PYTHON_MODULES[package_name] = this_pkg
+        return this_pkg
+
     def version_file_path(self):
         return PurePath(self.module_name, '_version.py')
 
@@ -41,7 +58,20 @@ class ArvadosPythonPackage:
             # This will raise ValueError if they're not related,
             # in which case we don't want to use this $WORKSPACE.
             workdir.relative_to(workspace)
-        except (KeyError, ValueError):
+        except KeyError:
+            # $WORKSPACE isn't set. Fall back to the Git worktree toplevel.
+            try:
+                git_proc = subprocess.run(
+                    ['git', 'rev-parse', '--show-toplevel'],
+                    capture_output=True,
+                    check=True,
+                    cwd=workdir,
+                    text=True,
+                )
+                workspace = Path(git_proc.stdout.removesuffix('\n'))
+            except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+                return None
+        except ValueError:
             return None
         if (workspace / VERSION_SCRIPT_PATH).exists():
             return workspace
@@ -117,60 +147,67 @@ class ArvadosPythonPackage:
         dep_ver, match_count = re.subn(r'\.dev(0|[1-9][0-9]*)$', '.dev0', version, 1)
         return ('~=' if match_count else '==', dep_ver)
 
-    def iter_dependencies(self, workdir=SETUP_DIR, version=None):
+    def iter_dependencies(self, workdir=SETUP_DIR, version=None, extras=None):
+        if extras is None:
+            extras = {}
         dep_op, dep_ver = self.get_dependencies_version(workdir, version)
         for dep in self.dependencies:
-            yield f'{dep.package_name} {dep_op} {dep_ver}'
+            try:
+                dep_extras = f'[{",".join(extras[dep.package_name])}]'
+            except KeyError:
+                dep_extras = ''
+            yield f'{dep.package_name}{dep_extras} {dep_op} {dep_ver}'
 
 
 ### Package database
 
-_PYSDK = ArvadosPythonPackage(
+ArvadosPythonPackage.register(
     'arvados-python-client',
     'arvados',
-    PurePath('sdk', 'python'),
-    [],
-)
-_CRUNCHSTAT_SUMMARY = ArvadosPythonPackage(
+    'sdk/python',
+),
+ArvadosPythonPackage.register(
     'crunchstat_summary',
     'crunchstat_summary',
-    PurePath('tools', 'crunchstat-summary'),
-    [_PYSDK],
+    'tools/crunchstat-summary',
+    'arvados-python-client',
 )
-ARVADOS_PYTHON_MODULES = {mod.package_name: mod for mod in [
-    _PYSDK,
-    _CRUNCHSTAT_SUMMARY,
-    ArvadosPythonPackage(
-        'arvados-cluster-activity',
-        'arvados_cluster_activity',
-        PurePath('tools', 'cluster-activity'),
-        [_PYSDK],
-    ),
-    ArvadosPythonPackage(
-        'arvados-cwl-runner',
-        'arvados_cwl',
-        PurePath('sdk', 'cwl'),
-        [_PYSDK, _CRUNCHSTAT_SUMMARY],
-    ),
-    ArvadosPythonPackage(
-        'arvados-docker-cleaner',
-        'arvados_docker',
-        PurePath('services', 'dockercleaner'),
-        [],
-    ),
-    ArvadosPythonPackage(
-        'arvados_fuse',
-        'arvados_fuse',
-        PurePath('services', 'fuse'),
-        [_PYSDK],
-    ),
-    ArvadosPythonPackage(
-        'arvados-user-activity',
-        'arvados_user_activity',
-        PurePath('tools', 'user-activity'),
-        [_PYSDK],
-    ),
-]}
+ArvadosPythonPackage.register(
+    'arvados-cluster-activity',
+    'arvados_cluster_activity',
+    'tools/cluster-activity',
+    'arvados-python-client',
+)
+ArvadosPythonPackage.register(
+    'arvados-cwl-runner',
+    'arvados_cwl',
+    'sdk/cwl',
+    'arvados-python-client',
+    'crunchstat_summary',
+)
+ArvadosPythonPackage.register(
+    'arvados_fuse',
+    'arvados_fuse',
+    'services/fuse',
+    'arvados-python-client',
+)
+ArvadosPythonPackage.register(
+    'arvados-user-activity',
+    'arvados_user_activity',
+    'tools/user-activity',
+    'arvados-python-client',
+)
+ArvadosPythonPackage.register(
+    'arvados-tools',
+    'NO SRCDIR',
+    'tools/python-metapackage',
+    *ARVADOS_PYTHON_MODULES,
+)
+ArvadosPythonPackage.register(
+    'arvados-docker-cleaner',
+    'arvados_docker',
+    'services/dockercleaner',
+)
 
 ### setuptools integration
 

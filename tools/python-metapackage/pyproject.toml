@@ -1,0 +1,47 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["setuptools ~= 80.9"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["dependencies", "version"]
+name = "arvados-tools"
+description = "A single package to install all Arvados client tools"
+authors = [
+  {name = "Arvados", email = "info@arvados.org"},
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+license-files = [
+  "agpl-3.0.txt",
+  "LICENSE-2.0.txt",
+]
+readme = "README.md"
+requires-python = "~= 3.10"
+
+[project.urls]
+Homepage = "https://arvados.org"
+Documentation = "https://doc.arvados.org"
+Repository = "https://git.arvados.org/arvados.git"
+Issues = "https://github.com/arvados/arvados/issues"
+Changelog = "https://arvados.org/releases/"
+
+[tool.setuptools.data-files]
+"share/doc/arvados_tools" = [
+  "agpl-3.0.txt",
+  "LICENSE-2.0.txt",
+  "README.md",
+]
