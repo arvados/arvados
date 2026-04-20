@@ -653,7 +653,7 @@ class TestGetEditorCmdline:
         requested, yields the full path of the `nano` executable.
         """
         nano = tmp_path / "nano"
-        nano.write_text("exit 0\n")
+        nano.write_text("#!/bin/sh\nexit 0\n")
         nano.chmod(0o500)
         monkeypatch.setenv("PATH", str(tmp_path))
         yield str(nano)
