@@ -643,3 +643,42 @@ class TestApiClientAuthorizationsResource:
 
     # TODO: investigate possible authorization issue with testing
     # the create_system_auth method.
+
+
+class TestGetEditorCmdline:
+    @pytest.fixture
+    def installed_nano(self, tmp_path, monkeypatch):
+        """Ensure that `nano` is installed by placing an executable named
+        "nano" in a temp directory and then set $PATH to that directory. When
+        requested, yields the full path of the `nano` executable.
+        """
+        nano = tmp_path / "nano"
+        nano.write_text("exit 0\n")
+        nano.chmod(0o500)
+        monkeypatch.setenv("PATH", str(tmp_path))
+        yield str(nano)
+
+    @pytest.fixture
+    def uninstalled_nano(self, tmp_path, monkeypatch):
+        """Ensure that `nano` is not in the $PATH, by setting $PATH to an empty
+        temp directory.
+        """
+        monkeypatch.setenv("PATH", str(tmp_path))
+        yield
+
+    def test_env_var(self, monkeypatch):
+        monkeypatch.setenv("VISUAL", "foo --bar")
+        monkeypatch.setenv("EDITOR", "bar")
+        assert arvcli.get_editor_cmdline() == ["foo", "--bar"]
+        monkeypatch.delenv("VISUAL")
+        assert arvcli.get_editor_cmdline() == ["bar"]
+
+    def test_fallback_nano(self, monkeypatch, installed_nano):
+        monkeypatch.delenv("VISUAL", raising=False)
+        monkeypatch.delenv("EDITOR", raising=False)
+        assert arvcli.get_editor_cmdline() == [installed_nano]
+
+    def test_fallback_no_nano(self, monkeypatch, uninstalled_nano):
+        monkeypatch.delenv("VISUAL", raising=False)
+        monkeypatch.delenv("EDITOR", raising=False)
+        assert arvcli.get_editor_cmdline() == ["vi"]

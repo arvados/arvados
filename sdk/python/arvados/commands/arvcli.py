@@ -20,11 +20,17 @@ import argparse
 import functools
 import importlib
 import json
+import os
 import re
+import shlex
+import shutil
 import sys
 from typing import NoReturn
 import arvados
 import arvados.commands._util as cmd_util
+from ruamel.yaml import YAML
+yaml = YAML(typ="safe", pure=True)
+yaml.default_flow_style = False
 
 
 class _ArgTypes:
@@ -231,6 +237,22 @@ class _ArgUtil:
                 )
 
 
+def get_editor_cmdline() -> list[str]:
+    """Returns a partial command-line argument list that begins with the
+    external editor program. The precedence is the $VISUAL environment
+    variable, followed by $EDITOR; and if both are missing, then `nano` if it
+    exists in the $PATH; and finally the hard-coded value `vi` no matter the
+    command exists or not.
+    """
+    if cmd_str := (os.environ.get("VISUAL") or os.environ.get("EDITOR")):
+        cmd = shlex.split(cmd_str)
+    elif cmd_str := shutil.which("nano"):
+        cmd = [cmd_str]
+    else:
+        cmd = ["vi"]
+    return cmd
+
+
 class ArvCLIArgumentParser(argparse.ArgumentParser):
     """Argument parser for `arv` commands.
     """
@@ -313,6 +335,23 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                 self._subcommand_to_resource["sys"]
             )
 
+        # Only those resources that support a "create" method can be valid
+        # for the "create" subcommand.
+        creatable_targets = set()
+        for cli_name, resource in self._subcommand_to_resource.items():
+            resource_schema = self.resource_dictionary[resource]
+            if "create" in resource_schema.get("methods", {}):
+                creatable_targets.add(cli_name)
+        create_parser = subparsers.add_parser(
+            "create", help="Create Arvados object using external editor"
+        )
+        create_parser.add_argument(
+            "target_resource",
+            choices=sorted(list(creatable_targets)),
+            metavar="RESOURCE",
+            help="Type of the resource to be created"
+        )
+
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
         sub-subcommands, and the parameters associated with each method.
@@ -389,9 +428,6 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
             json.dump(result, sys.stdout, indent=1)
             print()
         case "yaml":
-            from ruamel.yaml import YAML
-            yaml = YAML(typ="safe", pure=True)
-            yaml.default_flow_style = False
             yaml.dump(result, sys.stdout)
         case "uuid":
             if (
@@ -427,6 +463,11 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
                     )
                     sys.exit(1)
                 print(obj_uuid)
+    sys.exit(0)
+
+
+def _handle_external_editor_command() -> NoReturn:
+    # TODO
     sys.exit(0)
 
 
@@ -481,6 +522,10 @@ def dispatch(arguments=None):
             sys.exit(2)
         else:
             _handle_resource_method(api_client, resource, args)  # Exits.
+
+    # Are we starting an external editor program?
+    if args.subcommand in ("create", "edit"):
+        _handle_external_editor_command()  # Exits.
 
     # TODO: Other types of commands are not yet implemented ("create" and
     # "edit"). The code immediately below is not reachable.
