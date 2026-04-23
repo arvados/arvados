@@ -71,16 +71,6 @@ all:
     #  "172.16.0.0/12": true
     #  "192.168.0.0/16: true
 
-    # `arvados_nginx_server_names` defines additional server name(s) for
-    # individual services beyond what's in the service's `ExternalURL` in the
-    # cluster configuration. The service's nginx front-end will be configured
-    # to recognize all listed server names. Each key corresponds to a key in
-    # `Services` section of your cluster configuration.
-    #arvados_nginx_server_names:
-    #  Controller:
-    #    - arvados.example
-    #    - api.arvados.example
-
     # `arvados_apt_periodic_default` defines the number of days that periodic
     # apt tasks like unattended upgrades should run. Set this to `0` to disable
     # periodic tasks.
@@ -119,6 +109,13 @@ arvados_api:
 arvados_controller:
   hosts:
     api.arvados.example:
+  vars:
+    # `arvados_nginx_server_config` is a block of nginx configuration
+    # directives that will be included in the server block for this
+    # service. You can use this to answer to additional names or ports,
+    # or do whatever other customization you need.
+    #arvados_nginx_server_config: |
+    #  server_name  arvados.example;
 
 # arvados_websocket host(s) run the Arvados websockets server.
 arvados_websocket:

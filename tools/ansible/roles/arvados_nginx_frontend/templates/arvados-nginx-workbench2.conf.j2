@@ -1,23 +1,13 @@
-### This file is managed by Ansible ###
+{% extends "arvados-nginx-site.conf.j2" %}
 {# Copyright (C) The Arvados Authors. All rights reserved.
  #
  # SPDX-License-Identifier: Apache-2.0
  #}
 
-server {
-{% set ext_addr = arvados_cluster.Services.Workbench2 | external_addr %}
-  listen       {{ ext_addr.port }} ssl;
-  server_name  {{ ext_addr.address }}
-{% for server_name in arvados_nginx_server_names.get(arvados_nginx_service_key, []) %}
-    {{ server_name }}
-{% endfor %}
-    ;
+{% block upstream %}
+{% endblock %}
 
-  ssl_certificate      {{ tls_source.cert.path }};
-  ssl_certificate_key  {{ tls_source.key.path }};
-
-  index  index.html;
-
+{% block server_config %}
   # Workbench2 uses a call to /config.json to bootstrap itself
   # and find out where to contact the API server.
   location /config.json {
@@ -32,4 +22,4 @@ server {
       return 503;
     }
   }
-}
+{% endblock %}

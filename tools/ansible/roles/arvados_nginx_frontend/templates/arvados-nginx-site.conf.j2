@@ -6,50 +6,29 @@
 
 {% set upstream_name = "arvados-" + arvados_nginx_service_key|lower %}
 {% set upstream_svc = arvados_cluster.Services[arvados_nginx_service_key] %}
+{% block upstream %}
 upstream {{ upstream_name }} {
 {% for addr in upstream_svc | internal_addrs %}
   server  {{ addr }}  fail_timeout=10s;
 {% endfor %}
 }
+{% endblock %}
 
-server {
-{% if arvados_nginx_service_key == "Controller" %}
-{% set external_port_min = arvados_cluster.Services.ContainerWebServices.ExternalPortMin|default(0) %}
-{% set external_port_max = arvados_cluster.Services.ContainerWebServices.ExternalPortMax|default(0) %}
-{% if 0 < external_port_min <= external_port_max %}
-  listen       {{ external_port_min }}-{{ external_port_max }} ssl;
-{% endif %}
-{% endif %}
 {% set ext_addr = upstream_svc | external_addr %}
+server {
   listen       {{ ext_addr.port }} ssl;
-  server_name  {{ ext_addr.address }}
-{% if arvados_nginx_service_key == "Controller" %}
-{% set containers_addr = arvados_cluster.Services.ContainerWebServices|external_addr|default(ext_addr) %}
-{% if containers_addr.address != ext_addr.address %}
-    {{ containers_addr.address }}
-{% endif %}
-{% endif %}
-{% for server_name in arvados_nginx_server_names.get(arvados_nginx_service_key, []) %}
-    {{ server_name }}
-{% endfor %}
-    ;
+  server_name  {{ ext_addr.address }};
 
   ssl_certificate      {{ tls_source.cert.path }};
   ssl_certificate_key  {{ tls_source.key.path }};
 
-{% set client_max_body_size = arvados_nginx_client_max_body_size.get(arvados_nginx_service_key) %}
-{% if client_max_body_size is not none %}
-  client_max_body_size  {{ client_max_body_size }};
-{% endif %}
+  {{ arvados_nginx_server_config|indent(2) }}
+{% block server_config %}
 
   location / {
     proxy_pass  http://{{ upstream_name }};
-{% for key, val in arvados_nginx_proxy_config.items() %}
-    proxy_{{ key }}  {{ val }};
-{% endfor %}
 
-{% for key, val in arvados_nginx_proxy_headers.items() %}
-    proxy_set_header  {{ key }}  {{ val }};
-{% endfor %}
+    {{ arvados_nginx_proxy_config|indent(4) }}
   }
+{% endblock %}
 }

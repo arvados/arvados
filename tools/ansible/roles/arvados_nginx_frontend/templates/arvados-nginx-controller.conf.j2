@@ -1,0 +1,22 @@
+{% extends "arvados-nginx-site.conf.j2" %}
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+{% block server_config %}
+{% set cws_svc = arvados_cluster.Services.ContainerWebServices %}
+{% set containers_addr = cws_svc|external_addr|default(none) %}
+{% if containers_addr.address is not none %}
+  server_name  {{ containers_addr.address }};
+{% endif %}
+
+{% set external_port_min = cws_svc.ExternalPortMin|default(0) %}
+{% set external_port_max = cws_svc.ExternalPortMax|default(0) %}
+{% if 0 < external_port_min <= external_port_max %}
+  listen  {{ external_port_min }}-{{ external_port_max }} ssl;
+{% endif %}
+
+  client_max_body_size  {{ arvados_cluster.API.MaxRequestSize|default('128m') }};
+{{ super() }}
+{% endblock %}
