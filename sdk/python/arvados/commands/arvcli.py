@@ -16,7 +16,9 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 """
 
 
+import abc
 import argparse
+from contextlib import AbstractContextManager
 import functools
 import importlib
 import json
@@ -24,7 +26,9 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 import sys
+from tempfile import NamedTemporaryFile
 from typing import NoReturn
 import arvados
 import arvados.commands._util as cmd_util
@@ -35,6 +39,19 @@ yaml.default_flow_style = False
 
 class _ArgTypes:
     """Private namespace class for JSON-related CLI argument types."""
+    group_uuid_pattern = re.compile(r"\A[0-9a-z]{5}-j7d0g-[0-9a-f]{15}\Z")
+
+    @staticmethod
+    def group_uuid(text: str) -> str:
+        """Validate an Arvados group UUID as the value of a CLI argument (an
+        Arvados project being a type of group).
+        """
+        if _ArgTypes.group_uuid_pattern.match(text):
+            return text
+        raise argparse.ArgumentTypeError(
+            f"Invalid UUID for Arvados project or group: {text}"
+        )
+
     @staticmethod
     def _validate_type(obj_type, obj):
         if isinstance(obj, obj_type):
@@ -253,6 +270,132 @@ def get_editor_cmdline() -> list[str]:
     return cmd
 
 
+class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
+    """Base class represending a process (in the generic sense, rather than
+    "a Unix/Linux process") of editing an Arvados object with an external
+    editor on a temporary file.
+
+    The methods `serialize(self, obj, file)` and `deserialize(self, file)` are
+    abstract methods meant to be overridden. `serialize()` should write to the
+    open `file` (any file-like object), and `deserialize()` should return an
+    object loaded from the file.
+
+    When initialized, no external file has been created. To do so, enter it as
+    a context manager.
+
+    Upon entering the context, the temporary file will be opened and written to
+    with proper initial content if necessary. Upon leaving, the temporary file
+    will be closed and cleaned-up (this normally means the file will be gone
+    permanently).
+    """
+    def __init__(self, initial_object=None, uuid=None, file_extension=None):
+        """Arguments:
+
+        * initial_object: Optional[Mapping[str, Any]] --- Initial object to be
+          serialized and written to the temporary file before the editor
+          process is run. If not provided, the file will be opened empty in the
+          editor.
+        * uuid: Optional[str] --- Arvados object UUID to be used as the prefix
+          of the temporary file's basename. If not provided, the initial
+          object's `uuid` field will be used, or if the initial object or its
+          `uuid` field is missing, a platform-dependent prefix will be chosen
+          automatically. This UUID as part of the filename is for information
+          only, and it may be displayed in the editor's UI. Its value has no
+          bearing on the actual object being edited.
+        * file_extension: Optional[str] --- Filename extension (without leading
+          dot) of the temporary file, e.g. "json" or "yml". This information
+          may be used by the editor to provide syntax highlighting, automatic
+          indentation, completion, etc.
+        """
+        # NOTE: Aravados objects are mappings, so the special value `None`
+        # cannot also be a valid object.
+        self.initial_object = initial_object
+
+        if initial_object is None:
+            self.prefix = None
+        elif prefix := initial_object.get("uuid") is None:
+            prefix = uuid
+            self.prefix = f"{prefix}-"
+        if file_extension is not None:
+            self.suffix = f".{file_extension}"
+        else:
+            self.suffix = None
+
+        self.tmp_file = None
+        self.run_result = None
+        self.base_command = get_editor_cmdline()
+
+    @abc.abstractmethod
+    def serialize(self, obj, file):
+        ...
+
+    @abc.abstractmethod
+    def deserialize(self, file):
+        ...
+
+    def dump(self, obj):
+        if self.tmp_file is None or self.tmp_file.closed:
+            raise RuntimeError("Temporary file is not available for writing")
+        # The following should not be done while the child process is pending.
+        self.tmp_file.seek(0, whence=os.SEEK_END)
+        self.serialize(obj, self.tmp_file)
+        self.tmp_file.flush()
+
+    def load(self):
+        if self.tmp_file is None or self.tmp_file.closed:
+            raise RuntimeError("Temporary file is not available for reading")
+        self.tmp_file.seek(0)
+        return self.deserialize(self.tmp_file)
+
+    def edit(self):
+        if self.tmp_file is None or self.tmp_file.closed:
+            raise RuntimeError(
+                "Temporary file is not available for editing by"
+                " external process"
+            )
+        self.run_result = subprocess.run(
+            self.base_command + [self.tmp_file.name]
+        )  # Wait for child.
+
+    def __enter__(self):
+        self.tmp_file = NamedTemporaryFile(
+            prefix=self.prefix, suffix=self.suffix
+        )
+        if self.initial_object is not None:
+            self.dump(self.initial_object)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.tmp_file.close()
+
+
+class JSONEditingProcess(ObjectEditingProcessBase):
+    def __init__(self, indent=1, **kwargs):
+        kw = kwargs.copy()
+        kw["file_extension"] = "json"
+        super().__init__(**kw)
+        self.indent = indent
+
+    def serialize(self, obj, file):
+        return json.dump(obj, file, indent=self.indent)
+
+    def deserialize(self, file):
+        return json.load(file)
+
+
+class YAMLEditingProcess(ObjectEditingProcessBase):
+    def __init__(self, **kwargs):
+        kw = kwargs.copy()
+        kw["file_extension"] = "yml"
+        super().__init__(**kw)
+
+    def serialize(self, obj, file):
+        return yaml.dump(obj, file)
+
+    def deserialize(self, file):
+        return yaml.load(file)
+
+
 class ArvCLIArgumentParser(argparse.ArgumentParser):
     """Argument parser for `arv` commands.
     """
@@ -350,6 +493,12 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
             choices=sorted(list(creatable_targets)),
             metavar="RESOURCE",
             help="Type of the resource to be created"
+        )
+        create_parser.add_argument(
+            "--project-uuid", "-p",
+            type=_ArgTypes.group_uuid,
+            metavar="UUID",
+            help="UUID of the project in which to create the resource"
         )
 
     def add_resource_subcommands(self):
@@ -466,7 +615,7 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
     sys.exit(0)
 
 
-def _handle_external_editor_command() -> NoReturn:
+def _handle_external_editor_command(api_client, args) -> NoReturn:
     # TODO
     sys.exit(0)
 
@@ -525,7 +674,7 @@ def dispatch(arguments=None):
 
     # Are we starting an external editor program?
     if args.subcommand in ("create", "edit"):
-        _handle_external_editor_command()  # Exits.
+        _handle_external_editor_command(api_client, args)  # Exits.
 
     # TODO: Other types of commands are not yet implemented ("create" and
     # "edit"). The code immediately below is not reachable.

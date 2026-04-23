@@ -7,6 +7,7 @@ import re
 import io
 import json
 from unittest import mock
+from pathlib import Path
 import ciso8601
 import pytest
 from ruamel.yaml import YAML
@@ -682,3 +683,46 @@ class TestGetEditorCmdline:
         monkeypatch.delenv("VISUAL", raising=False)
         monkeypatch.delenv("EDITOR", raising=False)
         assert arvcli.get_editor_cmdline() == ["vi"]
+
+
+@pytest.fixture
+def setup_editor(tmp_path, monkeypatch):
+    editor_dir = Path(__file__).parent
+    editor_path = editor_dir / "editor_simulator.py"
+    monkeypatch.setenv("PATH", str(editor_dir), prepend=":")
+
+    edit_source = tmp_path / "edit_source"
+
+    def editor_fcn(content: bytes, *extra_args):
+        edit_source.write_bytes(content)
+        editor_cmd = f"{editor_path!s} -i {edit_source!s}"
+        if extra_args:
+            editor_cmd += f" {' '.join(extra_args)}"
+        monkeypatch.setenv("VISUAL", editor_cmd)
+
+    yield editor_fcn
+
+
+class TestObjectEditingProcessBase:
+    """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
+    class PlainEditing(arvcli.ObjectEditingProcessBase):
+        """'Plain' editing process for which 'serialization'/'deserialization'
+        are simply bytes-writing and reading respectively.
+        """
+        def serialize(self, obj: bytes, file):
+            n = 0
+            l = len(obj)
+            while n < l:
+                n += file.write(obj[n:l])
+
+        def deserialize(self, file) -> bytes:
+            return file.read()
+
+    def test_basic(self, setup_editor):
+        content = b"Hello, world!"
+        setup_editor(content)
+        with self.PlainEditing() as ed:
+            ed.edit()
+            ed.tmp_file.seek(0)
+            assert ed.tmp_file.read() == content
+        assert not Path(ed.tmp_file.name).exists()
