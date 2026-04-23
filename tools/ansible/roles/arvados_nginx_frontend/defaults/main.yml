@@ -2,32 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-arvados_nginx_client_max_body_size:
-  Controller: "{{ arvados_cluster.API.MaxRequestSize|default(134217728) }}"
-  Keepproxy: "64m"
-  WebDAV: "0"
+# arvados_nginx_proxy_config is an nginx configuration block that will be used
+# for all proxy front-ends. The default has standard configuration suitable for
+# all Arvados services.
+arvados_nginx_proxy_config: |
+  proxy_buffering           off;
+  proxy_connect_timeout     90s;
+  proxy_http_version        1.1;
+  proxy_max_temp_file_size  0;
+  proxy_read_timeout        300s;
+  proxy_redirect            off;
+  proxy_request_buffering   off;
 
-arvados_nginx_proxy_config:
-  redirect: "off"
-  connect_timeout: "90s"
-  read_timeout: "300s"
-  max_temp_file_size: "0"
-  request_buffering: "off"
-  buffering: "off"
-  http_version: "1.1"
+  proxy_set_header  Connection         "upgrade";
+  proxy_set_header  Host               $http_host;
+  proxy_set_header  Upgrade            $http_upgrade;
+  proxy_set_header  X-External-Client  $external_client;
+  proxy_set_header  X-Forwarded-For    $proxy_add_x_forwarded_for;
+  proxy_set_header  X-Forwarded-Proto  https;
+  proxy_set_header  X-Real-IP          $remote_addr;
 
-arvados_nginx_proxy_headers:
-  Host: "$http_host"
-  Upgrade: "$http_upgrade"
-  Connection: '"upgrade"'
-  X-External-Client: "$external_client"
-  X-Forwarded-For: "$proxy_add_x_forwarded_for"
-  X-Forwarded-Proto: "https"
-  X-Real-IP: "$remote_addr"
+# arvados_nginx_servers_config is an nginx configuration block that will be used
+# for all servers. You can set this in inventory to customize servers; e.g., to add
+# server names or listening ports.
+arvados_nginx_server_config: ""
 
 tls_source: "{{ arvados_tls.get(arvados_nginx_service_key, arvados_tls.Default) }}"
-
-# This mapping provides additional names for specific services like keep-web.
-# Each key is the name of a service in the Arvados cluster configuration, like
-# WebDAV. The value is a list of strings with additional server names.
-arvados_nginx_server_names: {}
