@@ -23,6 +23,10 @@ all:
     # cluster configured in `arvados_config_file` that you want to deploy.
     arvados_cluster_id: xurid
 
+    # If you are deploying a cluster to AWS, name the region you are deploying
+    # to here. You can override this value per group or per host as needed.
+    #aws_region: us-east-1
+
     # If specified, this file will be deployed to cluster hosts as
     # /etc/arvados/ca-certificates.crt. Arvados services use this file as a
     # source of trusted CA certificates.
@@ -47,6 +51,10 @@ all:
         key:
           # path to the private key on the managed node
           path: /PATH/TO/controller.key
+          # If the key file requires a passphrase stored in an AWS secret,
+          # provide the name of that secret as `aws_secret`. This requires
+          # you to set `aws_region` too.
+          #aws_secret: ExampleSecretName
           # Also takes optional src, owner, group, and mode like cert
           #src: /PATH/TO/controller.key
           #owner: root

@@ -7,6 +7,15 @@
   ansible.builtin.apt:
     name: nginx
 
+- name: Install nginx service override directory
+  become: yes
+  ansible.builtin.file:
+    state: directory
+    path: /etc/systemd/system/nginx.service.d
+    owner: root
+    group: root
+    mode: 0755
+
 - name: Disable nginx default site
   become: yes
   ansible.builtin.file:

@@ -6,4 +6,5 @@
   become: yes
   ansible.builtin.systemd_service:
     name: nginx
+    daemon_reload: "{{ nginx_service_definition.changed|default(false) }}"
     state: restarted

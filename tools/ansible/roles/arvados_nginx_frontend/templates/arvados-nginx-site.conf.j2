@@ -21,6 +21,9 @@ server {
 
   ssl_certificate      {{ tls_source.cert.path }};
   ssl_certificate_key  {{ tls_source.key.path }};
+{% if tls_source.key.aws_secret is defined %}
+  ssl_password_file    /run/arvados/{{ tls_source.key.aws_secret }};
+{% endif %}
 
   {{ arvados_nginx_server_config|indent(2) }}
 {% block server_config %}
