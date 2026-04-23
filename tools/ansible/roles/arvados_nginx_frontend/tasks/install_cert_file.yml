@@ -9,7 +9,7 @@
     dest: "{{ tls_source[item].path }}"
     owner: "{{ tls_source[item].owner|default(omit) }}"
     group: "{{ tls_source[item].group|default(omit) }}"
-    mode: "{{ tls_source[item].mode|default('0640') }}"
+    mode: "{{ tls_source[item].mode|default('0640' if item == 'key' else omit) }}"
   when: tls_source[item].src is defined
   notify:
     - restart nginx
@@ -21,7 +21,7 @@
     dest: "{{ tls_source[item].path }}"
     owner: "{{ tls_source[item].owner|default(omit) }}"
     group: "{{ tls_source[item].group|default(omit) }}"
-    mode: "{{ tls_source[item].mode|default('0640') }}"
+    mode: "{{ tls_source[item].mode|default('0640' if item == 'key' else omit) }}"
   when: tls_source[item].src is not defined
   notify:
     - restart nginx
