@@ -8,6 +8,19 @@
     - cert
     - key
 
+- name: Add nginx secret service
+  when: tls_source.key.aws_secret is defined
+  become: yes
+  ansible.builtin.copy:
+    src: aws_secret.conf
+    dest: /etc/systemd/system/nginx.service.d/aws_secret.conf
+    owner: root
+    group: root
+    mode: 0644
+  register: nginx_service_definition
+  notify:
+    - restart nginx
+
 - name: "Set up nginx {{ arvados_nginx_service_key }} site"
   become: yes
   ansible.builtin.template:

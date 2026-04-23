@@ -17,7 +17,6 @@
     owner: root
     group: root
     mode: 0755
-  register: aws_secret_script_copy
 
 - name: Write arvados_aws_secret service definitions
   become: yes
@@ -27,7 +26,6 @@
     owner: root
     group: root
     mode: 0644
-  register: aws_secret_systemd
 
 - name: Add symlink from password_secret_connector service to arvados_aws_secret
   become: yes
@@ -35,11 +33,3 @@
     state: link
     src: /etc/systemd/system/arvados_aws_secret.service
     dest: /etc/systemd/system/password_secret_connector.service
-
-- name: Start and enable arvados_aws_secret.service
-  become: yes
-  ansible.builtin.systemd_service:
-    name: arvados_aws_secret.service
-    daemon_reload: "{{ aws_secret_systemd.changed }}"
-    state: "{{ 'restarted' if (aws_secret_script_copy.changed or aws_secret_systemd.changed) else 'started' }}"
-    enabled: true
