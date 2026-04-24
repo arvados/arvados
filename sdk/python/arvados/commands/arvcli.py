@@ -362,7 +362,7 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
 
     def __enter__(self):
         self.tmp_file = NamedTemporaryFile(
-            prefix=self.prefix, suffix=self.suffix
+            mode="w+", prefix=self.prefix, suffix=self.suffix
         )
         if self.initial_object is not None:
             self.dump(self.initial_object)

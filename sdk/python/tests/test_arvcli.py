@@ -703,13 +703,13 @@ def setup_editor(tmp_path, monkeypatch):
     # Persistent file that keeps a record of editor input, for each request to
     # this fixture (typically means function scope).
     log = base_dir / "log"
-    logf = open(log, "ab")
+    logf = open(log, "a")
 
-    def editor_fcn(content: bytes = b"", *extra_args):
-        with open(edit_source, "wb") as s:
+    def editor_fcn(content: str = "", *extra_args):
+        with open(edit_source, "w") as s:
             s.write(content)
         logf.write(content)
-        logf.write(b"-----\n")
+        logf.write("-----\n")
         editor_cmd = f"{editor_path!s} -i {edit_source!s}"
         if extra_args:
             editor_cmd += f" {' '.join(extra_args)}"
@@ -723,22 +723,19 @@ def setup_editor(tmp_path, monkeypatch):
 
 class PlainEditing(arvcli.ObjectEditingProcessBase):
     """'Plain' editing process for which 'serialization'/'deserialization'
-    are simply bytes-writing and reading respectively.
+    are simply string-writing and reading respectively.
     """
-    def serialize(self, obj: bytes, file):
-        n = 0
-        l = len(obj)
-        while n < l:
-            n += file.write(obj[n:l])
+    def serialize(self, obj: str, file):
+        file.write(obj)
 
-    def deserialize(self, file) -> bytes:
+    def deserialize(self, file) -> str:
         return file.read()
 
 
 class TestObjectEditingProcessBase:
     """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
     def test_basic(self, setup_editor):
-        content = b"Hello, world!\n"
+        content = "Hello, world!\n"
         setup_editor(content)
         with PlainEditing() as ed:
             assert ed.tmp_file is not None
@@ -748,17 +745,17 @@ class TestObjectEditingProcessBase:
             assert ed.load() == content
             # Inside the same context, the ed.edit() method can be called more
             # than once with the desired result.
-            content = b"foo bar"
+            content = "foo bar"
             setup_editor(content)
             ed.edit()
             assert ed.load() == content
         assert not Path(ed.tmp_file.name).exists()
 
     def test_initial_object(self):
-        initial_obj = b"init"
+        initial_obj = "init"
         with PlainEditing(initial_obj) as ed:
             # Snoop the temp file.
-            with open(ed.tmp_file.name, "rb") as t:
+            with open(ed.tmp_file.name, "r") as t:
                 filled_content = t.read()
         assert filled_content == initial_obj
 
@@ -787,8 +784,8 @@ class TestObjectEditingProcessBase:
         assert ed.suffix is None
 
     def test_editor_did_not_edit(self, setup_editor):
-        setup_editor(b"", "-a")
-        initial_obj = b"init"
+        setup_editor("", "-a")
+        initial_obj = "init"
         with PlainEditing(initial_obj) as ed:
             ed.edit()
             assert ed.load() == initial_obj

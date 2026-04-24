@@ -49,7 +49,7 @@ parser.add_argument("target_file")
 args = parser.parse_args()
 
 if args.crash:
-    t = open(args.target_file, "r+b")
+    t = open(args.target_file, "r+")
     os._exit(1)
 
 if args.delete:
@@ -57,15 +57,15 @@ if args.delete:
     sys.exit(0)
 
 if not args.input_source:
-    with open(args.target_file, "r+b"):
+    with open(args.target_file, "r+"):
         sys.exit(0)
 
-with open(args.input_source, "rb") as f:
+with open(args.input_source, "r") as f:
     content = f.read()
 
 if args.replace:
     os.rename(args.target_file, f"{args.target_file}.bak")
-with open(args.target_file, "r+b") as t:
+with open(args.target_file, "r+") as t:
     if args.append:
         t.seek(0, os.SEEK_END)
     else:
