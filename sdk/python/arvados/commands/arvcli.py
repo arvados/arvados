@@ -18,6 +18,7 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 
 import abc
 import argparse
+from collections.abc import Mapping
 from contextlib import AbstractContextManager
 import functools
 import importlib
@@ -291,31 +292,34 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     def __init__(self, initial_object=None, uuid=None, file_extension=None):
         """Arguments:
 
-        * initial_object: Optional[Mapping[str, Any]] --- Initial object to be
-          serialized and written to the temporary file before the editor
-          process is run. If not provided, the file will be opened empty in the
-          editor.
+        * initial_object: Optional[Any] --- Initial object to be serialized and
+          written to the temporary file before the editor process is run. If
+          not provided, the file will be opened empty in the editor.
         * uuid: Optional[str] --- Arvados object UUID to be used as the prefix
           of the temporary file's basename. If not provided, the initial
-          object's `uuid` field will be used, or if the initial object or its
-          `uuid` field is missing, a platform-dependent prefix will be chosen
-          automatically. This UUID as part of the filename is for information
-          only, and it may be displayed in the editor's UI. Its value has no
-          bearing on the actual object being edited.
+          object's `uuid` field will be used if available; otherwise, a
+          platform-dependent prefix will be chosen automatically. This UUID as
+          part of the filename is for information only, and it may be displayed
+          in the editor's UI. Its value has no bearing on the actual object
+          being edited.
         * file_extension: Optional[str] --- Filename extension (without leading
           dot) of the temporary file, e.g. "json" or "yml". This information
           may be used by the editor to provide syntax highlighting, automatic
           indentation, completion, etc.
         """
-        # NOTE: Aravados objects are mappings, so the special value `None`
-        # cannot also be a valid object.
         self.initial_object = initial_object
 
-        if initial_object is None:
-            self.prefix = None
-        elif prefix := initial_object.get("uuid") is None:
+        if uuid is not None:
             prefix = uuid
+        elif isinstance(initial_object, Mapping):
+            prefix = initial_object.get("uuid")
+        else:
+            prefix = None
+        if prefix is not None:
             self.prefix = f"{prefix}-"
+        else:
+            self.prefix = None
+
         if file_extension is not None:
             self.suffix = f".{file_extension}"
         else:
@@ -337,7 +341,7 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError("Temporary file is not available for writing")
         # The following should not be done while the child process is pending.
-        self.tmp_file.seek(0, whence=os.SEEK_END)
+        self.tmp_file.seek(0, os.SEEK_END)
         self.serialize(obj, self.tmp_file)
         self.tmp_file.flush()
 

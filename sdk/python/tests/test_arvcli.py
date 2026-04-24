@@ -691,16 +691,30 @@ def setup_editor(tmp_path, monkeypatch):
     editor_path = editor_dir / "editor_simulator.py"
     monkeypatch.setenv("PATH", str(editor_dir), prepend=":")
 
-    edit_source = tmp_path / "edit_source"
+    base_dir = tmp_path / "editor_input"
+    base_dir.mkdir()
+    # Temporary file for editor_simulator.py that gets written each time the
+    # editor is "installed"
+    edit_source = base_dir / "source"
+    # Persistent file that keeps a record of editor input, for each request to
+    # this fixture (typically means function scope).
+    log = base_dir / "log"
+    logf = open(log, "ab")
 
-    def editor_fcn(content: bytes, *extra_args):
-        edit_source.write_bytes(content)
+    def editor_fcn(content: bytes = b"", *extra_args):
+        with open(edit_source, "wb") as s:
+            s.write(content)
+        logf.write(content)
+        logf.write(b"-----\n")
         editor_cmd = f"{editor_path!s} -i {edit_source!s}"
         if extra_args:
             editor_cmd += f" {' '.join(extra_args)}"
         monkeypatch.setenv("VISUAL", editor_cmd)
 
-    yield editor_fcn
+    try:
+        yield editor_fcn
+    finally:
+        logf.close()
 
 
 class TestObjectEditingProcessBase:
@@ -719,10 +733,43 @@ class TestObjectEditingProcessBase:
             return file.read()
 
     def test_basic(self, setup_editor):
-        content = b"Hello, world!"
+        content = b"Hello, world!\n"
         setup_editor(content)
         with self.PlainEditing() as ed:
+            assert ed.tmp_file is not None
+            assert Path(ed.tmp_file.name).exists()
             ed.edit()
-            ed.tmp_file.seek(0)
-            assert ed.tmp_file.read() == content
+            assert ed.run_result is not None
+            assert ed.load() == content
+            # Inside the same context, the ed.edit() method can be called more
+            # than once with the desired result.
+            content = b"foo bar"
+            setup_editor(content)
+            ed.edit()
+            assert ed.load() == content
         assert not Path(ed.tmp_file.name).exists()
+
+    def test_initial_object(self):
+        initial_obj = b"init"
+        with self.PlainEditing(initial_obj) as ed:
+            # Snoop the temp file.
+            with open(ed.tmp_file.name, "rb") as t:
+                filled_content = t.read()
+        assert filled_content == initial_obj
+
+    def test_tempfile_name_prefix(self):
+        fake_uuid = "foo-bar"
+        with self.PlainEditing(uuid=fake_uuid) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
+
+    def test_tempfile_name_suffix(self):
+        ext = "dat"
+        with self.PlainEditing(file_extension=ext) as ed:
+            assert Path(ed.tmp_file.name).suffix == f".{ext}"
+
+    def test_editor_did_not_edit(self, setup_editor):
+        setup_editor(b"", "-a")
+        initial_obj = b"init"
+        with self.PlainEditing(initial_obj) as ed:
+            ed.edit()
+            assert ed.load() == initial_obj

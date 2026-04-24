@@ -25,6 +25,8 @@ Options are used to simulate editing behavior, and these include:
     -i/--input INPUT_SOURCE   Put the content of INPUT_SOURCE into FILE. If no
                               INPUT_SOURCE value is specified, leave FILE
                               unmodified.
+    -a/--append               Append to FILE, rather than truncating FILE and
+                              then injecting the content.
     -r/--replace              Actually move FILE and write new file at the same
                               path (similar to vim with `writebackup`).
     -d/--delete               Delete FILE (will cause `-i` option to be
@@ -38,6 +40,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", dest="input_source", default="")
+parser.add_argument("-a", "--append", action="store_true")
 parser.add_argument("-r", "--replace", action="store_true")
 parser.add_argument("-d", "--delete", action="store_true")
 parser.add_argument("-x", "--crash", action="store_true")
@@ -63,8 +66,9 @@ with open(args.input_source, "rb") as f:
 if args.replace:
     os.rename(args.target_file, f"{args.target_file}.bak")
 with open(args.target_file, "r+b") as t:
-    n = 0
-    lc = len(content)
-    while n < lc:
-        n += t.write(content[n:lc])
+    if args.append:
+        t.seek(0, os.SEEK_END)
+    else:
+        t.truncate()
+    t.write(content)
 sys.exit(0)
