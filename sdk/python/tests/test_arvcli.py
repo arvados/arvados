@@ -8,6 +8,7 @@ import io
 import json
 from unittest import mock
 from pathlib import Path
+from typing import TextIO
 import ciso8601
 import pytest
 from ruamel.yaml import YAML
@@ -690,7 +691,7 @@ class TestGetEditorCmdline:
 
 
 @pytest.fixture
-def setup_editor(tmp_path, monkeypatch):
+def setup_editor_simulator(tmp_path, monkeypatch):
     editor_dir = Path(__file__).parent
     editor_path = editor_dir / "editor_simulator.py"
     monkeypatch.setenv("PATH", str(editor_dir), prepend=":")
@@ -721,23 +722,23 @@ def setup_editor(tmp_path, monkeypatch):
         logf.close()
 
 
-class PlainEditing(arvcli.ObjectEditingProcessBase):
+class PlainStringEditing(arvcli.ObjectEditingProcessBase):
     """'Plain' editing process for which 'serialization'/'deserialization'
     are simply string-writing and reading respectively.
     """
-    def serialize(self, obj: str, file):
+    def serialize(self, obj: str, file: TextIO) -> None:
         file.write(obj)
 
-    def deserialize(self, file) -> str:
+    def deserialize(self, file: TextIO) -> str:
         return file.read()
 
 
 class TestObjectEditingProcessBase:
     """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
-    def test_basic(self, setup_editor):
+    def test_basic(self, setup_editor_simulator):
         content = "Hello, world!\n"
-        setup_editor(content)
-        with PlainEditing() as ed:
+        setup_editor_simulator(content)
+        with PlainStringEditing() as ed:
             assert ed.tmp_file is not None
             assert Path(ed.tmp_file.name).exists()
             ed.edit()
@@ -746,14 +747,14 @@ class TestObjectEditingProcessBase:
             # Inside the same context, the ed.edit() method can be called more
             # than once with the desired result.
             content = "foo bar"
-            setup_editor(content)
+            setup_editor_simulator(content)
             ed.edit()
             assert ed.load() == content
         assert not Path(ed.tmp_file.name).exists()
 
     def test_initial_object(self):
         initial_obj = "init"
-        with PlainEditing(initial_obj) as ed:
+        with PlainStringEditing(initial_obj) as ed:
             # Snoop the temp file.
             with open(ed.tmp_file.name, "r") as t:
                 filled_content = t.read()
@@ -761,7 +762,7 @@ class TestObjectEditingProcessBase:
 
     def test_tempfile_name_prefix(self):
         fake_uuid = "foo-bar"
-        with PlainEditing(uuid=fake_uuid) as ed:
+        with PlainStringEditing(uuid=fake_uuid) as ed:
             assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
 
     def test_tempfile_name_no_empty_prefix(self):
@@ -770,22 +771,22 @@ class TestObjectEditingProcessBase:
         # hyphen/dash character *created by us* when uuid="" or when
         # initial_object["uuid"] is empty, but a hyphen may as well happen to
         # be the first character generated randomly.
-        ed = PlainEditing(uuid="")
+        ed = PlainStringEditing(uuid="")
         assert ed.prefix is None
 
     def test_tempfile_name_suffix(self):
         ext = "dat"
-        with PlainEditing(file_extension=ext) as ed:
+        with PlainStringEditing(file_extension=ext) as ed:
             assert Path(ed.tmp_file.name).suffix == f".{ext}"
 
     def test_tempfile_name_suffix_no_empty_extension(self):
         # See also the comment for test_tempfile_name_no_empty_prefix().
-        ed = PlainEditing(file_extension="")
+        ed = PlainStringEditing(file_extension="")
         assert ed.suffix is None
 
-    def test_editor_did_not_edit(self, setup_editor):
-        setup_editor("", "-a")
+    def test_editor_did_not_edit(self, setup_editor_simulator):
+        setup_editor_simulator("", "-a")
         initial_obj = "init"
-        with PlainEditing(initial_obj) as ed:
+        with PlainStringEditing(initial_obj) as ed:
             ed.edit()
             assert ed.load() == initial_obj

@@ -30,7 +30,7 @@ import shutil
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
-from typing import NoReturn
+from typing import Any, NoReturn, TextIO
 import arvados
 import arvados.commands._util as cmd_util
 from ruamel.yaml import YAML
@@ -272,6 +272,17 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     with proper initial content if necessary. Upon leaving, the temporary file
     will be closed and cleaned-up (this normally means the file will be gone
     permanently).
+
+    Attributes:
+
+    * tmp_file: Optional[tempfile.NamedTemporaryFile] --- Temporary file to be
+      edited.
+    * prefix: Optional[str] --- Prefix of temporary filename if provided.
+    * suffix: Optional[str] --- Suffix of temporary filename if provided. This
+      can be a filename extension with the leading dot/period character `.`,
+      useful for hinting the external editor with syntax highlighting.
+    * base_command: list[str] --- Command-line argument list for invoking the
+      external editor program. See `get_editor_cmdline()` for more.
     """
     _tmpfile_extension = None
 
@@ -329,14 +340,19 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         return cmd
 
     @abc.abstractmethod
-    def serialize(self, obj, file):
-        ...
+    def serialize(self, obj: Any, file: TextIO) -> None:
+        """Abstract method for serializing any object `obj` to the file-like
+        object `file` as text.
+        """
 
     @abc.abstractmethod
-    def deserialize(self, file):
-        ...
+    def deserialize(self, file: TextIO) -> Any:
+        """Abstract method for loading from the file-like object `file` as
+        text. Returns the object deserialized from the text content.
+        """
 
-    def dump(self, obj):
+    def dump(self, obj: Any) -> None:
+        """Append the serialized object to the temporary file."""
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError("Temporary file is not available for writing")
         # The following should not be done while the child process is pending.
@@ -344,20 +360,25 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         self.serialize(obj, self.tmp_file)
         self.tmp_file.flush()
 
-    def load(self):
+    def load(self) -> Any:
+        """Read the temporary file from the beginning. Returns the deserialized
+        object.
+        """
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError("Temporary file is not available for reading")
         self.tmp_file.seek(0)
         return self.deserialize(self.tmp_file)
 
-    def edit(self):
+    def edit(self) -> None:
+        """Run external editor and wait for it to finish."""
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError(
                 "Temporary file is not available for editing by"
                 " external process"
             )
         self.run_result = subprocess.run(
-            self.base_command + [self.tmp_file.name]
+            self.base_command + [self.tmp_file.name],
+            check=False
         )  # Wait for child.
 
     def __enter__(self):
@@ -373,9 +394,15 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
 
 
 class JSONEditingProcess(ObjectEditingProcessBase):
+    """Subclass of editing process tuned for JSON files."""
     _tmpfile_extension = "json"
 
-    def __init__(self, *args, indent=1, **kwargs):
+    def __init__(self, *args, indent: int = 1, **kwargs):
+        """Arguments:
+
+        * indent: int --- Number of spaces for each indentation level in the
+          JSON file. Default: 1.
+        """
         super().__init__(*args, **kwargs)
         self.indent = indent
 
@@ -387,10 +414,8 @@ class JSONEditingProcess(ObjectEditingProcessBase):
 
 
 class YAMLEditingProcess(ObjectEditingProcessBase):
+    """Subclass of editing process tuned for YAML files."""
     _tmpfile_extension = "yml"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def serialize(self, obj, file):
         return yaml.dump(obj, file)

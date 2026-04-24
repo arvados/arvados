@@ -12,7 +12,7 @@ environment-variable value, e.g.
     VISUAL='editor_simulator.py -i source.json'
 
 This file only provides the executable; to use in a test suite, please refer to
-the "setup_editor" fixture in tests/test_arvcli.py for an example.
+the "setup_editor_simulator" fixture in tests/test_arvcli.py for an example.
 
 Usage:
 
