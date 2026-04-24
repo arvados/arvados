@@ -767,10 +767,24 @@ class TestObjectEditingProcessBase:
         with PlainEditing(uuid=fake_uuid) as ed:
             assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
 
+    def test_tempfile_name_no_empty_prefix(self):
+        # It's risky to do negative tests on the tempfile's actual name because
+        # it's random in a platform-dependent way. We don't want a widowed
+        # hyphen/dash character *created by us* when uuid="" or when
+        # initial_object["uuid"] is empty, but a hyphen may as well happen to
+        # be the first character generated randomly.
+        ed = PlainEditing(uuid="")
+        assert ed.prefix is None
+
     def test_tempfile_name_suffix(self):
         ext = "dat"
         with PlainEditing(file_extension=ext) as ed:
             assert Path(ed.tmp_file.name).suffix == f".{ext}"
+
+    def test_tempfile_name_suffix_no_empty_extension(self):
+        # See also the comment for test_tempfile_name_no_empty_prefix().
+        ed = PlainEditing(file_extension="")
+        assert ed.suffix is None
 
     def test_editor_did_not_edit(self, setup_editor):
         setup_editor(b"", "-a")

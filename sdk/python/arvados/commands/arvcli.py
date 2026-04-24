@@ -273,6 +273,8 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     will be closed and cleaned-up (this normally means the file will be gone
     permanently).
     """
+    _tmpfile_extension = None
+
     def __init__(self, initial_object=None, uuid=None, file_extension=None):
         """Arguments:
 
@@ -293,21 +295,18 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         """
         self.initial_object = initial_object
 
-        if uuid is not None:
-            prefix = uuid
-        elif isinstance(initial_object, Mapping):
-            prefix = initial_object.get("uuid")
-        else:
-            prefix = None
-        if prefix is not None:
-            self.prefix = f"{prefix}-"
+        if uuid:
+            self.prefix = f"{uuid}-"
+        elif (
+            isinstance(initial_object, Mapping)
+            and (obj_uuid := initial_object.get("uuid"))
+        ):
+            self.prefix = f"{obj_uuid}-"
         else:
             self.prefix = None
 
-        if file_extension is not None:
-            self.suffix = f".{file_extension}"
-        else:
-            self.suffix = None
+        ext = self._tmpfile_extension or file_extension
+        self.suffix = f".{file_extension}" if ext else None
 
         self.tmp_file = None
         self.run_result = None
@@ -328,7 +327,6 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         else:
             cmd = ["vi"]
         return cmd
-
 
     @abc.abstractmethod
     def serialize(self, obj, file):
@@ -375,10 +373,10 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
 
 
 class JSONEditingProcess(ObjectEditingProcessBase):
-    def __init__(self, indent=1, **kwargs):
-        kw = kwargs.copy()
-        kw["file_extension"] = "json"
-        super().__init__(**kw)
+    _tmpfile_extension = "json"
+
+    def __init__(self, *args, indent=1, **kwargs):
+        super().__init__(*args, **kwargs)
         self.indent = indent
 
     def serialize(self, obj, file):
@@ -389,10 +387,10 @@ class JSONEditingProcess(ObjectEditingProcessBase):
 
 
 class YAMLEditingProcess(ObjectEditingProcessBase):
-    def __init__(self, **kwargs):
-        kw = kwargs.copy()
-        kw["file_extension"] = "yml"
-        super().__init__(**kw)
+    _tmpfile_extension = "yml"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def serialize(self, obj, file):
         return yaml.dump(obj, file)
