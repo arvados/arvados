@@ -717,25 +717,26 @@ def setup_editor(tmp_path, monkeypatch):
         logf.close()
 
 
+class PlainEditing(arvcli.ObjectEditingProcessBase):
+    """'Plain' editing process for which 'serialization'/'deserialization'
+    are simply bytes-writing and reading respectively.
+    """
+    def serialize(self, obj: bytes, file):
+        n = 0
+        l = len(obj)
+        while n < l:
+            n += file.write(obj[n:l])
+
+    def deserialize(self, file) -> bytes:
+        return file.read()
+
+
 class TestObjectEditingProcessBase:
     """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
-    class PlainEditing(arvcli.ObjectEditingProcessBase):
-        """'Plain' editing process for which 'serialization'/'deserialization'
-        are simply bytes-writing and reading respectively.
-        """
-        def serialize(self, obj: bytes, file):
-            n = 0
-            l = len(obj)
-            while n < l:
-                n += file.write(obj[n:l])
-
-        def deserialize(self, file) -> bytes:
-            return file.read()
-
     def test_basic(self, setup_editor):
         content = b"Hello, world!\n"
         setup_editor(content)
-        with self.PlainEditing() as ed:
+        with PlainEditing() as ed:
             assert ed.tmp_file is not None
             assert Path(ed.tmp_file.name).exists()
             ed.edit()
@@ -751,7 +752,7 @@ class TestObjectEditingProcessBase:
 
     def test_initial_object(self):
         initial_obj = b"init"
-        with self.PlainEditing(initial_obj) as ed:
+        with PlainEditing(initial_obj) as ed:
             # Snoop the temp file.
             with open(ed.tmp_file.name, "rb") as t:
                 filled_content = t.read()
@@ -759,17 +760,17 @@ class TestObjectEditingProcessBase:
 
     def test_tempfile_name_prefix(self):
         fake_uuid = "foo-bar"
-        with self.PlainEditing(uuid=fake_uuid) as ed:
+        with PlainEditing(uuid=fake_uuid) as ed:
             assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
 
     def test_tempfile_name_suffix(self):
         ext = "dat"
-        with self.PlainEditing(file_extension=ext) as ed:
+        with PlainEditing(file_extension=ext) as ed:
             assert Path(ed.tmp_file.name).suffix == f".{ext}"
 
     def test_editor_did_not_edit(self, setup_editor):
         setup_editor(b"", "-a")
         initial_obj = b"init"
-        with self.PlainEditing(initial_obj) as ed:
+        with PlainEditing(initial_obj) as ed:
             ed.edit()
             assert ed.load() == initial_obj
