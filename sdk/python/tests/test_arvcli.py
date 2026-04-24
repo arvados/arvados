@@ -774,6 +774,20 @@ class TestObjectEditingProcessBase:
         ed = PlainStringEditing(uuid="")
         assert ed.prefix is None
 
+    def test_tempfile_name_prefix_from_obj_uuid(self):
+        uuid = "foo-bar"
+        initial_obj = {"uuid": uuid}
+        with arvcli.JSONEditingProcess(initial_obj) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{uuid}-")
+
+        uuid_override = "foo-bar-baz"
+        with arvcli.JSONEditingProcess(initial_obj, uuid=uuid_override) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{uuid_override}-")
+
+        initial_obj = {}
+        ed = arvcli.JSONEditingProcess(initial_obj)
+        assert ed.prefix is None
+
     def test_tempfile_name_suffix(self):
         ext = "dat"
         with PlainStringEditing(file_extension=ext) as ed:
