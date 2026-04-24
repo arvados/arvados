@@ -646,7 +646,11 @@ class TestApiClientAuthorizationsResource:
     # the create_system_auth method.
 
 
+GEC = arvcli.ObjectEditingProcessBase.get_editor_cmdline
+
+
 class TestGetEditorCmdline:
+
     @pytest.fixture
     def installed_nano(self, tmp_path, monkeypatch):
         """Ensure that `nano` is installed by placing an executable named
@@ -670,19 +674,19 @@ class TestGetEditorCmdline:
     def test_env_var(self, monkeypatch):
         monkeypatch.setenv("VISUAL", "foo --bar")
         monkeypatch.setenv("EDITOR", "bar")
-        assert arvcli.get_editor_cmdline() == ["foo", "--bar"]
+        assert GEC() == ["foo", "--bar"]
         monkeypatch.delenv("VISUAL")
-        assert arvcli.get_editor_cmdline() == ["bar"]
+        assert GEC() == ["bar"]
 
     def test_fallback_nano(self, monkeypatch, installed_nano):
         monkeypatch.delenv("VISUAL", raising=False)
         monkeypatch.delenv("EDITOR", raising=False)
-        assert arvcli.get_editor_cmdline() == [installed_nano]
+        assert GEC() == [installed_nano]
 
     def test_fallback_no_nano(self, monkeypatch, uninstalled_nano):
         monkeypatch.delenv("VISUAL", raising=False)
         monkeypatch.delenv("EDITOR", raising=False)
-        assert arvcli.get_editor_cmdline() == ["vi"]
+        assert GEC() == ["vi"]
 
 
 @pytest.fixture

@@ -255,22 +255,6 @@ class _ArgUtil:
                 )
 
 
-def get_editor_cmdline() -> list[str]:
-    """Returns a partial command-line argument list that begins with the
-    external editor program. The precedence is the $VISUAL environment
-    variable, followed by $EDITOR; and if both are missing, then `nano` if it
-    exists in the $PATH; and finally the hard-coded value `vi` no matter the
-    command exists or not.
-    """
-    if cmd_str := (os.environ.get("VISUAL") or os.environ.get("EDITOR")):
-        cmd = shlex.split(cmd_str)
-    elif cmd_str := shutil.which("nano"):
-        cmd = [cmd_str]
-    else:
-        cmd = ["vi"]
-    return cmd
-
-
 class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     """Base class represending a process (in the generic sense, rather than
     "a Unix/Linux process") of editing an Arvados object with an external
@@ -327,7 +311,24 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
 
         self.tmp_file = None
         self.run_result = None
-        self.base_command = get_editor_cmdline()
+        self.base_command = self.get_editor_cmdline()
+
+    @staticmethod
+    def get_editor_cmdline() -> list[str]:
+        """Returns a partial command-line argument list that begins with the
+        external editor program. The precedence is the $VISUAL environment
+        variable, followed by $EDITOR; and if both are missing, then `nano` if
+        it exists in the $PATH; and finally the hard-coded value `vi` no matter
+        the command exists or not.
+        """
+        if cmd_str := (os.environ.get("VISUAL") or os.environ.get("EDITOR")):
+            cmd = shlex.split(cmd_str)
+        elif cmd_str := shutil.which("nano"):
+            cmd = [cmd_str]
+        else:
+            cmd = ["vi"]
+        return cmd
+
 
     @abc.abstractmethod
     def serialize(self, obj, file):
