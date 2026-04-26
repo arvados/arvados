@@ -18,7 +18,6 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 
 import abc
 import argparse
-from collections.abc import Mapping
 from contextlib import AbstractContextManager
 import functools
 import importlib
@@ -30,7 +29,7 @@ import shutil
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
-from typing import Any, NoReturn, TextIO
+from typing import Any, Mapping, NoReturn, TextIO
 import arvados
 import arvados.commands._util as cmd_util
 from ruamel.yaml import YAML
@@ -364,6 +363,7 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         """Read the temporary file from the beginning. Returns the deserialized
         object.
         """
+        # TODO: There's no error handling for garbage in the temp file.
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError("Temporary file is not available for reading")
         self.tmp_file.seek(0)
@@ -406,10 +406,10 @@ class JSONEditingProcess(ObjectEditingProcessBase):
         super().__init__(*args, **kwargs)
         self.indent = indent
 
-    def serialize(self, obj, file):
+    def serialize(self, obj: Mapping[str, Any], file: TextIO) -> None:
         return json.dump(obj, file, indent=self.indent)
 
-    def deserialize(self, file):
+    def deserialize(self, file: TextIO) -> Mapping[str, Any]:
         return json.load(file)
 
 
@@ -417,10 +417,10 @@ class YAMLEditingProcess(ObjectEditingProcessBase):
     """Subclass of editing process tuned for YAML files."""
     _tmpfile_extension = "yml"
 
-    def serialize(self, obj, file):
+    def serialize(self, obj: Mapping[str, Any], file: TextIO) -> None:
         return yaml.dump(obj, file)
 
-    def deserialize(self, file):
+    def deserialize(self, file: TextIO) -> Mapping[str, Any]:
         return yaml.load(file)
 
 
