@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+from collections import namedtuple
 import re
 import io
 import json
@@ -812,3 +813,40 @@ class TestObjectEditingProcessBase:
         with PlainStringEditing(initial_obj) as ed:
             ed.edit()
             assert ed.load() == initial_obj
+
+
+def yaml_dumps(obj) -> str:
+    buf = io.StringIO()
+    yaml.dump(obj, stream=buf)
+    return buf.getvalue()
+
+
+EditFormatCase = namedtuple("EditFormatCase", ("format", "dumps", "loads"))
+
+
+@pytest.mark.parametrize("format_case", (
+    EditFormatCase("json", json.dumps, json.loads),
+    EditFormatCase("yaml", yaml_dumps, yaml.load)
+))
+class TestEditingSubcommands:
+    def setup_method(self):
+        run_test_server.reset()
+
+    @classmethod
+    def teardown_class(self):
+        run_test_server.reset()
+
+    def test_basic_create(
+        self, format_case, setup_editor_simulator, run_arvcli
+    ):
+        obj = {"name": "a new project", "group_class": "project"}
+        setup_editor_simulator(format_case.dumps(obj))
+        # Force arvcli to believe that we have a tty.
+        with mock.patch("os.isatty", new=lambda _: True):
+            exit_code, out, err = run_arvcli(
+                ["--format", format_case.format, "create", "group"]
+            )
+        assert exit_code == 0
+        result = format_case.loads(out)
+        for k in obj.keys():
+            assert obj[k] == result[k]

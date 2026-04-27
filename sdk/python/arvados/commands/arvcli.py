@@ -758,7 +758,11 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
     # Refuse to run when we're not in an interactive session -- some editors
     # may be unwilling to quit even when not attached to a terminal (e.g. vim),
     # which would have caused us to wait without making progress.
-    if not os.isatty(sys.stdin.fileno()):
+    try:
+        stdin_fileno = sys.stdin.fileno()
+    except OSError:
+        stdin_fileno = 0
+    if not os.isatty(stdin_fileno):
         print(
             "'create'/'edit' subcommands can only run interactively when"
             " input/output are a terminal.",
