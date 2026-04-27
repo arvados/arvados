@@ -39,7 +39,7 @@ yaml.default_flow_style = False
 
 class _ArgTypes:
     """Private namespace class for JSON-related CLI argument types."""
-    group_uuid_pattern = re.compile(r"\A[0-9a-z]{5}-j7d0g-[0-9a-f]{15}\Z")
+    group_uuid_pattern = re.compile(r"\A[0-9a-z]{5}-j7d0g-[0-9a-z]{15}\Z")
 
     @staticmethod
     def group_uuid(text: str) -> str:

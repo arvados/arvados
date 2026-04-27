@@ -274,6 +274,14 @@ class TestArgTypes:
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.json_object(invalid_input)
 
+    def test_group_uuid_validation(self):
+        assert all(
+            arvcli._ArgTypes.group_uuid(fx["uuid"])
+            for fx in run_test_server.fixture("groups").values()
+        )
+        with pytest.raises(argparse.ArgumentTypeError):
+            arvcli._ArgTypes.group_uuid("zzzzz-j7d0g-123456789")
+
 
 @pytest.fixture
 def run_arvcli(capsys):
