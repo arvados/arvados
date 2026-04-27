@@ -32,7 +32,7 @@ from tempfile import NamedTemporaryFile
 from typing import Any, Mapping, NoReturn, TextIO
 import arvados
 import arvados.commands._util as cmd_util
-from ruamel.yaml import YAML
+from ruamel.yaml import YAML, YAMLError
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
@@ -316,7 +316,7 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
             self.prefix = None
 
         ext = self._tmpfile_extension or file_extension
-        self.suffix = f".{file_extension}" if ext else None
+        self.suffix = f".{ext}" if ext else None
 
         self.tmp_file = None
         self.run_result = None
@@ -355,19 +355,36 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError("Temporary file is not available for writing")
         # The following should not be done while the child process is pending.
-        self.tmp_file.seek(0, os.SEEK_END)
-        self.serialize(obj, self.tmp_file)
+        pos = self.tmp_file.tell()
+        try:
+            self.tmp_file.seek(0, os.SEEK_END)
+            self.serialize(obj, self.tmp_file)
+        except Exception as err:
+            self.tmp_file.seek(pos)
+            raise err
         self.tmp_file.flush()
 
     def load(self) -> Any:
         """Read the temporary file from the beginning. Returns the deserialized
-        object.
+        object, or None if the file is empty or only whitespace.
         """
-        # TODO: There's no error handling for garbage in the temp file.
         if self.tmp_file is None or self.tmp_file.closed:
             raise RuntimeError("Temporary file is not available for reading")
+        # Snoop the file to see if it consists of only whitespace characters
+        # (including empty lines); if so, return the special value None to
+        # indicate that the user has abandoned the edit.
+        with open(self.tmp_file.name, "r") as fdup:
+            if not fdup.read().strip():
+                return None
+
+        pos = self.tmp_file.tell()
         self.tmp_file.seek(0)
-        return self.deserialize(self.tmp_file)
+        try:
+            obj = self.deserialize(self.tmp_file)
+        except EditingContentError as err:
+            self.tmp_file.seek(pos)
+            raise err
+        return obj
 
     def edit(self) -> None:
         """Run external editor and wait for it to finish."""
@@ -393,9 +410,41 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         self.tmp_file.close()
 
 
+class EditingContentError(ValueError):
+    """Exception that indicates the content provided by the user via the editor
+    is invalid for the specific format.
+    """
+    def __init__(
+        self,
+        path=None, line=0, column=0,
+        file_type=None,
+        original_exception=None,
+    ):
+        self.path = path
+        self.line = line
+        self.column = column
+        self.file_type = file_type
+        self.original_exception = original_exception
+
+    def __str__(self):
+        msg = (
+            f"Error: invalid input file [type {self.file_type or 'unknown'}]:"
+            f" {self.path!s}:{self.line}:{self.column}"
+        )
+        if (
+            self.original_exception
+            and (orig_msg := str(self.original_exception))
+        ):
+            msg += f":\n{orig_msg}"
+        return msg
+
+
 class JSONEditingProcess(ObjectEditingProcessBase):
     """Subclass of editing process tuned for JSON files."""
     _tmpfile_extension = "json"
+    input_error_type = functools.partial(
+        EditingContentError, file_type="JSON"
+    )
 
     def __init__(self, *args, indent: int = 1, **kwargs):
         """Arguments:
@@ -410,18 +459,70 @@ class JSONEditingProcess(ObjectEditingProcessBase):
         return json.dump(obj, file, indent=self.indent)
 
     def deserialize(self, file: TextIO) -> Mapping[str, Any]:
-        return json.load(file)
+        path = getattr(file, "name", "<unknown path>")
+        try:
+            obj = json.load(file)
+        except json.JSONDecodeError as err:
+            line = getattr(err, "lineno", 0)
+            column = getattr(err, "colno", 0)
+            raise self.input_error_type(
+                path=path, line=line, column=column,
+                original_exception=err
+            )
+        if not isinstance(obj, Mapping):
+            raise self.input_error_type(
+                path=path,
+                # NOTE: the "official" term for the curly-braced entity is
+                # "object" (see
+                # https://datatracker.ietf.org/doc/html/rfc7159.html,
+                # https://www.json.org/json-en.html)
+                # but that word may be a little confusing, so we elaborate a
+                # bit in the user-facing message.
+                original_exception=ValueError(
+                    "JSON input does not define an object"
+                    " (i.e., 'mapping' or 'dict'),"
+                    " hence cannot be a valid Arvados object"
+                )
+            )
+        return obj
 
 
 class YAMLEditingProcess(ObjectEditingProcessBase):
     """Subclass of editing process tuned for YAML files."""
     _tmpfile_extension = "yml"
+    input_error_type = functools.partial(
+        EditingContentError, file_type="YAML"
+    )
 
     def serialize(self, obj: Mapping[str, Any], file: TextIO) -> None:
         return yaml.dump(obj, file)
 
     def deserialize(self, file: TextIO) -> Mapping[str, Any]:
-        return yaml.load(file)
+        path = getattr(file, "name", "<unknown path>")
+        try:
+            obj = yaml.load(file)
+        except YAMLError as err:
+            if problem_mark := getattr(err, "problem_mark", None):
+                line = getattr(problem_mark, "line", 0)
+                column = getattr(problem_mark, "column", 0)
+            else:
+                line = 0
+                column = 0
+            raise self.input_error_type(
+                path=path, line=line, column=column,
+                original_exception=err
+            )
+        if not isinstance(obj, Mapping):
+            raise self.input_error_type(
+                path=path,
+                # NOTE: YAML spec uses the term "mapping",
+                # https://yaml.org/spec/1.2.2/#mapping
+                original_exception=ValueError(
+                    "YAML input does not define a mapping,"
+                    " hence cannot be a valid Arvados object"
+                )
+            )
+        return obj
 
 
 class ArvCLIArgumentParser(argparse.ArgumentParser):
@@ -574,18 +675,14 @@ def _handle_external_command(module_name: str, args: list[str]) -> NoReturn:
     sys.exit(external_mod.main(args))
 
 
-def _handle_resource_method(api_client, resource, args) -> NoReturn:
-    """Prepare API request by resource name and the already-parsed arguments,
-    send the request, and analyze & print out the result.
-    """
-    arv_resource = getattr(api_client, resource)()
-    arv_method = getattr(arv_resource, args.method)
-    method_call = arv_method(**{
-        k: v
-        for k, v in vars(args).items()
-        if k not in ArvCLIArgumentParser.global_args
-    })
+def _call_resource_method(method_obj, method_args: Mapping, fmt: str) -> int:
+    """Given the API resource method object and parameters, create an API
+    request, execute it (do the call), and print the response of the API server
+    in the given format.
 
+    Returns 0 if successful, or 1 if any errors are encountered.
+    """
+    method_call = method_obj(**method_args)
     try:
         result = method_call.execute()
     except arvados.errors.ApiError as err:
@@ -598,9 +695,9 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
         ):
             msg += f" ({request_id})"
         print(f"Error: {msg}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    match args.format:
+    match fmt:
         case "json":
             json.dump(result, sys.stdout, indent=1)
             print()
@@ -626,9 +723,8 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
                             sep="\n",
                             file=sys.stderr
                         )
-                        sys.exit(1)
-                    else:
-                        print(item["uuid"])
+                        return 1
+                    print(item["uuid"])
             else:
                 obj_uuid = result.get("uuid")
                 if obj_uuid is None:
@@ -638,14 +734,97 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
                         sep="\n",
                         file=sys.stderr
                     )
-                    sys.exit(1)
+                    return 1
                 print(obj_uuid)
-    sys.exit(0)
+    return 0
 
 
-def _handle_external_editor_command(api_client, args) -> NoReturn:
-    # TODO
-    sys.exit(0)
+def _handle_resource_method(api_client, resource, args) -> NoReturn:
+    """Prepare API request by resource name and the already-parsed arguments,
+    send the request, and analyze & print out the result.
+    """
+    arv_resource = getattr(api_client, resource)()
+    arv_method = getattr(arv_resource, args.method)
+    method_args = {
+        k: v
+        for k, v in vars(args).items()
+        if k not in ArvCLIArgumentParser.global_args
+    }
+
+    sys.exit(_call_resource_method(arv_method, method_args, args.format))
+
+
+def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
+    # Refuse to run when we're not in an interactive session -- some editors
+    # may be unwilling to quit even when not attached to a terminal (e.g. vim),
+    # which would have caused us to wait without making progress.
+    if not os.isatty(sys.stdin.fileno()):
+        print(
+            "'create'/'edit' subcommands can only run interactively when"
+            " input/output are a terminal.",
+            file=sys.stderr
+        )
+        sys.exit(1)
+
+    obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else None
+    match args.format:
+        case "uuid":
+            print(
+                "Error: --format=uuid or -s option is not supported for"
+                " creating/editing Arvados objects with external editor."
+                " Please choose --format=json (default) or --format=yaml.",
+                file=sys.stderr
+            )
+            sys.exit(2)
+        case "json":
+            editing = JSONEditingProcess(initial_object=obj_stub)
+        case "yaml":
+            editing = YAMLEditingProcess(initial_object=obj_stub)
+
+    with editing:
+        while True:
+            try:
+                editing.edit()
+            except OSError as err:
+                print(
+                    "Error: failed to execute editor command:"
+                    f" {(editing.base_command + [editing.tmp_file.name])!r}."
+                    f" The error was: {err!s}",
+                    file=sys.stderr
+                )
+                sys.exit(1)
+
+            try:
+                edited_obj = editing.load()
+            except EditingContentError as err:
+                # Invalid input from editor; emit error message and let the
+                # user try again.
+                print(str(err), file=sys.stderr)
+                continue
+            if edited_obj is None:
+                print(
+                    "Info: file content is empty or blank; stopping the"
+                    " editing process; no Arvados object has been"
+                    " created or modified.",
+                    file=sys.stderr
+                )
+                sys.exit(0)
+
+            resource = parser._subcommand_to_resource[args.target_resource]
+            arv_resource = getattr(api_client, resource)()
+            # TODO: This only handles "create" for now.
+            call_status = _call_resource_method(
+                arv_resource.create, {"body": edited_obj}, args.format
+            )
+            if call_status == 0:
+                sys.exit(0)
+            # If the API request failed, go back to editing (beginning of the
+            # "while True" loop)
+            print(
+                "Error: object being edited was rejected by API server; please"
+                " try again.",
+                file=sys.stderr
+            )
 
 
 def dispatch(arguments=None):
@@ -702,10 +881,9 @@ def dispatch(arguments=None):
 
     # Are we starting an external editor program?
     if args.subcommand in ("create", "edit"):
-        _handle_external_editor_command(api_client, args)  # Exits.
+        _handle_external_editor_command(api_client, cmd_parser, args)  # Exits.
 
-    # TODO: Other types of commands are not yet implemented ("create" and
-    # "edit"). The code immediately below is not reachable.
+    # NOTE: The code immediately below is not reachable.
     raise RuntimeError("Unexpected arguments: {arguments!r}")
 
 
