@@ -904,7 +904,8 @@ install_deps() {
     do_install sdk/python pip
     # lib/controller integration tests depend on arv-mount to run containers.
     do_install services/fuse pip
-    # sdk/cwl depends on crunchstat-summary.
+    # sdk/cwl depends on crunch-dispatch-local and crunchstat-summary.
+    do_install services/crunch-dispatch-local go
     do_install tools/crunchstat-summary pip
     do_install cmd/arvados-server go
     do_install sdk/ruby-google-api-client
