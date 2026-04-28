@@ -929,4 +929,4 @@ class TestEditingSubcommands:
             )
 
         assert exit_code == 0
-        assert "no Arvados object has been created or modified" in err
+        assert "No Arvados object has been created or modified" in err
