@@ -8,6 +8,7 @@ import re
 import io
 import json
 from unittest import mock
+import os
 from pathlib import Path
 from typing import TextIO
 import ciso8601
@@ -912,3 +913,20 @@ class TestEditingSubcommands:
         result = format_case.loads(out)
         for k in EDITOR_INPUT_OBJ.keys():
             assert EDITOR_INPUT_OBJ[k] == result[k]
+
+    @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
+    def test_edit_process_loops_and_exits_when_abandoned(
+        self, scenario, setup_editor_simulator, run_arvcli
+    ):
+        format_case, garbage_text = scenario
+        # Set up editor to write garbage first then abandon the effort of
+        # inputting.
+        setup_editor_simulator(garbage_text, "-t", os.devnull)
+
+        with mock.patch("os.isatty", new=lambda _: True):
+            exit_code, out, err = run_arvcli(
+                ["--format", format_case.format, "create", "group"]
+            )
+
+        assert exit_code == 0
+        assert "no Arvados object has been created or modified" in err
