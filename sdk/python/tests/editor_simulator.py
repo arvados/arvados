@@ -22,8 +22,8 @@ where FILE is the path to the file being edited. This file must exist.
 
 Options are used to simulate editing behavior, and these include:
 
-    -i/--input INPUT_SOURCE   Put the content of INPUT_SOURCE into FILE. If no
-                              INPUT_SOURCE value is specified, leave FILE
+    -i/--input INPUT_SOURCE   Put the content of file INPUT_SOURCE into FILE.
+                              If no INPUT_SOURCE value is specified, leave FILE
                               unmodified.
     -a/--append               Append to FILE, rather than truncating FILE and
                               then injecting the content.
@@ -32,6 +32,8 @@ Options are used to simulate editing behavior, and these include:
     -d/--delete               Delete FILE (will cause `-i` option to be
                               ignored).
     -x/--crash                Open FILE then crash (i.e., exit with code 1).
+    -t/--next NEXT_INPUT      When used with -i/--input, upon exit, put the
+                              content of file NEXT_INPUT into INPUT_SOURCE.
 """
 import argparse
 import os
@@ -39,11 +41,12 @@ import sys
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", dest="input_source", default="")
+parser.add_argument("-i", "--input", dest="input_source")
 parser.add_argument("-a", "--append", action="store_true")
 parser.add_argument("-r", "--replace", action="store_true")
 parser.add_argument("-d", "--delete", action="store_true")
 parser.add_argument("-x", "--crash", action="store_true")
+parser.add_argument("-t", "--next", dest="next_input")
 parser.add_argument("target_file")
 
 args = parser.parse_args()
@@ -71,4 +74,9 @@ with open(args.target_file, "r+") as t:
     else:
         t.truncate()
     t.write(content)
+
+if args.next_input:
+    with open(args.next_input, "r") as n, open(args.input_source, "w") as f:
+        f.write(n.read())
+
 sys.exit(0)

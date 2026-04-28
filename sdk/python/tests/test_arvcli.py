@@ -830,6 +830,15 @@ def yaml_dumps(obj) -> str:
 
 
 EditFormatCase = namedtuple("EditFormatCase", ("format", "dumps", "loads"))
+FORMAT_CASES = (
+    EditFormatCase("json", json.dumps, json.loads),
+    EditFormatCase("yaml", yaml_dumps, yaml.load)
+)
+GARBAGE_TEXTS = (
+    "foo: bar foo: bar",  # invalid JSON
+    "{{}}"  # invalid YAML
+)
+EDITOR_INPUT_OBJ = {"name": "a new project", "group_class": "project"}
 
 
 class TestEditingSubcommands:
@@ -840,15 +849,11 @@ class TestEditingSubcommands:
     def teardown_class(self):
         run_test_server.reset()
 
-    @pytest.mark.parametrize("format_case", (
-        EditFormatCase("json", json.dumps, json.loads),
-        EditFormatCase("yaml", yaml_dumps, yaml.load)
-    ))
+    @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_basic_create(
         self, format_case, setup_editor_simulator, run_arvcli
     ):
-        obj = {"name": "a new project", "group_class": "project"}
-        setup_editor_simulator(format_case.dumps(obj))
+        setup_editor_simulator(format_case.dumps(EDITOR_INPUT_OBJ))
 
         # Force arvcli to believe that we have a tty.
         with mock.patch("os.isatty", new=lambda _: True):
@@ -858,8 +863,8 @@ class TestEditingSubcommands:
 
         assert exit_code == 0
         result = format_case.loads(out)
-        for k in obj.keys():
-            assert obj[k] == result[k]
+        for k in EDITOR_INPUT_OBJ.keys():
+            assert EDITOR_INPUT_OBJ[k] == result[k]
 
     def test_create_in_project_yaml(self, setup_editor_simulator, run_arvcli):
         # Simulate editing the temp file with owner_uuid field pre-filled due
@@ -867,8 +872,7 @@ class TestEditingSubcommands:
         # with our fake editor because simple appending will suffice.
         parent_proj = run_test_server.fixture("groups")["aproject"]
         # The object to be appended to the pre-filled stub in the temp file.
-        obj = {"name": "a new sub-project", "group_class": "project"}
-        setup_editor_simulator(yaml_dumps(obj), "-a")
+        setup_editor_simulator(yaml_dumps(EDITOR_INPUT_OBJ), "-a")
 
         with mock.patch("os.isatty", new=lambda _: True):
             exit_code, out, err = run_arvcli([
@@ -880,5 +884,31 @@ class TestEditingSubcommands:
         assert exit_code == 0
         result = yaml.load(out)
         assert result["owner_uuid"] == parent_proj["uuid"]
-        for k in obj.keys():
-            assert obj[k] == result[k]
+        for k in EDITOR_INPUT_OBJ.keys():
+            assert EDITOR_INPUT_OBJ[k] == result[k]
+
+    @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
+    def test_edit_process_loops_and_exits_when_fixed(
+        self, scenario, tmp_path, setup_editor_simulator, run_arvcli
+    ):
+        """Test that the edit process can loop back upon bad input until
+        input is good.
+        """
+        # Unpack parametrized args.
+        format_case, garbage_text = scenario
+        # Prepare the good editor input to be injected to the editor.
+        good_file = tmp_path / "good_input"
+        good_file.write_text(format_case.dumps(EDITOR_INPUT_OBJ))
+        # Set up editor to write garbage first then good input.
+        setup_editor_simulator(garbage_text, "-t", str(good_file))
+
+        with mock.patch("os.isatty", new=lambda _: True):
+            exit_code, out, err = run_arvcli(
+                ["--format", format_case.format, "create", "group"]
+            )
+
+        assert exit_code == 0
+        assert err
+        result = format_case.loads(out)
+        for k in EDITOR_INPUT_OBJ.keys():
+            assert EDITOR_INPUT_OBJ[k] == result[k]
