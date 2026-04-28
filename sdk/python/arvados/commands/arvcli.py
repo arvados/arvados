@@ -809,11 +809,18 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 # Invalid input from editor; emit error message and let the
                 # user try again.
                 print(str(err), file=sys.stderr)
-                continue
+                print(
+                    "Error: likely syntactic error in the file being edited;"
+                    " see messages above. Please try again; or clear the file"
+                    " content in the editor, save it, and quit the editor to"
+                    " abandon the process.",
+                    file=sys.stderr
+                )
+                continue  # TODO: Consider sleep()ing for a bit.
             if edited_obj is None:
                 print(
                     "Info: file content is empty or blank; stopping the"
-                    " editing process; no Arvados object has been"
+                    " editing process. No Arvados object has been"
                     " created or modified.",
                     file=sys.stderr
                 )
@@ -830,10 +837,11 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             # If the API request failed, go back to editing (beginning of the
             # "while True" loop)
             print(
-                "Error: object being edited was rejected by API server; please"
-                " try again.",
+                "Error: the object being edited was invalid; see API server"
+                " messages above. Please try again.",
                 file=sys.stderr
             )
+            # TODO: Consider sleep()ing for a bit.
 
 
 def dispatch(arguments=None):
