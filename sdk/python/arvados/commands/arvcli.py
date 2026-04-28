@@ -755,13 +755,19 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
-    # Refuse to run when we're not in an interactive session -- some editors
-    # may be unwilling to quit even when not attached to a terminal (e.g. vim),
-    # which would have caused us to wait without making progress.
+    # fileno() method may fail in certain test environments when stdin capture
+    # is in effect.
     try:
         stdin_fileno = sys.stdin.fileno()
     except OSError:
         stdin_fileno = 0
+    # Refuse to run when we're not in an interactive session. Some editors may
+    # be unwilling to quit even when not attached to a terminal (e.g., vim),
+    # which would have caused us to wait without making progress. Others (e.g.,
+    # nano) may quit immediately with non-zero code, but editor exit codes are
+    # flaky and not well-documented or standardized (see
+    # https://stackoverflow.com/a/46678151,
+    # https://unix.stackexchange.com/a/293461), and we can't rely on them.
     if not os.isatty(stdin_fileno):
         print(
             "'create'/'edit' subcommands can only run interactively when"
