@@ -14,6 +14,7 @@ import ciso8601
 import pytest
 from ruamel.yaml import YAML
 yaml = YAML(typ="safe", pure=True)
+yaml.default_flow_style = False
 
 import arvados
 from arvados.commands import arvcli
@@ -824,10 +825,6 @@ def yaml_dumps(obj) -> str:
 EditFormatCase = namedtuple("EditFormatCase", ("format", "dumps", "loads"))
 
 
-@pytest.mark.parametrize("format_case", (
-    EditFormatCase("json", json.dumps, json.loads),
-    EditFormatCase("yaml", yaml_dumps, yaml.load)
-))
 class TestEditingSubcommands:
     def setup_method(self):
         run_test_server.reset()
@@ -836,17 +833,45 @@ class TestEditingSubcommands:
     def teardown_class(self):
         run_test_server.reset()
 
+    @pytest.mark.parametrize("format_case", (
+        EditFormatCase("json", json.dumps, json.loads),
+        EditFormatCase("yaml", yaml_dumps, yaml.load)
+    ))
     def test_basic_create(
         self, format_case, setup_editor_simulator, run_arvcli
     ):
         obj = {"name": "a new project", "group_class": "project"}
         setup_editor_simulator(format_case.dumps(obj))
+
         # Force arvcli to believe that we have a tty.
         with mock.patch("os.isatty", new=lambda _: True):
             exit_code, out, err = run_arvcli(
                 ["--format", format_case.format, "create", "group"]
             )
+
         assert exit_code == 0
         result = format_case.loads(out)
+        for k in obj.keys():
+            assert obj[k] == result[k]
+
+    def test_create_in_project_yaml(self, setup_editor_simulator, run_arvcli):
+        # Simulate editing the temp file with owner_uuid field pre-filled due
+        # to the --project-uuid CLI argument. YAML is much easier to setup
+        # with our fake editor because simple appending will suffice.
+        parent_proj = run_test_server.fixture("groups")["aproject"]
+        # The object to be appended to the pre-filled stub in the temp file.
+        obj = {"name": "a new sub-project", "group_class": "project"}
+        setup_editor_simulator(yaml_dumps(obj), "-a")
+
+        with mock.patch("os.isatty", new=lambda _: True):
+            exit_code, out, err = run_arvcli([
+                "--format", "yaml",
+                "create", "group",
+                "--project-uuid", parent_proj["uuid"]
+            ])
+
+        assert exit_code == 0
+        result = yaml.load(out)
+        assert result["owner_uuid"] == parent_proj["uuid"]
         for k in obj.keys():
             assert obj[k] == result[k]
