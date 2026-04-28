@@ -755,6 +755,14 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
+    if args.format == "uuid":
+        print(
+            "Error: --format=uuid or -s option is not supported for"
+            " creating/editing Arvados objects with external editor. Please"
+            " choose --format=json (default) or --format=yaml.",
+            file=sys.stderr
+        )
+        sys.exit(2)
     # fileno() method may fail in certain test environments when stdin capture
     # is in effect.
     try:
@@ -777,19 +785,10 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         sys.exit(1)
 
     obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else None
-    match args.format:
-        case "uuid":
-            print(
-                "Error: --format=uuid or -s option is not supported for"
-                " creating/editing Arvados objects with external editor."
-                " Please choose --format=json (default) or --format=yaml.",
-                file=sys.stderr
-            )
-            sys.exit(2)
-        case "json":
-            editing = JSONEditingProcess(initial_object=obj_stub)
-        case "yaml":
-            editing = YAMLEditingProcess(initial_object=obj_stub)
+    if args.format == "json":
+        editing = JSONEditingProcess(initial_object=obj_stub)
+    else:
+        editing = YAMLEditingProcess(initial_object=obj_stub)
 
     with editing:
         while True:

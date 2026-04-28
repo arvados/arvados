@@ -816,6 +816,13 @@ class TestObjectEditingProcessBase:
             assert ed.load() == initial_obj
 
 
+def test_create_subcommad_s_option(setup_editor_simulator, run_arvcli):
+    with mock.patch("subprocess.run") as sr:
+        exit_code, out, err = run_arvcli(["-s", "create", "collection"])
+    assert exit_code == 2
+    assert not sr.called
+
+
 def yaml_dumps(obj) -> str:
     buf = io.StringIO()
     yaml.dump(obj, stream=buf)
