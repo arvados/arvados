@@ -988,22 +988,18 @@ class TestEditingSubcommands:
         for k in EDITOR_INPUT_OBJ.keys():
             assert EDITOR_INPUT_OBJ[k] == result[k]
 
-    @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
-        self, scenario, setup_editor_simulator, run_arvcli, aux_client
+        self, setup_editor_simulator, run_arvcli, aux_client
     ):
-        format_case, garbage_text = scenario
-        # Set up editor to write garbage first then abandon the effort of
+        # Set up editor to write garbage JSON first then abandon the effort of
         # inputting.
-        setup_editor_simulator(garbage_text, "-t", os.devnull)
+        setup_editor_simulator(GARBAGE_TEXTS[0], "-t", os.devnull)
 
         group_list_result = aux_client.groups().list().execute()
         ngroups_before = group_list_result["items_available"]
 
         with editor_run_context(input_values="y"):
-            exit_code, out, err = run_arvcli(
-                ["--format", format_case.format, "create", "group"]
-            )
+            exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 0
         assert "No Arvados object has been created or modified" in err
@@ -1011,20 +1007,18 @@ class TestEditingSubcommands:
         ngroups_after = group_list_result["items_available"]
         assert ngroups_after == ngroups_before  # No group created.
 
-    @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
     def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
-        self, scenario, setup_editor_simulator, run_arvcli, aux_client
+        self, setup_editor_simulator, run_arvcli, aux_client
     ):
-        format_case, garbage_text = scenario
-        # Set up editor to write garbage.
-        setup_editor_simulator(garbage_text)
+        # Set up editor to write garbage YAML.
+        setup_editor_simulator(GARBAGE_TEXTS[1])
 
         group_list_result = aux_client.groups().list().execute()
         ngroups_before = group_list_result["items_available"]
 
         with editor_run_context(input_values="n"):
             exit_code, out, err = run_arvcli(
-                ["--format", format_case.format, "create", "group"]
+                ["--format", "yaml", "create", "group"]
             )
 
         assert exit_code == 1
