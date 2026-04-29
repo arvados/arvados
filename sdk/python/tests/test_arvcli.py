@@ -52,6 +52,15 @@ def mock_stdin(monkeypatch, tmp_path):
         buf.close()
 
 
+@pytest.fixture
+def aux_client():
+    api_client = arvados.api("v1")
+    try:
+        yield api_client
+    finally:
+        api_client.close()
+
+
 def test_global_option_help_followed_by_subcommand():
     """When called as arvcli.py -h [subcommand], the subcommand is ignored,
     the -h option is consumed by the parser, and the help message is printed,
@@ -123,10 +132,9 @@ def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
 
 
-def test_cli_parser_has_singular_plural_mapping():
-    api_client = arvados.api("v1")
+def test_cli_parser_has_singular_plural_mapping(aux_client):
     cmd_parser = arvcli.ArvCLIArgumentParser(
-        api_client._resourceDesc["resources"]
+        aux_client._resourceDesc["resources"]
     )
     for resource in cmd_parser.resource_dictionary.keys():
         k = arvcli._ArgUtil.singularize_resource(resource)
@@ -982,12 +990,15 @@ class TestEditingSubcommands:
 
     @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
-        self, scenario, setup_editor_simulator, run_arvcli
+        self, scenario, setup_editor_simulator, run_arvcli, aux_client
     ):
         format_case, garbage_text = scenario
         # Set up editor to write garbage first then abandon the effort of
         # inputting.
         setup_editor_simulator(garbage_text, "-t", os.devnull)
+
+        group_list_result = aux_client.groups().list().execute()
+        ngroups_before = group_list_result["items_available"]
 
         with editor_run_context(input_values="y"):
             exit_code, out, err = run_arvcli(
@@ -996,3 +1007,27 @@ class TestEditingSubcommands:
 
         assert exit_code == 0
         assert "No Arvados object has been created or modified" in err
+        group_list_result = aux_client.groups().list().execute()
+        ngroups_after = group_list_result["items_available"]
+        assert ngroups_after == ngroups_before  # No group created.
+
+    @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
+    def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
+        self, scenario, setup_editor_simulator, run_arvcli, aux_client
+    ):
+        format_case, garbage_text = scenario
+        # Set up editor to write garbage.
+        setup_editor_simulator(garbage_text)
+
+        group_list_result = aux_client.groups().list().execute()
+        ngroups_before = group_list_result["items_available"]
+
+        with editor_run_context(input_values="n"):
+            exit_code, out, err = run_arvcli(
+                ["--format", format_case.format, "create", "group"]
+            )
+
+        assert exit_code == 1
+        group_list_result = aux_client.groups().list().execute()
+        ngroups_after = group_list_result["items_available"]
+        assert ngroups_after == ngroups_before  # No group created.
