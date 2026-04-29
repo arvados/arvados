@@ -3,13 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import builtins
 from collections import namedtuple
+from contextlib import contextmanager
 import re
 import io
 import json
 from unittest import mock
 import os
 from pathlib import Path
+import sys
 from typing import TextIO
 import ciso8601
 import pytest
@@ -23,6 +26,31 @@ from . import run_test_server
 
 
 COLLECTION_UUID_PATTERN = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
+
+
+class ArvCLITestError(Exception):
+    """An exception to be raised by our own testing facilites, not meant to be
+    caught in tests (hence not a derived class of commonly caught exceptions).
+    """
+    pass
+
+
+@pytest.fixture
+def mock_stdin(monkeypatch, tmp_path):
+    """Mock sys.stdin to redirect to a temporary text file that is retained for
+    record-keeping. You can write to this file but in the same test function,
+    you need to rewind the tape by the seek()ing, so that any code that reads
+    the stdin may actually get the just-written data without hitting EOF
+    prematurely.
+    """
+    old_stdin = sys.stdin
+    buf_path = tmp_path / "mock_stdin"
+    buf = open(buf_path, "w+")
+    monkeypatch.setattr(sys, "stdin", buf)
+    try:
+        yield sys.stdin
+    finally:
+        buf.close()
 
 
 def test_global_option_help_followed_by_subcommand():
@@ -453,7 +481,6 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert err
         assert not out
 
-    @mock.patch("sys.stdin", new_callable=io.StringIO)
     def test_request_body_stdin_valid_json(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
@@ -489,7 +516,6 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert _no_extra_spaces_at_end(out)
         assert COLLECTION_UUID_PATTERN.match(out.rstrip())
 
-    @mock.patch("sys.stdin", new_callable=io.StringIO)
     def test_replace_files(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
@@ -842,6 +868,50 @@ GARBAGE_TEXTS = (
 EDITOR_INPUT_OBJ = {"name": "a new project", "group_class": "project"}
 
 
+@contextmanager
+def editor_run_context(input_values=None, endless_input=False):
+    """Set up the context in which the arvcli.py script (via the fixture
+    `run_arvcli`) is run, with certain builtins replaced by monkey-patching.
+
+    Arguments:
+
+    * input_values: Optional[Sequence[str]] --- If provided, `input()` will be
+      monkey-patched, and each call to the builtin `input()` will return
+      successively the value in the sequence of strings. This can be used to
+      "script" the user's input. If this argument is `None` (default),
+      `input()` is not mocked at all. Note that providing a string means
+      `input()` will yield a single character in the string each time.
+    * endless_input: bool --- If True, when more calls to `input()` are made
+      than there are items in input_values, repeat the last item for all future
+      calls. Default: False.
+    """
+    with pytest.MonkeyPatch.context() as m:
+        # Force the external-editor handler to believe we are running in a
+        # terminal.
+        m.setattr(os, "isatty", lambda _: True)
+        # If input_values are provided, mock the builtins.input()
+        # function.
+        if input_values:
+            nvalues = len(input_values)
+            calls = 0
+            def mock_input(*args):
+                nonlocal calls
+                calls += 1
+                if calls <= nvalues:
+                    return input_values[calls - 1]
+                # More calls than pre-filled items.
+                if endless_input:
+                    return input_values[-1]
+                raise ArvCLITestError(
+                    f"There are {nvalues} items in the mock input queue but"
+                    f" the mocked `input()` function has been called {calls}"
+                    " times. This likely indicates an error in the testing"
+                    " function."
+                )
+            m.setattr(builtins, "input", mock_input)
+        yield m
+
+
 class TestEditingSubcommands:
     def setup_method(self):
         run_test_server.reset()
@@ -856,8 +926,7 @@ class TestEditingSubcommands:
     ):
         setup_editor_simulator(format_case.dumps(EDITOR_INPUT_OBJ))
 
-        # Force arvcli to believe that we have a tty.
-        with mock.patch("os.isatty", new=lambda _: True):
+        with editor_run_context():
             exit_code, out, err = run_arvcli(
                 ["--format", format_case.format, "create", "group"]
             )
@@ -875,7 +944,7 @@ class TestEditingSubcommands:
         # The object to be appended to the pre-filled stub in the temp file.
         setup_editor_simulator(yaml_dumps(EDITOR_INPUT_OBJ), "-a")
 
-        with mock.patch("os.isatty", new=lambda _: True):
+        with editor_run_context():
             exit_code, out, err = run_arvcli([
                 "--format", "yaml",
                 "create", "group",
@@ -903,7 +972,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage first then good input.
         setup_editor_simulator(garbage_text, "-t", str(good_file))
 
-        with mock.patch("os.isatty", new=lambda _: True):
+        with editor_run_context(input_values="y"):
             exit_code, out, err = run_arvcli(
                 ["--format", format_case.format, "create", "group"]
             )
@@ -915,7 +984,7 @@ class TestEditingSubcommands:
             assert EDITOR_INPUT_OBJ[k] == result[k]
 
     @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
-    def test_edit_process_loops_and_exits_when_abandoned(
+    def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
         self, scenario, setup_editor_simulator, run_arvcli
     ):
         format_case, garbage_text = scenario
@@ -923,7 +992,7 @@ class TestEditingSubcommands:
         # inputting.
         setup_editor_simulator(garbage_text, "-t", os.devnull)
 
-        with mock.patch("os.isatty", new=lambda _: True):
+        with editor_run_context(input_values="y"):
             exit_code, out, err = run_arvcli(
                 ["--format", format_case.format, "create", "group"]
             )

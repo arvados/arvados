@@ -811,12 +811,15 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 print(str(err), file=sys.stderr)
                 print(
                     "Error: likely syntactic error in the file being edited;"
-                    " see messages above. Please try again; or clear the file"
-                    " content in the editor, save it, and quit the editor to"
-                    " abandon the process.",
+                    " see error messages above.",
                     file=sys.stderr
                 )
-                continue  # TODO: Consider sleep()ing for a bit.
+                while (wants_retry := _ask_reedit()) is None:
+                    pass
+                if wants_retry:
+                    # NOTE: Back to the start of the "while True" loop!
+                    continue
+                sys.exit(1)
             if edited_obj is None:
                 print(
                     "Info: file content is empty or blank; stopping the"
@@ -834,14 +837,42 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             )
             if call_status == 0:
                 sys.exit(0)
-            # If the API request failed, go back to editing (beginning of the
-            # "while True" loop)
+            # If the API request failed, try editing again if the user so
+            # desires.
             print(
                 "Error: the object being edited was invalid; see API server"
-                " messages above. Please try again.",
+                " message above.",
                 file=sys.stderr
             )
-            # TODO: Consider sleep()ing for a bit.
+            while (wants_retry := _ask_reedit()) is None:
+                pass
+            if wants_retry:
+                continue  # NOTE: Back to the start of the "while True" loop!
+            sys.exit(1)
+        # End of the "while True" loop for editor interaction.
+    sys.exit(0)  # End of the NoReturn function.
+
+
+def _ask_reedit() -> bool | None:
+    """Ask the user if they'd like to continue editing. Returns True for "yes"
+    (default, applies also when the user types in a blank newline), False for
+    "no", and None for any other answer.
+    """
+    # Put the prompt to the stderr rather than the stdout because we would like
+    # to keep the stdout clean for API server output, which makes testing
+    # simpler, too. Note that if we are ever to import `readline`, which we're
+    # not doing now, this customized prompting behavior might break cursor
+    # positioning and would have to be revisited.
+    print(
+        "Edit and try again? ([Y]es/no) ", end="", file=sys.stderr, flush=True
+    )
+    match input().strip().lower():
+        case "" | "y" | "ye" | "yes":
+            return True
+        case "n" | "no":
+            return False
+        case _:
+            return None
 
 
 def dispatch(arguments=None):
