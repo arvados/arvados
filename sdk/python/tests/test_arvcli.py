@@ -37,15 +37,14 @@ class ArvCLITestError(Exception):
 
 @pytest.fixture
 def mock_stdin(monkeypatch, tmp_path):
-    """Mock sys.stdin to redirect to a temporary text file that is retained for
-    record-keeping. You can write to this file but in the same test function,
-    you need to rewind the tape by the seek()ing, so that any code that reads
-    the stdin may actually get the just-written data without hitting EOF
-    prematurely.
+    """Mock sys.stdin to redirect to a temporary text file that can be retained
+    for record-keeping. You can write to this file, but after that, in the same
+    test function, you need to rewind the tape by the seek()ing, so that any
+    code that reads the stdin may actually get the just-written data without
+    hitting EOF prematurely.
     """
     old_stdin = sys.stdin
-    buf_path = tmp_path / "mock_stdin"
-    buf = open(buf_path, "w+")
+    buf = open(tmp_path / "mock_stdin", "w+")
     monkeypatch.setattr(sys, "stdin", buf)
     try:
         yield sys.stdin
@@ -894,6 +893,7 @@ def editor_run_context(input_values=None, endless_input=False):
         if input_values:
             nvalues = len(input_values)
             calls = 0
+
             def mock_input(*args):
                 nonlocal calls
                 calls += 1
@@ -905,21 +905,16 @@ def editor_run_context(input_values=None, endless_input=False):
                 raise ArvCLITestError(
                     f"There are {nvalues} items in the mock input queue but"
                     f" the mocked `input()` function has been called {calls}"
-                    " times. This likely indicates an error in the testing"
-                    " function."
+                    " times."
                 )
+
             m.setattr(builtins, "input", mock_input)
         yield m
 
 
 class TestEditingSubcommands:
-    def setup_method(self):
-        run_test_server.reset()
 
-    @classmethod
-    def teardown_class(self):
-        run_test_server.reset()
-
+    @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_basic_create(
         self, format_case, setup_editor_simulator, run_arvcli
@@ -936,6 +931,7 @@ class TestEditingSubcommands:
         for k in EDITOR_INPUT_OBJ.keys():
             assert EDITOR_INPUT_OBJ[k] == result[k]
 
+    @pytest.mark.usefixtures("reset_test_server_db")
     def test_create_in_project_yaml(self, setup_editor_simulator, run_arvcli):
         # Simulate editing the temp file with owner_uuid field pre-filled due
         # to the --project-uuid CLI argument. YAML is much easier to setup
@@ -957,6 +953,7 @@ class TestEditingSubcommands:
         for k in EDITOR_INPUT_OBJ.keys():
             assert EDITOR_INPUT_OBJ[k] == result[k]
 
+    @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
     def test_edit_process_loops_and_exits_when_fixed(
         self, scenario, tmp_path, setup_editor_simulator, run_arvcli

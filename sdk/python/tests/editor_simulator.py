@@ -6,8 +6,8 @@
 arvcli's "create" and "edit" subcommands.
 
 To use it in the test suites, set the $VISUAL environment variable to the path
-of this executable. To get different behaviors, you can include options in the
-environment-variable value, e.g.
+of this executable. To get different behaviors, you can include CLI arguments
+in the environment-variable value, e.g.
 
     VISUAL='editor_simulator.py -i source.json'
 
@@ -34,7 +34,11 @@ Options are used to simulate editing behavior, and these include:
     -x/--crash                Open FILE then crash (i.e., exit with code 1).
     -t/--next NEXT_INPUT      When used with -i/--input, upon exit, put the
                               content of file NEXT_INPUT into INPUT_SOURCE.
+                              This may be used to make two consecutive
+                              invocations behave differently with the same CLI
+                              arguments.
 """
+# NOTE: This script should not read stdin or write to stdout/stderr.
 import argparse
 import os
 import sys
@@ -68,6 +72,7 @@ with open(args.input_source, "r") as f:
 
 if args.replace:
     os.rename(args.target_file, f"{args.target_file}.bak")
+
 with open(args.target_file, "r+") as t:
     if args.append:
         t.seek(0, os.SEEK_END)
