@@ -618,7 +618,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         )
         create_parser.add_argument(
             "target_resource",
-            choices=sorted(list(creatable_targets)),
+            choices=sorted(creatable_targets),
             metavar="RESOURCE",
             help="Type of the resource to be created"
         )
@@ -755,19 +755,11 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
     if args.format == "uuid":
-        print(
+        parser.error(
             "Error: --format=uuid or -s option is not supported for"
             " creating/editing Arvados objects with external editor. Please"
-            " choose --format=json (default) or --format=yaml.",
-            file=sys.stderr
-        )
-        sys.exit(2)
-    # fileno() method may fail in certain test environments when stdin capture
-    # is in effect.
-    try:
-        stdin_fileno = sys.stdin.fileno()
-    except OSError:
-        stdin_fileno = 0
+            " choose --format=json (default) or --format=yaml."
+        )  # Exits with status 2.
     # Refuse to run when we're not in an interactive session. Some editors may
     # be unwilling to quit even when not attached to a terminal (e.g., vim),
     # which would have caused us to wait without making progress. Others (e.g.,
@@ -775,7 +767,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
     # flaky and not well-documented or standardized (see
     # https://stackoverflow.com/a/46678151,
     # https://unix.stackexchange.com/a/293461), and we can't rely on them.
-    if not os.isatty(stdin_fileno):
+    if not sys.stdin.isatty():
         print(
             "'create'/'edit' subcommands can only run interactively when"
             " input/output are a terminal.",

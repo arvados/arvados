@@ -898,7 +898,7 @@ def editor_run_context(input_values=None, endless_input=False):
     with pytest.MonkeyPatch.context() as m:
         # Force the external-editor handler to believe we are running in a
         # terminal.
-        m.setattr(os, "isatty", lambda _: True)
+        m.setattr(sys.stdin, "isatty", lambda: True)
         # If input_values are provided, mock the builtins.input()
         # function.
         if input_values:
