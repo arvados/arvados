@@ -25,9 +25,6 @@ from arvados.commands import arvcli
 from . import run_test_server
 
 
-COLLECTION_UUID_PATTERN = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
-
-
 class ArvCLITestError(Exception):
     """An exception to be raised by our own testing facilites, not meant to be
     caught in tests (hence not a derived class of commonly caught exceptions).
@@ -359,7 +356,10 @@ class TestSameFlagInTwoPlaces:
         assert exit_code == 0
         lines = out.splitlines()
         assert any(lines)
-        assert all(COLLECTION_UUID_PATTERN.match(line) for line in lines)
+        assert all(
+            arvados.util.collection_uuid_pattern.fullmatch(line)
+            for line in lines
+        )
 
     def test_f_flag(self, run_arvcli):
         # As "global" parameter, "-f" is for "--format", which takes one arg
@@ -374,7 +374,10 @@ class TestSameFlagInTwoPlaces:
         assert not err
         lines = out.splitlines()
         assert any(lines)
-        assert all(COLLECTION_UUID_PATTERN.match(line) for line in lines)
+        assert all(
+            arvados.util.collection_uuid_pattern.fullmatch(line)
+            for line in lines
+        )
 
 
 class TestCommonMethods:
@@ -428,7 +431,7 @@ class TestCommonMethods:
             })
         ])
         assert exit_code == 0
-        assert re.match(r"^[0-9a-z]{5}-o0j2j-[0-9a-z]{15}$", out)
+        assert arvados.util.link_uuid_pattern.fullmatch(out.rstrip())
 
     @pytest.mark.usefixtures("reset_test_server_db")
     def test_user_update(self, run_arvcli):
@@ -497,7 +500,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         actual = json.loads(out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
-        assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
+        assert arvados.util.collection_uuid_pattern.fullmatch(actual["uuid"])
         assert _no_extra_spaces_at_end(out)
 
     def test_request_body_file_valid_json_out_yaml(self, tmp_path, run_arvcli):
@@ -511,7 +514,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         actual = yaml.load(out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
-        assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
+        assert arvados.util.collection_uuid_pattern.fullmatch(actual["uuid"])
         assert _no_extra_spaces_at_end(out)
 
     def test_request_body_file_valid_json_out_short(self, tmp_path, run_arvcli):
@@ -521,7 +524,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert exit_code == 0
         assert not err
         assert _no_extra_spaces_at_end(out)
-        assert COLLECTION_UUID_PATTERN.match(out.rstrip())
+        assert arvados.util.collection_uuid_pattern.fullmatch(out.rstrip())
 
     def test_replace_files(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)

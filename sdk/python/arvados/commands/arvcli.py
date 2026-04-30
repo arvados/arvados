@@ -39,14 +39,13 @@ yaml.default_flow_style = False
 
 class _ArgTypes:
     """Private namespace class for JSON-related CLI argument types."""
-    group_uuid_pattern = re.compile(r"\A[0-9a-z]{5}-j7d0g-[0-9a-z]{15}\Z")
 
     @staticmethod
     def group_uuid(text: str) -> str:
         """Validate an Arvados group UUID as the value of a CLI argument (an
         Arvados project being a type of group).
         """
-        if _ArgTypes.group_uuid_pattern.match(text):
+        if arvados.util.group_uuid_pattern.fullmatch(text):
             return text
         raise argparse.ArgumentTypeError(
             f"Invalid UUID for Arvados project or group: {text}"
