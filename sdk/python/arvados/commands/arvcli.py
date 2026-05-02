@@ -786,10 +786,11 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             try:
                 editing.edit()
             except OSError as err:
+                cmd_str = shlex.join(
+                    editing.base_command + [editing.tmp_file.name]
+                )
                 print(
-                    "Error: failed to execute editor command:"
-                    f" {(editing.base_command + [editing.tmp_file.name])!r}."
-                    f" The error was: {err!s}",
+                    f"Error: failed to execute editor `{cmd_str}`: {err}",
                     file=sys.stderr
                 )
                 sys.exit(1)

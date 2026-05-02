@@ -925,6 +925,15 @@ def editor_run_context(input_values=None, endless_input=False):
 
 class TestEditingSubcommands:
 
+    def test_bad_editor(self, monkeypatch, run_arvcli):
+        monkeypatch.setenv("VISUAL", "no_such_command")
+
+        with editor_run_context():
+            exit_code, out, err = run_arvcli(["create", "group"])
+
+        assert exit_code == 1
+        assert re.match(r"Error: failed to execute editor `no_such_command.+`:.+No such file or directory", err)
+
     @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_basic_create(
