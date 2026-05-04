@@ -1014,7 +1014,7 @@ class TestEditingSubcommands:
             exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 0
-        assert "No Arvados object has been created or modified" in err
+        assert "notice: input is empty; exiting without changes" in err
         group_list_result = aux_client.groups().list().execute()
         ngroups_after = group_list_result["items_available"]
         assert ngroups_after == ngroups_before  # No group created.

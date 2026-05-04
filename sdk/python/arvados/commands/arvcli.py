@@ -809,9 +809,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 sys.exit(1)
             if edited_obj is None:
                 print(
-                    "Info: file content is empty or blank; stopping the"
-                    " editing process. No Arvados object has been"
-                    " created or modified.",
+                    "notice: input is empty; exiting without changes",
                     file=sys.stderr
                 )
                 sys.exit(0)
