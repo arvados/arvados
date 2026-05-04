@@ -349,49 +349,37 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         text. Returns the object deserialized from the text content.
         """
 
-    def dump(self, obj: Any) -> None:
-        """Append the serialized object to the temporary file."""
+    def check_tmp_file(self):
+        """Perform a basic sanity check for the temp file being usable."""
         if self.tmp_file is None or self.tmp_file.closed:
-            raise RuntimeError("Temporary file is not available for writing")
+            raise RuntimeError("Temporary file is not available")
+
+    def dump(self, obj: Any) -> None:
+        """Overwrite the temporary file with the serialized object `obj`."""
+        self.check_tmp_file()
         # The following should not be done while the child process is pending.
-        pos = self.tmp_file.tell()
-        try:
-            self.tmp_file.seek(0, os.SEEK_END)
-            self.serialize(obj, self.tmp_file)
-        except Exception as err:
-            self.tmp_file.seek(pos)
-            raise err
+        self.tmp_file.seek(0)
+        self.tmp_file.truncate()
+        self.serialize(obj, self.tmp_file)
         self.tmp_file.flush()
 
     def load(self) -> Any:
         """Read the temporary file from the beginning. Returns the deserialized
         object, or None if the file is empty or only whitespace.
         """
-        if self.tmp_file is None or self.tmp_file.closed:
-            raise RuntimeError("Temporary file is not available for reading")
+        self.check_tmp_file()
         # Snoop the file to see if it consists of only whitespace characters
-        # (including empty lines); if so, return the special value None to
-        # indicate that the user has abandoned the edit.
+        # (including empty lines); if so, return the special value None.
         with open(self.tmp_file.name, "r") as fdup:
             if not fdup.read().strip():
                 return None
 
-        pos = self.tmp_file.tell()
         self.tmp_file.seek(0)
-        try:
-            obj = self.deserialize(self.tmp_file)
-        except EditingContentError as err:
-            self.tmp_file.seek(pos)
-            raise err
-        return obj
+        return self.deserialize(self.tmp_file)
 
     def edit(self) -> None:
         """Run external editor and wait for it to finish."""
-        if self.tmp_file is None or self.tmp_file.closed:
-            raise RuntimeError(
-                "Temporary file is not available for editing by"
-                " external process"
-            )
+        self.check_tmp_file()
         self.run_result = subprocess.run(
             self.base_command + [self.tmp_file.name],
             check=False
@@ -775,7 +763,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         )
         sys.exit(1)
 
-    obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else None
+    obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else {}
     if args.format == "json":
         editing = JSONEditingProcess(initial_object=obj_stub)
     else:
@@ -807,7 +795,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                     # NOTE: Back to the start of the "while True" loop!
                     continue
                 sys.exit(1)
-            if edited_obj is None:
+            if not edited_obj:
                 print(
                     "notice: input is empty; exiting without changes",
                     file=sys.stderr
