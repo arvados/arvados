@@ -428,7 +428,7 @@ class EditingContentError(ValueError):
     def __str__(self):
         msg = (
             f"Error: invalid input file [type {self.file_type or 'unknown'}]:"
-            f" {self.path!s}:{self.line}:{self.column}"
+            f" {self.path}:{self.line}:{self.column}"
         )
         if (
             self.original_exception
@@ -769,8 +769,8 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
     # https://unix.stackexchange.com/a/293461), and we can't rely on them.
     if not sys.stdin.isatty():
         print(
-            "'create'/'edit' subcommands can only run interactively when"
-            " input/output are a terminal.",
+            "Error: 'create'/'edit' subcommands can only run interactively"
+            " when input/output are a terminal.",
             file=sys.stderr
         )
         sys.exit(1)
@@ -801,11 +801,6 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 # Invalid input from editor; emit error message and let the
                 # user try again.
                 print(str(err), file=sys.stderr)
-                print(
-                    "Error: likely syntactic error in the file being edited;"
-                    " see error messages above.",
-                    file=sys.stderr
-                )
                 while (wants_retry := _ask_reedit()) is None:
                     pass
                 if wants_retry:
@@ -831,11 +826,6 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 sys.exit(0)
             # If the API request failed, try editing again if the user so
             # desires.
-            print(
-                "Error: the object being edited was invalid; see API server"
-                " message above.",
-                file=sys.stderr
-            )
             while (wants_retry := _ask_reedit()) is None:
                 pass
             if wants_retry:
