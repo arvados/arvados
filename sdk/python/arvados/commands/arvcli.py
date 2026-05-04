@@ -770,7 +770,8 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         editing = YAMLEditingProcess(initial_object=obj_stub)
 
     with editing:
-        while True:
+        api_call_status = None
+        while api_call_status is None:
             try:
                 editing.edit()
             except OSError as err:
@@ -792,9 +793,9 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 while (wants_retry := _ask_reedit()) is None:
                     pass
                 if wants_retry:
-                    # NOTE: Back to the start of the "while True" loop!
+                    # NOTE: Back to the start of the editing loop!
                     continue
-                sys.exit(1)
+                sys.exit(1)  # User won't retry; exit with failure.
             if not edited_obj:
                 print(
                     "notice: input is empty; exiting without changes",
@@ -805,20 +806,23 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             resource = parser._subcommand_to_resource[args.target_resource]
             arv_resource = getattr(api_client, resource)()
             # TODO: This only handles "create" for now.
-            call_status = _call_resource_method(
+            api_call_status = _call_resource_method(
                 arv_resource.create, {"body": edited_obj}, args.format
             )
-            if call_status == 0:
-                sys.exit(0)
-            # If the API request failed, try editing again if the user so
-            # desires.
-            while (wants_retry := _ask_reedit()) is None:
-                pass
-            if wants_retry:
-                continue  # NOTE: Back to the start of the "while True" loop!
-            sys.exit(1)
-        # End of the "while True" loop for editor interaction.
-    sys.exit(0)  # End of the NoReturn function.
+            if api_call_status != 0:
+                # If the API request failed, try editing again if the user so
+                # desires.
+                wants_retry = None
+                while wants_retry is None:
+                    wants_retry = _ask_reedit()
+                    if wants_retry:
+                        # Editing loop to be restarted; clear last API call
+                        # status.
+                        api_call_status = None
+                        continue
+            # End of the editing loop.
+        sys.exit(api_call_status)
+    # End of the NoReturn function.
 
 
 def _ask_reedit() -> bool | None:
