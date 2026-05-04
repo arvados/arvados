@@ -1007,17 +1007,15 @@ class TestEditingSubcommands:
         # inputting.
         setup_editor_simulator(GARBAGE_TEXTS[0], "-t", os.devnull)
 
-        group_list_result = aux_client.groups().list().execute()
-        ngroups_before = group_list_result["items_available"]
-
         with editor_run_context(input_values="y"):
             exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 0
         assert "notice: input is empty; exiting without changes" in err
-        group_list_result = aux_client.groups().list().execute()
-        ngroups_after = group_list_result["items_available"]
-        assert ngroups_after == ngroups_before  # No group created.
+        group_list_result = aux_client.groups().list(
+            filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
+        ).execute()
+        assert group_list_result["items_available"] == 0  # No group created.
 
     def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
         self, setup_editor_simulator, run_arvcli, aux_client
@@ -1025,15 +1023,13 @@ class TestEditingSubcommands:
         # Set up editor to write garbage YAML.
         setup_editor_simulator(GARBAGE_TEXTS[1])
 
-        group_list_result = aux_client.groups().list().execute()
-        ngroups_before = group_list_result["items_available"]
-
         with editor_run_context(input_values="n"):
             exit_code, out, err = run_arvcli(
                 ["--format", "yaml", "create", "group"]
             )
 
         assert exit_code == 1
-        group_list_result = aux_client.groups().list().execute()
-        ngroups_after = group_list_result["items_available"]
-        assert ngroups_after == ngroups_before  # No group created.
+        group_list_result = aux_client.groups().list(
+            filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
+        ).execute()
+        assert group_list_result["items_available"] == 0  # No group created.
