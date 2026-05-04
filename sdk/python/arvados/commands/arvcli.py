@@ -742,12 +742,6 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
-    if args.format == "uuid":
-        parser.error(
-            "Error: --format=uuid or -s option is not supported for"
-            " creating/editing Arvados objects with external editor. Please"
-            " choose --format=json (default) or --format=yaml."
-        )  # Exits with status 2.
     # Refuse to run when we're not in an interactive session. Some editors may
     # be unwilling to quit even when not attached to a terminal (e.g., vim),
     # which would have caused us to wait without making progress. Others (e.g.,
@@ -901,6 +895,12 @@ def dispatch(arguments=None):
 
     # Are we starting an external editor program?
     if args.subcommand in ("create", "edit"):
+        if args.format == "uuid":
+            cmd_parser.error(
+                "Error: --format=uuid or -s option is not supported for"
+                " creating/editing Arvados objects with external editor."
+                " Please choose --format=json (default) or --format=yaml."
+            )  # Exits with status 2.
         _handle_external_editor_command(api_client, cmd_parser, args)  # Exits.
 
     # NOTE: The code immediately below is not reachable.
