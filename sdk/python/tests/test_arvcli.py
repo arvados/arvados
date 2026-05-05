@@ -866,14 +866,13 @@ def yaml_dumps(obj) -> str:
     return buf.getvalue()
 
 
-EditFormatCase = namedtuple("EditFormatCase", ("format", "dumps", "loads"))
-FORMAT_CASES = (
-    EditFormatCase("json", json.dumps, json.loads),
-    EditFormatCase("yaml", yaml_dumps, yaml.load)
+EditFormatCase = namedtuple(
+    "EditFormatCase",
+    ("format", "dumps", "loads", "garbage_text")
 )
-GARBAGE_TEXTS = (
-    "foo: bar foo: bar",  # invalid JSON
-    "{{}}"  # invalid YAML
+FORMAT_CASES = (
+    EditFormatCase("json", json.dumps, json.loads, "foo: bar foo: bar"),
+    EditFormatCase("yaml", yaml_dumps, yaml.load, "{{}}")
 )
 EDITOR_INPUT_OBJ = {"name": "a new project", "group_class": "project"}
 
@@ -974,20 +973,18 @@ class TestEditingSubcommands:
             assert EDITOR_INPUT_OBJ[k] == result[k]
 
     @pytest.mark.usefixtures("reset_test_server_db")
-    @pytest.mark.parametrize("scenario", zip(FORMAT_CASES, GARBAGE_TEXTS))
+    @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_edit_process_loops_and_exits_when_fixed(
-        self, scenario, tmp_path, setup_editor_simulator, run_arvcli
+        self, format_case, tmp_path, setup_editor_simulator, run_arvcli
     ):
         """Test that the edit process can loop back upon bad input until
         input is good.
         """
-        # Unpack parametrized args.
-        format_case, garbage_text = scenario
         # Prepare the good editor input to be injected to the editor.
         good_file = tmp_path / "good_input"
         good_file.write_text(format_case.dumps(EDITOR_INPUT_OBJ))
         # Set up editor to write garbage first then good input.
-        setup_editor_simulator(garbage_text, "-t", str(good_file))
+        setup_editor_simulator(format_case.garbage_text, "-t", str(good_file))
 
         with editor_run_context(input_values="y"):
             exit_code, out, err = run_arvcli(
@@ -1005,7 +1002,7 @@ class TestEditingSubcommands:
     ):
         # Set up editor to write garbage JSON first then abandon the effort of
         # inputting.
-        setup_editor_simulator(GARBAGE_TEXTS[0], "-t", os.devnull)
+        setup_editor_simulator(FORMAT_CASES[0].garbage_text, "-t", os.devnull)
 
         with editor_run_context(input_values="y"):
             exit_code, out, err = run_arvcli(["create", "group"])
@@ -1021,7 +1018,7 @@ class TestEditingSubcommands:
         self, setup_editor_simulator, run_arvcli, simple_api_client
     ):
         # Set up editor to write garbage YAML.
-        setup_editor_simulator(GARBAGE_TEXTS[1])
+        setup_editor_simulator(FORMAT_CASES[1].garbage_text)
 
         with editor_run_context(input_values="n"):
             exit_code, out, err = run_arvcli(
