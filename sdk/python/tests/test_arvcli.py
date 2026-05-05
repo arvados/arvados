@@ -50,7 +50,7 @@ def mock_stdin(monkeypatch, tmp_path):
 
 
 @pytest.fixture
-def aux_client():
+def simple_api_client():
     api_client = arvados.api("v1")
     try:
         yield api_client
@@ -129,9 +129,9 @@ def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
 
 
-def test_cli_parser_has_singular_plural_mapping(aux_client):
+def test_cli_parser_has_singular_plural_mapping(simple_api_client):
     cmd_parser = arvcli.ArvCLIArgumentParser(
-        aux_client._resourceDesc["resources"]
+        simple_api_client._resourceDesc["resources"]
     )
     for resource in cmd_parser.resource_dictionary.keys():
         k = arvcli._ArgUtil.singularize_resource(resource)
@@ -694,10 +694,10 @@ class TestApiClientAuthorizationsResource:
     # the create_system_auth method.
 
 
-GEC = arvcli.ObjectEditingProcessBase.get_editor_cmdline
-
-
 class TestGetEditorCmdline:
+
+    gec = staticmethod(arvcli.ObjectEditingProcessBase.get_editor_cmdline)
+
 
     @pytest.fixture
     def installed_nano(self, tmp_path, monkeypatch):
@@ -722,19 +722,19 @@ class TestGetEditorCmdline:
     def test_env_var(self, monkeypatch):
         monkeypatch.setenv("VISUAL", "foo --bar")
         monkeypatch.setenv("EDITOR", "bar")
-        assert GEC() == ["foo", "--bar"]
+        assert self.gec() == ["foo", "--bar"]
         monkeypatch.delenv("VISUAL")
-        assert GEC() == ["bar"]
+        assert self.gec() == ["bar"]
 
     def test_fallback_nano(self, monkeypatch, installed_nano):
         monkeypatch.delenv("VISUAL", raising=False)
         monkeypatch.delenv("EDITOR", raising=False)
-        assert GEC() == [installed_nano]
+        assert self.gec() == [installed_nano]
 
     def test_fallback_no_nano(self, monkeypatch, uninstalled_nano):
         monkeypatch.delenv("VISUAL", raising=False)
         monkeypatch.delenv("EDITOR", raising=False)
-        assert GEC() == ["vi"]
+        assert self.gec() == ["vi"]
 
 
 @pytest.fixture
@@ -1001,7 +1001,7 @@ class TestEditingSubcommands:
             assert EDITOR_INPUT_OBJ[k] == result[k]
 
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
-        self, setup_editor_simulator, run_arvcli, aux_client
+        self, setup_editor_simulator, run_arvcli, simple_api_client
     ):
         # Set up editor to write garbage JSON first then abandon the effort of
         # inputting.
@@ -1012,13 +1012,13 @@ class TestEditingSubcommands:
 
         assert exit_code == 0
         assert "notice: input is empty; exiting without changes" in err
-        group_list_result = aux_client.groups().list(
+        group_list_result = simple_api_client.groups().list(
             filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
         ).execute()
         assert group_list_result["items_available"] == 0  # No group created.
 
     def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
-        self, setup_editor_simulator, run_arvcli, aux_client
+        self, setup_editor_simulator, run_arvcli, simple_api_client
     ):
         # Set up editor to write garbage YAML.
         setup_editor_simulator(GARBAGE_TEXTS[1])
@@ -1029,7 +1029,7 @@ class TestEditingSubcommands:
             )
 
         assert exit_code == 1
-        group_list_result = aux_client.groups().list(
+        group_list_result = simple_api_client.groups().list(
             filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
         ).execute()
         assert group_list_result["items_available"] == 0  # No group created.
