@@ -874,7 +874,10 @@ FORMAT_CASES = (
     EditFormatCase("json", json.dumps, json.loads, "foo: bar foo: bar"),
     EditFormatCase("yaml", yaml_dumps, yaml.load, "{{}}")
 )
-EDITOR_INPUT_OBJ = {"name": "a new project", "group_class": "project"}
+
+@pytest.fixture
+def editor_input():
+    return {"name": "a new project", "group_class": "project"}
 
 
 @contextmanager
@@ -936,9 +939,9 @@ class TestEditingSubcommands:
     @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_basic_create(
-        self, format_case, setup_editor_simulator, run_arvcli
+        self, format_case, setup_editor_simulator, run_arvcli, editor_input
     ):
-        setup_editor_simulator(format_case.dumps(EDITOR_INPUT_OBJ))
+        setup_editor_simulator(format_case.dumps(editor_input))
 
         with editor_run_context():
             exit_code, out, err = run_arvcli(
@@ -947,17 +950,19 @@ class TestEditingSubcommands:
 
         assert exit_code == 0
         result = format_case.loads(out)
-        for k in EDITOR_INPUT_OBJ.keys():
-            assert EDITOR_INPUT_OBJ[k] == result[k]
+        for k in editor_input.keys():
+            assert editor_input[k] == result[k]
 
     @pytest.mark.usefixtures("reset_test_server_db")
-    def test_create_in_project_yaml(self, setup_editor_simulator, run_arvcli):
+    def test_create_in_project_yaml(
+        self, setup_editor_simulator, run_arvcli, editor_input
+    ):
         # Simulate editing the temp file with owner_uuid field pre-filled due
         # to the --project-uuid CLI argument. YAML is much easier to setup
         # with our fake editor because simple appending will suffice.
         parent_proj = run_test_server.fixture("groups")["aproject"]
         # The object to be appended to the pre-filled stub in the temp file.
-        setup_editor_simulator(yaml_dumps(EDITOR_INPUT_OBJ), "-a")
+        setup_editor_simulator(yaml_dumps(editor_input), "-a")
 
         with editor_run_context():
             exit_code, out, err = run_arvcli([
@@ -969,20 +974,21 @@ class TestEditingSubcommands:
         assert exit_code == 0
         result = yaml.load(out)
         assert result["owner_uuid"] == parent_proj["uuid"]
-        for k in EDITOR_INPUT_OBJ.keys():
-            assert EDITOR_INPUT_OBJ[k] == result[k]
+        for k in editor_input.keys():
+            assert editor_input[k] == result[k]
 
     @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_edit_process_loops_and_exits_when_fixed(
-        self, format_case, tmp_path, setup_editor_simulator, run_arvcli
+        self, format_case, tmp_path, setup_editor_simulator,
+        run_arvcli, editor_input
     ):
         """Test that the edit process can loop back upon bad input until
         input is good.
         """
         # Prepare the good editor input to be injected to the editor.
         good_file = tmp_path / "good_input"
-        good_file.write_text(format_case.dumps(EDITOR_INPUT_OBJ))
+        good_file.write_text(format_case.dumps(editor_input))
         # Set up editor to write garbage first then good input.
         setup_editor_simulator(format_case.garbage_text, "-t", str(good_file))
 
@@ -994,11 +1000,12 @@ class TestEditingSubcommands:
         assert exit_code == 0
         assert err
         result = format_case.loads(out)
-        for k in EDITOR_INPUT_OBJ.keys():
-            assert EDITOR_INPUT_OBJ[k] == result[k]
+        for k in editor_input.keys():
+            assert editor_input[k] == result[k]
 
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
-        self, setup_editor_simulator, run_arvcli, simple_api_client
+        self, setup_editor_simulator, run_arvcli,
+        simple_api_client, editor_input
     ):
         # Set up editor to write garbage JSON first then abandon the effort of
         # inputting.
@@ -1010,12 +1017,13 @@ class TestEditingSubcommands:
         assert exit_code == 0
         assert "notice: input is empty; exiting without changes" in err
         group_list_result = simple_api_client.groups().list(
-            filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
+            filters=[["name", "=", editor_input["name"]]]
         ).execute()
         assert group_list_result["items_available"] == 0  # No group created.
 
     def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
-        self, setup_editor_simulator, run_arvcli, simple_api_client
+        self, setup_editor_simulator, run_arvcli,
+        simple_api_client, editor_input
     ):
         # Set up editor to write garbage YAML.
         setup_editor_simulator(FORMAT_CASES[1].garbage_text)
@@ -1027,7 +1035,7 @@ class TestEditingSubcommands:
 
         assert exit_code == 1
         group_list_result = simple_api_client.groups().list(
-            filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
+            filters=[["name", "=", editor_input["name"]]]
         ).execute()
         assert group_list_result["items_available"] == 0  # No group created.
 
