@@ -738,7 +738,10 @@ class TestGetEditorCmdline:
 
 
 @pytest.fixture
-def setup_editor_simulator(tmp_path, monkeypatch):
+def setup_editor(tmp_path, monkeypatch):
+    """Set up the environment variable $VISUAL to point to our simulated
+    external editor.
+    """
     editor_dir = Path(__file__).parent
     writefile_script = editor_dir / "writefile.sh"
     monkeypatch.setenv("PATH", str(editor_dir), prepend=":")
@@ -801,9 +804,9 @@ class PlainStringEditing(arvcli.ObjectEditingProcessBase):
 
 class TestObjectEditingProcessBase:
     """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
-    def test_basic(self, setup_editor_simulator):
+    def test_basic(self, setup_editor):
         content = "Hello, world!\n"
-        setup_editor_simulator(content)
+        setup_editor(content)
         with PlainStringEditing() as ed:
             assert ed.tmp_file is not None
             assert Path(ed.tmp_file.name).exists()
@@ -813,7 +816,7 @@ class TestObjectEditingProcessBase:
             # Inside the same context, the ed.edit() method can be called more
             # than once with the desired result.
             content = "foo bar"
-            setup_editor_simulator(content)
+            setup_editor(content)
             ed.edit()
             assert ed.load() == content
         assert not Path(ed.tmp_file.name).exists()
@@ -864,15 +867,15 @@ class TestObjectEditingProcessBase:
         ed = PlainStringEditing(file_extension="")
         assert ed.suffix is None
 
-    def test_editor_did_not_edit(self, setup_editor_simulator):
-        setup_editor_simulator("", "append")
+    def test_editor_did_not_edit(self, setup_editor):
+        setup_editor("", "append")
         initial_obj = "init"
         with PlainStringEditing(initial_obj) as ed:
             ed.edit()
             assert ed.load() == initial_obj
 
 
-def test_create_subcommad_s_option(setup_editor_simulator, run_arvcli):
+def test_create_subcommad_s_option(setup_editor, run_arvcli):
     with mock.patch("subprocess.run") as sr:
         exit_code, out, err = run_arvcli(["-s", "create", "collection"])
     assert exit_code == 2
@@ -978,9 +981,9 @@ class TestEditingSubcommands:
     @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_basic_create(
-        self, format_case, setup_editor_simulator, run_arvcli, new_project
+        self, format_case, setup_editor, run_arvcli, new_project
     ):
-        setup_editor_simulator(format_case.dumps(new_project))
+        setup_editor(format_case.dumps(new_project))
 
         with editor_run_context():
             exit_code, out, err = run_arvcli(
@@ -994,14 +997,14 @@ class TestEditingSubcommands:
 
     @pytest.mark.usefixtures("reset_test_server_db")
     def test_create_in_project_yaml(
-        self, setup_editor_simulator, run_arvcli, new_project
+        self, setup_editor, run_arvcli, new_project
     ):
         # Simulate editing the temp file with owner_uuid field pre-filled due
         # to the --project-uuid CLI argument. YAML is much easier to setup
         # with our fake editor because simple appending will suffice.
         parent_proj = run_test_server.fixture("groups")["aproject"]
         # The object to be appended to the pre-filled stub in the temp file.
-        setup_editor_simulator(yaml_dumps(new_project), "append")
+        setup_editor(yaml_dumps(new_project), "append")
 
         with editor_run_context():
             exit_code, out, err = run_arvcli([
@@ -1019,14 +1022,13 @@ class TestEditingSubcommands:
     @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
     def test_edit_process_loops_and_exits_when_fixed(
-        self, format_case, tmp_path, setup_editor_simulator,
-        run_arvcli, new_project
+        self, format_case, tmp_path, setup_editor, run_arvcli, new_project
     ):
         """Test that the edit process can loop back upon bad input until
         input is good.
         """
         # Set up editor to write garbage first.
-        src_file = setup_editor_simulator(format_case.garbage_text)
+        src_file = setup_editor(format_case.garbage_text)
 
         with editor_run_context(
             # Then answer "yes" to re-edit and provide good input.
@@ -1044,11 +1046,10 @@ class TestEditingSubcommands:
             assert new_project[k] == result[k]
 
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
-        self, setup_editor_simulator, run_arvcli,
-        simple_api_client, new_project
+        self, setup_editor, run_arvcli, simple_api_client, new_project
     ):
         # Set up editor to write garbage JSON first.
-        src_file = setup_editor_simulator(FORMAT_CASES[0].garbage_text)
+        src_file = setup_editor(FORMAT_CASES[0].garbage_text)
 
         with editor_run_context(
             # Then answer "yes" to re-edit but abandon edit by inputting blank.
@@ -1065,11 +1066,10 @@ class TestEditingSubcommands:
         assert group_list_result["items_available"] == 0  # No group created.
 
     def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
-        self, setup_editor_simulator, run_arvcli,
-        simple_api_client, new_project
+        self, setup_editor, run_arvcli, simple_api_client, new_project
     ):
         # Set up editor to write garbage YAML.
-        setup_editor_simulator(FORMAT_CASES[1].garbage_text)
+        setup_editor(FORMAT_CASES[1].garbage_text)
 
         with editor_run_context(input_values="n"):  # A single "no" answer.
             exit_code, out, err = run_arvcli(
@@ -1082,10 +1082,8 @@ class TestEditingSubcommands:
         ).execute()
         assert group_list_result["items_available"] == 0  # No group created.
 
-    def test_json_input_not_an_object(
-            self, setup_editor_simulator, run_arvcli
-    ):
-        setup_editor_simulator("[0, 1, 2]\n")
+    def test_json_input_not_an_object(self, setup_editor, run_arvcli):
+        setup_editor("[0, 1, 2]\n")
 
         with editor_run_context(input_values="n"):
             exit_code, out, err = run_arvcli(["create", "group"])
