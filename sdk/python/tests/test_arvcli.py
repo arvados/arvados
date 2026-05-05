@@ -740,28 +740,47 @@ class TestGetEditorCmdline:
 @pytest.fixture
 def setup_editor_simulator(tmp_path, monkeypatch):
     editor_dir = Path(__file__).parent
-    editor_path = editor_dir / "editor_simulator.py"
+    writefile_script = editor_dir / "writefile.sh"
     monkeypatch.setenv("PATH", str(editor_dir), prepend=":")
 
     base_dir = tmp_path / "editor_input"
     base_dir.mkdir()
-    # Temporary file for editor_simulator.py that gets written each time the
-    # editor is "installed"
+    # Temporary file that gets written each time the editor is "installed"
     edit_source = base_dir / "source"
     # Persistent file that keeps a record of editor input, for each request to
     # this fixture (typically means function scope).
     log = base_dir / "log"
     logf = open(log, "a")
 
-    def editor_fcn(content: str = "", *extra_args):
+    def editor_fcn(content: str = "", action: str = ""):
         with open(edit_source, "w") as s:
+            # Note that not all actions uses the edit_source file.
             s.write(content)
-        logf.write(content)
-        logf.write("-----\n")
-        editor_cmd = f"{editor_path!s} -i {edit_source!s}"
-        if extra_args:
-            editor_cmd += f" {' '.join(extra_args)}"
+        sep = "-----\n"
+        match action:
+            case "replace":
+                logf.write(f"replace tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = "cp {edit_source}"
+            case "delete":
+                logf.write(f"delete tmpfile: {sep}")
+                editor_cmd = "rm"
+            case "crash":
+                logf.write(f"crash: {sep}")
+                editor_cmd = "false"
+            case "append":
+                logf.write(f"append to tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = f"{writefile_script} {edit_source} -a"
+            case _:  # The most common case: fill target file with content.
+                logf.write(f"fill tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = f"{writefile_script} {edit_source}"
         monkeypatch.setenv("VISUAL", editor_cmd)
+        return edit_source  # "Leak" the edit-source for convenience in tests.
 
     try:
         yield editor_fcn
@@ -846,7 +865,7 @@ class TestObjectEditingProcessBase:
         assert ed.suffix is None
 
     def test_editor_did_not_edit(self, setup_editor_simulator):
-        setup_editor_simulator("", "-a")
+        setup_editor_simulator("", "append")
         initial_obj = "init"
         with PlainStringEditing(initial_obj) as ed:
             ed.edit()
@@ -875,53 +894,73 @@ FORMAT_CASES = (
     EditFormatCase("yaml", yaml_dumps, yaml.load, "{{}}")
 )
 
+
 @pytest.fixture
 def editor_input():
     return {"name": "a new project", "group_class": "project"}
 
 
+class AnswerAndEdit:
+    """Simulate the interactive user's "answer-then-edit" actions, i.e.,
+    answering the question about whether to continue editing at the interactive
+    prompt, and if yes, then optionally provide some content to the editor.
+    """
+    def __init__(self, input_values=[], input_source_file=None):
+        """Arguments:
+
+        * input_values: Sequence[tuple[str, str] | str] --- Input "action
+          stream" to the mocked `input()` function. If an item is a single
+          string, that will be the user's answer at the prompt. If an item is a
+          pair of values (answer, content), in addition to answering the
+          prompt, provide the `content` as the input to the external editor.
+          This means that `answer` must be affirmative for `content` to take
+          effect.
+        * input_source_file: Optional[Path] --- Target file where the provided
+          `content` will be written to; if not provided, `content` has no
+          effect.
+        """
+        self.input_values = input_values
+        self.n_values = len(input_values)
+        self.n_calls = 0
+        self.target_file = input_source_file and Path(input_source_file)
+
+    def input(self, *args):
+        """Callable that mocks the `builtins.input()` function; the *args are
+        provided pro-forma and are ignored.
+        """
+        self.n_calls += 1
+        if self.n_calls > self.n_values:
+            raise ArvCLITestError(
+                f"There are {self.n_values} items in the mock input queue but"
+                f"the mocked `input()` function has been called {self.n_calls}"
+                " times."
+            )
+        input_retval, *new_content = self.input_values[self.n_calls - 1]
+        # When we have a target, write new content regardless of the mocked
+        # answer, as long as the content is provided in the input stream.
+        if new_content and self.target_file:
+            self.target_file.write_text(new_content[0])
+        return input_retval
+
+
 @contextmanager
-def editor_run_context(input_values=None, endless_input=False):
+def editor_run_context(*args, **kwargs):
     """Set up the context in which the arvcli.py script (via the fixture
     `run_arvcli`) is run, with certain builtins replaced by monkey-patching.
 
-    Arguments:
+    This is meant to be entered as close to the command run as possible, to
+    confine the scope of builtins being mocked.
 
-    * input_values: Optional[Sequence[str]] --- If provided, `input()` will be
-      monkey-patched, and each call to the builtin `input()` will return
-      successively the value in the sequence of strings. This can be used to
-      "script" the user's input. If this argument is `None` (default),
-      `input()` is not mocked at all. Note that providing a string means
-      `input()` will yield a single character in the string each time.
-    * endless_input: bool --- If True, when more calls to `input()` are made
-      than there are items in input_values, repeat the last item for all future
-      calls. Default: False.
+    Arguments are passed directly to `AnswerAndEdit()` for setting up the mock
+    `input()` builtin.
     """
     with pytest.MonkeyPatch.context() as m:
         # Force the external-editor handler to believe we are running in a
         # terminal.
         m.setattr(sys.stdin, "isatty", lambda: True)
-        # If input_values are provided, mock the builtins.input()
-        # function.
-        if input_values:
-            nvalues = len(input_values)
-            calls = 0
-
-            def mock_input(*args):
-                nonlocal calls
-                calls += 1
-                if calls <= nvalues:
-                    return input_values[calls - 1]
-                # More calls than pre-filled items.
-                if endless_input:
-                    return input_values[-1]
-                raise ArvCLITestError(
-                    f"There are {nvalues} items in the mock input queue but"
-                    f" the mocked `input()` function has been called {calls}"
-                    " times."
-                )
-
-            m.setattr(builtins, "input", mock_input)
+        # Mock the `input()` builtin.
+        input_mock = AnswerAndEdit(*args, **kwargs)
+        m.setattr(builtins, "input", input_mock.input)
         yield m
 
 
@@ -962,7 +1001,7 @@ class TestEditingSubcommands:
         # with our fake editor because simple appending will suffice.
         parent_proj = run_test_server.fixture("groups")["aproject"]
         # The object to be appended to the pre-filled stub in the temp file.
-        setup_editor_simulator(yaml_dumps(editor_input), "-a")
+        setup_editor_simulator(yaml_dumps(editor_input), "append")
 
         with editor_run_context():
             exit_code, out, err = run_arvcli([
@@ -986,13 +1025,14 @@ class TestEditingSubcommands:
         """Test that the edit process can loop back upon bad input until
         input is good.
         """
-        # Prepare the good editor input to be injected to the editor.
-        good_file = tmp_path / "good_input"
-        good_file.write_text(format_case.dumps(editor_input))
-        # Set up editor to write garbage first then good input.
-        setup_editor_simulator(format_case.garbage_text, "-t", str(good_file))
+        # Set up editor to write garbage first.
+        src_file = setup_editor_simulator(format_case.garbage_text)
 
-        with editor_run_context(input_values="y"):
+        with editor_run_context(
+            # Then answer "yes" to re-edit and provide good input.
+            input_values=[("y", format_case.dumps(editor_input))],
+            input_source_file=src_file
+        ):
             exit_code, out, err = run_arvcli(
                 ["--format", format_case.format, "create", "group"]
             )
@@ -1007,11 +1047,14 @@ class TestEditingSubcommands:
         self, setup_editor_simulator, run_arvcli,
         simple_api_client, editor_input
     ):
-        # Set up editor to write garbage JSON first then abandon the effort of
-        # inputting.
-        setup_editor_simulator(FORMAT_CASES[0].garbage_text, "-t", os.devnull)
+        # Set up editor to write garbage JSON first.
+        src_file = setup_editor_simulator(FORMAT_CASES[0].garbage_text)
 
-        with editor_run_context(input_values="y"):
+        with editor_run_context(
+            # Then answer "yes" to re-edit but abandon edit by inputting blank.
+            input_values=[("y", "")],
+            input_source_file=src_file
+        ):
             exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 0
@@ -1028,7 +1071,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage YAML.
         setup_editor_simulator(FORMAT_CASES[1].garbage_text)
 
-        with editor_run_context(input_values="n"):
+        with editor_run_context(input_values="n"):  # A single "no" answer.
             exit_code, out, err = run_arvcli(
                 ["--format", "yaml", "create", "group"]
             )
