@@ -459,16 +459,9 @@ class JSONEditingProcess(ObjectEditingProcessBase):
         if not isinstance(obj, Mapping):
             raise self.input_error_type(
                 path=path,
-                # NOTE: the "official" term for the curly-braced entity is
-                # "object" (see
-                # https://datatracker.ietf.org/doc/html/rfc7159.html,
-                # https://www.json.org/json-en.html)
-                # but that word may be a little confusing, so we elaborate a
-                # bit in the user-facing message.
                 original_exception=ValueError(
-                    "JSON input does not define an object"
-                    " (i.e., 'mapping' or 'dict'),"
-                    " hence cannot be a valid Arvados object"
+                    f"JSON input has type '{type(obj).__name__}',"
+                    " not a valid Arvados object"
                 )
             )
         return obj
@@ -502,11 +495,9 @@ class YAMLEditingProcess(ObjectEditingProcessBase):
         if not isinstance(obj, Mapping):
             raise self.input_error_type(
                 path=path,
-                # NOTE: YAML spec uses the term "mapping",
-                # https://yaml.org/spec/1.2.2/#mapping
                 original_exception=ValueError(
-                    "YAML input does not define a mapping,"
-                    " hence cannot be a valid Arvados object"
+                    f"YAML input has type '{type(obj).__name__}',"
+                    " not a valid Arvados object"
                 )
             )
         return obj

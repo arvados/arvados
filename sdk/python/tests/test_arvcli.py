@@ -1033,3 +1033,14 @@ class TestEditingSubcommands:
             filters=[["name", "=", EDITOR_INPUT_OBJ["name"]]]
         ).execute()
         assert group_list_result["items_available"] == 0  # No group created.
+
+    def test_json_input_not_an_object(
+            self, setup_editor_simulator, run_arvcli
+    ):
+        setup_editor_simulator("[0, 1, 2]\n")
+
+        with editor_run_context(input_values="n"):
+            exit_code, out, err = run_arvcli(["create", "group"])
+
+        assert exit_code == 1
+        assert "JSON input has type 'list', not a valid Arvados object" in err
