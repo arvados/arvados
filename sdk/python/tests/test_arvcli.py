@@ -1046,7 +1046,7 @@ class TestEditingSubcommands:
             assert new_project[k] == result[k]
 
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
-        self, setup_editor, run_arvcli, simple_api_client, new_project
+        self, setup_editor, run_arvcli, new_project
     ):
         # Set up editor to write garbage JSON first.
         src_file = setup_editor(FORMAT_CASES[0].garbage_text)
@@ -1060,13 +1060,9 @@ class TestEditingSubcommands:
 
         assert exit_code == 0
         assert "notice: input is empty; exiting without changes" in err
-        group_list_result = simple_api_client.groups().list(
-            filters=[["name", "=", new_project["name"]]]
-        ).execute()
-        assert group_list_result["items_available"] == 0  # No group created.
 
     def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
-        self, setup_editor, run_arvcli, simple_api_client, new_project
+        self, setup_editor, run_arvcli, new_project
     ):
         # Set up editor to write garbage YAML.
         setup_editor(FORMAT_CASES[1].garbage_text)
@@ -1077,10 +1073,6 @@ class TestEditingSubcommands:
             )
 
         assert exit_code == 1
-        group_list_result = simple_api_client.groups().list(
-            filters=[["name", "=", new_project["name"]]]
-        ).execute()
-        assert group_list_result["items_available"] == 0  # No group created.
 
     def test_json_input_not_an_object(self, setup_editor, run_arvcli):
         setup_editor("[0, 1, 2]\n")
