@@ -733,21 +733,6 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
-    # Refuse to run when we're not in an interactive session. Some editors may
-    # be unwilling to quit even when not attached to a terminal (e.g., vim),
-    # which would have caused us to wait without making progress. Others (e.g.,
-    # nano) may quit immediately with non-zero code, but editor exit codes are
-    # flaky and not well-documented or standardized (see
-    # https://stackoverflow.com/a/46678151,
-    # https://unix.stackexchange.com/a/293461), and we can't rely on them.
-    if not sys.stdin.isatty():
-        print(
-            "Error: 'create'/'edit' subcommands can only run interactively"
-            " when input/output are a terminal.",
-            file=sys.stderr
-        )
-        sys.exit(1)
-
     obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else {}
     if args.format == "json":
         editing = JSONEditingProcess(initial_object=obj_stub)
