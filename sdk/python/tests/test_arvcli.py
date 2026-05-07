@@ -906,47 +906,25 @@ def new_project():
     return {"name": "a new project", "group_class": "project"}
 
 
-class AnswerAndEdit:
-    """Simulate the interactive user's "answer-then-edit" actions, i.e.,
-    answering the question about whether to continue editing at the interactive
-    prompt, and if yes, then optionally provide some content to the editor.
+def input_mock_action(input_values=[], input_source_file=None):
+    """Arguments:
+
+    * input_values: Sequence[tuple[str, str] | str] --- Input "action stream"
+      to the mocked `input()` function. If an item is a single string, that
+      will be the user's answer at the prompt. If an item is a pair of values
+      (answer, content), in addition to answering the prompt, provide the
+      `content` as the input to the external editor.  This means that `answer`
+      must be affirmative for `content` to take effect.
+    * input_source_file: Optional[Path] --- Target file where the provided
+      `content` will be written to; if not provided, `content` has no
+      effect.
     """
-    def __init__(self, input_values=[], input_source_file=None):
-        """Arguments:
-
-        * input_values: Sequence[tuple[str, str] | str] --- Input "action
-          stream" to the mocked `input()` function. If an item is a single
-          string, that will be the user's answer at the prompt. If an item is a
-          pair of values (answer, content), in addition to answering the
-          prompt, provide the `content` as the input to the external editor.
-          This means that `answer` must be affirmative for `content` to take
-          effect.
-        * input_source_file: Optional[Path] --- Target file where the provided
-          `content` will be written to; if not provided, `content` has no
-          effect.
-        """
-        self.input_values = input_values
-        self.n_values = len(input_values)
-        self.n_calls = 0
-        self.target_file = input_source_file and Path(input_source_file)
-
-    def input(self, *args):
-        """Callable that mocks the `builtins.input()` function; the *args are
-        provided pro-forma and are ignored.
-        """
-        self.n_calls += 1
-        if self.n_calls > self.n_values:
-            raise ArvCLITestError(
-                f"There are {self.n_values} items in the mock input queue but"
-                f"the mocked `input()` function has been called {self.n_calls}"
-                " times."
-            )
-        input_retval, *new_content = self.input_values[self.n_calls - 1]
+    for answer, *new_content in input_values:
         # When we have a target, write new content regardless of the mocked
         # answer, as long as the content is provided in the input stream.
-        if new_content and self.target_file:
-            self.target_file.write_text(new_content[0])
-        return input_retval
+        if new_content and input_source_file:
+            input_source_file.write_text(new_content[0])
+        yield answer
 
 
 @contextmanager
@@ -954,16 +932,15 @@ def editor_run_context(*args, **kwargs):
     """Set up the context in which the arvcli.py script (via the fixture
     `run_arvcli`) is run, with certain builtins replaced by monkey-patching.
 
-    This is meant to be entered as close to the command run as possible, to
-    confine the scope of builtins being mocked.
-
-    Arguments are passed directly to `AnswerAndEdit()` for setting up the mock
-    `input()` builtin.
+    Arguments are passed directly to `input_mock_action()` for setting up the
+    mock `input()` builtin.
     """
     with pytest.MonkeyPatch.context() as m:
         # Mock the `input()` builtin.
-        input_mock = AnswerAndEdit(*args, **kwargs)
-        m.setattr(builtins, "input", input_mock.input)
+        m.setattr(
+            builtins, "input",
+            mock.Mock(side_effect=input_mock_action(*args, **kwargs))
+        )
         yield m
 
 
