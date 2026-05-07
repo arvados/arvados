@@ -907,7 +907,11 @@ def new_project():
 
 
 def input_mock_action(input_values=[], input_source_file=None):
-    """Arguments:
+    """
+    Side-effect function for the builtin `input()` intended to simulate user's
+    answers at the prompt and re-edits that follow.
+
+    Arguments:
 
     * input_values: Sequence[tuple[str, str] | str] --- Input "action stream"
       to the mocked `input()` function. If an item is a single string, that
@@ -928,9 +932,9 @@ def input_mock_action(input_values=[], input_source_file=None):
 
 
 @contextmanager
-def editor_run_context(*args, **kwargs):
-    """Set up the context in which the arvcli.py script (via the fixture
-    `run_arvcli`) is run, with certain builtins replaced by monkey-patching.
+def builtin_input_patched(*args, **kwargs):
+    """Context manager for patching the builtin `input()` function, intended to
+    narrowly limit the scope in which a builtin is patched.
 
     Arguments are passed directly to `input_mock_action()` for setting up the
     mock `input()` builtin.
@@ -1004,7 +1008,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage first.
         src_file = setup_editor(format_case.garbage_text)
 
-        with editor_run_context(
+        with builtin_input_patched(
             # Then answer "yes" to re-edit and provide good input.
             input_values=[("y", format_case.dumps(new_project))],
             input_source_file=src_file
@@ -1025,7 +1029,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage JSON first.
         src_file = setup_editor(FORMAT_CASES[0].garbage_text)
 
-        with editor_run_context(
+        with builtin_input_patched(
             # Then answer "yes" to re-edit but abandon edit by inputting blank.
             input_values=[("y", "")],
             input_source_file=src_file
@@ -1041,7 +1045,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage YAML.
         setup_editor(FORMAT_CASES[1].garbage_text)
 
-        with editor_run_context(input_values="n"):  # A single "no" answer.
+        with builtin_input_patched(input_values="n"):  # A single "no" answer.
             exit_code, out, err = run_arvcli(
                 ["--format", "yaml", "create", "group"]
             )
@@ -1051,7 +1055,7 @@ class TestEditingSubcommands:
     def test_json_input_not_an_object(self, setup_editor, run_arvcli):
         setup_editor("[0, 1, 2]\n")
 
-        with editor_run_context(input_values="n"):
+        with builtin_input_patched(input_values="n"):
             exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 1
