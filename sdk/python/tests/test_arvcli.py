@@ -95,25 +95,25 @@ PASSTHROUGH_CMD_FUNCS = [
 ]
 
 
-@pytest.mark.parametrize("subcommand,main_fcn_name", PASSTHROUGH_CMD_FUNCS)
-def test_passthrough_commands_args(subcommand, main_fcn_name):
+@pytest.mark.parametrize("subcommand,main_func_name", PASSTHROUGH_CMD_FUNCS)
+def test_passthrough_commands_args(subcommand, main_func_name):
     """Test that arbitrary argv ('[...] arvcli.py subcommand --foo bar') to
     arvcli.py gets passed to the underlying subcommand; i.e. the passed-through
     subcommand's entry function gets called with ["--foo", "bar"].
     """
-    with mock.patch(main_fcn_name) as s:
+    with mock.patch(main_func_name) as s:
         with pytest.raises(SystemExit):
             arvcli.dispatch([*subcommand.split(), "--foo", "bar"])
         s.assert_called_with(["--foo", "bar"])
 
 
-@pytest.mark.parametrize("subcommand,main_fcn_name", PASSTHROUGH_CMD_FUNCS)
-def test_passthrough_commands_help(subcommand, main_fcn_name):
+@pytest.mark.parametrize("subcommand,main_func_name", PASSTHROUGH_CMD_FUNCS)
+def test_passthrough_commands_help(subcommand, main_func_name):
     """Test that the -h flag to a subcommand (as opposed to the main command)
     gets passed to the underlying script rather than consumed by the main arg
     parser.
     """
-    with mock.patch(main_fcn_name) as s:
+    with mock.patch(main_func_name) as s:
         with pytest.raises(SystemExit):
             arvcli.dispatch([*subcommand.split(), "-h"])
         s.assert_called_with(["-h"])
@@ -756,7 +756,7 @@ def setup_editor(tmp_path, monkeypatch):
     log = base_dir / "log"
     logf = open(log, "a")
 
-    def editor_fcn(content: str = "", action: str = "write") -> Path:
+    def editor_func(content: str = "", action: str = "write") -> Path:
         with open(edit_source, "w") as s:
             # Note that not all actions uses the edit_source file.
             s.write(content)
@@ -789,7 +789,7 @@ def setup_editor(tmp_path, monkeypatch):
         return edit_source  # "Leak" the edit-source for convenience in tests.
 
     try:
-        yield editor_fcn
+        yield editor_func
     finally:
         logf.close()
 
