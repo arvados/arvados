@@ -939,7 +939,7 @@ def input_mock_action(input_values=[], input_source_file=None):
 
 
 @contextmanager
-def builtin_input_patched(*args, **kwargs):
+def builtins_input_patched(*args, **kwargs):
     """Context manager for patching the builtin `input()` function, intended to
     narrowly limit the scope in which a builtin is patched.
 
@@ -1015,7 +1015,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage first.
         src_file = setup_editor(content=format_case.garbage_text)
 
-        with builtin_input_patched(
+        with builtins_input_patched(
             # Then answer "yes" to re-edit and provide good input.
             input_values=[("y", format_case.dumps(new_project))],
             input_source_file=src_file
@@ -1036,7 +1036,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage JSON first.
         src_file = setup_editor(content=FORMAT_CASES[0].garbage_text)
 
-        with builtin_input_patched(
+        with builtins_input_patched(
             # Then answer "yes" to re-edit but abandon edit by inputting blank.
             input_values=[("y", "")],
             input_source_file=src_file
@@ -1052,7 +1052,7 @@ class TestEditingSubcommands:
         # Set up editor to write garbage YAML.
         setup_editor(content=FORMAT_CASES[1].garbage_text)
 
-        with builtin_input_patched(input_values="n"):  # A single "no" answer.
+        with builtins_input_patched(input_values="n"):  # A single "no" answer.
             exit_code, out, err = run_arvcli(
                 ["--format", "yaml", "create", "group"]
             )
@@ -1062,7 +1062,7 @@ class TestEditingSubcommands:
     def test_json_input_not_an_object(self, setup_editor, run_arvcli):
         setup_editor(content="[0, 1, 2]\n")
 
-        with builtin_input_patched(input_values="n"):
+        with builtins_input_patched(input_values="n"):
             exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 1
