@@ -733,10 +733,15 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
     obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else {}
-    if args.format == "json":
-        editing = JSONEditingProcess(initial_object=obj_stub)
-    else:
-        editing = YAMLEditingProcess(initial_object=obj_stub)
+    match args.format:
+        case "json":
+            editing = JSONEditingProcess(initial_object=obj_stub)
+        case "yaml":
+            editing = YAMLEditingProcess(initial_object=obj_stub)
+        case _:
+            raise RuntimeError(
+                f"Error: unexpected value for format option: {args.format}"
+            )
 
     with editing:
         api_call_status = None
