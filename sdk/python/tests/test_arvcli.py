@@ -12,6 +12,7 @@ import json
 from unittest import mock
 import os
 from pathlib import Path
+import shlex
 import sys
 from typing import TextIO
 import ciso8601
@@ -765,24 +766,24 @@ def setup_editor(tmp_path, monkeypatch):
                 logf.write(f"replace tmpfile: {sep}")
                 logf.write(content)
                 logf.write(sep)
-                editor_cmd = "cp {edit_source}"
+                editor_cmd = ["cp", str(edit_source)]
             case "delete":
                 logf.write(f"delete tmpfile: {sep}")
-                editor_cmd = "rm"
+                editor_cmd = ["rm"]
             case "crash":
                 logf.write(f"crash: {sep}")
-                editor_cmd = "false"
+                editor_cmd = ["false"]
             case "append":
                 logf.write(f"append to tmpfile: {sep}")
                 logf.write(content)
                 logf.write(sep)
-                editor_cmd = f"{writefile_script} {edit_source} -a"
+                editor_cmd = [str(writefile_script), str(edit_source), "-a"]
             case _:  # The most common case: fill target file with content.
                 logf.write(f"fill tmpfile: {sep}")
                 logf.write(content)
                 logf.write(sep)
-                editor_cmd = f"{writefile_script} {edit_source}"
-        monkeypatch.setenv("VISUAL", editor_cmd)
+                editor_cmd = [str(writefile_script), str(edit_source)]
+        monkeypatch.setenv("VISUAL", shlex.join(editor_cmd))
         return edit_source  # "Leak" the edit-source for convenience in tests.
 
     try:
