@@ -541,6 +541,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             "-f", "--format",
             choices=["json", "yaml", "uuid"],
+            type=str.lower,
             default="json",
             help="Set output format"
         )
