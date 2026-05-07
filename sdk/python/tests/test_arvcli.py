@@ -949,8 +949,7 @@ class TestEditingSubcommands:
     def test_bad_editor(self, monkeypatch, run_arvcli, tmp_path):
         monkeypatch.setenv("PATH", str(tmp_path))
 
-        with editor_run_context():
-            exit_code, out, err = run_arvcli(["create", "group"])
+        exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 1
         assert re.match(r"Error: failed to execute editor `vi .+`:.+No such file or directory", err)
@@ -962,10 +961,9 @@ class TestEditingSubcommands:
     ):
         setup_editor(format_case.dumps(new_project))
 
-        with editor_run_context():
-            exit_code, out, err = run_arvcli(
-                ["--format", format_case.format, "create", "group"]
-            )
+        exit_code, out, err = run_arvcli(
+            ["--format", format_case.format, "create", "group"]
+        )
 
         assert exit_code == 0
         result = format_case.loads(out)
@@ -983,12 +981,11 @@ class TestEditingSubcommands:
         # The object to be appended to the pre-filled stub in the temp file.
         setup_editor(yaml_dumps(new_project), "append")
 
-        with editor_run_context():
-            exit_code, out, err = run_arvcli([
-                "--format", "yaml",
-                "create", "group",
-                "--project-uuid", parent_proj["uuid"]
-            ])
+        exit_code, out, err = run_arvcli([
+            "--format", "yaml",
+            "create", "group",
+            "--project-uuid", parent_proj["uuid"]
+        ])
 
         assert exit_code == 0
         result = yaml.load(out)
