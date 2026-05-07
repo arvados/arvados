@@ -6,15 +6,15 @@ import argparse
 import builtins
 from collections import namedtuple
 from contextlib import contextmanager
-import re
 import io
 import json
-from unittest import mock
 import os
 from pathlib import Path
+import re
 import shlex
 import sys
 from typing import TextIO
+from unittest import mock
 import ciso8601
 import pytest
 from ruamel.yaml import YAML
@@ -699,7 +699,6 @@ class TestGetEditorCmdline:
 
     gec = staticmethod(arvcli.ObjectEditingProcessBase.get_editor_cmdline)
 
-
     @pytest.fixture
     def installed_nano(self, tmp_path, monkeypatch):
         """Ensure that `nano` is installed by placing an executable named
@@ -742,6 +741,14 @@ class TestGetEditorCmdline:
 def setup_editor(tmp_path, monkeypatch):
     """Set up the environment variable $VISUAL to point to our simulated
     external editor.
+
+    To use, call it with the arguments
+
+        setup_editor(action, content)
+
+    where "action" is one of "write" (default), "append", "delete", "replace",
+    or "crash". "Write", "append", and "replace" take optional `content`, a
+    string to be written to the file.
     """
     editor_dir = Path(__file__).parent
     writefile_script = editor_dir / "writefile.sh"
@@ -756,33 +763,33 @@ def setup_editor(tmp_path, monkeypatch):
     log = base_dir / "log"
     logf = open(log, "a")
 
-    def editor_func(content: str = "", action: str = "write") -> Path:
-        with open(edit_source, "w") as s:
-            # Note that not all actions uses the edit_source file.
-            s.write(content)
+    def editor_func(action: str = "write", content: str = "") -> Path:
+        edit_source.write_text(content)
         sep = "-----\n"
+        exe_path = str(writefile_script)
+        src_path = str(edit_source)
         match action:
             case "write":
                 logf.write(f"fill tmpfile: {sep}")
                 logf.write(content)
                 logf.write(sep)
-                editor_cmd = [str(writefile_script), str(edit_source)]
+                editor_cmd = [exe_path, src_path]
+            case "append":
+                logf.write(f"append to tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = [exe_path, src_path, "-a"]
             case "replace":
                 logf.write(f"replace tmpfile: {sep}")
                 logf.write(content)
                 logf.write(sep)
-                editor_cmd = ["cp", str(edit_source)]
+                editor_cmd = ["cp", src_path]
             case "delete":
                 logf.write(f"delete tmpfile: {sep}")
                 editor_cmd = ["rm"]
             case "crash":
                 logf.write(f"crash: {sep}")
                 editor_cmd = ["false"]
-            case "append":
-                logf.write(f"append to tmpfile: {sep}")
-                logf.write(content)
-                logf.write(sep)
-                editor_cmd = [str(writefile_script), str(edit_source), "-a"]
             case _:
                 raise ArvCLITestError(f"Error: unrecognized action {action!r}")
         monkeypatch.setenv("VISUAL", shlex.join(editor_cmd))
@@ -809,7 +816,7 @@ class TestObjectEditingProcessBase:
     """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
     def test_basic(self, setup_editor):
         content = "Hello, world!\n"
-        setup_editor(content)
+        setup_editor(content=content)
         with PlainStringEditing() as ed:
             assert ed.tmp_file is not None
             assert Path(ed.tmp_file.name).exists()
@@ -819,7 +826,7 @@ class TestObjectEditingProcessBase:
             # Inside the same context, the ed.edit() method can be called more
             # than once with the desired result.
             content = "foo bar"
-            setup_editor(content)
+            setup_editor(content=content)
             ed.edit()
             assert ed.load() == content
         assert not Path(ed.tmp_file.name).exists()
@@ -871,7 +878,7 @@ class TestObjectEditingProcessBase:
         assert ed.suffix is None
 
     def test_editor_did_not_edit(self, setup_editor):
-        setup_editor("", "append")
+        setup_editor("append", "")
         initial_obj = "init"
         with PlainStringEditing(initial_obj) as ed:
             ed.edit()
@@ -963,7 +970,7 @@ class TestEditingSubcommands:
     def test_basic_create(
         self, format_case, setup_editor, run_arvcli, new_project
     ):
-        setup_editor(format_case.dumps(new_project))
+        setup_editor(content=format_case.dumps(new_project))
 
         exit_code, out, err = run_arvcli(
             ["--format", format_case.format, "create", "group"]
@@ -983,7 +990,7 @@ class TestEditingSubcommands:
         # with our fake editor because simple appending will suffice.
         parent_proj = run_test_server.fixture("groups")["aproject"]
         # The object to be appended to the pre-filled stub in the temp file.
-        setup_editor(yaml_dumps(new_project), "append")
+        setup_editor("append", yaml_dumps(new_project))
 
         exit_code, out, err = run_arvcli([
             "--format", "yaml",
@@ -1006,7 +1013,7 @@ class TestEditingSubcommands:
         input is good.
         """
         # Set up editor to write garbage first.
-        src_file = setup_editor(format_case.garbage_text)
+        src_file = setup_editor(content=format_case.garbage_text)
 
         with builtin_input_patched(
             # Then answer "yes" to re-edit and provide good input.
@@ -1027,7 +1034,7 @@ class TestEditingSubcommands:
         self, setup_editor, run_arvcli, new_project
     ):
         # Set up editor to write garbage JSON first.
-        src_file = setup_editor(FORMAT_CASES[0].garbage_text)
+        src_file = setup_editor(content=FORMAT_CASES[0].garbage_text)
 
         with builtin_input_patched(
             # Then answer "yes" to re-edit but abandon edit by inputting blank.
@@ -1043,7 +1050,7 @@ class TestEditingSubcommands:
         self, setup_editor, run_arvcli, new_project
     ):
         # Set up editor to write garbage YAML.
-        setup_editor(FORMAT_CASES[1].garbage_text)
+        setup_editor(content=FORMAT_CASES[1].garbage_text)
 
         with builtin_input_patched(input_values="n"):  # A single "no" answer.
             exit_code, out, err = run_arvcli(
@@ -1053,7 +1060,7 @@ class TestEditingSubcommands:
         assert exit_code == 1
 
     def test_json_input_not_an_object(self, setup_editor, run_arvcli):
-        setup_editor("[0, 1, 2]\n")
+        setup_editor(content="[0, 1, 2]\n")
 
         with builtin_input_patched(input_values="n"):
             exit_code, out, err = run_arvcli(["create", "group"])
