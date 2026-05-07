@@ -756,12 +756,17 @@ def setup_editor(tmp_path, monkeypatch):
     log = base_dir / "log"
     logf = open(log, "a")
 
-    def editor_fcn(content: str = "", action: str = ""):
+    def editor_fcn(content: str = "", action: str = "write") -> Path:
         with open(edit_source, "w") as s:
             # Note that not all actions uses the edit_source file.
             s.write(content)
         sep = "-----\n"
         match action:
+            case "write":
+                logf.write(f"fill tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = [str(writefile_script), str(edit_source)]
             case "replace":
                 logf.write(f"replace tmpfile: {sep}")
                 logf.write(content)
@@ -778,11 +783,8 @@ def setup_editor(tmp_path, monkeypatch):
                 logf.write(content)
                 logf.write(sep)
                 editor_cmd = [str(writefile_script), str(edit_source), "-a"]
-            case _:  # The most common case: fill target file with content.
-                logf.write(f"fill tmpfile: {sep}")
-                logf.write(content)
-                logf.write(sep)
-                editor_cmd = [str(writefile_script), str(edit_source)]
+            case _:
+                raise ArvCLITestError(f"Error: unrecognized action {action!r}")
         monkeypatch.setenv("VISUAL", shlex.join(editor_cmd))
         return edit_source  # "Leak" the edit-source for convenience in tests.
 
