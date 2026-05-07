@@ -358,8 +358,7 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         """Overwrite the temporary file with the serialized object `obj`."""
         self.check_tmp_file()
         # The following should not be done while the child process is pending.
-        self.tmp_file.seek(0)
-        self.tmp_file.truncate()
+        self.tmp_file.truncate(0)
         self.serialize(obj, self.tmp_file)
         self.tmp_file.flush()
 
