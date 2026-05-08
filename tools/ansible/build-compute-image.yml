@@ -71,8 +71,6 @@
   # instance used to create the image.
   hosts: default
   tasks:
-    - ansible.builtin.include_role:
-        name: arvados_apt
     - name: Stop unwanted services
       become: yes
       ansible.builtin.systemd_service:
