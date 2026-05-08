@@ -87,12 +87,11 @@
           dpkg-query --list "linux-image-[1-9]*-$(dpkg --print-architecture)" |
           awk '($1 ~ /^[irp][HUFWti]$/) { print $2; }'
       register: linux_image_preupgrade
-    - name: apt update if needed
-      ansible.builtin.meta: flush_handlers
 
     - name: Upgrade packages
       become: yes
       ansible.builtin.apt:
+        update_cache: yes
         upgrade: true
 
     - name: List linux-image packages post-upgrade
