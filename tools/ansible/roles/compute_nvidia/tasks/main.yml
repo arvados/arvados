@@ -69,3 +69,5 @@
     name: "{{ item.Id }}"
     enabled: false
   loop: "{{ nvidia_services.results|map(attribute='status')|selectattr('LoadState', '!=', 'not-found') }}"
+  loop_control:
+    label: "{{ item.Id }}"
