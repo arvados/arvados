@@ -501,7 +501,22 @@ class YAMLEditingProcess(ObjectEditingProcessBase):
         return obj
 
 
-class ArvCLIArgumentParser(argparse.ArgumentParser):
+class FullHelpOnErrorArgumentParser(argparse.ArgumentParser):
+    """Argument parser subclass that customizes the `error()` method.
+
+    Intended to be used as a base to a parser with complex subparsers, to print
+    more-useful information when a required subcommand is missing.
+    """
+    def error(self, message, with_help=True):
+        if with_help:
+            self.print_help(sys.stderr)
+            print(file=sys.stderr)
+        # XXX: Use of self.prog, undocumented.
+        print(f"{self.prog}: error: {message}", file=sys.stderr)
+        sys.exit(2)
+
+
+class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
     """Argument parser for `arv` commands.
     """
     global_args = frozenset((
@@ -553,32 +568,41 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
 
         subparsers = self.add_subparsers(
             dest="subcommand",
-            help="Subcommands",
+            description="Available subcommands and resources",
             required=True,
-            parser_class=functools.partial(
-                argparse.ArgumentParser,
-                add_help=False,
-            )
+            metavar="subcommand",  # Suppress huge list in help message.
+            parser_class=FullHelpOnErrorArgumentParser
         )
 
-        keep_parser = subparsers.add_parser("keep")
+        keep_methods = ["ls", "get", "put", "docker"]
+        keep_parser = subparsers.add_parser(
+            "keep", help="Arvados Keep client", add_help=False,
+            epilog=f"available methods: {', '.join(keep_methods)}"
+        )
         keep_parser.add_argument(
             "method",
-            choices=["ls", "get", "put", "docker"]
+            metavar="METHOD",
+            choices=keep_methods
         )
 
-        ws_parser = subparsers.add_parser("ws")
-        copy_parser = subparsers.add_parser("copy")
+        subparsers.add_parser(
+            "ws", help="Arvados WebSocket client", add_help=False
+        )
+        subparsers.add_parser(
+            "copy",
+            help=(
+                "Copy collection, workflow, or project between Arvados"
+                " instances"
+            ),
+            add_help=False
+        )
 
         self.subparsers = subparsers
         self.resource_dictionary = resource_dictionary
-        self._subparser_index = {}
         self._subcommand_to_resource = {}
 
         self.add_resource_subcommands()
 
-        if "sys" in self._subparser_index:
-            self._subparser_index["sy"] = self._subparser_index["sys"]
         if "sys" in self._subcommand_to_resource:
             self._subcommand_to_resource["sy"] = (
                 self._subcommand_to_resource["sys"]
@@ -614,28 +638,37 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         for resource, resource_schema in self.resource_dictionary.items():
             subcommand = _ArgUtil.singularize_resource(resource)
             self._subcommand_to_resource[subcommand] = resource
+            # XXX: Below, "{resource}" can be a "word" like
+            # "api_client_authorizations" that doesn't read well; consider
+            # retrieving more natural-language-flavored description from the
+            # "schema" portion of the discovery doc?
+            subcommand_summary = f"Resource subcommand for {resource}"
             resource_subparser = self.subparsers.add_parser(
                 subcommand,
+                help=subcommand_summary,
+                description=subcommand_summary,
                 # For backward compatibility with legacy Ruby CLI client.
                 aliases=["sy"] if subcommand == "sys" else []
             )
-            self._subparser_index[subcommand] = resource_subparser
             methods_dict = resource_schema.get("methods")
             if methods_dict:
                 # Create a collection of "sub-subparsers" under the resource
                 # subparser for the methods.
                 method_subparsers = resource_subparser.add_subparsers(
-                    title="Methods",
+                    title="methods",
                     dest="method",
-                    parser_class=argparse.ArgumentParser,
-                    help=f"Methods for subcommand {subcommand}"
+                    parser_class=FullHelpOnErrorArgumentParser,
+                    required=True,
+                    help=f"Methods for subcommand '{subcommand}'"
                 )
                 for method, method_schema in methods_dict.items():
                     # Add each specific method as a (sub-)subparser with its
                     # associated parameters.
+                    method_summary = method_schema.get("description")
                     method_parser = method_subparsers.add_parser(
                         method,
-                        help=method_schema.get("description")
+                        description=method_summary,
+                        help=method_summary
                     )
                     for parameter_names, kwargs in _ArgUtil.get_method_options(
                             method_schema
@@ -841,27 +874,15 @@ def dispatch(arguments=None):
     # Are we doing an API resource call?
     resource = cmd_parser._subcommand_to_resource.get(args.subcommand)
     if resource is not None:
-        # This is to work around an issue with nested subparsers being unable
-        # to show subcommand-level help (while help generation for the
-        # leafmost, method-level subparser works as expected). For example,
-        # "arvcli.py resouce method -h" will be handled by the leafmost parser
-        # first and the code will not reach here if that is the CLI given.
-        # However, "arvcli.py resource -h" is handled manually here.
-        help_wanted = "-h" in remaining_args or "--help" in remaining_args
-        if not method or help_wanted:
-            subparser = cmd_parser._subparser_index[args.subcommand]
-            subparser.print_help(
-                file=(sys.stdout if help_wanted else sys.stderr)
-            )
-            sys.exit(0 if help_wanted else 2)
         # Any further remaining args indicate either malformed or unrecognized
         # global args (e.g. "arvcli.py --bad-arg resource method") or undefined
         # parameters to a valid resouce-method combination.
-        elif remaining_args:
+        if remaining_args:
             cmd_parser.error(
                 f"unrecognized arguments: {', '.join(remaining_args)}\n"
                 f"Try: {sys.argv[0]} --help\n"
-                f"     {sys.argv[0]} {args.subcommand} {method} --help"
+                f"     {sys.argv[0]} {args.subcommand} {method} --help",
+                with_help=False
             )  # Exits with status 2.
         _handle_resource_method(api_client, resource, args)  # Exits.
 
