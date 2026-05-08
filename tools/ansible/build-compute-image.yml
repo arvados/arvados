@@ -73,6 +73,15 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_apt
+    - name: Stop unwanted services
+      become: yes
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
+      loop:
+        - apt-daily.timer
+        - apt-daily-upgrade.timer
 
     - name: List linux-image packages pre-upgrade
       ansible.builtin.shell:
@@ -87,13 +96,6 @@
       become: yes
       ansible.builtin.apt:
         upgrade: true
-    - name: Remove unwanted packages
-      become: yes
-      ansible.builtin.apt:
-        state: absent
-        purge: true
-        name:
-          - unattended-upgrades
 
     - name: List linux-image packages post-upgrade
       ansible.builtin.shell:
