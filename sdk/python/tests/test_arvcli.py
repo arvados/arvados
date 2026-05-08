@@ -41,7 +41,6 @@ def mock_stdin(monkeypatch, tmp_path):
     code that reads the stdin may actually get the just-written data without
     hitting EOF prematurely.
     """
-    old_stdin = sys.stdin
     buf = open(tmp_path / "mock_stdin", "w+")
     monkeypatch.setattr(sys, "stdin", buf)
     try:
