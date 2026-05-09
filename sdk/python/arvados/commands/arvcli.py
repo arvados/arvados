@@ -318,7 +318,6 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         self.suffix = f".{ext}" if ext else None
 
         self.tmp_file = None
-        self.run_result = None
         self.base_command = self.get_editor_cmdline()
 
     @staticmethod
@@ -376,10 +375,10 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         self.tmp_file.seek(0)
         return self.deserialize(self.tmp_file)
 
-    def edit(self) -> None:
+    def edit(self) -> subprocess.CompletedProcess:
         """Run external editor and wait for it to finish."""
         self.check_tmp_file()
-        self.run_result = subprocess.run(
+        return subprocess.run(
             self.base_command + [self.tmp_file.name],
             check=False
         )  # Wait for child.

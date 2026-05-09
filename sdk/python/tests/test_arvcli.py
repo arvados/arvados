@@ -819,8 +819,8 @@ class TestObjectEditingProcessBase:
         with PlainStringEditing() as ed:
             assert ed.tmp_file is not None
             assert Path(ed.tmp_file.name).exists()
-            ed.edit()
-            assert ed.run_result is not None
+            run_result = ed.edit()
+            assert run_result.returncode == 0
             assert ed.load() == content
             # Inside the same context, the ed.edit() method can be called more
             # than once with the desired result.
