@@ -859,28 +859,20 @@ def dispatch(arguments=None):
         # global args (e.g. "arvcli.py --bad-arg resource method") or undefined
         # parameters to a valid resouce-method combination.
         elif remaining_args:
-            print(
-                "Error: unrecognized command-line arguments:",
-                ", ".join(remaining_args),
-                file=sys.stderr
-            )
-            print(
-                f"Try: {sys.argv[0]} --help",
-                f"     {sys.argv[0]} {args.subcommand} {method} --help",
-                sep="\n",
-                file=sys.stderr
-            )
-            sys.exit(2)
-        else:
-            _handle_resource_method(api_client, resource, args)  # Exits.
+            cmd_parser.error(
+                f"unrecognized arguments: {', '.join(remaining_args)}\n"
+                f"Try: {sys.argv[0]} --help\n"
+                f"     {sys.argv[0]} {args.subcommand} {method} --help"
+            )  # Exits with status 2.
+        _handle_resource_method(api_client, resource, args)  # Exits.
 
     # Are we starting an external editor program?
     if args.subcommand in ("create", "edit"):
         if args.format == "uuid":
             cmd_parser.error(
-                "Error: --format=uuid or -s option is not supported for"
-                " creating/editing Arvados objects with external editor."
-                " Please choose --format=json (default) or --format=yaml."
+                "--format=uuid or -s option is not supported when creating or"
+                " editing Arvados objects with external editor. Please"
+                " choose --format=json (default) or --format=yaml."
             )  # Exits with status 2.
         _handle_external_editor_command(api_client, cmd_parser, args)  # Exits.
 
