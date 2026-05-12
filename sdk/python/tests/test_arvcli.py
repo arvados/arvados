@@ -3,21 +3,59 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import re
+import builtins
+from collections import namedtuple
+from contextlib import contextmanager
 import io
 import json
+import os
+from pathlib import Path
+import re
+import shlex
+import sys
+from typing import TextIO
 from unittest import mock
 import ciso8601
 import pytest
 from ruamel.yaml import YAML
 yaml = YAML(typ="safe", pure=True)
+yaml.default_flow_style = False
 
 import arvados
 from arvados.commands import arvcli
 from . import run_test_server
 
 
-COLLECTION_UUID_PATTERN = re.compile(r"^[0-9a-z]{5}-4zz18-[0-9a-z]{15}$")
+class ArvCLITestError(Exception):
+    """An exception to be raised by our own testing facilites, not meant to be
+    caught in tests (hence not a derived class of commonly caught exceptions).
+    """
+    pass
+
+
+@pytest.fixture
+def mock_stdin(monkeypatch, tmp_path):
+    """Mock sys.stdin to redirect to a temporary text file that can be retained
+    for record-keeping. You can write to this file, but after that, in the same
+    test function, you need to rewind the tape by the seek()ing, so that any
+    code that reads the stdin may actually get the just-written data without
+    hitting EOF prematurely.
+    """
+    buf = open(tmp_path / "mock_stdin", "w+")
+    monkeypatch.setattr(sys, "stdin", buf)
+    try:
+        yield sys.stdin
+    finally:
+        buf.close()
+
+
+@pytest.fixture
+def simple_api_client():
+    api_client = arvados.api("v1")
+    try:
+        yield api_client
+    finally:
+        api_client.close()
 
 
 def test_global_option_help_followed_by_subcommand():
@@ -56,25 +94,25 @@ PASSTHROUGH_CMD_FUNCS = [
 ]
 
 
-@pytest.mark.parametrize("subcommand,main_fcn_name", PASSTHROUGH_CMD_FUNCS)
-def test_passthrough_commands_args(subcommand, main_fcn_name):
+@pytest.mark.parametrize("subcommand,main_func_name", PASSTHROUGH_CMD_FUNCS)
+def test_passthrough_commands_args(subcommand, main_func_name):
     """Test that arbitrary argv ('[...] arvcli.py subcommand --foo bar') to
     arvcli.py gets passed to the underlying subcommand; i.e. the passed-through
     subcommand's entry function gets called with ["--foo", "bar"].
     """
-    with mock.patch(main_fcn_name) as s:
+    with mock.patch(main_func_name) as s:
         with pytest.raises(SystemExit):
             arvcli.dispatch([*subcommand.split(), "--foo", "bar"])
         s.assert_called_with(["--foo", "bar"])
 
 
-@pytest.mark.parametrize("subcommand,main_fcn_name", PASSTHROUGH_CMD_FUNCS)
-def test_passthrough_commands_help(subcommand, main_fcn_name):
+@pytest.mark.parametrize("subcommand,main_func_name", PASSTHROUGH_CMD_FUNCS)
+def test_passthrough_commands_help(subcommand, main_func_name):
     """Test that the -h flag to a subcommand (as opposed to the main command)
     gets passed to the underlying script rather than consumed by the main arg
     parser.
     """
-    with mock.patch(main_fcn_name) as s:
+    with mock.patch(main_func_name) as s:
         with pytest.raises(SystemExit):
             arvcli.dispatch([*subcommand.split(), "-h"])
         s.assert_called_with(["-h"])
@@ -91,10 +129,9 @@ def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
 
 
-def test_cli_parser_has_singular_plural_mapping():
-    api_client = arvados.api("v1")
+def test_cli_parser_has_singular_plural_mapping(simple_api_client):
     cmd_parser = arvcli.ArvCLIArgumentParser(
-        api_client._resourceDesc["resources"]
+        simple_api_client._resourceDesc["resources"]
     )
     for resource in cmd_parser.resource_dictionary.keys():
         k = arvcli._ArgUtil.singularize_resource(resource)
@@ -272,6 +309,14 @@ class TestArgTypes:
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.json_object(invalid_input)
 
+    def test_group_uuid_validation(self):
+        assert all(
+            arvcli._ArgTypes.group_uuid(fx["uuid"])
+            for fx in run_test_server.fixture("groups").values()
+        )
+        with pytest.raises(argparse.ArgumentTypeError):
+            arvcli._ArgTypes.group_uuid("zzzzz-j7d0g-123456789")
+
 
 @pytest.fixture
 def run_arvcli(capsys):
@@ -311,7 +356,10 @@ class TestSameFlagInTwoPlaces:
         assert exit_code == 0
         lines = out.splitlines()
         assert any(lines)
-        assert all(COLLECTION_UUID_PATTERN.match(line) for line in lines)
+        assert all(
+            arvados.util.collection_uuid_pattern.fullmatch(line)
+            for line in lines
+        )
 
     def test_f_flag(self, run_arvcli):
         # As "global" parameter, "-f" is for "--format", which takes one arg
@@ -326,7 +374,10 @@ class TestSameFlagInTwoPlaces:
         assert not err
         lines = out.splitlines()
         assert any(lines)
-        assert all(COLLECTION_UUID_PATTERN.match(line) for line in lines)
+        assert all(
+            arvados.util.collection_uuid_pattern.fullmatch(line)
+            for line in lines
+        )
 
 
 class TestCommonMethods:
@@ -380,7 +431,7 @@ class TestCommonMethods:
             })
         ])
         assert exit_code == 0
-        assert re.match(r"^[0-9a-z]{5}-o0j2j-[0-9a-z]{15}$", out)
+        assert arvados.util.link_uuid_pattern.fullmatch(out.rstrip())
 
     @pytest.mark.usefixtures("reset_test_server_db")
     def test_user_update(self, run_arvcli):
@@ -440,7 +491,6 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert err
         assert not out
 
-    @mock.patch("sys.stdin", new_callable=io.StringIO)
     def test_request_body_stdin_valid_json(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
@@ -450,7 +500,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         actual = json.loads(out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
-        assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
+        assert arvados.util.collection_uuid_pattern.fullmatch(actual["uuid"])
         assert _no_extra_spaces_at_end(out)
 
     def test_request_body_file_valid_json_out_yaml(self, tmp_path, run_arvcli):
@@ -464,7 +514,7 @@ class TestRequestBodyWithCollectionCreateCMD:
         actual = yaml.load(out)
         assert actual["kind"] == "arvados#collection"
         assert actual["name"] == self.manifest_data["name"]
-        assert COLLECTION_UUID_PATTERN.match(actual["uuid"])
+        assert arvados.util.collection_uuid_pattern.fullmatch(actual["uuid"])
         assert _no_extra_spaces_at_end(out)
 
     def test_request_body_file_valid_json_out_short(self, tmp_path, run_arvcli):
@@ -474,9 +524,8 @@ class TestRequestBodyWithCollectionCreateCMD:
         assert exit_code == 0
         assert not err
         assert _no_extra_spaces_at_end(out)
-        assert COLLECTION_UUID_PATTERN.match(out.rstrip())
+        assert arvados.util.collection_uuid_pattern.fullmatch(out.rstrip())
 
-    @mock.patch("sys.stdin", new_callable=io.StringIO)
     def test_replace_files(self, mock_stdin, run_arvcli):
         json.dump(self.manifest_data, mock_stdin)
         mock_stdin.seek(0)
@@ -643,3 +692,377 @@ class TestApiClientAuthorizationsResource:
 
     # TODO: investigate possible authorization issue with testing
     # the create_system_auth method.
+
+
+class TestGetEditorCmdline:
+
+    gec = staticmethod(arvcli.ObjectEditingProcessBase.get_editor_cmdline)
+
+    @pytest.fixture
+    def installed_nano(self, tmp_path, monkeypatch):
+        """Ensure that `nano` is installed by placing an executable named
+        "nano" in a temp directory and then set $PATH to that directory. When
+        requested, yields the full path of the `nano` executable.
+        """
+        nano = tmp_path / "nano"
+        nano.write_text("#!/bin/sh\nexit 0\n")
+        nano.chmod(0o500)
+        monkeypatch.setenv("PATH", str(tmp_path))
+        yield str(nano)
+
+    @pytest.fixture
+    def uninstalled_nano(self, tmp_path, monkeypatch):
+        """Ensure that `nano` is not in the $PATH, by setting $PATH to an empty
+        temp directory.
+        """
+        monkeypatch.setenv("PATH", str(tmp_path))
+        yield
+
+    def test_env_var(self, monkeypatch):
+        monkeypatch.setenv("VISUAL", "foo --bar")
+        monkeypatch.setenv("EDITOR", "bar")
+        assert self.gec() == ["foo", "--bar"]
+        monkeypatch.delenv("VISUAL")
+        assert self.gec() == ["bar"]
+
+    def test_fallback_nano(self, monkeypatch, installed_nano):
+        monkeypatch.delenv("VISUAL", raising=False)
+        monkeypatch.delenv("EDITOR", raising=False)
+        assert self.gec() == [installed_nano]
+
+    def test_fallback_no_nano(self, monkeypatch, uninstalled_nano):
+        monkeypatch.delenv("VISUAL", raising=False)
+        monkeypatch.delenv("EDITOR", raising=False)
+        assert self.gec() == ["vi"]
+
+
+@pytest.fixture
+def setup_editor(tmp_path, monkeypatch):
+    """Set up the environment variable $VISUAL to point to our simulated
+    external editor.
+
+    To use, call it with the arguments
+
+        setup_editor(action, content)
+
+    where "action" is one of "write" (default), "append", "delete", "replace",
+    or "crash". "Write", "append", and "replace" take optional `content`, a
+    string to be written to the file.
+    """
+    editor_dir = Path(__file__).parent
+    writefile_script = editor_dir / "writefile.sh"
+    monkeypatch.setenv("PATH", str(editor_dir), prepend=":")
+
+    base_dir = tmp_path / "editor_input"
+    base_dir.mkdir()
+    # Temporary file that gets written each time the editor is "installed"
+    edit_source = base_dir / "source"
+    # Persistent file that keeps a record of editor input, for each request to
+    # this fixture (typically means function scope).
+    log = base_dir / "log"
+    logf = open(log, "a")
+
+    def editor_func(action: str = "write", content: str = "") -> Path:
+        edit_source.write_text(content)
+        sep = "-----\n"
+        exe_path = str(writefile_script)
+        src_path = str(edit_source)
+        match action:
+            case "write":
+                logf.write(f"fill tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = [exe_path, src_path]
+            case "append":
+                logf.write(f"append to tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = [exe_path, src_path, "-a"]
+            case "replace":
+                logf.write(f"replace tmpfile: {sep}")
+                logf.write(content)
+                logf.write(sep)
+                editor_cmd = ["cp", src_path]
+            case "delete":
+                logf.write(f"delete tmpfile: {sep}")
+                editor_cmd = ["rm"]
+            case "crash":
+                logf.write(f"crash: {sep}")
+                editor_cmd = ["false"]
+            case _:
+                raise ArvCLITestError(f"Error: unrecognized action {action!r}")
+        monkeypatch.setenv("VISUAL", shlex.join(editor_cmd))
+        return edit_source  # "Leak" the edit-source for convenience in tests.
+
+    try:
+        yield editor_func
+    finally:
+        logf.close()
+
+
+class PlainStringEditing(arvcli.ObjectEditingProcessBase):
+    """'Plain' editing process for which 'serialization'/'deserialization'
+    are simply string-writing and reading respectively.
+    """
+    def serialize(self, obj: str, file: TextIO) -> None:
+        file.write(obj)
+
+    def deserialize(self, file: TextIO) -> str:
+        return file.read()
+
+
+class TestObjectEditingProcessBase:
+    """Test a minimal concrete derived-class of ObjectEditingProcessBase."""
+    def test_basic(self, setup_editor):
+        content = "Hello, world!\n"
+        setup_editor(content=content)
+        with PlainStringEditing() as ed:
+            assert ed.tmp_file is not None
+            assert Path(ed.tmp_file.name).exists()
+            run_result = ed.edit()
+            assert run_result.returncode == 0
+            assert ed.load() == content
+            # Inside the same context, the ed.edit() method can be called more
+            # than once with the desired result.
+            content = "foo bar"
+            setup_editor(content=content)
+            ed.edit()
+            assert ed.load() == content
+        assert not Path(ed.tmp_file.name).exists()
+
+    def test_initial_object(self):
+        initial_obj = "init"
+        with PlainStringEditing(initial_obj) as ed:
+            # Snoop the temp file.
+            with open(ed.tmp_file.name, "r") as t:
+                filled_content = t.read()
+        assert filled_content == initial_obj
+
+    def test_tempfile_name_prefix(self):
+        fake_uuid = "foo-bar"
+        with PlainStringEditing(uuid=fake_uuid) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
+
+    def test_tempfile_name_no_empty_prefix(self):
+        # It's risky to do negative tests on the tempfile's actual name because
+        # it's random in a platform-dependent way. We don't want a widowed
+        # hyphen/dash character *created by us* when uuid="" or when
+        # initial_object["uuid"] is empty, but a hyphen may as well happen to
+        # be the first character generated randomly.
+        ed = PlainStringEditing(uuid="")
+        assert ed.prefix is None
+
+    def test_tempfile_name_prefix_from_obj_uuid(self):
+        uuid = "foo-bar"
+        initial_obj = {"uuid": uuid}
+        with arvcli.JSONEditingProcess(initial_obj) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{uuid}-")
+
+        uuid_override = "foo-bar-baz"
+        with arvcli.JSONEditingProcess(initial_obj, uuid=uuid_override) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{uuid_override}-")
+
+        initial_obj = {}
+        ed = arvcli.JSONEditingProcess(initial_obj)
+        assert ed.prefix is None
+
+    def test_tempfile_name_suffix(self):
+        ext = "dat"
+        with PlainStringEditing(file_extension=ext) as ed:
+            assert Path(ed.tmp_file.name).suffix == f".{ext}"
+
+    def test_tempfile_name_suffix_no_empty_extension(self):
+        # See also the comment for test_tempfile_name_no_empty_prefix().
+        ed = PlainStringEditing(file_extension="")
+        assert ed.suffix is None
+
+    def test_editor_did_not_edit(self, setup_editor):
+        setup_editor("append", "")
+        initial_obj = "init"
+        with PlainStringEditing(initial_obj) as ed:
+            ed.edit()
+            assert ed.load() == initial_obj
+
+
+def test_create_subcommad_s_option(setup_editor, run_arvcli):
+    with mock.patch("subprocess.run") as sr:
+        exit_code, out, err = run_arvcli(["-s", "create", "collection"])
+    assert exit_code == 2
+    assert not sr.called
+
+
+def yaml_dumps(obj) -> str:
+    buf = io.StringIO()
+    yaml.dump(obj, stream=buf)
+    return buf.getvalue()
+
+
+EditFormatCase = namedtuple(
+    "EditFormatCase",
+    ("format", "dumps", "loads", "garbage_text")
+)
+FORMAT_CASES = (
+    EditFormatCase("json", json.dumps, json.loads, "foo: bar foo: bar"),
+    EditFormatCase("yaml", yaml_dumps, yaml.load, "{{}}")
+)
+
+
+@pytest.fixture
+def new_project():
+    return {"name": "a new project", "group_class": "project"}
+
+
+def input_mock_action(input_values=[], input_source_file=None):
+    """
+    Side-effect function for the builtin `input()` intended to simulate user's
+    answers at the prompt and re-edits that follow.
+
+    Arguments:
+
+    * input_values: Sequence[tuple[str, str] | str] --- Input "action stream"
+      to the mocked `input()` function. If an item is a single string, that
+      will be the user's answer at the prompt. If an item is a pair of values
+      (answer, content), in addition to answering the prompt, provide the
+      `content` as the input to the external editor.  This means that `answer`
+      must be affirmative for `content` to take effect.
+    * input_source_file: Optional[Path] --- Target file where the provided
+      `content` will be written to; if not provided, `content` has no
+      effect.
+    """
+    for answer, *new_content in input_values:
+        # When we have a target, write new content regardless of the mocked
+        # answer, as long as the content is provided in the input stream.
+        if new_content and input_source_file:
+            input_source_file.write_text(new_content[0])
+        yield answer
+
+
+@contextmanager
+def builtins_input_patched(*args, **kwargs):
+    """Context manager for patching the builtin `input()` function, intended to
+    narrowly limit the scope in which a builtin is patched.
+
+    Arguments are passed directly to `input_mock_action()` for setting up the
+    mock `input()` builtin.
+    """
+    with pytest.MonkeyPatch.context() as m:
+        # Mock the `input()` builtin.
+        m.setattr(
+            builtins, "input",
+            mock.Mock(side_effect=input_mock_action(*args, **kwargs))
+        )
+        yield m
+
+
+class TestEditingSubcommands:
+
+    def test_bad_editor(self, monkeypatch, run_arvcli, tmp_path):
+        monkeypatch.setenv("PATH", str(tmp_path))
+
+        exit_code, out, err = run_arvcli(["create", "group"])
+
+        assert exit_code == 1
+        assert re.match(r"Error: failed to execute editor `vi .+`:.+No such file or directory", err)
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    @pytest.mark.parametrize("format_case", FORMAT_CASES)
+    def test_basic_create(
+        self, format_case, setup_editor, run_arvcli, new_project
+    ):
+        setup_editor(content=format_case.dumps(new_project))
+
+        exit_code, out, err = run_arvcli(
+            ["--format", format_case.format, "create", "group"]
+        )
+
+        assert exit_code == 0
+        result = format_case.loads(out)
+        for k in new_project.keys():
+            assert new_project[k] == result[k]
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_create_in_project_yaml(
+        self, setup_editor, run_arvcli, new_project
+    ):
+        # Simulate editing the temp file with owner_uuid field pre-filled due
+        # to the --project-uuid CLI argument. YAML is much easier to setup
+        # with our fake editor because simple appending will suffice.
+        parent_proj = run_test_server.fixture("groups")["aproject"]
+        # The object to be appended to the pre-filled stub in the temp file.
+        setup_editor("append", yaml_dumps(new_project))
+
+        exit_code, out, err = run_arvcli([
+            "--format", "yaml",
+            "create", "group",
+            "--project-uuid", parent_proj["uuid"]
+        ])
+
+        assert exit_code == 0
+        result = yaml.load(out)
+        assert result["owner_uuid"] == parent_proj["uuid"]
+        for k in new_project.keys():
+            assert new_project[k] == result[k]
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    @pytest.mark.parametrize("format_case", FORMAT_CASES)
+    def test_edit_process_loops_and_exits_when_fixed(
+        self, format_case, tmp_path, setup_editor, run_arvcli, new_project
+    ):
+        """Test that the edit process can loop back upon bad input until
+        input is good.
+        """
+        # Set up editor to write garbage first.
+        src_file = setup_editor(content=format_case.garbage_text)
+
+        with builtins_input_patched(
+            # Then answer "yes" to re-edit and provide good input.
+            input_values=[("y", format_case.dumps(new_project))],
+            input_source_file=src_file
+        ):
+            exit_code, out, err = run_arvcli(
+                ["--format", format_case.format, "create", "group"]
+            )
+
+        assert exit_code == 0
+        assert err
+        result = format_case.loads(out)
+        for k in new_project.keys():
+            assert new_project[k] == result[k]
+
+    def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
+        self, setup_editor, run_arvcli, new_project
+    ):
+        # Set up editor to write garbage JSON first.
+        src_file = setup_editor(content=FORMAT_CASES[0].garbage_text)
+
+        with builtins_input_patched(
+            # Then answer "yes" to re-edit but abandon edit by inputting blank.
+            input_values=[("y", "")],
+            input_source_file=src_file
+        ):
+            exit_code, out, err = run_arvcli(["create", "group"])
+
+        assert exit_code == 0
+        assert "notice: input is empty; exiting without changes" in err
+
+    def test_edit_process_loops_and_exits_when_abandoned_by_answer_at_prompt(
+        self, setup_editor, run_arvcli, new_project
+    ):
+        # Set up editor to write garbage YAML.
+        setup_editor(content=FORMAT_CASES[1].garbage_text)
+
+        with builtins_input_patched(input_values="n"):  # A single "no" answer.
+            exit_code, out, err = run_arvcli(
+                ["--format", "yaml", "create", "group"]
+            )
+
+        assert exit_code == 1
+
+    def test_json_input_not_an_object(self, setup_editor, run_arvcli):
+        setup_editor(content="[0, 1, 2]\n")
+
+        with builtins_input_patched(input_values="n"):
+            exit_code, out, err = run_arvcli(["create", "group"])
+
+        assert exit_code == 1
+        assert "JSON input has type 'list', not a valid Arvados object" in err
