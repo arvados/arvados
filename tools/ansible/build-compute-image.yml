@@ -13,11 +13,13 @@
       ansible.builtin.include_vars:
         name: arvados_config
         file: "{{ arvados_config_file }}"
+
     - name: Load Arvados cluster configuration
       no_log: yes
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
       failed_when: arvados_cluster is undefined
+
     - name: Get Crunch dispatch public key
       no_log: yes
       when: arvados_cluster.Containers.DispatchPrivateKey is defined and arvados_cluster.Containers.DispatchPrivateKey is truthy
@@ -69,33 +71,36 @@
   # instance used to create the image.
   hosts: default
   tasks:
-    - ansible.builtin.include_role:
-        name: arvados_apt
+    - name: Stop unwanted services
+      become: yes
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
+      loop:
+        - apt-daily.timer
+        - apt-daily-upgrade.timer
+
     - name: List linux-image packages pre-upgrade
       ansible.builtin.shell:
         cmd: |
           dpkg-query --list "linux-image-[1-9]*-$(dpkg --print-architecture)" |
           awk '($1 ~ /^[irp][HUFWti]$/) { print $2; }'
       register: linux_image_preupgrade
-    - name: apt update if needed
-      ansible.builtin.meta: flush_handlers
+
     - name: Upgrade packages
       become: yes
       ansible.builtin.apt:
+        update_cache: yes
         upgrade: true
-    - name: Remove unwanted packages
-      become: yes
-      ansible.builtin.apt:
-        state: absent
-        purge: true
-        name:
-          - unattended-upgrades
+
     - name: List linux-image packages post-upgrade
       ansible.builtin.shell:
         cmd: |
           dpkg-query --list "linux-image-[1-9]*-$(dpkg --print-architecture)" |
           awk '($1 ~ /^[irp][HUFWti]$/) { print $2; }'
       register: linux_image_postupgrade
+
     # Rebooting now accomplishes a few things: it means we can remove the old
     # linux-image afterward, and the `ansible_kernel` fact will reflect what
     # the image will boot into when used.
@@ -103,6 +108,7 @@
       when: "linux_image_preupgrade.stdout != linux_image_postupgrade.stdout"
       become: yes
       ansible.builtin.reboot: {}
+
     - name: Remove old kernel(s)
       when: "linux_image_preupgrade.stdout != linux_image_postupgrade.stdout"
       become: yes

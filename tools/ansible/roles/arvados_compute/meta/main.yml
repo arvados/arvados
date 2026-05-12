@@ -3,4 +3,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 dependencies:
-  - role: "{{ 'arvados_apt' if (arvados_compute_packages is defined and arvados_compute_packages is truthy) else 'distro_apt' }}"
+  - role: arvados_apt
+    when: "arvados_compute_packages is truthy"

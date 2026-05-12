@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-- ansible.builtin.include_role:
-    name: distro_apt
-
 - name: Install Docker package pins
   become: yes
   ansible.builtin.copy:
@@ -24,14 +21,11 @@
     suites: "{{ ansible_distribution_release }}"
     components: stable
     signed_by: "{{ docker_apt_url }}/gpg"
-  notify:
-    - apt update
-
-- name: apt update if needed
-  ansible.builtin.meta: flush_handlers
+  register: docker_apt_repo
 
 - name: Install Docker package
   become: yes
   ansible.builtin.apt:
     name: docker-ce
     install_recommends: false
+    update_cache: "{{ docker_apt_repo.changed }}"

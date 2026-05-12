@@ -20,5 +20,10 @@
     suites: stable
     components: main
     signed_by: https://apt.grafana.com/gpg.key
-  notify:
-    - apt update
+  register: grafana_apt_repo
+
+- name: Cache Grafana repository
+  when: grafana_apt_repo.changed
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes

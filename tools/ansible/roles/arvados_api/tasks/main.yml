@@ -5,15 +5,11 @@
 # Install the RailsAPI server and configure it to match the cluster
 # configuration.
 
-- name: apt update if needed
-  ansible.builtin.meta: flush_handlers
-
-- name: Install PostgreSQL client package from postgresql.org
+- name: Install PostgreSQL client package
   become: yes
   ansible.builtin.apt:
     name:
-      - "postgresql-client-{{ arvados_postgresql_version }}"
-  when: "arvados_postgresql_version is defined"
+      - "postgresql-client{{ arvados_postgresql_suffix }}"
 
 - name: Install arvados-api-server
   become: yes

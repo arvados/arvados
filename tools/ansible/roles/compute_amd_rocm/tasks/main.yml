@@ -40,11 +40,7 @@
     architectures:
       - amd64
     signed_by: https://repo.radeon.com/rocm/rocm.gpg.key
-  notify:
-    - apt update
-
-- name: apt update if needed
-  ansible.builtin.meta: flush_handlers
+  register: rocm_apt_repository
 
 - name: Install AMD ROCm build prerequisites
   ansible.builtin.apt:
@@ -63,6 +59,7 @@
 
 - name: Install AMD ROCm packages
   ansible.builtin.apt:
+    update_cache: "{{ rocm_apt_repository.changed }}"
     name:
       - amdgpu-dkms
       - rocm

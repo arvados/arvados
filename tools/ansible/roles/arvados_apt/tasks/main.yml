@@ -23,5 +23,10 @@
     suites: "{{ ansible_distribution_release if arvados_apt_suites.startswith('-') else '' }}{{ arvados_apt_suites }}"
     components: main
     signed_by: "{{ arvados_apt_url }}/pubkey.gpg"
-  notify:
-    - apt update
+  register: arvados_apt_repo
+
+- name: Cache Arvados repository
+  when: arvados_apt_repo.changed
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes

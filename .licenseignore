@@ -68,6 +68,8 @@ services/arv-web/sample-cgi-app/public/.htaccess
 services/arv-web/sample-cgi-app/public/index.cgi
 services/keepproxy/pkg-extras/etc/default/keepproxy
 *.tar
+tools/ansible/requirements.txt
+tools/ansible/requirements.yml
 tools/crunchstat-summary/tests/crunchstat_error_messages.txt
 tools/crunchstat-summary/crunchstat_summary/synchronizer.js
 tools/cluster-activity/tests/*.html
