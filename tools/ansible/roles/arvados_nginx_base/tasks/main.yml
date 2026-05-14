@@ -2,6 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+- name: Validate backend inventory against service URLs
+  vars:
+    inv_key: "arvados_{{ item }}"
+    inv_hosts: "{{ groups[inv_key]|sort }}"
+    url_hosts: "{{ arvados_cluster.Services[item]|internal_addrs|map(attribute='address')|sort }}"
+  when: "inv_hosts != url_hosts"
+  ansible.builtin.fail:
+    msg: "group {{ inv_key }} has hosts {{ inv_hosts }} which doesn't match the cluster's {{ item }} InternalURLs {{ url_hosts }}"
+  loop: "{{ service_groups }}"
+
+- name: Set individual front-end facts
+  vars:
+    group_key: "arvados_{{ item }}"
+    frontend:
+      # Boolean flag for whether this front-end is load-balanced.
+      balanced: "{{ groups[group_key]|sort != groups[group_key ~ '_frontend']|sort }}"
+      # List of upstream hosts that should be configured "down" in the front-end.
+      # Backend hosts are removed from this list after they are configured.
+      down: "{{ groups[group_key] if frontend.balanced and arvados_down|default(false)|bool else [] }}"
+  ansible.builtin.set_fact:
+    arvados_frontends: "{{ arvados_frontends|default({})|combine({item: frontend}) }}"
+  loop: "{{ service_groups }}"
+
 - name: Install nginx
   become: yes
   ansible.builtin.apt:

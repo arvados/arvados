@@ -28,6 +28,32 @@
     - ansible.builtin.include_role:
         name: distro_bootstrap
 
+# We configure front-ends first so we can mark upstreams as being down for
+# maintenance if requested.
+- name: Initialize service front-ends
+  hosts: "arvados_*_frontend"
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_base
+
+    - ansible.builtin.include_role:
+        name: arvados_aws_secret
+        vars:
+          arvados_secret_id: "{{ item }}"
+      loop: "{{ arvados_frontends|select('in', arvados_tls)|map('extract', arvados_tls)|map(attribue='aws_secret', default=none)|select|unique }}"
+
+    - ansible.builtin.include_role:
+        name: arvados_aws_secret
+        vars:
+          arvados_secret_id: "{{ arvados_tls.Default.aws_secret }}"
+      when: "{{ arvados_frontends|reject('in', arvados_tls)|first is defined and arvados_tls.Default.aws_secret is defined }}"
+
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+        vars:
+          arvados_nginx_service_key: "{{ item }}"
+      loop: "{{ arvados_frontends }}"
+
 - name: Install PostgreSQL
   hosts: arvados_PostgreSQL
   tasks:

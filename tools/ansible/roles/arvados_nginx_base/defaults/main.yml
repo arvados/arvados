@@ -7,3 +7,5 @@
 # boolean. If it's the literal `false`, the netmask will not be considered
 # internal. *Any* other value will be considered internal.
 arvados_nginx_internal_networks: {}
+
+arvados_nginx_service_groups: "{{ group_names|map('regex_search', '^arvados_(\\w+)_frontend$', '\\1')|select|flatten }}"

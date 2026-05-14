@@ -5,6 +5,3 @@
 dependencies:
   - role: arvados_apt
   - role: arvados_service
-  - role: arvados_nginx_frontend
-    vars:
-      arvados_nginx_service_key: Controller
