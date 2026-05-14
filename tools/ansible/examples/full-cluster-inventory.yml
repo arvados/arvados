@@ -89,11 +89,11 @@ all:
 ### Host groups for core Arvados services ###
 # Most Arvados clusters will have at least one host in each of these groups.
 # It's normal to have the same host in multiple groups. For example, most
-# clusters have the same host(s) in the `arvados_api`, `arvados_controller`,
-# and `arvados_websocket` groups.
+# clusters have the same host(s) in the `arvados_RailsAPI`,
+# `arvados_Controller`, and `arvados_Websocket` groups.
 
-# arvados_api host(s) run the Arvados Rails API server.
-arvados_api:
+# arvados_RailsAPI host(s) run the Arvados Rails API server.
+arvados_RailsAPI:
   hosts:
     api.arvados.example:
   vars:
@@ -103,8 +103,8 @@ arvados_api:
     #arvados_database_login_user: ""
     #arvados_database_login_password: ""
 
-# arvados_controller host(s) run the Arvados API controller.
-arvados_controller:
+# arvados_Controller host(s) run the Arvados API controller.
+arvados_Controller:
   hosts:
     api.arvados.example:
   vars:
@@ -115,35 +115,35 @@ arvados_controller:
     #arvados_nginx_server_config: |
     #  server_name  arvados.example;
 
-# arvados_websocket host(s) run the Arvados websockets server.
-arvados_websocket:
+# arvados_Websocket host(s) run the Arvados websockets server.
+arvados_Websocket:
   hosts:
     api.arvados.example:
 
-# arvados_keepstore host(s) run the Arvados keepstore services.
-arvados_keepstore:
+# arvados_Keepstore host(s) run the Arvados keepstore services.
+arvados_Keepstore:
   hosts:
     keep0.arvados.example:
     keep1.arvados.example:
 
-# arvados_keepbalance host(s) run the Arvados keep-balance service.
-arvados_keepbalance:
+# arvados_Keepbalance host(s) run the Arvados keep-balance service.
+arvados_Keepbalance:
   hosts:
     keep0.arvados.example:
     keep1.arvados.example:
 
-# arvados_keepproxy host(s) run the Arvados keepproxy service.
-arvados_keepproxy:
+# arvados_Keepproxy host(s) run the Arvados keepproxy service.
+arvados_Keepproxy:
   hosts:
     keep.arvados.example:
 
-# arvados_keep_web host(s) run the Arvados keep-web/WebDAV service.
-arvados_keep_web:
+# arvados_WebDAV host(s) run the Arvados keep-web/WebDAV service.
+arvados_WebDAV:
   hosts:
     webdav.arvados.example:
 
-# arvados_workbench host(s) serve the Arvados Workbench front-end.
-arvados_workbench:
+# arvados_Workbench2 host(s) serve the Arvados Workbench front-end.
+arvados_Workbench2:
   hosts:
     workbench.arvados.example:
 
@@ -153,19 +153,19 @@ arvados_workbench:
 # different clusters run different dispatchers. Uncomment and define the
 # group(s) for the dispatcher(s) your cluster will run.
 
-# arvados_dispatch_cloud host(s) run the arvados-dispatch-cloud service
+# arvados_DispatchCloud host(s) run the arvados-dispatch-cloud service
 # to create dedicated cloud nodes to configure containers. You must have
 # `Containers.CloudVMs` configured in your cluster configuration for this
 # to work.
-#arvados_dispatch_cloud:
+#arvados_DispatchCloud:
 #  hosts:
 #    api.arvados.example:
 
-# arvados_dispatch_local host(s) run the crunch-dispatch-local service
+# arvados_DispatchLocal host(s) run the crunch-dispatch-local service
 # to run containers on the local host. This is only intended for small
 # development clusters, not production use. These hosts will automatically
 # have compute requirements like Docker and arv-mount installed.
-#arvados_dispatch_local:
+#arvados_DispatchLocal:
 #  hosts:
 #    compute0.arvados.example:
 #    compute1.arvados.example:
@@ -176,12 +176,12 @@ arvados_workbench:
 # deploy or use, but they are not required for all clusters. Uncomment and
 # define the group(s) for the services you want to run.
 
-# arvados_postgresql host(s) will have the PostgreSQL server installed to host
+# arvados_PostgreSQL host(s) will have the PostgreSQL server installed to host
 # the cluster database. The Ansible installer currently does minimal server
 # configuration and does not set up replication or other high-level features.
 # You do not need this group if your cluster uses an externally managed database
 # (e.g., Amazon RDS).
-#arvados_postgresql:
+#arvados_PostgreSQL:
 #  hosts:
 #    api.arvados.example:
 #  vars:
@@ -199,9 +199,9 @@ arvados_workbench:
 #    # If you need to do advanced database setup, refer to other settings in
 #    # `roles/arvados_postgresql/defaults/main.yml`.
 
-# arvados_shell host(s) have all client tools installed so cluster users can
+# arvados_Shell host(s) have all client tools installed so cluster users can
 # access a complete client environment via SSH or similar.
-#arvados_shell:
+#arvados_Shell:
 #  hosts:
 #    shell.arvados.example:
 #      # The installer will automatically create an Arvados virtual machine
@@ -218,44 +218,44 @@ arvados_workbench:
 # The Arvados cluster activity report can use these metrics to report additional
 # information about cluster health.
 
-# arvados_loki host(s) will have Loki installed from the Grafana APT repository.
+# arvados_Loki host(s) will have Loki installed from the Grafana APT repository.
 # The required Loki configuration file is defined by `arvados_loki_config_file`.
 # Typically this should be installed on all nodes running Arvados services as
 # illustrated in the example below.
-#arvados_loki:
+#arvados_Loki:
 #  children:
-#    arvados_api:
-#    arvados_controller:
-#    arvados_websocket:
-#    arvados_keepstore:
-#    arvados_keepbalance:
-#    arvados_keepproxy:
-#    arvados_keep_web:
-#    arvados_workbench:
-#    arvados_dispatch_cloud:
-#    arvados_dispatch_local:
+#    arvados_RailsAPI:
+#    arvados_Controller:
+#    arvados_Websocket:
+#    arvados_Keepstore:
+#    arvados_Keepbalance:
+#    arvados_Keepproxy:
+#    arvados_WebDAV:
+#    arvados_Workbench2:
+#    arvados_DispatchCloud:
+#    arvados_DispatchLocal:
 #  vars:
 #    arvados_loki_config_file: /PATH/TO/config.yml
 
-# arvados_alloy host(s) will have Alloy installed from the Grafana APT repository.
+# arvados_Alloy host(s) will have Alloy installed from the Grafana APT repository.
 # The required Alloy configuration file is defined by `arvados_alloy_config_file`.
-#arvados_alloy:
+#arvados_Alloy:
 #  hosts:
 #    prometheus.arvados.example:
 #  vars:
 #    arvados_alloy_config_file: /PATH/TO/config.alloy
 
-# arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
+# arvados_Grafana host(s) will have Grafana installed from the Grafana APT repository.
 # The required Grafana configuration file is defined by `arvados_grafana_config_file`.
-#arvados_grafana:
+#arvados_Grafana:
 #  hosts:
 #    prometheus.arvados.example:
 #  vars:
 #    arvados_grafana_config_file: /PATH/TO/grafana.ini
 
-# arvados_prometheus host(s) will have Prometheus installed from the Prometheus APT repository.
+# arvados_Prometheus host(s) will have Prometheus installed from the Prometheus APT repository.
 # The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
-#arvados_prometheus:
+#arvados_Prometheus:
 #  hosts:
 #    prometheus.arvados.example:
 #  vars:

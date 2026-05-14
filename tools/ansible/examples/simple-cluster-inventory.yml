@@ -55,9 +55,9 @@ arvados_cluster_host:
 # The configuration below will install a PostgreSQL server on the cluster host
 # for all Arvados services to use. If your Arvados cluster configuration refers
 # to a database server that already exists, you can remove this
-# `arvados_postgresql` section, and set database superuser credentials under
-# the next `arvados_api` section.
-arvados_postgresql:
+# `arvados_PostgreSQL` section, and set database superuser credentials under
+# the next `arvados_RailsAPI` section.
+arvados_PostgreSQL:
   children:
     arvados_cluster_host:
   vars:
@@ -65,7 +65,7 @@ arvados_postgresql:
     arvados_postgresql_hba_sources:
       - samehost
 
-arvados_api:
+arvados_RailsAPI:
   children:
     arvados_cluster_host:
   vars:
@@ -79,34 +79,34 @@ arvados_api:
 ### Arvados services ###
 # The rest of the inventory defines the Arvados services to run on the
 # cluster host. You should not need to change anything from here on.
-arvados_controller:
+arvados_Controller:
   children:
     arvados_cluster_host:
 
-arvados_websocket:
+arvados_Websocket:
   children:
     arvados_cluster_host:
 
-arvados_keepstore:
+arvados_Keepstore:
   children:
     arvados_cluster_host:
 
-arvados_keepbalance:
+arvados_Keepbalance:
   children:
     arvados_cluster_host:
 
-arvados_keepproxy:
+arvados_Keepproxy:
   children:
     arvados_cluster_host:
 
-arvados_keep_web:
+arvados_WebDAV:
   children:
     arvados_cluster_host:
 
-arvados_workbench:
+arvados_Workbench2:
   children:
     arvados_cluster_host:
 
-arvados_dispatch_local:
+arvados_DispatchLocal:
   children:
     arvados_cluster_host:
