@@ -164,7 +164,7 @@ sanity_checks() {
     find /usr/include -path '*fuse/fuse.h' | egrep --max-count=1 . \
         || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
     echo -n 'virtualenv: '
-    python3 -m venv --help | grep -q '^usage: venv ' \
+    python3 -m venv --help | grep -q '^usage:.*venv ' \
         && echo "venv module found" \
         || fatal "No virtualenv. Try: apt-get install python3-venv"
     which netstat \
