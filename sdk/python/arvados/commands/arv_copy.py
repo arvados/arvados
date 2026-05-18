@@ -70,7 +70,7 @@ scripts_copied = set()
 src_owner_uuid = None
 
 def main(arguments=None):
-    copy_opts = argparse.ArgumentParser(arguments, add_help=False)
+    copy_opts = argparse.ArgumentParser(add_help=False)
 
     copy_opts.add_argument(
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
@@ -163,7 +163,7 @@ administrator privileges on the destination cluster to create collections.
     parser = argparse.ArgumentParser(
         description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
         parents=[copy_opts, arv_cmd.retry_opt])
-    args = parser.parse_args()
+    args = parser.parse_args(arguments)
 
     if args.verbose:
         arvlogger.setLevel(logging.DEBUG)
