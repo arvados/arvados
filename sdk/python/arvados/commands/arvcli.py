@@ -863,12 +863,12 @@ def dispatch(arguments=None):
     # required by the parser. But "method" may be absent, as is in the case of
     # external commands like "ws" or "copy".
     method = getattr(args, "method", "")
+    command_key = f"{args.subcommand} {method}" if method else args.subcommand
 
     # Are we calling an external command?
-    ext_module = cmd_parser.external_command_modules.get(
-        f"{args.subcommand} {method}" if method else args.subcommand
-    )
+    ext_module = cmd_parser.external_command_modules.get(command_key)
     if ext_module is not None:
+        sys.argv[0] = f"arv {command_key}"
         _handle_external_command(ext_module, remaining_args)  # Exits.
 
     # Are we doing an API resource call?
@@ -881,7 +881,7 @@ def dispatch(arguments=None):
             cmd_parser.error(
                 f"unrecognized arguments: {', '.join(remaining_args)}\n"
                 f"Try: {sys.argv[0]} --help\n"
-                f"     {sys.argv[0]} {args.subcommand} {method} --help",
+                f"     {sys.argv[0]} {command_key} --help",
                 with_help=False
             )  # Exits with status 2.
         _handle_resource_method(api_client, resource, args)  # Exits.
