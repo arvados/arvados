@@ -63,6 +63,19 @@ def discovery_document(simple_api_client):
     yield simple_api_client._rootDesc
 
 
+@pytest.fixture
+def run_arvcli(capsys, monkeypatch):
+
+    def the_run(cli_args):
+        monkeypatch.setattr(sys, "argv", [arvcli.__file__, *cli_args])
+        with pytest.raises(SystemExit) as exc:
+            arvcli.dispatch(cli_args)
+        captured = capsys.readouterr()
+        return exc.value.code, captured.out, captured.err
+
+    return the_run
+
+
 def test_global_option_help_followed_by_subcommand():
     """When called as arvcli.py -h [subcommand], the subcommand is ignored,
     the -h option is consumed by the parser, and the help message is printed,
@@ -88,39 +101,30 @@ def test_invalid_subcommand():
     assert exit_status.value.code == 2
 
 
-# Pass-through (sub)commands and their corresponding 'entry point' functions.
-PASSTHROUGH_CMD_FUNCS = [
-    ("keep ls", "arvados.commands.ls.main"),
-    ("keep get", "arvados.commands.get.main"),
-    ("keep put", "arvados.commands.put.main"),
-    ("keep docker", "arvados.commands.keepdocker.main"),
-    ("ws", "arvados.commands.ws.main"),
-    ("copy", "arvados.commands.arv_copy.main")
-]
-
-
-@pytest.mark.parametrize("subcommand,main_func_name", PASSTHROUGH_CMD_FUNCS)
-def test_passthrough_commands_args(subcommand, main_func_name):
+@pytest.mark.parametrize(
+    "subcommand,cmd_mod_name",
+    arvcli.ArvCLIArgumentParser.external_command_modules.items()
+)
+def test_passthrough_commands_args(subcommand, cmd_mod_name, run_arvcli):
     """Test that arbitrary argv ('[...] arvcli.py subcommand --foo bar') to
     arvcli.py gets passed to the underlying subcommand; i.e. the passed-through
-    subcommand's entry function gets called with ["--foo", "bar"].
+    subcommand's `main()` function gets called with ["--foo", "bar"].
     """
-    with mock.patch(main_func_name) as s:
-        with pytest.raises(SystemExit):
-            arvcli.dispatch([*subcommand.split(), "--foo", "bar"])
-        s.assert_called_with(["--foo", "bar"])
+    mock_mod = mock.Mock()
+    with pytest.MonkeyPatch.context() as m:
+        m.setitem(sys.modules, cmd_mod_name, mock_mod)
+        run_arvcli([*subcommand.split(), "--foo", "bar"])
+    mock_mod.main.assert_called_with(["--foo", "bar"])
 
 
-@pytest.mark.parametrize("subcommand,main_func_name", PASSTHROUGH_CMD_FUNCS)
-def test_passthrough_commands_help(subcommand, main_func_name):
-    """Test that the -h flag to a subcommand (as opposed to the main command)
-    gets passed to the underlying script rather than consumed by the main arg
-    parser.
-    """
-    with mock.patch(main_func_name) as s:
-        with pytest.raises(SystemExit):
-            arvcli.dispatch([*subcommand.split(), "-h"])
-        s.assert_called_with(["-h"])
+@pytest.mark.parametrize(
+    "subcommand",
+    arvcli.ArvCLIArgumentParser.external_command_modules.keys()
+)
+def test_passthrough_command_usage_prog_name(subcommand, run_arvcli):
+    exit_code, out, err = run_arvcli([*subcommand.split(), "-h"])
+    assert exit_code == 0
+    assert re.search(f"^usage: arv {subcommand}", out)
 
 
 @pytest.mark.parametrize("plural,singular", (
@@ -336,18 +340,6 @@ class TestArgTypes:
         )
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.group_uuid("zzzzz-j7d0g-123456789")
-
-
-@pytest.fixture
-def run_arvcli(capsys):
-
-    def the_run(cli_args):
-        with pytest.raises(SystemExit) as exc:
-            arvcli.dispatch(cli_args)
-        captured = capsys.readouterr()
-        return exc.value.code, captured.out, captured.err
-
-    return the_run
 
 
 @pytest.mark.parametrize(
