@@ -520,7 +520,7 @@ class FullHelpOnErrorArgumentParser(argparse.ArgumentParser):
         if with_help:
             self.print_help(sys.stderr)
             print(file=sys.stderr)
-        # XXX: Use of self.prog, undocumented.
+        # NOTE: self.prog is to be overridden by child class
         print(f"{self.prog}: error: {message}", file=sys.stderr)
         sys.exit(2)
 
@@ -528,6 +528,7 @@ class FullHelpOnErrorArgumentParser(argparse.ArgumentParser):
 class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
     """Argument parser for `arv` commands.
     """
+    prog = "arv"
     global_args = frozenset((
         "dry_run",
         "verbose",
@@ -551,7 +552,11 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
           document; can be obtained as the `_rootDesc` attribute of an
           Arvados API client object.
         """
-        super().__init__(description="Arvados command line client", **kwargs)
+        super().__init__(
+            description="Arvados command line client",
+            prog=self.prog,
+            **kwargs
+        )
         # Common flags to the main command.
         self.add_argument("-n", "--dry-run", action="store_true",
                           help="Don't actually do anything")
@@ -899,8 +904,8 @@ def dispatch(arguments=None):
         if remaining_args:
             cmd_parser.error(
                 f"unrecognized arguments: {', '.join(remaining_args)}\n"
-                f"Try: {sys.argv[0]} --help\n"
-                f"     {sys.argv[0]} {command_key} --help",
+                f"Try: {cmd_parser.prog} --help\n"
+                f"     {cmd_parser.prog} {command_key} --help",
                 with_help=False
             )  # Exits with status 2.
         _handle_resource_method(api_client, resource, args)  # Exits.
