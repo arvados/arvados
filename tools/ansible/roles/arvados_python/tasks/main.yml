@@ -10,13 +10,23 @@
 - ansible.builtin.include_tasks: install_from_source.yml
   when: "not (arvados_dev_from_pkgs or python_stat.stat.exists)"
 
-- name: Add Python commands to PATH
+- name: Set major-minor version fact for Python
+  when: "not arvados_dev_from_pkgs"
+  ansible.builtin.set_fact:
+    arvados_python_major_minor: "python{{ arvados_python_version|regex_search('^[0-9]+\\.[0-9]+\\b') }}"
+
+- name: Add Python wrapper command to PATH
+  when: "not arvados_dev_from_pkgs"
+  become: yes
+  ansible.builtin.template:
+    mode: '0755'
+    src: arvados_python_wrapper.j2
+    dest: "{{ ('/usr/local/bin', arvados_python_major_minor)|path_join }}"
+
+- name: Add 'python3' relative link to Python wrapper command in PATH
   when: "not arvados_dev_from_pkgs"
   become: yes
   ansible.builtin.file:
     state: link
-    src: "{{ (arvados_python_destdir, 'bin', item)|path_join }}"
-    dest: "{{ ('/usr/local/bin', item)|path_join }}"
-  loop:
-    - python3
-    - "python{{ arvados_python_version|regex_search('^[0-9]+\\.[0-9]+\\b') }}"
+    src: "{{ arvados_python_major_minor }}"
+    path: /usr/local/bin/python3
