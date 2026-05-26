@@ -111,6 +111,15 @@ class _ArgUtil:
         return "--" + parameter_key.replace("_", "-")
 
     @staticmethod
+    def camel_case_to_snake(text: str) -> str:
+        """Simple converter of CamelCase text to so-called 'snake_case' (lower
+        case with underscore).
+        """
+        return text[:1].lower() + "".join(
+            f"_{c.lower()}" if c.isupper() else c for c in text[1:]
+        )
+
+    @staticmethod
     def get_method_options(
         method_schema: Mapping[str, Any],
         ignored_parameters: Container[str] = ()
@@ -260,6 +269,21 @@ class _ArgUtil:
                 yield (
                     (f"-{argument_short_key}", argument_key), parameter_kwargs
                 )
+
+    @staticmethod
+    def make_uuid_to_resource_map(schemas: dict[str, dict]) -> dict[str, str]:
+        """Returns a mapping of Arvados object UUID prefixes to resource names
+        (in the "subcommand" form, i.e. mostly an English noun in the singular)
+        based on the input "schemas" portion of the discovery document.
+        """
+        result = {}
+        for schema in schemas.values():
+            if (
+                    (prefix := schema.get("uuidPrefix"))
+                    and (key := schema.get("id"))
+            ):
+                result[prefix] = _ArgUtil.camel_case_to_snake(key)
+        return result
 
 
 class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
@@ -654,6 +678,17 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             help="UUID of the project in which to create the resource"
         )
 
+        edit_parser = subparsers.add_parser(
+            "edit", help="Edit Arvados object using external editor"
+        )
+        edit_parser.add_argument(
+            "uuid", help="UUID of the object to be edited"
+        )
+        edit_parser.add_argument(
+            "fields", nargs="*",
+            help="Fields to be edited"
+        )
+
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
         sub-subcommands, and the parameters associated with each method.
@@ -836,7 +871,6 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
 
             resource = parser._subcommand_to_resource[args.target_resource]
             arv_resource = getattr(api_client, resource)()
-            # TODO: This only handles "create" for now.
             api_call_status = _call_resource_method(
                 arv_resource.create, {"body": edited_obj}, args.format
             )

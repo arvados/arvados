@@ -149,6 +149,20 @@ def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
 
 
+@pytest.mark.parametrize("text,expected", (
+    ("", ""),
+    ("a", "a"),
+    ("A", "a"),
+    ("snake_case", "snake_case"),
+    ("CamelCase", "camel_case"),
+    ("mixedCase", "mixed_case"),
+    ("HTTPClient", "h_t_t_p_client"),  # This shows the limitation.
+    ("ApiClientAuthorization", "api_client_authorization")
+))
+def test_camel_to_snake(text, expected):
+    assert arvcli._ArgUtil.camel_case_to_snake(text) == expected
+
+
 def test_cli_parser_has_singular_plural_mapping(discovery_document):
     cmd_parser = arvcli.ArvCLIArgumentParser(discovery_document)
     for resource in cmd_parser.resource_schemas:
@@ -322,6 +336,28 @@ def test_get_method_options():
             input_method_schema, ignored_parameters=("alt", "pp")
         )
     ) == output
+
+
+def test_make_uuid_to_resource_map():
+    # Stub input schemas based on the real discovery doc.
+    schemas = {
+        "ApiClientAuthorization": {
+            "id": "ApiClientAuthorization",
+            "uuidPrefix": "gj3su"
+        },
+        "CollectionList": {
+            "id": "CollectionList"
+        },
+        "Credential": {
+            "id": "Credential",
+            "uuidPrefix": "oss07"
+        }
+    }
+    expected = {
+        "gj3su": "api_client_authorization",
+        "oss07": "credential"
+    }
+    assert arvcli._ArgUtil.make_uuid_to_resource_map(schemas) == expected
 
 
 class TestArgTypes:
