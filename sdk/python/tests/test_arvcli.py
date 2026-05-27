@@ -364,6 +364,15 @@ class TestArgTypes:
     """Test the private type converter-validators under the arvcli._ArgTypes
     namespace.
     """
+    bad_type = "thing"
+    bad_uuid = f"xyzzy-{bad_type}-0123456789abcde"
+
+    @pytest.fixture
+    def type_map(self, discovery_document):
+        yield arvcli._ArgUtil.make_uuid_to_resource_map(
+            discovery_document["schemas"]
+        )
+
     def test_json_array_makes_list(self):
         assert arvcli._ArgTypes.json_array("[]") == []
 
@@ -387,6 +396,22 @@ class TestArgTypes:
         )
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.group_uuid("zzzzz-j7d0g-123456789")
+
+    def test_generic_uuid_good_type(self, type_map):
+        uuid = run_test_server.fixture("collections")["collection_owned_by_active"]["uuid"]
+        assert arvcli._ArgTypes.generic_uuid(type_map, uuid) == (
+            uuid, "collection"
+        )
+
+    def test_generic_uuid_bad_type(self, type_map):
+        assert self.bad_type not in type_map
+        with pytest.raises(
+            argparse.ArgumentTypeError,
+            match=re.compile(
+                rf"Invalid object type code {re.escape(repr(self.bad_type))}"
+            )
+        ):
+            arvcli._ArgTypes.generic_uuid(type_map, self.bad_uuid)
 
 
 @pytest.mark.parametrize(
@@ -1131,3 +1156,7 @@ class TestEditingSubcommands:
 
         assert exit_code == 1
         assert "JSON input has type 'list', not a valid Arvados object" in err
+
+    def test_edit_malfomed_type_code_in_uuid(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["edit", TestArgTypes.bad_uuid])
+        assert exit_code == 2

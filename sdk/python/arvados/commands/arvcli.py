@@ -47,11 +47,37 @@ class _ArgTypes:
         """Validate an Arvados group UUID as the value of a CLI argument (an
         Arvados project being a type of group).
         """
+        # In theory this is a special case of "generic_uuid()" but we mostly
+        # need it for the nicer error message.
         if arvados.util.group_uuid_pattern.fullmatch(text):
             return text
         raise argparse.ArgumentTypeError(
             f"Invalid UUID for Arvados project or group: {text}"
         )
+
+    @staticmethod
+    def generic_uuid(
+        type_map: Mapping[str, str], text: str
+    ) -> tuple[str, str]:
+        """Parse the UUID argument. If accepted, returns a tuple
+        `(uuid, resource_type)` where `uuid` is the input UUID unchanged and
+        `resource_type` is the type of Arvados object (in lower_case), as
+        determined by the input parameter `type_map`.
+        """
+        if not arvados.util.uuid_pattern.fullmatch(text):
+            raise argparse.ArgumentTypeError(
+                f"Invalid Arvados object UUID: {text}"
+            )
+        type_code = text.split("-")[1]
+        if type_code not in type_map:
+            available_types = ", ".join(sorted(
+                f"{k} ({v})" for k, v in type_map.items()
+            ))
+            raise argparse.ArgumentTypeError(
+                f"Invalid object type code {type_code!r} in Arvados"
+                f" object UUID {text}: valid type codes are {available_types}"
+            )
+        return text, type_map[type_code]
 
     @staticmethod
     def _validate_type(obj_type, obj):
@@ -656,38 +682,7 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
                 self._subcommand_to_resource["sys"]
             )
 
-        # Only those resources that support a "create" method can be valid
-        # for the "create" subcommand.
-        creatable_targets = set()
-        for cli_name, resource in self._subcommand_to_resource.items():
-            if "create" in self.resource_schemas[resource].get("methods", {}):
-                creatable_targets.add(cli_name)
-        create_parser = subparsers.add_parser(
-            "create", help="Create Arvados object using external editor"
-        )
-        create_parser.add_argument(
-            "target_resource",
-            choices=sorted(creatable_targets),
-            metavar="RESOURCE",
-            help="Type of the resource to be created"
-        )
-        create_parser.add_argument(
-            "--project-uuid", "-p",
-            type=_ArgTypes.group_uuid,
-            metavar="UUID",
-            help="UUID of the project in which to create the resource"
-        )
-
-        edit_parser = subparsers.add_parser(
-            "edit", help="Edit Arvados object using external editor"
-        )
-        edit_parser.add_argument(
-            "uuid", help="UUID of the object to be edited"
-        )
-        edit_parser.add_argument(
-            "fields", nargs="*",
-            help="Fields to be edited"
-        )
+        self.add_editor_subcommands()
 
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
@@ -733,6 +728,48 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
                         ignored_parameters=self._ignored_parameters
                     ):
                         method_parser.add_argument(*parameter_names, **kwargs)
+
+    def add_editor_subcommands(self):
+        """Add the "create" and "edit" subcommands."""
+        # Only those resources that support a "create" method can be valid
+        # for the "create" subcommand.
+        creatable_targets = set()
+        for cli_name, resource in self._subcommand_to_resource.items():
+            if "create" in self.resource_schemas[resource].get("methods", {}):
+                creatable_targets.add(cli_name)
+        create_parser = self.subparsers.add_parser(
+            "create", help="Create Arvados object using external editor"
+        )
+        create_parser.add_argument(
+            "target_resource",
+            choices=sorted(creatable_targets),
+            metavar="RESOURCE",
+            help="Type of the resource to be created"
+        )
+        create_parser.add_argument(
+            "--project-uuid", "-p",
+            type=_ArgTypes.group_uuid,
+            metavar="UUID",
+            help="UUID of the project in which to create the resource"
+        )
+
+        self.uuid_type_map = _ArgUtil.make_uuid_to_resource_map(
+            self.discovery_document.get("schemas", {})
+        )
+
+        edit_parser = self.subparsers.add_parser(
+            "edit", help="Edit Arvados object using external editor"
+        )
+        edit_parser.add_argument(
+            "uuid", help="UUID of the object to be edited",
+            type=functools.partial(
+                _ArgTypes.generic_uuid, self.uuid_type_map
+            )
+        )
+        edit_parser.add_argument(
+            "fields", nargs="*",
+            help="Fields to be edited"
+        )
 
 
 def _handle_external_command(module_name: str, args: list[str]) -> NoReturn:
