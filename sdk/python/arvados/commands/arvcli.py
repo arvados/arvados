@@ -273,7 +273,7 @@ class _ArgUtil:
     @staticmethod
     def make_uuid_to_resource_map(schemas: dict[str, dict]) -> dict[str, str]:
         """Returns a mapping of Arvados object UUID prefixes to resource names
-        (in the "subcommand" form, i.e. mostly an English noun in the singular)
+        (in the "subcommand" form, i.e. a mostly-English noun in the singular)
         based on the input "schemas" portion of the discovery document.
         """
         result = {}
