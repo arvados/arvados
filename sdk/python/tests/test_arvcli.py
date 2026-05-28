@@ -6,6 +6,7 @@ import argparse
 import builtins
 from collections import namedtuple
 from contextlib import contextmanager
+import datetime
 import io
 import json
 from pathlib import Path
@@ -1045,6 +1046,9 @@ def builtins_input_patched(*args, **kwargs):
 
 
 class TestEditingSubcommands:
+    @classmethod
+    def teardown_class(self):
+        run_test_server.reset()
 
     def test_bad_editor(self, monkeypatch, run_arvcli, tmp_path):
         monkeypatch.setenv("PATH", str(tmp_path))
@@ -1160,3 +1164,37 @@ class TestEditingSubcommands:
     def test_edit_malfomed_type_code_in_uuid(self, run_arvcli):
         exit_code, out, err = run_arvcli(["edit", TestArgTypes.bad_uuid])
         assert exit_code == 2
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_edit_collection_name(
+            self, simple_api_client, setup_editor, run_arvcli
+    ):
+        uuid = run_test_server.fixture(
+            "collections"
+        )["collection_owned_by_active"]["uuid"]
+        collection = simple_api_client.collections().get(uuid=uuid).execute()
+        edited_collection = collection.copy()
+        edited_collection["name"] += "_edited"
+        setup_editor(content=json.dumps(edited_collection))
+        timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+        exit_code, out, err = run_arvcli(["edit", uuid])
+
+        assert exit_code == 0
+        assert not err
+        out_obj = json.loads(out)
+        assert out_obj["uuid"] == uuid
+        assert out_obj["name"] == collection["name"] + "_edited"
+        assert ciso8601.parse_datetime(out_obj["modified_at"]) >= timestamp
+
+    def test_edit_collection_did_not_edit(self, setup_editor, run_arvcli):
+        uuid = run_test_server.fixture(
+            "collections"
+        )["collection_owned_by_active"]["uuid"]
+        setup_editor("append", "")
+
+        exit_code, out, err = run_arvcli(["edit", uuid])
+
+        assert exit_code == 0
+        assert not out
+        assert "notice: object is unchanged; did not update" in err
