@@ -914,25 +914,28 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         init_obj = {
             "owner_uuid": args.project_uuid
         } if args.project_uuid else {}
-        uuid = None
+        # Tempfile name resembling "new-collection-{random}.{json|yml}".
+        prefix = f"new-{args.target_resource}"
     else:
         init_obj = _prepare_initial_object_to_edit(api_client, parser, args)
         if init_obj is None:
             # API call fails; messaging already done in preceding call.
             sys.exit(1)
-        uuid = args.uuid[0]
+        # Tempfile name resembling
+        # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
+        prefix = f"{args.uuid[1]}-{args.uuid[0]}"
 
     match args.format:
         case "json":
-            editing = JSONEditingProcess(initial_object=init_obj, prefix=uuid)
+            editing_class = JSONEditingProcess
         case "yaml":
-            editing = YAMLEditingProcess(initial_object=init_obj, prefix=uuid)
+            editing_class = YAMLEditingProcess
         case _:
             raise RuntimeError(
                 f"Error: unexpected value for format option: {args.format}"
             )
 
-    with editing:
+    with editing_class(initial_object=init_obj, prefix=prefix) as editing:
         api_call_status = None
         while api_call_status is None:
             try:
