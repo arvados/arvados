@@ -767,8 +767,11 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             )
         )
         edit_parser.add_argument(
-            "fields", nargs="*",
-            help="Fields to be edited"
+            "fields", nargs="*", type=str.lower,
+            help=(
+                "Fields to be edited (case-insensitive);"
+                " duplicate and invalid fields are ignored"
+            )
         )
 
 
@@ -867,28 +870,42 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
     sys.exit(_call_resource_method(arv_method, method_args, args.format))
 
 
+def _select_fields(
+    src: Mapping[str, Any], fields: Iterable[str]
+) -> Mapping[str, Any]:
+    """Select the items of input dict `src` whose keys are in `fields`, or, if
+    `fields` is empty, return the input `src` unmodified. However, if the
+    selection result would have been empty, return `src` unmodified instead.
+    """
+    key_filter = frozenset(fields)
+    if not key_filter:
+        return src
+    result = {k: v for k, v in src.items() if k in key_filter}
+    return result or src
+
+
 def _prepare_initial_object_to_edit(api_client, parser, args) -> dict | None:
     """Obtain the initial object for the "arv edit" subcommand, based on the
     commandline args and the current API client & CLI parser instances.
 
     Returns the retrieved Arvados object upon successful API call, or None if
-    the call fails.
+    the call fails. If the "fields" argument is provided, only those fields
+    that are specified are returned (duplicate and invalid fields are ignored;
+    if all fields are invalid, it behaves as if no fields are specified).
 
-    In the latter case, write error message about the failed "get" call to the
+    In case of error, write error message about the failed "get" call to the
     standard error.
     """
     uuid, resource_name = args.uuid
     resource = parser._subcommand_to_resource[resource_name]
-    method_call = getattr(api_client, resource)().get(
-        uuid=uuid, select=(args.fields or None)
-    )
+    method_call = getattr(api_client, resource)().get(uuid=uuid)
     try:
         arv_obj = method_call.execute()
     except arvados.errors.ApiError as err:
         msg = _format_api_error_msg(err, method_call)
         print(msg, file=sys.stderr)
-        arv_obj = None
-    return arv_obj
+        return None
+    return _select_fields(arv_obj, args.fields)
 
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
@@ -897,17 +914,19 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         init_obj = {
             "owner_uuid": args.project_uuid
         } if args.project_uuid else {}
+        uuid = None
     else:
         init_obj = _prepare_initial_object_to_edit(api_client, parser, args)
         if init_obj is None:
             # API call fails; messaging already done in preceding call.
             sys.exit(1)
+        uuid = args.uuid[0]
 
     match args.format:
         case "json":
-            editing = JSONEditingProcess(initial_object=init_obj)
+            editing = JSONEditingProcess(initial_object=init_obj, uuid=uuid)
         case "yaml":
-            editing = YAMLEditingProcess(initial_object=init_obj)
+            editing = YAMLEditingProcess(initial_object=init_obj, uuid=uuid)
         case _:
             raise RuntimeError(
                 f"Error: unexpected value for format option: {args.format}"

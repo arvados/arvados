@@ -982,6 +982,47 @@ def test_create_subcommad_s_option(setup_editor, run_arvcli):
     assert not sr.called
 
 
+class TestPrepareInitialObjectToEdit:
+    @pytest.fixture
+    def parser(self, discovery_document):
+        yield arvcli.ArvCLIArgumentParser(discovery_document)
+
+    @pytest.mark.parametrize("src,fields,expected", (
+        ({}, [], {}),
+        ({"foo": "bar"}, [], {"foo": "bar"}),
+        ({"foo": "bar"}, [""], {"foo": "bar"}),
+        ({}, [""], {}),
+        ({"foo": "bar", "baz": "quux"}, ["foo"], {"foo": "bar"}),
+        ({"foo": "bar", "baz": "quux"}, ["", "foo", "zzz"], {"foo": "bar"})
+    ))
+    def test_select_fields(self, src, fields, expected):
+        assert arvcli._select_fields(src, fields) == expected
+
+    def test_no_such_uuid(self, capsys, simple_api_client, parser):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+        uuid_list = uuid.split("-")
+        # Make sure the uuid doesn't match by changing its cluster-id part.
+        uuid_list[0] = "xyzzy"
+        args = parser.parse_args(["edit", "-".join(uuid_list)])
+        actual = arvcli._prepare_initial_object_to_edit(
+            simple_api_client, parser, args
+        )
+        captured = capsys.readouterr()
+        assert actual is None
+        assert "not found" in captured.err.lower()
+
+    def test_no_empty_output(self, simple_api_client, parser):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+        # None of the following are valid fields for a group.
+        invalid_fields = ["foo", "bar", ""]
+        args = parser.parse_args(["edit", uuid, *invalid_fields])
+        expected = simple_api_client.groups().get(uuid=uuid).execute()
+        actual = arvcli._prepare_initial_object_to_edit(
+            simple_api_client, parser, args
+        )
+        assert actual == expected
+
+
 def yaml_dumps(obj) -> str:
     buf = io.StringIO()
     yaml.dump(obj, stream=buf)
@@ -1169,28 +1210,28 @@ class TestEditingSubcommands:
     def test_edit_collection_name(
             self, simple_api_client, setup_editor, run_arvcli
     ):
-        uuid = run_test_server.fixture(
-            "collections"
-        )["collection_owned_by_active"]["uuid"]
-        collection = simple_api_client.collections().get(uuid=uuid).execute()
-        edited_collection = collection.copy()
-        edited_collection["name"] += "_edited"
-        setup_editor(content=json.dumps(edited_collection))
+        uuid = run_test_server.fixture("collections")[
+            "collection_owned_by_active"
+        ]["uuid"]
+        old_obj = simple_api_client.collections().get(uuid=uuid).execute()
+        edited_obj = old_obj.copy()
+        edited_obj["name"] += "_edited"
+        setup_editor(content=json.dumps(edited_obj))
         timestamp = datetime.datetime.now(datetime.timezone.utc)
 
         exit_code, out, err = run_arvcli(["edit", uuid])
 
         assert exit_code == 0
         assert not err
-        out_obj = json.loads(out)
-        assert out_obj["uuid"] == uuid
-        assert out_obj["name"] == collection["name"] + "_edited"
-        assert ciso8601.parse_datetime(out_obj["modified_at"]) >= timestamp
+        new_obj = json.loads(out)
+        assert new_obj["uuid"] == uuid
+        assert new_obj["name"] == edited_obj["name"]
+        assert ciso8601.parse_datetime(new_obj["modified_at"]) >= timestamp
 
     def test_edit_collection_did_not_edit(self, setup_editor, run_arvcli):
-        uuid = run_test_server.fixture(
-            "collections"
-        )["collection_owned_by_active"]["uuid"]
+        uuid = run_test_server.fixture("collections")[
+            "collection_owned_by_active"
+        ]["uuid"]
         setup_editor("append", "")
 
         exit_code, out, err = run_arvcli(["edit", uuid])
@@ -1198,3 +1239,42 @@ class TestEditingSubcommands:
         assert exit_code == 0
         assert not out
         assert "notice: object is unchanged; did not update" in err
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_edit_group_with_fields(self, setup_editor, run_arvcli):
+        fx = run_test_server.fixture("groups")["aproject"]
+        fields = ("name", "description")
+        uuid = fx["uuid"]
+        edited_obj = {k: f"{v} (edited)" for k, v in fx.items() if k in fields}
+        setup_editor(content=json.dumps(edited_obj))
+
+        exit_code, out, err = run_arvcli(["edit", uuid, *fields])
+
+        assert exit_code == 0
+        assert not err
+        new_obj = json.loads(out)
+        assert new_obj["uuid"] == uuid
+        for k in fields:
+            assert new_obj[k] == edited_obj[k]
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_edit_group_with_fields_and_extra_fields_added_in_editor(
+            self, setup_editor, run_arvcli
+    ):
+        fx = run_test_server.fixture("groups")["aproject"]
+        uuid = fx["uuid"]
+
+        new_desc = f"{fx['description']} (edited by user anyway)"
+        edited_obj = {
+            "name": fx["name"],
+            "description": new_desc
+        }
+        setup_editor(content=json.dumps(edited_obj))
+
+        exit_code, out, err = run_arvcli(["edit", uuid, "name"])
+
+        assert exit_code == 0
+        assert not err
+        new_obj = json.loads(out)
+        assert new_obj["uuid"] == uuid
+        assert new_obj["description"] == new_desc
