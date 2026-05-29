@@ -343,19 +343,19 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     """
     _tmpfile_extension = None
 
-    def __init__(self, initial_object=None, uuid=None, file_extension=None):
+    def __init__(self, initial_object=None, prefix=None, file_extension=None):
         """Arguments:
 
         * initial_object: Optional[Any] --- Initial object to be serialized and
           written to the temporary file before the editor process is run. If
           not provided, the file will be opened empty in the editor.
-        * uuid: Optional[str] --- Arvados object UUID to be used as the prefix
-          of the temporary file's basename. If not provided, the initial
-          object's `uuid` field will be used if available; otherwise, a
-          platform-dependent prefix will be chosen automatically. This UUID as
+        * prefix: Optional[str] --- String to be used as the prefix
+          of the temporary file's basename, followed by a hyphen (`-`)
+          character that will be added automatically. If not provided, the
+          initial object's `uuid` field will be used if available; otherwise, a
+          platform-dependent prefix will be chosen automatically. A UUID as
           part of the filename is for information only, and it may be displayed
-          in the editor's UI. Its value has no bearing on the actual object
-          being edited.
+          in the editor's UI.
         * file_extension: Optional[str] --- Filename extension (without leading
           dot) of the temporary file, e.g. "json" or "yml". This information
           may be used by the editor to provide syntax highlighting, automatic
@@ -363,8 +363,8 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         """
         self.initial_object = initial_object
 
-        if uuid:
-            self.prefix = f"{uuid}-"
+        if prefix:
+            self.prefix = f"{prefix}-"
         elif (
             isinstance(initial_object, Mapping)
             and (obj_uuid := initial_object.get("uuid"))
@@ -924,9 +924,9 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
 
     match args.format:
         case "json":
-            editing = JSONEditingProcess(initial_object=init_obj, uuid=uuid)
+            editing = JSONEditingProcess(initial_object=init_obj, prefix=uuid)
         case "yaml":
-            editing = YAMLEditingProcess(initial_object=init_obj, uuid=uuid)
+            editing = YAMLEditingProcess(initial_object=init_obj, prefix=uuid)
         case _:
             raise RuntimeError(
                 f"Error: unexpected value for format option: {args.format}"

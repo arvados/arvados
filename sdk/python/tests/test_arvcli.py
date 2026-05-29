@@ -930,17 +930,17 @@ class TestObjectEditingProcessBase:
         assert filled_content == initial_obj
 
     def test_tempfile_name_prefix(self):
-        fake_uuid = "foo-bar"
-        with PlainStringEditing(uuid=fake_uuid) as ed:
-            assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
+        prefix = "foo-bar"
+        with PlainStringEditing(prefix=prefix) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{prefix}-")
 
     def test_tempfile_name_no_empty_prefix(self):
         # It's risky to do negative tests on the tempfile's actual name because
         # it's random in a platform-dependent way. We don't want a widowed
-        # hyphen/dash character *created by us* when uuid="" or when
+        # hyphen/dash character *created by us* when prefix="" or when
         # initial_object["uuid"] is empty, but a hyphen may as well happen to
         # be the first character generated randomly.
-        ed = PlainStringEditing(uuid="")
+        ed = PlainStringEditing(prefix="")
         assert ed.prefix is None
 
     def test_tempfile_name_prefix_from_obj_uuid(self):
@@ -949,9 +949,11 @@ class TestObjectEditingProcessBase:
         with arvcli.JSONEditingProcess(initial_obj) as ed:
             assert Path(ed.tmp_file.name).stem.startswith(f"{uuid}-")
 
-        uuid_override = "foo-bar-baz"
-        with arvcli.JSONEditingProcess(initial_obj, uuid=uuid_override) as ed:
-            assert Path(ed.tmp_file.name).stem.startswith(f"{uuid_override}-")
+        prefix_override = "foo-bar-baz"
+        with arvcli.JSONEditingProcess(
+            initial_obj, prefix=prefix_override
+        ) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{prefix_override}-")
 
         initial_obj = {}
         ed = arvcli.JSONEditingProcess(initial_obj)
