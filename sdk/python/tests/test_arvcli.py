@@ -69,7 +69,7 @@ def run_arvcli(capsys, monkeypatch):
     def the_run(cli_args):
         monkeypatch.setattr(sys, "argv", [arvcli.__file__, *cli_args])
         with pytest.raises(SystemExit) as exc:
-            arvcli.dispatch(cli_args)
+            arvcli.dispatch()
         captured = capsys.readouterr()
         return exc.value.code, captured.out, captured.err
 
@@ -118,8 +118,7 @@ def test_passthrough_commands_args(subcommand, cmd_mod_name, run_arvcli):
 
 
 @pytest.mark.parametrize(
-    "subcommand",
-    arvcli.ArvCLIArgumentParser.external_command_modules.keys()
+    "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
 )
 def test_passthrough_command_usage_prog_name(subcommand, run_arvcli):
     exit_code, out, err = run_arvcli([*subcommand.split(), "-h"])
