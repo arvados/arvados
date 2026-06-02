@@ -9,7 +9,9 @@ $namespaces:
 
 hints:
   arv:OutOfMemoryRetry:
-    memoryRetryMultiplier: 2
+    # legacy misspelled name, should behave exactly the same
+    memoryRetryMultipler: 2
+    memoryErrorRegex: NoMoreRAM
   ResourceRequirement:
     ramMin: 256
   arv:APIRequirement: {}
