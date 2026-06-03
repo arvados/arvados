@@ -136,7 +136,7 @@ def test_singularizer(plural, singular):
 
 def test_cli_parser_has_singular_plural_mapping(discovery_document):
     cmd_parser = arvcli.ArvCLIArgumentParser(discovery_document)
-    for resource in cmd_parser.resource_schema:
+    for resource in cmd_parser.resource_schemas:
         k = arvcli._ArgUtil.singularize_resource(resource)
         assert cmd_parser._subcommand_to_resource[k] == resource
     assert cmd_parser._subcommand_to_resource["sy"] == cmd_parser._subcommand_to_resource["sys"]

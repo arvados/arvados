@@ -589,7 +589,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
             discovery_document.get("parameters", {}).keys()
             | apiclient_discovery.STACK_QUERY_PARAMETERS
         )
-        self.resource_schema = discovery_document.get("resources", {})
+        self.resource_schemas = discovery_document.get("resources", {})
         self._subparser_index = {}
         self._subcommand_to_resource = {}
 
@@ -606,7 +606,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         # for the "create" subcommand.
         creatable_targets = set()
         for cli_name, resource in self._subcommand_to_resource.items():
-            if "create" in self.resource_schema[resource].get("methods", {}):
+            if "create" in self.resource_schemas[resource].get("methods", {}):
                 creatable_targets.add(cli_name)
         create_parser = subparsers.add_parser(
             "create", help="Create Arvados object using external editor"
@@ -628,7 +628,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         """Add resources as subcommands, their associated methods as
         sub-subcommands, and the parameters associated with each method.
         """
-        for resource, resource_schema in self.resource_schema.items():
+        for resource, resource_schema in self.resource_schemas.items():
             subcommand = _ArgUtil.singularize_resource(resource)
             self._subcommand_to_resource[subcommand] = resource
             resource_subparser = self.subparsers.add_parser(
