@@ -11,7 +11,7 @@ import { openMoveProjectDialog } from "store/projects/project-move-actions";
 import { openProjectCreateDialog } from "store/projects/project-create-actions";
 import { openProjectUpdateDialog } from "store/projects/project-update-actions";
 import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
-import { toggleResourceTrashed } from "store/trash/trash-actions";
+import { openTrashConfirmDialog } from "store/trash/trash-actions";
 import { ShareIcon } from "components/icon/icon";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
@@ -109,7 +109,7 @@ export const toggleTrashAction = {
     name: ContextMenuActionNames.MOVE_TO_TRASH,
     isForMulti: true,
     execute: (dispatch, resources) => {
-        dispatch(toggleResourceTrashed(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
+        dispatch(openTrashConfirmDialog(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
     },
 };
 
