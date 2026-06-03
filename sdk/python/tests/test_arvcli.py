@@ -58,6 +58,11 @@ def simple_api_client():
         api_client.close()
 
 
+@pytest.fixture
+def discovery_document(simple_api_client):
+    yield simple_api_client._rootDesc
+
+
 def test_global_option_help_followed_by_subcommand():
     """When called as arvcli.py -h [subcommand], the subcommand is ignored,
     the -h option is consumed by the parser, and the help message is printed,
@@ -129,11 +134,9 @@ def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
 
 
-def test_cli_parser_has_singular_plural_mapping(simple_api_client):
-    cmd_parser = arvcli.ArvCLIArgumentParser(
-        simple_api_client._resourceDesc["resources"]
-    )
-    for resource in cmd_parser.resource_dictionary.keys():
+def test_cli_parser_has_singular_plural_mapping(discovery_document):
+    cmd_parser = arvcli.ArvCLIArgumentParser(discovery_document)
+    for resource in cmd_parser.resource_schema:
         k = arvcli._ArgUtil.singularize_resource(resource)
         assert cmd_parser._subcommand_to_resource[k] == resource
     assert cmd_parser._subcommand_to_resource["sy"] == cmd_parser._subcommand_to_resource["sys"]
@@ -287,6 +290,32 @@ def test_get_method_options():
     assert list(
         arvcli._ArgUtil.get_method_options(input_method_schema)
     ) == output
+
+def test_get_method_options_ignored_parameters():
+    input_method_schema = {
+        "parameters": {
+            # Based on parameters from top-level "parameters" key.
+            "alt": {
+                "type": "string",
+                "description": "Data format for the response.",
+                "default": "json",
+                "enum": [
+                    "json"
+                ],
+                "enumDescriptions": [
+                    "Responses with Content-Type of application/json"
+                ],
+                "location": "query"
+            },
+            # Based on googleapiclient's injection of "stack query parameters".
+            "pp": {"type": "string", "location": "query"}
+        }
+    }
+    assert list(
+        arvcli._ArgUtil.get_method_options(
+            input_method_schema, ignored_parameters=("alt", "pp")
+        )
+    ) == []
 
 
 class TestArgTypes:
@@ -611,7 +640,7 @@ def test_uuid_output_with_list_items_having_no_uuid(run_arvcli):
 
 
 class TestDefaultValuesForAPICalls:
-    resources = arvados.api("v1")._resourceDesc["resources"]
+    resources = arvados.api("v1")._rootDesc["resources"]
 
     @classmethod
     def get_default(cls, resource, method, parameter):
@@ -641,6 +670,12 @@ class TestConfigGet:
     def test_config_get(self, run_arvcli):
         exit_code, out, err = run_arvcli(["config", "get"])
         assert exit_code == 0
+
+    def test_config_get_help(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["config", "get", "-h"])
+        assert exit_code == 0
+        out_lines = out.splitlines()
+        assert re.match(r"^usage: \S+ config get \[-h\]$", out_lines[0])
 
     def test_config_get_uuid(self, run_arvcli):
         exit_code, out, err = run_arvcli(["--format", "uuid", "config", "get"])
