@@ -32,8 +32,8 @@ import sys
 from tempfile import NamedTemporaryFile
 from typing import Any, NoReturn, Optional, TextIO
 import arvados
-from arvados.api import apiclient_discovery
 import arvados.commands._util as cmd_util
+from googleapiclient import discovery
 from ruamel.yaml import YAML, YAMLError
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
@@ -113,7 +113,7 @@ class _ArgUtil:
     @staticmethod
     def get_method_options(
         method_schema: Mapping[str, Any],
-        ignored_parameters: Optional[Container[str]] = None
+        ignored_parameters: Container[str] = ()
     ):
         """Generate command-line options, in the form of "-f/--foo", from the
         parameters as defined by the API method schema in the discovery
@@ -149,8 +149,8 @@ class _ArgUtil:
 
         * method_schema: Mapping[str, Any] --- Dict object from the parsed
           discover document that defines a method.
-        * ignored_parameters: Optional[Container[str]] --- If provided, the
-          parameters that are in `ignored_parameters` will not be processed.
+        * ignored_parameters: Container[str] --- If provided, the parameters
+          that are in `ignored_parameters` will not be processed.
         """
         parameters_schema = method_schema.get("parameters", {}).copy()
         # If the method comes with the "request" field, add another parameter
@@ -169,7 +169,7 @@ class _ArgUtil:
                 }
         argument_key_abbrevs = set("h")  # prevent conflict with "help"
         for parameter_key, parameter_dict in parameters_schema.items():
-            if ignored_parameters and parameter_key in ignored_parameters:
+            if parameter_key in ignored_parameters:
                 continue
             parameter_kwargs = {
                 "required": parameter_dict.get("required", False)
@@ -587,7 +587,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         # default storage classes for its KeepClient object).
         self._ignored_parameters = frozenset(
             discovery_document.get("parameters", {}).keys()
-            | apiclient_discovery.STACK_QUERY_PARAMETERS
+            | discovery.STACK_QUERY_PARAMETERS
         )
         self.resource_schemas = discovery_document.get("resources", {})
         self._subparser_index = {}

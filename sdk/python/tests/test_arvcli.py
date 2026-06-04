@@ -195,7 +195,22 @@ def test_get_method_options():
                 "required": False,
                 "description": "help-filters.",
                 "location": "query"
-            }
+            },
+            # Based on parameters from top-level "parameters" key.
+            "alt": {
+                "type": "string",
+                "description": "Data format for the response.",
+                "default": "json",
+                "enum": [
+                    "json"
+                ],
+                "enumDescriptions": [
+                    "Responses with Content-Type of application/json"
+                ],
+                "location": "query"
+            },
+            # Based on googleapiclient's injection of "stack query parameters".
+            "pp": {"type": "string", "location": "query"}
         },
         "request": {
             "required": True,
@@ -288,34 +303,10 @@ def test_get_method_options():
         )
     ]
     assert list(
-        arvcli._ArgUtil.get_method_options(input_method_schema)
-    ) == output
-
-def test_get_method_options_ignored_parameters():
-    input_method_schema = {
-        "parameters": {
-            # Based on parameters from top-level "parameters" key.
-            "alt": {
-                "type": "string",
-                "description": "Data format for the response.",
-                "default": "json",
-                "enum": [
-                    "json"
-                ],
-                "enumDescriptions": [
-                    "Responses with Content-Type of application/json"
-                ],
-                "location": "query"
-            },
-            # Based on googleapiclient's injection of "stack query parameters".
-            "pp": {"type": "string", "location": "query"}
-        }
-    }
-    assert list(
         arvcli._ArgUtil.get_method_options(
             input_method_schema, ignored_parameters=("alt", "pp")
         )
-    ) == []
+    ) == output
 
 
 class TestArgTypes:
