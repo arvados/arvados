@@ -20,6 +20,7 @@ import abc
 import argparse
 from collections.abc import Container, Mapping
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 import functools
 import importlib
 import json
@@ -47,37 +48,45 @@ class _ArgTypes:
         """Validate an Arvados group UUID as the value of a CLI argument (an
         Arvados project being a type of group).
         """
-        # In theory this is a special case of "generic_uuid()" but we mostly
-        # need it for the nicer error message.
+        # In theory this is a special case of "UUIDInfo" but we mostly need it
+        # for the nicer error message.
         if arvados.util.group_uuid_pattern.fullmatch(text):
             return text
         raise argparse.ArgumentTypeError(
             f"Invalid UUID for Arvados project or group: {text}"
         )
 
-    @staticmethod
-    def generic_uuid(
-        type_map: Mapping[str, str], text: str
-    ) -> tuple[str, str]:
-        """Parse the UUID argument. If accepted, returns a tuple
-        `(uuid, resource_type)` where `uuid` is the input UUID unchanged and
-        `resource_type` is the type of Arvados object (in lower_case), as
-        determined by the input parameter `type_map`.
-        """
-        if not arvados.util.uuid_pattern.fullmatch(text):
-            raise argparse.ArgumentTypeError(
-                f"Invalid Arvados object UUID: {text}"
-            )
-        type_code = text.split("-")[1]
-        if type_code not in type_map:
-            available_types = ", ".join(sorted(
-                f"{k} ({v})" for k, v in type_map.items()
-            ))
-            raise argparse.ArgumentTypeError(
-                f"Invalid object type code {type_code!r} in Arvados"
-                f" object UUID {text}: valid type codes are {available_types}"
-            )
-        return text, type_map[type_code]
+    @dataclass(frozen=True)
+    class UUIDInfo:
+        """'Interpreted' Arvados UUID object with resource type info."""
+        uuid: str
+        resource_type: str
+
+        @classmethod
+        def parse(
+            cls, type_map: Mapping[str, str], text: str
+        ) -> "UUIDInfo":  # self-typing support comes in Python 3.11.
+            """Parse the UUID argument `text`. If accepted, returns an
+            `UUIDInfo` instance whose `uuid` attribute is the input UUID
+            unchanged and the `resource_type` attribute is the type of Arvados
+            object (in lower_case), as determined by the input parameter
+            `type_map`.
+            """
+            if not arvados.util.uuid_pattern.fullmatch(text):
+                raise argparse.ArgumentTypeError(
+                    f"Invalid Arvados object UUID: {text}"
+                )
+            type_code = text.split("-")[1]
+            if type_code not in type_map:
+                available_types = ", ".join(sorted(
+                    f"{k} ({v})" for k, v in type_map.items()
+                ))
+                raise argparse.ArgumentTypeError(
+                    f"Invalid object type code {type_code!r} in Arvados"
+                    f" object UUID {text}: valid type codes are"
+                    f" {available_types}"
+                )
+            return cls(text, type_map[type_code])
 
     @staticmethod
     def _validate_type(obj_type, obj):
@@ -761,9 +770,10 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             "edit", help="Edit Arvados object using external editor"
         )
         edit_parser.add_argument(
-            "uuid", help="UUID of the object to be edited",
+            "uuid_info", help="UUID of the object to be edited",
+            metavar="UUID",
             type=functools.partial(
-                _ArgTypes.generic_uuid, self.uuid_type_map
+                _ArgTypes.UUIDInfo.parse, self.uuid_type_map
             )
         )
         edit_parser.add_argument(
@@ -896,9 +906,8 @@ def _prepare_initial_object_to_edit(api_client, parser, args) -> dict | None:
     In case of error, write error message about the failed "get" call to the
     standard error.
     """
-    uuid, resource_name = args.uuid
-    resource = parser._subcommand_to_resource[resource_name]
-    method_call = getattr(api_client, resource)().get(uuid=uuid)
+    resource = parser._subcommand_to_resource[args.uuid_info.resource_type]
+    method_call = getattr(api_client, resource)().get(uuid=args.uuid_info.uuid)
     try:
         arv_obj = method_call.execute()
     except arvados.errors.ApiError as err:
@@ -923,7 +932,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             sys.exit(1)
         # Tempfile name resembling
         # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
-        prefix = f"{args.uuid[1]}-{args.uuid[0]}"
+        prefix = f"{args.uuid_info.resource_type}-{args.uuid_info.uuid}"
 
     match args.format:
         case "json":
@@ -972,7 +981,9 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             if args.subcommand == "create":
                 resource = parser._subcommand_to_resource[args.target_resource]
             else:
-                resource = parser._subcommand_to_resource[args.uuid[1]]
+                resource = parser._subcommand_to_resource[
+                    args.uuid_info.resource_type
+                ]
 
             arv_resource = getattr(api_client, resource)()
 
@@ -994,7 +1005,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                     sys.exit(0)
                 api_call_status = _call_resource_method(
                     arv_resource.update,
-                    {"uuid": args.uuid[0], "body": obj_delta},
+                    {"uuid": args.uuid_info.uuid, "body": obj_delta},
                     args.format
                 )
 

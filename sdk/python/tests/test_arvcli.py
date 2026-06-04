@@ -398,13 +398,13 @@ class TestArgTypes:
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.group_uuid("zzzzz-j7d0g-123456789")
 
-    def test_generic_uuid_good_type(self, type_map):
+    def test_uuid_info_parse_good_type(self, type_map):
         uuid = run_test_server.fixture("collections")["collection_owned_by_active"]["uuid"]
-        assert arvcli._ArgTypes.generic_uuid(type_map, uuid) == (
-            uuid, "collection"
+        assert arvcli._ArgTypes.UUIDInfo.parse(type_map, uuid) == (
+            arvcli._ArgTypes.UUIDInfo(uuid, "collection")
         )
 
-    def test_generic_uuid_bad_type(self, type_map):
+    def test_uuid_info_parse_bad_type(self, type_map):
         assert self.bad_type not in type_map
         with pytest.raises(
             argparse.ArgumentTypeError,
@@ -412,7 +412,7 @@ class TestArgTypes:
                 rf"Invalid object type code {re.escape(repr(self.bad_type))}"
             )
         ):
-            arvcli._ArgTypes.generic_uuid(type_map, self.bad_uuid)
+            arvcli._ArgTypes.UUIDInfo.parse(type_map, self.bad_uuid)
 
 
 @pytest.mark.parametrize(
