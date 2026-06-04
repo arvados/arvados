@@ -18,6 +18,7 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 
 import abc
 import argparse
+from collections.abc import Container, Iterable, Mapping
 from contextlib import AbstractContextManager
 import functools
 import importlib
@@ -29,9 +30,10 @@ import shutil
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
-from typing import Any, Mapping, NoReturn, TextIO
+from typing import Any, NoReturn, Optional, TextIO
 import arvados
 import arvados.commands._util as cmd_util
+from googleapiclient import discovery
 from ruamel.yaml import YAML, YAMLError
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
@@ -109,7 +111,10 @@ class _ArgUtil:
         return "--" + parameter_key.replace("_", "-")
 
     @staticmethod
-    def get_method_options(method_schema):
+    def get_method_options(
+        method_schema: Mapping[str, Any],
+        ignored_parameters: Container[str] = ()
+    ):
         """Generate command-line options, in the form of "-f/--foo", from the
         parameters as defined by the API method schema in the discovery
         document.
@@ -142,8 +147,10 @@ class _ArgUtil:
 
         Arguments:
 
-        * method_schema: dict --- Dict object from the parsed discover document
-          that defines a method.
+        * method_schema: Mapping[str, Any] --- Dict object from the parsed
+          discover document that defines a method.
+        * ignored_parameters: Container[str] --- If provided, the parameters
+          that are in `ignored_parameters` will not be processed.
         """
         parameters_schema = method_schema.get("parameters", {}).copy()
         # If the method comes with the "request" field, add another parameter
@@ -162,6 +169,8 @@ class _ArgUtil:
                 }
         argument_key_abbrevs = set("h")  # prevent conflict with "help"
         for parameter_key, parameter_dict in parameters_schema.items():
+            if parameter_key in ignored_parameters:
+                continue
             parameter_kwargs = {
                 "required": parameter_dict.get("required", False)
             }
@@ -520,13 +529,12 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         "copy": "arvados.commands.arv_copy"
     }
 
-    def __init__(self, resource_dictionary, **kwargs):
+    def __init__(self, discovery_document: dict[str, str | dict], **kwargs):
         """Arguments:
 
-        * resource dictionary: dict --- Dict containing the resources defined
-          in the discovery document; can be obtained as the
-          `_resourceDesc["resources"]` attribute of an Arvados API client
-          object.
+        * discovery_document: dict --- Dict containing the parsed API discovery
+          document; can be obtained as the `_rootDesc` attribute of an
+          Arvados API client object.
         """
         super().__init__(description="Arvados command line client", **kwargs)
         # Common flags to the main command.
@@ -571,7 +579,17 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         copy_parser = subparsers.add_parser("copy")
 
         self.subparsers = subparsers
-        self.resource_dictionary = resource_dictionary
+        self.discovery_document = discovery_document
+        # Work around googleapiclient's mutation of _rootDesc/_resourceDesc
+        # dicts when a resource is created. For instance, currently (as of
+        # 2026-06-03) "configs.get" resource-method's parameters get mutated at
+        # init time of the API client object (as a side-effect of getting the
+        # default storage classes for its KeepClient object).
+        self._ignored_parameters = frozenset(
+            discovery_document.get("parameters", {}).keys()
+            | discovery.STACK_QUERY_PARAMETERS
+        )
+        self.resource_schemas = discovery_document.get("resources", {})
         self._subparser_index = {}
         self._subcommand_to_resource = {}
 
@@ -588,8 +606,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         # for the "create" subcommand.
         creatable_targets = set()
         for cli_name, resource in self._subcommand_to_resource.items():
-            resource_schema = self.resource_dictionary[resource]
-            if "create" in resource_schema.get("methods", {}):
+            if "create" in self.resource_schemas[resource].get("methods", {}):
                 creatable_targets.add(cli_name)
         create_parser = subparsers.add_parser(
             "create", help="Create Arvados object using external editor"
@@ -611,7 +628,7 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
         """Add resources as subcommands, their associated methods as
         sub-subcommands, and the parameters associated with each method.
         """
-        for resource, resource_schema in self.resource_dictionary.items():
+        for resource, resource_schema in self.resource_schemas.items():
             subcommand = _ArgUtil.singularize_resource(resource)
             self._subcommand_to_resource[subcommand] = resource
             resource_subparser = self.subparsers.add_parser(
@@ -638,7 +655,8 @@ class ArvCLIArgumentParser(argparse.ArgumentParser):
                         help=method_schema.get("description")
                     )
                     for parameter_names, kwargs in _ArgUtil.get_method_options(
-                            method_schema
+                        method_schema,
+                        ignored_parameters=self._ignored_parameters
                     ):
                         method_parser.add_argument(*parameter_names, **kwargs)
 
@@ -823,7 +841,7 @@ def _ask_reedit() -> bool | None:
 
 def dispatch(arguments=None):
     api_client = arvados.api("v1")
-    cmd_parser = ArvCLIArgumentParser(api_client._resourceDesc["resources"])
+    cmd_parser = ArvCLIArgumentParser(api_client._rootDesc)
     args, remaining_args = cmd_parser.parse_known_args(arguments)
 
     # There's always args.subcommand if we reach here, because "subcommand" is
