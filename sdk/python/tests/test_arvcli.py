@@ -356,8 +356,8 @@ def test_make_uuid_to_resource_map():
         }
     }
     expected = {
-        "gj3su": "api_client_authorization",
-        "oss07": "credential"
+        "gj3su": "ApiClientAuthorization",
+        "oss07": "Credential"
     }
     assert arvcli._ArgUtil.make_uuid_to_resource_map(schemas) == expected
 
@@ -402,7 +402,7 @@ class TestArgTypes:
     def test_uuid_info_parse_good_type(self, type_map):
         uuid = run_test_server.fixture("collections")["collection_owned_by_active"]["uuid"]
         assert arvcli._ArgTypes.UUIDInfo.parse(type_map, uuid) == (
-            arvcli._ArgTypes.UUIDInfo(uuid, "collection")
+            arvcli._ArgTypes.UUIDInfo(uuid, "Collection", "collection")
         )
 
     def test_uuid_info_parse_bad_type(self, type_map):
@@ -992,38 +992,36 @@ class TestPrepareInitialObjectToEdit:
 
     @pytest.mark.parametrize("src,fields,expected", (
         ({}, [], {}),
+        ({}, ["foo"], {}),
         ({"foo": "bar"}, [], {"foo": "bar"}),
-        ({"foo": "bar"}, [""], {"foo": "bar"}),
-        ({}, [""], {}),
         ({"foo": "bar", "baz": "quux"}, ["foo"], {"foo": "bar"}),
-        ({"foo": "bar", "baz": "quux"}, ["", "foo", "zzz"], {"foo": "bar"})
+        ({"foo": "bar", "baz": "quux"}, ["abc", "foo"], {"foo": "bar"})
     ))
     def test_select_fields(self, src, fields, expected):
         assert arvcli._select_fields(src, fields) == expected
 
-    def test_no_such_uuid(self, capsys, simple_api_client, parser):
+    def test_no_such_uuid(self, simple_api_client, parser):
         uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
         uuid_list = uuid.split("-")
         # Make sure the uuid doesn't match by changing its cluster-id part.
         uuid_list[0] = "xyzzy"
         args = parser.parse_args(["edit", "-".join(uuid_list)])
-        actual = arvcli._prepare_initial_object_to_edit(
+        status, value = arvcli._prepare_initial_object_to_edit(
             simple_api_client, parser, args
         )
-        captured = capsys.readouterr()
-        assert actual is None
-        assert "not found" in captured.err.lower()
+        assert status == 1
+        assert "not found" in value.lower()
 
-    def test_no_empty_output(self, simple_api_client, parser):
+    def test_invalid_fields(self, simple_api_client, parser):
         uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
         # None of the following are valid fields for a group.
         invalid_fields = ["foo", "bar", ""]
         args = parser.parse_args(["edit", uuid, *invalid_fields])
-        expected = simple_api_client.groups().get(uuid=uuid).execute()
-        actual = arvcli._prepare_initial_object_to_edit(
+        status, value = arvcli._prepare_initial_object_to_edit(
             simple_api_client, parser, args
         )
-        assert actual == expected
+        assert status == 2
+        assert value == "invalid fields for resource 'group': 'foo', 'bar', ''"
 
 
 def yaml_dumps(obj) -> str:

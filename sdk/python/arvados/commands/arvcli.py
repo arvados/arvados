@@ -60,7 +60,8 @@ class _ArgTypes:
     class UUIDInfo:
         """'Interpreted' Arvados UUID object with resource type info."""
         uuid: str
-        resource_type: str
+        resource_type: str  # value in CamelCase
+        resource_type_alt: str  # value in snake_case
 
         @classmethod
         def parse(
@@ -69,8 +70,9 @@ class _ArgTypes:
             """Parse the UUID argument `text`. If accepted, returns an
             `UUIDInfo` instance whose `uuid` attribute is the input UUID
             unchanged and the `resource_type` attribute is the type of Arvados
-            object (in lower_case), as determined by the input parameter
-            `type_map`.
+            object (in CamelCase), as determined by the input parameter
+            `type_map`, and `resourece_type_alt` is the alternative form of
+            resource type in snake_case.
             """
             if not arvados.util.uuid_pattern.fullmatch(text):
                 raise argparse.ArgumentTypeError(
@@ -86,7 +88,8 @@ class _ArgTypes:
                     f" object UUID {text}: valid type codes are"
                     f" {available_types}"
                 )
-            return cls(text, type_map[type_code])
+            type_key = type_map[type_code]
+            return cls(text, type_key, _ArgUtil.camel_case_to_snake(type_key))
 
     @staticmethod
     def _validate_type(obj_type, obj):
@@ -309,8 +312,8 @@ class _ArgUtil:
     @staticmethod
     def make_uuid_to_resource_map(schemas: dict[str, dict]) -> dict[str, str]:
         """Returns a mapping of Arvados object UUID prefixes to resource names
-        (in the "subcommand" form, i.e. a mostly-English noun in the singular)
-        based on the input "schemas" portion of the discovery document.
+        (in the schema-key, CamelCase form, e.g. "ContainerRequest") based on
+        the input "schemas" portion of the discovery document.
         """
         result = {}
         for schema in schemas.values():
@@ -318,7 +321,7 @@ class _ArgUtil:
                     (prefix := schema.get("uuidPrefix"))
                     and (key := schema.get("id"))
             ):
-                result[prefix] = _ArgUtil.camel_case_to_snake(key)
+                result[prefix] = key
         return result
 
 
@@ -778,11 +781,9 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             )
         )
         edit_parser.add_argument(
-            "fields", nargs="*", type=str.lower,
-            help=(
-                "Fields to be edited (case-insensitive);"
-                " duplicate and invalid fields are ignored"
-            )
+            "fields", nargs="*",
+            type=str.lower,  # "type" applies to individual items.
+            help="Fields to be edited (case-insensitive)"
         )
 
 
@@ -885,37 +886,56 @@ def _select_fields(
     src: Mapping[str, Any], fields: Iterable[str]
 ) -> Mapping[str, Any]:
     """Select the items of input dict `src` whose keys are in `fields`, or, if
-    `fields` is empty, return the input `src` unmodified. However, if the
-    selection result would have been empty, return `src` unmodified instead.
+    `fields` is empty, return the input `src` unmodified.
     """
     key_filter = frozenset(fields)
     if not key_filter:
         return src
     result = {k: v for k, v in src.items() if k in key_filter}
-    return result or src
+    return result
 
 
-def _prepare_initial_object_to_edit(api_client, parser, args) -> dict | None:
+def _prepare_initial_object_to_edit(
+    api_client, parser, args
+) -> tuple[int, dict | str]:
     """Obtain the initial object for the "arv edit" subcommand, based on the
-    commandline args and the current API client & CLI parser instances.
+    commandline args and the current API client & CLI parser instances. If the
+    "fields" argument (`args.fields`) is provided, only those fields that are
+    specified are returned.
 
-    Returns the retrieved Arvados object upon successful API call, or None if
-    the call fails. If the "fields" argument is provided, only those fields
-    that are specified are returned (duplicate and invalid fields are ignored;
-    if all fields are invalid, it behaves as if no fields are specified).
+    Return value:
 
-    In case of error, write error message about the failed "get" call to the
-    standard error.
+    * status: int --- Status code indicating the result of operation:
+      * 0: Success; the second return value is the initial object as a dict.
+      * 1: API error; the second return value is the error message.
+      * 2: Invalid input; the second return value is the error message.
+    * value: dict | str --- Returned, filtered initial object `dict` in case of
+      success, or an error-message string in case of failure.
     """
-    resource = parser._subcommand_to_resource[args.uuid_info.resource_type]
-    method_call = getattr(api_client, resource)().get(uuid=args.uuid_info.uuid)
+    resource_name = args.uuid_info.resource_type_alt
+
+    # Filter the fields for any invalid keys of the particular resource.
+    valid_fields = parser.discovery_document.get("schemas", {})[
+        args.uuid_info.resource_type
+    ]["properties"]
+    # Sets doesn't remember insertion order, but we want to put invalid keys in
+    # the order given by the user for consistency, so we do a dedup with dict.
+    invalid_fields = {f: None for f in args.fields if f not in valid_fields}
+    if invalid_fields:
+        return 2, (
+            f"invalid fields for resource {resource_name!r}:"
+            f" {', '.join(map(repr, invalid_fields))}"
+        )
+
+    method_call = getattr(
+        api_client, parser._subcommand_to_resource[resource_name]
+    )().get(uuid=args.uuid_info.uuid)
     try:
         arv_obj = method_call.execute()
     except arvados.errors.ApiError as err:
-        msg = _format_api_error_msg(err, method_call)
-        print(msg, file=sys.stderr)
-        return None
-    return _select_fields(arv_obj, args.fields)
+        return 1, _format_api_error_msg(err, method_call)
+
+    return 0, _select_fields(arv_obj, args.fields)
 
 
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
@@ -927,13 +947,16 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         # Tempfile name resembling "new-collection-{random}.{json|yml}".
         prefix = f"new-{args.target_resource}"
     else:
-        init_obj = _prepare_initial_object_to_edit(api_client, parser, args)
-        if init_obj is None:
-            # API call fails; messaging already done in preceding call.
-            sys.exit(1)
+        status, obj_or_msg = _prepare_initial_object_to_edit(
+            api_client, parser, args
+        )
+        if status != 0:
+            print("Error: {obj_or_msg}", file=sys.stderr)
+            sys.exit(status)
         # Tempfile name resembling
         # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
-        prefix = f"{args.uuid_info.resource_type}-{args.uuid_info.uuid}"
+        init_obj = obj_or_msg
+        prefix = f"{args.uuid_info.resource_type_alt}-{args.uuid_info.uuid}"
 
     match args.format:
         case "json":
@@ -983,7 +1006,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 resource = parser._subcommand_to_resource[args.target_resource]
             else:
                 resource = parser._subcommand_to_resource[
-                    args.uuid_info.resource_type
+                    args.uuid_info.resource_type_alt
                 ]
 
             arv_resource = getattr(api_client, resource)()
