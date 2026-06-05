@@ -156,8 +156,9 @@ def test_singularizer(plural, singular):
     ("A", "a"),
     ("snake_case", "snake_case"),
     ("CamelCase", "camel_case"),
-    ("mixedCase", "mixed_case"),
-    ("HTTPClient", "h_t_t_p_client"),  # This shows the limitation.
+    # Following are keys from schemas definition.
+    ("Log", "log"),
+    ("KeepService", "keep_service"),
     ("ApiClientAuthorization", "api_client_authorization")
 ))
 def test_camel_to_snake(text, expected):

@@ -148,7 +148,8 @@ class _ArgUtil:
     @staticmethod
     def camel_case_to_snake(text: str) -> str:
         """Simple converter of CamelCase text to so-called 'snake_case' (lower
-        case with underscore).
+        case with underscore). Works if there's no consecutive upper-case
+        letters such as "API".
         """
         return text[:1].lower() + "".join(
             f"_{c.lower()}" if c.isupper() else c for c in text[1:]
