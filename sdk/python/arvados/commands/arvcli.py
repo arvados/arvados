@@ -61,7 +61,7 @@ class _ArgTypes:
         """'Interpreted' Arvados UUID object with resource type info."""
         uuid: str
         resource_type: str  # value in CamelCase
-        resource_type_alt: str  # value in snake_case
+        rtype_lower: str  # value in snake_case
 
         @classmethod
         def parse(
@@ -71,7 +71,7 @@ class _ArgTypes:
             `UUIDInfo` instance whose `uuid` attribute is the input UUID
             unchanged and the `resource_type` attribute is the type of Arvados
             object (in CamelCase), as determined by the input parameter
-            `type_map`, and `resourece_type_alt` is the alternative form of
+            `type_map`, and `rtype_lower` is the alternative form of
             resource type in snake_case.
             """
             if not arvados.util.uuid_pattern.fullmatch(text):
@@ -912,7 +912,7 @@ def _prepare_initial_object_to_edit(
     * value: dict | str --- Returned, filtered initial object `dict` in case of
       success, or an error-message string in case of failure.
     """
-    resource_name = args.uuid_info.resource_type_alt
+    resource_name = args.uuid_info.rtype_lower
 
     # Filter the fields for any invalid keys of the particular resource.
     valid_fields = parser.discovery_document.get("schemas", {})[
@@ -956,7 +956,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         # Tempfile name resembling
         # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
         init_obj = obj_or_msg
-        prefix = f"{args.uuid_info.resource_type_alt}-{args.uuid_info.uuid}"
+        prefix = f"{args.uuid_info.rtype_lower}-{args.uuid_info.uuid}"
 
     match args.format:
         case "json":
@@ -1006,7 +1006,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 resource = parser._subcommand_to_resource[args.target_resource]
             else:
                 resource = parser._subcommand_to_resource[
-                    args.uuid_info.resource_type_alt
+                    args.uuid_info.rtype_lower
                 ]
 
             arv_resource = getattr(api_client, resource)()
