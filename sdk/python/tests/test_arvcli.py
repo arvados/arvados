@@ -1241,13 +1241,19 @@ class TestEditingSubcommands:
         assert new_obj["name"] == edited_obj["name"]
         assert ciso8601.parse_datetime(new_obj["modified_at"]) >= timestamp
 
-    def test_edit_collection_did_not_edit(self, setup_editor, run_arvcli):
+    @pytest.mark.parametrize("fields", (
+        [],
+        ["name", "description"]
+    ))
+    def test_edit_collection_did_not_edit(
+        self, fields, setup_editor, run_arvcli
+    ):
         uuid = run_test_server.fixture("collections")[
             "collection_owned_by_active"
         ]["uuid"]
         setup_editor("append", "")
 
-        exit_code, out, err = run_arvcli(["edit", uuid])
+        exit_code, out, err = run_arvcli(["edit", uuid] + fields)
 
         assert exit_code == 0
         assert not out
