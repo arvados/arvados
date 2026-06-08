@@ -27,6 +27,19 @@ from arvados.commands import arvcli
 from . import run_test_server
 
 
+def dump_datetime(datetime_obj: datetime.datetime) -> str:
+    """Dump a Python `datetime.datetime` object as string in the format
+    returned by Arvados API server.
+    See: https://doc.arvados.org/main/api/resources.html#:~:text=Timestamps
+
+    This can be used to "un-parse" datetimes in objects loaded by
+    `run_test_server.fixture()` from YAML.
+    """
+    return datetime_obj.astimezone(
+        datetime.timezone.utc
+    ).strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
+
+
 class ArvCLITestError(Exception):
     """An exception to be raised by our own testing facilites, not meant to be
     caught in tests (hence not a derived class of commonly caught exceptions).
@@ -1211,21 +1224,22 @@ class TestEditingSubcommands:
     def test_edit_collection_name(
             self, simple_api_client, setup_editor, run_arvcli
     ):
-        uuid = run_test_server.fixture("collections")[
+        old_obj = run_test_server.fixture("collections")[
             "collection_owned_by_active"
-        ]["uuid"]
-        old_obj = simple_api_client.collections().get(uuid=uuid).execute()
+        ]
+        for k in ("created_at", "modified_at", "updated_at"):
+            old_obj[k] = dump_datetime(old_obj[k])
         edited_obj = old_obj.copy()
         edited_obj["name"] += "_edited"
         setup_editor(content=json.dumps(edited_obj))
         timestamp = datetime.datetime.now(datetime.timezone.utc)
 
-        exit_code, out, err = run_arvcli(["edit", uuid])
+        exit_code, out, err = run_arvcli(["edit", old_obj["uuid"]])
 
         assert exit_code == 0
         assert not err
         new_obj = json.loads(out)
-        assert new_obj["uuid"] == uuid
+        assert new_obj["uuid"] == old_obj["uuid"]
         assert new_obj["name"] == edited_obj["name"]
         assert ciso8601.parse_datetime(new_obj["modified_at"]) >= timestamp
 
