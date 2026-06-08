@@ -1005,10 +1005,8 @@ class TestPrepareInitialObjectToEdit:
 
     @pytest.mark.parametrize("src,fields,expected", (
         ({}, [], {}),
-        ({}, ["foo"], {}),
         ({"foo": "bar"}, [], {"foo": "bar"}),
         ({"foo": "bar", "baz": "quux"}, ["foo"], {"foo": "bar"}),
-        ({"foo": "bar", "baz": "quux"}, ["abc", "foo"], {"foo": "bar"})
     ))
     def test_select_fields(self, src, fields, expected):
         assert arvcli._select_fields(src, fields) == expected

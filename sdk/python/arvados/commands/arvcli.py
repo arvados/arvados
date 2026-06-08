@@ -883,16 +883,13 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
 
 
 def _select_fields(
-    src: Mapping[str, Any], fields: Iterable[str]
+    src: Mapping[str, Any], fields: Container[str]
 ) -> Mapping[str, Any]:
-    """Select the items of input dict `src` whose keys are in `fields`, or, if
-    `fields` is empty, return the input `src` unmodified.
+    """Select the items of input dict `src` whose keys are in `fields` (a
+    subset of the keys of `src`, or, if `fields` is empty, return the input
+    `src` unmodified.
     """
-    key_filter = frozenset(fields)
-    if not key_filter:
-        return src
-    result = {k: v for k, v in src.items() if k in key_filter}
-    return result
+    return {k: src[k] for k in fields} or src
 
 
 def _prepare_initial_object_to_edit(
