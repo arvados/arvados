@@ -18,7 +18,7 @@ The `ArvCLIArgumentParser` class, specializing the standard Python
 
 import abc
 import argparse
-from collections.abc import Container, Iterable, Mapping
+from collections.abc import Container, Mapping
 from contextlib import AbstractContextManager
 import functools
 import importlib
@@ -30,7 +30,7 @@ import shutil
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
-from typing import Any, NoReturn, Optional, TextIO
+from typing import Any, NoReturn, TextIO
 import arvados
 import arvados.commands._util as cmd_util
 from googleapiclient import discovery

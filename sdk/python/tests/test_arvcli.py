@@ -8,7 +8,6 @@ from collections import namedtuple
 from contextlib import contextmanager
 import io
 import json
-import os
 from pathlib import Path
 import re
 import shlex
