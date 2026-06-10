@@ -101,38 +101,41 @@ def test_invalid_subcommand():
     assert exit_status.value.code == 2
 
 
-@pytest.mark.parametrize(
-    "subcommand,cmd_mod_name",
-    arvcli.ArvCLIArgumentParser.external_command_modules.items()
-)
-def test_passthrough_commands_args(subcommand, cmd_mod_name, run_arvcli):
-    """Test that arbitrary argv ('[...] arvcli.py subcommand --foo bar') to
-    arvcli.py gets passed to the underlying subcommand; i.e. the passed-through
-    subcommand's `main()` function gets called with ["--foo", "bar"].
-    """
-    mock_mod = mock.Mock()
-    with pytest.MonkeyPatch.context() as m:
-        m.setitem(sys.modules, cmd_mod_name, mock_mod)
-        run_arvcli([*subcommand.split(), "--foo", "bar"])
-    mock_mod.main.assert_called_with(["--foo", "bar"])
+class TestPassthroughCommands:
 
+    @pytest.mark.parametrize(
+        "subcommand,cmd_mod_name",
+        arvcli.ArvCLIArgumentParser.external_command_modules.items()
+    )
+    def test_args(self, subcommand, cmd_mod_name, run_arvcli):
+        """Test that arbitrary argv ('[...] arvcli.py subcommand --foo bar') to
+        arvcli.py gets passed to the underlying subcommand; i.e. the
+        passed-through subcommand's `main()` function gets called with
+        ["--foo", "bar"].
+        """
+        mock_mod = mock.Mock()
+        with pytest.MonkeyPatch.context() as m:
+            m.setitem(sys.modules, cmd_mod_name, mock_mod)
+            run_arvcli([*subcommand.split(), "--foo", "bar"])
+        mock_mod.main.assert_called_with(["--foo", "bar"])
 
-@pytest.mark.parametrize(
-    "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
-)
-def test_passthrough_command_usage_prog_name(subcommand, run_arvcli):
-    exit_code, out, err = run_arvcli([*subcommand.split(), "-h"])
-    assert exit_code == 0
-    assert re.search(f"^usage: arv {subcommand}", out)
+    @pytest.mark.parametrize(
+        "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
+    )
+    def test_usage_prog_name(self, subcommand, run_arvcli):
+        exit_code, out, err = run_arvcli([*subcommand.split(), "-h"])
+        assert exit_code == 0
+        assert not err
+        assert re.search(f"^usage: arv {subcommand}", out)
 
-
-@pytest.mark.parametrize(
-    "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
-)
-def test_passthrough_command_version_prog_name(subcommand, run_arvcli):
-    exit_code, out, err = run_arvcli([*subcommand.split(), "--version"])
-    assert exit_code == 0
-    assert out.rstrip() == f"arv {subcommand} {__version__}"
+    @pytest.mark.parametrize(
+        "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
+    )
+    def test_version_prog_name(self, subcommand, run_arvcli):
+        exit_code, out, err = run_arvcli([*subcommand.split(), "--version"])
+        assert exit_code == 0
+        assert not err
+        assert out.rstrip() == f"arv {subcommand} {__version__}"
 
 
 @pytest.mark.parametrize("plural,singular", (
