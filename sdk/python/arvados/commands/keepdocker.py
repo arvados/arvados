@@ -44,7 +44,7 @@ DockerImage = collections.namedtuple(
     'DockerImage', ['repo', 'tag', 'hash', 'created', 'vsize'])
 
 
-def get_argument_parsers():
+def get_keepdocker_parser():
     keepdocker_parser = argparse.ArgumentParser(add_help=False)
     keepdocker_parser.add_argument(
         '--version', action='version', version=f"%(prog)s {__version__}",
@@ -63,14 +63,17 @@ def get_argument_parsers():
     _group.add_argument(
         '--no-pull', action='store_false', dest='pull',
         help="Use locally installed image only, don't pull image from Docker registry (default)")
+    return keepdocker_parser
 
-    # Combine keepdocker options listed above with run_opts options of arv-put.
+
+def get_argument_parser(keepdocker_parser):
+    # Combine keepdocker options with the run_opts options of arv-put.
     # The options inherited from arv-put include --name, --project-uuid,
     # --progress/--no-progress/--batch-progress and --resume/--no-resume.
-    _, run_opts = arv_put.get_argument_parsers()
     arg_parser = argparse.ArgumentParser(
-            description="Upload or list Docker images in Arvados",
-            parents=[keepdocker_parser, run_opts, arv_cmd.retry_opt])
+        description="Upload or list Docker images in Arvados",
+        parents=[keepdocker_parser, arv_put.get_run_opts(), arv_cmd.retry_opt]
+    )
 
     arg_parser.add_argument(
         'image', nargs='?',
@@ -79,7 +82,7 @@ def get_argument_parsers():
         'tag', nargs='?',
         help="Tag of the Docker image to upload (default 'latest'), if image is given as an untagged repo name")
 
-    return arg_parser, keepdocker_parser
+    return arg_parser
 
 
 class DockerError(Exception):
@@ -386,7 +389,8 @@ def load_image_metadata(image_file):
     return image_manifest, image_config
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, install_sig_handlers=True, api=None):
-    arg_parser, keepdocker_parser = get_argument_parsers()
+    keepdocker_parser = get_keepdocker_parser()
+    arg_parser = get_argument_parser(keepdocker_parser)
     args = arg_parser.parse_args(arguments)
     if api is None:
         api = arvados.api('v1', num_retries=args.retries)

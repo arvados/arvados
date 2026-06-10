@@ -38,11 +38,80 @@ from arvados._version import __version__
 api_client = None
 
 
-def get_argument_parsers():
-    """Returns two argparseArgumentParser instances, `arg_parser` and
-    `run_opts`. The former is the main argument parser used by 'arv put', and
-    the latter includes a subset of parameters also reused by
-    'arv keep docker'.
+def get_run_opts():
+    """Returns an argparse.ArgumentParser instances that includes
+    a subset of parameters used both by this script ('arv put') and also reused
+    by 'arv keep docker'.
+    """
+    run_opts = argparse.ArgumentParser(add_help=False)
+
+    run_opts.add_argument('--project-uuid', metavar='UUID', help="""
+    Store the collection in the specified project, instead of your Home
+    project.
+    """)
+
+    run_opts.add_argument('--name', help="""
+    Save the collection with the specified name.
+    """)
+
+    _group = run_opts.add_mutually_exclusive_group()
+    _group.add_argument('--progress', action='store_true',
+                        help="""
+    Display human-readable progress on stderr (bytes and, if possible,
+    percentage of total data size). This is the default behavior when
+    stderr is a tty.
+    """)
+
+    _group.add_argument('--no-progress', action='store_true',
+                        help="""
+    Do not display human-readable progress on stderr, even if stderr is a
+    tty.
+    """)
+
+    _group.add_argument('--batch-progress', action='store_true',
+                        help="""
+    Display machine-readable progress on stderr (bytes and, if known,
+    total data size).
+    """)
+
+    run_opts.add_argument('--silent', action='store_true',
+                          help="""
+    Do not print any debug messages to console. (Any error messages will
+    still be displayed.)
+    """)
+
+    run_opts.add_argument('--batch', action='store_true', default=False,
+                          help="""
+    Retries with '--no-resume --no-cache' if cached state contains invalid/expired
+    block signatures.
+    """)
+
+    _group = run_opts.add_mutually_exclusive_group()
+    _group.add_argument('--resume', action='store_true', default=True,
+                        help="""
+    Continue interrupted uploads from cached state (default).
+    """)
+    _group.add_argument('--no-resume', action='store_false', dest='resume',
+                        help="""
+    Do not continue interrupted uploads from cached state.
+    """)
+
+    _group = run_opts.add_mutually_exclusive_group()
+    _group.add_argument('--cache', action='store_true', dest='use_cache', default=True,
+                        help="""
+    Save upload state in a cache file for resuming (default).
+    """)
+    _group.add_argument('--no-cache', action='store_false', dest='use_cache',
+                        help="""
+    Do not save upload state in a cache file for resuming.
+    """)
+
+    return run_opts
+
+
+def get_argument_parser():
+    """Returns an argparse.ArgumentParser instance, the main argument parser
+    used by 'arv put', given the shared argument parser instance.
     """
     upload_opts = argparse.ArgumentParser(add_help=False)
 
@@ -187,70 +256,6 @@ def get_argument_parsers():
     command line will be skipped if they are symlinks.
     """)
 
-
-    run_opts = argparse.ArgumentParser(add_help=False)
-
-    run_opts.add_argument('--project-uuid', metavar='UUID', help="""
-    Store the collection in the specified project, instead of your Home
-    project.
-    """)
-
-    run_opts.add_argument('--name', help="""
-    Save the collection with the specified name.
-    """)
-
-    _group = run_opts.add_mutually_exclusive_group()
-    _group.add_argument('--progress', action='store_true',
-                        help="""
-    Display human-readable progress on stderr (bytes and, if possible,
-    percentage of total data size). This is the default behavior when
-    stderr is a tty.
-    """)
-
-    _group.add_argument('--no-progress', action='store_true',
-                        help="""
-    Do not display human-readable progress on stderr, even if stderr is a
-    tty.
-    """)
-
-    _group.add_argument('--batch-progress', action='store_true',
-                        help="""
-    Display machine-readable progress on stderr (bytes and, if known,
-    total data size).
-    """)
-
-    run_opts.add_argument('--silent', action='store_true',
-                          help="""
-    Do not print any debug messages to console. (Any error messages will
-    still be displayed.)
-    """)
-
-    run_opts.add_argument('--batch', action='store_true', default=False,
-                          help="""
-    Retries with '--no-resume --no-cache' if cached state contains invalid/expired
-    block signatures.
-    """)
-
-    _group = run_opts.add_mutually_exclusive_group()
-    _group.add_argument('--resume', action='store_true', default=True,
-                        help="""
-    Continue interrupted uploads from cached state (default).
-    """)
-    _group.add_argument('--no-resume', action='store_false', dest='resume',
-                        help="""
-    Do not continue interrupted uploads from cached state.
-    """)
-
-    _group = run_opts.add_mutually_exclusive_group()
-    _group.add_argument('--cache', action='store_true', dest='use_cache', default=True,
-                        help="""
-    Save upload state in a cache file for resuming (default).
-    """)
-    _group.add_argument('--no-cache', action='store_false', dest='use_cache',
-                        help="""
-    Do not save upload state in a cache file for resuming.
-    """)
-
     _group = upload_opts.add_mutually_exclusive_group()
     _group.add_argument('--trash-at', metavar='YYYY-MM-DDTHH:MM', default=None,
                         help="""
@@ -264,14 +269,13 @@ def get_argument_parsers():
     date/time that the upload process finishes.
     """)
 
-    arg_parser = argparse.ArgumentParser(
+    return argparse.ArgumentParser(
         description='Copy data from the local filesystem to Keep.',
-        parents=[upload_opts, run_opts, arv_cmd.retry_opt])
-    return arg_parser, run_opts
+        parents=[upload_opts, get_run_opts(), arv_cmd.retry_opt])
 
 
 def parse_arguments(arguments):
-    arg_parser, _ = get_argument_parsers()
+    arg_parser = get_argument_parser()
     args = arg_parser.parse_args(arguments)
 
     if len(args.paths) == 0:
