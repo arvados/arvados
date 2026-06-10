@@ -18,7 +18,7 @@ def main(arguments=None):
 
     parser = argparse.ArgumentParser(parents=[arv_cmd.retry_opt])
     parser.add_argument('--version', action='version',
-                        version="%s %s" % (sys.argv[0], __version__),
+                        version=f"%(prog)s {__version__}",
                         help='Print version and exit.')
     parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
     parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")

@@ -43,38 +43,47 @@ STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
 DockerImage = collections.namedtuple(
     'DockerImage', ['repo', 'tag', 'hash', 'created', 'vsize'])
 
-keepdocker_parser = argparse.ArgumentParser(add_help=False)
-keepdocker_parser.add_argument(
-    '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
-    help='Print version and exit.')
-keepdocker_parser.add_argument(
-    '-f', '--force', action='store_true', default=False,
-    help="Re-upload the image even if it already exists on the server")
-keepdocker_parser.add_argument(
-    '--force-image-format', action='store_true', default=False,
-    help="Proceed even if the image format is not supported by the server")
 
-_group = keepdocker_parser.add_mutually_exclusive_group()
-_group.add_argument(
-    '--pull', action='store_true', default=False,
-    help="Try to pull the latest image from Docker registry")
-_group.add_argument(
-    '--no-pull', action='store_false', dest='pull',
-    help="Use locally installed image only, don't pull image from Docker registry (default)")
+def get_keepdocker_parser():
+    keepdocker_parser = argparse.ArgumentParser(add_help=False)
+    keepdocker_parser.add_argument(
+        '--version', action='version', version=f"%(prog)s {__version__}",
+        help='Print version and exit.')
+    keepdocker_parser.add_argument(
+        '-f', '--force', action='store_true', default=False,
+        help="Re-upload the image even if it already exists on the server")
+    keepdocker_parser.add_argument(
+        '--force-image-format', action='store_true', default=False,
+        help="Proceed even if the image format is not supported by the server")
 
-# Combine keepdocker options listed above with run_opts options of arv-put.
-# The options inherited from arv-put include --name, --project-uuid,
-# --progress/--no-progress/--batch-progress and --resume/--no-resume.
-arg_parser = argparse.ArgumentParser(
+    _group = keepdocker_parser.add_mutually_exclusive_group()
+    _group.add_argument(
+        '--pull', action='store_true', default=False,
+        help="Try to pull the latest image from Docker registry")
+    _group.add_argument(
+        '--no-pull', action='store_false', dest='pull',
+        help="Use locally installed image only, don't pull image from Docker registry (default)")
+    return keepdocker_parser
+
+
+def get_argument_parser(keepdocker_parser):
+    # Combine keepdocker options with the run_opts options of arv-put.
+    # The options inherited from arv-put include --name, --project-uuid,
+    # --progress/--no-progress/--batch-progress and --resume/--no-resume.
+    arg_parser = argparse.ArgumentParser(
         description="Upload or list Docker images in Arvados",
-        parents=[keepdocker_parser, arv_put.run_opts, arv_cmd.retry_opt])
+        parents=[keepdocker_parser, arv_put.get_run_opts(), arv_cmd.retry_opt]
+    )
 
-arg_parser.add_argument(
-    'image', nargs='?',
-    help="Docker image to upload: repo, repo:tag, or hash")
-arg_parser.add_argument(
-    'tag', nargs='?',
-    help="Tag of the Docker image to upload (default 'latest'), if image is given as an untagged repo name")
+    arg_parser.add_argument(
+        'image', nargs='?',
+        help="Docker image to upload: repo, repo:tag, or hash")
+    arg_parser.add_argument(
+        'tag', nargs='?',
+        help="Tag of the Docker image to upload (default 'latest'), if image is given as an untagged repo name")
+
+    return arg_parser
+
 
 class DockerError(Exception):
     pass
@@ -380,6 +389,8 @@ def load_image_metadata(image_file):
     return image_manifest, image_config
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, install_sig_handlers=True, api=None):
+    keepdocker_parser = get_keepdocker_parser()
+    arg_parser = get_argument_parser(keepdocker_parser)
     args = arg_parser.parse_args(arguments)
     if api is None:
         api = arvados.api('v1', num_retries=args.retries)

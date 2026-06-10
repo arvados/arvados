@@ -37,230 +37,245 @@ from arvados._version import __version__
 
 api_client = None
 
-upload_opts = argparse.ArgumentParser(add_help=False)
 
-upload_opts.add_argument('--version', action='version',
-                         version="%s %s" % (sys.argv[0], __version__),
-                         help='Print version and exit.')
-upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
-                         help="""
-Local file or directory. If path is a directory reference with a trailing
-slash, then just upload the directory's contents; otherwise upload the
-directory itself. Default: read from standard input.
-""")
+def get_run_opts():
+    """Returns an argparse.ArgumentParser instances that includes
+    a subset of parameters used both by this script ('arv put') and also reused
+    by 'arv keep docker'.
+    """
+    run_opts = argparse.ArgumentParser(add_help=False)
 
-_group = upload_opts.add_mutually_exclusive_group()
+    run_opts.add_argument('--project-uuid', metavar='UUID', help="""
+    Store the collection in the specified project, instead of your Home
+    project.
+    """)
 
-_group.add_argument('--max-manifest-depth', type=int, metavar='N',
-                    default=-1, help=argparse.SUPPRESS)
+    run_opts.add_argument('--name', help="""
+    Save the collection with the specified name.
+    """)
 
-_group.add_argument('--normalize', action='store_true',
-                    help="""
-Normalize the manifest by re-ordering files and streams after writing
-data.
-""")
+    _group = run_opts.add_mutually_exclusive_group()
+    _group.add_argument('--progress', action='store_true',
+                        help="""
+    Display human-readable progress on stderr (bytes and, if possible,
+    percentage of total data size). This is the default behavior when
+    stderr is a tty.
+    """)
 
-_group.add_argument('--dry-run', action='store_true', default=False,
-                    help="""
-Don't actually upload files, but only check if any file should be
-uploaded. Exit with code=2 when files are pending for upload.
-""")
+    _group.add_argument('--no-progress', action='store_true',
+                        help="""
+    Do not display human-readable progress on stderr, even if stderr is a
+    tty.
+    """)
 
-_group = upload_opts.add_mutually_exclusive_group()
+    _group.add_argument('--batch-progress', action='store_true',
+                        help="""
+    Display machine-readable progress on stderr (bytes and, if known,
+    total data size).
+    """)
 
-_group.add_argument('--as-stream', action='store_true', dest='stream',
-                    help="""
-Synonym for --stream.
-""")
+    run_opts.add_argument('--silent', action='store_true',
+                          help="""
+    Do not print any debug messages to console. (Any error messages will
+    still be displayed.)
+    """)
 
-_group.add_argument('--stream', action='store_true',
-                    help="""
-Store the file content and display the resulting manifest on
-stdout. Do not save a Collection object in Arvados.
-""")
+    run_opts.add_argument('--batch', action='store_true', default=False,
+                          help="""
+    Retries with '--no-resume --no-cache' if cached state contains invalid/expired
+    block signatures.
+    """)
 
-_group.add_argument('--as-manifest', action='store_true', dest='manifest',
-                    help="""
-Synonym for --manifest.
-""")
+    _group = run_opts.add_mutually_exclusive_group()
+    _group.add_argument('--resume', action='store_true', default=True,
+                        help="""
+    Continue interrupted uploads from cached state (default).
+    """)
+    _group.add_argument('--no-resume', action='store_false', dest='resume',
+                        help="""
+    Do not continue interrupted uploads from cached state.
+    """)
 
-_group.add_argument('--in-manifest', action='store_true', dest='manifest',
-                    help="""
-Synonym for --manifest.
-""")
+    _group = run_opts.add_mutually_exclusive_group()
+    _group.add_argument('--cache', action='store_true', dest='use_cache', default=True,
+                        help="""
+    Save upload state in a cache file for resuming (default).
+    """)
+    _group.add_argument('--no-cache', action='store_false', dest='use_cache',
+                        help="""
+    Do not save upload state in a cache file for resuming.
+    """)
 
-_group.add_argument('--manifest', action='store_true',
-                    help="""
-Store the file data and resulting manifest in Keep, save a Collection
-object in Arvados, and display the manifest locator (Collection uuid)
-on stdout. This is the default behavior.
-""")
-
-_group.add_argument('--as-raw', action='store_true', dest='raw',
-                    help="""
-Synonym for --raw.
-""")
-
-_group.add_argument('--raw', action='store_true',
-                    help="""
-Store the file content and display the data block locators on stdout,
-separated by commas, with a trailing newline. Do not store a
-manifest.
-""")
-
-upload_opts.add_argument('--update-collection', type=str, default=None,
-                         dest='update_collection', metavar="UUID", help="""
-Update an existing collection identified by the given Arvados collection
-UUID. All new local files will be uploaded.
-""")
-
-upload_opts.add_argument('--use-filename', type=str, default=None,
-                         dest='filename', help="""
-Synonym for --filename.
-""")
-
-upload_opts.add_argument('--filename', type=str, default=None,
-                         help="""
-Use the given filename in the manifest, instead of the name of the
-local file. This is useful when "-" or "/dev/stdin" is given as an
-input file. It can be used only if there is exactly one path given and
-it is not a directory. Implies --manifest.
-""")
-
-upload_opts.add_argument('--portable-data-hash', action='store_true',
-                         help="""
-Print the portable data hash instead of the Arvados UUID for the collection
-created by the upload.
-""")
-
-upload_opts.add_argument('--replication', type=int, metavar='N', default=None,
-                         help="""
-Set the replication level for the new collection: how many different
-physical storage devices (e.g., disks) should have a copy of each data
-block. Default is to use the server-provided default (if any) or 2.
-""")
-
-upload_opts.add_argument(
-    '--storage-classes',
-    type=arv_cmd.UniqueSplit(),
-    help="""
-Specify comma separated list of storage classes to be used when saving data to Keep.
-""")
-
-upload_opts.add_argument('--threads', type=int, metavar='N', default=None,
-                         help="""
-Set the number of upload threads to be used. Take into account that
-using lots of threads will increase the RAM requirements. Default is
-to use 2 threads.
-On high latency installations, using a greater number will improve
-overall throughput.
-""")
-
-upload_opts.add_argument('--exclude', metavar='PATTERN', default=[],
-                      action='append', help="""
-Exclude files and directories whose names match the given glob pattern. When
-using a path-like pattern like 'subdir/*.txt', all text files inside 'subdir'
-directory, relative to the provided input dirs will be excluded.
-When using a filename pattern like '*.txt', any text file will be excluded
-no matter where it is placed.
-For the special case of needing to exclude only files or dirs directly below
-the given input directory, you can use a pattern like './exclude_this.gif'.
-You can specify multiple patterns by using this argument more than once.
-""")
-
-_group = upload_opts.add_mutually_exclusive_group()
-_group.add_argument('--follow-links', action='store_true', default=True,
-                    dest='follow_links', help="""
-Follow file and directory symlinks (default).
-""")
-_group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
-                    help="""
-Ignore file and directory symlinks. Even paths given explicitly on the
-command line will be skipped if they are symlinks.
-""")
+    return run_opts
 
 
-run_opts = argparse.ArgumentParser(add_help=False)
+def get_argument_parser():
+    """Returns an argparse.ArgumentParser instance, the main argument parser
+    used by 'arv put', given the shared argument parser instance.
+    """
+    upload_opts = argparse.ArgumentParser(add_help=False)
 
-run_opts.add_argument('--project-uuid', metavar='UUID', help="""
-Store the collection in the specified project, instead of your Home
-project.
-""")
+    upload_opts.add_argument('--version', action='version',
+                             version=f"%(prog)s {__version__}",
+                             help='Print version and exit.')
+    upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
+                             help="""
+    Local file or directory. If path is a directory reference with a trailing
+    slash, then just upload the directory's contents; otherwise upload the
+    directory itself. Default: read from standard input.
+    """)
 
-run_opts.add_argument('--name', help="""
-Save the collection with the specified name.
-""")
+    _group = upload_opts.add_mutually_exclusive_group()
 
-_group = run_opts.add_mutually_exclusive_group()
-_group.add_argument('--progress', action='store_true',
-                    help="""
-Display human-readable progress on stderr (bytes and, if possible,
-percentage of total data size). This is the default behavior when
-stderr is a tty.
-""")
+    _group.add_argument('--max-manifest-depth', type=int, metavar='N',
+                        default=-1, help=argparse.SUPPRESS)
 
-_group.add_argument('--no-progress', action='store_true',
-                    help="""
-Do not display human-readable progress on stderr, even if stderr is a
-tty.
-""")
+    _group.add_argument('--normalize', action='store_true',
+                        help="""
+    Normalize the manifest by re-ordering files and streams after writing
+    data.
+    """)
 
-_group.add_argument('--batch-progress', action='store_true',
-                    help="""
-Display machine-readable progress on stderr (bytes and, if known,
-total data size).
-""")
+    _group.add_argument('--dry-run', action='store_true', default=False,
+                        help="""
+    Don't actually upload files, but only check if any file should be
+    uploaded. Exit with code=2 when files are pending for upload.
+    """)
 
-run_opts.add_argument('--silent', action='store_true',
-                      help="""
-Do not print any debug messages to console. (Any error messages will
-still be displayed.)
-""")
+    _group = upload_opts.add_mutually_exclusive_group()
 
-run_opts.add_argument('--batch', action='store_true', default=False,
-                      help="""
-Retries with '--no-resume --no-cache' if cached state contains invalid/expired
-block signatures.
-""")
+    _group.add_argument('--as-stream', action='store_true', dest='stream',
+                        help="""
+    Synonym for --stream.
+    """)
 
-_group = run_opts.add_mutually_exclusive_group()
-_group.add_argument('--resume', action='store_true', default=True,
-                    help="""
-Continue interrupted uploads from cached state (default).
-""")
-_group.add_argument('--no-resume', action='store_false', dest='resume',
-                    help="""
-Do not continue interrupted uploads from cached state.
-""")
+    _group.add_argument('--stream', action='store_true',
+                        help="""
+    Store the file content and display the resulting manifest on
+    stdout. Do not save a Collection object in Arvados.
+    """)
 
-_group = run_opts.add_mutually_exclusive_group()
-_group.add_argument('--cache', action='store_true', dest='use_cache', default=True,
-                    help="""
-Save upload state in a cache file for resuming (default).
-""")
-_group.add_argument('--no-cache', action='store_false', dest='use_cache',
-                    help="""
-Do not save upload state in a cache file for resuming.
-""")
+    _group.add_argument('--as-manifest', action='store_true', dest='manifest',
+                        help="""
+    Synonym for --manifest.
+    """)
 
-_group = upload_opts.add_mutually_exclusive_group()
-_group.add_argument('--trash-at', metavar='YYYY-MM-DDTHH:MM', default=None,
-                    help="""
-Set the trash date of the resulting collection to an absolute date in the future.
-The accepted format is defined by the ISO 8601 standard. Examples: 20090103, 2009-01-03, 20090103T181505, 2009-01-03T18:15:05.\n
-Timezone information can be added. If not, the provided date/time is assumed as being in the local system's timezone.
-""")
-_group.add_argument('--trash-after', type=int, metavar='DAYS', default=None,
-                    help="""
-Set the trash date of the resulting collection to an amount of days from the
-date/time that the upload process finishes.
-""")
+    _group.add_argument('--in-manifest', action='store_true', dest='manifest',
+                        help="""
+    Synonym for --manifest.
+    """)
 
-arg_parser = argparse.ArgumentParser(
-    description='Copy data from the local filesystem to Keep.',
-    parents=[upload_opts, run_opts, arv_cmd.retry_opt])
+    _group.add_argument('--manifest', action='store_true',
+                        help="""
+    Store the file data and resulting manifest in Keep, save a Collection
+    object in Arvados, and display the manifest locator (Collection uuid)
+    on stdout. This is the default behavior.
+    """)
+
+    _group.add_argument('--as-raw', action='store_true', dest='raw',
+                        help="""
+    Synonym for --raw.
+    """)
+
+    _group.add_argument('--raw', action='store_true',
+                        help="""
+    Store the file content and display the data block locators on stdout,
+    separated by commas, with a trailing newline. Do not store a
+    manifest.
+    """)
+
+    upload_opts.add_argument('--update-collection', type=str, default=None,
+                             dest='update_collection', metavar="UUID", help="""
+    Update an existing collection identified by the given Arvados collection
+    UUID. All new local files will be uploaded.
+    """)
+
+    upload_opts.add_argument('--use-filename', type=str, default=None,
+                             dest='filename', help="""
+    Synonym for --filename.
+    """)
+
+    upload_opts.add_argument('--filename', type=str, default=None,
+                             help="""
+    Use the given filename in the manifest, instead of the name of the
+    local file. This is useful when "-" or "/dev/stdin" is given as an
+    input file. It can be used only if there is exactly one path given and
+    it is not a directory. Implies --manifest.
+    """)
+
+    upload_opts.add_argument('--portable-data-hash', action='store_true',
+                             help="""
+    Print the portable data hash instead of the Arvados UUID for the collection
+    created by the upload.
+    """)
+
+    upload_opts.add_argument('--replication', type=int, metavar='N',
+                             default=None,
+                             help="""
+    Set the replication level for the new collection: how many different
+    physical storage devices (e.g., disks) should have a copy of each data
+    block. Default is to use the server-provided default (if any) or 2.
+    """)
+
+    upload_opts.add_argument(
+        '--storage-classes',
+        type=arv_cmd.UniqueSplit(),
+        help="""
+    Specify comma separated list of storage classes to be used when saving data to Keep.
+    """)
+
+    upload_opts.add_argument('--threads', type=int, metavar='N', default=None,
+                             help="""
+    Set the number of upload threads to be used. Take into account that
+    using lots of threads will increase the RAM requirements. Default is
+    to use 2 threads.
+    On high latency installations, using a greater number will improve
+    overall throughput.
+    """)
+
+    upload_opts.add_argument('--exclude', metavar='PATTERN', default=[],
+                          action='append', help="""
+    Exclude files and directories whose names match the given glob pattern. When
+    using a path-like pattern like 'subdir/*.txt', all text files inside 'subdir'
+    directory, relative to the provided input dirs will be excluded.
+    When using a filename pattern like '*.txt', any text file will be excluded
+    no matter where it is placed.
+    For the special case of needing to exclude only files or dirs directly below
+    the given input directory, you can use a pattern like './exclude_this.gif'.
+    You can specify multiple patterns by using this argument more than once.
+    """)
+
+    _group = upload_opts.add_mutually_exclusive_group()
+    _group.add_argument('--follow-links', action='store_true', default=True,
+                        dest='follow_links', help="""
+    Follow file and directory symlinks (default).
+    """)
+    _group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
+                        help="""
+    Ignore file and directory symlinks. Even paths given explicitly on the
+    command line will be skipped if they are symlinks.
+    """)
+
+    _group = upload_opts.add_mutually_exclusive_group()
+    _group.add_argument('--trash-at', metavar='YYYY-MM-DDTHH:MM', default=None,
+                        help="""
+    Set the trash date of the resulting collection to an absolute date in the future.
+    The accepted format is defined by the ISO 8601 standard. Examples: 20090103, 2009-01-03, 20090103T181505, 2009-01-03T18:15:05.\n
+    Timezone information can be added. If not, the provided date/time is assumed as being in the local system's timezone.
+    """)
+    _group.add_argument('--trash-after', type=int, metavar='DAYS', default=None,
+                        help="""
+    Set the trash date of the resulting collection to an amount of days from the
+    date/time that the upload process finishes.
+    """)
+
+    return argparse.ArgumentParser(
+        description='Copy data from the local filesystem to Keep.',
+        parents=[upload_opts, get_run_opts(), arv_cmd.retry_opt])
+
 
 def parse_arguments(arguments):
+    arg_parser = get_argument_parser()
     args = arg_parser.parse_args(arguments)
 
     if len(args.paths) == 0:

@@ -25,7 +25,7 @@ def parse_args(args):
     parser.add_argument('-s', action='store_true',
                         help="""List file sizes, in KiB.""")
     parser.add_argument('--version', action='version',
-                        version="%s %s" % (sys.argv[0], __version__),
+                        version=f"%(prog)s {__version__}",
                         help='Print version and exit.')
 
     return parser.parse_args(args)
