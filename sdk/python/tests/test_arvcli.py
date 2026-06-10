@@ -21,6 +21,7 @@ yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
 import arvados
+from arvados._version import __version__
 from arvados.commands import arvcli
 from . import run_test_server
 
@@ -123,6 +124,15 @@ def test_passthrough_command_usage_prog_name(subcommand, run_arvcli):
     exit_code, out, err = run_arvcli([*subcommand.split(), "-h"])
     assert exit_code == 0
     assert re.search(f"^usage: arv {subcommand}", out)
+
+
+@pytest.mark.parametrize(
+    "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
+)
+def test_passthrough_command_version_prog_name(subcommand, run_arvcli):
+    exit_code, out, err = run_arvcli([*subcommand.split(), "--version"])
+    assert exit_code == 0
+    assert out.rstrip() == f"arv {subcommand} {__version__}"
 
 
 @pytest.mark.parametrize("plural,singular", (

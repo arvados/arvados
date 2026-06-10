@@ -73,7 +73,7 @@ def main(arguments=None):
     copy_opts = argparse.ArgumentParser(add_help=False)
 
     copy_opts.add_argument(
-        '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+        '--version', action='version', version=f"%(prog)s {__version__}",
         help='Print version and exit.')
     copy_opts.add_argument(
         '-v', '--verbose', dest='verbose', action='store_true',

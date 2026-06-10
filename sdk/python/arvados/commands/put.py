@@ -47,7 +47,7 @@ def get_argument_parsers():
     upload_opts = argparse.ArgumentParser(add_help=False)
 
     upload_opts.add_argument('--version', action='version',
-                             version="%s %s" % (sys.argv[0], __version__),
+                             version=f"%(prog)s {__version__}",
                              help='Print version and exit.')
     upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
                              help="""

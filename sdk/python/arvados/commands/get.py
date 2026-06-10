@@ -25,7 +25,7 @@ def get_argument_parser():
         description='Copy data from Keep to a local file or pipe.',
         parents=[arv_cmd.retry_opt])
     parser.add_argument('--version', action='version',
-                        version="%s %s" % (sys.argv[0], __version__),
+                        version=f"%(prog)s {__version__}",
                         help='Print version and exit.')
     parser.add_argument('locator', type=str,
                         help="""

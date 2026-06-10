@@ -47,7 +47,7 @@ DockerImage = collections.namedtuple(
 def get_argument_parsers():
     keepdocker_parser = argparse.ArgumentParser(add_help=False)
     keepdocker_parser.add_argument(
-        '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+        '--version', action='version', version=f"%(prog)s {__version__}",
         help='Print version and exit.')
     keepdocker_parser.add_argument(
         '-f', '--force', action='store_true', default=False,
