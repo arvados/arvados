@@ -20,6 +20,7 @@ import abc
 import argparse
 from collections.abc import Container, Mapping
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 import functools
 import importlib
 import json
@@ -47,11 +48,48 @@ class _ArgTypes:
         """Validate an Arvados group UUID as the value of a CLI argument (an
         Arvados project being a type of group).
         """
+        # In theory this is a special case of "UUIDInfo" but we mostly need it
+        # for the nicer error message.
         if arvados.util.group_uuid_pattern.fullmatch(text):
             return text
         raise argparse.ArgumentTypeError(
             f"Invalid UUID for Arvados project or group: {text}"
         )
+
+    @dataclass(frozen=True)
+    class UUIDInfo:
+        """'Interpreted' Arvados UUID object with resource type info."""
+        uuid: str
+        resource_type: str  # value in CamelCase
+        rtype_lower: str  # value in snake_case
+
+        @classmethod
+        def parse(
+            cls, type_map: Mapping[str, str], text: str
+        ) -> "UUIDInfo":  # self-typing support comes in Python 3.11.
+            """Parse the UUID argument `text`. If accepted, returns an
+            `UUIDInfo` instance whose `uuid` attribute is the input UUID
+            unchanged and the `resource_type` attribute is the type of Arvados
+            object (in CamelCase), as determined by the input parameter
+            `type_map`, and `rtype_lower` is the alternative form of
+            resource type in snake_case.
+            """
+            if not arvados.util.uuid_pattern.fullmatch(text):
+                raise argparse.ArgumentTypeError(
+                    f"Invalid Arvados object UUID: {text}"
+                )
+            type_code = text.split("-")[1]
+            if type_code not in type_map:
+                available_types = ", ".join(sorted(
+                    f"{k} ({v})" for k, v in type_map.items()
+                ))
+                raise argparse.ArgumentTypeError(
+                    f"Invalid object type code {type_code!r} in Arvados"
+                    f" object UUID {text}: valid type codes are"
+                    f" {available_types}"
+                )
+            type_key = type_map[type_code]
+            return cls(text, type_key, _ArgUtil.camel_case_to_snake(type_key))
 
     @staticmethod
     def _validate_type(obj_type, obj):
@@ -109,6 +147,16 @@ class _ArgUtil:
           discovery document, typically like `foo_bar`.
         """
         return "--" + parameter_key.replace("_", "-")
+
+    @staticmethod
+    def camel_case_to_snake(text: str) -> str:
+        """Simple converter of CamelCase text to so-called 'snake_case' (lower
+        case with underscore). Works if there's no consecutive upper-case
+        letters such as "API".
+        """
+        return text[:1].lower() + "".join(
+            f"_{c.lower()}" if c.isupper() else c for c in text[1:]
+        )
 
     @staticmethod
     def get_method_options(
@@ -261,6 +309,21 @@ class _ArgUtil:
                     (f"-{argument_short_key}", argument_key), parameter_kwargs
                 )
 
+    @staticmethod
+    def make_uuid_to_resource_map(schemas: dict[str, dict]) -> dict[str, str]:
+        """Returns a mapping of Arvados object UUID prefixes to resource names
+        (in the schema-key, CamelCase form, e.g. "ContainerRequest") based on
+        the input "schemas" portion of the discovery document.
+        """
+        result = {}
+        for schema in schemas.values():
+            if (
+                    (prefix := schema.get("uuidPrefix"))
+                    and (key := schema.get("id"))
+            ):
+                result[prefix] = key
+        return result
+
 
 class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     """Base class represending a process (in the generic sense, rather than
@@ -293,19 +356,19 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     """
     _tmpfile_extension = None
 
-    def __init__(self, initial_object=None, uuid=None, file_extension=None):
+    def __init__(self, initial_object=None, prefix=None, file_extension=None):
         """Arguments:
 
         * initial_object: Optional[Any] --- Initial object to be serialized and
           written to the temporary file before the editor process is run. If
           not provided, the file will be opened empty in the editor.
-        * uuid: Optional[str] --- Arvados object UUID to be used as the prefix
-          of the temporary file's basename. If not provided, the initial
-          object's `uuid` field will be used if available; otherwise, a
-          platform-dependent prefix will be chosen automatically. This UUID as
+        * prefix: Optional[str] --- String to be used as the prefix
+          of the temporary file's basename, followed by a hyphen (`-`)
+          character that will be added automatically. If not provided, the
+          initial object's `uuid` field will be used if available; otherwise, a
+          platform-dependent prefix will be chosen automatically. A UUID as
           part of the filename is for information only, and it may be displayed
-          in the editor's UI. Its value has no bearing on the actual object
-          being edited.
+          in the editor's UI.
         * file_extension: Optional[str] --- Filename extension (without leading
           dot) of the temporary file, e.g. "json" or "yml". This information
           may be used by the editor to provide syntax highlighting, automatic
@@ -313,8 +376,8 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         """
         self.initial_object = initial_object
 
-        if uuid:
-            self.prefix = f"{uuid}-"
+        if prefix:
+            self.prefix = f"{prefix}-"
         elif (
             isinstance(initial_object, Mapping)
             and (obj_uuid := initial_object.get("uuid"))
@@ -632,27 +695,7 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
                 self._subcommand_to_resource["sys"]
             )
 
-        # Only those resources that support a "create" method can be valid
-        # for the "create" subcommand.
-        creatable_targets = set()
-        for cli_name, resource in self._subcommand_to_resource.items():
-            if "create" in self.resource_schemas[resource].get("methods", {}):
-                creatable_targets.add(cli_name)
-        create_parser = subparsers.add_parser(
-            "create", help="Create Arvados object using external editor"
-        )
-        create_parser.add_argument(
-            "target_resource",
-            choices=sorted(creatable_targets),
-            metavar="RESOURCE",
-            help="Type of the resource to be created"
-        )
-        create_parser.add_argument(
-            "--project-uuid", "-p",
-            type=_ArgTypes.group_uuid,
-            metavar="UUID",
-            help="UUID of the project in which to create the resource"
-        )
+        self.add_editor_subcommands()
 
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
@@ -699,6 +742,50 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
                     ):
                         method_parser.add_argument(*parameter_names, **kwargs)
 
+    def add_editor_subcommands(self):
+        """Add the "create" and "edit" subcommands."""
+        # Only those resources that support a "create" method can be valid
+        # for the "create" subcommand.
+        creatable_targets = set()
+        for cli_name, resource in self._subcommand_to_resource.items():
+            if "create" in self.resource_schemas[resource].get("methods", {}):
+                creatable_targets.add(cli_name)
+        create_parser = self.subparsers.add_parser(
+            "create", help="Create Arvados object using external editor"
+        )
+        create_parser.add_argument(
+            "target_resource",
+            choices=sorted(creatable_targets),
+            metavar="RESOURCE",
+            help="Type of the resource to be created"
+        )
+        create_parser.add_argument(
+            "--project-uuid", "-p",
+            type=_ArgTypes.group_uuid,
+            metavar="UUID",
+            help="UUID of the project in which to create the resource"
+        )
+
+        self.uuid_type_map = _ArgUtil.make_uuid_to_resource_map(
+            self.discovery_document.get("schemas", {})
+        )
+
+        edit_parser = self.subparsers.add_parser(
+            "edit", help="Edit Arvados object using external editor"
+        )
+        edit_parser.add_argument(
+            "uuid_info", help="UUID of the object to be edited",
+            metavar="UUID",
+            type=functools.partial(
+                _ArgTypes.UUIDInfo.parse, self.uuid_type_map
+            )
+        )
+        edit_parser.add_argument(
+            "fields", nargs="*",
+            type=str.lower,  # "type" applies to individual items.
+            help="Fields to be edited (case-insensitive)"
+        )
+
 
 def _handle_external_command(module_name: str, args: list[str]) -> NoReturn:
     """Import the external module for the subcommand, call the module's
@@ -707,6 +794,20 @@ def _handle_external_command(module_name: str, args: list[str]) -> NoReturn:
     """
     external_mod = importlib.import_module(module_name)
     sys.exit(external_mod.main(args))
+
+
+def _format_api_error_msg(err: arvados.errors.ApiError, method_call) -> str:
+    """Format API error, with the request-id from the HttpRequest object
+    `method_call` if 1) it is available and 2) the original message itself
+    doesn't already contain the request-id.
+    """
+    # NOTE: This is not exactly the same output as that generated by the Ruby
+    # 'arv' command upon error.
+    msg = str(err)
+    request_id = method_call.headers.get("X-Request-Id")
+    if request_id and not re.search(rf"\b{re.escape(request_id)}\b", msg):
+        msg += f" ({request_id})"
+    return msg
 
 
 def _call_resource_method(method_obj, method_args: Mapping, fmt: str) -> int:
@@ -720,14 +821,7 @@ def _call_resource_method(method_obj, method_args: Mapping, fmt: str) -> int:
     try:
         result = method_call.execute()
     except arvados.errors.ApiError as err:
-        # NOTE: This is not exactly the same output as that generated by
-        # the Ruby 'arv' command upon error.
-        msg = str(err)
-        request_id = method_call.headers.get("X-Request-Id")
-        if request_id and not re.search(
-            rf"\b{re.escape(request_id)}\b", msg
-        ):
-            msg += f" ({request_id})"
+        msg = _format_api_error_msg(err, method_call)
         print(f"Error: {msg}", file=sys.stderr)
         return 1
 
@@ -788,19 +882,90 @@ def _handle_resource_method(api_client, resource, args) -> NoReturn:
     sys.exit(_call_resource_method(arv_method, method_args, args.format))
 
 
+def _select_fields(
+    src: Mapping[str, Any], fields: Container[str]
+) -> Mapping[str, Any]:
+    """Select the items of input dict `src` whose keys are in `fields` (a
+    subset of the keys of `src`, or, if `fields` is empty, return the input
+    `src` unmodified.
+    """
+    return {k: src[k] for k in fields} or src
+
+
+def _prepare_initial_object_to_edit(
+    api_client, parser, args
+) -> tuple[int, dict | str]:
+    """Obtain the initial object for the "arv edit" subcommand, based on the
+    commandline args and the current API client & CLI parser instances. If the
+    "fields" argument (`args.fields`) is provided, only those fields that are
+    specified are returned.
+
+    Return value:
+
+    * status: int --- Status code indicating the result of operation:
+      * 0: Success; the second return value is the initial object as a dict.
+      * 1: API error; the second return value is the error message.
+      * 2: Invalid input; the second return value is the error message.
+    * value: dict | str --- Returned, filtered initial object `dict` in case of
+      success, or an error-message string in case of failure.
+    """
+    resource_name = args.uuid_info.rtype_lower
+
+    # Filter the fields for any invalid keys of the particular resource.
+    valid_fields = parser.discovery_document.get("schemas", {})[
+        args.uuid_info.resource_type
+    ]["properties"]
+    # Sets doesn't remember insertion order, but we want to put invalid keys in
+    # the order given by the user for consistency, so we do a dedup with dict.
+    invalid_fields = {f: None for f in args.fields if f not in valid_fields}
+    if invalid_fields:
+        return 2, (
+            f"invalid fields for resource {resource_name!r}:"
+            f" {', '.join(map(repr, invalid_fields))}"
+        )
+
+    method_call = getattr(
+        api_client, parser._subcommand_to_resource[resource_name]
+    )().get(uuid=args.uuid_info.uuid)
+    try:
+        arv_obj = method_call.execute()
+    except arvados.errors.ApiError as err:
+        return 1, _format_api_error_msg(err, method_call)
+
+    return 0, _select_fields(arv_obj, args.fields)
+
+
 def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
-    obj_stub = {"owner_uuid": args.project_uuid} if args.project_uuid else {}
+    """Handle the subcommands "create" or "edit"."""
+    if args.subcommand == "create":
+        init_obj = {
+            "owner_uuid": args.project_uuid
+        } if args.project_uuid else {}
+        # Tempfile name resembling "new-collection-{random}.{json|yml}".
+        prefix = f"new-{args.target_resource}"
+    else:
+        status, obj_or_msg = _prepare_initial_object_to_edit(
+            api_client, parser, args
+        )
+        if status != 0:
+            print("Error: {obj_or_msg}", file=sys.stderr)
+            sys.exit(status)
+        # Tempfile name resembling
+        # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
+        init_obj = obj_or_msg
+        prefix = f"{args.uuid_info.rtype_lower}-{args.uuid_info.uuid}"
+
     match args.format:
         case "json":
-            editing = JSONEditingProcess(initial_object=obj_stub)
+            editing_class = JSONEditingProcess
         case "yaml":
-            editing = YAMLEditingProcess(initial_object=obj_stub)
+            editing_class = YAMLEditingProcess
         case _:
             raise RuntimeError(
                 f"Error: unexpected value for format option: {args.format}"
             )
 
-    with editing:
+    with editing_class(initial_object=init_obj, prefix=prefix) as editing:
         api_call_status = None
         while api_call_status is None:
             try:
@@ -834,12 +999,37 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
                 )
                 sys.exit(0)
 
-            resource = parser._subcommand_to_resource[args.target_resource]
+            if args.subcommand == "create":
+                resource = parser._subcommand_to_resource[args.target_resource]
+            else:
+                resource = parser._subcommand_to_resource[
+                    args.uuid_info.rtype_lower
+                ]
+
             arv_resource = getattr(api_client, resource)()
-            # TODO: This only handles "create" for now.
-            api_call_status = _call_resource_method(
-                arv_resource.create, {"body": edited_obj}, args.format
-            )
+
+            if args.subcommand == "create":
+                api_call_status = _call_resource_method(
+                    arv_resource.create, {"body": edited_obj}, args.format
+                )
+            else:
+                obj_delta = {
+                    k: v
+                    for k, v in edited_obj.items()
+                    if k not in init_obj or v != init_obj[k]
+                }
+                if not obj_delta:
+                    print(
+                        "notice: object is unchanged; did not update",
+                        file=sys.stderr
+                    )
+                    sys.exit(0)
+                api_call_status = _call_resource_method(
+                    arv_resource.update,
+                    {"uuid": args.uuid_info.uuid, "body": obj_delta},
+                    args.format
+                )
+
             if api_call_status != 0:
                 # If the API request failed, try editing again if the user so
                 # desires.

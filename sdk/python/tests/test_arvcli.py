@@ -6,6 +6,7 @@ import argparse
 import builtins
 from collections import namedtuple
 from contextlib import contextmanager
+import datetime
 import io
 import json
 from pathlib import Path
@@ -26,11 +27,17 @@ from arvados.commands import arvcli
 from . import run_test_server
 
 
-class ArvCLITestError(Exception):
-    """An exception to be raised by our own testing facilites, not meant to be
-    caught in tests (hence not a derived class of commonly caught exceptions).
+def dump_datetime(datetime_obj: datetime.datetime) -> str:
+    """Dump a Python `datetime.datetime` object as string in the format
+    returned by Arvados API server.
+    See: https://doc.arvados.org/main/api/resources.html#:~:text=Timestamps
+
+    This can be used to "un-parse" datetimes in objects loaded by
+    `run_test_server.fixture()` from YAML.
     """
-    pass
+    return datetime_obj.astimezone(
+        datetime.timezone.utc
+    ).strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
 
 
 @pytest.fixture
@@ -147,6 +154,21 @@ class TestPassthroughCommands:
 ))
 def test_singularizer(plural, singular):
     assert arvcli._ArgUtil.singularize_resource(plural) == singular
+
+
+@pytest.mark.parametrize("text,expected", (
+    ("", ""),
+    ("a", "a"),
+    ("A", "a"),
+    ("snake_case", "snake_case"),
+    ("CamelCase", "camel_case"),
+    # Following are keys from schemas definition.
+    ("Log", "log"),
+    ("KeepService", "keep_service"),
+    ("ApiClientAuthorization", "api_client_authorization")
+))
+def test_camel_to_snake(text, expected):
+    assert arvcli._ArgUtil.camel_case_to_snake(text) == expected
 
 
 def test_cli_parser_has_singular_plural_mapping(discovery_document):
@@ -324,10 +346,41 @@ def test_get_method_options():
     ) == output
 
 
+def test_make_uuid_to_resource_map():
+    # Stub input schemas based on the real discovery doc.
+    schemas = {
+        "ApiClientAuthorization": {
+            "id": "ApiClientAuthorization",
+            "uuidPrefix": "gj3su"
+        },
+        "CollectionList": {
+            "id": "CollectionList"
+        },
+        "Credential": {
+            "id": "Credential",
+            "uuidPrefix": "oss07"
+        }
+    }
+    expected = {
+        "gj3su": "ApiClientAuthorization",
+        "oss07": "Credential"
+    }
+    assert arvcli._ArgUtil.make_uuid_to_resource_map(schemas) == expected
+
+
 class TestArgTypes:
     """Test the private type converter-validators under the arvcli._ArgTypes
     namespace.
     """
+    bad_type = "thing"
+    bad_uuid = f"xyzzy-{bad_type}-0123456789abcde"
+
+    @pytest.fixture
+    def type_map(self, discovery_document):
+        yield arvcli._ArgUtil.make_uuid_to_resource_map(
+            discovery_document["schemas"]
+        )
+
     def test_json_array_makes_list(self):
         assert arvcli._ArgTypes.json_array("[]") == []
 
@@ -351,6 +404,22 @@ class TestArgTypes:
         )
         with pytest.raises(argparse.ArgumentTypeError):
             arvcli._ArgTypes.group_uuid("zzzzz-j7d0g-123456789")
+
+    def test_uuid_info_parse_good_type(self, type_map):
+        uuid = run_test_server.fixture("collections")["collection_owned_by_active"]["uuid"]
+        assert arvcli._ArgTypes.UUIDInfo.parse(type_map, uuid) == (
+            arvcli._ArgTypes.UUIDInfo(uuid, "Collection", "collection")
+        )
+
+    def test_uuid_info_parse_bad_type(self, type_map):
+        assert self.bad_type not in type_map
+        with pytest.raises(
+            argparse.ArgumentTypeError,
+            match=re.compile(
+                rf"Invalid object type code {re.escape(repr(self.bad_type))}"
+            )
+        ):
+            arvcli._ArgTypes.UUIDInfo.parse(type_map, self.bad_uuid)
 
 
 @pytest.mark.parametrize(
@@ -819,7 +888,7 @@ def setup_editor(tmp_path, monkeypatch):
                 logf.write(f"crash: {sep}")
                 editor_cmd = ["false"]
             case _:
-                raise ArvCLITestError(f"Error: unrecognized action {action!r}")
+                pytest.fail(f"Error: unrecognized action {action!r}")
         monkeypatch.setenv("VISUAL", shlex.join(editor_cmd))
         return edit_source  # "Leak" the edit-source for convenience in tests.
 
@@ -868,17 +937,17 @@ class TestObjectEditingProcessBase:
         assert filled_content == initial_obj
 
     def test_tempfile_name_prefix(self):
-        fake_uuid = "foo-bar"
-        with PlainStringEditing(uuid=fake_uuid) as ed:
-            assert Path(ed.tmp_file.name).stem.startswith(f"{fake_uuid}-")
+        prefix = "foo-bar"
+        with PlainStringEditing(prefix=prefix) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{prefix}-")
 
     def test_tempfile_name_no_empty_prefix(self):
         # It's risky to do negative tests on the tempfile's actual name because
         # it's random in a platform-dependent way. We don't want a widowed
-        # hyphen/dash character *created by us* when uuid="" or when
+        # hyphen/dash character *created by us* when prefix="" or when
         # initial_object["uuid"] is empty, but a hyphen may as well happen to
         # be the first character generated randomly.
-        ed = PlainStringEditing(uuid="")
+        ed = PlainStringEditing(prefix="")
         assert ed.prefix is None
 
     def test_tempfile_name_prefix_from_obj_uuid(self):
@@ -887,9 +956,11 @@ class TestObjectEditingProcessBase:
         with arvcli.JSONEditingProcess(initial_obj) as ed:
             assert Path(ed.tmp_file.name).stem.startswith(f"{uuid}-")
 
-        uuid_override = "foo-bar-baz"
-        with arvcli.JSONEditingProcess(initial_obj, uuid=uuid_override) as ed:
-            assert Path(ed.tmp_file.name).stem.startswith(f"{uuid_override}-")
+        prefix_override = "foo-bar-baz"
+        with arvcli.JSONEditingProcess(
+            initial_obj, prefix=prefix_override
+        ) as ed:
+            assert Path(ed.tmp_file.name).stem.startswith(f"{prefix_override}-")
 
         initial_obj = {}
         ed = arvcli.JSONEditingProcess(initial_obj)
@@ -918,6 +989,43 @@ def test_create_subcommad_s_option(setup_editor, run_arvcli):
         exit_code, out, err = run_arvcli(["-s", "create", "collection"])
     assert exit_code == 2
     assert not sr.called
+
+
+class TestPrepareInitialObjectToEdit:
+    @pytest.fixture
+    def parser(self, discovery_document):
+        yield arvcli.ArvCLIArgumentParser(discovery_document)
+
+    @pytest.mark.parametrize("src,fields,expected", (
+        ({}, [], {}),
+        ({"foo": "bar"}, [], {"foo": "bar"}),
+        ({"foo": "bar", "baz": "quux"}, ["foo"], {"foo": "bar"}),
+    ))
+    def test_select_fields(self, src, fields, expected):
+        assert arvcli._select_fields(src, fields) == expected
+
+    def test_no_such_uuid(self, simple_api_client, parser):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+        uuid_list = uuid.split("-")
+        # Make sure the uuid doesn't match by changing its cluster-id part.
+        uuid_list[0] = "xyzzy"
+        args = parser.parse_args(["edit", "-".join(uuid_list)])
+        status, value = arvcli._prepare_initial_object_to_edit(
+            simple_api_client, parser, args
+        )
+        assert status == 1
+        assert "not found" in value.lower()
+
+    def test_invalid_fields(self, simple_api_client, parser):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+        # None of the following are valid fields for a group.
+        invalid_fields = ["foo", "bar", ""]
+        args = parser.parse_args(["edit", uuid, *invalid_fields])
+        status, value = arvcli._prepare_initial_object_to_edit(
+            simple_api_client, parser, args
+        )
+        assert status == 2
+        assert value == "invalid fields for resource 'group': 'foo', 'bar', ''"
 
 
 def yaml_dumps(obj) -> str:
@@ -984,6 +1092,9 @@ def builtins_input_patched(*args, **kwargs):
 
 
 class TestEditingSubcommands:
+    @classmethod
+    def teardown_class(self):
+        run_test_server.reset()
 
     def test_bad_editor(self, monkeypatch, run_arvcli, tmp_path):
         monkeypatch.setenv("PATH", str(tmp_path))
@@ -1095,3 +1206,87 @@ class TestEditingSubcommands:
 
         assert exit_code == 1
         assert "JSON input has type 'list', not a valid Arvados object" in err
+
+    def test_edit_malfomed_type_code_in_uuid(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["edit", TestArgTypes.bad_uuid])
+        assert exit_code == 2
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_edit_collection_name(
+            self, simple_api_client, setup_editor, run_arvcli
+    ):
+        old_obj = run_test_server.fixture("collections")[
+            "collection_owned_by_active"
+        ]
+        for k in ("created_at", "modified_at", "updated_at"):
+            old_obj[k] = dump_datetime(old_obj[k])
+        edited_obj = old_obj.copy()
+        edited_obj["name"] += "_edited"
+        setup_editor(content=json.dumps(edited_obj))
+        timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+        exit_code, out, err = run_arvcli(["edit", old_obj["uuid"]])
+
+        assert exit_code == 0
+        assert not err
+        new_obj = json.loads(out)
+        assert new_obj["uuid"] == old_obj["uuid"]
+        assert new_obj["name"] == edited_obj["name"]
+        assert ciso8601.parse_datetime(new_obj["modified_at"]) >= timestamp
+
+    @pytest.mark.parametrize("fields", (
+        [],
+        ["name", "description"]
+    ))
+    def test_edit_collection_did_not_edit(
+        self, fields, setup_editor, run_arvcli
+    ):
+        uuid = run_test_server.fixture("collections")[
+            "collection_owned_by_active"
+        ]["uuid"]
+        setup_editor("append", "")
+
+        exit_code, out, err = run_arvcli(["edit", uuid] + fields)
+
+        assert exit_code == 0
+        assert not out
+        assert "notice: object is unchanged; did not update" in err
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_edit_group_with_fields(self, setup_editor, run_arvcli):
+        fx = run_test_server.fixture("groups")["aproject"]
+        fields = ("name", "description")
+        uuid = fx["uuid"]
+        edited_obj = {k: f"{v} (edited)" for k, v in fx.items() if k in fields}
+        setup_editor(content=json.dumps(edited_obj))
+
+        exit_code, out, err = run_arvcli(["edit", uuid, *fields])
+
+        assert exit_code == 0
+        assert not err
+        new_obj = json.loads(out)
+        assert new_obj["uuid"] == uuid
+        for k in fields:
+            assert new_obj[k] == edited_obj[k]
+
+    @pytest.mark.usefixtures("reset_test_server_db")
+    def test_edit_group_with_fields_and_extra_fields_added_in_editor(
+            self, setup_editor, run_arvcli
+    ):
+        fx = run_test_server.fixture("groups")["aproject"]
+        uuid = fx["uuid"]
+
+        new_desc = f"{fx['description']} (edited by user anyway)"
+        edited_obj = {
+            "name": fx["name"],
+            "description": new_desc
+        }
+        setup_editor(content=json.dumps(edited_obj))
+
+        exit_code, out, err = run_arvcli(["edit", uuid, "name"])
+
+        assert exit_code == 0
+        assert not err
+        new_obj = json.loads(out)
+        assert new_obj["uuid"] == uuid
+        assert new_obj["description"] == new_desc
