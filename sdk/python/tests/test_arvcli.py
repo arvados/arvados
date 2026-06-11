@@ -40,13 +40,6 @@ def dump_datetime(datetime_obj: datetime.datetime) -> str:
     ).strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
 
 
-class ArvCLITestError(Exception):
-    """An exception to be raised by our own testing facilites, not meant to be
-    caught in tests (hence not a derived class of commonly caught exceptions).
-    """
-    pass
-
-
 @pytest.fixture
 def mock_stdin(monkeypatch, tmp_path):
     """Mock sys.stdin to redirect to a temporary text file that can be retained
@@ -895,7 +888,7 @@ def setup_editor(tmp_path, monkeypatch):
                 logf.write(f"crash: {sep}")
                 editor_cmd = ["false"]
             case _:
-                raise ArvCLITestError(f"Error: unrecognized action {action!r}")
+                pytest.fail(f"Error: unrecognized action {action!r}")
         monkeypatch.setenv("VISUAL", shlex.join(editor_cmd))
         return edit_source  # "Leak" the edit-source for convenience in tests.
 
