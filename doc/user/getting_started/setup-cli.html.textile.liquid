@@ -27,15 +27,15 @@ This option gives you more flexibility in your work, but takes more time to set 
 
 h3. Recommended: Install client tools on Linux using @pipx@
 
-To start getting work done on your Arvados cluster from the command line, install the "arvados-tools":https://pypi.org/project/arvados-tools/ Python package that contains CLI tools and client libraries.
+To start getting work done on your Arvados cluster from the command line, install the "arvados-tools Python package":https://pypi.org/project/arvados-tools/ that contains CLI tools and client libraries.
 
-The recommended way to install @arvados-tools@ is to use @pipx@, and you may need to install @pipx@ first.  Please follow "the pipx documentation":https://pipx.pypa.io/stable/how-to/install-pipx/#on-linux; in summary,
+The recommended way to install @arvados-tools@ is to use @pipx@. If you need to install @pipx@:
 
-* On DEB-based systems (e.g. Debian and Ubuntu), run <code class="userinput">apt install pipx</code> as root;
-* On RPM-based systems (e.g. Red Hat, AlmaLinux, and Rocky), run <code class="userinput">dnf install pipx</code> as root;
+* On Debian or Ubuntu, run <code class="userinput">sudo apt install pipx</code>.
+* On Red Hat, AlmaLinux, or Rocky Linux, run <code class="userinput">sudo dnf install pipx</code>.
 * Then, as your own user, run <code class="userinput">pipx ensurepath</code>.
 
-After @pipx@ is installed, run the following command as your own user:
+If you need troubleshooting or other help, "refer to the pipx documentation":https://pipx.pypa.io/stable/how-to/install-pipx/#on-linux. After @pipx@ is installed, run:
 
 <notextile><pre>
 <code>$ <span class="userinput">pipx install --include-deps arvados-tools</span></code>
