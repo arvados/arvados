@@ -25,31 +25,32 @@ h2. Option 2: Installing Arvados tools on your own system
 
 This option gives you more flexibility in your work, but takes more time to set up.
 
-h3. Install client tools on Red Hat, AlmaLinux, and Rocky Linux
+h3. Recommended: Install client tools on Linux using <code>pipx</code>
+
+To start getting work done on your Arvados cluster from the command line, install the "arvados-tools":https://pypi.org/project/arvados-tools/ Python package that contains CLI tools and client libraries.
+
+The recommended way to install <code>arvados-tools</code> is to use <code>pipx</code>, and you may need to install <code>pipx</code> first.  Please follow "the pipx documentation":https://pipx.pypa.io/stable/how-to/install-pipx/#on-linux; in summary,
+
+* On RPM-based systems (e.g. Red Hat, AlmaLinux, and Rocky), run <code class="userinput">dnf install pipx</code> as root;
+* On APT-based systems (e.g. Debian and Ubuntu), run <code class="userinput">apt install pipx</code> as root;
+* Then, as your own user, run <code class="userinput">pipx ensurepath</code>.
+
+After <code>pipx</code> is installed, run the following command as your own user:
+
+<notextile><pre>
+<code>$ <span class="userinput">pipx install --include-deps arvados-tools</span></code>
+</pre></notextile>
+
+h3. Alternative: Install client tools using the system package manager
+
+h4. On Red Hat, AlmaLinux, and Rocky Linux
 
 {% assign packages_to_install = "arvados-client python3-arvados-python-client python3-arvados-cwl-runner python3-arvados-fuse python3-crunchstat-summary" %}
 {% include 'setup_redhat_repo' %}
 
-Proceed to build and install the Arvados CLI tools:
-
-<notextile>
-<pre><code># <span class="userinput">dnf module enable ruby:3.1</span>
-# <span class="userinput">dnf install ruby ruby-devel gcc-c++ make redhat-rpm-config glibc-devel glibc-headers curl-devel openssl-devel zlib-devel</span>
-# <span class="userinput">gem install arvados-cli</span>
-</code></pre>
-</notextile>
-
-h3. Install client tools on Debian and Ubuntu
+h4. On Debian and Ubuntu
 
 {% include 'setup_debian_repo' %}
-
-Proceed to build and install the Arvados CLI tools:
-
-<notextile>
-<pre><code># <span class="userinput">apt install ruby ruby-dev gcc g++ make libc-dev libcurl4-openssl-dev zlib1g-dev</span>
-# <span class="userinput">gem install arvados-cli</span>
-</code></pre>
-</notextile>
 
 h3. Proceed to configuration
 
