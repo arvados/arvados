@@ -695,7 +695,15 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
                 self._subcommand_to_resource["sys"]
             )
 
+        self.uuid_parser = functools.partial(
+            _ArgTypes.UUIDInfo.parse,
+            _ArgUtil.make_uuid_to_resource_map(
+                self.discovery_document.get("schemas", {})
+            )
+        )
+
         self.add_editor_subcommands()
+        self.add_get_subcommand()
 
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
@@ -766,24 +774,36 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             help="UUID of the project in which to create the resource"
         )
 
-        self.uuid_type_map = _ArgUtil.make_uuid_to_resource_map(
-            self.discovery_document.get("schemas", {})
-        )
-
         edit_parser = self.subparsers.add_parser(
             "edit", help="Edit Arvados object using external editor"
         )
         edit_parser.add_argument(
-            "uuid_info", help="UUID of the object to be edited",
-            metavar="UUID",
-            type=functools.partial(
-                _ArgTypes.UUIDInfo.parse, self.uuid_type_map
-            )
+            "uuid_info",
+            help="UUID of the object to be edited", metavar="UUID",
+            type=self.uuid_parser
         )
         edit_parser.add_argument(
             "fields", nargs="*",
             type=str.lower,  # "type" applies to individual items.
             help="Fields to be edited (case-insensitive)"
+        )
+
+    def add_get_subcommand(self):
+        get_parser = self.subparsers.add_parser(
+            "get", help=(
+                "Fetch the specified Arvados object, select the specified"
+                " fields, and print a text representation"
+            )
+        )
+        get_parser.add_argument(
+            "uuid_info",
+            help="UUID of the object to be fetched", metavar="UUID",
+            type=self.uuid_parser
+        )
+        get_parser.add_argument(
+            "fields", nargs="*",
+            type=str.lower,
+            help="Fields to be fetched (case-insensitive)"
         )
 
 
@@ -892,13 +912,11 @@ def _select_fields(
     return {k: src[k] for k in fields} or src
 
 
-def _prepare_initial_object_to_edit(
-    api_client, parser, args
-) -> tuple[int, dict | str]:
-    """Obtain the initial object for the "arv edit" subcommand, based on the
-    commandline args and the current API client & CLI parser instances. If the
-    "fields" argument (`args.fields`) is provided, only those fields that are
-    specified are returned.
+def _get_obj_by_uuid_info(api_client, parser, args) -> tuple[int, dict | str]:
+    """Obtain the object for the "get" subcommand and the initial object for
+    the "arv edit" subcommand, based on the commandline args and the current
+    API client & CLI parser instances. If the "fields" argument (`args.fields`)
+    is provided, only those fields that are specified are returned.
 
     Return value:
 
@@ -944,7 +962,7 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         # Tempfile name resembling "new-collection-{random}.{json|yml}".
         prefix = f"new-{args.target_resource}"
     else:
-        status, obj_or_msg = _prepare_initial_object_to_edit(
+        status, obj_or_msg = _get_obj_by_uuid_info(
             api_client, parser, args
         )
         if status != 0:
@@ -1044,6 +1062,10 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             # End of the editing loop.
         sys.exit(api_call_status)
     # End of the NoReturn function.
+
+
+def _handle_get_subcommand(api_client, parser, args) -> NoReturn:
+    pass
 
 
 def _ask_reedit() -> bool | None:

@@ -991,7 +991,7 @@ def test_create_subcommad_s_option(setup_editor, run_arvcli):
     assert not sr.called
 
 
-class TestPrepareInitialObjectToEdit:
+class TestGetObjByUUIDInfo:
     @pytest.fixture
     def parser(self, discovery_document):
         yield arvcli.ArvCLIArgumentParser(discovery_document)
@@ -1010,7 +1010,7 @@ class TestPrepareInitialObjectToEdit:
         # Make sure the uuid doesn't match by changing its cluster-id part.
         uuid_list[0] = "xyzzy"
         args = parser.parse_args(["edit", "-".join(uuid_list)])
-        status, value = arvcli._prepare_initial_object_to_edit(
+        status, value = arvcli._get_obj_by_uuid_info(
             simple_api_client, parser, args
         )
         assert status == 1
@@ -1021,7 +1021,7 @@ class TestPrepareInitialObjectToEdit:
         # None of the following are valid fields for a group.
         invalid_fields = ["foo", "bar", ""]
         args = parser.parse_args(["edit", uuid, *invalid_fields])
-        status, value = arvcli._prepare_initial_object_to_edit(
+        status, value = arvcli._get_obj_by_uuid_info(
             simple_api_client, parser, args
         )
         assert status == 2
