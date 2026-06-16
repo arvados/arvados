@@ -143,8 +143,8 @@ class _ArgUtil:
 
         Arguments:
 
-        * parameter_key: str -- Parameter key in the form as they appear in the
-          discovery document, typically like `foo_bar`.
+        * parameter_key: str --- Parameter key in the form as they appear in
+          the discovery document, typically like `foo_bar`.
         """
         return "--" + parameter_key.replace("_", "-")
 
