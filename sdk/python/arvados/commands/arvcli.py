@@ -966,7 +966,8 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             api_client, parser, args
         )
         if status != 0:
-            print("Error: {obj_or_msg}", file=sys.stderr)
+            # FIXME: Not yet convered by test.
+            print(f"Error: {obj_or_msg}", file=sys.stderr)
             sys.exit(status)
         # Tempfile name resembling
         # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
@@ -1089,8 +1090,9 @@ def _ask_reedit() -> bool | None:
 def _handle_get_subcommand(api_client, parser, args) -> NoReturn:
     status, obj_or_msg = _get_obj_by_uuid_info(api_client, parser, args)
     if status != 0:
+        # FIXME: Not yet convered by test.
         # "obj_or_msg" is a message.
-        print("Error: {obj_or_msg}", file=sys.stderr)
+        print(f"Error: {obj_or_msg}", file=sys.stderr)
     else:
         # "obj_or_msg" is a real Arvados object.
         match args.format:
