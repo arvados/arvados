@@ -31,7 +31,7 @@ EOF</span>
 {%- if modules_to_enable != nil %}
 # <span class="userinput">dnf module enable {{ modules_to_enable }}</span>
 {% endif -%}
-{%- if packages_to_install != nil -%}
+{%- if packages_to_install != nil %}
 # <span class="userinput">dnf install {{ packages_to_install }}</span>
 {% endif -%}
 </code></pre>

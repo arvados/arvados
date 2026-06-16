@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-First, log into an Arvados VM instance (instructions for "Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html or "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login) or install the Arvados "Command line SDK":{{site.baseurl}}/sdk/cli/install.html and "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html on your workstation.
+First, log into an Arvados VM instance (see instructions for "Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html, "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login, or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login), or install the "Arvados tools":{{site.baseurl}}/user/getting_started/setup-cli.html on your workstation.
 
 Check that you are able to access the Arvados API server using @arv user current@.  If it is able to access the API server, it will print out information about your account:
 
@@ -40,4 +40,4 @@ However, if you receive the following message:
 
 bc. ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables
 
-follow the instructions for "getting an API token,":{{site.baseurl}}/user/reference/api-tokens.html and try @arv user current@ again.
+follow the instructions for "getting an API token":{{site.baseurl}}/user/reference/api-tokens.html, and try @arv user current@ again.
