@@ -1064,10 +1064,6 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
     # End of the NoReturn function.
 
 
-def _handle_get_subcommand(api_client, parser, args) -> NoReturn:
-    pass
-
-
 def _ask_reedit() -> bool | None:
     """Ask the user if they'd like to continue editing. Returns True for "yes"
     (default, applies also when the user types in a blank newline), False for
@@ -1088,6 +1084,28 @@ def _ask_reedit() -> bool | None:
             return False
         case _:
             return None
+
+
+def _handle_get_subcommand(api_client, parser, args) -> NoReturn:
+    status, obj_or_msg = _get_obj_by_uuid_info(api_client, parser, args)
+    if status != 0:
+        # "obj_or_msg" is a message.
+        print("Error: {obj_or_msg}", file=sys.stderr)
+    else:
+        # "obj_or_msg" is a real Arvados object.
+        match args.format:
+            case "json":
+                json.dump(obj_or_msg, sys.stdout, indent=1)
+                print()
+            case "yaml":
+                yaml.dump(obj_or_msg, sys.stdout)
+            case _:
+                # This must not happen, as "--format=uuid" is an invalid global
+                # option value for "get" subcommand.
+                raise RuntimeError(
+                    f"Error: unexpected value for format option: {args.format}"
+                )
+    sys.exit(status)
 
 
 def dispatch(arguments=None):
@@ -1131,6 +1149,16 @@ def dispatch(arguments=None):
                 " choose --format=json (default) or --format=yaml."
             )  # Exits with status 2.
         _handle_external_editor_command(api_client, cmd_parser, args)  # Exits.
+
+    # Are we running "arv get"?
+    if args.subcommand == "get":
+        if args.format == "uuid":
+            cmd_parser.error(
+                "--format=uuid or -s option is not supported for the 'arv get'"
+                " command. Please choose --format=json (default) or"
+                " --format=yaml."
+            )  # Exits with status 2.
+        _handle_get_subcommand(api_client, cmd_parser, args)  # Exits.
 
     # NOTE: The code immediately below is not reachable.
     raise RuntimeError("Unexpected arguments: {arguments!r}")

@@ -1290,3 +1290,18 @@ class TestEditingSubcommands:
         new_obj = json.loads(out)
         assert new_obj["uuid"] == uuid
         assert new_obj["description"] == new_desc
+
+
+class TestGetSubcommand:
+
+    def test_valid_object_no_fields(self, run_arvcli):
+        fx = run_test_server.fixture("authorized_keys")["active"]
+
+        exit_code, out, err = run_arvcli(["get", fx["uuid"]])
+
+        assert exit_code == 0
+        assert not err
+        result = json.loads(out)
+        assert result
+        for k, expected_v in fx.items():
+            assert result[k] == expected_v
