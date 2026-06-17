@@ -1212,6 +1212,8 @@ class TestEditingSubcommands:
     def test_edit_malfomed_type_code_in_uuid(self, run_arvcli):
         exit_code, out, err = run_arvcli(["edit", TestArgTypes.bad_uuid])
         assert exit_code == 2
+        assert not out
+        assert f"Invalid object type code {TestArgTypes.bad_type!r} in Arvados object UUID {TestArgTypes.bad_uuid}:" in err
 
     def test_edit_non_existent_object(self, run_arvcli):
         exit_code, out, err = run_arvcli(["edit", NOT_FOUND_UUID])
