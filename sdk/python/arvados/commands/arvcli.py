@@ -32,10 +32,14 @@ import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 from typing import Any, NoReturn, TextIO
-import arvados
-import arvados.commands._util as cmd_util
+
 from googleapiclient import discovery
 from ruamel.yaml import YAML, YAMLError
+
+import arvados
+import arvados.commands._util as cmd_util
+
+
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
@@ -143,8 +147,8 @@ class _ArgUtil:
 
         Arguments:
 
-        * parameter_key: str -- Parameter key in the form as they appear in the
-          discovery document, typically like `foo_bar`.
+        * parameter_key: str --- Parameter key in the form as they appear in
+          the discovery document, typically like `foo_bar`.
         """
         return "--" + parameter_key.replace("_", "-")
 
@@ -695,7 +699,15 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
                 self._subcommand_to_resource["sys"]
             )
 
+        self.uuid_parser = functools.partial(
+            _ArgTypes.UUIDInfo.parse,
+            _ArgUtil.make_uuid_to_resource_map(
+                self.discovery_document.get("schemas", {})
+            )
+        )
+
         self.add_editor_subcommands()
+        self.add_get_subcommand()
 
     def add_resource_subcommands(self):
         """Add resources as subcommands, their associated methods as
@@ -766,24 +778,36 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             help="UUID of the project in which to create the resource"
         )
 
-        self.uuid_type_map = _ArgUtil.make_uuid_to_resource_map(
-            self.discovery_document.get("schemas", {})
-        )
-
         edit_parser = self.subparsers.add_parser(
             "edit", help="Edit Arvados object using external editor"
         )
         edit_parser.add_argument(
-            "uuid_info", help="UUID of the object to be edited",
-            metavar="UUID",
-            type=functools.partial(
-                _ArgTypes.UUIDInfo.parse, self.uuid_type_map
-            )
+            "uuid_info",
+            help="UUID of the object to be edited", metavar="UUID",
+            type=self.uuid_parser
         )
         edit_parser.add_argument(
             "fields", nargs="*",
             type=str.lower,  # "type" applies to individual items.
             help="Fields to be edited (case-insensitive)"
+        )
+
+    def add_get_subcommand(self):
+        get_parser = self.subparsers.add_parser(
+            "get", help=(
+                "Fetch the specified Arvados object, select the specified"
+                " fields, and print a text representation"
+            )
+        )
+        get_parser.add_argument(
+            "uuid_info",
+            help="UUID of the object to be fetched", metavar="UUID",
+            type=self.uuid_parser
+        )
+        get_parser.add_argument(
+            "fields", nargs="*",
+            type=str.lower,
+            help="Fields to be fetched (case-insensitive)"
         )
 
 
@@ -892,13 +916,11 @@ def _select_fields(
     return {k: src[k] for k in fields} or src
 
 
-def _prepare_initial_object_to_edit(
-    api_client, parser, args
-) -> tuple[int, dict | str]:
-    """Obtain the initial object for the "arv edit" subcommand, based on the
-    commandline args and the current API client & CLI parser instances. If the
-    "fields" argument (`args.fields`) is provided, only those fields that are
-    specified are returned.
+def _get_obj_by_uuid_info(api_client, parser, args) -> tuple[int, dict | str]:
+    """Obtain the object for the "get" subcommand and the initial object for
+    the "arv edit" subcommand, based on the commandline args and the current
+    API client & CLI parser instances. If the "fields" argument (`args.fields`)
+    is provided, only those fields that are specified are returned.
 
     Return value:
 
@@ -944,11 +966,11 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
         # Tempfile name resembling "new-collection-{random}.{json|yml}".
         prefix = f"new-{args.target_resource}"
     else:
-        status, obj_or_msg = _prepare_initial_object_to_edit(
+        status, obj_or_msg = _get_obj_by_uuid_info(
             api_client, parser, args
         )
         if status != 0:
-            print("Error: {obj_or_msg}", file=sys.stderr)
+            print(f"Error: {obj_or_msg}", file=sys.stderr)
             sys.exit(status)
         # Tempfile name resembling
         # "collection-clstr-4zz18-{15chars}-{random}.{json|yml}".
@@ -1068,6 +1090,28 @@ def _ask_reedit() -> bool | None:
             return None
 
 
+def _handle_get_subcommand(api_client, parser, args) -> NoReturn:
+    status, obj_or_msg = _get_obj_by_uuid_info(api_client, parser, args)
+    if status != 0:
+        # "obj_or_msg" is a message.
+        print(f"Error: {obj_or_msg}", file=sys.stderr)
+    else:
+        # "obj_or_msg" is a real Arvados object.
+        match args.format:
+            case "json":
+                json.dump(obj_or_msg, sys.stdout, indent=1)
+                print()
+            case "yaml":
+                yaml.dump(obj_or_msg, sys.stdout)
+            case _:
+                # This must not happen, as "--format=uuid" is an invalid global
+                # option value for "get" subcommand.
+                raise RuntimeError(
+                    f"Error: unexpected value for format option: {args.format}"
+                )
+    sys.exit(status)
+
+
 def dispatch(arguments=None):
     api_client = arvados.api("v1")
     cmd_parser = ArvCLIArgumentParser(api_client._rootDesc)
@@ -1106,9 +1150,21 @@ def dispatch(arguments=None):
             cmd_parser.error(
                 "--format=uuid or -s option is not supported when creating or"
                 " editing Arvados objects with external editor. Please"
-                " choose --format=json (default) or --format=yaml."
+                " choose --format=json (default) or --format=yaml.",
+                with_help=False
             )  # Exits with status 2.
         _handle_external_editor_command(api_client, cmd_parser, args)  # Exits.
+
+    # Are we running "arv get"?
+    if args.subcommand == "get":
+        if args.format == "uuid":
+            cmd_parser.error(
+                "--format=uuid or -s option is not supported for the 'arv get'"
+                " command. Please choose --format=json (default) or"
+                " --format=yaml.",
+                with_help=False
+            )  # Exits with status 2.
+        _handle_get_subcommand(api_client, cmd_parser, args)  # Exits.
 
     # NOTE: The code immediately below is not reachable.
     raise RuntimeError("Unexpected arguments: {arguments!r}")
