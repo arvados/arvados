@@ -32,10 +32,14 @@ import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 from typing import Any, NoReturn, TextIO
-import arvados
-import arvados.commands._util as cmd_util
+
 from googleapiclient import discovery
 from ruamel.yaml import YAML, YAMLError
+
+import arvados
+import arvados.commands._util as cmd_util
+
+
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
