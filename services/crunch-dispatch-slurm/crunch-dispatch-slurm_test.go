@@ -68,12 +68,11 @@ func (s *IntegrationSuite) TearDownTest(c *C) {
 }
 
 type slurmFake struct {
-	didBatch      [][]string
-	didCancel     []string
-	didRelease    []string
-	didRenice     [][]string
-	queue         string
-	rejectNice10K bool
+	didBatch   [][]string
+	didCancel  []string
+	didRelease []string
+	didRenice  [][]string
+	queue      string
 	// If non-nil, run this func during the 2nd+ call to Cancel()
 	onCancel func()
 	// Error returned by Batch()
@@ -96,9 +95,6 @@ func (sf *slurmFake) Release(name string) error {
 
 func (sf *slurmFake) Renice(name string, nice int64) error {
 	sf.didRenice = append(sf.didRenice, []string{name, fmt.Sprintf("%d", nice)})
-	if sf.rejectNice10K && nice > 10000 {
-		return errors.New("scontrol: error: Invalid nice value, must be between -10000 and 10000")
-	}
 	return nil
 }
 
