@@ -1119,8 +1119,8 @@ class TestEditingSubcommands:
 
         assert exit_code == 0
         result = format_case.loads(out)
-        for k in new_project.keys():
-            assert new_project[k] == result[k]
+        for k in new_project:
+            assert result[k] == new_project[k]
 
     @pytest.mark.usefixtures("reset_test_server_db")
     def test_create_in_project_yaml(
@@ -1142,8 +1142,8 @@ class TestEditingSubcommands:
         assert exit_code == 0
         result = yaml.load(out)
         assert result["owner_uuid"] == parent_proj["uuid"]
-        for k in new_project.keys():
-            assert new_project[k] == result[k]
+        for k in new_project:
+            assert result[k] == new_project[k]
 
     @pytest.mark.usefixtures("reset_test_server_db")
     @pytest.mark.parametrize("format_case", FORMAT_CASES)
@@ -1168,8 +1168,8 @@ class TestEditingSubcommands:
         assert exit_code == 0
         assert err
         result = format_case.loads(out)
-        for k in new_project.keys():
-            assert new_project[k] == result[k]
+        for k in new_project:
+            assert result[k] == new_project[k]
 
     def test_edit_process_loops_and_exits_when_abandoned_by_blank_file(
         self, setup_editor, run_arvcli, new_project
@@ -1339,8 +1339,8 @@ class TestGetSubcommand:
         assert not err
         result = json.loads(out)
         assert tuple(result) == fields  # Ordering as user specified.
-        for k, v in result.items():
-            assert fx[k] == v
+        for k in result:
+            assert result[k] == fx[k]
 
     def test_get_invalid_fields(self, run_arvcli):
         uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
