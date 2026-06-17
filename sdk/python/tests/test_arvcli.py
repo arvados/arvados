@@ -1301,14 +1301,17 @@ class TestEditingSubcommands:
 
 class TestGetSubcommand:
 
-    def test_get_valid_object_no_fields(self, run_arvcli):
+    @pytest.mark.parametrize("format_case", FORMAT_CASES)
+    def test_get_valid_object_no_fields(self, format_case, run_arvcli):
         fx = run_test_server.fixture("authorized_keys")["active"]
 
-        exit_code, out, err = run_arvcli(["get", fx["uuid"]])
+        exit_code, out, err = run_arvcli([
+            "-f", format_case.format, "get", fx["uuid"]
+        ])
 
         assert exit_code == 0
         assert not err
-        result = json.loads(out)
+        result = format_case.loads(out)
         assert result
         for k, expected_v in fx.items():
             assert result[k] == expected_v
@@ -1319,3 +1322,48 @@ class TestGetSubcommand:
         assert exit_code == 1
         assert not out
         assert "not found" in err.lower()
+
+    def test_get_valid_object_valid_fields(self, run_arvcli):
+        fx = run_test_server.fixture("collections")[
+            "collection_owned_by_active"
+        ]
+
+        fields = ("portable_data_hash", "name", "owner_uuid")
+        exit_code, out, err = run_arvcli(["get", fx["uuid"], *fields])
+
+        assert exit_code == 0
+        assert not err
+        result = json.loads(out)
+        assert tuple(result) == fields  # Ordering as user specified.
+        for k, v in result.items():
+            assert fx[k] == v
+
+    def test_get_invalid_fields(self, run_arvcli):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+        # None of the following are valid fields for a group.
+        invalid_fields = ["foo", "bar", ""]
+
+        exit_code, out, err = run_arvcli(["get", uuid, *invalid_fields])
+
+        assert exit_code == 2
+        assert not out
+        assert "invalid fields for resource 'group': 'foo', 'bar', ''" in err.lower()
+
+    def test_get_valid_and_invalid_fields(self, run_arvcli):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+
+        exit_code, out, err = run_arvcli([
+            "get",
+            uuid,
+            "name",  # Valid field.
+            "foo"  # Invalid field.
+        ])
+        assert exit_code == 2
+        assert not out
+        assert "invalid fields for resource 'group': 'foo'" in err.lower()
+
+    def test_get_help(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["get", "-h"])
+
+        assert exit_code == 0
+        assert not err
