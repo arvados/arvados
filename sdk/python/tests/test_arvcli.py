@@ -1362,6 +1362,15 @@ class TestGetSubcommand:
         assert not out
         assert "invalid fields for resource 'group': 'foo'" in err.lower()
 
+    def test_get_format_is_uuid(self, run_arvcli):
+        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
+
+        exit_code, out, err = run_arvcli(["-s", "get", uuid])
+
+        assert exit_code == 2
+        assert not out
+        assert "--format=uuid or -s option is not supported" in err
+
     def test_get_help(self, run_arvcli):
         exit_code, out, err = run_arvcli(["get", "-h"])
 

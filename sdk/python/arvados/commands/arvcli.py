@@ -1146,7 +1146,8 @@ def dispatch(arguments=None):
             cmd_parser.error(
                 "--format=uuid or -s option is not supported when creating or"
                 " editing Arvados objects with external editor. Please"
-                " choose --format=json (default) or --format=yaml."
+                " choose --format=json (default) or --format=yaml.",
+                with_help=False
             )  # Exits with status 2.
         _handle_external_editor_command(api_client, cmd_parser, args)  # Exits.
 
@@ -1156,7 +1157,8 @@ def dispatch(arguments=None):
             cmd_parser.error(
                 "--format=uuid or -s option is not supported for the 'arv get'"
                 " command. Please choose --format=json (default) or"
-                " --format=yaml."
+                " --format=yaml.",
+                with_help=False
             )  # Exits with status 2.
         _handle_get_subcommand(api_client, cmd_parser, args)  # Exits.
 
