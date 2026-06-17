@@ -1227,7 +1227,9 @@ class TestEditingSubcommands:
         old_obj = run_test_server.fixture("collections")[
             "collection_owned_by_active"
         ]
-        for k in ("created_at", "modified_at", "updated_at"):
+        if "updated_at" in old_obj:
+            del old_obj["updated_at"]
+        for k in ("created_at", "modified_at"):
             old_obj[k] = dump_datetime(old_obj[k])
         edited_obj = old_obj.copy()
         edited_obj["name"] += "_edited"
