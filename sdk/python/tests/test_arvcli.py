@@ -991,6 +991,11 @@ def test_create_subcommad_s_option(setup_editor, run_arvcli):
     assert not sr.called
 
 
+# This UUID is pro-forma valid (as a collection) but will not match any object
+# on the test server because the cluster-id part doesn't match.
+NOT_FOUND_UUID = "xyzzy-4zz18-12345abcde67890"
+
+
 class TestGetObjByUUIDInfo:
     @pytest.fixture
     def parser(self, discovery_document):
@@ -1005,11 +1010,7 @@ class TestGetObjByUUIDInfo:
         assert arvcli._select_fields(src, fields) == expected
 
     def test_no_such_uuid(self, simple_api_client, parser):
-        uuid = run_test_server.fixture("groups")["aproject"]["uuid"]
-        uuid_list = uuid.split("-")
-        # Make sure the uuid doesn't match by changing its cluster-id part.
-        uuid_list[0] = "xyzzy"
-        args = parser.parse_args(["edit", "-".join(uuid_list)])
+        args = parser.parse_args(["edit", NOT_FOUND_UUID])
         status, value = arvcli._get_obj_by_uuid_info(
             simple_api_client, parser, args
         )
@@ -1092,6 +1093,7 @@ def builtins_input_patched(*args, **kwargs):
 
 
 class TestEditingSubcommands:
+
     @classmethod
     def teardown_class(self):
         run_test_server.reset()
@@ -1211,6 +1213,11 @@ class TestEditingSubcommands:
         exit_code, out, err = run_arvcli(["edit", TestArgTypes.bad_uuid])
         assert exit_code == 2
 
+    def test_edit_non_existent_object(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["edit", NOT_FOUND_UUID])
+        assert exit_code == 1
+        assert "not found" in err.lower()
+
     @pytest.mark.usefixtures("reset_test_server_db")
     def test_edit_collection_name(
             self, simple_api_client, setup_editor, run_arvcli
@@ -1294,7 +1301,7 @@ class TestEditingSubcommands:
 
 class TestGetSubcommand:
 
-    def test_valid_object_no_fields(self, run_arvcli):
+    def test_get_valid_object_no_fields(self, run_arvcli):
         fx = run_test_server.fixture("authorized_keys")["active"]
 
         exit_code, out, err = run_arvcli(["get", fx["uuid"]])
@@ -1305,3 +1312,10 @@ class TestGetSubcommand:
         assert result
         for k, expected_v in fx.items():
             assert result[k] == expected_v
+
+    def test_get_non_existent_uuid(self, run_arvcli):
+        exit_code, out, err = run_arvcli(["get", NOT_FOUND_UUID])
+
+        assert exit_code == 1
+        assert not out
+        assert "not found" in err.lower()

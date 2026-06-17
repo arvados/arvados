@@ -966,7 +966,6 @@ def _handle_external_editor_command(api_client, parser, args) -> NoReturn:
             api_client, parser, args
         )
         if status != 0:
-            # FIXME: Not yet convered by test.
             print(f"Error: {obj_or_msg}", file=sys.stderr)
             sys.exit(status)
         # Tempfile name resembling
@@ -1090,7 +1089,6 @@ def _ask_reedit() -> bool | None:
 def _handle_get_subcommand(api_client, parser, args) -> NoReturn:
     status, obj_or_msg = _get_obj_by_uuid_info(api_client, parser, args)
     if status != 0:
-        # FIXME: Not yet convered by test.
         # "obj_or_msg" is a message.
         print(f"Error: {obj_or_msg}", file=sys.stderr)
     else:
