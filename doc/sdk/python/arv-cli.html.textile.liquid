@@ -23,3 +23,69 @@ TODO: This page should briefly describe and demonstrate every arv subcommand. I 
 Do not include --help output from any tool. This is meant to be a higher-level overview and we don't have a good way to keep it in sync.
 
 {% endcomment %}
+
+@arv@ is the command-line client for Arvados.  With @arv@, you can access Arvados API and Keep services, view and operate on Arvados resources and objects, and perform admin work.  It is distributed as part of the Arvados Python SDK.
+
+You can start using your Arvados cluster with @arv@ after configuring the working environment with an Arvados API token.  Please refer to the sections '"Getting an API token":{{ site.baseurl }}/user/reference/api-tokens.html' and '"Checking your environment":{{ site.baseurl }}/user/getting_started/check-environment.html' in the User Guide for details.
+
+h2(#overview). Overview
+
+@arv@ is a collection of _subcommands_ that can be broadly divided into three kinds; namely, high-level resource subcommands, data subcommands, and low-level resource subcommands that closely follow the Arvados API semantics.
+
+h2(#high-level-resource-subcommands). High-level resource subcommands
+
+h3(#arv-get). @arv get@ -- display Arvados objects
+
+Usage: @arv [--format=json|yaml] get UUID [fields ...]@
+
+@arv get@ retrieves arbitrary Arvados object by its "UUID":{{ site.baseurl }}/api/resources.html#object-uuid and writes it to the standard output as JSON (default) or YAML.
+
+The optional @fields@ arguments can be specified on the command-line to select the fields in the object to display.  All of the fields must be valid for the type of resource referred to by @UUID@.
+
+Example: display a "collection":{{ site.baseurl }}/api/methods/collections.html, limiting output to the fields @uuid@, @portable_data_hash@, @version@, and @modified_at@:
+
+<notextile><pre>
+<code>$ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data_hash version modified_at</span>
+{
+ "uuid": "zzzzz-4zz18-12345abcde67890",
+ "portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
+ "version": 3,
+ "modified_at": "2026-06-04T08:55:47.236090000Z"
+}
+</code></pre></notextile>
+
+h3(#editor-commands). @arv create@, @arv edit@ -- create and update Arvados objects in text editor
+
+@arv@ lets you interactively create new Arvados objects and update existing ones in a text editor.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is avaialble in @PATH@, and falls back to @vi@ otherwise.
+
+h4(#arv-create). @arv create@
+
+Usage: @arv [--format=json|yaml] create RESOURCE [--project-uuid=UUID]@
+
+@arv create@ starts a text editor in which you can create a new Arvados object using one of the two supported formats, JSON (default) or YAML.  The @RESOURCE@ argument can be any of the supported Arvados resource types (e.g., @collection@, @group@, @user@, etc.) as detailed in the "API Reference":{{ site.baseurl}}/api/index.html.
+
+If the @--project-uuid@ parameter is given, the newly-created object will be placed in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate.
+
+When you save the work in the editor and exit, @arv@ will validate the file, then request the API server for object creation.  If a problem arises, detailed error messages will be shown and you will see a prompt like the following:
+
+<notextile><pre>Edit and try again? ([Y]es/no) </pre></notextile>
+
+You can then choose to edit the object again until the problem is fixed, or discard the object at any time.  Saving an empty file or object will also stop the editing process.
+
+h4(#arv-edit). @arv edit@
+
+Usage: @arv [--format=json|yaml] edit UUID [fields ...]@
+
+Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
+
+Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  Still, you are free to edit other fields in addition to those specified on the command-line.  In addition, any field not present in the saved object will not be updated.
+
+The editing process largely follows that of @arv create@.  If any problem arises, you will be interactively prompted to fix it, before the changes are actually committed.
+
+h2(#data-subcommands). Data subcommands
+
+The following subcommands work on data associated with Arvados objects.
+
+h3(#arv-copy). @arv copy@ -- move objects across Arvados clusters
+
+@arv copy@ is an alias of the @arv-copy@ command.  It can copy collections, projects, and workflows (with their dependencies) from one Arvados cluser to another, or download URLs to Arvados collections.  More examples can be found in the section '"Using arv-copy":{{ site.baseurl}}/user/topics/arv-copy.html' of the User Guide, and you can refer to the output of @arv copy --help@ for more about the command-line parameters.
