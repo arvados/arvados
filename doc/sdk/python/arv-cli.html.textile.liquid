@@ -45,14 +45,14 @@ The optional @fields@ arguments can be specified on the command-line to select t
 Example: display a "collection":{{ site.baseurl }}/api/methods/collections.html, limiting output to the fields @uuid@, @portable_data_hash@, @version@, and @modified_at@:
 
 <notextile><pre>
-<code>$ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data_hash version modified_at</span>
+$ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data_hash version modified_at</span>
 {
  "uuid": "zzzzz-4zz18-12345abcde67890",
  "portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
  "version": 3,
  "modified_at": "2026-06-04T08:55:47.236090000Z"
 }
-</code></pre></notextile>
+</pre></notextile>
 
 h3(#editor-commands). @arv create@, @arv edit@ -- create and update Arvados objects in text editor
 
@@ -78,7 +78,7 @@ Usage: @arv [--format=json|yaml] edit UUID [fields ...]@
 
 Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
 
-Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  Still, you are free to edit other fields in addition to those specified on the command-line.  In addition, any field not present in the saved object will not be updated.
+Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  Still, you are free to edit other fields in addition to those specified on the command-line.  Conversely, any field not present in the saved object will not be updated.
 
 The editing process largely follows that of @arv create@.  If any problem arises, you will be interactively prompted to fix it, before the changes are actually committed.
 
@@ -89,3 +89,28 @@ The following subcommands work on data associated with Arvados objects.
 h3(#arv-copy). @arv copy@ -- move objects across Arvados clusters
 
 @arv copy@ is an alias of the @arv-copy@ command.  It can copy collections, projects, and workflows (with their dependencies) from one Arvados cluser to another, or download URLs to Arvados collections.  More examples can be found in the section '"Using arv-copy":{{ site.baseurl}}/user/topics/arv-copy.html' of the User Guide, and you can refer to the output of @arv copy --help@ for more about the command-line parameters.
+
+h3(#arv-keep-ls). @arv keep ls@ -- list Arvados collection contents
+
+Usage: @arv keep ls [-s] locator@
+
+@arv keep ls@ is akin to the regular @ls@ command, but for Arvados collections.
+
+The @locator@ argument can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator.
+
+Example:
+
+<notextile><pre>
+$ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</span>
+         1 ./README.txt
+     53877 ./raw_fastq/Irrel_kd_1.subset.fq
+     46349 ./raw_fastq/Irrel_kd_2.subset.fq
+     35419 ./raw_fastq/Irrel_kd_3.subset.fq
+     73933 ./raw_fastq/Mov10_oe_1.subset.fq
+     67068 ./raw_fastq/Mov10_oe_2.subset.fq
+     41741 ./raw_fastq/Mov10_oe_3.subset.fq
+     10555 ./reference_data/chr1-hg19_genes.gtf
+    248277 ./reference_data/chr1.fa
+</pre></notextile>
+
+h3(#arv-keep-get). @arv keep get@ -- copy data from Keep to local filesystem
