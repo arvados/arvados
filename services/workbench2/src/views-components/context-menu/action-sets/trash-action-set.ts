@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet, ContextMenuActionNames } from '../context-menu-action-set';
 import { ToggleTrashAction } from 'views-components/context-menu/actions/trash-action';
-import { toggleResourceTrashed } from 'store/trash/trash-actions';
+import { openTrashConfirmDialog } from 'store/trash/trash-actions';
 
 export const trashActionSet: ContextMenuActionSet = [
     [
@@ -12,7 +12,7 @@ export const trashActionSet: ContextMenuActionSet = [
             component: ToggleTrashAction,
             name: ContextMenuActionNames.MOVE_TO_TRASH,
             execute: (dispatch, resources) => {
-                dispatch<any>(toggleResourceTrashed(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
+                dispatch<any>(openTrashConfirmDialog(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
             },
         },
     ],
