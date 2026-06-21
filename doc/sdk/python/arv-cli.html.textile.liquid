@@ -72,7 +72,7 @@ When you save the work in the editor and exit, @arv@ will validate the file, the
 
 You can then choose to edit the object again until the problem is fixed, or discard the object at any time.  Saving an empty file or object will also stop the editing process.
 
-Options:
+*Options*:
 
 * @--project-uuid@: If given, the newly-created object will be placed in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate.
 
@@ -102,7 +102,7 @@ h3(#arv-keep-ls). @arv keep ls@ -- list Arvados collection contents
 
 The @locator@ argument can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "portable data hash":{{ site.baseurl }}/api/methods/collections.html#resource (PDH).
 
-Selected options:
+*Selected options*:
 
 * @-s@: If specified, the file sizes are shown (in KiB).
 
@@ -138,7 +138,8 @@ The @locator@ argument can be one of the following --
 
 The @destination@ argument specifies the local filesystem path where the output is downloaded to.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
 
-Selected options:
+*Selected options*:
+
 * @-f@: Overwrite existing files at @destination@. (The default is to refuse to write anything if any of the output files already exist.)
 * @--skip-existing@: Skip files that already exist at @destination@ when downloading by path.
 * @--hash=algorithm@: Output file digest by the specified hash algorithm (@md5@, @sha1@, @sha224@, @sha256@, @sha384@, or @sha512@) when downloading by path.
