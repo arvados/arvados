@@ -56,6 +56,8 @@ $ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data
 }
 </pre></notextile>
 
+---
+
 h3(#editor-commands). @arv create@, @arv edit@ -- create and update Arvados objects in text editor
 
 @arv@ lets you interactively create new Arvados objects and update existing ones in a text editor.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is avaialble in @PATH@, and falls back to @vi@ otherwise.
@@ -76,6 +78,8 @@ You can then choose to edit the object again until the problem is fixed, or disc
 
 * @--project-uuid@: If given, the newly-created object will be placed in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate.
 
+---
+
 h4(#arv-edit). @arv edit@
 
 *Usage*: @arv [--format=json|yaml] edit UUID [fields ...]@
@@ -86,6 +90,8 @@ Just like with @arv get@, you can optionally select the fields of the object to 
 
 The editing process largely follows that of @arv create@.  If any problem arises after you save the object and exit the editor, you will be interactively prompted to fix it, before the changes are actually committed to Arvados.
 
+---
+
 h2(#data-subcommands). Data subcommands
 
 The following subcommands work on data associated with Arvados objects.
@@ -93,6 +99,8 @@ The following subcommands work on data associated with Arvados objects.
 h3(#arv-copy). @arv copy@ -- move objects across Arvados clusters
 
 @arv copy@ is an alias of the @arv-copy@ command.  It can copy collections, projects, and workflows (with their dependencies) from one Arvados cluser to another, or download data from URLs to Arvados collections.  More examples can be found in the section '"Using arv-copy":{{ site.baseurl}}/user/topics/arv-copy.html' of the User Guide, and you can refer to the output of @arv copy --help@ for more about the command-line parameters.
+
+---
 
 h3(#arv-keep-ls). @arv keep ls@ -- list Arvados collection contents
 
@@ -120,6 +128,8 @@ $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</s
      10555 ./reference_data/chr1-hg19_genes.gtf
     248277 ./reference_data/chr1.fa
 </pre></notextile>
+
+---
 
 h3(#arv-keep-get). @arv keep get@ -- copy data from Keep or fetch collection manifest
 
@@ -183,3 +193,5 @@ hello, world
 </pre></notextile>
 
 More examples, including federated downloads, can be found in the User Guide section '"Downloading data":{{ site.baseurl }}/user/tutorials/tutorial-keep-get.html#download-using-arv'.
+
+---
