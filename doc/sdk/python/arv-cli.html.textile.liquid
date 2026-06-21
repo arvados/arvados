@@ -50,9 +50,9 @@ Example: display a "collection":{{ site.baseurl }}/api/methods/collections.html,
 $ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data_hash version modified_at</span>
 {
  "uuid": "zzzzz-4zz18-12345abcde67890",
- "portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
+ "portable_data_hash": "1361eacc54cd808e2377d30a742cc9d2+53",
  "version": 3,
- "modified_at": "2026-06-04T08:55:47.236090000Z"
+ "modified_at": "2025-12-34T12:34:56.789012000Z"
 }
 </pre></notextile>
 
@@ -100,13 +100,13 @@ Usage: @arv keep ls [-s] locator@
 
 @arv keep ls@ lists the file contents of Arvados collections.
 
-The @locator@ argument can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator.
+The @locator@ argument can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "portable data hash":{{ site.baseurl }}/architecture/manifest-format.html#locator (PDH).
 
 Selected options:
 
 * @-s@: If specified, the file sizes are shown (in KiB).
 
-Example: List files by the Keep locator of a collection:
+Example: List files by the <abbr title="portable data hash">PDH</abbr> of a collection:
 
 <notextile><pre>
 $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</span>
@@ -121,4 +121,53 @@ $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</s
     248277 ./reference_data/chr1.fa
 </pre></notextile>
 
-h3(#arv-keep-get). @arv keep get@ -- copy data from Keep to local filesystem
+h3(#arv-keep-get). @arv keep get@ -- copy data from Keep or fetch collection manifest
+
+Usage: @arv keep get [options] locator[path] [destination]@
+
+@arv keep get@ copies data from Keep to a local destination, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.
+
+The @locator@ argument can be a collection <abbr title="portable data hash">PDH</abbr> or UUID.
+
+The @path@ component starts with a slash (@/@) character, and it refers to a file or subdirectory in the collection.
+
+When @path@ is given, @arv keep get@ downloads *data* from Keep. Without @path@, the collection *manifest* is fetched instead.
+
+To recursively download the full contents of a collection, use a single @/@ as the @path@ component.  More examples can be found in the User Guide section '"Downloading data":{{ site.baseurl }}/user/tutorials/tutorial-keep-get.html#download-using-arv'.
+
+The @destination@ argument specifies the local filesystem path where the output is downloaded to.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local path.
+
+Selected options:
+* @-f@: When downloading data, overwrite existing files at @destination@. (The default is to refuse to write anything if any of the output files already exist.)
+* @--skip-existing@: Skip files that already exist at @destination@ when downloading data.
+* @--hash=algorithm@: Output file digest by the specified hash algorithm (@md5@, @sha1@, @sha224@, @sha256@, @sha384@, or @sha512@).
+* @--strip-manifest@: Remove "token signatures":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures in manifest output.
+
+Example: copy file content from Keep to standard output:
+
+<notextile><pre>
+$ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890/hello.txt</span>
+hello, world
+</pre></notextile>
+
+Example: download whole collection to current directory and compute file digests:
+
+<notextile><pre>
+$ <span class="userinput">arv keep get --hash sha256 --no-progress 1361eacc54cd808e2377d30a742cc9d2+53/ . 2> SHA256SUM</span>
+$ <span class="userinput">sha256sum -c SHA256SUM</span>
+./hello.txt: OK
+</pre></notextile>
+
+Example: fetch collection manifest:
+
+<notextile><pre>
+$ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890</span>
+. 22c3683b094136c3398391ae71b20f04+13+Aa611e1b3689f1af04bc46f7ba226d03dade48845@6a49fa07 0:13:hello.txt
+</pre></notextile>
+
+With @--strip-manifest@, token signatures are not shown in the manifest output:
+
+<notextile><pre>
+$ <span class="userinput">arv keep get --strip-manifest zzzzz-4zz18-12345abcde67890</span>
+. 22c3683b094136c3398391ae71b20f04+13 0:13:hello.txt
+</pre></notextile>
