@@ -198,6 +198,25 @@ More examples, including federated downloads, can be found in the User Guide sec
 
 h3(#arv-keep-put). @arv keep put@ -- upload data to Keep
 
-*Usage*: @arv keep put [options] [path ...]@
+*Usage*: @arv keep put [options] [paths ...]@
 
-@arv keep put@ uploads data to Keep.
+@arv keep put@ uploads data to Keep.  In the most common usage, the @paths@ are uploaded to Keep and a collection is created with those files as its contents.  Alternatively, an existing collection can be updated with new local files.
+
+If a path argument is a local directory with a trailing slash (@/@), the contents under the directory will be uploaded.  Otherwise, the directory itself will be a level in the collection.
+
+This subcommand is an alias of @arv-put@.  More examples can be found in the section '"Uploading data":{{ site.baseurl }}/user/tutorials/tutorial-keep.html#upload-using-command' of the User Guide.
+
+*Selected options*:
+
+* @--name@: Set collection name.
+* @--exclude=PATTERN@: Glob pattern for files to exclude. Can be given multiple times.
+* @--update-collection=UUID@: Update the existing collection identified by the UUID with new file uploads.
+* @--storage-classes@: Comma-separated list of "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html for the uploads.
+
+h4(#arv-keep-put-low-level). Lower-level operation modes of @arv keep put@
+
+With the option @--stream@, @arv keep put@ will upload the files to Keep, but does not create a collection.  Instead, the manifest text is written to the standard output.
+
+With the option @--raw@, files will be uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks are written to the standard output.
+
+---
