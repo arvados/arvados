@@ -135,14 +135,14 @@ h3(#arv-keep-get). @arv keep get@ -- copy data from Keep or fetch collection man
 
 *Usage*: @arv keep get [options] locator[path] [destination]@
 
-@arv keep get@ copies data from Keep to a local destination, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.
+@arv keep get@ copies data from Keep to a local destination, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.  This subcommand is an alias of @arv-get@.
 
 The @locator@ argument can be one of the following --
 
 #  A collection UUID or <abbr title="portable data hash">PDH</abbr>:
    The collection's *manifest text* will be fetched.
 #  A collection UUID or <abbr title="portable data hash">PDH</abbr> with a @path@ component:
-   *File(s)* in the collection will be downloaded.  A @path@ starts with the slash (@/@) character and to a file or directory in the collection.  A directory @path@ refers to files and subdirectories under it recursively.  A single @/@ as the @path@ refers to the full contents of the collection.
+   *File(s)* in the collection will be downloaded.  A @path@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory @path@ (ending in a @/@) refers to files and subdirectories under it recursively.  A single @/@ as the @path@ refers to the full contents of the collection.
 #  A full "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator, with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures:
    The individual data *block* in Keep will be downloaded.
 
@@ -195,3 +195,9 @@ hello, world
 More examples, including federated downloads, can be found in the User Guide section '"Downloading data":{{ site.baseurl }}/user/tutorials/tutorial-keep-get.html#download-using-arv'.
 
 ---
+
+h3(#arv-keep-put). @arv keep put@ -- upload data to Keep
+
+*Usage*: @arv keep put [options] [path ...]@
+
+@arv keep put@ uploads data to Keep.
