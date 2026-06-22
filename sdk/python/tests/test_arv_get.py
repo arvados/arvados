@@ -61,18 +61,23 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
                 c.portable_data_hash(),
                 c.manifest_text(strip=strip_manifest))
 
-    def run_get(self, args):
-        self.stdout.seek(0, 0)
-        self.stdout.truncate(0)
-        self.stderr.seek(0, 0)
-        self.stderr.truncate(0)
-        return arv_get.main(args, self.stdout, self.stderr)
+    def run_get(self, args, stdout=None, stderr=None):
+        if stdout is None:
+            self.stdout.seek(0, 0)
+            self.stdout.truncate(0)
+            stdout = self.stdout
+        if stderr is None:
+            self.stderr.seek(0, 0)
+            self.stderr.truncate(0)
+            stderr = self.stderr
+        with self.assertRaises(SystemExit) as cm:
+            arv_get.main(args, stdout, stderr)
+        return cm.exception.code
 
     def test_version_argument(self):
         with tutil.redirected_streams(
                 stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
-            with self.assertRaises(SystemExit):
-                self.run_get(['--version'])
+            self.run_get(['--version'])
         self.assertVersionOutput(out, err)
 
     def test_get_single_file(self):
@@ -176,7 +181,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
 
         # Confirm that progress is written to stderr when is a tty
         stderr.isatty.return_value = True
-        r = arv_get.main(['{}/bigfile.txt'.format(c.manifest_locator()),
+        r = self.run_get(['{}/bigfile.txt'.format(c.manifest_locator()),
                           '{}/bigfile.txt'.format(tmpdir)],
                          stdout, stderr)
         self.assertEqual(0, r)
@@ -190,7 +195,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
 
         # Confirm that progress is not written to stderr when isn't a tty
         stderr.isatty.return_value = False
-        r = arv_get.main(['{}/bigfile.txt'.format(c.manifest_locator()),
+        r = self.run_get(['{}/bigfile.txt'.format(c.manifest_locator()),
                           '{}/bigfile.txt'.format(tmpdir)],
                          stdout, stderr)
         self.assertEqual(0, r)

@@ -187,17 +187,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                             api_client=api_client, args=args)
             except (IOError, OSError) as error:
                 logger.error("can't write to '{}': {}".format(args.destination, error))
-                return 1
+                sys.exit(1)
             except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
                 logger.error("failed to download '{}': {}".format(col_loc, error))
-                return 1
+                sys.exit(1)
             except arvados.errors.ArgumentError as error:
                 if 'Argument to CollectionReader' in str(error):
                     logger.error("error reading collection: {}".format(error))
-                    return 1
+                    sys.exit(1)
                 else:
                     raise
-        return 0
+        sys.exit(0)
 
     try:
         reader = arvados.CollectionReader(
@@ -205,7 +205,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             keep_client=arvados.keep.KeepClient(block_cache=arvados.keep.KeepBlockCache((args.threads+1)*64 * 1024 * 1024), num_prefetch_threads=args.threads))
     except Exception as error:
         logger.error("failed to read collection: {}".format(error))
-        return 1
+        sys.exit(1)
 
     # Scan the collection. Make an array of (stream, file, local
     # destination filename) tuples, and add up total size to extract.
@@ -221,11 +221,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             # If the user asked for a file and we got a subcollection, error out.
             if get_prefix[-1] != os.sep:
                 logger.error("requested file '{}' is in fact a subcollection. Append a trailing '/' to download it.".format('.' + get_prefix))
-                return 1
+                sys.exit(1)
             # If the user asked stdout as a destination, error out.
             elif args.destination == '-':
                 logger.error("cannot use 'stdout' as destination when downloading multiple files.")
-                return 1
+                sys.exit(1)
             # User asked for a subcollection, and that's what was found. Add up total size
             # to download.
             for s, f in files_in_collection(item):
@@ -235,7 +235,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 if (not (args.n or args.f or args.skip_existing) and
                     os.path.exists(dest_path)):
                     logger.error('Local file %s already exists.' % (dest_path,))
-                    return 1
+                    sys.exit(1)
                 todo += [(s, f, dest_path)]
                 todo_bytes += f.size()
         elif isinstance(item, arvados.arvfile.ArvadosFile):
@@ -243,10 +243,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             todo_bytes += item.size()
         else:
             logger.error("'{}' not found.".format('.' + get_prefix))
-            return 1
+            sys.exit(1)
     except (IOError, arvados.errors.NotFoundError) as e:
         logger.error(e)
-        return 1
+        sys.exit(1)
 
     out_bytes = 0
     for s, f, outfilename in todo:
@@ -264,14 +264,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                     # Good thing we looked again: apparently this file wasn't
                     # here yet when we checked earlier.
                     logger.error('Local file %s already exists.' % (outfilename,))
-                    return 1
+                    sys.exit(1)
                 if args.r:
                     pathlib.Path(outfilename).parent.mkdir(parents=True, exist_ok=True)
                 try:
                     outfile = open(outfilename, 'wb')
                 except Exception as error:
                     logger.error('Open(%s) failed: %s' % (outfilename, error))
-                    return 1
+                    sys.exit(1)
         if args.hash:
             digestor = hashlib.new(args.hash)
         try:
@@ -306,7 +306,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.progress:
         stderr.write('\n')
-    return 0
+    sys.exit(0)
 
 def files_in_collection(c):
     # Sort first by file type, then alphabetically by file path.
