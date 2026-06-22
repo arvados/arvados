@@ -155,7 +155,7 @@ The @destination@ argument specifies the local filesystem path where the output 
 * @--hash=algorithm@: Output file digest by the specified hash algorithm (@md5@, @sha1@, @sha224@, @sha256@, @sha384@, or @sha512@) when downloading by path.
 * @--strip-manifest@: Remove token signatures from the manifest output.
 
-*Example*: Write file content from Keep to standard output.
+p(#hello-world). *Example*: Write file content from Keep to standard output.
 
 <notextile><pre>
 $ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890/hello.txt</span>
@@ -212,8 +212,29 @@ This subcommand is an alias of @arv-put@.  More examples can be found in the sec
 * @--exclude=PATTERN@: Glob pattern for files to exclude. Can be given multiple times.
 * @--update-collection=UUID@: Update the existing collection identified by the UUID with new file uploads.
 * @--storage-classes@: Comma-separated list of "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html for the uploads.
+* @--normalize@: Peform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data.
 
-h4(#arv-keep-put-low-level). Lower-level operation modes of @arv keep put@
+*Example*: Update the '"hello, world":#hello-world' collection.
+
+In this example, the collection is downloaded to the current directory, a new file "hola.txt" is added, and the collection is updated with it.
+
+<notextile><pre>
+$ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890 .</span>
+0 MiB / 0 MiB 100.0%
+$ <span class="userinput">ls</span>
+hello.txt
+$ <span class="userinput">echo 'hola, mundo' > hola.txt</span>
+$ <span class="userinput">arv keep put --update-collection zzzzz-4zz18-12345abcde67890 ./</span>
+2026-06-22 10:06:14 arvados.arv_put[7354] INFO: Calculating upload size, this could take some time...
+2026-06-22 10:06:14 arvados.arv_put[7354] INFO: Creating new cache file at /home/user/.cache/arvados/arv-put/2a9792e8c4d207bd70cf7470c85c3bbc
+0M / 0M 100.0%
+2026-06-22 10:06:15 arvados.arv_put[7354] INFO: Collection updated: 'hello-world'
+zzzzz-4zz18-12345abcde67890
+</pre></notextile>
+
+The file that already exists in the collection, "hello.txt", is skipped by @arv keep put@ when we upload the current directory's contents.
+
+h4(#arv-keep-put-low-level). Lower-level operations of @arv keep put@
 
 With the option @--stream@, @arv keep put@ will upload the files to Keep, but does not create a collection.  Instead, the manifest text is written to the standard output.
 
