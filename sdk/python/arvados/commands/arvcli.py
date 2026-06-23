@@ -817,7 +817,10 @@ def _handle_external_command(module_name: str, args: list[str]) -> NoReturn:
     return value as the exit status code.
     """
     external_mod = importlib.import_module(module_name)
-    sys.exit(external_mod.main(args))
+    external_mod.main(args)  # Exits.
+    raise RuntimeError(
+        f"Error: {module_name}.main() did not exit when called with {args!r}"
+    )
 
 
 def _format_api_error_msg(err: arvados.errors.ApiError, method_call) -> str:
@@ -1167,7 +1170,7 @@ def dispatch(arguments=None):
         _handle_get_subcommand(api_client, cmd_parser, args)  # Exits.
 
     # NOTE: The code immediately below is not reachable.
-    raise RuntimeError("Unexpected arguments: {arguments!r}")
+    raise RuntimeError(f"Unexpected arguments: {arguments!r}")
 
 
 if __name__ == "__main__":

@@ -40,8 +40,9 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
     def test_unsupported_arg(self):
         out = tutil.StringIO()
         with tutil.redirected_streams(stdout=out, stderr=out), \
-             self.assertRaises(SystemExit):
+             self.assertRaises(SystemExit) as cm:
             self.run_arv_keepdocker(['-x=unknown'], sys.stderr)
+        self.assertEqual(2, cm.exception.code)
         self.assertRegex(out.getvalue(), r'unrecognized arguments')
 
     def test_version_argument(self):
@@ -215,8 +216,8 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                             stdout=subprocess.PIPE)), \
              mock.patch('arvados.commands.keepdocker.prep_image_file',
                         return_value=(mocked_file, False)), \
-             mock.patch('arvados.commands.put.main',
-                        return_value='new-collection-uuid'), \
+             mock.patch('arvados.commands.put.do_put',
+                        return_value=(0, 'new-collection-uuid')), \
              self.assertRaises(StopTest):
 
             api()._rootDesc = fakeDD

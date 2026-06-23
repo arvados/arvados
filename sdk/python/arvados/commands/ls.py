@@ -60,7 +60,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, api_client=None, 
             if not (isinstance(reader, arvados.CollectionReader) or
                     isinstance(reader, arvados.collection.Subcollection)):
                 logger.error("'{}' is not a subdirectory".format(get_prefix))
-                return 1
+                sys.exit(1)
         else:
             stream_name = '.'
             reader = cr
@@ -68,7 +68,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, api_client=None, 
             arvados.errors.ArgumentError,
             arvados.errors.NotFoundError) as error:
         logger.error("error fetching collection: {}".format(error))
-        return 1
+        sys.exit(1)
 
     formatters = []
     if args.s:
@@ -78,7 +78,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, api_client=None, 
     for f in files_in_collection(reader, stream_name):
         print(*(info_func(f) for info_func in formatters), file=stdout)
 
-    return 0
+    sys.exit(0)
 
 def files_in_collection(c, stream_name='.'):
     # Sort first by file type, then alphabetically by file path.

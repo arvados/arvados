@@ -40,7 +40,9 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
     def run_ls(self, args, api_client, logger=None):
         self.stdout = StringIO()
         self.stderr = StringIO()
-        return arv_ls.main(args, self.stdout, self.stderr, api_client, logger)
+        with self.assertRaises(SystemExit) as cm:
+            arv_ls.main(args, self.stdout, self.stderr, api_client, logger)
+        return cm.exception.code
 
     def test_plain_listing(self):
         collection, api_client = self.mock_api_for_manifest(
@@ -90,6 +92,5 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
         import warnings
         warnings.simplefilter("ignore")
         with redirected_streams(stdout=StringIO, stderr=StringIO) as (out, err):
-            with self.assertRaises(SystemExit):
-                self.run_ls(['--version'], None)
+            self.assertEqual(0, self.run_ls(['--version'], None))
         self.assertVersionOutput(out, err)

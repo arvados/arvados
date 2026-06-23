@@ -1143,8 +1143,8 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
         raise ValueError("Not a valid project UUID: {}".format(project_uuid))
     return query.execute(num_retries=num_retries)['uuid']
 
-def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
-         install_sig_handlers=True):
+def do_put(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
+           install_sig_handlers=True) -> tuple[int, str | None]:
     global api_client
 
     args = parse_arguments(arguments)
@@ -1153,7 +1153,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         logger.setLevel(logging.WARNING)
     else:
         logger.setLevel(logging.INFO)
-    status = 0
 
     request_id = arvados.util.new_request_id()
 
@@ -1173,7 +1172,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         # make sure the user provides a complete YYYY-MM-DD date.
         if not re.match(r'^\d{4}(?P<dash>-?)\d{2}?(?P=dash)\d{2}', args.trash_at):
             logger.error("--trash-at argument format invalid, use --help to see examples.")
-            sys.exit(1)
+            return 2, None
         # Check if no time information was provided. In that case, assume end-of-day.
         if re.match(r'^\d{4}(?P<dash>-?)\d{2}?(?P=dash)\d{2}$', args.trash_at):
             args.trash_at += 'T23:59:59'
@@ -1181,7 +1180,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             trash_at = ciso8601.parse_datetime(args.trash_at)
         except:
             logger.error("--trash-at argument format invalid, use --help to see examples.")
-            sys.exit(1)
+            return 2, None
         else:
             if trash_at.tzinfo is not None:
                 # Timezone aware datetime provided.
@@ -1197,21 +1196,21 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
 
         if trash_at <= datetime.datetime.utcnow():
             logger.error("--trash-at argument must be set in the future")
-            sys.exit(1)
+            return 2, None
     if args.trash_after is not None:
         if args.trash_after < 1:
             logger.error("--trash-after argument must be >= 1")
-            sys.exit(1)
+            return 2, None
         trash_at = datetime.timedelta(seconds=(args.trash_after * 24 * 60 * 60))
 
     # Determine the name to use
     if args.name:
         if args.stream or args.raw:
             logger.error("Cannot use --name with --stream or --raw")
-            sys.exit(1)
+            return 2, None
         elif args.update_collection:
             logger.error("Cannot use --name with --update-collection")
-            sys.exit(1)
+            return 2, None
         collection_name = args.name
     else:
         collection_name = "Saved at {} by {}@{}".format(
@@ -1221,7 +1220,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
 
     if args.project_uuid and (args.stream or args.raw):
         logger.error("Cannot use --project-uuid with --stream or --raw")
-        sys.exit(1)
+        return 2, None
 
     # Determine the parent project
     try:
@@ -1229,7 +1228,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                                             args.retries)
     except (apiclient_errors.Error, ValueError) as error:
         logger.error(error)
-        sys.exit(1)
+        return 1, None
 
     if args.progress:
         reporter = progress_writer(human_progress)
@@ -1255,14 +1254,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             # Only relative paths patterns allowed
             if p.startswith(os.sep):
                 logger.error("Cannot use absolute paths with --exclude")
-                sys.exit(1)
+                return 2, None
             if os.path.dirname(p):
                 # We don't support of path patterns with '..'
                 p_parts = p.split(os.sep)
                 if '..' in p_parts:
                     logger.error(
                         "Cannot use path patterns that include or '..'")
-                    sys.exit(1)
+                    return 2, None
                 # Path search pattern
                 exclude_paths.append(p)
             else:
@@ -1307,7 +1306,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
             "         Use --no-cache if this is really what you want."]))
-        sys.exit(1)
+        return 1, None
     except ResumeCacheInvalidError:
         logger.error("\n".join([
             "arv-put: Resume cache contains invalid signature: it may have expired",
@@ -1316,17 +1315,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             "         --no-resume to start a new resume cache.",
             "         --no-cache to disable resume cache.",
             "         --batch to ignore the resume cache if invalid."]))
-        sys.exit(1)
+        return 1, None
     except (CollectionUpdateError, PathDoesNotExistError) as error:
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
-        sys.exit(1)
+        return 1, None
     except ArvPutUploadIsPending:
         # Dry run check successful, return proper exit code.
-        sys.exit(2)
+        return 1, None
     except ArvPutUploadNotPending:
         # No files pending for upload
-        sys.exit(0)
+        return 0, None
 
     if not args.dry_run and not args.update_collection and args.resume and writer.bytes_written > 0:
         logger.warning("\n".join([
@@ -1341,7 +1340,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     except (arvados.errors.ApiError, arvados.errors.KeepWriteError) as error:
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
-        sys.exit(1)
+        return 1, None
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
         logger.info("\n")
@@ -1378,14 +1377,9 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             logger.error(
                 "arv-put: Error creating Collection on project: {}.".format(
                     error))
-            status = 1
-    else:
-        status = 1
 
     # Print the locator (uuid) of the new collection.
-    if output is None:
-        status = status or 1
-    elif not args.silent:
+    if output is not None and not args.silent:
         stdout.write(output)
         if not output.endswith('\n'):
             stdout.write('\n')
@@ -1393,11 +1387,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     if install_sig_handlers:
         arv_cmd.restore_signal_handlers()
 
-    if status != 0:
-        sys.exit(status)
+    return (0 if output is not None else 1), output
 
-    # Success!
-    return output
+
+def main(*args, **kwargs):
+    status, _ = do_put(*args, **kwargs)
+    sys.exit(status)
 
 
 if __name__ == '__main__':

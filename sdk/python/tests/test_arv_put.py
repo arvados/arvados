@@ -814,17 +814,19 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
     MAIN_SERVER = {}
     Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
 
-    def call_main_with_args(self, args):
+    def call_do_put_with_args(self, args):
         self.main_stdout.seek(0, 0)
         self.main_stdout.truncate(0)
         self.main_stderr.seek(0, 0)
         self.main_stderr.truncate(0)
-        return arv_put.main(args, self.main_stdout, self.main_stderr)
+        return arv_put.do_put(args, self.main_stdout, self.main_stderr)
 
-    def call_main_on_test_file(self, args=[]):
+    def call_do_put_on_test_file(self, args=[]):
         with self.make_test_file() as testfile:
             path = testfile.name
-            self.call_main_with_args(['--stream', '--no-progress'] + args + [path])
+            self.call_do_put_with_args(
+                ['--stream', '--no-progress'] + args + [path]
+            )
         self.assertTrue(
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
@@ -853,11 +855,11 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         with tutil.redirected_streams(
                 stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
-                self.call_main_with_args(['--version'])
+                self.call_do_put_with_args(['--version'])
         self.assertVersionOutput(out, err)
 
     def test_simple_file_put(self):
-        self.call_main_on_test_file()
+        self.call_do_put_on_test_file()
 
     def test_put_with_unwriteable_cache_dir(self):
         orig_cachedir = arv_put.ResumeCache.CACHE_DIR
@@ -865,7 +867,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         os.chmod(cachedir, 0o0)
         arv_put.ResumeCache.CACHE_DIR = cachedir
         try:
-            self.call_main_on_test_file()
+            self.call_do_put_on_test_file()
         finally:
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
@@ -876,19 +878,19 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         os.chmod(cachedir, 0o0)
         arv_put.ResumeCache.CACHE_DIR = os.path.join(cachedir, 'cachedir')
         try:
-            self.call_main_on_test_file()
+            self.call_do_put_on_test_file()
         finally:
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
 
     def test_put_block_replication(self):
-        self.call_main_on_test_file()
+        self.call_do_put_on_test_file()
         arv_put.api_client = None
         with mock.patch('arvados.collection.KeepClient.local_store_put') as put_mock:
             put_mock.return_value = 'acbd18db4cc2f85cedef654fccc4a4d8+3'
-            self.call_main_on_test_file(['--replication', '1'])
-            self.call_main_on_test_file(['--replication', '4'])
-            self.call_main_on_test_file(['--replication', '5'])
+            self.call_do_put_on_test_file(['--replication', '1'])
+            self.call_do_put_on_test_file(['--replication', '4'])
+            self.call_do_put_on_test_file(['--replication', '5'])
             self.assertEqual(
                 [x[-1].get('copies') for x in put_mock.call_args_list],
                 [1, 4, 5])
@@ -899,8 +901,9 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         test_paths = [testfile1.name, testfile2.name]
         # Reverse-sort the paths, so normalization must change their order.
         test_paths.sort(reverse=True)
-        self.call_main_with_args(['--stream', '--no-progress', '--normalize'] +
-                                 test_paths)
+        self.call_do_put_with_args(
+            ['--stream', '--no-progress', '--normalize'] + test_paths
+        )
         manifest = self.main_stdout.getvalue()
         # Assert the second file we specified appears first in the manifest.
         file_indices = [manifest.find(':' + os.path.basename(path))
@@ -908,26 +911,27 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         self.assertGreater(*file_indices)
 
     def test_error_name_without_collection(self):
-        self.assertRaises(SystemExit, self.call_main_with_args,
-                          ['--name', 'test without Collection',
-                           '--stream', '/dev/null'])
+        status, _ = self.call_do_put_with_args(
+            ['--name', 'test without Collection', '--stream', '/dev/null']
+        )
+        self.assertEqual(2, status)
 
     def test_error_when_project_not_found(self):
-        self.assertRaises(SystemExit,
-                          self.call_main_with_args,
-                          ['--project-uuid', self.Z_UUID])
+        status, _ = self.call_do_put_with_args(['--project-uuid', self.Z_UUID])
+        self.assertEqual(1, status)
 
     def test_error_bad_project_uuid(self):
-        self.assertRaises(SystemExit,
-                          self.call_main_with_args,
-                          ['--project-uuid', self.Z_UUID, '--stream'])
+        status, _ = self.call_do_put_with_args(
+            ['--project-uuid', self.Z_UUID, '--stream']
+        )
+        self.assertEqual(2, status)
 
     def test_error_when_excluding_absolute_path(self):
         tmpdir = self.make_tmpdir()
-        self.assertRaises(SystemExit,
-                          self.call_main_with_args,
-                          ['--exclude', '/some/absolute/path/*',
-                           tmpdir])
+        status, _ = self.call_do_put_with_args(
+            ['--exclude', '/some/absolute/path/*', tmpdir]
+        )
+        self.assertEqual(2, status)
 
     def test_api_error_handling(self):
         coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
@@ -935,9 +939,8 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
             fake_httplib2_response(403), b'{}')
         with mock.patch('arvados.collection.Collection.save_new',
                         new=coll_save_mock):
-            with self.assertRaises(SystemExit) as exc_test:
-                self.call_main_with_args(['/dev/null'])
-            self.assertLess(0, exc_test.exception.args[0])
+            status, output = self.call_do_put_with_args(['/dev/null'])
+            self.assertLess(0, status)
             self.assertLess(0, coll_save_mock.call_count)
             self.assertEqual("", self.main_stdout.getvalue())
 
@@ -948,8 +951,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
             fake_httplib2_response(403), b'{}')
         with mock.patch('arvados.collection.Collection.save_new',
                         new=coll_save_mock):
-            with self.assertRaises(SystemExit):
-                self.call_main_with_args(['/dev/null'])
+            self.call_do_put_with_args(['/dev/null'])
             self.assertRegex(
                 self.main_stderr.getvalue(), matcher)
 
