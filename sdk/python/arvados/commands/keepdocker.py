@@ -559,9 +559,13 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr, install_sig_handl
         if args.name is None:
             put_args += ['--name', collection_name]
 
-        coll_uuid = arv_put.main(
+        status, coll_uuid = arv_put.do_put(
             put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
-            install_sig_handlers=install_sig_handlers).strip()
+            install_sig_handlers=install_sig_handlers)
+        if status == 0:
+            coll_uuid = coll_uuid.strip()
+        else:
+            sys.exit(status)
 
         # Managed properties could be already set
         coll_properties = api.collections().get(uuid=coll_uuid).execute(num_retries=args.retries).get('properties', {})
