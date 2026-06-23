@@ -114,17 +114,32 @@ class TestPassthroughCommands:
         "subcommand,cmd_mod_name",
         arvcli.ArvCLIArgumentParser.external_command_modules.items()
     )
-    def test_args(self, subcommand, cmd_mod_name, run_arvcli):
+    def test_pass_through(self, subcommand, cmd_mod_name, run_arvcli):
         """Test that arbitrary argv ('[...] arvcli.py subcommand --foo bar') to
         arvcli.py gets passed to the underlying subcommand; i.e. the
         passed-through subcommand's `main()` function gets called with
-        ["--foo", "bar"].
+        ["--foo", "bar"].  `arvcli` then exits when the imported `main()` does,
+        with whatever exit code the `main()` generates.
         """
         mock_mod = mock.Mock()
+
+        def mock_main(*args, **kwargs):
+            """Alters some external state, then exits."""
+            print("fake out")
+            print("fake err", file=sys.stderr)
+            sys.exit(42)
+
+        mock_mod.main.side_effect = mock_main
         with pytest.MonkeyPatch.context() as m:
             m.setitem(sys.modules, cmd_mod_name, mock_mod)
-            run_arvcli([*subcommand.split(), "--foo", "bar"])
+            exit_code, out, err = run_arvcli(
+                [*subcommand.split(), "--foo", "bar"]
+            )
+
         mock_mod.main.assert_called_with(["--foo", "bar"])
+        assert exit_code == 42
+        assert out.rstrip() == "fake out"
+        assert err.rstrip() == "fake err"
 
     @pytest.mark.parametrize(
         "subcommand", arvcli.ArvCLIArgumentParser.external_command_modules
