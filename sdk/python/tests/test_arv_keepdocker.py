@@ -42,7 +42,7 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
         with tutil.redirected_streams(stdout=out, stderr=out), \
              self.assertRaises(SystemExit) as cm:
             self.run_arv_keepdocker(['-x=unknown'], sys.stderr)
-        self.assertEqual(cm.exception.code, 2)
+        self.assertEqual(2, cm.exception.code)
         self.assertRegex(out.getvalue(), r'unrecognized arguments')
 
     def test_version_argument(self):

@@ -824,7 +824,9 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
     def call_do_put_on_test_file(self, args=[]):
         with self.make_test_file() as testfile:
             path = testfile.name
-            self.call_do_put_with_args(['--stream', '--no-progress'] + args + [path])
+            self.call_do_put_with_args(
+                ['--stream', '--no-progress'] + args + [path]
+            )
         self.assertTrue(
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
@@ -899,8 +901,9 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         test_paths = [testfile1.name, testfile2.name]
         # Reverse-sort the paths, so normalization must change their order.
         test_paths.sort(reverse=True)
-        self.call_do_put_with_args(['--stream', '--no-progress', '--normalize'] +
-                                 test_paths)
+        self.call_do_put_with_args(
+            ['--stream', '--no-progress', '--normalize'] + test_paths
+        )
         manifest = self.main_stdout.getvalue()
         # Assert the second file we specified appears first in the manifest.
         file_indices = [manifest.find(':' + os.path.basename(path))
