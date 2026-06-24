@@ -38,11 +38,11 @@ h2(#high-level-resource-subcommands). High-level resource subcommands
 
 h3(#arv-get). @arv get@ -- fetch Arvados objects
 
-*Usage*: @arv [--format=json|yaml] get UUID [fields ...]@
+*Usage*: @arv [--format=json|yaml] get UUID [FIELDS ...]@
 
 @arv get@ retrieves arbitrary Arvados object by its "UUID":{{ site.baseurl }}/api/resources.html#object-uuid and writes it to the standard output as JSON (default) or YAML.
 
-The optional @fields@ arguments can be specified to select the fields in the object to display.
+The optional @FIELDS@ arguments can be specified to select the fields in the object to display.
 
 *Example*: Display a "collection":{{ site.baseurl }}/api/methods/collections.html, limiting output to the fields @uuid@, @portable_data_hash@, @version@, and @modified_at@.
 
@@ -82,7 +82,7 @@ You can then choose to edit the object again until the problem is fixed, or disc
 
 h4(#arv-edit). @arv edit@
 
-*Usage*: @arv [--format=json|yaml] edit UUID [fields ...]@
+*Usage*: @arv [--format=json|yaml] edit UUID [FIELDS ...]@
 
 Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
 
@@ -104,11 +104,11 @@ h3(#arv-copy). @arv copy@ -- move objects across Arvados clusters
 
 h3(#arv-keep-ls). @arv keep ls@ -- list Arvados collection contents
 
-*Usage*: @arv keep ls [-s] locator@
+*Usage*: @arv keep ls [-s] LOCATOR@
 
 @arv keep ls@ lists the file contents of Arvados collections.
 
-The @locator@ argument can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "portable data hash":{{ site.baseurl }}/api/methods/collections.html#resource (PDH).
+The @LOCATOR@ can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "portable data hash":{{ site.baseurl }}/api/methods/collections.html#resource (PDH).
 
 *Selected options*:
 
@@ -133,11 +133,11 @@ $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</s
 
 h3(#arv-keep-get). @arv keep get@ -- copy data from Keep or fetch collection manifest
 
-*Usage*: @arv keep get [options] locator[path] [destination]@
+*Usage*: @arv keep get [options] LOCATOR[PATH] [DEST]@
 
-@arv keep get@ copies data from Keep to a local destination, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.  This subcommand is an alias of @arv-get@.
+@arv keep get@ copies data from Keep to a local destination @DEST@, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.  This subcommand is an alias of @arv-get@.
 
-The @locator@ argument can be one of the following --
+The @LOCATOR@ argument can be one of the following --
 
 #  A collection UUID or <abbr title="portable data hash">PDH</abbr>:
    The collection's *manifest text* will be fetched.
@@ -146,13 +146,13 @@ The @locator@ argument can be one of the following --
 #  A full "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator, with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures:
    The individual data *block* in Keep will be downloaded.
 
-The @destination@ argument specifies the local filesystem path where the output is downloaded to.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
+The @DEST@ argument specifies the local filesystem path where the output is downloaded to.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
 
 *Selected options*:
 
 * @-f@: Overwrite existing files at @destination@. (The default is to refuse to write anything if any of the output files already exist.)
 * @--skip-existing@: Skip files that already exist at @destination@ when downloading by path.
-* @--hash=algorithm@: Output file digest by the specified hash algorithm (@md5@, @sha1@, @sha224@, @sha256@, @sha384@, or @sha512@) when downloading by path.
+* @--hash=ALGORITHM@: Output file digest by the specified hash algorithm (@md5@, @sha1@, @sha224@, @sha256@, @sha384@, or @sha512@) when downloading by path.
 * @--strip-manifest@: Remove token signatures from the manifest output.
 
 p(#hello-world). *Example*: Write file content from Keep to standard output.
@@ -198,9 +198,9 @@ More examples, including federated downloads, can be found in the User Guide sec
 
 h3(#arv-keep-put). @arv keep put@ -- upload data to Keep
 
-*Usage*: @arv keep put [options] [paths ...]@
+*Usage*: @arv keep put [OPTIONS] [PATHS ...]@
 
-@arv keep put@ uploads data to Keep.  In the most common usage, the @paths@ are uploaded to Keep and a collection is created with those files as its contents.  Alternatively, an existing collection can be updated with new local files.
+@arv keep put@ uploads data to Keep.  In the most common usage, the @PATHS@ are uploaded to Keep and a collection is created with those files as its contents.  Alternatively, an existing collection can be updated with new local files.
 
 If a path argument is a local directory with a trailing slash (@/@), the contents under the directory will be uploaded.  Otherwise, the directory itself will be a level in the collection.
 
