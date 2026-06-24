@@ -214,7 +214,7 @@ This subcommand is an alias of @arv-put@.  More examples can be found in the sec
 * @--storage-classes@: Comma-separated list of "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html for the uploads.
 * @--normalize@: Peform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data.
 
-*Example*: Update the '"hello, world":#hello-world' collection.
+p(#update-hello-world). *Example*: Update the '"hello-world":#hello-world' collection.
 
 In this example, the collection is downloaded to the current directory, a new file "hola.txt" is added, and the collection is updated with it.
 
@@ -241,3 +241,217 @@ With the option @--stream@, @arv keep put@ will upload the files to Keep, but do
 With the option @--raw@, files will be uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks are written to the standard output.
 
 ---
+
+h3(#arv-keep-docker). @arv keep docker@ -- TODO
+
+---
+
+h2(#api-resource-subcommands). API resource subcommands
+
+@arv@ has a collection of subcommands that closely follows the semantics of the "Arvados API service":{{ site.baseurl }}/api/index.html.
+
+The basic *usage* pattern of these API resource subcommands are as follows --
+
+<notextile><pre>
+<span class="userinput">arv [--format=json|yaml|uuid] RESOURCE METHOD [PARAMETERS]</span>
+</pre></notextile>
+
+@RESOURCE@ is one of the resource types to operate on, for example, @collection@, @user@, @container_request@, etc.  Notice that the argument typically takes the singular noun form: "@group@" as opposed to "groups".
+
+@METHOD@ refers to the operation, for example, @create@, @list@, @update@, @delete@, etc.  Methods shared by most resources are described in '"Common resource methods":{{ site.baseurl }}/api/methods.html' in the API documentation.  In addition, many resources support additional methods, as detailed in their respective sections in the API documentation.  For instance, "the @user@ resource":{{ site.baseurl }}/api/methods/users.html has @activate@, @setup@, @merge@ methods, etc.
+
+@PARAMETERS@ are arguments taken by a method, and they are documented in the "API Reference":{{ site.baseurl}}/api/index.html under each resource-method combination.
+* A method argument in the form of @foo_bar@ becomes the command-line parameter @--foo-bar@.  For example, for @arv collection update@, "the @replace_files@ API argument":{{ site.baseurl }}/api/methods/collections.html#update becomes @--replace-files@.
+* A boolean argument @foo@ becomes a pair of CLI parameters @--foo@ and @--no-foo@, for truth and false values respectively.  For example, the "API method argument @ensure_unique_name@":{{ site.baseurl }}/api/methods/collections.html#untrash becomes the pair @--[no-]ensure-unique-name@.  Currently, all boolean parameters are optional and defaults to false.
+* All CLI parameters have short forms (a single dash followed by a single letter, like @-c@), except the "negated" forms of boolean parameters like @--no-ensure-unique-name@.  Please check the output of @arv resource method -h@ for the short parameters of a specific resource-method combination.
+
+A comprehensive list of available resources for your Arvados cluster can be viewed by @arv --help@.
+
+h3(#resource-type-parameters). "Resource-type" parameters
+
+The @create@ and @update@ methods both "take a 'resource-type' parameter":{{ site.baseurl }}/api/methods.html#create.  This simply refers to a parameter named after the @resource@ itself.
+
+*Examples*:
+
+<notextile><pre>
+$ <span class="userinput">arv collection update --collection=[...]</span>
+</pre></notextile>
+
+and
+
+<notextile><pre>
+$ <span class="userinput">arv api_client_authorization create --api-client-authorization=[...]</span>
+</pre></notextile>
+
+both show the respective resource-type parameters on the command line.
+
+The value of a resource-type parameter can be one of the following --
+
+#  A *string* that represents a valid JSON object (i.e., key-value pairs surrounded by braces @{ }@);
+#  A *path* to a file that contains a valid JSON object; or
+#  A single *dash* (@-@), which causes the input value to be read from the standard input.
+
+(In the rare case where the file path happens to be valid JSON, an error is reported.)
+
+h3(#resource-subcommand-output). Output formats
+
+The following command-line options to @arv@ control the output format.
+
+* @--format=json@: Output as JSON (default).
+* @--format=yaml@: Output as YAML.
+* @--format=uuid@, @-s@, or @--short@: Only output object <notextile>UUID(s)</notextile>.  For the "@list@ method":{{ site.baseurl }}/api/methods.html#index, output the individual items' UUIDs, one line each.
+
+h3(#misc-resource-subcommands). Miscellaneous resource subcommands
+
+The following subcommands are grouped with the API resource commands.
+
+h4(#arv-config). @arv config@ -- public Arvados cluster configuration
+
+*Usage*: @arv [--format=json|yaml] config get@
+
+Get the public configuration file of the Arvados cluster.
+
+h4(#arv-sys). @arv sys@ -- run data trash and sweep
+
+*Usage*: @arv sys get@
+
+Run scheduled data trash and sweep operations across the cluster's Keep services.
+
+Note that for compatibility reasons, @sy@ is an alias of the @sys@ resource.
+
+h4(#arv-vocabulary). @arv vocabulary@ -- metadata vocabulary
+
+*Usage*: @arv [--format=json|yaml] vocabulary get@
+
+Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html managed by the Arvados cluster.
+
+h3(#resource-subcommand-examples). Resource-subcommand examples
+
+*Example*: Get collection from federated cluster by PDH.
+
+For collections, the @get@ method provides for a special use case of fetching a collection by <abbr title="portable data hash">PDH</abbr>.  If the PDH is not found on the home cluster, federated clusters are searched.  When getting a collection by PDH, only the @manifest_text@, @portable_data_hash@, and @trash_at@ fields are returned.
+
+<notextile><pre>
+$ <span class="userinput">arv collection get --uuid 133e9a1bcd7899d51aa8a2b6b6f9fea9+61</span>
+{
+ "created_at": null,
+ "current_version_uuid": "",
+ "delete_at": null,
+ "description": null,
+ "etag": "",
+ "file_count": 0,
+ "file_size_total": 0,
+ "is_trashed": false,
+ "kind": "arvados#collection",
+ "manifest_text": ". deb944805bc57a3010079a8ecf1eb48d+1339378+Rzzyzx-7ab32fdcc9cc588fb934196ff6162acdb9c353ec@6a4e5acd 0:1339378:user.jpg\n",
+ "modified_at": null,
+ "modified_by_user_uuid": "",
+ "name": "",
+ "owner_uuid": "",
+ "portable_data_hash": "133e9a1bcd7899d51aa8a2b6b6f9fea9+61",
+ "preserve_version": false,
+ "properties": null,
+ "replication_confirmed": null,
+ "replication_confirmed_at": null,
+ "replication_desired": null,
+ "storage_classes_confirmed": null,
+ "storage_classes_confirmed_at": null,
+ "storage_classes_desired": null,
+ "trash_at": null,
+ "unsigned_manifest_text": "",
+ "uuid": "133e9a1bcd7899d51aa8a2b6b6f9fea9+61",
+ "version": 0
+}
+</pre></notextile>
+
+Here, the manifest text contains a "remote signature":{{ site.baseurl }}/architecture/manifest-format.html#federationsignatures, indicating the data block is not on the home cluster (@zzzzz@ in this guide), but is available on the federated cluster @zzyzx@.
+
+*Example*: Create new project.
+
+<notextile><pre>
+$ <span class="userinput">arv group create --group '{"group_class": "project", "name": "hello-project"}'</span>
+{
+ "can_manage": true,
+ "can_write": true,
+ "created_at": "2026-06-24T07:39:20.950807457Z",
+ "delete_at": null,
+ "description": null,
+ "etag": "12345abcde67890fghij12345",
+ "frozen_by_uuid": null,
+ "group_class": "project",
+ "is_trashed": false,
+ "kind": "arvados#group",
+ "modified_at": "2026-06-24T07:39:20.946873000Z",
+ "modified_by_user_uuid": "zzzzz-tpzed-12345abcde67890",
+ "name": "hello-project",
+ "owner_uuid": "zzzzz-tpzed-12345abcde67890",
+ "properties": {},
+ "trash_at": null,
+ "uuid": "zzzzz-j7d0g-12345abcde67890",
+ "writable_by": [
+  "zzzzz-tpzed-12345abcde67890",
+  "zzzzz-tpzed-12345abcde67890"
+ ]
+}
+</pre></notextile>
+
+Notice that here the @--group@ option is a "resource-type parameter":#resource-type-parameters.
+
+*Example*: List users with email-address filter.
+
+The @list@ methods support the parameter @--fiters@ that can efficiently query the API service for objects matching specific conditions.  The following command searches for users whose associated email addresses are in the specified domain, and outputs their UUIDs:
+
+<notextile><pre>
+$ <span class="userinput">arv -s user list --filters '[["email", "ilike", "%@example.com"]]'</span>
+zzzzz-tpzed-12345abcde67890
+</pre></notextile>
+
+More examples of using filters can be found in the "API Reference":{{ site.baseurl }}/api/methods.html#filters.
+
+You can also pass the path of a JSON file to the @--filters@ parameter.  Alternatively, a single dash (@-@) means reading the filters from the standard input.
+
+*Example*: Update collection with @--replace-files@.
+
+The "'hello-world' collection":#update-hello-world in a previous example contains two files, "hello.txt" and "hola.txt" at the top level.
+
+We will add a new file "hello-world.c" to the collection, and re-organize the collection contents into two new directories: "natural-langauges" that will contain the two existing files, and "programming-languages" with the new file.
+
+The "@replace_files@ API argument":{{ site.baseurl }}/api/methods/collections.html#replace_files lets us re-organize the collection contents with the @collection update@ method.
+
+First, we need to upload the new file content to Keep storage without creating a new collection, using "the command @arv keep put --stream@":#arv-keep-put-low-level.  The manifest text is then written to the standard output:
+
+<notextile><pre>
+$ <span class="userinput">arv keep put --stream hello-world.c</span>
+[...]
+. bbae5d9983ce453e09ff5b2d40cca5c5+66+A225a7c0842f7fefbaedf42ed87cbcdb27cae836a@6a4e0c74 0:66:hello-world.c
+</pre></notextile>
+
+Then, we perform an atomic update of collection contents:
+
+<notextile><pre>
+$ <span class="userinput">arv collection update --uuid zzzzz-4zz18-12345abcde67890 \</span>
+> <span class="userinput">--replace-files \</span>
+> <span class="userinput">'{</span>
+> <span class="userinput">  "/natural-languages/hello.txt": "current/hello.txt",</span>
+> <span class="userinput">  "/natural-languages/hola.txt": "current/hola.txt",</span>
+> <span class="userinput">  "/hello.txt": "",</span>
+> <span class="userinput">  "/hola.txt": "",</span>
+> <span class="userinput">  "/programming-langauges/hello-world.c": "manifest_text/hello-world.c"</span>
+> <span class="userinput">}' \</span>
+> <span class="userinput">--collection \</span>
+> <span class="userinput">'{</span>
+> <span class="userinput">  "manifest_text": ". bbae5d9983ce453e09ff5b2d40cca5c5+66+A225a7c0842f7fefbaedf42ed87cbcdb27cae836a@6a4e0c74 0:66:hello-world.c\n"</span>
+> <span class="userinput">}'</span>
+</pre></notextile>
+
+*Example*: Trashing a collection by the @delete@ method.
+
+<notextile><pre>
+$ <span class="userinput">arv collection delete --uuid zzzzz-4zz18-12345abcde67890</span>
+</pre></notextile>
+
+This puts the collection in the "trash":{{ site.baseurl }}/api/methods/collections.html#trashing.
+
+h4(#user-admin-examples). User administration examples
+
+Examples about performing user administration work with @arv@ can be found in the "Admin Guide":{{ site.baseurl }}/admin/user-management-cli.html.
