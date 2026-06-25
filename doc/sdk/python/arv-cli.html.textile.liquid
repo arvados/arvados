@@ -102,7 +102,7 @@ h4(#arv-create). @arv create@
 
 @arv create@ starts a text editor in which you can create a new Arvados object using one of the two supported formats, JSON (default) or YAML.  The @RESOURCE@ argument can be any of the supported Arvados resource types (e.g., @collection@, @group@, @user@, etc.) as detailed in the "API Reference":{{ site.baseurl}}/api/index.html.
 
-When you save the work in the editor and exit, @arv@ will validate the object, then send an API request for object creation.  If a problem arises, detailed error messages will be shown and you will see a prompt like the following:
+When you save the work in the editor and exit, @arv@ will validate the object, then send an API request for object creation.  If a problem arises, detailed error messages will be shown, and you will see a prompt like the following:
 
 <notextile><pre>Edit and try again? ([Y]es/no) </pre></notextile>
 
@@ -120,7 +120,7 @@ h4(#arv-edit). @arv edit@
 
 Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
 
-Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  You are not limited to those fields though, because you can always add any (valid) fields in the editor.  Conversely, removing any fields from the object means that those fields will not be updated.
+Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  Nevertheless, you are not limited to those fields, because you can always add any (valid) fields in the editor.  Conversely, removing any fields from the object means that those fields will not be updated.
 
 The editing process largely follows that of @arv create@.  If any problem arises after you save the object and exit the editor, you will be interactively prompted to fix it, before the changes are actually committed to Arvados.
 
@@ -272,7 +272,7 @@ h4(#arv-keep-put-low-level). Lower-level operations of @arv keep put@
 
 With the option @--stream@, @arv keep put@ uploads the files to Keep, but does not create a collection.  Instead, the manifest text is written to the standard output.
 
-With the option @--raw@, files will be uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks is written to the standard output.
+With the option @--raw@, files are be uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks is written to the standard output.
 
 ---
 
@@ -309,7 +309,7 @@ h2(#api-resource-subcommands). API resource subcommands
 
 @arv@ has a collection of subcommands that closely follow the semantics of the "Arvados API service":{{ site.baseurl }}/api/index.html.
 
-The basic *usage* pattern of these API resource subcommands are as follows --
+The basic *usage* pattern of these API resource subcommands is as follows --
 
 <notextile><pre>
 <span class="userinput">arv [--format=json|yaml|uuid] RESOURCE METHOD [PARAMETERS]</span>
@@ -523,7 +523,7 @@ h3(#arv-ws). @arv ws@ -- WebSocket client
 
 @arv ws@ provides access to the WebSockets event stream, displaying Arvados log events as they arrive.  For detailed information about the logs API, please refer to its "API Reference section":{{ site.baseurl }}/api/methods/logs.html.
 
-Once started, this subcommand will keep listening to events until interrupted, for example by <kbd>Ctrl</kbd>-<kbd>C</kbd>.
+Once started, this subcommand will keep listening to events until interrupted, for example, by <kbd>Ctrl</kbd>-<kbd>C</kbd>.
 
 *Selected options*:
 
