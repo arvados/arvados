@@ -242,7 +242,32 @@ With the option @--raw@, files will be uploaded to Keep, and the comma-separated
 
 ---
 
-h3(#arv-keep-docker). @arv keep docker@ -- TODO
+h3(#arv-keep-docker). @arv keep docker@ -- List or upload Docker images
+
+*Usage*: @arv keep docker [OPTIONS] [IMAGE[:TAG]]@
+
+When invoked as @arv keep docker@, the command displays the Docker images stored on the Arvados cluster.
+
+When the @IMAGE@ argument is given, optionally with a tag (default tag: @latest@), it uploads the Docker image to Arvados.  Upon completion, the UUID of the collection containing the image is written to the standard output.
+
+@arv keep docker@ is an alias of the @arv-keepdocker@ command.  Further examples can be found in the section '"Working with container images":{{ site.baseurl }}/user/topics/arv-docker.html#upload' in the User Guide.
+
+*Selected options*:
+
+* @--project-uuid=UUID@: Upload the Docker image to the project specified by UUID.
+* @--name@: Set the collection's name for the upload.
+* @--pull@: Pull the Docker image from an image registry.  The default behavior is to only upload local images (@--no-pull@).
+
+*Example*: Pull image and upload to Arvados.
+
+The following command pulls the image with a specific tag from the "BioContainers registry":https://quay.io/biocontainers and uploads it to Arvados.
+
+<notextile><pre>
+$ <span class="userinput">arv keep docker --pull quay.io/biocontainers/star:2.7.5c--0</span>
+[...]
+2026-06-24 23:55:13 arvados.arv_put[7557] INFO: Collection saved as 'Docker image quay.io biocontainers star:2.7.5c--0 sha256:89936'
+zzzzz-4zz18-veebf08kyoi9eks
+</pre></notextile>
 
 ---
 
