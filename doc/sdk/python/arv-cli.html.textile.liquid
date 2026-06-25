@@ -28,6 +28,33 @@ Do not include --help output from any tool. This is meant to be a higher-level o
 
 You can start using your Arvados cluster with @arv@ after configuring the working environment with an Arvados API token.  Please refer to the sections '"Getting an API token":{{ site.baseurl }}/user/reference/api-tokens.html' and '"Checking your environment":{{ site.baseurl }}/user/getting_started/check-environment.html' in the User Guide for details.
 
+h2. Table of contents
+
+#  "Overview":#overview
+#  "High-level resource subcommands":#high-level-resource-subcommands
+#*  "@arv get@ -- Fetch Arvados objects":#arv-get
+#*  "@arv create@, @arv edit@ -- Create and update Arvados objects in text editor":#editor-commands
+#**  "@arv create@":#arv-create
+#**  "@arv edit@":#arv-edit
+#  "Data subcommands":#data-subcommands
+#*  "@arv copy@ -- Move objects across Arvados clusters":#arv-copy
+#*  "@arv keep ls@ -- List Arvados collection contents":#arv-keep-ls
+#*  "@arv keep get@ -- Copy data from Keep or fetch collection manifest":#arv-keep-get
+#*  "@arv keep put@ -- Upload data to Keep":#arv-keep-put
+#**  "Lower-level operations of @arv keep put@":#arv-keep-put-low-level
+#*  "@arv keep docker@ -- List or upload Docker images":#arv-keep-docker
+#  "API resource subcommands":#api-resource-subcommands
+#*  "'Resource-type' parameters":#resource-type-parameters
+#*  "Output formats":#resource-subcommand-output
+#*  "Miscellaneous resource subcommands":#misc-resource-subcommands
+#**  "@arv config@ -- Public Arvados cluster configuration":#arv-config
+#**  "@arv sys@ -- Run data trash and sweep":#arv-sys
+#**  "@arv vocabulary@ -- Metadata vocabulary":#arv-vocabulary
+#*  "Resource-subcommand examples":#resource-subcommand-examples
+#**  "User administration examples":#user-admin-examples
+#  "Additional subcommands":#additional-subcommands
+#*  "@arv ws@ -- WebSocket client":#arv-ws
+
 h2(#overview). Overview
 
 @arv@ is a collection of _subcommands_ that can be broadly divided into three kinds; namely, high-level resource subcommands, data subcommands, and low-level resource subcommands that closely follow the Arvados API semantics.
