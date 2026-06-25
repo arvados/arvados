@@ -36,7 +36,7 @@ For every subcommand, you can get help with the @-h@/@--help@ option.  For examp
 
 h2(#high-level-resource-subcommands). High-level resource subcommands
 
-h3(#arv-get). @arv get@ -- fetch Arvados objects
+h3(#arv-get). @arv get@ -- Fetch Arvados objects
 
 *Usage*: @arv [--format=json|yaml] get UUID [FIELDS ...]@
 
@@ -58,7 +58,7 @@ $ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data
 
 ---
 
-h3(#editor-commands). @arv create@, @arv edit@ -- create and update Arvados objects in text editor
+h3(#editor-commands). @arv create@, @arv edit@ -- Create and update Arvados objects in text editor
 
 @arv@ lets you interactively create new Arvados objects and update existing ones in a text editor.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is avaialble in @PATH@, and falls back to @vi@ otherwise.
 
@@ -96,13 +96,13 @@ h2(#data-subcommands). Data subcommands
 
 The following subcommands work on data associated with Arvados objects.
 
-h3(#arv-copy). @arv copy@ -- move objects across Arvados clusters
+h3(#arv-copy). @arv copy@ -- Move objects across Arvados clusters
 
 @arv copy@ is an alias of the @arv-copy@ command.  It can copy collections, projects, and workflows (with their dependencies) from one Arvados cluser to another, or download data from URLs to Arvados collections.  More examples can be found in the section '"Using arv-copy":{{ site.baseurl}}/user/topics/arv-copy.html' of the User Guide, and you can refer to the output of @arv copy --help@ for more about the command-line parameters.
 
 ---
 
-h3(#arv-keep-ls). @arv keep ls@ -- list Arvados collection contents
+h3(#arv-keep-ls). @arv keep ls@ -- List Arvados collection contents
 
 *Usage*: @arv keep ls [-s] LOCATOR@
 
@@ -131,7 +131,7 @@ $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</s
 
 ---
 
-h3(#arv-keep-get). @arv keep get@ -- copy data from Keep or fetch collection manifest
+h3(#arv-keep-get). @arv keep get@ -- Copy data from Keep or fetch collection manifest
 
 *Usage*: @arv keep get [options] LOCATOR[PATH] [DEST]@
 
@@ -196,7 +196,7 @@ More examples, including federated downloads, can be found in the User Guide sec
 
 ---
 
-h3(#arv-keep-put). @arv keep put@ -- upload data to Keep
+h3(#arv-keep-put). @arv keep put@ -- Upload data to Keep
 
 *Usage*: @arv keep put [OPTIONS] [PATHS ...]@
 
@@ -305,13 +305,13 @@ h3(#misc-resource-subcommands). Miscellaneous resource subcommands
 
 The following subcommands are grouped with the API resource commands.
 
-h4(#arv-config). @arv config@ -- public Arvados cluster configuration
+h4(#arv-config). @arv config@ -- Public Arvados cluster configuration
 
 *Usage*: @arv [--format=json|yaml] config get@
 
 Get the public configuration file of the Arvados cluster.
 
-h4(#arv-sys). @arv sys@ -- run data trash and sweep
+h4(#arv-sys). @arv sys@ -- Run data trash and sweep
 
 *Usage*: @arv sys get@
 
@@ -319,7 +319,7 @@ Run scheduled data trash and sweep operations across the cluster's Keep services
 
 Note that for compatibility reasons, @sy@ is an alias of the @sys@ resource.
 
-h4(#arv-vocabulary). @arv vocabulary@ -- metadata vocabulary
+h4(#arv-vocabulary). @arv vocabulary@ -- Metadata vocabulary
 
 *Usage*: @arv [--format=json|yaml] vocabulary get@
 
