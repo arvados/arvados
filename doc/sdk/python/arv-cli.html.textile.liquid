@@ -26,7 +26,7 @@ Do not include --help output from any tool. This is meant to be a higher-level o
 
 @arv@ is the command-line client for Arvados.  With @arv@, you can access Arvados API and Keep services, view and operate on Arvados resources and objects, and perform admin work.  It is distributed as part of the Arvados Python SDK.
 
-You can start using your Arvados cluster with @arv@ after configuring the working environment with an Arvados API token.  Please refer to the sections '"Getting an API token":{{ site.baseurl }}/user/reference/api-tokens.html' and '"Checking your environment":{{ site.baseurl }}/user/getting_started/check-environment.html' in the User Guide for details.
+You can start using your Arvados cluster with @arv@ after configuring the working environment with an Arvados API token.  Please refer to the sections '"Getting an API token":{{ site.baseurl }}/user/reference/api-tokens.html' and '"Checking your environment":{{ site.baseurl }}/user/getting_started/check-environment.html' in the User Guide for details.  In this document, we will use @zzzzz@ to stand for the Arvados cluster ID.
 
 h2. Table of contents
 
@@ -60,6 +60,12 @@ h2(#overview). Overview
 @arv@ is a collection of _subcommands_ that can be broadly divided into three kinds, namely, high-level resource subcommands, data subcommands, and low-level resource subcommands that closely follow the Arvados API semantics.
 
 For every subcommand, you can get help with the @-h@/@--help@ option.  For example, @arv collection update -h@ will print the help information about the specific subcommand @collection update@.
+
+h3(#exit-codes). Exit codes
+
+*  0: Success.
+*  1: An error has occurred during the operation (server indicating a failure, local resource being unavailable, etc.).
+*  2: The command-line input is invalid, and no operation has been performed.
 
 h2(#high-level-resource-subcommands). High-level resource subcommands
 
@@ -113,7 +119,7 @@ h4(#arv-edit). @arv edit@
 
 Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
 
-Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  You are not limited to those fields when editing the object though, because you can always add (valid) fields during editing.  Conversely, removing any fields from the object means that those fields will not be updated.
+Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  You are not limited to those fields though, because you can always add any (valid) fields in the editor.  Conversely, removing any fields from the object means that those fields will not be updated.
 
 The editing process largely follows that of @arv create@.  If any problem arises after you save the object and exit the editor, you will be interactively prompted to fix it, before the changes are actually committed to Arvados.
 
