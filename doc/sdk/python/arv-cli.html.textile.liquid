@@ -324,7 +324,7 @@ The basic *usage* pattern of these API resource subcommands are as follows --
 * A boolean argument @foo@ becomes a pair of CLI parameters @--foo@ and @--no-foo@, for true and false values respectively.  For example, the "API method argument @ensure_unique_name@":{{ site.baseurl }}/api/methods/collections.html#untrash becomes the pair @--[no-]ensure-unique-name@.  Currently, all boolean parameters are optional and default to false.
 * All CLI parameters have short forms (a single dash followed by a single letter, like @-c@), except the "negated" forms of boolean parameters like @--no-ensure-unique-name@.  Please check the output of @arv resource method -h@ for the short parameters of a specific resource-method combination.
 
-A comprehensive list of available resources for your Arvados cluster can be viewed by running @arv --help@.
+The CLI bindings for the resources, methods, and parameters are defined by the "discovery document":{{ site.baseurl }}/api/index.html#discovery-document published by the Arvados API server.  A comprehensive list of available resources for your Arvados cluster can be viewed by running @arv --help@.
 
 h3(#resource-type-parameters). "Resource-type" parameters
 
@@ -364,11 +364,11 @@ h3(#misc-resource-subcommands). Miscellaneous resource subcommands
 
 The following subcommands are grouped with the API resource commands.
 
-h4(#arv-config). @arv config@ -- Public Arvados cluster configuration
+h4(#arv-config). @arv config@ -- Get Arvados cluster configuration
 
 *Usage*: @arv [--format=json|yaml] config get@
 
-Get the public configuration file of the Arvados cluster.
+Get the "publicly exported configuration":{{ site.baseurl }}/api/index.html#exported-configuration of the Arvados cluster.
 
 h4(#arv-sys). @arv sys@ -- Run data trash and sweep
 
@@ -378,11 +378,11 @@ Run scheduled data trash and sweep operations across the cluster's Keep services
 
 Note that for compatibility reasons, @sy@ is an alias of the @sys@ resource.
 
-h4(#arv-vocabulary). @arv vocabulary@ -- Metadata vocabulary
+h4(#arv-vocabulary). @arv vocabulary@ -- Get metadata vocabulary
 
 *Usage*: @arv [--format=json|yaml] vocabulary get@
 
-Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html managed by the Arvados cluster.
+Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html managed and "exported":{{ site.baseurl }}/api/index.html#exported-vocabulary by the Arvados cluster.
 
 h3(#resource-subcommand-examples). Resource-subcommand examples
 
