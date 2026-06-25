@@ -455,3 +455,52 @@ This puts the collection in the "trash":{{ site.baseurl }}/api/methods/collectio
 h4(#user-admin-examples). User administration examples
 
 Examples about performing user administration work with @arv@ can be found in the "Admin Guide":{{ site.baseurl }}/admin/user-management-cli.html.
+
+h2(#additional-subcommands). Additional subcommands
+
+h3(#arv-ws). @arv ws@ -- WebSocket client
+
+*Usage*: @arv ws [OPTIONS]@
+
+@arv ws@ provides access to the WebSockets event stream, displaying Arvados log events as they arrive.  For detailed information about the logs API, please refer to its "API Reference section":{{ site.baseurl }}/api/methods/logs.html.
+
+Once started, this subcommand will keep listening to events until interrupted, for example by <kbd>Ctrl</kbd>-<kbd>C</kbd>.
+
+*Selected options*:
+
+* @-f@, @--filters@: Apply "filters":{{ site.baseurl }}/api/methods.html#filters to log events.
+* @--uuid@: Simple filtering by the @object_uuid@ field of events.
+* @-i@, @--id=N@: Start from given log ID.
+* @-s@, @--start-time=TIME@: Start from given time (specified as @YYYY-MM-DD@ or @YYYY-MM-DD hh:mm:ss@).
+
+*Examples*:
+
+The following session logs an event for collection trashing (slightly re-formatted for legibility).
+
+<notextile><pre>
+$ <span class="userinput">arv ws</span>
+{
+ "event_at": "2026-06-25T02:12:21.650905Z",
+ "event_type": "update",
+ "id": 240,
+ "msgID": 2,
+ "object_kind": "arvados#collection",
+ "object_owner_uuid": "zzzzz-tpzed-12345abcde67890",
+ "object_uuid": "zzzzz-4zz18-12345abcde67890",
+ "properties": {
+  "new_attributes": {
+   "is_trashed": true,
+   "name": "hello-world",
+   "owner_uuid": "zzzzz-tpzed-12345abcde67890",
+   "portable_data_hash": "0c139c33f961ef83eb17508fb4255019+165"
+  },
+  "old_attributes": {
+   "is_trashed": false,
+   "name": "hello-world",
+   "owner_uuid": "zzzzz-tpzed-12345abcde67890",
+   "portable_data_hash": "0c139c33f961ef83eb17508fb4255019+165"
+  }
+ },
+ "uuid": "zzzzz-57u5n-qwj78wid4oohho1"
+}
+</pre></notextile>
