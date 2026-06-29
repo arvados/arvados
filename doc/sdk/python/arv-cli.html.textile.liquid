@@ -140,7 +140,7 @@ The @LOCATOR@ can be either a collection UUID (in the form of @zzzzz-4zz18-12345
 
 * @-s@: If specified, the file sizes are shown (in KiB).
 
-*Example*: List files by the <abbr title="portable data hash">PDH</abbr> of a collection.
+*Example*: List files by the portable data hash of a collection.
 
 <notextile><pre>
 $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</span>
@@ -163,14 +163,11 @@ h3(#arv-keep-get). @arv keep get@ -- Copy data from Keep or fetch collection man
 
 @arv keep get@ copies data from Keep to a local destination @DEST@, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.  This subcommand is an alias of @arv-get@.
 
-The @LOCATOR@ argument can be one of the following --
+The @LOCATOR@ argument can be one of the following:
 
-#  A collection UUID or <abbr title="portable data hash">PDH</abbr>:
-   The collection's *manifest text* will be fetched.
-#  A collection UUID or <abbr title="portable data hash">PDH</abbr> with a @path@ component:
-   *File(s)* in the collection will be downloaded.  A @path@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory @path@ (ending in a @/@) refers to files and subdirectories under it recursively.  A single @/@ as the @path@ refers to the full contents of the collection.
-#  A full "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator, with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures:
-   The individual data *block* in Keep will be downloaded.
+#  A collection UUID or portable data hash: The collection's _manifest text_ will be fetched.
+#  A collection UUID or portable data hash with a @path@ component: _File(s)_ in the collection will be downloaded.  A @path@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory @path@ (ending in a @/@) refers to files and subdirectories under it recursively.  A single @/@ as the @path@ refers to the full contents of the collection.
+#  A full "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator, with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures: The individual data _block_ in Keep will be downloaded.
 
 The @DEST@ argument specifies the location where the output is downloaded.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
 
@@ -258,13 +255,13 @@ $ <span class="userinput">arv keep put --update-collection zzzzz-4zz18-12345abcd
 zzzzz-4zz18-12345abcde67890
 </pre></notextile>
 
-The file that already exists in the collection, "hello.txt", is skipped by @arv keep put@ when we upload the current directory's contents.
+The file that already exists in the collection, @hello.txt@, is skipped by @arv keep put@ when we upload the current directory's contents.
 
 h4(#arv-keep-put-low-level). Lower-level operations of @arv keep put@
 
 With the option @--stream@, @arv keep put@ uploads the files to Keep, but does not create a collection.  Instead, the manifest text is written to the standard output.
 
-With the option @--raw@, files are be uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks is written to the standard output.
+With the option @--raw@, files are uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks is written to the standard output.
 
 ---
 
@@ -301,7 +298,7 @@ h2(#api-resource-subcommands). API resource subcommands
 
 @arv@ has a collection of subcommands that closely follow the semantics of the "Arvados API service":{{ site.baseurl }}/api/index.html.
 
-The basic *usage* pattern of these API resource subcommands is as follows --
+The basic *usage* pattern of these API resource subcommands is as follows:
 
 <notextile><pre>
 <span class="userinput">arv [--format=json|yaml|uuid] RESOURCE METHOD [PARAMETERS]</span>
@@ -336,11 +333,11 @@ $ <span class="userinput">arv api_client_authorization create --api-client-autho
 
 both show the respective resource-type parameters on the command line.
 
-The value of a resource-type parameter can be one of the following --
+The value of a resource-type parameter can be one of the following:
 
-#  A *string* that represents a valid JSON object (i.e., key-value pairs surrounded by braces @{ }@);
-#  A *path* to a file that contains a valid JSON object; or
-#  A single *dash* (@-@), which causes the input value to be read from the standard input.
+#  A _string_ that represents a valid JSON object (i.e., key-value pairs surrounded by braces @{ }@);
+#  A _path_ to a file that contains a valid JSON object; or
+#  A single _dash_ (@-@), which causes the input value to be read from the standard input.
 
 (In the rare case where the file path string itself happens to be valid JSON, an error is reported.)
 
@@ -378,44 +375,22 @@ Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.htm
 
 h3(#resource-subcommand-examples). Resource-subcommand examples
 
-*Example*: Get collection from federated cluster by PDH.
+*Example*: Get collection from federated cluster by portable data hash.
 
-For collections, the @get@ method provides for a special use case of fetching a collection by <abbr title="portable data hash">PDH</abbr>.  If the PDH is not found on the home cluster, federated clusters are searched.  When getting a collection by PDH, only the @kind@, @manifest_text@, @portable_data_hash@, and @trash_at@ fields are populated with meaningful values.
+For collections, the @get@ method provides for a special use case of fetching a collection by its portable data hash.  If the portable data has is not found on the home cluster, federated clusters are searched.  When getting a collection by the portable data hash, only the @kind@, @manifest_text@, @portable_data_hash@, and @trash_at@ fields are populated with meaningful values.
 
 <notextile><pre>
-$ <span class="userinput">arv collection get --uuid 133e9a1bcd7899d51aa8a2b6b6f9fea9+61</span>
+$ <span class="userinput">arv collection get --uuid 133e9a1bcd7899d51aa8a2b6b6f9fea9+61 --select '[
+  "kind", "manifest_text", "portable_data_hash", "trash_at"
+]'</span>
 {
- "created_at": null,
- "current_version_uuid": "",
- "delete_at": null,
- "description": null,
- "etag": "",
- "file_count": 0,
- "file_size_total": 0,
  "is_trashed": false,
  "kind": "arvados#collection",
  "manifest_text": ". deb944805bc57a3010079a8ecf1eb48d+1339378+Rzzyzx-7ab32fdcc9cc588fb934196ff6162acdb9c353ec@6a4e5acd 0:1339378:user.jpg\n",
- "modified_at": null,
- "modified_by_user_uuid": "",
- "name": "",
- "owner_uuid": "",
  "portable_data_hash": "133e9a1bcd7899d51aa8a2b6b6f9fea9+61",
- "preserve_version": false,
- "properties": null,
- "replication_confirmed": null,
- "replication_confirmed_at": null,
- "replication_desired": null,
- "storage_classes_confirmed": null,
- "storage_classes_confirmed_at": null,
- "storage_classes_desired": null,
- "trash_at": null,
- "unsigned_manifest_text": "",
- "uuid": "133e9a1bcd7899d51aa8a2b6b6f9fea9+61",
- "version": 0
+ "trash_at": null
 }
 </pre></notextile>
-
-Here, the manifest text contains a "remote signature":{{ site.baseurl }}/architecture/manifest-format.html#federationsignatures, indicating the data block is not on the home cluster (@zzzzz@ in this guide), but is available on the federated cluster @zzyzx@.
 
 *Example*: Create new project.
 
@@ -463,9 +438,9 @@ You can also pass the path of a JSON file to the @--filters@ parameter.  Alterna
 
 *Example*: Update collection with @--replace-files@.
 
-The "'hello-world' collection":#update-hello-world in a previous example contains two files, "hello.txt" and "hola.txt" at the top level.
+The "'hello-world' collection":#update-hello-world in a previous example contains two files, @hello.txt@ and @hola.txt@ at the top level.
 
-We will add a new file "hello-world.c" to the collection, and re-organize the collection contents into two new directories: "natural-languages" that will contain the two existing files, and "programming-languages" with the new file.
+We will add a new file @hello-world.c@ to the collection, and re-organize the collection contents into two new directories: @natural-languages@ that will contain the two existing files, and @programming-languages@ with the new file.
 
 The "@replace_files@ API argument":{{ site.baseurl }}/api/methods/collections.html#replace_files lets us re-organize the collection contents with the @collection update@ method.
 
@@ -480,17 +455,13 @@ $ <span class="userinput">arv keep put --stream hello-world.c</span>
 Then, we perform an atomic update of collection contents:
 
 <notextile><pre>
-$ <span class="userinput">arv collection update --uuid zzzzz-4zz18-12345abcde67890 \</span>
-> <span class="userinput">--replace-files \</span>
-> <span class="userinput">'{</span>
+$ <span class="userinput">arv collection update --uuid zzzzz-4zz18-12345abcde67890 --replace-files '{</span>
 > <span class="userinput">  "/natural-languages/hello.txt": "current/hello.txt",</span>
 > <span class="userinput">  "/natural-languages/hola.txt": "current/hola.txt",</span>
 > <span class="userinput">  "/hello.txt": "",</span>
 > <span class="userinput">  "/hola.txt": "",</span>
 > <span class="userinput">  "/programming-languages/hello-world.c": "manifest_text/hello-world.c"</span>
-> <span class="userinput">}' \</span>
-> <span class="userinput">--collection \</span>
-> <span class="userinput">'{</span>
+> <span class="userinput">}' --collection '{</span>
 > <span class="userinput">  "manifest_text": ". bbae5d9983ce453e09ff5b2d40cca5c5+66+A225a7c0842f7fefbaedf42ed87cbcdb27cae836a@6a4e0c74 0:66:hello-world.c\n"</span>
 > <span class="userinput">}'</span>
 </pre></notextile>
@@ -513,7 +484,7 @@ h3(#arv-ws). @arv ws@ -- WebSocket client
 
 *Usage*: @arv ws [OPTIONS]@
 
-@arv ws@ provides access to the WebSockets event stream, displaying Arvados log events as they arrive.  For detailed information about the logs API, please refer to its "API Reference section":{{ site.baseurl }}/api/methods/logs.html.
+@arv ws@ provides access to the WebSocket event stream, displaying Arvados log events as they arrive.  For detailed information about the logs API, please refer to its "API Reference section":{{ site.baseurl }}/api/methods/logs.html.
 
 Once started, this subcommand will keep listening to events until interrupted, for example, by <kbd>Ctrl</kbd>-<kbd>C</kbd>.
 
