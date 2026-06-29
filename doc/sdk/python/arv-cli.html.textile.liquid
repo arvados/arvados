@@ -72,11 +72,11 @@ $ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data
 
 ---
 
-@arv@ lets you interactively create new Arvados objects and update existing ones in a text editor.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is available in @PATH@, and falls back to @vi@ otherwise.
-
 h3(#arv-create). @arv create@ -- Create Arvados objects in editor
 
 *Usage*: @arv [--format=json|yaml] create RESOURCE [--project-uuid=UUID]@
+
+@arv@ lets you interactively create new Arvados objects.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is available in @PATH@, and falls back to @vi@ otherwise.
 
 @arv create@ starts a text editor in which you can create a new Arvados object using one of the two supported formats, JSON (default) or YAML.  The @RESOURCE@ argument can be any of the supported Arvados resource types (e.g., @collection@, @group@, @user@, etc.) as detailed in the "API Reference":{{ site.baseurl}}/api/index.html.
 
@@ -100,7 +100,7 @@ h3(#arv-edit). @arv edit@ -- Update Arvados objects in editor
 
 Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
 
-Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  Nevertheless, you are not limited to those fields, because you can always add any (valid) fields in the editor.  Conversely, removing any fields from the object means that those fields will not be updated.
+Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  However, you are not limited to those fields, because you can always add any (valid) fields in the editor.  Conversely, removing any fields from the object means that those fields will not be updated.
 
 The editing process largely follows that of @arv create@.  If any problem arises after you save the object and exit the editor, you will be interactively prompted to fix it, before the changes are actually committed to Arvados.
 
@@ -158,7 +158,7 @@ The @LOCATOR@ argument can be one of the following:
 table(table table-bordered table-condensed).
 |_. @LOCATOR@ type |_. Description |_. Notes |
 | Collection UUID or portable data hash | Fetch the collection's _manifest text_. ||
-| Collection UUID or portable data hash, with @PATH@ | Download _file(s)_ in the collection.  | A @PATH@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory path (one ending in a @/@) refers its contents recursively.  A single @/@ as the @PATH@ refers to the full contents of the collection. |
+| Collection UUID or portable data hash, with @PATH@ | Download _file(s)_ in the collection.  | A @PATH@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory path (one ending in a @/@) refers to its contents recursively.  A single @/@ as the @PATH@ refers to the full contents of the collection. |
 | "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures | Download the individual data _block_ in Keep. ||
 
 The @DEST@ argument specifies the location where the output is downloaded.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
@@ -229,7 +229,7 @@ table(table table-bordered table-condensed).
 |_. Option |_. Description |_. Notes |
 | @--name@ | Set the collection name. ||
 | @--exclude=PATTERN@ | Exclude files by glob pattern. | Can be given multiple times. |
-| @--update-collection=UUID@ | Update the existing collection identified by the UUID with new file uploads. |
+| @--update-collection=UUID@ | Update the existing collection identified by the UUID with new file uploads. ||
 | @--storage-classes@ | Specify the desired "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html by a comma-separated list. ||
 | @--normalize@ | Perform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data. ||
 
@@ -321,7 +321,7 @@ table(table table-bordered table-condensed).
 |_. Option |_. Description |_. Notes |
 | @--format=json@ | Output as JSON (default). ||
 | @--format=yaml@ | Output as YAML. ||
-| @--format=uuid@, @-s@, or @--short@ | Only output object UUID. | For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each. |
+| @--format=uuid@, @-s@, or @--short@ | Only output object <notextile>UUID(s)</notextile>. | For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each. |
 
 h3(#resource-type-parameters). "Resource-type" parameters
 
@@ -353,7 +353,7 @@ h3(#resource-subcommand-examples). Resource-subcommand examples
 
 *Example*: Get collection from federated cluster by portable data hash.
 
-For collections, the @get@ method provides for a special use case of fetching a collection by its portable data hash.  If the portable data has is not found on the home cluster, federated clusters are searched.  When getting a collection by the portable data hash, only the @kind@, @manifest_text@, @portable_data_hash@, and @trash_at@ fields are populated with meaningful values.
+For collections, the @get@ method provides for a special use case of fetching a collection by its portable data hash.  If the portable data hash is not found on the home cluster, federated clusters are searched.  When getting a collection by the portable data hash, only the @kind@, @manifest_text@, @portable_data_hash@, and @trash_at@ fields are populated with meaningful values.
 
 <notextile><pre>
 $ <span class="userinput">arv collection get --uuid 133e9a1bcd7899d51aa8a2b6b6f9fea9+61 --select '[
