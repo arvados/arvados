@@ -104,7 +104,7 @@ You can then choose to edit the object again until the problem is fixed, or disc
 
 table(table table-bordered table-condensed).
 |_. Option |_. Description |_. Notes |
-| @--project-uuid=UUID@ | The newly-created object will be placed in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate. ||
+| @--project-uuid=UUID@ | Place the newly-created object in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate. ||
 
 ---
 
@@ -242,9 +242,9 @@ This subcommand is an alias of @arv-put@.  More examples can be found in the sec
 table(table table-bordered table-condensed).
 |_. Option |_. Description |_. Notes |
 | @--name@ | Set the collection name. ||
-| @--exclude=PATTERN@ | Glob pattern for the files to exclude. | Can be given multiple times. |
+| @--exclude=PATTERN@ | Exclude files by glob pattern. | Can be given multiple times. |
 | @--update-collection=UUID@ | Update the existing collection identified by the UUID with new file uploads. |
-| @--storage-classes@ | Comma-separated list of "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html for the uploads. ||
+| @--storage-classes@ | Specify the desired "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html by a comma-separated list. ||
 | @--normalize@ | Perform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data. ||
 
 p(#update-hello-world). *Example*: Update the '"hello-world":#hello-world' collection.
