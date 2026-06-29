@@ -43,14 +43,14 @@ h2. Table of contents
 #**  "Lower-level operations of @arv keep put@":#arv-keep-put-low-level
 #*  "@arv keep docker@ -- List or upload Docker images":#arv-keep-docker
 #  "API resource subcommands":#api-resource-subcommands
-#*  "'Resource-type' parameters":#resource-type-parameters
 #*  "Output formats":#resource-subcommand-output
+#*  "'Resource-type' parameters":#resource-type-parameters
+#*  "Resource-subcommand examples":#resource-subcommand-examples
+#**  "User administration examples":#user-admin-examples
 #*  "Miscellaneous resource subcommands":#misc-resource-subcommands
 #**  "@arv config@ -- Get Arvados cluster configuration":#arv-config
 #**  "@arv sys@ -- Run data trash and sweep":#arv-sys
 #**  "@arv vocabulary@ -- Get metadata vocabulary":#arv-vocabulary
-#*  "Resource-subcommand examples":#resource-subcommand-examples
-#**  "User administration examples":#user-admin-examples
 #  "Additional subcommands":#additional-subcommands
 #*  "@arv ws@ -- WebSocket client":#arv-ws
 
@@ -327,9 +327,27 @@ The basic *usage* pattern of these API resource subcommands is as follows:
 
 The CLI bindings for the resources, methods, and parameters are defined by the "discovery document":{{ site.baseurl }}/api/index.html#discovery-document published by the Arvados API server.  A comprehensive list of available resources for your Arvados cluster can be viewed by running @arv --help@.
 
+h3(#resource-subcommand-output). Output formats
+
+The following command-line options to @arv@ control the output format.
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--format=json@ | Output as JSON (default). ||
+| @--format=yaml@ | Output as YAML. ||
+| @--format=uuid@, @-s@, or @--short@ | Only output object UUID. | For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each. |
+
 h3(#resource-type-parameters). "Resource-type" parameters
 
 The @create@ and @update@ methods both "take a 'resource-type' parameter":{{ site.baseurl }}/api/methods.html#create.  This simply refers to a parameter named after the @resource@ itself.
+
+The value of a resource-type parameter can be one of the following:
+
+#  A _string_ that represents a valid JSON object (i.e., key-value pairs surrounded by braces @{ }@);
+#  A _path_ to a file that contains a valid JSON object; or
+#  A single _dash_ (@-@), which causes the input value to be read from the standard input.
+
+(In the rare case where the file path string itself happens to be valid JSON, an error is reported.)
 
 *Examples*:
 
@@ -344,48 +362,6 @@ $ <span class="userinput">arv api_client_authorization create --api-client-autho
 </pre></notextile>
 
 both show the respective resource-type parameters on the command line.
-
-The value of a resource-type parameter can be one of the following:
-
-#  A _string_ that represents a valid JSON object (i.e., key-value pairs surrounded by braces @{ }@);
-#  A _path_ to a file that contains a valid JSON object; or
-#  A single _dash_ (@-@), which causes the input value to be read from the standard input.
-
-(In the rare case where the file path string itself happens to be valid JSON, an error is reported.)
-
-h3(#resource-subcommand-output). Output formats
-
-The following command-line options to @arv@ control the output format.
-
-table(table table-bordered table-condensed).
-|_. Option |_. Description |_. Notes |
-| @--format=json@ | Output as JSON (default). ||
-| @--format=yaml@ | Output as YAML. ||
-| @--format=uuid@, @-s@, or @--short@ | Only output object UUID. | For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each. |
-
-h3(#misc-resource-subcommands). Miscellaneous resource subcommands
-
-The following subcommands are grouped with the API resource commands.
-
-h4(#arv-config). @arv config@ -- Get Arvados cluster configuration
-
-*Usage*: @arv [--format=json|yaml] config get@
-
-Get the "publicly exported configuration":{{ site.baseurl }}/api/index.html#exported-configuration of the Arvados cluster.
-
-h4(#arv-sys). @arv sys@ -- Run data trash and sweep
-
-*Usage*: @arv sys get@
-
-Run scheduled data trash and sweep operations across the cluster's Keep services.
-
-Note that for compatibility reasons, @sy@ is an alias of the @sys@ resource.
-
-h4(#arv-vocabulary). @arv vocabulary@ -- Get metadata vocabulary
-
-*Usage*: @arv [--format=json|yaml] vocabulary get@
-
-Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html managed and "exported":{{ site.baseurl }}/api/index.html#exported-vocabulary by the Arvados cluster.
 
 h3(#resource-subcommand-examples). Resource-subcommand examples
 
@@ -490,6 +466,30 @@ This puts the collection in the "trash":{{ site.baseurl }}/api/methods/collectio
 h4(#user-admin-examples). User administration examples
 
 Examples about performing user administration work with @arv@ can be found in the "Admin Guide":{{ site.baseurl }}/admin/user-management-cli.html.
+
+h3(#misc-resource-subcommands). Miscellaneous resource subcommands
+
+The following subcommands are grouped with the API resource commands.
+
+h4(#arv-config). @arv config@ -- Get Arvados cluster configuration
+
+*Usage*: @arv [--format=json|yaml] config get@
+
+Get the "publicly exported configuration":{{ site.baseurl }}/api/index.html#exported-configuration of the Arvados cluster.
+
+h4(#arv-sys). @arv sys@ -- Run data trash and sweep
+
+*Usage*: @arv sys get@
+
+Run scheduled data trash and sweep operations across the cluster's Keep services.
+
+Note that for compatibility reasons, @sy@ is an alias of the @sys@ resource.
+
+h4(#arv-vocabulary). @arv vocabulary@ -- Get metadata vocabulary
+
+*Usage*: @arv [--format=json|yaml] vocabulary get@
+
+Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html managed and "exported":{{ site.baseurl }}/api/index.html#exported-vocabulary by the Arvados cluster.
 
 h2(#additional-subcommands). Additional subcommands
 
