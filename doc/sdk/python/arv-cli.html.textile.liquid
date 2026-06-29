@@ -72,7 +72,7 @@ h3(#arv-get). @arv get@ -- Fetch Arvados objects
 
 The optional @FIELDS@ arguments can be specified to select the fields in the object to display.
 
-*Example*: Display a "collection":{{ site.baseurl }}/api/methods/collections.html, limiting output to the fields @uuid@, @portable_data_hash@, @version@, and @modified_at@.
+*Example*: Display "collection":{{ site.baseurl }}/api/methods/collections.html, limiting output to @uuid@, @portable_data_hash@, @version@, and @modified_at@ fields.
 
 <notextile><pre>
 $ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data_hash version modified_at</span>
@@ -144,7 +144,7 @@ table(table table-bordered table-condensed).
 |_. Option |_. Description |_. Notes |
 | @-s@ | Show file sizes in KiB. ||
 
-*Example*: List files by the portable data hash of a collection.
+*Example*: List files in collection by portable data hash.
 
 <notextile><pre>
 $ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</span>
@@ -455,7 +455,7 @@ $ <span class="userinput">arv collection update --uuid zzzzz-4zz18-12345abcde678
 > <span class="userinput">}'</span>
 </pre></notextile>
 
-*Example*: Trashing a collection by the @delete@ method.
+*Example*: Trashing collection.
 
 <notextile><pre>
 $ <span class="userinput">arv collection delete --uuid zzzzz-4zz18-12345abcde67890</span>
