@@ -31,12 +31,10 @@ You can start using your Arvados cluster with @arv@ after configuring the workin
 h2. Table of contents
 
 #  "Overview":#overview
-#*  "Exit codes":#exit-codes
 #  "High-level resource subcommands":#high-level-resource-subcommands
 #*  "@arv get@ -- Fetch Arvados objects":#arv-get
-#*  "@arv create@, @arv edit@ -- Create and update Arvados objects in text editor":#editor-commands
-#**  "@arv create@":#arv-create
-#**  "@arv edit@":#arv-edit
+#*  "@arv create@ -- Create Arvados objects in editor":#arv-create
+#*  "@arv edit@ -- Update Arvados objects in editor":#arv-edit
 #  "Data subcommands":#data-subcommands
 #*  "@arv copy@ -- Move objects across Arvados clusters":#arv-copy
 #*  "@arv keep ls@ -- List Arvados collection contents":#arv-keep-ls
@@ -62,11 +60,7 @@ h2(#overview). Overview
 
 For every subcommand, you can get help with the @-h@/@--help@ option.  For example, @arv collection update -h@ will print the help information about the specific subcommand @collection update@.
 
-h3(#exit-codes). Exit codes
-
-*  0: Success.
-*  1: An error has occurred during the operation (server indicating a failure, local resource being unavailable, etc.).
-*  2: The command-line input is invalid, and no operation has been performed.
+*Exit codes*: @arv@ exits with 0 on success, with 2 when the command-line input is invalid, and with 1 on all other errors.
 
 h2(#high-level-resource-subcommands). High-level resource subcommands
 
@@ -92,11 +86,9 @@ $ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data
 
 ---
 
-h3(#editor-commands). @arv create@, @arv edit@ -- Create and update Arvados objects in text editor
-
 @arv@ lets you interactively create new Arvados objects and update existing ones in a text editor.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is available in @PATH@, and falls back to @vi@ otherwise.
 
-h4(#arv-create). @arv create@
+h3(#arv-create). @arv create@ -- Create Arvados objects in editor
 
 *Usage*: @arv [--format=json|yaml] create RESOURCE [--project-uuid=UUID]@
 
@@ -114,7 +106,7 @@ You can then choose to edit the object again until the problem is fixed, or disc
 
 ---
 
-h4(#arv-edit). @arv edit@
+h3(#arv-edit). @arv edit@ -- Update Arvados objects in editor
 
 *Usage*: @arv [--format=json|yaml] edit UUID [FIELDS ...]@
 
