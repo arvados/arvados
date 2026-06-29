@@ -102,7 +102,9 @@ You can then choose to edit the object again until the problem is fixed, or disc
 
 *Options*:
 
-* @--project-uuid@: If given, the newly-created object will be placed in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate.
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--project-uuid=UUID@ | The newly-created object will be placed in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate. ||
 
 ---
 
@@ -138,7 +140,9 @@ The @LOCATOR@ can be either a collection UUID (in the form of @zzzzz-4zz18-12345
 
 *Selected options*:
 
-* @-s@: If specified, the file sizes are shown (in KiB).
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @-s@ | Show file sizes in KiB. ||
 
 *Example*: List files by the portable data hash of a collection.
 
@@ -165,18 +169,22 @@ h3(#arv-keep-get). @arv keep get@ -- Copy data from Keep or fetch collection man
 
 The @LOCATOR@ argument can be one of the following:
 
-#  A collection UUID or portable data hash: The collection's _manifest text_ will be fetched.
-#  A collection UUID or portable data hash with a @path@ component: _File(s)_ in the collection will be downloaded.  A @path@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory @path@ (ending in a @/@) refers to files and subdirectories under it recursively.  A single @/@ as the @path@ refers to the full contents of the collection.
-#  A full "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator, with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures: The individual data _block_ in Keep will be downloaded.
+table(table table-bordered table-condensed).
+|_. @LOCATOR@ type |_. Description |_. Notes |
+| Collection UUID or portable data hash | Fetch the collection's _manifest text_. ||
+| Collection UUID or portable data hash, with @PATH@ | Download _file(s)_ in the collection.  | A @PATH@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory path (one ending in a @/@) refers its contents recursively.  A single @/@ as the @PATH@ refers to the full contents of the collection. |
+| "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures | Download the individual data _block_ in Keep. ||
 
 The @DEST@ argument specifies the location where the output is downloaded.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
 
 *Selected options*:
 
-* @-f@: Overwrite existing files at @DEST@. (The default is to refuse to write anything if any of the output files already exist.)
-* @--skip-existing@: Skip files that already exist at @DEST@ when downloading by path.
-* @--hash=ALGORITHM@: Output file digest by the specified hash algorithm (@md5@, @sha1@, @sha224@, @sha256@, @sha384@, or @sha512@) when downloading by path.
-* @--strip-manifest@: Remove token signatures from the manifest output.
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @-f@ | Overwrite existing files at @DEST@. | Default: refuse to write anything if any of the output files already exist. |
+| @--skip-existing@ | Skip files that already exist at @DEST@ when downloading by path. ||
+| @--hash=ALGORITHM@ | Output file digest by the specified hash algorithm when downloading by path. | Available algorithms: @md5@, @sha1@, @sha224@, @sha256@, @sha384@, and @sha512@. |
+| @--strip-manifest@ | Remove token signatures from the manifest output. ||
 
 p(#hello-world). *Example*: Write file content from Keep to standard output.
 
@@ -231,11 +239,13 @@ This subcommand is an alias of @arv-put@.  More examples can be found in the sec
 
 *Selected options*:
 
-* @--name@: Set collection name.
-* @--exclude=PATTERN@: Glob pattern for files to exclude. Can be given multiple times.
-* @--update-collection=UUID@: Update the existing collection identified by the UUID with new file uploads.
-* @--storage-classes@: Comma-separated list of "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html for the uploads.
-* @--normalize@: Perform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data.
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--name@ | Set the collection name. ||
+| @--exclude=PATTERN@ | Glob pattern for the files to exclude. | Can be given multiple times. |
+| @--update-collection=UUID@ | Update the existing collection identified by the UUID with new file uploads. |
+| @--storage-classes@ | Comma-separated list of "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html for the uploads. ||
+| @--normalize@ | Perform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data. ||
 
 p(#update-hello-world). *Example*: Update the '"hello-world":#hello-world' collection.
 
@@ -277,9 +287,11 @@ When the @IMAGE@ argument is given, optionally with a tag (default tag: @latest@
 
 *Selected options*:
 
-* @--project-uuid=UUID@: Upload the Docker image to the project specified by UUID.
-* @--name@: Set the collection's name for the upload.
-* @--pull@: Pull the Docker image from an image registry.  The default behavior is to only upload local images (@--no-pull@).
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--project-uuid=UUID@ | Upload the Docker image to the project specified by UUID. ||
+| @--name@ | Set the collection's name for the upload. ||
+| @--pull@ | Pull the Docker image from an image registry. | Default: only upload local images (@--no-pull@). |
 
 *Example*: Pull image and upload to Arvados.
 
@@ -345,9 +357,11 @@ h3(#resource-subcommand-output). Output formats
 
 The following command-line options to @arv@ control the output format.
 
-* @--format=json@: Output as JSON (default).
-* @--format=yaml@: Output as YAML.
-* @--format=uuid@, @-s@, or @--short@: Only output object <notextile>UUID(s)</notextile>.  For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each.
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--format=json@ | Output as JSON (default). ||
+| @--format=yaml@ | Output as YAML. ||
+| @--format=uuid@, @-s@, or @--short@ | Only output object UUID. | For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each. |
 
 h3(#misc-resource-subcommands). Miscellaneous resource subcommands
 
@@ -384,7 +398,6 @@ $ <span class="userinput">arv collection get --uuid 133e9a1bcd7899d51aa8a2b6b6f9
   "kind", "manifest_text", "portable_data_hash", "trash_at"
 ]'</span>
 {
- "is_trashed": false,
  "kind": "arvados#collection",
  "manifest_text": ". deb944805bc57a3010079a8ecf1eb48d+1339378+Rzzyzx-7ab32fdcc9cc588fb934196ff6162acdb9c353ec@6a4e5acd 0:1339378:user.jpg\n",
  "portable_data_hash": "133e9a1bcd7899d51aa8a2b6b6f9fea9+61",
@@ -490,10 +503,12 @@ Once started, this subcommand will keep listening to events until interrupted, f
 
 *Selected options*:
 
-* @-f@, @--filters@: Apply "filters":{{ site.baseurl }}/api/methods.html#filters to log events.
-* @--uuid@: Simple filtering by the @object_uuid@ field of events.
-* @-i@, @--id=N@: Start from given log ID.
-* @-s@, @--start-time=TIME@: Start from given time (specified as @YYYY-MM-DD@ or @YYYY-MM-DD hh:mm:ss@).
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @-f@, @--filters@ | Apply "filters":{{ site.baseurl }}/api/methods.html#filters to log events. ||
+| @--uuid@ | Filter by the @object_uuid@ field of events. ||
+| @-i@, @--id=N@ | Start from given log ID. ||
+| @-s@, @--start-time=TIME@ | Start from given time. | Format: @YYYY-MM-DD@ or @YYYY-MM-DD hh:mm:ss@. |
 
 *Examples*:
 
