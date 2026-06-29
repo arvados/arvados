@@ -50,7 +50,7 @@ It is legal to have multiple file tokens in the manifest (possible across differ
 
 Spaces are represented by the escape sequence @\040@.  Spaces in stream names and filenames must be translated when reading and writing manifests.  A manifest may not contain TAB characters, nor other ASCII whitespace characters or control codes other than the spaces or newlines used as delimiters specified above.  A manifest always ends with a newline -- except the empty (zero-length) string, which is a valid manifest.
 
-h3. Normalized manifest v1
+h3(#normalization). Normalized manifest v1
 
 A normalized manifest is a manifest that meets the following additional restrictions:
 

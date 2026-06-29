@@ -2,7 +2,7 @@
 layout: default
 navsection: sdk
 navmenu: Python
-title: Arvados API Client
+title: Python API Client
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -103,7 +103,7 @@ workflow['created_at']
 
 h2. list method
 
-To fetch multiple Arvados objects of the same type, call the @list@ method for that resource type. The list method takes a number of arguments. Refer to the "list method API reference":{{site.baseurl}}/api/methods.html#index for details about them. The method returns a dictionary also documented at the bottom of that section. The most interesting field is @'items'@, which is a list of dictionaries where each one corresponds to an Arvados object that matched your search. To work with a single page of results:
+To fetch multiple Arvados objects of the same type, call the @list@ method for that resource type. The list method takes a number of arguments. Refer to the "list method API reference":{{site.baseurl}}/api/methods.html#list for details about them. The method returns a dictionary also documented at the bottom of that section. The most interesting field is @'items'@, which is a list of dictionaries where each one corresponds to an Arvados object that matched your search. To work with a single page of results:
 
 {% codeblock as python %}
 # Output the exit codes of the 10 most recently run containers.

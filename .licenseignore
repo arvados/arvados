@@ -8,6 +8,7 @@ AUTHORS
 *by-sa-3.0.html
 *by-sa-3.0.txt
 *COPYING
+doc/sdk/cli/subcommands.html
 doc/fonts/*
 doc/_includes/_config_default_yml.liquid
 doc/_includes/_terraform_*_tfvars.liquid
