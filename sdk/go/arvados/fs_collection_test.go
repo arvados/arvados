@@ -213,6 +213,20 @@ func (s *CollectionFSSuite) TestUnattainableStorageClasses(c *check.C) {
 	c.Assert(err, check.ErrorMatches, `.*stub does not write storage class \"unobtainium\"`)
 }
 
+func (s *CollectionFSSuite) TestInvalidManifests(c *check.C) {
+	s.testInvalidManifest(c, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo", `^invalid manifest_text: line 1: no trailing newline$`)
+	s.testInvalidManifest(c, ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo\n", `^invalid manifest_text: line 1: bad locator "d41d8cd98f00b204e9800998ecf8427e"$`)
+	s.testInvalidManifest(c, ". d41d8cd98f00b204e9800998ecf8427e+x 0:0:foo\n", `^invalid manifest_text: line 1: bad locator "d41d8cd98f00b204e9800998ecf8427e\+x"$`)
+	s.testInvalidManifest(c, ". d41d8cd98f00b204e9800998ecf8427e+0 ::foo\n", `^invalid manifest_text: line 1: bad file segment "::foo"$`)
+}
+
+func (s *CollectionFSSuite) testInvalidManifest(c *check.C, manifest string, expectReason string) {
+	coll := Collection{ManifestText: manifest}
+	_, err := coll.FileSystem(s.client, s.kc)
+	c.Check(errors.Is(err, ErrInvalidManifestText), check.Equals, true)
+	c.Assert(err, check.ErrorMatches, expectReason)
+}
+
 func (s *CollectionFSSuite) TestColonInFilename(c *check.C) {
 	fs, err := (&Collection{
 		ManifestText: "./foo:foo 3858f62230ac3c915f300c664312c63f+3 0:3:bar:bar\n",
