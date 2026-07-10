@@ -500,7 +500,7 @@ class EditingContentError(ValueError):
         return msg
 
 
-class LoadingHelper:
+class ArvObjLoadingHelper:
     """Helper class to provide shared error handling and validation traits for
     the temp file being edited (whose content shall be an Arvados object).
     """
@@ -527,7 +527,7 @@ class LoadingHelper:
         return obj
 
 
-class JSONEditingProcess(LoadingHelper, ObjectEditingProcessBase):
+class JSONEditingProcess(ArvObjLoadingHelper, ObjectEditingProcessBase):
     """Subclass of editing process tuned for JSON files."""
     _file_type = "JSON"
 
@@ -551,7 +551,7 @@ class JSONEditingProcess(LoadingHelper, ObjectEditingProcessBase):
         return self.validate_mapping(obj, file)
 
 
-class YAMLEditingProcess(LoadingHelper, ObjectEditingProcessBase):
+class YAMLEditingProcess(ArvObjLoadingHelper, ObjectEditingProcessBase):
     """Subclass of editing process tuned for YAML files."""
     _file_type = "YAML"
 
