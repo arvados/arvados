@@ -516,12 +516,11 @@ class ArvObjLoadingHelper:
     def validate_mapping(self, obj: Any, file: TextIO) -> Mapping[str, Any]:
         if not isinstance(obj, Mapping):
             path = getattr(file, "name", "<unknown path>")
-            format_name = self._file_type or "<unknown format>"
             raise EditingContentError(
-                path=path,
+                path=path, file_type=self._file_type,
                 original_exception=ValueError(
-                    f"{format_name} input has type '{type(obj).__name__}',"
-                    " not a valid Arvados object"
+                    f"{self._file_type or 'unknown-format'} input has type"
+                    f" '{type(obj).__name__}', not a valid Arvados object"
                 )
             )
         return obj
