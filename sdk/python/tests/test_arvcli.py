@@ -1222,7 +1222,8 @@ class TestEditingSubcommands:
             exit_code, out, err = run_arvcli(["create", "group"])
 
         assert exit_code == 1
-        assert "JSON input has type 'list', not a valid Arvados object" in err
+        assert "Error: invalid input file [type JSON]" in err
+        assert "Input content type is 'list', not a valid Arvados object" in err
 
     def test_edit_malfomed_type_code_in_uuid(self, run_arvcli):
         exit_code, out, err = run_arvcli(["edit", TestArgTypes.bad_uuid])

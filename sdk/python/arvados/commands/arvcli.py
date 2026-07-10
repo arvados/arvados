@@ -519,8 +519,8 @@ class ArvObjLoadingHelper:
             raise EditingContentError(
                 path=path, file_type=self._file_type,
                 original_exception=ValueError(
-                    f"{self._file_type or 'unknown-format'} input has type"
-                    f" '{type(obj).__name__}', not a valid Arvados object"
+                    f"Input content type is '{type(obj).__name__}',"
+                    " not a valid Arvados object"
                 )
             )
         return obj
