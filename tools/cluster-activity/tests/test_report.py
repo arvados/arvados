@@ -9,13 +9,14 @@ import pathlib
 import arvados
 import pytest
 
+from testutil import FakePrometheusClient
 from typing import ClassVar
 from unittest import mock
 
 from arvados_cluster_activity import report as acar
 
 TODAY = datetime.date(2024, 4, 6)
-REPORT_END = datetime.datetime.combine(TODAY, datetime.time())
+REPORT_END = datetime.datetime.combine(TODAY, datetime.time(tzinfo=datetime.timezone.utc))
 REPORT_START = REPORT_END - datetime.timedelta(days=2)
 
 class _TestingClusterActivityReport(acar.ClusterActivityReport):
@@ -31,11 +32,6 @@ class _TestingClusterActivityReport(acar.ClusterActivityReport):
         'name': 'WGS processing workflow scattered over samples (v1.1-2-gcf002b3)',
         'uuid': 'pirca-7fd4e-01234abcde56789',
     }
-
-    def __post_init__(self, exclude):
-        super().__post_init__(exclude)
-        self.total_projects = 6
-        self.total_users = 4
 
     def _iter_runs(self):
         container = {
@@ -82,14 +78,6 @@ class _TestingClusterActivityReport(acar.ClusterActivityReport):
         self.workflow_map[request['uuid']] = self._workflow['uuid']
         yield acar.WorkflowRun(request, container, self._group, self._user, self._workflow)
 
-    def collect_graph(self, since, to, metric, resample_to):
-        time = datetime.time(11)
-        delta = datetime.timedelta(minutes=5)
-        return [
-            [datetime.datetime.combine(TODAY, time) + (delta * ii), val]
-            for ii, val in enumerate([3, 5, 2, 5, 3])
-        ]
-
 
 class FakeDate(datetime.date):
     @classmethod
@@ -113,20 +101,21 @@ def mock_arv_client():
             },
         },
     }
+    arv_client.groups().list().execute.return_value = {
+        'items_available': 6,
+    }
+    arv_client.users().list().execute.return_value = {
+        'items_available': 4,
+    }
     return arv_client
 
 
-@pytest.fixture
-def mock_prom_client():
-    return mock.Mock()
-
-
-def test_csv_report(set_today, mock_arv_client, mock_prom_client, tmp_path):
+def test_csv_report(set_today, mock_arv_client, tmp_path):
     report = _TestingClusterActivityReport(
         REPORT_START,
         REPORT_END,
         mock_arv_client,
-        mock_prom_client,
+        None,
     )
     with (tmp_path / 'actual_report.csv').open('w+') as out_file:
         report.csv_report(out_file, columns=None, include_steps=True)
@@ -135,12 +124,17 @@ def test_csv_report(set_today, mock_arv_client, mock_prom_client, tmp_path):
     assert actual == pathlib.Path('tests', 'test_report.csv').read_text()
 
 
-def test_html_report(set_today, mock_arv_client, mock_prom_client, tmp_path):
+def test_html_report(set_today, mock_arv_client, tmp_path):
+    prom_client = FakePrometheusClient(
+        '35253',
+        REPORT_START,
+        datetime.timedelta(hours=10),
+    )
     report = _TestingClusterActivityReport(
         REPORT_START,
         REPORT_END,
         mock_arv_client,
-        mock_prom_client,
+        prom_client,
     )
     actual = report.html_report()
     (tmp_path / 'actual_report.html').write_text(actual)

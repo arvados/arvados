@@ -1,0 +1,127 @@
+{#
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0
+#}
+{% raw %}
+    <style>
+        body {
+          background: #fafafa;
+          font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+          font-size: 0.875rem;
+          color: rgba(0, 0, 0, 0.87);
+          font-weight: 400;
+        }
+        .card {
+          background: #ffffff;
+          box-shadow: 0px 1px 5px 0px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 3px 1px -2px rgba(0,0,0,0.12);
+          border-radius: 4px;
+          margin: 20px;
+        }
+        .content {
+          padding: 2px 16px 8px 16px;
+        }
+        table {
+          border-spacing: 0px;
+        }
+        tr {
+          height: 36px;
+          text-align: left;
+        }
+        th {
+          padding-right: 4em;
+          border-top: 1px solid rgba(224, 224, 224, 1);
+        }
+        td {
+          padding-right: 2em;
+          border-top: 1px solid rgba(224, 224, 224, 1);
+        }
+        #chart {
+          margin-left: -20px;
+        }
+    </style>
+    
+
+<style>
+@charset "UTF-8";
+.sortable thead th:not(.no-sort) {
+  cursor: pointer;
+}
+.sortable thead th:not(.no-sort)::after, .sortable thead th:not(.no-sort)::before {
+  transition: color 0.1s ease-in-out;
+  font-size: 1.2em;
+  color: transparent;
+}
+.sortable thead th:not(.no-sort)::after {
+  margin-left: 3px;
+  content: "▸";
+}
+.sortable thead th:not(.no-sort):hover::after {
+  color: inherit;
+}
+.sortable thead th:not(.no-sort)[aria-sort=descending]::after {
+  color: inherit;
+  content: "▾";
+}
+.sortable thead th:not(.no-sort)[aria-sort=ascending]::after {
+  color: inherit;
+  content: "▴";
+}
+.sortable thead th:not(.no-sort).indicator-left::after {
+  content: "";
+}
+.sortable thead th:not(.no-sort).indicator-left::before {
+  margin-right: 3px;
+  content: "▸";
+}
+.sortable thead th:not(.no-sort).indicator-left:hover::before {
+  color: inherit;
+}
+.sortable thead th:not(.no-sort).indicator-left[aria-sort=descending]::before {
+  color: inherit;
+  content: "▾";
+}
+.sortable thead th:not(.no-sort).indicator-left[aria-sort=ascending]::before {
+  color: inherit;
+  content: "▴";
+}
+
+table.aggtable td:nth-child(2) {
+  text-align: right;
+}
+
+table.active-projects td:nth-child(4),
+table.active-projects td:nth-child(5) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.single-project td:nth-child(3),
+table.single-project td:nth-child(4) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.active-projects th:nth-child(4),
+table.active-projects th:nth-child(5) {
+  text-align: left;
+}
+
+table.project td:nth-child(3),
+table.project td:nth-child(4),
+table.project td:nth-child(5),
+table.project td:nth-child(6),
+table.project td:nth-child(7) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.project th:nth-child(3),
+table.project th:nth-child(4),
+table.project th:nth-child(5),
+table.project th:nth-child(6),
+table.project th:nth-child(7) {
+  text-align: left;
+}
+</style>
+{% endraw %}

@@ -14,6 +14,7 @@ setuptools.setup(
     cmdclass=arvados_version['CMDCLASS'],
     install_requires=[
         *arv_mod.iter_dependencies(version=version),
+        'Jinja2 ~= 3.1.6',
     ],
     version=version,
 )

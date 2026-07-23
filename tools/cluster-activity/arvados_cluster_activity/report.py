@@ -16,16 +16,16 @@ import re
 import statistics
 import urllib.parse
 
+from pathlib import PurePath
 from typing import Callable, ClassVar, Dict, List, Mapping
 
 import arvados.api_resources as arv_types
 import arvados.util
 import ciso8601
+import jinja2
+import markupsafe
 
-from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
-from arvados_cluster_activity.reportchart import ReportChart
-
-NOT_AVAILABLE = "(Not Available)"
+from arvados_cluster_activity.prometheus import get_metric_usage, PrometheusUsageChart
 
 @dataclasses.dataclass
 class BytesFormatter:
@@ -33,49 +33,82 @@ class BytesFormatter:
     exp: int
     suffixes: list[str]
 
-    def __call__(self, bytecount):
-        if bytecount is None:
+    def __call__(self, value):
+        if value is None:
             return None
         for suffix in self.suffixes:
-            bytecount /= self.exp
-            if bytecount < self.exp:
+            value /= self.exp
+            if value < self.exp:
                 break
-        return f'{bytecount:.3f} {suffix}'
+        return f'{value:.3f} {suffix}'
 
 
 bytes_base2_fmt = BytesFormatter(1024, ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'])
 bytes_si_fmt = BytesFormatter(1000, ['KB', 'MB', 'GB', 'TB', 'PB', 'EB'])
 
-def cost_fmt(cost):
-    return f'${cost:,.02f}'
+_JINJA_FILTERS = {
+    'bytes_base2': bytes_base2_fmt,
+    'bytes_si': bytes_si_fmt,
+    'bytes': bytes_si_fmt,
+}
+def _jinja_filter(func):
+    _JINJA_FILTERS[func.__name__.removesuffix('_fmt')] = func
+    return func
 
 
-def datespan_fmt(begin, end):
-    begin_isodate = begin.strftime('%Y-%m-%d')
-    end_isodate = end.strftime('%Y-%m-%d')
+@_jinja_filter
+def cost_fmt(value):
+    if value is None:
+        return None
+    return f'${value:,.02f}'
+
+
+@_jinja_filter
+def date_fmt(value):
+    return value.strftime('%Y-%m-%d')
+
+
+@_jinja_filter
+def datespan_fmt(value, end):
+    begin_isodate = date_fmt(value)
+    end_isodate = date_fmt(end)
     if begin_isodate == end_isodate:
         return begin_isodate
     else:
         return f'{begin_isodate} to {end_isodate}'
 
 
-def datetime_fmt(dt):
-    return dt.strftime('%Y-%m-%d %H:%M:%S')
+@_jinja_filter
+def datetime_fmt(value):
+    return value.strftime('%Y-%m-%d %H:%M:%S')
 
 
-def duration_hms_fmt(seconds):
-    if isinstance(seconds, datetime.timedelta):
-        seconds = seconds.total_seconds()
-    mins, secs = divmod(round(seconds), 60)
+@_jinja_filter
+def duration_hms_fmt(value):
+    if isinstance(value, datetime.timedelta):
+        value = value.total_seconds()
+    mins, secs = divmod(round(value), 60)
     hrs, mins = divmod(mins, 60)
     return f'{hrs}:{mins:02d}:{secs:02d}'
 
 
-def duration_hrs_fmt(seconds, suffix=''):
-    if isinstance(seconds, datetime.timedelta):
-        seconds = seconds.total_seconds()
+@_jinja_filter
+def duration_hrs_fmt(value, suffix=''):
+    if isinstance(value, datetime.timedelta):
+        value = value.total_seconds()
     sep = ' ' if suffix and not suffix.startswith(' ') else ''
-    return f'{seconds / 3600:,.1f}{sep}{suffix}'
+    return f'{value / 3600:,.1f}{sep}{suffix}'
+
+
+@_jinja_filter
+def numeric_fmt(value, prec=None):
+    if value is None:
+        return None
+    elif prec is None:
+        fmt = '{:,d}'
+    else:
+        fmt = f'{{:,.{prec}f}}'
+    return fmt.format(value)
 
 
 class S3CostPeriod(enum.IntEnum):
@@ -86,6 +119,8 @@ class S3CostPeriod(enum.IntEnum):
 
 def s3_cost(num_bytes, period):
     """Calculate the USD cost of storing `num_bytes` over the time `period`"""
+    if num_bytes is None:
+        return None
     gb = num_bytes / (1 << 30)
     first_50tb = min(1024*50, gb)
     next_450tb = max(min(1024*450, gb-1024*50), 0)
@@ -336,6 +371,88 @@ class WorkflowRunStatistics:
 
 
 @dataclasses.dataclass
+class ClusterSummary:
+    containers: PrometheusUsageChart
+    managed_data: PrometheusUsageChart
+    stored_data: PrometheusUsageChart
+    total_users: int = 0
+    total_projects: int = 0
+
+    managed_data_end: int | None = dataclasses.field(init=False)
+    stored_data_end: int | None = dataclasses.field(init=False)
+    storage_cost: float | None = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.managed_data_end = self.managed_data.last_value()
+        self.stored_data_end = self.stored_data.last_value()
+        self.storage_cost = s3_cost(self.stored_data_end, S3CostPeriod.MONTHLY)
+
+    @staticmethod
+    def _count_items(arv_resource, *filters):
+        return arv_resource().list(
+            filters=filters,
+            limit=0,
+            count='exact',
+        ).execute()['items_available']
+
+    @classmethod
+    def query(cls, arv_client, prom_client, since, to):
+        cluster = arv_client.config()['ClusterID']
+        def _get_metric_usage(name, resampleTo):
+            metric_name = f"{name}{{cluster='{cluster}'}}"
+            return get_metric_usage(prom_client, since, to, metric_name, resampleTo)
+
+        logging.info("Getting container hours time series")
+        containers = PrometheusUsageChart(
+            "Concurrent running containers",
+            "containers",
+            _get_metric_usage("arvados_dispatchcloud_containers_running", "5min"),
+        )
+        logging.info("Getting data usage time series")
+        managed_data = PrometheusUsageChart(
+            "Data under management",
+            "managed",
+            _get_metric_usage("arvados_keep_collection_bytes", "60min")
+        )
+        stored_data = PrometheusUsageChart(
+            "Storage usage",
+            "used",
+            _get_metric_usage("arvados_keep_total_bytes", "60min"),
+        )
+
+        total_users = cls._count_items(arv_client.users, ['is_active', '=', True])
+        total_projects = cls._count_items(arv_client.groups, ['group_class', '=', 'project'])
+        return cls(containers, managed_data, stored_data, total_users, total_projects)
+
+    def iter_charts(self):
+        yield self.containers
+        yield self.managed_data
+        yield self.stored_data
+
+    def have_charts(self):
+        return any(chart.data for chart in self.iter_charts())
+
+    def chart_json(self):
+        return markupsafe.Markup(json.dumps([
+            chart.json_object()
+            for chart in self.iter_charts()
+            if chart.data
+        ]))
+
+    def dedup_ratio(self):
+        if self.managed_data_end and self.stored_data_end:
+            return self.managed_data_end / self.stored_data_end
+        else:
+            return None
+
+    def monthly_storage_cost(self):
+        if not self.stored_data.data:
+            return None
+        else:
+            return sum(s3_cost(v, S3CostPeriod.HOURLY) for v in self.stored_data.iter_values())
+
+
+@dataclasses.dataclass
 class ProgressLogger:
     """Log progress over subsequences of a larger sequence"""
     log_fmt: str
@@ -361,7 +478,6 @@ class ClusterActivityReport:
     prom_client: 'prometheus_api_client.PrometheusConnect | None' = None
     exclude: dataclasses.InitVar[str] = ''
 
-    cluster: str = dataclasses.field(init=False)
     should_exclude: Callable[[str], bool] = dataclasses.field(init=False)
     # A WorkflowRunSummary for each project. The None key summarizes all runs.
     summaries: dict[str | None, WorkflowRunSummary] = dataclasses.field(init=False, default_factory=dict)
@@ -394,7 +510,6 @@ class ClusterActivityReport:
     ]
 
     def __post_init__(self, exclude):
-        self.cluster = self.arv_client.config()["ClusterID"]
         self.owners = collections.ChainMap(self.groups, self.users)
         if exclude:
             self.should_exclude = re.compile(exclude, re.IGNORECASE).search
@@ -551,39 +666,6 @@ class ClusterActivityReport:
             yield from self._load_and_iter_runs(new_reqs, containers, logger)
             seen_cuuids.update(cuuid_batch)
 
-    @functools.cached_property
-    def total_users(self):
-        return self.arv_client.users().list(
-            filters=[
-                ['is_active', '=', True],
-            ],
-            limit=0,
-            count='exact',
-        ).execute()['items_available']
-
-    @functools.cached_property
-    def total_projects(self):
-        return self.arv_client.groups().list(
-            filters=[
-                ['group_class', '=', 'project'],
-            ],
-            limit=0,
-            count='exact',
-        ).execute()['items_available']
-
-    def collect_graph(self, since, to, metric, resample_to):
-        return [
-            list(t[:2])
-            for series in get_metric_usage(
-                    self.prom_client,
-                    since,
-                    to,
-                    f"{metric}{{cluster='{self.cluster}'}}",
-                    resampleTo=resample_to,
-            )
-            for t in series.itertuples()
-        ]
-
     def html_report(self):
         """Get a cluster activity report for the desired time period,
         returning a string containing the report as an HTML document."""
@@ -591,281 +673,43 @@ class ClusterActivityReport:
             # HTML doesn't report individual runs, just summaries.
             pass
 
-        logging.info("Getting container hours time series")
-        containers_graph = self.collect_graph(
-            self.since,
-            self.to,
-            "arvados_dispatchcloud_containers_running",
-            resample_to="5min",
-        )
-        logging.info("Getting data usage time series")
-        managed_graph = self.collect_graph(
-            self.since,
-            self.to,
-            "arvados_keep_collection_bytes",
-            resample_to="60min",
-        )
-        storage_graph = self.collect_graph(
-            self.since,
-            self.to,
-            "arvados_keep_total_bytes",
-            resample_to="60min",
-        )
-
-        wb_url = self.arv_client.config()["Services"]["Workbench2"]["ExternalURL"]
-        def wb_link(path, text):
-            return '<a href="{}">{}</a>'.format(
-                urllib.parse.urljoin(wb_url, path),
-                text,
-            )
-
-        cards = []
-        data_rows = []
-        def add_row(key, val):
-            match val:
-                case None:
-                    val = NOT_AVAILABLE
-                case int(_):
-                    val = f'{val:,d}'
-                case float(_):
-                    val = f'{val:,.2f}'
-            data_rows.append(f"<tr><th>{key}</th><td>{val}</td></tr>")
-        def add_card(header, suffix):
-            table_data = '\n'.join(data_rows)
-            cards.append(f"""<h2>{header}</h2>
-            <table class='aggtable'><tbody>
-            {table_data}
-            </tbody></table>
-            <p>{suffix}</p>
-            """)
-            data_rows.clear()
-
-        try:
-            _, managed_data_end = managed_graph[-1]
-        except IndexError:
-            managed_data_end = None
-        if storage_graph:
-            _, storage_used_end = storage_graph[-1]
-            storage_cost_end = s3_cost(storage_used_end, S3CostPeriod.MONTHLY)
-        else:
-            storage_used_end = None
-            storage_cost_end = NOT_AVAILABLE
-        if managed_data_end and storage_used_end:
-            dedup_ratio = managed_data_end / storage_used_end
-        else:
-            dedup_ratio = NOT_AVAILABLE
-
-        if self.to.date() == datetime.date.today():
-            # The deduplication ratio overstates things a bit, you can
-            # have collections which reference a small slice of a large
-            # block, and this messes up the intuitive value of this ratio
-            # and exagerates the effect.
-            #
-            # So for now, as much fun as this is, I'm excluding it from
-            # the report.
-            #
-            # dedup_savings = aws_monthly_cost(managed_data_now) - storage_cost
-            # <tr><th>Monthly savings from storage deduplication</th> <td>${dedup_savings:,.2f}</td></tr>
-            add_row(wb_link('users', 'Total users'), self.total_users)
-            add_row('Total projects', self.total_projects)
-            add_row('Total data under management', bytes_si_fmt(managed_data_end))
-            add_row('Total storage usage', bytes_si_fmt(storage_used_end))
-            add_row('Deduplication ratio', dedup_ratio)
-            add_row('Approximate monthly storage cost', cost_fmt(storage_cost_end))
-            add_card(
-                f'Cluster status as of {self.to.date()}',
-                'See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.',
-            )
-
-        # We have a couple of options for getting total container hours
-        #
-        # total_hours=sum(v for _, v in containers_graph) / 12
-        #
-        # calculates the sum from prometheus metrics
-        #
-        # total_hours=self.total_hours
-        #
-        # calculates the sum of the containers that were fetched
-        #
-        # The problem is these numbers tend not to match, especially
-        # if the report generation was not called with "include
-        # workflow steps".
-        #
-        # I decided to use the sum from containers fetched, because it
-        # will match the sum of compute time for each project listed
-        # in the report.
-
-        cluster_summary = self.summaries.pop(None)
-        add_row('Active users', cluster_summary.total_users())
-        add_row('<a href="#Active_Projects">Active projects</a>', len(self.summaries))
-        add_row('Workflow runs', cluster_summary.total_runs())
-        add_row('Compute used', duration_hrs_fmt(cluster_summary.total_runtime(), 'hours'))
-        add_row('Compute cost', cost_fmt(cluster_summary.total_cost()))
-        add_row(
-            'Storage cost',
-            cost_fmt(sum(s3_cost(v, S3CostPeriod.HOURLY) for _, v in storage_graph)),
-        )
-        add_card(
-            'Activity and cost over the {} day period {} to {}'.format(
-                (self.to - self.since).days, self.since.date(), self.to.date(),
-            ),
-            'See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.',
-        )
-
-        graphs = {
-            ('Concurrent running containers', 'containers'): containers_graph,
-            ('Data under management', 'managed'): managed_graph,
-            ('Storage usage', 'used'): storage_graph,
-        }
-        if any(graphs.values()):
-            cards.append("""
-                <div id="chart"></div>
-            """)
-
-        projects = sorted(
+        arv_config = self.arv_client.config()
+        active = self.summaries.pop(None)
+        cluster = ClusterSummary.query(self.arv_client, self.prom_client, self.since, self.to)
+        summaries = sorted(
             self.summaries.items(),
             key=lambda kv: kv[1].total_cost(),
             reverse=True,
         )
-        project_rows = {
-            key: '<td>{0}</td> <td>{1}</td> <td>{2}</td> <td>{3}</td>'.format(
-                ', '.join(summary.usernames(self.users)),
-                datespan_fmt(summary.earliest, summary.latest),
-                duration_hrs_fmt(summary.total_runtime()),
-                cost_fmt(summary.total_cost()),
-            )
-            for key, summary in projects
-        }
-        data_rows = '\n'.join(
-            '<tr><td><a href="#{0}">{0}</a></td>{1}</tr>'.format(key, row)
-            for key, row in project_rows.items()
+        statistics = {key: sorted(
+            workflows.items(),
+            key=lambda kv: kv[1].total_runs(),
+            reverse=True,
+        ) for key, workflows in self.statistics.items()}
+
+        jinja = jinja2.Environment(
+            autoescape=jinja2.select_autoescape(),
+            loader=jinja2.PackageLoader('arvados_cluster_activity'),
+            trim_blocks=True,
         )
-        cards.append(
-            f"""
-            <a id="Active_Projects"><h2>Active Projects</h2></a>
-            <table class='sortable active-projects'>
-            <thead><tr><th>Project</th> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
-            <tbody>{data_rows}</tbody>
-            </table>
-            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
-            """)
+        jinja.filters.update(_JINJA_FILTERS)
+        wb_url = arv_config['Services']['Workbench2']['ExternalURL']
+        def workbench_url(value):
+            if not isinstance(value, str):
+                value = PurePath(*value).as_posix()
+            return markupsafe.Markup(urllib.parse.urljoin(wb_url, value))
+        jinja.filters['workbench_url'] = workbench_url
 
-        for pkey, psum in projects:
-            workflows = sorted(
-                self.statistics[pkey].items(),
-                key=lambda kv: kv[1].total_runs(),
-                reverse=True,
-            )
-            data_rows = '\n                '.join(
-                '<tr><td>{0}</td> <td>{1}</td> <td>{2}</td> <td>{3}</td> <td>{4}</td> <td>{5}</td> <td>{6}</td></tr>'.format(
-                    stats.total_runs(),
-                    wb_link(f'workflows/{stats.workflow_uuid}', key) if stats.workflow_uuid else key,
-                    duration_hms_fmt(stats.median_runtime()),
-                    duration_hms_fmt(stats.mean_runtime()),
-                    cost_fmt(stats.median_cost()),
-                    cost_fmt(stats.mean_cost()),
-                    cost_fmt(stats.total_cost()),
-                )
-                for key, stats in workflows
-            )
-            title_link = wb_link(f'projects/{psum.owner_uuid}', pkey)
-            cards.append(
-                f"""<a id="{pkey}"></a><h2>{title_link}</h2>
-
-                <table class='sortable single-project'>
-                <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
-                <tbody><tr>{project_rows[pkey]}</tr></tbody>
-                </table>
-
-                <table class='sortable project'>
-                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Median runtime</th> <th>Mean runtime</th> <th>Median cost per run</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
-                <tbody>
-                {data_rows}
-                </tbody></table>
-                """)
-
-        # The deduplication ratio overstates things a bit, you can
-        # have collections which reference a small slice of a large
-        # block, and this messes up the intuitive value of this ratio
-        # and exagerates the effect.
-        #
-        # So for now, as much fun as this is, I'm excluding it from
-        # the report.
-        #
-        # <p>"Monthly savings from storage deduplication" is the
-        # estimated cost difference between "storage usage" and "data
-        # under management" as a way of comparing with other
-        # technologies that do not support data deduplication.</p>
-
-
-        cards.append("""
-        <h2 id="prices">Note on usage and cost calculations</h2>
-
-        <div style="max-width: 60em">
-
-        <p>The numbers presented in this report are estimates and will
-        not perfectly match your cloud bill.  Nevertheless this report
-        should be useful for identifying your main cost drivers.</p>
-
-        <h3>Storage</h3>
-
-        <p>"Total data under management" is what you get if you add up
-        all blocks referenced by all collections in Workbench, without
-        considering deduplication.</p>
-
-        <p>"Total storage usage" is the actual underlying storage
-        usage, accounting for data deduplication.</p>
-
-        <p>Storage costs are based on AWS "S3 Standard"
-        described on the <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 pricing</a> page:</p>
-
-        <ul>
-        <li>$0.023 per GB / Month for the first 50 TB</li>
-        <li>$0.022 per GB / Month for the next 450 TB</li>
-        <li>$0.021 per GB / Month over 500 TB</li>
-        </ul>
-
-        <p>Finally, this only the base storage cost, and does not
-        include any fees associated with S3 API usage.  However, there
-        are generally no ingress/egress fees if your Arvados instance
-        and S3 bucket are in the same region, which is the normal
-        recommended configuration.</p>
-
-        <h3>Compute</h3>
-
-        <p>"Compute usage" are instance-hours used in running
-        workflows.  Because multiple steps may run in parallel on
-        multiple instances, a workflow that completes in four hours
-        but runs parallel steps on five instances, would be reported
-        as using 20 instance hours.</p>
-
-        <p>"Runtime" is the actual wall clock time that it took to
-        complete a workflow.  This does not include time spent in the
-        queue for the workflow itself, but does include queuing time
-        of individual workflow steps.</p>
-
-        <p>Computational costs are derived from Arvados cost
-        calculations of container runs.  For on-demand instances, this
-        uses the prices from the InstanceTypes section of the Arvado
-        config file, set by the system administrator.  For spot
-        instances, this uses current spot prices retrieved on the fly
-        the AWS API.</p>
-
-        <p>Be aware that the cost calculations are only for the time
-        the container is running and only do not take into account the
-        overhead of launching instances or idle time between scheduled
-        tasks or prior to automatic shutdown.</p>
-
-        </div>
-        """)
-
-        return ReportChart(
-            "Cluster report for {} from {} to {}".format(
-                self.cluster, self.since.date(), self.to.date(),
-            ),
-            cards,
-            graphs,
-        ).html()
+        return jinja.get_template('report.html.j2').render(
+            active=active,
+            cluster=cluster,
+            cluster_id=arv_config['ClusterID'],
+            report=self,
+            report_span=datespan_fmt(self.since, self.to),
+            statistics=statistics,
+            summaries=summaries,
+            today=datetime.date.today(),
+        )
 
     def csv_report(self, out, columns, *, include_steps: bool):
         if not columns:
