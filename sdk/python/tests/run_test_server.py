@@ -19,7 +19,10 @@ import sys
 import tempfile
 import time
 import unittest
-import yaml
+
+from ruamel.yaml import YAML
+yaml = YAML(typ="safe", pure=True)
+yaml.default_flow_style = False
 
 from urllib.parse import urlparse
 
@@ -456,7 +459,7 @@ def stop(force=False):
 
 def get_config():
     with open(os.environ["ARVADOS_CONFIG"]) as f:
-        return yaml.safe_load(f)
+        return yaml.load(f)
 
 def internal_port_from_config(service, idx=0):
     return int(urlparse(
@@ -565,7 +568,7 @@ def _start_keep(n, blob_signing=False):
     confdata = get_config()
     confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
     with open(conf, 'w') as f:
-        yaml.safe_dump(confdata, f)
+        yaml.dump(confdata, f)
     keep_cmd = ["arvados-server", "keepstore", "-config", conf]
 
     # Tell keepstore which of the InternalURLs it's supposed to listen
@@ -772,7 +775,7 @@ def setup_config():
     if configsrc:
         clusterconf = os.path.join(configsrc, "config.yml")
         print("Getting config from %s" % clusterconf, file=sys.stderr)
-        pgconnection = yaml.safe_load(open(clusterconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
+        pgconnection = yaml.load(open(clusterconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
     else:
         # assume the conventional db credentials
         pgconnection = {
@@ -938,7 +941,7 @@ def setup_config():
 
     conf = os.path.join(TEST_TMPDIR, 'arvados.yml')
     with open(conf, 'w') as f:
-        yaml.safe_dump(config, f)
+        yaml.dump(config, f)
 
     ex = "export ARVADOS_CONFIG="+conf
     print(ex)
@@ -962,7 +965,7 @@ def fixture(fix):
           yaml_file = yaml_file[0:trim_index]
         except ValueError:
           pass
-        return yaml.safe_load(yaml_file)
+        return yaml.load(yaml_file)
 
 def auth_token(token_name):
     return fixture("api_client_authorizations")[token_name]["api_token"]
