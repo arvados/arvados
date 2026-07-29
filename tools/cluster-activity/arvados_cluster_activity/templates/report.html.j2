@@ -40,12 +40,12 @@ SPDX-License-Identifier: AGPL-3.0
           });
       });
 
-{% include 'synchronizer.js.j2' without context %}
-{% include 'dygraphs.js.j2' without context %}
-{% include 'sortable.js.j2' without context %}
+{{ include_file('synchronizer.js') }}
+{{ include_file('dygraphs.js') }}
+{{ include_file('sortable.js') }}
     </script>
 
-{% include 'report.css.j2' without context %}
+{{ include_file('report.css') }}
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css">
   </head>

@@ -700,10 +700,15 @@ class ClusterActivityReport:
             return markupsafe.Markup(urllib.parse.urljoin(wb_url, value))
         jinja.filters['workbench_url'] = workbench_url
 
+        def include_file(path: str) -> markupsafe.Markup:
+            content, _, _ = jinja.loader.get_source(jinja, path)
+            return markupsafe.Markup(content)
+
         return jinja.get_template('report.html.j2').render(
             active=active,
             cluster=cluster,
             cluster_id=arv_config['ClusterID'],
+            include_file=include_file,
             report=self,
             report_span=datespan_fmt(self.since, self.to),
             statistics=statistics,

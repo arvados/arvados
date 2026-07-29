@@ -1,4 +1,3 @@
-{% raw %}
 /**
  * Copyright Jonas Earendel. All rights reserved.
  * SPDX-License-Identifier: Unlicense
@@ -127,4 +126,3 @@ document.addEventListener('click', function (e) {
         // console.log(error)
     }
 });
-{% endraw %}

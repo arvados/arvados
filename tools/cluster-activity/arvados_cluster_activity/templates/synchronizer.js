@@ -1,4 +1,3 @@
-{% raw %}
 // Copyright (c) 2009 Dan Vanderkam. All rights reserved.
 //
 // SPDX-License-Identifier: MIT
@@ -275,4 +274,3 @@ function attachSelectionHandlers(gs, prevCallbacks) {
 Dygraph.synchronize = synchronize;
 
 })();
-{% endraw %}

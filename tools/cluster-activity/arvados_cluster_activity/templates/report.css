@@ -1,9 +1,8 @@
-{#
+/*
 Copyright (C) The Arvados Authors. All rights reserved.
 
 SPDX-License-Identifier: AGPL-3.0
-#}
-{% raw %}
+*/
 <style>
 @charset "UTF-8";
 body {
@@ -120,4 +119,3 @@ table.project th:nth-child(7) {
     text-align: left;
 }
 </style>
-{% endraw %}
