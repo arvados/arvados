@@ -659,7 +659,7 @@ do_install_once() {
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
-        pip install "$WORKSPACE/$1"
+        pip install "$WORKSPACE/$1${pythonextras[$1]}"
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -997,6 +997,9 @@ declare -a pythonstuff=(
     services/dockercleaner
     services/fuse
     tools/cluster-activity
+)
+declare -A pythonextras=(
+    [tools/cluster-activity]="[prometheus]"
 )
 
 declare -a gostuff

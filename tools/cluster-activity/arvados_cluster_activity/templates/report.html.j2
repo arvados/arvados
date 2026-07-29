@@ -1,0 +1,256 @@
+{#
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0
+#}
+<!doctype html>
+{% set title %}Cluster report for {{ cluster_id }} from {{ report_span }}{% endset %}
+{% set unavail %}(Not Available){% endset %}
+{% set price_footnote %}
+<p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
+{% endset %}
+{% macro card() %}
+<div class="card">
+  <div class="content">
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+{% macro project_row(project, name=None) %}
+<tr>
+{% if name is not none %}
+  <td><a href="#{{ project.owner_uuid }}">{{ name }}</a></td>
+{% endif %}
+  <td>{{ project.usernames(report.users)|join(', ') }}</td>
+  <td>{{ project.earliest|datespan(project.latest) }}</td>
+  <td>{{ project.total_runtime()|duration_hrs }}</td>
+  <td>{{ project.total_cost()|cost }}</td>
+</tr>
+{% endmacro %}
+<html>
+  <head>
+    <title>{{ title }}</title>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js"></script>
+    <script type="text/javascript">
+      var chartdata = {{ cluster.chart_json() }};
+      chartdata.forEach(chart => {
+          chart.charts[0].data.forEach(chartdata => {
+              chartdata[0] = new Date(chartdata[0]);
+          });
+      });
+
+{{ include_file('synchronizer.js') }}
+{{ include_file('dygraphs.js') }}
+{{ include_file('sortable.js') }}
+    </script>
+
+{{ include_file('report.css') }}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css">
+  </head>
+
+  <body>
+
+{% call card() %}
+<h1>{{ title }}</h1>
+{% endcall %}
+
+{% if report.to.date() == today %}
+{% call card() %}
+<h2>Cluster status as of {{ report.to|date }}</h2>
+<table class='aggtable'><tbody>
+    <tr>
+      <th><a href="{{ 'users'|workbench_url }}">Total users</a></th>
+      <td>{{ cluster.total_users|numeric }}</td>
+    </tr>
+    <tr>
+      <th>Total projects</th>
+      <td>{{ cluster.total_projects|numeric }}</td>
+    </tr>
+    <tr>
+      <th>Total data under management</th>
+      <td>{{ cluster.managed_data_end|bytes_si or unavail }}</td>
+    </tr>
+    <tr>
+      <th>Total storage usage</th>
+      <td>{{ cluster.stored_data_end|bytes_si or unavail }}</td>
+    </tr>
+    <tr>
+      <th>Deduplication ratio</th>
+      <td>{{ cluster.dedup_ratio()|numeric('02') or unavail }}</td>
+    </tr>
+    <tr>
+      <th>Approximate monthly storage cost</th>
+      <td>{{ cluster.monthly_storage_cost()|cost or unavail }}</td>
+    </tr>
+</tbody></table>
+{{ price_footnote }}
+{% endcall %}
+{% endif %}
+
+{% call card() %}
+<h2>Activity and cost over the {{ (report.to - report.since).days }} day period {{ report_span }}</h2>
+<table class='aggtable'><tbody>
+    <tr>
+      <th>Active users</th>
+      <td>{{ active.total_users()|numeric }}</td>
+    </tr>
+    <tr>
+      <th><a href="#Active_Projects">Active projects</a></th>
+      <td>{{ report.summaries|length|numeric }}</td>
+    </tr>
+    <tr>
+      <th>Workflow runs</th>
+      <td>{{ active.total_runs()|numeric }}</td>
+    </tr>
+    <tr>
+      <th>Compute used</th>
+      <td>{{ active.total_runtime()|duration_hrs('hours') }}</td>
+    </tr>
+    <tr>
+      <th>Compute cost</th>
+      <td>{{ active.total_cost()|cost }}</td>
+    </tr>
+    <tr>
+      <th>Storage cost</th>
+      <td>{{ cluster.storage_cost|cost or unavail }}</td>
+    </tr>
+</tbody></table>
+{{ price_footnote }}
+{% endcall %}
+
+{% if cluster.have_charts() %}
+{% call card() %}
+<div id="chart"></div>
+{% endcall %}
+{% endif %}
+
+{% call card() %}
+<a id="Active_Projects"><h2>Active Projects</h2></a>
+<table class='sortable active-projects'>
+  <thead>
+    <tr>
+      <th>Project</th>
+      <th>Users</th>
+      <th>Active</th>
+      <th>Compute usage (hours)</th>
+      <th>Compute cost</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for key, summary in summaries %}
+    {{ project_row(summary, key) }}
+    {% endfor %}
+  </tbody>
+</table>
+{{ price_footnote }}
+{% endcall %}
+
+{% for pkey, psum in summaries %}
+{% call card() %}
+<a id="{{ psum.owner_uuid }}"></a><h2><a href="{{ ('projects', psum.owner_uuid)|workbench_url }}">{{ pkey }}</a></h2>
+
+<table class='sortable single-project'>
+  <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
+  <tbody>
+    {{ project_row(psum) }}
+  </tbody>
+</table>
+
+<table class='sortable project'>
+  <thead>
+    <tr>
+      <th>Workflow run count</th>
+      <th>Workflow name</th>
+      <th>Median runtime</th>
+      <th>Mean runtime</th>
+      <th>Median cost per run</th>
+      <th>Mean cost per run</th>
+      <th>Sum cost over runs</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for wfkey, stats in statistics[pkey] %}
+    <tr>
+      <td>{{ stats.total_runs()|numeric }}</td>
+      {% if stats.workflow_uuid %}
+      <td><a href="{{ ('workflows', stats.workflow_uuid)|workbench_url }}">{{ wfkey }}</a></td>
+      {% else %}
+      <td>{{ wfkey }}</td>
+      {% endif %}
+      <td>{{ stats.median_runtime()|duration_hms }}</td>
+      <td>{{ stats.mean_runtime()|duration_hms }}</td>
+      <td>{{ stats.median_cost()|cost }}</td>
+      <td>{{ stats.mean_cost()|cost }}</td>
+      <td>{{ stats.total_cost()|cost }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endcall %}
+{% endfor %}
+
+{% call card() %}
+<h2 id="prices">Note on usage and cost calculations</h2>
+
+<div style="max-width: 60em">
+
+  <p>The numbers presented in this report are estimates and will
+    not perfectly match your cloud bill.  Nevertheless this report
+    should be useful for identifying your main cost drivers.</p>
+
+  <h3>Storage</h3>
+
+  <p>"Total data under management" is what you get if you add up
+    all blocks referenced by all collections in Workbench, without
+    considering deduplication.</p>
+
+  <p>"Total storage usage" is the actual underlying storage
+    usage, accounting for data deduplication.</p>
+
+  <p>Storage costs are based on AWS "S3 Standard"
+    described on the <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 pricing</a> page:</p>
+
+  <ul>
+    <li>$0.023 per GB / Month for the first 50 TB</li>
+    <li>$0.022 per GB / Month for the next 450 TB</li>
+    <li>$0.021 per GB / Month over 500 TB</li>
+  </ul>
+
+  <p>Finally, this only the base storage cost, and does not
+    include any fees associated with S3 API usage.  However, there
+    are generally no ingress/egress fees if your Arvados instance
+    and S3 bucket are in the same region, which is the normal
+    recommended configuration.</p>
+
+  <h3>Compute</h3>
+
+  <p>"Compute usage" are instance-hours used in running
+    workflows.  Because multiple steps may run in parallel on
+    multiple instances, a workflow that completes in four hours
+    but runs parallel steps on five instances, would be reported
+    as using 20 instance hours.</p>
+
+  <p>"Runtime" is the actual wall clock time that it took to
+    complete a workflow.  This does not include time spent in the
+    queue for the workflow itself, but does include queuing time
+    of individual workflow steps.</p>
+
+  <p>Computational costs are derived from Arvados cost
+    calculations of container runs.  For on-demand instances, this
+    uses the prices from the InstanceTypes section of the Arvado
+    config file, set by the system administrator.  For spot
+    instances, this uses current spot prices retrieved on the fly
+    the AWS API.</p>
+
+  <p>Be aware that the cost calculations are only for the time
+    the container is running and only do not take into account the
+    overhead of launching instances or idle time between scheduled
+    tasks or prior to automatic shutdown.</p>
+
+</div>
+{% endcall %}
+
+  </body>
+</html>
