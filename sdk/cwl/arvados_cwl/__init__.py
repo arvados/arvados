@@ -14,6 +14,8 @@ import os
 import sys
 import re
 
+from packaging.version import Version
+
 from schema_salad.sourceline import SourceLine
 import schema_salad.validate as validate
 import cwltool.main
@@ -22,6 +24,7 @@ import cwltool.process
 import cwltool.argparser
 from cwltool.errors import WorkflowException
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
+from cwltool.update import INTERNAL_VERSION
 from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing
 
 import arvados
@@ -294,10 +297,24 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
-    supported_versions = ["v1.0", "v1.1", "v1.2"]
-    for s in supported_versions:
-        customschema = importlib.resources.read_text(__name__, f'arv-cwl-schema-{s}.yml', encoding='utf-8')
-        use_custom_schema(s, "http://arvados.org/cwl", customschema)
+    supported_versions = ["v1.0", "v1.1", "v1.2"]  # Keep this list sorted.
+    custom_schemas = {}
+    for v in supported_versions:
+        customschema = importlib.resources.read_text(
+            __name__, f'arv-cwl-schema-{v}.yml', encoding='utf-8'
+        )
+        custom_schemas[v] = customschema
+        use_custom_schema(v, "http://arvados.org/cwl", customschema)
+
+    # For the case when our supported versions lag behind cwltool internal
+    # version.
+    arv_latest = supported_versions[-1]
+    if Version(INTERNAL_VERSION) > Version(arv_latest):
+        use_custom_schema(
+            INTERNAL_VERSION,
+            "http://arvados.org/cwl", custom_schemas[arv_latest]
+        )
+
     cwltool.process.supportedProcessRequirements.extend([
         "http://arvados.org/cwl#RunInSingleContainer",
         "http://arvados.org/cwl#OutputDirType",
