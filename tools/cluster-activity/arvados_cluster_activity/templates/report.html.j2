@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0
 {% macro project_row(project, name=None) %}
 <tr>
 {% if name is not none %}
-  <td><a href="#{{ name }}">{{ name }}</a></td>
+  <td><a href="#{{ project.owner_uuid }}">{{ name }}</a></td>
 {% endif %}
   <td>{{ project.usernames(report.users)|join(', ') }}</td>
   <td>{{ project.earliest|datespan(project.latest) }}</td>
@@ -149,7 +149,7 @@ SPDX-License-Identifier: AGPL-3.0
 
 {% for pkey, psum in summaries %}
 {% call card() %}
-<a id="{{ pkey }}"></a><h2><a href="{{ ('projects', psum.owner_uuid)|workbench_url }}">{{ pkey }}</a></h2>
+<a id="{{ psum.owner_uuid }}"></a><h2><a href="{{ ('projects', psum.owner_uuid)|workbench_url }}">{{ pkey }}</a></h2>
 
 <table class='sortable single-project'>
   <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
