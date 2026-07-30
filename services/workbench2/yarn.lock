@@ -6727,6 +6727,7 @@ __metadata:
     parse-duration: ^2.1.3
     path-browserify: ^1.0.1
     popper-max-size-modifier: ^0.2.0
+    postcss: ^8.5.18
     postcss-flexbugs-fixes: ^5.0.2
     postcss-loader: ^6.2.1
     postcss-normalize: ^10.0.1
@@ -15170,7 +15171,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.2.14, postcss@npm:^8.3.5, postcss@npm:^8.4.23, postcss@npm:^8.4.33":
+"postcss@npm:^8.2.14, postcss@npm:^8.3.5, postcss@npm:^8.4.23, postcss@npm:^8.4.33, postcss@npm:^8.5.18":
   version: 8.5.25
   resolution: "postcss@npm:8.5.25"
   dependencies:
