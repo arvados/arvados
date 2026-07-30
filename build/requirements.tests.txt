@@ -7,9 +7,6 @@
 ### Requirements for run-tests.sh itself
 -r requirements.build.txt
 
-# YAML support required by sdk/python/tests/run_test_server.py is already
-# provided by the PySDK dependency ruamel.yaml
-
 # yq is used by run-tests.sh directly and controller tests
 yq ~= 3.4
 
