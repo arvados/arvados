@@ -125,7 +125,6 @@ completed:
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 completed-older:
   uuid: zzzzz-xvhdp-cr4completedcr2
@@ -151,7 +150,6 @@ completed-older:
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 completed_diagnostics:
   name: CWL diagnostics hasher
@@ -433,7 +431,6 @@ requester:
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 cr_for_requester:
   uuid: zzzzz-xvhdp-cr4requestercnt
