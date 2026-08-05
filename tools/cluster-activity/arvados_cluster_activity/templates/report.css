@@ -1,5 +1,3 @@
-<style>
-@charset "UTF-8";
 /*
 Copyright (C) The Arvados Authors. All rights reserved.
 
@@ -118,4 +116,3 @@ table.project th:nth-child(6),
 table.project th:nth-child(7) {
     text-align: left;
 }
-</style>
