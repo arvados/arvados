@@ -27,7 +27,7 @@ class StopTest(Exception):
     pass
 
 
-class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
+class ArvKeepdockerTestCase(unittest.TestCase):
     def run_arv_keepdocker(self, args, err, **kwargs):
         sys.argv = ['arv-keepdocker'] + args
         log_handler = logging.StreamHandler(err)
@@ -36,20 +36,6 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             return arv_keepdocker.main(**kwargs)
         finally:
             arv_keepdocker.logger.removeHandler(log_handler)
-
-    def test_unsupported_arg(self):
-        out = tutil.StringIO()
-        with tutil.redirected_streams(stdout=out, stderr=out), \
-             self.assertRaises(SystemExit):
-            self.run_arv_keepdocker(['-x=unknown'], sys.stderr)
-        self.assertRegex(out.getvalue(), r'unrecognized arguments')
-
-    def test_version_argument(self):
-        with tutil.redirected_streams(
-                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
-            with self.assertRaises(SystemExit):
-                self.run_arv_keepdocker(['--version'], sys.stderr)
-        self.assertVersionOutput(out, err)
 
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
                 return_value=[])
@@ -215,8 +201,8 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                             stdout=subprocess.PIPE)), \
              mock.patch('arvados.commands.keepdocker.prep_image_file',
                         return_value=(mocked_file, False)), \
-             mock.patch('arvados.commands.put.main',
-                        return_value='new-collection-uuid'), \
+             mock.patch('arvados.commands.put.do_put',
+                        return_value=(0, 'new-collection-uuid')), \
              self.assertRaises(StopTest):
 
             api()._rootDesc = fakeDD

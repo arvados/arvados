@@ -12,16 +12,7 @@
       - build-essential
       - libcurl4-openssl-dev
       - libssl-dev
-      - ruby-dev
-      - ruby-rubygems
       - zlib1g-dev
-
-- name: Install shell client gems
-  become: yes
-  community.general.gem:
-    name: arvados-cli
-    user_install: no
-    version: "{{ arvados_pin_version or omit }}"
 
 - name: Query virtual machine record
   no_log: yes
@@ -30,7 +21,7 @@
     order: [["created_at", "desc"], ["uuid", "desc"]]
   ansible.builtin.command:
     argv:
-      - /usr/local/bin/arv
+      - /usr/bin/arv
       - virtual_machine
       - list
       - "--filters={{ filters|to_json }}"
@@ -49,7 +40,7 @@
       hostname: "{{ arvados_shell_hostname }}"
   ansible.builtin.command:
     argv:
-      - /usr/local/bin/arv
+      - /usr/bin/arv
       - virtual_machine
       - create
       - "--virtual-machine={{ virtual_machine|to_json }}"

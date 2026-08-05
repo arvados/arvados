@@ -12,14 +12,14 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This reference describes the semantics of Arvados resources and how to programatically access Arvados via its REST API.  Each resource listed in this section is exposed on the Arvados API server under the @/arvados/v1/@ path prefix, for example, @https://{{ site.arvados_api_host }}/arvados/v1/collections@.
 
-h2. Discovery document
+h2(#discovery-document). Discovery document
 
 The API server publishes a machine-readable description of its endpoints and some additional site configuration values via a JSON-formatted discovery document.  This is available at @/discovery/v1/apis/arvados/v1/rest@, for example @https://{{ site.arvados_api_host }}/discovery/v1/apis/arvados/v1/rest@.  Some Arvados SDKs use the discovery document to generate language bindings.
 
-h2. Exported configuration
+h2(#exported-configuration). Exported configuration
 
 The Controller exposes a subset of the cluster's configuration and makes it available to clients in JSON format. This public config includes valuable information like several service's URLs, timeout settings, etc. and it is available at @/arvados/v1/config@, for example @https://{{ site.arvados_api_host }}/arvados/v1/config@. Workbench is one example of a client using this information, as it's a client-side application and doesn't have access to the cluster's config file.
 
-h2. Exported vocabulary definition
+h2(#exported-vocabulary). Exported vocabulary definition
 
 When configured, the Controller also exports the "metadata vocabulary definition":{{site.baseurl}}/admin/metadata-vocabulary.html in JSON format. This functionality is useful for clients like Workbench and the Python SDK to translate between identifiers and human-readable labels when reading and writing objects on the system. This is available at @/arvados/v1/vocabulary@, for example @https://{{ site.arvados_api_host }}/arvados/v1/vocabulary@.

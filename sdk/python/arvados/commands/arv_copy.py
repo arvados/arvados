@@ -73,7 +73,7 @@ def main(arguments=None):
     copy_opts = argparse.ArgumentParser(add_help=False)
 
     copy_opts.add_argument(
-        '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+        '--version', action='version', version=f"%(prog)s {__version__}",
         help='Print version and exit.')
     copy_opts.add_argument(
         '-v', '--verbose', dest='verbose', action='store_true',
@@ -221,26 +221,26 @@ administrator privileges on the destination cluster to create collections.
             abort("cannot copy object {} of type {}".format(args.object_uuid, t))
     except Exception as e:
         logger.error("%s", e, exc_info=args.verbose)
-        exit(1)
+        sys.exit(1)
 
     if not result:
-        exit(1)
+        sys.exit(1)
 
     # If no exception was thrown and the response does not have an
     # error_token field, presume success
     if result is None or 'error_token' in result or 'uuid' not in result:
         if result:
             logger.error("API server returned an error result: {}".format(result))
-        exit(1)
+        sys.exit(1)
 
     print(result['uuid'])
 
     if result.get('partial_error'):
         logger.warning("Warning: created copy with uuid {} but failed to copy some items: {}".format(result['uuid'], result['partial_error']))
-        exit(1)
+        sys.exit(1)
 
     logger.info("Success: created copy with uuid {}".format(result['uuid']))
-    exit(0)
+    sys.exit(0)
 
 def set_src_owner_uuid(resource, uuid, args):
     global src_owner_uuid
@@ -994,7 +994,7 @@ def copy_from_url(url, src, dst, args):
 
 def abort(msg, code=1):
     logger.info("arv-copy: %s", msg)
-    exit(code)
+    sys.exit(code)
 
 
 # Code for reporting on the progress of a collection upload.

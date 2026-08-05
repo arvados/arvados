@@ -20,94 +20,98 @@ from arvados._version import __version__
 
 logger = logging.getLogger('arvados.arv-get')
 
-parser = argparse.ArgumentParser(
-    description='Copy data from Keep to a local file or pipe.',
-    parents=[arv_cmd.retry_opt])
-parser.add_argument('--version', action='version',
-                    version="%s %s" % (sys.argv[0], __version__),
-                    help='Print version and exit.')
-parser.add_argument('locator', type=str,
-                    help="""
-Collection locator, optionally with a file path or prefix.
-""")
-parser.add_argument('destination', type=str, nargs='?', default='-',
-                    help="""
-Local file or directory where the data is to be written. Default: stdout.
-""")
-group = parser.add_mutually_exclusive_group()
-group.add_argument('--progress', action='store_true',
-                   help="""
-Display human-readable progress on stderr (bytes and, if possible,
-percentage of total data size). This is the default behavior when it
-is not expected to interfere with the output: specifically, stderr is
-a tty _and_ either stdout is not a tty, or output is being written to
-named files rather than stdout.
-""")
-group.add_argument('--no-progress', action='store_true',
-                   help="""
-Do not display human-readable progress on stderr.
-""")
-group.add_argument('--batch-progress', action='store_true',
-                   help="""
-Display machine-readable progress on stderr (bytes and, if known,
-total data size).
-""")
-group = parser.add_mutually_exclusive_group()
-group.add_argument('--hash',
-                    help="""
-Display the hash of each file as it is read from Keep, using the given
-hash algorithm. Supported algorithms include md5, sha1, sha224,
-sha256, sha384, and sha512.
-""")
-group.add_argument('--md5sum', action='store_const',
-                    dest='hash', const='md5',
-                    help="""
-Display the MD5 hash of each file as it is read from Keep.
-""")
-parser.add_argument('-n', action='store_true',
-                    help="""
-Do not write any data -- just read from Keep, and report md5sums if
-requested.
-""")
-parser.add_argument('-r', action='store_true',
-                    help="""
-Retrieve all files in the specified collection/prefix. This is the
-default behavior if the "locator" argument ends with a forward slash.
-""")
-group = parser.add_mutually_exclusive_group()
-group.add_argument('-f', action='store_true',
-                   help="""
-Overwrite existing files while writing. The default behavior is to
-refuse to write *anything* if any of the output files already
-exist. As a special case, -f is not needed to write to stdout.
-""")
-group.add_argument('-v', action='count', default=0,
-                    help="""
-Once for verbose mode, twice for debug mode.
-""")
-group.add_argument('--skip-existing', action='store_true',
-                   help="""
-Skip files that already exist. The default behavior is to refuse to
-write *anything* if any files exist that would have to be
-overwritten. This option causes even devices, sockets, and fifos to be
-skipped.
-""")
-group.add_argument('--strip-manifest', action='store_true', default=False,
-                   help="""
-When getting a collection manifest, strip its access tokens before writing
-it.
-""")
+def get_argument_parser():
+    parser = argparse.ArgumentParser(
+        description='Copy data from Keep to a local file or pipe.',
+        parents=[arv_cmd.retry_opt])
+    parser.add_argument('--version', action='version',
+                        version=f"%(prog)s {__version__}",
+                        help='Print version and exit.')
+    parser.add_argument('locator', type=str,
+                        help="""
+    Collection locator, optionally with a file path or prefix.
+    """)
+    parser.add_argument('destination', type=str, nargs='?', default='-',
+                        help="""
+    Local file or directory where the data is to be written. Default: stdout.
+    """)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--progress', action='store_true',
+                       help="""
+    Display human-readable progress on stderr (bytes and, if possible,
+    percentage of total data size). This is the default behavior when it
+    is not expected to interfere with the output: specifically, stderr is
+    a tty _and_ either stdout is not a tty, or output is being written to
+    named files rather than stdout.
+    """)
+    group.add_argument('--no-progress', action='store_true',
+                       help="""
+    Do not display human-readable progress on stderr.
+    """)
+    group.add_argument('--batch-progress', action='store_true',
+                       help="""
+    Display machine-readable progress on stderr (bytes and, if known,
+    total data size).
+    """)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--hash',
+                        help="""
+    Display the hash of each file as it is read from Keep, using the given
+    hash algorithm. Supported algorithms include md5, sha1, sha224,
+    sha256, sha384, and sha512.
+    """)
+    group.add_argument('--md5sum', action='store_const',
+                        dest='hash', const='md5',
+                        help="""
+    Display the MD5 hash of each file as it is read from Keep.
+    """)
+    parser.add_argument('-n', action='store_true',
+                        help="""
+    Do not write any data -- just read from Keep, and report md5sums if
+    requested.
+    """)
+    parser.add_argument('-r', action='store_true',
+                        help="""
+    Retrieve all files in the specified collection/prefix. This is the
+    default behavior if the "locator" argument ends with a forward slash.
+    """)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-f', action='store_true',
+                       help="""
+    Overwrite existing files while writing. The default behavior is to
+    refuse to write *anything* if any of the output files already
+    exist. As a special case, -f is not needed to write to stdout.
+    """)
+    group.add_argument('-v', action='count', default=0,
+                        help="""
+    Once for verbose mode, twice for debug mode.
+    """)
+    group.add_argument('--skip-existing', action='store_true',
+                       help="""
+    Skip files that already exist. The default behavior is to refuse to
+    write *anything* if any files exist that would have to be
+    overwritten. This option causes even devices, sockets, and fifos to be
+    skipped.
+    """)
+    group.add_argument('--strip-manifest', action='store_true', default=False,
+                       help="""
+    When getting a collection manifest, strip its access tokens before writing
+    it.
+    """)
 
-parser.add_argument('--threads', type=int, metavar='N', default=4,
-                    help="""
-Set the number of download threads to be used. Take into account that
-using lots of threads will increase the RAM requirements. Default is
-to use 4 threads.
-On high latency installations, using a greater number will improve
-overall throughput.
-""")
+    parser.add_argument('--threads', type=int, metavar='N', default=4,
+                        help="""
+    Set the number of download threads to be used. Take into account that
+    using lots of threads will increase the RAM requirements. Default is
+    to use 4 threads.
+    On high latency installations, using a greater number will improve
+    overall throughput.
+    """)
+    return parser
+
 
 def parse_arguments(arguments, stdout, stderr):
+    parser = get_argument_parser()
     args = parser.parse_args(arguments)
 
     if args.locator[-1] == os.sep:
@@ -183,17 +187,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                             api_client=api_client, args=args)
             except (IOError, OSError) as error:
                 logger.error("can't write to '{}': {}".format(args.destination, error))
-                return 1
+                sys.exit(1)
             except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
                 logger.error("failed to download '{}': {}".format(col_loc, error))
-                return 1
+                sys.exit(1)
             except arvados.errors.ArgumentError as error:
                 if 'Argument to CollectionReader' in str(error):
                     logger.error("error reading collection: {}".format(error))
-                    return 1
+                    sys.exit(1)
                 else:
                     raise
-        return 0
+        sys.exit(0)
 
     try:
         reader = arvados.CollectionReader(
@@ -201,7 +205,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             keep_client=arvados.keep.KeepClient(block_cache=arvados.keep.KeepBlockCache((args.threads+1)*64 * 1024 * 1024), num_prefetch_threads=args.threads))
     except Exception as error:
         logger.error("failed to read collection: {}".format(error))
-        return 1
+        sys.exit(1)
 
     # Scan the collection. Make an array of (stream, file, local
     # destination filename) tuples, and add up total size to extract.
@@ -217,11 +221,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             # If the user asked for a file and we got a subcollection, error out.
             if get_prefix[-1] != os.sep:
                 logger.error("requested file '{}' is in fact a subcollection. Append a trailing '/' to download it.".format('.' + get_prefix))
-                return 1
+                sys.exit(1)
             # If the user asked stdout as a destination, error out.
             elif args.destination == '-':
                 logger.error("cannot use 'stdout' as destination when downloading multiple files.")
-                return 1
+                sys.exit(1)
             # User asked for a subcollection, and that's what was found. Add up total size
             # to download.
             for s, f in files_in_collection(item):
@@ -231,7 +235,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 if (not (args.n or args.f or args.skip_existing) and
                     os.path.exists(dest_path)):
                     logger.error('Local file %s already exists.' % (dest_path,))
-                    return 1
+                    sys.exit(1)
                 todo += [(s, f, dest_path)]
                 todo_bytes += f.size()
         elif isinstance(item, arvados.arvfile.ArvadosFile):
@@ -239,10 +243,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             todo_bytes += item.size()
         else:
             logger.error("'{}' not found.".format('.' + get_prefix))
-            return 1
+            sys.exit(1)
     except (IOError, arvados.errors.NotFoundError) as e:
         logger.error(e)
-        return 1
+        sys.exit(1)
 
     out_bytes = 0
     for s, f, outfilename in todo:
@@ -260,14 +264,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                     # Good thing we looked again: apparently this file wasn't
                     # here yet when we checked earlier.
                     logger.error('Local file %s already exists.' % (outfilename,))
-                    return 1
+                    sys.exit(1)
                 if args.r:
                     pathlib.Path(outfilename).parent.mkdir(parents=True, exist_ok=True)
                 try:
                     outfile = open(outfilename, 'wb')
                 except Exception as error:
                     logger.error('Open(%s) failed: %s' % (outfilename, error))
-                    return 1
+                    sys.exit(1)
         if args.hash:
             digestor = hashlib.new(args.hash)
         try:
@@ -302,7 +306,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.progress:
         stderr.write('\n')
-    return 0
+    sys.exit(0)
 
 def files_in_collection(c):
     # Sort first by file type, then alphabetically by file path.

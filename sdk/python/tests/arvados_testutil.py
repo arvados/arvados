@@ -75,13 +75,6 @@ def redirected_streams(stdout=None, stderr=None):
         sys.stderr = orig_stderr
 
 
-class VersionChecker(object):
-    def assertVersionOutput(self, out, err):
-        self.assertEqual(err.getvalue(), '')
-        v = out.getvalue()
-        self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+(\.dev[0-9]+)?$\n")
-
-
 class FakeCurl(object):
     @classmethod
     def make(cls, code, body=b'', headers={}):

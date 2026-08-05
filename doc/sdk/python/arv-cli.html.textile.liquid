@@ -1,0 +1,529 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Command Line Tools
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+@arv@ is the command-line client for Arvados.  With @arv@, you can access Arvados API and Keep services, view and operate on Arvados resources and objects, and perform admin work.  It is distributed as part of the Arvados Python SDK.
+
+You can start using your Arvados cluster with @arv@ after configuring the working environment with an Arvados API token.  Please refer to the sections '"Getting an API token":{{ site.baseurl }}/user/reference/api-tokens.html' and '"Checking your environment":{{ site.baseurl }}/user/getting_started/check-environment.html' in the User Guide for details.  In this document, we will use @zzzzz@ to stand for the Arvados cluster ID.
+
+h2. Table of contents
+
+#  "Overview":#overview
+#  "High-level resource subcommands":#high-level-resource-subcommands
+#*  "@arv get@ -- Fetch Arvados objects":#arv-get
+#*  "@arv create@ -- Create Arvados objects in your editor":#arv-create
+#*  "@arv edit@ -- Update Arvados objects in your editor":#arv-edit
+#  "Data subcommands":#data-subcommands
+#*  "@arv copy@ -- Move objects across Arvados clusters":#arv-copy
+#*  "@arv keep ls@ -- List Arvados collection contents":#arv-keep-ls
+#*  "@arv keep get@ -- Copy data from Keep or fetch collection manifest":#arv-keep-get
+#*  "@arv keep put@ -- Upload data to Keep":#arv-keep-put
+#**  "Lower-level operations of @arv keep put@":#arv-keep-put-low-level
+#*  "@arv keep docker@ -- List or upload Docker images":#arv-keep-docker
+#  "API resource subcommands":#api-resource-subcommands
+#*  "Output formats":#resource-subcommand-output
+#*  "'Resource-type' parameters":#resource-type-parameters
+#*  "Resource-subcommand examples":#resource-subcommand-examples
+#**  "User administration examples":#user-admin-examples
+#*  "Miscellaneous resource subcommands":#misc-resource-subcommands
+#**  "@arv config@ -- Get Arvados cluster configuration":#arv-config
+#**  "@arv sys@ -- Run data trash and sweep":#arv-sys
+#**  "@arv vocabulary@ -- Get metadata vocabulary":#arv-vocabulary
+#  "Additional subcommands":#additional-subcommands
+#*  "@arv ws@ -- WebSocket client":#arv-ws
+
+h2(#overview). Overview
+
+@arv@ is a collection of _subcommands_ that can be broadly divided into three kinds, namely, high-level resource subcommands, data subcommands, and low-level resource subcommands that closely follow the Arvados API semantics.
+
+For every subcommand, you can get help with the @-h@/@--help@ option.  For example, @arv collection update -h@ will print the help information about the specific subcommand @collection update@.
+
+*Exit codes*: @arv@ exits with 0 on success, with 2 when the command-line input is invalid, and with 1 on all other errors.
+
+h2(#high-level-resource-subcommands). High-level resource subcommands
+
+h3(#arv-get). @arv get@ -- Fetch Arvados objects
+
+*Usage*: @arv [--format=json|yaml] get UUID [FIELDS ...]@
+
+@arv get@ retrieves an Arvados object by its "UUID":{{ site.baseurl }}/api/resources.html#object-uuid and writes it to the standard output as JSON (default) or YAML.
+
+The optional @FIELDS@ arguments can be specified to select the fields in the object to display.
+
+*Example*: Display "collection":{{ site.baseurl }}/api/methods/collections.html, limiting output to @uuid@, @portable_data_hash@, @version@, and @modified_at@ fields.
+
+<notextile><pre>
+$ <span class="userinput">arv get zzzzz-4zz18-12345abcde67890 uuid portable_data_hash version modified_at</span>
+{
+ "uuid": "zzzzz-4zz18-12345abcde67890",
+ "portable_data_hash": "1361eacc54cd808e2377d30a742cc9d2+53",
+ "version": 3,
+ "modified_at": "2025-01-23T12:34:56.789012000Z"
+}
+</pre></notextile>
+
+---
+
+h3(#arv-create). @arv create@ -- Create Arvados objects in your editor
+
+*Usage*: @arv [--format=json|yaml] create RESOURCE [--project-uuid=UUID]@
+
+@arv@ lets you interactively create new Arvados objects.  The editor program to run is determined by environment variables: @VISUAL@ is used if it is set; otherwise, @EDITOR@ is used.  If neither @VISUAL@ nor @EDITOR@ is set, @arv@ uses @nano@ if it is available in @PATH@, and falls back to @vi@ otherwise.
+
+@arv create@ starts a text editor in which you can create a new Arvados object using one of the two supported formats, JSON (default) or YAML.  The @RESOURCE@ argument can be any of the supported Arvados resource types (e.g., @collection@, @group@, @user@, etc.) as detailed in the "API Reference":{{ site.baseurl}}/api/index.html.
+
+When you save the work in the editor and exit, @arv@ will validate the object, then send an API request for object creation.  If a problem arises, detailed error messages will be shown, and you will see a prompt like the following:
+
+<notextile><pre>Edit and try again? ([Y]es/no) </pre></notextile>
+
+You can then choose to edit the object again until the problem is fixed, or discard the object at any time.  Saving an empty file or object will also stop the editing process.
+
+*Options*:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--project-uuid=UUID@ | Place the newly-created object in the specified "project":{{ site.baseurl}}/user/tutorials/tutorial-projects.html if appropriate. ||
+
+---
+
+h3(#arv-edit). @arv edit@ -- Update Arvados objects in your editor
+
+*Usage*: @arv [--format=json|yaml] edit UUID [FIELDS ...]@
+
+Similar to @arv create@, @arv edit@ lets you update an existing Arvados object using a text editor.
+
+Just like with @arv get@, you can optionally select the fields of the object to be shown in the editor.  However, you are not limited to those fields, because you can always add any (valid) fields in the editor.  Conversely, removing any fields from the object means that those fields will not be updated.
+
+The editing process largely follows that of @arv create@.  If any problem arises after you save the object and exit the editor, you will be interactively prompted to fix it, before the changes are actually committed to Arvados.
+
+---
+
+h2(#data-subcommands). Data subcommands
+
+The following subcommands work on data associated with Arvados objects.
+
+h3(#arv-copy). @arv copy@ -- Move objects across Arvados clusters
+
+@arv copy@ is an alias of the @arv-copy@ command.  It can copy collections, projects, and workflows (with their dependencies) from one Arvados cluster to another, or download data from URLs to Arvados collections.  More examples can be found in the section '"Using arv-copy":{{ site.baseurl}}/user/topics/arv-copy.html' of the User Guide, and you can refer to the output of @arv copy --help@ for more about the command-line parameters.
+
+---
+
+h3(#arv-keep-ls). @arv keep ls@ -- List Arvados collection contents
+
+*Usage*: @arv keep ls [-s] LOCATOR@
+
+@arv keep ls@ lists the file contents of Arvados collections.
+
+The @LOCATOR@ can be either a collection UUID (in the form of @zzzzz-4zz18-12345abcde67890@) or a "portable data hash":{{ site.baseurl }}/api/methods/collections.html#resource (PDH).
+
+*Selected options*:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @-s@ | Show file sizes in KiB. ||
+
+*Example*: List files in collection by portable data hash.
+
+<notextile><pre>
+$ <span class="userinput">arv keep ls -s 9178fe1b80a08a422dbe02adfd439764+925</span>
+         1 ./README.txt
+     53877 ./raw_fastq/Irrel_kd_1.subset.fq
+     46349 ./raw_fastq/Irrel_kd_2.subset.fq
+     35419 ./raw_fastq/Irrel_kd_3.subset.fq
+     73933 ./raw_fastq/Mov10_oe_1.subset.fq
+     67068 ./raw_fastq/Mov10_oe_2.subset.fq
+     41741 ./raw_fastq/Mov10_oe_3.subset.fq
+     10555 ./reference_data/chr1-hg19_genes.gtf
+    248277 ./reference_data/chr1.fa
+</pre></notextile>
+
+---
+
+h3(#arv-keep-get). @arv keep get@ -- Copy data from Keep or fetch collection manifest
+
+*Usage*: @arv keep get [options] LOCATOR[PATH] [DEST]@
+
+@arv keep get@ copies data from Keep to a local destination @DEST@, or fetches "collection manifests":{{ site.baseurl }}/architecture/manifest-format.html.  This subcommand is an alias of @arv-get@.
+
+The @LOCATOR@ argument can be one of the following:
+
+table(table table-bordered table-condensed).
+|_. @LOCATOR@ type |_. Description |_. Notes |
+| Collection UUID or portable data hash | Fetch the collection's _manifest text_. ||
+| Collection UUID or portable data hash, with @PATH@ | Download _file(s)_ in the collection.  | A @PATH@ starts with the slash (@/@) character and refers to a file or directory in the collection.  A directory path (one ending in a @/@) refers to its contents recursively.  A single @/@ as the @PATH@ refers to the full contents of the collection. |
+| "Keep locator":{{ site.baseurl }}/architecture/manifest-format.html#locator with "token signature":{{ site.baseurl }}/architecture/manifest-format.html#token_signatures | Download the individual data _block_ in Keep. ||
+
+The @DEST@ argument specifies the location where the output is downloaded.  By default, the output is written to the standard output.  However, when recursively downloading a directory, the destination must be a local directory path.
+
+*Selected options*:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @-f@ | Overwrite existing files at @DEST@. | Default: refuse to write anything if any of the output files already exist. |
+| @--skip-existing@ | Skip files that already exist at @DEST@ when downloading by path. ||
+| @--hash=ALGORITHM@ | Output file digest by the specified hash algorithm when downloading by path. | Available algorithms: @md5@, @sha1@, @sha224@, @sha256@, @sha384@, and @sha512@. |
+| @--strip-manifest@ | Remove token signatures from the manifest output. ||
+
+p(#hello-world). *Example*: Write file content from Keep to standard output.
+
+<notextile><pre>
+$ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890/hello.txt</span>
+hello, world
+</pre></notextile>
+
+*Example*: Download whole collection to current directory and compute file digests.
+
+<notextile><pre>
+$ <span class="userinput">arv keep get --hash sha256 --no-progress 1361eacc54cd808e2377d30a742cc9d2+53/ . 2> SHA256SUM</span>
+$ <span class="userinput">sha256sum -c SHA256SUM</span>
+./hello.txt: OK
+</pre></notextile>
+
+*Example*: Fetch collection manifest, with token signatures.
+
+<notextile><pre>
+$ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890</span>
+. 22c3683b094136c3398391ae71b20f04+13+Aa611e1b3689f1af04bc46f7ba226d03dade48845@6a49fa07 0:13:hello.txt
+</pre></notextile>
+
+With @--strip-manifest@, token signatures are not shown in the manifest output:
+
+<notextile><pre>
+$ <span class="userinput">arv keep get --strip-manifest zzzzz-4zz18-12345abcde67890</span>
+. 22c3683b094136c3398391ae71b20f04+13 0:13:hello.txt
+</pre></notextile>
+
+*Example*: Download single block by Keep locator (as shown in the manifest output of the preceding example).
+
+<notextile><pre>
+$ <span class="userinput">arv keep get 22c3683b094136c3398391ae71b20f04+13+Aa611e1b3689f1af04bc46f7ba226d03dade48845@6a49fa07 block</span>
+$ <span class="userinput">cat block</span>
+hello, world
+</pre></notextile>
+
+More examples, including federated downloads, can be found in the User Guide section '"Downloading data":{{ site.baseurl }}/user/tutorials/tutorial-keep-get.html#download-using-arv'.
+
+---
+
+h3(#arv-keep-put). @arv keep put@ -- Upload data to Keep
+
+*Usage*: @arv keep put [OPTIONS] [PATHS ...]@
+
+@arv keep put@ uploads data to Keep.  In the most common usage, the @PATHS@ are uploaded to Keep and a collection is created with those files as its contents.  Alternatively, an existing collection can be updated with new local files.
+
+If a path argument is a local directory with a trailing slash (@/@), the contents under the directory will be uploaded.  Otherwise, the directory itself will be a level in the collection.
+
+This subcommand is an alias of @arv-put@.  More examples can be found in the section '"Uploading data":{{ site.baseurl }}/user/tutorials/tutorial-keep.html#upload-using-command' of the User Guide.
+
+*Selected options*:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--name@ | Set the collection name. ||
+| @--exclude=PATTERN@ | Exclude files by glob pattern. | Can be given multiple times. |
+| @--update-collection=UUID@ | Update the existing collection identified by the UUID with new file uploads. ||
+| @--storage-classes@ | Specify the desired "storage classes":{{ site.baseurl }}/user/topics/storage-classes.html by a comma-separated list. ||
+| @--normalize@ | Perform "manifest normalization":{{ site.baseurl }}/architecture/manifest-format.html#normalization after writing data. ||
+
+p(#update-hello-world). *Example*: Update the '"hello-world":#hello-world' collection.
+
+In this example, the collection is downloaded to the current directory, a new file @hola.txt@ is added, and the collection is updated with it.
+
+<notextile><pre>
+$ <span class="userinput">arv keep get zzzzz-4zz18-12345abcde67890 .</span>
+0 MiB / 0 MiB 100.0%
+$ <span class="userinput">ls</span>
+hello.txt
+$ <span class="userinput">echo 'hola, mundo' > hola.txt</span>
+$ <span class="userinput">arv keep put --update-collection zzzzz-4zz18-12345abcde67890 ./</span>
+2026-06-22 10:06:14 arvados.arv_put[7354] INFO: Calculating upload size, this could take some time...
+2026-06-22 10:06:14 arvados.arv_put[7354] INFO: Creating new cache file at /home/user/.cache/arvados/arv-put/2a9792e8c4d207bd70cf7470c85c3bbc
+0M / 0M 100.0%
+2026-06-22 10:06:15 arvados.arv_put[7354] INFO: Collection updated: 'hello-world'
+zzzzz-4zz18-12345abcde67890
+</pre></notextile>
+
+The file that already exists in the collection, @hello.txt@, is skipped by @arv keep put@ when we upload the current directory's contents.
+
+h4(#arv-keep-put-low-level). Lower-level operations of @arv keep put@
+
+With the option @--stream@, @arv keep put@ uploads the files to Keep, but does not create a collection.  Instead, the manifest text is written to the standard output.
+
+With the option @--raw@, files are uploaded to Keep, and the comma-separated list of "locators":{{ site.baseurl }}/architecture/manifest-format.html#locator of the resulting data blocks is written to the standard output.
+
+---
+
+h3(#arv-keep-docker). @arv keep docker@ -- List or upload Docker images
+
+*Usage*: @arv keep docker [OPTIONS] [IMAGE[:TAG]]@
+
+When invoked as @arv keep docker@, the command displays the Docker images stored on the Arvados cluster.
+
+When the @IMAGE@ argument is given, optionally with a tag (default tag: @latest@), the command uploads the Docker image to Arvados.  Upon completion, the UUID of the collection containing the image is written to the standard output.
+
+@arv keep docker@ is an alias of the @arv-keepdocker@ command.  Further examples can be found in the section '"Working with container images":{{ site.baseurl }}/user/topics/arv-docker.html#upload' in the User Guide.
+
+*Selected options*:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--project-uuid=UUID@ | Upload the Docker image to the project specified by UUID. ||
+| @--name@ | Set the collection's name for the upload. ||
+| @--pull@ | Pull the Docker image from an image registry. | Default: only upload local images (@--no-pull@). |
+
+*Example*: Pull image and upload to Arvados.
+
+The following command pulls the image with a specific tag from the "BioContainers registry":https://quay.io/biocontainers and uploads it to Arvados.
+
+<notextile><pre>
+$ <span class="userinput">arv keep docker --pull quay.io/biocontainers/star:2.7.5c--0</span>
+[...]
+2026-06-24 23:55:13 arvados.arv_put[7557] INFO: Collection saved as 'Docker image quay.io biocontainers star:2.7.5c--0 sha256:89936'
+zzzzz-4zz18-veebf08kyoi9eks
+</pre></notextile>
+
+---
+
+h2(#api-resource-subcommands). API resource subcommands
+
+@arv@ has a collection of subcommands that closely follow the semantics of the "Arvados API service":{{ site.baseurl }}/api/index.html.
+
+The basic *usage* pattern of these API resource subcommands is as follows:
+
+<notextile><pre>
+<span class="userinput">arv [--format=json|yaml|uuid] RESOURCE METHOD [PARAMETERS]</span>
+</pre></notextile>
+
+@RESOURCE@ is one of the resource types to operate on, for example, @collection@, @user@, @container_request@, etc.  Notice that the argument typically takes the singular noun form: "@group@" as opposed to "groups".
+
+@METHOD@ refers to the operation, for example, @create@, @list@, @update@, @delete@, etc.  Methods shared by most resources are described in '"Common resource methods":{{ site.baseurl }}/api/methods.html' in the API documentation.  In addition, many resources support additional methods, as detailed in their respective sections in the API documentation.  For instance, "the @user@ resource":{{ site.baseurl }}/api/methods/users.html has @activate@, @setup@, @merge@ methods, etc.
+
+@PARAMETERS@ are arguments taken by a method, and they are documented in the "API Reference":{{ site.baseurl}}/api/index.html under each resource-method combination.
+* A method argument in the form of @foo_bar@ becomes the command-line parameter @--foo-bar@.  For example, for @arv collection update@, "the @replace_files@ API argument":{{ site.baseurl }}/api/methods/collections.html#update becomes @--replace-files@.
+* A boolean argument @foo@ becomes a pair of CLI parameters @--foo@ and @--no-foo@, for true and false values respectively.  For example, the "API method argument @ensure_unique_name@":{{ site.baseurl }}/api/methods/collections.html#untrash becomes the pair @--[no-]ensure-unique-name@.  Currently, all boolean parameters are optional and default to false.
+* All CLI parameters have short forms (a single dash followed by a single letter, like @-c@), except the "negated" forms of boolean parameters like @--no-ensure-unique-name@.  Please check the output of @arv resource method -h@ for the short parameters of a specific resource-method combination.
+
+The CLI bindings for the resources, methods, and parameters are defined by the "discovery document":{{ site.baseurl }}/api/index.html#discovery-document published by the Arvados API server.  A comprehensive list of available resources for your Arvados cluster can be viewed by running @arv --help@.
+
+h3(#resource-subcommand-output). Output formats
+
+The following command-line options to @arv@ control the output format.
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @--format=json@ | Output as JSON (default). ||
+| @--format=yaml@ | Output as YAML. ||
+| @--format=uuid@, @-s@, or @--short@ | Only output object <notextile>UUID(s)</notextile>. | For the "@list@ method":{{ site.baseurl }}/api/methods.html#list, output the individual items' UUIDs, one line each. |
+
+h3(#resource-type-parameters). "Resource-type" parameters
+
+The @create@ and @update@ methods both "take a 'resource-type' parameter":{{ site.baseurl }}/api/methods.html#create.  This simply refers to a parameter named after the @resource@ itself.
+
+The value of a resource-type parameter can be one of the following:
+
+#  A _string_ that represents a valid JSON object (i.e., key-value pairs surrounded by braces @{ }@);
+#  A _path_ to a file that contains a valid JSON object; or
+#  A single _dash_ (@-@), which causes the input value to be read from the standard input.
+
+(In the rare case where the file path string itself happens to be valid JSON, an error is reported.)
+
+*Examples*:
+
+<notextile><pre>
+$ <span class="userinput">arv collection update --collection=[...]</span>
+</pre></notextile>
+
+and
+
+<notextile><pre>
+$ <span class="userinput">arv api_client_authorization create --api-client-authorization=[...]</span>
+</pre></notextile>
+
+both show the respective resource-type parameters on the command line.
+
+h3(#resource-subcommand-examples). Resource-subcommand examples
+
+*Example*: Get collection from federated cluster by portable data hash.
+
+For collections, the @get@ method provides for a special use case of fetching a collection by its portable data hash.  If the portable data hash is not found on the home cluster, federated clusters are searched.  When getting a collection by the portable data hash, only the @kind@, @manifest_text@, @portable_data_hash@, and @trash_at@ fields are populated with meaningful values.
+
+<notextile><pre>
+$ <span class="userinput">arv collection get --uuid 133e9a1bcd7899d51aa8a2b6b6f9fea9+61 --select '[
+  "kind", "manifest_text", "portable_data_hash", "trash_at"
+]'</span>
+{
+ "kind": "arvados#collection",
+ "manifest_text": ". deb944805bc57a3010079a8ecf1eb48d+1339378+Rzzyzx-7ab32fdcc9cc588fb934196ff6162acdb9c353ec@6a4e5acd 0:1339378:user.jpg\n",
+ "portable_data_hash": "133e9a1bcd7899d51aa8a2b6b6f9fea9+61",
+ "trash_at": null
+}
+</pre></notextile>
+
+*Example*: Create new project.
+
+<notextile><pre>
+$ <span class="userinput">arv group create --group '{"group_class": "project", "name": "hello-project"}'</span>
+{
+ "can_manage": true,
+ "can_write": true,
+ "created_at": "2026-06-24T07:39:20.950807457Z",
+ "delete_at": null,
+ "description": null,
+ "etag": "12345abcde67890fghij12345",
+ "frozen_by_uuid": null,
+ "group_class": "project",
+ "is_trashed": false,
+ "kind": "arvados#group",
+ "modified_at": "2026-06-24T07:39:20.946873000Z",
+ "modified_by_user_uuid": "zzzzz-tpzed-12345abcde67890",
+ "name": "hello-project",
+ "owner_uuid": "zzzzz-tpzed-12345abcde67890",
+ "properties": {},
+ "trash_at": null,
+ "uuid": "zzzzz-j7d0g-12345abcde67890",
+ "writable_by": [
+  "zzzzz-tpzed-12345abcde67890",
+  "zzzzz-tpzed-12345abcde67890"
+ ]
+}
+</pre></notextile>
+
+Notice that here the @--group@ option is a "resource-type parameter":#resource-type-parameters.
+
+*Example*: List users with email-address filter.
+
+The @list@ methods support the parameter @--filters@ that can efficiently query the API service for objects matching specific conditions.  The following command searches for users whose associated email addresses are in the specified domain, and outputs their UUIDs:
+
+<notextile><pre>
+$ <span class="userinput">arv -s user list --filters '[["email", "ilike", "%@example.com"]]'</span>
+zzzzz-tpzed-12345abcde67890
+</pre></notextile>
+
+More examples of using filters can be found in the "API Reference":{{ site.baseurl }}/api/methods.html#filters.
+
+You can also pass the path of a JSON file to the @--filters@ parameter.  Alternatively, a single dash (@-@) means reading the filters from the standard input.
+
+*Example*: Update collection with @--replace-files@.
+
+The "'hello-world' collection":#update-hello-world in a previous example contains two files, @hello.txt@ and @hola.txt@ at the top level.
+
+We will add a new file @hello-world.c@ to the collection, and re-organize the collection contents into two new directories: @natural-languages@ that will contain the two existing files, and @programming-languages@ with the new file.
+
+The "@replace_files@ API argument":{{ site.baseurl }}/api/methods/collections.html#replace_files lets us re-organize the collection contents with the @collection update@ method.
+
+First, we need to upload the new file content to Keep storage without creating a new collection, using "the command @arv keep put --stream@":#arv-keep-put-low-level.  The manifest text is then written to the standard output:
+
+<notextile><pre>
+$ <span class="userinput">arv keep put --stream hello-world.c</span>
+[...]
+. bbae5d9983ce453e09ff5b2d40cca5c5+66+A225a7c0842f7fefbaedf42ed87cbcdb27cae836a@6a4e0c74 0:66:hello-world.c
+</pre></notextile>
+
+Then, we perform an atomic update of collection contents:
+
+<notextile><pre>
+$ <span class="userinput">arv collection update --uuid zzzzz-4zz18-12345abcde67890 --replace-files '{</span>
+> <span class="userinput">  "/natural-languages/hello.txt": "current/hello.txt",</span>
+> <span class="userinput">  "/natural-languages/hola.txt": "current/hola.txt",</span>
+> <span class="userinput">  "/hello.txt": "",</span>
+> <span class="userinput">  "/hola.txt": "",</span>
+> <span class="userinput">  "/programming-languages/hello-world.c": "manifest_text/hello-world.c"</span>
+> <span class="userinput">}' --collection '{</span>
+> <span class="userinput">  "manifest_text": ". bbae5d9983ce453e09ff5b2d40cca5c5+66+A225a7c0842f7fefbaedf42ed87cbcdb27cae836a@6a4e0c74 0:66:hello-world.c\n"</span>
+> <span class="userinput">}'</span>
+</pre></notextile>
+
+*Example*: Trashing collection.
+
+<notextile><pre>
+$ <span class="userinput">arv collection delete --uuid zzzzz-4zz18-12345abcde67890</span>
+</pre></notextile>
+
+This puts the collection in the "trash":{{ site.baseurl }}/api/methods/collections.html#trashing.
+
+h4(#user-admin-examples). User administration examples
+
+Examples about performing user administration work with @arv@ can be found in the "Admin Guide":{{ site.baseurl }}/admin/user-management-cli.html.
+
+h3(#misc-resource-subcommands). Miscellaneous resource subcommands
+
+The following subcommands are grouped with the API resource commands.
+
+h4(#arv-config). @arv config@ -- Get Arvados cluster configuration
+
+*Usage*: @arv [--format=json|yaml] config get@
+
+Get the "publicly exported configuration":{{ site.baseurl }}/api/index.html#exported-configuration of the Arvados cluster.
+
+h4(#arv-sys). @arv sys@ -- Run data trash and sweep
+
+*Usage*: @arv sys get@
+
+Run scheduled data trash and sweep operations across the cluster's Keep services.
+
+Note that for compatibility reasons, @sy@ is an alias of the @sys@ resource.
+
+h4(#arv-vocabulary). @arv vocabulary@ -- Get metadata vocabulary
+
+*Usage*: @arv [--format=json|yaml] vocabulary get@
+
+Fetch the "metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html managed and "exported":{{ site.baseurl }}/api/index.html#exported-vocabulary by the Arvados cluster.
+
+h2(#additional-subcommands). Additional subcommands
+
+h3(#arv-ws). @arv ws@ -- WebSocket client
+
+*Usage*: @arv ws [OPTIONS]@
+
+@arv ws@ provides access to the WebSocket event stream, displaying Arvados log events as they arrive.  For detailed information about the logs API, please refer to its "API Reference section":{{ site.baseurl }}/api/methods/logs.html.
+
+Once started, this subcommand will keep listening to events until interrupted, for example, by <kbd>Ctrl</kbd>-<kbd>C</kbd>.
+
+*Selected options*:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |_. Notes |
+| @-f@, @--filters@ | Apply "filters":{{ site.baseurl }}/api/methods.html#filters to log events. ||
+| @--uuid@ | Filter by the @object_uuid@ field of events. ||
+| @-i@, @--id=N@ | Start from given log ID. ||
+| @-s@, @--start-time=TIME@ | Start from given time. | Format: @YYYY-MM-DD@ or @YYYY-MM-DD hh:mm:ss@. |
+
+*Example*:
+
+The following session logs an event for collection trashing (slightly re-formatted for legibility).
+
+<notextile><pre>
+$ <span class="userinput">arv ws</span>
+{
+ "event_at": "2026-06-25T02:12:21.650905Z",
+ "event_type": "update",
+ "id": 240,
+ "msgID": 2,
+ "object_kind": "arvados#collection",
+ "object_owner_uuid": "zzzzz-tpzed-12345abcde67890",
+ "object_uuid": "zzzzz-4zz18-12345abcde67890",
+ "properties": {
+  "new_attributes": {
+   "is_trashed": true,
+   "name": "hello-world",
+   "owner_uuid": "zzzzz-tpzed-12345abcde67890",
+   "portable_data_hash": "0c139c33f961ef83eb17508fb4255019+165"
+  },
+  "old_attributes": {
+   "is_trashed": false,
+   "name": "hello-world",
+   "owner_uuid": "zzzzz-tpzed-12345abcde67890",
+   "portable_data_hash": "0c139c33f961ef83eb17508fb4255019+165"
+  }
+ },
+ "uuid": "zzzzz-57u5n-qwj78wid4oohho1"
+}
+</pre></notextile>

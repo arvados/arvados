@@ -1,0 +1,7 @@
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+#!/bin/sh
+### This file is managed by Ansible ###
+exec "{{ (arvados_python_destdir, 'bin', arvados_python_major_minor)|path_join }}" "$@"

@@ -20,7 +20,6 @@ docker/config.yml
 /doc/sdk/R/arvados
 /doc/sdk/java-v2/javadoc
 *.class
-/sdk/cli/binstubs/
 /sdk/ruby/binstubs/
 /services/api/binstubs/
 /services/login-sync/binstubs/

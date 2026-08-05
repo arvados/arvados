@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import argparse
+import hashlib
+import os
+import re
+import string
+import sys
+
+import arvados
+from arvados._version import __version__
+
+
+def get_parser():
+    parser = argparse.ArgumentParser(
+        description=(
+            'Read manifest on standard input and put normalized manifest'
+            ' on standard output.'
+        )
+    )
+    parser.add_argument('--extract', type=str,
+                        help="The file to extract from the input manifest")
+    parser.add_argument('--strip', action='store_true',
+                        help="Strip authorization tokens")
+    parser.add_argument('--version', action='version',
+                        version=f"%(prog)s {__version__}",
+                        help='Print version and exit.')
+    return parser
+
+
+def main(arguments=None):
+    parser = get_parser()
+    args = parser.parse_args(arguments)
+
+    r = sys.stdin.read()
+
+    cr = arvados.CollectionReader(r)
+
+    if args.extract:
+        i = args.extract.rfind('/')
+        if i == -1:
+            stream = '.'
+            fn = args.extract
+        else:
+            stream = args.extract[:i]
+            fn = args.extract[(i+1):]
+        for s in cr.all_streams():
+            if s.name() == stream:
+                if fn in s.files():
+                    sys.stdout.write(s.files()[fn].as_manifest())
+    else:
+        sys.stdout.write(cr.manifest_text(strip=args.strip, normalize=True))
+    sys.exit(0)

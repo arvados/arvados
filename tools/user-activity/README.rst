@@ -90,6 +90,8 @@ Testing and Development
 
 This package is one part of the Arvados source package, and it has
 integration tests to check interoperability with other Arvados
-components.  Our `hacking guide
-<https://dev.arvados.org/projects/arvados/wiki/Hacking_Python_SDK>`_
-describes how to set up a development environment and run tests.
+components.  Our hacking guides describe how to `set up a development
+environment`_ and `run tests`_.
+
+.. _set up a development environment: https://github.com/arvados/arvados/blob/main/doc/development/Prerequisites.md
+.. _run tests: https://github.com/arvados/arvados/blob/main/doc/development/RunningTests.md

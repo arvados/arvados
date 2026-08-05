@@ -19,24 +19,13 @@ from arvados._internal import basedirs
 from . import arvados_testutil as tutil
 from . import run_test_server
 
-class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
+class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
 
     def run_copy(self, args):
         sys.argv = ['arv-copy'] + args
         return arv_copy.main()
-
-    def test_unsupported_arg(self):
-        with self.assertRaises(SystemExit):
-            self.run_copy(['-x=unknown'])
-
-    def test_version_argument(self):
-        with tutil.redirected_streams(
-                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
-            with self.assertRaises(SystemExit):
-                self.run_copy(['--version'])
-        self.assertVersionOutput(out, err)
 
     def test_copy_project(self):
         api = arvados.api()

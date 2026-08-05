@@ -2,6 +2,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-fakeoom:
-  class: File
-  location: fakeoom3.py
+fail_with: "NoMoreRAM"

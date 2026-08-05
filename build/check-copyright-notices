@@ -82,7 +82,6 @@ do
             | *.rb | *.rb.example | *.rake | *.ru \
             | *.gemspec | */Gemfile | */Rakefile \
             | services/login-sync/bin/* \
-            | sdk/cli/bin/* \
             | *.py \
             | sdk/python/bin/arv-* \
             | sdk/cwl/bin/* \
@@ -174,7 +173,7 @@ ${cc}${cc:+ }SPDX-License-Identifier: CC-BY-SA-3.0${ce}"
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)"
     found=$(head -n20 "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*All rights reserved.' || true)
     case ${fnm} in
-        Makefile | build/* | lib/* | tools/* | apps/* | services/* | sdk/cli/bin/crunch-job)
+        Makefile | build/* | lib/* | tools/* | apps/* | services/* )
             want=${wantGPL}
             ;;
         crunch_scripts/* | docker/* | sdk/*)

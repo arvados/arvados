@@ -7,10 +7,6 @@
 ### Requirements for run-tests.sh itself
 -r requirements.build.txt
 
-# Required by sdk/python/tests/run_test_server.py
-# which is run directly by run-tests.sh
-PyYAML
-
 # yq is used by run-tests.sh directly and controller tests
 yq ~= 3.4
 

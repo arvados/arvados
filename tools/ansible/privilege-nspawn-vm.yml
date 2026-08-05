@@ -105,6 +105,15 @@
         option: Bind
         value: /dev/fuse
 
+    # <https://github.com/systemd/systemd/issues/27994#issuecomment-1704005670>
+    - name: Bind /sys for Docker
+      community.general.ini_file:
+        state: "{{ docker_privileges }}"
+        path: "{{ nspawn_container_conffile }}"
+        section: Files
+        option: Bind
+        value: "/sys:/run/sys"
+
     - name: Bind block loop control device
       community.general.ini_file:
         state: "{{ singularity_privileges }}"

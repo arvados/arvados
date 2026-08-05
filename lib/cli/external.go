@@ -91,9 +91,7 @@ func (ec externalCmd) RunCommand(prog string, args []string, stdin io.Reader, st
 		return 1
 	case *exec.Error:
 		fmt.Fprintln(stderr, err)
-		if ec.prog == "arv" {
-			fmt.Fprint(stderr, rubyInstallHints)
-		} else if strings.HasPrefix(ec.prog, "arv-") {
+		if ec.prog == "arv" || strings.HasPrefix(ec.prog, "arv-") {
 			fmt.Fprint(stderr, pythonInstallHints)
 		}
 		return 1
@@ -103,14 +101,7 @@ func (ec externalCmd) RunCommand(prog string, args []string, stdin io.Reader, st
 	}
 }
 
-var (
-	rubyInstallHints = `
-Note: This subcommand uses the arvados-cli Ruby gem. If that is not
-installed, try "gem install arvados-cli", or see
-https://doc.arvados.org/install for more details.
-
-`
-	pythonInstallHints = `
+var pythonInstallHints = `
 Note: This subcommand uses the "arvados" Python module. If that is
 not installed, try:
 * "pip install arvados" (either as root or in a virtualenv), or
@@ -118,4 +109,3 @@ not installed, try:
 * see https://doc.arvados.org/install for more details.
 
 `
-)

@@ -164,7 +164,7 @@ sanity_checks() {
     find /usr/include -path '*fuse/fuse.h' | egrep --max-count=1 . \
         || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
     echo -n 'virtualenv: '
-    python3 -m venv --help | grep -q '^usage: venv ' \
+    python3 -m venv --help | grep -Eq '^usage:(| python[.0-9]* -m) venv ' \
         && echo "venv module found" \
         || fatal "No virtualenv. Try: apt-get install python3-venv"
     which netstat \
@@ -481,7 +481,6 @@ do_test() {
             | arvados_version.py \
             | doc \
             | lib/boot \
-            | lib/cli \
             | lib/cloud/azure \
             | lib/cloud/cloudtest \
             | lib/cloud/ec2 \
@@ -660,7 +659,7 @@ do_install_once() {
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
-        pip install "$WORKSPACE/$1"
+        pip install "$WORKSPACE/$1${pythonextras[$1]}"
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -712,10 +711,6 @@ install_contrib/R-sdk() {
   if [[ "$NEED_SDK_R" = true ]]; then
     env -C "$WORKSPACE/contrib/R-sdk" Rscript --vanilla install_deps.R
   fi
-}
-
-install_sdk/cli() {
-    install_gem arvados-cli sdk/cli
 }
 
 install_services/login-sync() {
@@ -863,12 +858,6 @@ test_contrib/R-sdk() {
   fi
 }
 
-test_sdk/cli() {
-    cd "$WORKSPACE/sdk/cli" \
-        && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
-}
-
 test_contrib/java-sdk-v2() {
     env -C "$WORKSPACE/contrib/java-sdk-v2" gradle test ${testargs[contrib/java-sdk-v2]}
 }
@@ -910,7 +899,6 @@ install_deps() {
     do_install cmd/arvados-server go
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
-    do_install sdk/cli
     do_install services/api
     do_install services/keepproxy go
     do_install services/keep-web go
@@ -922,7 +910,6 @@ install_all() {
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install contrib/R-sdk
-    do_install sdk/cli
     do_install services/login-sync
     local pkg_dir
     if [[ -z ${skip[python3]} ]]; then
@@ -948,7 +935,6 @@ test_all() {
     do_test sdk/ruby-google-api-client
     do_test sdk/ruby
     do_test contrib/R-sdk
-    do_test sdk/cli
     do_test services/login-sync
     do_test contrib/java-sdk-v2
     local pkg_dir
@@ -994,12 +980,14 @@ help_interactive() {
 }
 
 declare -a failures
-declare -A skip
+declare -A skip=(
+    # By default, ignore references to since-removed components.
+    [sdk/cli]=1
+)
 declare -A only
 declare -A testargs
 
-declare -a pythonstuff
-pythonstuff=(
+declare -a pythonstuff=(
     # The ordering of sdk/python, tools/crunchstat-summary, and
     # sdk/cwl here is significant. See
     # https://dev.arvados.org/issues/19744#note-26
@@ -1009,6 +997,9 @@ pythonstuff=(
     services/dockercleaner
     services/fuse
     tools/cluster-activity
+)
+declare -A pythonextras=(
+    [tools/cluster-activity]="[prometheus]"
 )
 
 declare -a gostuff

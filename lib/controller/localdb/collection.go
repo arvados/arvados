@@ -6,6 +6,7 @@ package localdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -288,7 +289,9 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 			srcfs = nil
 			srccoll := &arvados.Collection{ManifestText: providedManifestText}
 			srcfs, err = srccoll.FileSystem(&arvados.StubClient{}, &arvados.StubClient{})
-			if err != nil {
+			if errors.Is(err, arvados.ErrMalformedManifestText) {
+				return nil, httpserver.Errorf(http.StatusBadRequest, "replace_files: %w", err)
+			} else if err != nil {
 				return nil, err
 			}
 			srcidloaded = srcid

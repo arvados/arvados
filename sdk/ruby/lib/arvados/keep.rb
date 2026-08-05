@@ -248,7 +248,7 @@ module Keep
     end
 
     # Verify that a given manifest is valid according to
-    # https://dev.arvados.org/projects/arvados/wiki/Keep_manifest_format
+    # https://doc.arvados.org/main/architecture/manifest-format.html
     def self.validate! manifest
       raise ArgumentError.new "No manifest found" if !manifest
 

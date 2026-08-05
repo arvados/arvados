@@ -22,7 +22,7 @@ Certain method calls on certain object types support "federation":{{site.baseurl
 * "create":#create
 * "delete":#delete
 * "get":#get
-* "list":#index
+* "list":#list
 ** "Available list method filters":#filters
 *** "Filtering using substring search":#substringsearchfilter
 *** "Filtering on subproperties":#subpropertyfilters
@@ -80,7 +80,9 @@ table(table table-bordered table-condensed).
 |select  |array  |Attributes of the object to return in the response (by default, all available attributes are returned).
 Example: @["uuid","name","modified_at"]@|query|
 
-h2(#index). list
+<a name="index"></a>
+
+h2(#list). list
 
 The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support the @list@ method unless otherwise noted.
 

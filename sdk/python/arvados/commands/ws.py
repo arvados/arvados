@@ -18,7 +18,7 @@ def main(arguments=None):
 
     parser = argparse.ArgumentParser(parents=[arv_cmd.retry_opt])
     parser.add_argument('--version', action='version',
-                        version="%s %s" % (sys.argv[0], __version__),
+                        version=f"%(prog)s {__version__}",
                         help='Print version and exit.')
     parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
     parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")
@@ -105,6 +105,7 @@ def main(arguments=None):
         else:
             print(json.dumps(ev))
 
+    status = 0
     try:
         ws = subscribe(arvados.api('v1'), filters, on_message, poll_fallback=args.poll_interval, last_log_id=last_log_id)
         if ws:
@@ -117,7 +118,9 @@ def main(arguments=None):
     except KeyboardInterrupt:
         pass
     except Exception as e:
+        status = 1
         logger.error(e)
     finally:
         if ws:
             ws.close()
+        sys.exit(status)

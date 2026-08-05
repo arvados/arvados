@@ -39,16 +39,15 @@ Repository = "https://github.com/arvados/arvados"
 Issues = "https://github.com/arvados/arvados/issues"
 Changelog = "https://arvados.org/releases/"
 
-[tool.setuptools]
-script-files = [
-  "bin/arv-copy",
-  "bin/arv-get",
-  "bin/arv-keepdocker",
-  "bin/arv-ls",
-  "bin/arv-normalize",
-  "bin/arv-put",
-  "bin/arv-ws",
-]
+[project.scripts]
+arv-copy = "arvados.commands.arv_copy:main"
+arv-get = "arvados.commands.get:main"
+arv-keepdocker = "arvados.commands.keepdocker:main"
+arv-ls = "arvados.commands.ls:main"
+arv-normalize = "arvados.commands.normalize:main"
+arv-put = "arvados.commands.put:main"
+arv-ws = "arvados.commands.ws:main"
+arv = "arvados.commands.arvcli:dispatch"
 
 [tool.setuptools.data-files]
 "share/doc/arvados-python-client" = [

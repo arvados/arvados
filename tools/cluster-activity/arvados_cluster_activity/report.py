@@ -3,671 +3,734 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import logging
-import ciso8601
-import arvados.util
-import re
-import csv
-import math
 import collections
+import csv
+import dataclasses
+import datetime
+import enum
+import functools
+import itertools
 import json
-from datetime import date, datetime, timedelta
-from typing import Dict, List
+import logging
+import re
 import statistics
+import urllib.parse
 
-from dataclasses import dataclass
-from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
-from arvados_cluster_activity.reportchart import ReportChart
+from pathlib import PurePath
+from typing import Callable, ClassVar, Dict, List, Mapping
+
+import arvados.api_resources as arv_types
+import arvados.util
+import ciso8601
+import jinja2
+import markupsafe
+
+from arvados_cluster_activity.prometheus import get_metric_usage, PrometheusUsageChart
+
+@dataclasses.dataclass
+class BytesFormatter:
+    """Function to format a number of bytes as a human-friendly string"""
+    exp: int
+    suffixes: list[str]
+
+    def __call__(self, value):
+        if value is None:
+            return None
+        for suffix in self.suffixes:
+            value /= self.exp
+            if value < self.exp:
+                break
+        return f'{value:.3f} {suffix}'
 
 
-@dataclass
-class WorkflowRunSummary:
-    name: str
-    uuid: str
-    cost: List[float]
-    hours: List[float]
-    count: int = 0
+bytes_base2_fmt = BytesFormatter(1024, ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'])
+bytes_si_fmt = BytesFormatter(1000, ['KB', 'MB', 'GB', 'TB', 'PB', 'EB'])
+
+_JINJA_FILTERS = {
+    'bytes_base2': bytes_base2_fmt,
+    'bytes_si': bytes_si_fmt,
+    'bytes': bytes_si_fmt,
+}
+def _jinja_filter(func):
+    _JINJA_FILTERS[func.__name__.removesuffix('_fmt')] = func
+    return func
 
 
-@dataclass
-class ProjectSummary:
-    users: set
-    uuid: str
-    runs: Dict[str, WorkflowRunSummary]
-    earliest: datetime = datetime(year=9999, month=1, day=1)
-    latest: datetime = datetime(year=1900, month=1, day=1)
-    name: str = ""
-    cost: float = 0
-    count: int = 0
-    hours: float = 0
-    activityspan: str = ""
-    tablerow: str = ""
+@_jinja_filter
+def cost_fmt(value):
+    if value is None:
+        return None
+    return f'${value:,.02f}'
+
+
+@_jinja_filter
+def date_fmt(value):
+    return value.strftime('%Y-%m-%d')
+
+
+@_jinja_filter
+def datespan_fmt(value, end):
+    begin_isodate = date_fmt(value)
+    end_isodate = date_fmt(end)
+    if begin_isodate == end_isodate:
+        return begin_isodate
+    else:
+        return f'{begin_isodate} to {end_isodate}'
+
+
+@_jinja_filter
+def datetime_fmt(value):
+    return value.strftime('%Y-%m-%d %H:%M:%S')
+
+
+@_jinja_filter
+def duration_hms_fmt(value):
+    if isinstance(value, datetime.timedelta):
+        value = value.total_seconds()
+    mins, secs = divmod(round(value), 60)
+    hrs, mins = divmod(mins, 60)
+    return f'{hrs}:{mins:02d}:{secs:02d}'
+
+
+@_jinja_filter
+def duration_hrs_fmt(value, suffix=''):
+    if isinstance(value, datetime.timedelta):
+        value = value.total_seconds()
+    sep = ' ' if suffix and not suffix.startswith(' ') else ''
+    return f'{value / 3600:,.1f}{sep}{suffix}'
+
+
+@_jinja_filter
+def numeric_fmt(value, prec=None):
+    if value is None:
+        return None
+    elif prec is None:
+        fmt = '{:,d}'
+    else:
+        fmt = f'{{:,.{prec}f}}'
+    return fmt.format(value)
+
+
+class S3CostPeriod(enum.IntEnum):
+    MONTHLY = 1
+    DAILY = 30
+    HOURLY = 30 * 24
+
+
+def s3_cost(num_bytes, period):
+    """Calculate the USD cost of storing `num_bytes` over the time `period`"""
+    if num_bytes is None:
+        return None
+    gb = num_bytes / (1 << 30)
+    first_50tb = min(1024*50, gb)
+    next_450tb = max(min(1024*450, gb-1024*50), 0)
+    over_500tb = max(gb-1024*500, 0)
+    monthly_cost = (first_50tb * 0.023) + (next_450tb * 0.022) + (over_500tb * 0.021)
+    return monthly_cost / period.value
 
 
 def aws_monthly_cost(value):
-    value_gb = value / (1024*1024*1024)
-    first_50tb = min(1024*50, value_gb)
-    next_450tb = max(min(1024*450, value_gb-1024*50), 0)
-    over_500tb = max(value_gb-1024*500, 0)
-
-    monthly_cost = (first_50tb * 0.023) + (next_450tb * 0.022) + (over_500tb * 0.021)
-    return monthly_cost
+    return s3_cost(value, S3CostPeriod.MONTHLY)
 
 
-def format_with_suffix_base2(summary_value):
-    for scale in ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]:
-        summary_value = summary_value / 1024
-        if summary_value < 1024:
-            return "%.3f %s" % (summary_value, scale)
+@dataclasses.dataclass(slots=True)
+class WorkflowRunCSVRow:
+    Project: str
+    ProjectUUID: str
+    Workflow: str
+    WorkflowUUID: str
+    Step: str
+    StepUUID: str
+    Sample: str
+    SampleUUID: str
+    User: str
+    UserUUID: str
+    Submitted: str
+    Started: str
+    Finished: str
+    Runtime: str
+    Cost: str
+    CumulativeCost: str
 
-def format_with_suffix_base10(summary_value):
-    for scale in ["KB", "MB", "GB", "TB", "PB", "EB"]:
-        summary_value = summary_value / 1000
-        if summary_value < 1000:
-            return "%.3f %s" % (summary_value, scale)
-
-containers_graph = ('Concurrent running containers', 'containers')
-storage_graph = ('Storage usage', 'used')
-managed_graph = ('Data under management', 'managed')
-
-
-def runtime_str(container_request, containers):
-    length = ciso8601.parse_datetime(containers[container_request["container_uuid"]]["finished_at"]) - ciso8601.parse_datetime(containers[container_request["container_uuid"]]["started_at"])
-
-    hours = length.days * 24 + (length.seconds // 3600)
-    minutes = (length.seconds // 60) % 60
-    seconds = length.seconds % 60
-
-    return "%i:%02i:%02i" % (hours, minutes, seconds)
-
-def runtime_in_hours(runtime):
-    sp = runtime.split(":")
-    hours = float(sp[0])
-    hours += float(sp[1]) / 60
-    hours += float(sp[2]) / 3600
-    return hours
-
-def hours_to_runtime_str(frac_hours):
-    hours = math.floor(frac_hours)
-    minutes = (frac_hours - math.floor(frac_hours)) * 60.0
-    seconds = (minutes - math.floor(minutes)) * 60.0
-
-    return "%i:%02i:%02i" % (hours, minutes, seconds)
+    @classmethod
+    def field_names(cls) -> tuple[str]:
+        return tuple(f.name for f in dataclasses.fields(cls))
 
 
-def csv_dateformat(datestr):
-    dt = ciso8601.parse_datetime(datestr)
-    return dt.strftime("%Y-%m-%d %H:%M:%S")
+@dataclasses.dataclass(slots=True)
+class WorkflowRun:
+    """Encapsulate and query a run container
+
+    This class bundles together a satisfied container request, its container,
+    and other associated records like owner, modifying user, and workflow.
+    Methods fetch data from the low-level records with appropriate fallbacks.
+
+    It's called `WorkflowRun` because the report is focused on workflows and
+    defaults reflect that, but in principle it can wrap any container request
+    plus container.
+    """
+    request: arv_types.ContainerRequest
+    container: arv_types.Container
+    owner: arv_types.Group | arv_types.User | None = None
+    user: arv_types.User | None = None
+    workflow: arv_types.Workflow | None = None
+
+    def container_cost(self):
+        return self.container['cost']
+
+    def created_at(self):
+        return ciso8601.parse_datetime(self.request['created_at'])
+
+    def cumulative_cost(self):
+        return self.request['cumulative_cost']
+
+    def finished_at(self):
+        return ciso8601.parse_datetime(self.container['finished_at'])
+
+    def name_key(self):
+        if self.workflow is None:
+            return self.request_name_without_suffix()
+        else:
+            return self.workflow['name']
+
+    def owner_name(self):
+        if self.owner is None:
+            return 'unknown owner'
+        try:
+            return self.owner['full_name']
+        except KeyError:
+            return self.owner['name']
+
+    def request_name_without_suffix(self):
+        """Return the request name without any numbered suffix
+
+        This provides a normalized name for workflow steps with fanout.
+        """
+        return re.sub(r'_[0-9]+$', '', self.request['name'])
+
+    def runtime(self):
+        return self.finished_at() - self.started_at()
+
+    def started_at(self):
+        return ciso8601.parse_datetime(self.container['started_at'])
+
+    def start_end_runtime(self):
+        """Return start time, finish time, and runtime delta in one call
+
+        Most use cases want all three and this prevents needless re-parsing."""
+        start = self.started_at()
+        finish = self.finished_at()
+        return start, finish, finish - start
+
+    def step_name(self):
+        if self.request['requesting_container_uuid'] is None:
+            return 'workflow runner'
+        else:
+            return self.request_name_without_suffix()
+
+    def template_uuid(self, default=None):
+        try:
+            return self.request['properties']['template_uuid']
+        except KeyError:
+            return default
+
+    def user_name(self):
+        if self.user is None:
+            return 'unknown user'
+        else:
+            return self.user['full_name']
+
+    def workflow_name(self, default=None):
+        if self.workflow is not None:
+            return self.workflow['name']
+        else:
+            return self.template_uuid(default)
+
+    def csv_row(self) -> dict[str, str]:
+        started, finished, runtime = self.start_end_runtime()
+        return dataclasses.asdict(WorkflowRunCSVRow(
+            Project=self.owner_name(),
+            ProjectUUID=self.request['owner_uuid'],
+            Workflow=self.workflow_name('workflow run from command line'),
+            WorkflowUUID=self.template_uuid('none'),
+            Step=self.step_name(),
+            StepUUID=self.request['uuid'],
+            Sample=self.request['name'],
+            SampleUUID=self.request['uuid'],
+            User=self.user_name(),
+            UserUUID=self.request['modified_by_user_uuid'],
+            Submitted=datetime_fmt(self.created_at()),
+            Started=datetime_fmt(started),
+            Finished=datetime_fmt(finished),
+            Runtime=duration_hms_fmt(runtime),
+            Cost=self.container_cost(),
+            CumulativeCost=self.cumulative_cost(),
+        ))
 
 
-class ClusterActivityReport(object):
-    def __init__(self, prom_client):
-        self.arv_client = arvados.api()
-        self.prom_client = prom_client
-        self.cluster = self.arv_client.config()["ClusterID"]
+@dataclasses.dataclass(slots=True)
+class WorkflowRunSummary:
+    """Collect summary statistics about a series of related WorkflowRuns
 
-        self.active_users = set()
-        self.project_summary = {}
-        self.total_hours = 0
-        self.total_cost = 0
-        self.total_workflows = 0
-        self.storage_cost = 0
-        self.summary_fetched = False
-        self.graphs = {}
+    Call the `tally()` method with a series of WorkflowRuns, then call the
+    other methods to report collected statistics. The caller determines how
+    the WorkflowRuns are related; nothing in this class enforces any relation.
+    Refer to the `summaries` field of `ClusterActivityReport`.
 
-    def collect_graph(self, since, to, metric, resample_to, extra=None):
-        if not self.prom_client:
-            return
+    This class collects basic high-level statistics about related runs. Most
+    fields are a single cumulative data point. The only exception is `users`
+    which will grow much slower than the number of runs in most real-world
+    applications.
+    """
+    owner_uuid: str | None = None
 
-        flatdata = []
+    cost: float = dataclasses.field(init=False, default=0.0)
+    count: int = dataclasses.field(init=False, default=0)
+    earliest: datetime.datetime = dataclasses.field(
+        init=False,
+        default=datetime.datetime.max.replace(tzinfo=datetime.timezone.utc),
+    )
+    latest: datetime.datetime = dataclasses.field(
+        init=False,
+        default=datetime.datetime.min.replace(tzinfo=datetime.timezone.utc),
+    )
+    runtime: datetime.timedelta = dataclasses.field(init=False, default_factory=datetime.timedelta)
+    users: set[str] = dataclasses.field(init=False, default_factory=set)
 
-        for series in get_metric_usage(self.prom_client, since, to, metric % self.cluster, resampleTo=resample_to):
-            for t in series.itertuples():
-                flatdata.append([t[0], t[1]])
-                if extra:
-                    extra(t[0], t[1])
+    def tally(self, run):
+        started, finished, runtime = run.start_end_runtime()
+        self.earliest = min(self.earliest, started)
+        self.latest = max(self.latest, finished)
+        self.cost += run.cumulative_cost()
+        self.count += 1
+        self.runtime += runtime
+        self.users.add(run.request['modified_by_user_uuid'])
 
-        return flatdata
+    def total_cost(self):
+        return self.cost
 
-    def collect_storage_cost(self, timestamp, value):
-        self.storage_cost += aws_monthly_cost(value) / (30*24)
+    def total_runtime(self):
+        return self.runtime.total_seconds()
 
-    def html_report(self, since, to, exclude, include_workflow_steps):
-        """Get a cluster activity report for the desired time period,
-        returning a string containing the report as an HTML document."""
+    def total_runs(self):
+        return self.count
 
-        self.label = "Cluster report for %s from %s to %s" % (self.cluster, since.date(), to.date())
+    def total_users(self):
+        return len(self.users)
 
-        if not self.summary_fetched:
-            # If we haven't done it already, need to fetch everything
-            # from the API to collect summary stats (report_from_api
-            # calls collect_summary_stats on each row).
-            #
-            # Because it is a Python generator, we need call it in a
-            # loop to process all the rows.  This method also yields
-            # each row which is used by a different function to create
-            # the CSV report, but for the HTML report we just discard
-            # them.
-            for row in self.report_from_api(since, to, include_workflow_steps, exclude):
-                pass
+    def usernames(self, users_map, default_name='unknown user'):
+        default_user = {'full_name': default_name}
+        return sorted(
+            users_map.get(uuid, default_user)['full_name']
+            for uuid in self.users
+        )
 
-        container_cumulative_hours = 0
-        def collect_container_hours(timestamp, value):
-            nonlocal container_cumulative_hours
-            # resampled to 5 minute increments but we want
-            # a sum of hours
-            container_cumulative_hours += value / 12
+
+@dataclasses.dataclass(slots=True)
+class WorkflowRunStatistics:
+    """Collect detailed statistics about a series of related WorkflowRuns
+
+    Call the `tally()` method with a series of WorkflowRuns, then call the
+    other methods to report collected statistics. The caller determines how
+    the WorkflowRuns are related; nothing in this class enforces any relation.
+    Refer to the `statistics` field of `ClusterActivityReport`.
+
+    This class collects a few data points per tallied run, so you can expect
+    it to grow in RAM use O(n) with the number of runs.
+    """
+    owner_uuid: str | None = None
+    workflow_uuid: str | None = None
+
+    costs: list[float] = dataclasses.field(init=False, default_factory=list)
+    runtimes: list[float] = dataclasses.field(init=False, default_factory=list)
+
+    def tally(self, run):
+        self.costs.append(run.cumulative_cost())
+        self.runtimes.append(run.runtime().total_seconds())
+
+    def mean_cost(self):
+        return statistics.mean(self.costs)
+
+    def median_cost(self):
+        return statistics.median(self.costs)
+
+    def total_cost(self):
+        return sum(self.costs)
+
+    def mean_runtime(self):
+        return statistics.mean(self.runtimes)
+
+    def median_runtime(self):
+        return statistics.median(self.runtimes)
+
+    def total_runtime(self):
+        return sum(self.runtimes)
+
+    def total_runs(self):
+        return len(self.costs)
+
+
+@dataclasses.dataclass
+class ClusterSummary:
+    containers: PrometheusUsageChart
+    managed_data: PrometheusUsageChart
+    stored_data: PrometheusUsageChart
+    total_users: int = 0
+    total_projects: int = 0
+
+    managed_data_end: int | None = dataclasses.field(init=False)
+    stored_data_end: int | None = dataclasses.field(init=False)
+    storage_cost: float | None = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.managed_data_end = self.managed_data.last_value()
+        self.stored_data_end = self.stored_data.last_value()
+        self.storage_cost = s3_cost(self.stored_data_end, S3CostPeriod.MONTHLY)
+
+    @staticmethod
+    def _count_items(arv_resource, *filters):
+        return arv_resource().list(
+            filters=filters,
+            limit=0,
+            count='exact',
+        ).execute()['items_available']
+
+    @classmethod
+    def query(cls, arv_client, prom_client, since, to):
+        cluster = arv_client.config()['ClusterID']
+        def _get_metric_usage(name, resampleTo):
+            metric_name = f"{name}{{cluster='{cluster}'}}"
+            return get_metric_usage(prom_client, since, to, metric_name, resampleTo)
 
         logging.info("Getting container hours time series")
-
-        self.graphs[containers_graph] = self.collect_graph(since, to,
-                           "arvados_dispatchcloud_containers_running{cluster='%s'}",
-                           resample_to="5min",
-                           extra=collect_container_hours
-                           )
-
+        containers = PrometheusUsageChart(
+            "Concurrent running containers",
+            "containers",
+            _get_metric_usage("arvados_dispatchcloud_containers_running", "5min"),
+        )
         logging.info("Getting data usage time series")
-        self.graphs[managed_graph] = self.collect_graph(since, to,
-                           "arvados_keep_collection_bytes{cluster='%s'}", resample_to="60min")
+        managed_data = PrometheusUsageChart(
+            "Data under management",
+            "managed",
+            _get_metric_usage("arvados_keep_collection_bytes", "60min")
+        )
+        stored_data = PrometheusUsageChart(
+            "Storage usage",
+            "used",
+            _get_metric_usage("arvados_keep_total_bytes", "60min"),
+        )
 
-        self.graphs[storage_graph] = self.collect_graph(since, to,
-                           "arvados_keep_total_bytes{cluster='%s'}", resample_to="60min",
-                                                        extra=self.collect_storage_cost)
+        total_users = cls._count_items(arv_client.users, ['is_active', '=', True])
+        total_projects = cls._count_items(arv_client.groups, ['group_class', '=', 'project'])
+        return cls(containers, managed_data, stored_data, total_users, total_projects)
 
-        label = self.label
+    def iter_charts(self):
+        yield self.containers
+        yield self.managed_data
+        yield self.stored_data
 
-        cards = []
+    def have_charts(self):
+        return any(chart.data for chart in self.iter_charts())
 
-        workbench = self.arv_client.config()["Services"]["Workbench2"]["ExternalURL"]
-        if workbench.endswith("/"):
-            workbench = workbench[:-1]
+    def chart_json(self):
+        return markupsafe.Markup(json.dumps([
+            chart.json_object()
+            for chart in self.iter_charts()
+            if chart.data
+        ]))
 
-        if to.date() == self.today():
-            # The deduplication ratio overstates things a bit, you can
-            # have collections which reference a small slice of a large
-            # block, and this messes up the intuitive value of this ratio
-            # and exagerates the effect.
-            #
-            # So for now, as much fun as this is, I'm excluding it from
-            # the report.
-            #
-            # dedup_savings = aws_monthly_cost(managed_data_now) - storage_cost
-            # <tr><th>Monthly savings from storage deduplication</th> <td>${dedup_savings:,.2f}</td></tr>
+    def dedup_ratio(self):
+        if self.managed_data_end and self.stored_data_end:
+            return self.managed_data_end / self.stored_data_end
+        else:
+            return None
 
-            data_rows = ""
-            if self.graphs[managed_graph] and self.graphs[storage_graph]:
-                managed_data_now = self.graphs[managed_graph][-1][1]
-                storage_used_now = self.graphs[storage_graph][-1][1]
-                data_rows = """
-            <tr><th>Total data under management</th> <td>{managed_data_now}</td></tr>
-            <tr><th>Total storage usage</th> <td>{storage_used_now}</td></tr>
-            <tr><th>Deduplication ratio</th> <td>{dedup_ratio:.1f}</td></tr>
-            <tr><th>Approximate monthly storage cost</th> <td>${storage_cost:,.2f}</td></tr>
-                """.format(
-                       managed_data_now=format_with_suffix_base10(managed_data_now),
-                       storage_used_now=format_with_suffix_base10(storage_used_now),
-                       storage_cost=aws_monthly_cost(storage_used_now),
-                       dedup_ratio=managed_data_now / storage_used_now,
+    def monthly_storage_cost(self):
+        if not self.stored_data.data:
+            return None
+        else:
+            return sum(s3_cost(v, S3CostPeriod.HOURLY) for v in self.stored_data.iter_values())
+
+
+@dataclasses.dataclass
+class ProgressLogger:
+    """Log progress over subsequences of a larger sequence"""
+    log_fmt: str
+    logger: logging.Logger = dataclasses.field(default_factory=logging.getLogger)
+    loglevel: int = dataclasses.field(default=logging.INFO)
+    count: int = dataclasses.field(init=False, default=0)
+
+    def report(self, seq):
+        start = self.count + 1
+        self.count += len(seq)
+        self.logger.log(self.loglevel, self.log_fmt, start, self.count)
+
+
+def key_by_uuid(items):
+    return ((item['uuid'], item) for item in items)
+
+
+@dataclasses.dataclass
+class ClusterActivityReport:
+    since: datetime.datetime
+    to: datetime.datetime
+    arv_client: arv_types.ArvadosAPIClient = dataclasses.field(default_factory=arvados.api)
+    prom_client: 'prometheus_api_client.PrometheusConnect | None' = None
+    exclude: dataclasses.InitVar[str] = ''
+
+    should_exclude: Callable[[str], bool] = dataclasses.field(init=False)
+    # A WorkflowRunSummary for each project. The None key summarizes all runs.
+    summaries: dict[str | None, WorkflowRunSummary] = dataclasses.field(init=False, default_factory=dict)
+    # Statistics for each workflow. The outer key is an owner name. The inner
+    # key is a workflow UUID.
+    statistics: dict[str, dict[str, WorkflowRunStatistics]] = dataclasses.field(
+        init=False,
+        default_factory=lambda: collections.defaultdict(dict),
+    )
+    # Map container request UUIDs to workflow UUIDs
+    workflow_map: dict[str, str] = dataclasses.field(init=False, default_factory=dict)
+    # Map each type of object by UUID to the loaded API object
+    groups: dict[str, arv_types.Group] = dataclasses.field(init=False, default_factory=dict)
+    users: dict[str, arv_types.User] = dataclasses.field(init=False, default_factory=dict)
+    workflows: dict[str, arv_types.Workflow] = dataclasses.field(init=False, default_factory=dict)
+    # A chainmap of groups+users
+    owners: Mapping[str, arv_types.Group | arv_types.User] = dataclasses.field(init=False)
+    # UUIDs of containers that have been loaded. Used to find steps for csv_report.
+    ctr_uuids: set[str] = dataclasses.field(init=False, default_factory=set)
+
+    _request_select: ClassVar[list[str]] = [
+        'container_uuid',
+        'created_at',
+        'cumulative_cost',
+        'modified_by_user_uuid',
+        'name',
+        'owner_uuid',
+        'requesting_container_uuid',
+        'uuid',
+    ]
+
+    def __post_init__(self, exclude):
+        self.owners = collections.ChainMap(self.groups, self.users)
+        if exclude:
+            self.should_exclude = re.compile(exclude, re.IGNORECASE).search
+        else:
+            self.should_exclude = lambda s: False
+
+    def _since_filter(self):
+        return ['created_at', '>=', self.since.strftime('%Y-%m-%dT00:00Z')]
+
+    def _to_filter(self):
+        return ['created_at', '<', self.to.strftime('%Y-%m-%dT00:00Z')]
+
+    def _load_workflows(self, requests):
+        new_map = {
+            req['uuid']: wf_uuid
+            for req in requests
+            if (wf_uuid := req['properties'].get('template_uuid'))
+        }
+        self.workflow_map.update(new_map)
+        if new_wfs := frozenset(new_map.values()).difference(self.workflows):
+            self.workflows.update(key_by_uuid(arvados.util.keyset_list_all(
+                self.arv_client.workflows().list,
+                filters=[['uuid', 'in', list(new_wfs)]],
+                select=['uuid', 'name'],
+            )))
+
+    def _load_groups_and_users(self, requests):
+        user_uuids = {req['modified_by_user_uuid'] for req in requests}
+        group_uuids = set()
+        for req in requests:
+            owner_uuid = req['owner_uuid']
+            if arvados.util.user_uuid_pattern.fullmatch(owner_uuid):
+                user_uuids.add(owner_uuid)
+            elif arvados.util.group_uuid_pattern.fullmatch(owner_uuid):
+                group_uuids.add(owner_uuid)
+
+        if new_users := user_uuids.difference(self.users):
+            self.users.update(key_by_uuid(arvados.util.keyset_list_all(
+                self.arv_client.users().list,
+                filters=[['uuid', 'in', list(new_users)]],
+                select=['uuid', 'full_name', 'first_name', 'last_name'],
+            )))
+        if new_groups := group_uuids.difference(self.groups):
+            self.groups.update(key_by_uuid(arvados.util.keyset_list_all(
+                self.arv_client.groups().list,
+                filters=[['uuid', 'in', list(new_groups)]],
+                select=['uuid', 'name'],
+            )))
+
+    def _load_and_iter_runs(self, requests, containers, logger):
+        """Iterate WorkflowRuns for the given sequence of requests
+
+        `requests` is a sequence of Arvados container request records. This
+        method yields a corresponding WorkflowRun for each, loading other
+        resources from Arvados as needed to build them.
+        """
+        if not requests:
+            return
+        logger.report(requests)
+        self._load_groups_and_users(requests)
+        if new_cuuids := frozenset(req['container_uuid'] for req in requests).difference(containers):
+            containers.update(key_by_uuid(arvados.util.keyset_list_all(
+                self.arv_client.containers().list,
+                filters=[['uuid', 'in', list(new_cuuids)]],
+                select=['uuid', 'started_at', 'finished_at', 'cost'],
+            )))
+        for req in requests:
+            container = containers[req['container_uuid']]
+            # If the container doesn't have `finished_at` set, then it's some
+            # aborted attempt to run, and there's not enough info to report it.
+            if container['finished_at']:
+                yield WorkflowRun(
+                    req,
+                    container,
+                    owner=self.owners.get(req['owner_uuid']),
+                    user=self.users.get(req['modified_by_user_uuid']),
+                    workflow=self.workflows.get(self.workflow_map.get(req['uuid'])),
                 )
 
-            cards.append("""<h2>Cluster status as of {now}</h2>
-            <table class='aggtable'><tbody>
-            <tr><th><a href="{workbench}/users">Total users</a></th><td>{total_users}</td></tr>
-            <tr><th>Total projects</th><td>{total_projects}</td></tr>
-            {data_rows}
-            </tbody></table>
-            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
-            """.format(now=self.today(),
-                       total_users=self.total_users,
-                       total_projects=self.total_projects,
-                       workbench=workbench,
-                       data_rows=data_rows))
-
-        # We have a couple of options for getting total container hours
-        #
-        # total_hours=container_cumulative_hours
-        #
-        # calculates the sum from prometheus metrics
-        #
-        # total_hours=self.total_hours
-        #
-        # calculates the sum of the containers that were fetched
-        #
-        # The problem is these numbers tend not to match, especially
-        # if the report generation was not called with "include
-        # workflow steps".
-        #
-        # I decided to use the sum from containers fetched, because it
-        # will match the sum of compute time for each project listed
-        # in the report.
-
-        cards.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
-        <table class='aggtable'><tbody>
-        <tr><th>Active users</th> <td>{active_users}</td></tr>
-        <tr><th><a href="#Active_Projects">Active projects</a></th> <td>{active_projects}</td></tr>
-        <tr><th>Workflow runs</th> <td>{total_workflows:,}</td></tr>
-        <tr><th>Compute used</th> <td>{total_hours:,.1f} hours</td></tr>
-        <tr><th>Compute cost</th> <td>${total_cost:,.2f}</td></tr>
-        <tr><th>Storage cost</th> <td>${storage_cost:,.2f}</td></tr>
-        </tbody></table>
-        <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
-        """.format(active_users=len(self.active_users),
-                   total_users=self.total_users,
-                   total_hours=self.total_hours,
-                   total_cost=self.total_cost,
-                   total_workflows=self.total_workflows,
-                   active_projects=len(self.project_summary),
-                   since=since.date(), to=to.date(),
-                   reporting_days=(to - since).days,
-                   storage_cost=self.storage_cost))
-
-        projectlist = sorted(self.project_summary.items(), key=lambda x: x[1].cost, reverse=True)
-
-        for k, prj in projectlist:
-            if prj.earliest.date() == prj.latest.date():
-                prj.activityspan = "{}".format(prj.earliest.date())
-            else:
-                prj.activityspan = "{} to {}".format(prj.earliest.date(), prj.latest.date())
-
-            prj.tablerow = """<td>{users}</td> <td>{active}</td> <td>{hours:,.1f}</td> <td>${cost:,.2f}</td>""".format(
-                active=prj.activityspan,
-                cost=prj.cost,
-                hours=prj.hours,
-                users=", ".join(prj.users),
-            )
-
-        if any(self.graphs.values()):
-            cards.append("""
-                <div id="chart"></div>
-            """)
-
-        cards.append(
-            """
-            <a id="Active_Projects"><h2>Active Projects</h2></a>
-            <table class='sortable active-projects'>
-            <thead><tr><th>Project</th> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
-            <tbody><tr>{projects}</tr></tbody>
-            </table>
-            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
-            """.format(projects="</tr>\n<tr>".join("""<td><a href="#{name}">{name}</a></td>{rest}""".format(name=prj.name, rest=prj.tablerow) for k, prj in projectlist)))
-
-        for k, prj in projectlist:
-            wfsum = []
-            for k2, r in sorted(prj.runs.items(), key=lambda x: x[1].count, reverse=True):
-                wfsum.append("""
-                <tr><td>{count}</td> <td>{workflowlink}</td> <td>{median_runtime}</td> <td>{mean_runtime}</td> <td>${median_cost:,.2f}</td> <td>${mean_cost:,.2f}</td> <td>${totalcost:,.2f}</td></tr>
-                """.format(
-                    count=r.count,
-                    mean_runtime=hours_to_runtime_str(statistics.mean(r.hours)),
-                    median_runtime=hours_to_runtime_str(statistics.median(r.hours)),
-                    mean_cost=statistics.mean(r.cost),
-                    median_cost=statistics.median(r.cost),
-                    totalcost=sum(r.cost),
-                    workflowlink="""<a href="{workbench}/workflows/{uuid}">{name}</a>""".format(workbench=workbench,uuid=r.uuid,name=r.name)
-                    if r.uuid != "none" else r.name))
-
-            cards.append(
-                """<a id="{name}"></a><a href="{workbench}/projects/{uuid}"><h2>{name}</h2></a>
-
-                <table class='sortable single-project'>
-                <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
-                <tbody><tr>{projectrow}</tr></tbody>
-                </table>
-
-                <table class='sortable project'>
-                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Median runtime</th> <th>Mean runtime</th> <th>Median cost per run</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
-                <tbody>
-                {wfsum}
-                </tbody></table>
-                """.format(name=prj.name,
-                           wfsum=" ".join(wfsum),
-                           projectrow=prj.tablerow,
-                           workbench=workbench,
-                           uuid=prj.uuid)
-            )
-
-        # The deduplication ratio overstates things a bit, you can
-        # have collections which reference a small slice of a large
-        # block, and this messes up the intuitive value of this ratio
-        # and exagerates the effect.
-        #
-        # So for now, as much fun as this is, I'm excluding it from
-        # the report.
-        #
-        # <p>"Monthly savings from storage deduplication" is the
-        # estimated cost difference between "storage usage" and "data
-        # under management" as a way of comparing with other
-        # technologies that do not support data deduplication.</p>
-
-
-        cards.append("""
-        <h2 id="prices">Note on usage and cost calculations</h2>
-
-        <div style="max-width: 60em">
-
-        <p>The numbers presented in this report are estimates and will
-        not perfectly match your cloud bill.  Nevertheless this report
-        should be useful for identifying your main cost drivers.</p>
-
-        <h3>Storage</h3>
-
-        <p>"Total data under management" is what you get if you add up
-        all blocks referenced by all collections in Workbench, without
-        considering deduplication.</p>
-
-        <p>"Total storage usage" is the actual underlying storage
-        usage, accounting for data deduplication.</p>
-
-        <p>Storage costs are based on AWS "S3 Standard"
-        described on the <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 pricing</a> page:</p>
-
-        <ul>
-        <li>$0.023 per GB / Month for the first 50 TB</li>
-        <li>$0.022 per GB / Month for the next 450 TB</li>
-        <li>$0.021 per GB / Month over 500 TB</li>
-        </ul>
-
-        <p>Finally, this only the base storage cost, and does not
-        include any fees associated with S3 API usage.  However, there
-        are generally no ingress/egress fees if your Arvados instance
-        and S3 bucket are in the same region, which is the normal
-        recommended configuration.</p>
-
-        <h3>Compute</h3>
-
-        <p>"Compute usage" are instance-hours used in running
-        workflows.  Because multiple steps may run in parallel on
-        multiple instances, a workflow that completes in four hours
-        but runs parallel steps on five instances, would be reported
-        as using 20 instance hours.</p>
-
-        <p>"Runtime" is the actual wall clock time that it took to
-        complete a workflow.  This does not include time spent in the
-        queue for the workflow itself, but does include queuing time
-        of individual workflow steps.</p>
-
-        <p>Computational costs are derived from Arvados cost
-        calculations of container runs.  For on-demand instances, this
-        uses the prices from the InstanceTypes section of the Arvado
-        config file, set by the system administrator.  For spot
-        instances, this uses current spot prices retrieved on the fly
-        the AWS API.</p>
-
-        <p>Be aware that the cost calculations are only for the time
-        the container is running and only do not take into account the
-        overhead of launching instances or idle time between scheduled
-        tasks or prior to automatic shutdown.</p>
-
-        </div>
-        """)
-
-        return ReportChart(label, cards, self.graphs).html()
-
-    def iter_container_info(self, pending, include_steps, exclude):
-        # "pending" is a list of arvados-cwl-runner container requests
-        # returned by the API.  This method fetches detailed
-        # information about the runs and yields report rows.
-
-        # 1. Get container records corresponding to container requests.
+    def _iter_runs(self):
+        """Iterate all WorkflowRuns for this report"""
         containers = {}
-
-        for container in arvados.util.keyset_list_all(
-            self.arv_client.containers().list,
+        logger = ProgressLogger("Exporting workflow runs %s - %s")
+        wf_reqs = arvados.util.keyset_list_all(
+            self.arv_client.container_requests().list,
             filters=[
-                ["uuid", "in", [c["container_uuid"] for c in pending if c["container_uuid"]]],
+                ['command', 'like', '["arvados-cwl-runner"%'],
+                ['container_uuid', '!=', None],
+                self._since_filter(),
+                self._to_filter(),
             ],
-            select=["uuid", "started_at", "finished_at", "cost"]):
+            select=self._request_select + ['properties'],
+        )
+        # Arvados will never return more than 1000 results to a single list
+        # query. We go through requests in batches of 999 to maximize the
+        # chances that queries for associated resources will fit in a single
+        # page of results.
+        while new_reqs := list(itertools.islice(wf_reqs, 999)):
+            self._load_workflows(new_reqs)
+            yield from self._load_and_iter_runs(new_reqs, containers, logger)
 
-            containers[container["uuid"]] = container
+    def iter_and_tally_runs(self):
+        """Iterate, filter, and build summaries for top-level WorkflowRuns"""
+        if self.owners:
+            return
+        self.summaries[None] = WorkflowRunSummary(None)
+        for run in self._iter_runs():
+            run_key = run.name_key()
+            if self.should_exclude(run_key):
+                continue
+            yield run
+            self.ctr_uuids.add(run.request['container_uuid'])
+            self.summaries[None].tally(run)
 
-        # 2. Look for the template_uuid property and fetch the
-        # corresponding workflow record.
-        workflows = {}
-        workflows["none"] = "workflow run from command line"
+            owner_uuid = run.request['owner_uuid']
+            owner_name = run.owner_name()
+            try:
+                summary = self.summaries[owner_name]
+            except KeyError:
+                summary = self.summaries[owner_name] = WorkflowRunSummary(owner_uuid)
+            summary.tally(run)
 
-        for wf in arvados.util.keyset_list_all(
-                self.arv_client.workflows().list,
-                filters=[
-                    ["uuid", "in", list(set(c["properties"]["template_uuid"]
-                                            for c in pending
-                                            if "template_uuid" in c["properties"] and c["properties"]["template_uuid"].startswith(self.arv_client.config()["ClusterID"])))],
-                ],
-                select=["uuid", "name"]):
-            workflows[wf["uuid"]] = wf["name"]
+            wf_uuid = run.template_uuid()
+            try:
+                stats = self.statistics[owner_name][wf_uuid]
+            except KeyError:
+                stats = self.statistics[owner_name][wf_uuid] = WorkflowRunStatistics(owner_uuid, wf_uuid)
+            stats.tally(run)
 
-        # 3. Look at owner_uuid and fetch owning projects and users
-        projects = {}
-
-        for pr in arvados.util.keyset_list_all(
-                self.arv_client.groups().list,
-                filters=[
-                    ["uuid", "in", list(set(c["owner_uuid"] for c in pending if c["owner_uuid"][6:11] == 'j7d0g'))],
-                ],
-                select=["uuid", "name"]):
-            projects[pr["uuid"]] = pr["name"]
-
-        # 4. Look at owner_uuid and modified_by_user_uuid and get user records
-        for pr in arvados.util.keyset_list_all(
-                self.arv_client.users().list,
-                filters=[
-                    ["uuid", "in", list(set(c["owner_uuid"] for c in pending if c["owner_uuid"][6:11] == 'tpzed')|set(c["modified_by_user_uuid"] for c in pending))],
-                ],
-                select=["uuid", "full_name", "first_name", "last_name"]):
-            projects[pr["uuid"]] = pr["full_name"]
-
-        # 5. Optionally iterate over individual workflow steps.
-        if include_steps:
-            name_regex = re.compile(r"(.+)_[0-9]+")
-            child_crs = {}
-            child_cr_containers = set()
-            stepcount = 0
-
-            # 5.1. Go through the container requests owned by the toplevel workflow container
-            logging.info("Getting workflow steps")
-            for cr in arvados.util.keyset_list_all(
+    def iter_steps(self):
+        logging.info("Getting workflow steps")
+        containers = {}
+        logger = ProgressLogger("Got workflow steps %s - %s")
+        seen_cuuids = set()
+        while new_cuuids := self.ctr_uuids.difference(seen_cuuids):
+            # The ideal slice length here really depends on how many steps
+            # the typical workflow starts. 50 is just a fuzzy attempt to
+            # balance batching queries while keeping result sizes reasonable.
+            # It could be adjusted if better data suggests that's a good idea.
+            cuuid_batch = list(itertools.islice(new_cuuids, 50))
+            new_reqs = list(arvados.util.keyset_list_all(
                 self.arv_client.container_requests().list,
                 filters=[
-                    ["requesting_container_uuid", "in", list(containers.keys())],
+                    ['requesting_container_uuid', 'in', cuuid_batch],
+                    ['container_uuid', '!=', None],
                 ],
-                select=["uuid", "name", "cumulative_cost", "requesting_container_uuid", "container_uuid"]):
+                select=self._request_select,
+            ))
+            self.workflow_map.update(
+                (req['uuid'], wf_uuid)
+                for req in new_reqs
+                if (wf_uuid := self.workflow_map.get(req['requesting_container_uuid']))
+            )
+            yield from self._load_and_iter_runs(new_reqs, containers, logger)
+            seen_cuuids.update(cuuid_batch)
 
-                if cr["cumulative_cost"] == 0:
-                    continue
+    def html_report(self):
+        """Get a cluster activity report for the desired time period,
+        returning a string containing the report as an HTML document."""
+        for _ in self.iter_and_tally_runs():
+            # HTML doesn't report individual runs, just summaries.
+            pass
 
-                g = name_regex.fullmatch(cr["name"])
-                if g:
-                    cr["name"] = g[1]
+        arv_config = self.arv_client.config()
+        active = self.summaries.pop(None)
+        cluster = ClusterSummary.query(self.arv_client, self.prom_client, self.since, self.to)
+        summaries = sorted(
+            self.summaries.items(),
+            key=lambda kv: kv[1].total_cost(),
+            reverse=True,
+        )
+        statistics = {key: sorted(
+            workflows.items(),
+            key=lambda kv: kv[1].total_runs(),
+            reverse=True,
+        ) for key, workflows in self.statistics.items()}
 
-                # 5.2. Get the containers corresponding to the
-                # container requests.  This has the same logic as
-                # report_from_api where we batch it into 1000 items at
-                # a time.
-                child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
-                child_cr_containers.add(cr["container_uuid"])
-                if len(child_cr_containers) == 1000:
-                    stepcount += len(child_cr_containers)
-                    for container in arvados.util.keyset_list_all(
-                            self.arv_client.containers().list,
-                            filters=[
-                                ["uuid", "in", list(child_cr_containers)],
-                            ],
-                            select=["uuid", "started_at", "finished_at", "cost"]):
+        jinja = jinja2.Environment(
+            autoescape=jinja2.select_autoescape(),
+            loader=jinja2.PackageLoader('arvados_cluster_activity'),
+            trim_blocks=True,
+        )
+        jinja.filters.update(_JINJA_FILTERS)
+        wb_url = arv_config['Services']['Workbench2']['ExternalURL']
+        def workbench_url(value):
+            if not isinstance(value, str):
+                value = PurePath(*value).as_posix()
+            return markupsafe.Markup(urllib.parse.urljoin(wb_url, value))
+        jinja.filters['workbench_url'] = workbench_url
 
-                        containers[container["uuid"]] = container
+        def include_file(path: str) -> markupsafe.Markup:
+            content, _, _ = jinja.loader.get_source(jinja, path)
+            return markupsafe.Markup(content)
 
-                    logging.info("Got workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
-                    child_cr_containers.clear()
+        return jinja.get_template('report.html.j2').render(
+            active=active,
+            cluster=cluster,
+            cluster_id=arv_config['ClusterID'],
+            include_file=include_file,
+            report=self,
+            report_span=datespan_fmt(self.since, self.to),
+            statistics=statistics,
+            summaries=summaries,
+            today=datetime.date.today(),
+        )
 
-            # Get any remaining containers
-            if child_cr_containers:
-                stepcount += len(child_cr_containers)
-                for container in arvados.util.keyset_list_all(
-                        self.arv_client.containers().list,
-                        filters=[
-                            ["uuid", "in", list(child_cr_containers)],
-                        ],
-                        select=["uuid", "started_at", "finished_at", "cost"]):
-
-                    containers[container["uuid"]] = container
-                logging.info("Got workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
-
-        # 6. Now go through the list of workflow runs, yield a row
-        # with all the information we have collected, as well as the
-        # details for each workflow step (if enabled)
-        for container_request in pending:
-            if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
-                continue
-
-            template_uuid = container_request["properties"].get("template_uuid", "none")
-            workflowname = container_request["name"] if template_uuid == "none" else workflows.get(template_uuid, template_uuid)
-
-            if exclude and re.search(exclude, workflowname, flags=re.IGNORECASE):
-                continue
-
-            yield {
-                "Project": projects.get(container_request["owner_uuid"], "unknown owner"),
-                "ProjectUUID": container_request["owner_uuid"],
-                "Workflow": workflowname,
-                "WorkflowUUID": container_request["properties"].get("template_uuid", "none"),
-                "Step": "workflow runner",
-                "StepUUID": container_request["uuid"],
-                "Sample": container_request["name"],
-                "SampleUUID": container_request["uuid"],
-                "User": projects.get(container_request["modified_by_user_uuid"], "unknown user"),
-                "UserUUID": container_request["modified_by_user_uuid"],
-                "Submitted": csv_dateformat(container_request["created_at"]),
-                "Started": csv_dateformat(containers[container_request["container_uuid"]]["started_at"]),
-                "Finished": csv_dateformat(containers[container_request["container_uuid"]]["finished_at"]),
-                "Runtime": runtime_str(container_request, containers),
-                "Cost": round(containers[container_request["container_uuid"]]["cost"] if include_steps else container_request["cumulative_cost"], 3),
-                "CumulativeCost": round(container_request["cumulative_cost"], 3)
-                }
-
+    def csv_report(self, out, columns, *, include_steps: bool):
+        if not columns:
             if include_steps:
-                for child_cr in child_crs.get(container_request["container_uuid"], []):
-                    if not child_cr["container_uuid"] or not containers[child_cr["container_uuid"]]["started_at"] or not containers[child_cr["container_uuid"]]["finished_at"]:
-                        continue
-                    yield {
-                        "Project": projects.get(container_request["owner_uuid"], "unknown owner"),
-                        "ProjectUUID": container_request["owner_uuid"],
-                        "Workflow": workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
-                        "WorkflowUUID": container_request["properties"].get("template_uuid", "none"),
-                        "Step": child_cr["name"],
-                        "StepUUID": child_cr["uuid"],
-                        "Sample": container_request["name"],
-                        "SampleUUID": container_request["name"],
-                        "User": projects.get(container_request["modified_by_user_uuid"], "unknown user"),
-                        "UserUUID": container_request["modified_by_user_uuid"],
-                        "Submitted": csv_dateformat(child_cr["created_at"]),
-                        "Started": csv_dateformat(containers[child_cr["container_uuid"]]["started_at"]),
-                        "Finished": csv_dateformat(containers[child_cr["container_uuid"]]["finished_at"]),
-                        "Runtime": runtime_str(child_cr, containers),
-                        "Cost": round(containers[child_cr["container_uuid"]]["cost"], 3),
-                        "CumulativeCost": round(containers[child_cr["container_uuid"]]["cost"], 3),
-                        }
-
-
-    def collect_summary_stats(self, row):
-        self.active_users.add(row["User"])
-        self.project_summary.setdefault(row["ProjectUUID"],
-                                        ProjectSummary(users=set(),
-                                                       runs={},
-                                                       uuid=row["ProjectUUID"],
-                                                       name=row["Project"]))
-        prj = self.project_summary[row["ProjectUUID"]]
-        cost = row["Cost"]
-        prj.cost += cost
-        prj.count += 1
-        prj.users.add(row["User"])
-        hrs = runtime_in_hours(row["Runtime"])
-        prj.hours += hrs
-
-        started = datetime.strptime(row["Started"], "%Y-%m-%d %H:%M:%S")
-        finished = datetime.strptime(row["Finished"], "%Y-%m-%d %H:%M:%S")
-
-        if started < prj.earliest:
-            prj.earliest = started
-
-        if finished > prj.latest:
-            prj.latest = finished
-
-        if row["Step"] == "workflow runner":
-            prj.runs.setdefault(row["Workflow"], WorkflowRunSummary(name=row["Workflow"],
-                                                                    uuid=row["WorkflowUUID"],
-                                                                    cost=[], hours=[]))
-            wfuuid = row["Workflow"]
-            prj.runs[wfuuid].count += 1
-            prj.runs[wfuuid].cost.append(row["CumulativeCost"])
-            prj.runs[wfuuid].hours.append(hrs)
-            self.total_workflows += 1
-
-        self.total_hours += hrs
-        self.total_cost += cost
-
-    def report_from_api(self, since, to, include_steps, exclude):
-        pending = []
-
-        count = 0
-        for container_request in arvados.util.keyset_list_all(
-                self.arv_client.container_requests().list,
-                filters=[
-                    ["command", "like", "[\"arvados-cwl-runner%"],
-                    ["created_at", ">=", since.strftime("%Y%m%dT%H%M%SZ")],
-                    ["created_at", "<=", to.strftime("%Y%m%dT%H%M%SZ")],
-                ],
-                select=["uuid", "owner_uuid", "container_uuid", "name", "cumulative_cost", "properties", "modified_by_user_uuid", "created_at"]):
-
-            if container_request["cumulative_cost"] == 0:
-                continue
-
-            # Every 1000 container requests, we fetch the
-            # corresponding container records.
-            #
-            # What's so special about 1000?  Because that's the
-            # maximum Arvados page size, so when we use ['uuid', 'in',
-            # [...]] to fetch associated records it doesn't make sense
-            # to provide more than 1000 uuids.
-            #
-            # TODO: use the ?include=container_uuid feature so a
-            # separate request to the containers table isn't necessary.
-            if len(pending) < 1000:
-                pending.append(container_request)
+                columns = (
+                    "Project", "Workflow", "Step",
+                    "Sample", "User", "Submitted", "Runtime", "Cost"
+                )
             else:
-                count += len(pending)
-                logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
-                for row in self.iter_container_info(pending, include_steps, exclude):
-                    self.collect_summary_stats(row)
-                    yield row
-                pending.clear()
-
-        count += len(pending)
-        logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
-        for row in self.iter_container_info(pending, include_steps, exclude):
-            self.collect_summary_stats(row)
-            yield row
-
-        userinfo = self.arv_client.users().list(filters=[["is_active", "=", True]], limit=0).execute()
-        self.total_users = userinfo["items_available"]
-
-        groupinfo = self.arv_client.groups().list(filters=[["group_class", "=", "project"]], limit=0).execute()
-        self.total_projects = groupinfo["items_available"]
-
-    def csv_report(self, since, to, out, include_steps, columns, exclude):
-        if columns:
-            columns = columns.split(",")
-        else:
-            if include_steps:
-                columns = ("Project", "Workflow", "Step", "Sample", "User", "Submitted", "Runtime", "Cost")
-            else:
-                columns = ("Project", "Workflow", "Sample", "User", "Submitted", "Runtime", "Cost")
+                columns = (
+                    "Project", "Workflow",
+                    "Sample", "User", "Submitted", "Runtime", "CumulativeCost"
+                )
 
         csvwriter = csv.DictWriter(out, fieldnames=columns, extrasaction="ignore")
         csvwriter.writeheader()
-
-        for row in self.report_from_api(since, to, include_steps, exclude):
-            csvwriter.writerow(row)
-
-        self.summary_fetched = True
-
-    def today(self):
-        return date.today()
+        csvwriter.writerows(run.csv_row() for run in self.iter_and_tally_runs())
+        if include_steps:
+            csvwriter.writerows(run.csv_row() for run in self.iter_steps())

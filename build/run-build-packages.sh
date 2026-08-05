@@ -220,9 +220,6 @@ FPM_GEM_PREFIX=$(gem environment gemdir)
 cd "$WORKSPACE/sdk/ruby" || exit 1
 handle_ruby_gem arvados
 
-cd "$WORKSPACE/sdk/cli" || exit 1
-handle_ruby_gem arvados-cli
-
 cd "$WORKSPACE/services/login-sync" || exit 1
 handle_ruby_gem arvados-login-sync
 

@@ -4,7 +4,7 @@
 
 // Generate and verify permission signatures for Keep locators.
 //
-// See https://dev.arvados.org/projects/arvados/wiki/Keep_locator_format
+// See https://doc.arvados.org/main/architecture/manifest-format.html#locator
 
 package arvados
 

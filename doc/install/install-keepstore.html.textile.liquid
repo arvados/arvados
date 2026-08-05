@@ -91,7 +91,7 @@ Log into a host that is on your private Arvados network.  The host should be abl
 
 @ARVADOS_API_TOKEN@ should be the system root token.
 
-Install the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html
+Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html.
 
 Check that the keepstore server is in the @keep_service@ "accessible" list:
 
@@ -101,11 +101,9 @@ Check that the keepstore server is in the @keep_service@ "accessible" list:
 </code></pre>
 </notextile>
 
-If keepstore does not show up in the "accessible" list, and you are accessing it from within the private network, check that you have "properly configured the @geo@ block for the API server":install-api-server.html#update-nginx .
+If keepstore does not show up in the "accessible" list, and you are accessing it from within the private network, check that you have "properly configured the @geo@ block for the API server":install-api-server.html#update-nginx.
 
-Next, install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
-
-You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections.  Be sure to execute this from _inside_ the cluster's private network.  You will be able to access keep from _outside_ the private network after setting up "keepproxy":install-keepproxy.html .
+You should now be able to use @arv-put@ to upload collections and @arv-get@ to fetch collections.  Be sure to execute this from _inside_ the cluster's private network.  You will be able to access keep from _outside_ the private network after setting up "keepproxy":install-keepproxy.html.
 
 {% include 'arv_put_example' %}
 

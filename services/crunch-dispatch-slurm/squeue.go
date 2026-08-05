@@ -13,14 +13,15 @@ import (
 	"time"
 )
 
-const slurm15NiceLimit int64 = 10000
+// SLURM 15 had a nice limit of 10000. At the time that was a going concern we
+// used twice the value as a "low priority" threshold, and still do.
+const slurmLowPriority int64 = 20000
 
 type slurmJob struct {
 	uuid         string
 	wantPriority int64
 	priority     int64 // current slurm priority (incorporates nice value)
 	nice         int64 // current slurm nice value
-	hitNiceLimit bool
 }
 
 // SqueueChecker implements asynchronous polling monitor of the SLURM queue
@@ -88,14 +89,6 @@ func (sqc *SqueueChecker) reniceAll() {
 			// (perhaps it's not an Arvados job)
 			continue
 		}
-		if j.priority <= 2*slurm15NiceLimit {
-			// SLURM <= 15.x implements "hold" by setting
-			// priority to 0. If we include held jobs
-			// here, we'll end up trying to push other
-			// jobs below them using negative priority,
-			// which won't help anything.
-			continue
-		}
 		jobs = append(jobs, j)
 	}
 
@@ -112,17 +105,10 @@ func (sqc *SqueueChecker) reniceAll() {
 	renice := wantNice(jobs, sqc.PrioritySpread)
 	for i, job := range jobs {
 		niceNew := renice[i]
-		if job.hitNiceLimit && niceNew > slurm15NiceLimit {
-			niceNew = slurm15NiceLimit
-		}
 		if niceNew == job.nice {
 			continue
 		}
-		err := sqc.Slurm.Renice(job.uuid, niceNew)
-		if err != nil && niceNew > slurm15NiceLimit && strings.Contains(err.Error(), "Invalid nice value") {
-			sqc.Logger.Warnf("container %q clamping nice values at %d, priority order will not be correct -- see https://dev.arvados.org/projects/arvados/wiki/SLURM_integration#Limited-nice-values-SLURM-15", job.uuid, slurm15NiceLimit)
-			job.hitNiceLimit = true
-		}
+		_ = sqc.Slurm.Renice(job.uuid, niceNew)
 	}
 }
 
@@ -170,30 +156,8 @@ func (sqc *SqueueChecker) check() {
 		replacing.nice = n
 		newq[uuid] = replacing
 
-		if state == "PENDING" && ((reason == "BadConstraints" && p <= 2*slurm15NiceLimit) || reason == "launch failed requeued held") && replacing.wantPriority > 0 {
-			// When using SLURM 14.x or 15.x, our queued
-			// jobs land in this state when "scontrol
-			// reconfigure" invalidates their feature
-			// constraints by clearing all node features.
-			// They stay in this state even after the
-			// features reappear, until we run "scontrol
-			// release {jobid}". Priority is usually 0 in
-			// this state, but sometimes (due to a race
-			// with nice adjustments?) it's a small
-			// positive value.
-			//
-			// "scontrol release" is silent and successful
-			// regardless of whether the features have
-			// reappeared, so rather than second-guessing
-			// whether SLURM is ready, we just keep trying
-			// this until it works.
-			//
-			// "launch failed requeued held" seems to be
-			// another manifestation of this problem,
-			// resolved the same way.
-			sqc.Logger.Printf("releasing held job %q (priority=%d, state=%q, reason=%q)", uuid, p, state, reason)
-			sqc.Slurm.Release(uuid)
-		} else if state != "RUNNING" && p <= 2*slurm15NiceLimit && replacing.wantPriority > 0 {
+		if state != "RUNNING" && p <= slurmLowPriority && replacing.wantPriority > 0 {
+			// Warn about containers that have unexpectedly low priority.
 			sqc.Logger.Warnf("job %q has low priority %d, nice %d, state %q, reason %q", uuid, p, n, state, reason)
 		}
 	}

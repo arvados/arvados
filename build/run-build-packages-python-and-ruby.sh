@@ -169,7 +169,6 @@ GEM_BUILD_FAILURES=0
 if [ $RUBY -eq 1 ]; then
   debug_echo "Building Ruby gems"
   gem_wrapper arvados "$WORKSPACE/sdk/ruby"
-  gem_wrapper arvados-cli "$WORKSPACE/sdk/cli"
   gem_wrapper arvados-login-sync "$WORKSPACE/services/login-sync"
   if [ ${#failures[@]} -ne 0 ]; then
     GEM_BUILD_FAILURES=${#failures[@]}

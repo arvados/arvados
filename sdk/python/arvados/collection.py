@@ -69,7 +69,7 @@ ChangeList = List[Union[
     Tuple[Literal[MOD, TOK], str, 'Collection', 'Collection'],
 ]]
 ChangeType = Literal[ADD, DEL, MOD, TOK]
-CollectionItem = Union[ArvadosFile, 'Collection']
+CollectionItem = Union[ArvadosFile, 'Collection', 'Subcollection']
 ChangeCallback = Callable[[ChangeType, 'Collection', str, CollectionItem], object]
 CreateType = Literal[COLLECTION, FILE]
 Properties = Dict[str, Any]
@@ -276,18 +276,29 @@ class RichCollectionBase(CollectionBase):
             return self
 
     @synchronized
-    def find(self, path: str) -> CollectionItem:
-        """Get the item at the given path
+    def find(self, path: str) -> CollectionItem | None:
+        """Get the item at the given path.
 
         If `path` refers to a stream in this collection, returns a
-        corresponding `Subcollection` object. If `path` refers to a file in
-        this collection, returns a corresponding
-        `arvados.arvfile.ArvadosFile` object. If `path` does not exist in
-        this collection, then this method raises `NotADirectoryError`.
+        corresponding `Subcollection` object.
+
+        As a special case, if `path` is `"."`, returns the collection itself.
+
+        If `path` refers to a file in this collection, returns a corresponding
+        `arvados.arvfile.ArvadosFile` object.
+
+        If `path` does not exist in this collection, then this method returns
+        `None`.
+
+        A `path` that begins with the slash (`/`) character is invalid;
+        `NotADirectoryError` is raised in this case.
+
+        An empty `path` is invalid, and `arvados.errors.ArgumentError` is
+        raised.
 
         Arguments:
 
-        * path: str --- The path to find or create within this collection.
+        * path: str --- The path to find within this collection.
         """
         if not path:
             raise errors.ArgumentError("Parameter 'path' is empty.")
@@ -308,7 +319,9 @@ class RichCollectionBase(CollectionBase):
                 else:
                     return item
             else:
-                raise IOError(errno.ENOTDIR, "Not a directory", pathcomponents[0])
+                raise IOError(
+                    errno.ENOTDIR, "Not a directory", pathcomponents[0]
+                )
 
     @synchronized
     def mkdirs(self, path: str) -> 'Subcollection':
@@ -1453,7 +1466,7 @@ class Collection(RichCollectionBase):
         else:
             return super(Collection, self).find_or_create(path[2:] if path.startswith("./") else path, create_type)
 
-    def find(self, path: str) -> CollectionItem:
+    def find(self, path: str) -> CollectionItem | None:
         if path == ".":
             return self
         else:

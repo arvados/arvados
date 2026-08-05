@@ -1777,10 +1777,17 @@ func splitToToks(src []byte, c rune, toks [][]byte) int {
 	return 3
 }
 
+var ErrMalformedManifestText = errors.New("malformed manifest_text")
+
+func badmtxtErrorf(format string, args ...interface{}) error {
+	allArgs := slices.Concat([]interface{}{ErrMalformedManifestText}, args)
+	return fmt.Errorf("%w: "+format, allArgs...)
+}
+
 func (dn *dirnode) loadManifest(txt string) error {
 	streams := bytes.Split([]byte(txt), []byte{'\n'})
 	if len(streams[len(streams)-1]) != 0 {
-		return fmt.Errorf("line %d: no trailing newline", len(streams))
+		return badmtxtErrorf("line %d: no trailing newline", len(streams))
 	}
 	streams = streams[:len(streams)-1]
 	segments := []storedSegment{}
@@ -1812,14 +1819,14 @@ func (dn *dirnode) loadManifest(txt string) error {
 			}
 			if !bytes.ContainsRune(token, ':') {
 				if anyFileTokens {
-					return fmt.Errorf("line %d: bad file segment %q", lineno, token)
+					return badmtxtErrorf("line %d: bad file segment %q", lineno, token)
 				}
 				if splitToToks(token, '+', toks) < 2 {
-					return fmt.Errorf("line %d: bad locator %q", lineno, token)
+					return badmtxtErrorf("line %d: bad locator %q", lineno, token)
 				}
 				length, err := strconv.ParseInt(string(toks[1]), 10, 32)
 				if err != nil || length < 0 {
-					return fmt.Errorf("line %d: bad locator %q", lineno, token)
+					return badmtxtErrorf("line %d: bad locator %q", lineno, token)
 				}
 				streamoffset = append(streamoffset, streamoffset[len(segments)]+int64(length))
 				segments = append(segments, storedSegment{
@@ -1830,20 +1837,20 @@ func (dn *dirnode) loadManifest(txt string) error {
 				})
 				continue
 			} else if len(segments) == 0 {
-				return fmt.Errorf("line %d: bad locator %q", lineno, token)
+				return badmtxtErrorf("line %d: bad locator %q", lineno, token)
 			}
 			if splitToToks(token, ':', toks) != 3 {
-				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
+				return badmtxtErrorf("line %d: bad file segment %q", lineno, token)
 			}
 			anyFileTokens = true
 
 			offset, err := strconv.ParseInt(string(toks[0]), 10, 64)
 			if err != nil || offset < 0 {
-				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
+				return badmtxtErrorf("line %d: bad file segment %q", lineno, token)
 			}
 			length, err := strconv.ParseInt(string(toks[1]), 10, 64)
 			if err != nil || length < 0 {
-				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
+				return badmtxtErrorf("line %d: bad file segment %q", lineno, token)
 			}
 			fnode, cached := fnodeCache[string(toks[2])]
 			if !cached {
@@ -1855,14 +1862,14 @@ func (dn *dirnode) loadManifest(txt string) error {
 				}
 				fnode, err = dn.createFileAndParents(pathparts)
 				if err != nil {
-					return fmt.Errorf("line %d: cannot use name %q with length %d: %s", lineno, toks[2], length, err)
+					return badmtxtErrorf("line %d: cannot use name %q with length %d: %s", lineno, toks[2], length, err)
 				}
 				fnodeCache[string(toks[2])] = fnode
 			}
 			if fnode == nil {
 				// name matches an existing directory
 				if length != 0 {
-					return fmt.Errorf("line %d: cannot use name %q with length %d: is a directory", lineno, toks[2], length)
+					return badmtxtErrorf("line %d: cannot use name %q with length %d: is a directory", lineno, toks[2], length)
 				}
 				// Special case: an empty file used as
 				// a marker to preserve an otherwise
@@ -1913,15 +1920,15 @@ func (dn *dirnode) loadManifest(txt string) error {
 				})
 			}
 			if segIdx == len(segments) && streamoffset[segIdx] < offset+length {
-				return fmt.Errorf("line %d: invalid segment in %d-byte stream: %q", lineno, streamoffset[segIdx], token)
+				return badmtxtErrorf("line %d: invalid segment in %d-byte stream: %q", lineno, streamoffset[segIdx], token)
 			}
 		}
 		if !anyFileTokens {
-			return fmt.Errorf("line %d: no file segments", lineno)
+			return badmtxtErrorf("line %d: no file segments", lineno)
 		} else if len(segments) == 0 {
-			return fmt.Errorf("line %d: no locators", lineno)
+			return badmtxtErrorf("line %d: no locators", lineno)
 		} else if streamparts == 0 {
-			return fmt.Errorf("line %d: no stream name", lineno)
+			return badmtxtErrorf("line %d: no stream name", lineno)
 		}
 	}
 	return nil

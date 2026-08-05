@@ -5,6 +5,7 @@
 import ciso8601
 import copy
 import datetime
+import errno
 import os
 import random
 import re
@@ -614,8 +615,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertIs(c.find("."), c)
         self.assertIs(c.find("./count1.txt"), c["count1.txt"])
         self.assertIs(c.find("count1.txt"), c["count1.txt"])
-        with self.assertRaises(IOError):
+        with self.assertRaises(IOError) as exc_cm:
             c.find("/.")
+        self.assertEqual(exc_cm.exception.errno, errno.ENOTDIR)
         with self.assertRaises(arvados.errors.ArgumentError):
             c.find("")
         self.assertIs(c.find("./nonexistant.txt"), None)

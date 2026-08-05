@@ -16,7 +16,7 @@ from . import run_test_server
 from . import arvados_testutil as tutil
 from .arvados_testutil import str_keep_locator, redirected_streams, StringIO
 
-class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
+class ArvLsTestCase(run_test_server.TestCaseWithServers):
     FAKE_UUID = 'zzzzz-4zz18-12345abcde12345'
 
     def newline_join(self, seq):
@@ -40,7 +40,9 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
     def run_ls(self, args, api_client, logger=None):
         self.stdout = StringIO()
         self.stderr = StringIO()
-        return arv_ls.main(args, self.stdout, self.stderr, api_client, logger)
+        with self.assertRaises(SystemExit) as cm:
+            arv_ls.main(args, self.stdout, self.stderr, api_client, logger)
+        return cm.exception.code
 
     def test_plain_listing(self):
         collection, api_client = self.mock_api_for_manifest(
@@ -85,11 +87,3 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
             arv_error.NotFoundError)
         self.assertNotEqual(0, self.run_ls([self.FAKE_UUID], api_client, logger))
         self.assertEqual(1, error_mock.call_count)
-
-    def test_version_argument(self):
-        import warnings
-        warnings.simplefilter("ignore")
-        with redirected_streams(stdout=StringIO, stderr=StringIO) as (out, err):
-            with self.assertRaises(SystemExit):
-                self.run_ls(['--version'], None)
-        self.assertVersionOutput(out, err)

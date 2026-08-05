@@ -33,7 +33,7 @@ h3. Example: Accessing past versions of a collection
 To request a particular collection with all its versions you should request a list filtering the current version's UUID and passing the @include_old_versions@ query parameter. For example, using the @arv@ command line client:
 
 <pre>
-$ arv collection index --filters '[["current_version_uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"]]' --include-old-versions
+$ arv collection list --filters '[["current_version_uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"]]' --include-old-versions
 {
  "items":[
   {
@@ -58,7 +58,7 @@ $ arv collection index --filters '[["current_version_uuid", "=", "o967z-4zz18-yn
 To access a specific collection version using filters:
 
 <pre>
-$ arv collection index --filters '[["current_version_uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"], ["version", "=", 1]]' --include-old-versions
+$ arv collection list --filters '[["current_version_uuid", "=", "o967z-4zz18-ynmlhyjbg1arnr2"], ["version", "=", 1]]' --include-old-versions
 {
  "items":[
   {
