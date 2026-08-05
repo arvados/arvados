@@ -117,7 +117,7 @@ def test_csv_report(set_today, mock_arv_client, tmp_path):
         mock_arv_client,
         None,
     )
-    with (tmp_path / 'actual_report.csv').open('w+') as out_file:
+    with (tmp_path / 'test_report.csv').open('w+') as out_file:
         report.csv_report(out_file, columns=None, include_steps=True)
         out_file.seek(0)
         actual = out_file.read()
@@ -137,5 +137,5 @@ def test_html_report(set_today, mock_arv_client, tmp_path):
         prom_client,
     )
     actual = report.html_report()
-    (tmp_path / 'actual_report.html').write_text(actual)
+    (tmp_path / 'test_report.html').write_text(actual)
     assert actual == pathlib.Path('tests', 'test_report.html').read_text()
