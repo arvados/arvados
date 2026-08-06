@@ -177,6 +177,8 @@ fi
 
 PYTHON_BUILD_FAILURES=0
 if [ $PYTHON -eq 1 ]; then
+  debug_echo "Setting up Python build environment"
+  setup_build_virtualenv && . "$PYTHON_BUILDROOT/venv/bin/activate"
   debug_echo "Building Python packages"
   python_wrapper arvados-python-client "$WORKSPACE/sdk/python"
   python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"

@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 #
-# Python requirements for run-build-packages
+# Python requirements for run-build-packages*.sh
 
 -r requirements.build.txt
 
 piprepo
+twine

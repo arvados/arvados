@@ -634,7 +634,7 @@ handle_arvados_src () {
 setup_build_virtualenv() {
     PYTHON_BUILDROOT="$(mktemp --directory --tmpdir pybuild.XXXXXXXX)" &&
         mkdir "$PYTHON_BUILDROOT/wheelhouse" &&
-        "$PYTHON3_EXECUTABLE" -m venv "$PYTHON_BUILDROOT/venv" &&
+        "${PYTHON3_EXECUTABLE:-python3}" -m venv "$PYTHON_BUILDROOT/venv" &&
         "$PYTHON_BUILDROOT/venv/bin/pip" install -r "$WORKSPACE/build/requirements.build-packages.txt"
 }
 
