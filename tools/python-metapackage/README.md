@@ -9,7 +9,8 @@ SPDX-License-Identifier: Apache-2.0 -->
 This is a metapackage that lets you install all of the Python client tools for [Arvados][] in one simple command. It's intended for users setting up an interactive environment. It provides:
 
 * the [Arvados Python SDK](https://doc.arvados.org/sdk/python/api-client.html)
-* command line tools to work with collections and projects: [`arv-ls`, `arv-get`](https://doc.arvados.org/user/tutorials/tutorial-keep-get.html#download-using-arv), [`arv-put`](https://doc.arvados.org/user/tutorials/tutorial-keep.html#upload-using-command), [`arv-copy`](https://doc.arvados.org/user/topics/arv-copy.html), and [`arv-mount`](https://doc.arvados.org/user/tutorials/tutorial-keep-mount-gnu-linux.html)
+* the [`arv` command line tool](https://doc.arvados.org/sdk/python/arv-cli.html) to work with projects and collections
+* the [`arv-mount` tool](https://doc.arvados.org/user/tutorials/tutorial-keep-mount-gnu-linux.html) to mount projects and collections on your filesystem
 * Common Workflow Language (CWL) runners [`arvados-cwl-runner`](https://doc.arvados.org/user/cwl/cwl-runner.html) and the reference implementation [`cwltool`](https://pypi.org/project/cwltool/) that it's based on
 * reporting tools for [workflow performance](https://doc.arvados.org/user/cwl/crunchstat-summary.html), [cluster activity](https://doc.arvados.org/user/cwl/costanalyzer.html), and [user activity](https://doc.arvados.org/admin/user-activity.html)
 
