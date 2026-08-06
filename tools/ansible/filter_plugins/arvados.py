@@ -58,12 +58,12 @@ _RHEL_BASE: PackageMapping = {
 # Versions of RHEL we support and their version-specific package translations.
 _RHEL_VERSIONS: t.Dict[str, PackageMapping] = {
     '8': _RHEL_BASE | {
-        'python3-dev': ['python3.11-devel'],
-        'python3-venv': ['python3.11'],
+        'python3-dev': ['python3.12-devel'],
+        'python3-venv': ['python3.12'],
     },
     '9': _RHEL_BASE | {
-        'python3-dev': ['python3.11-devel'],
-        'python3-venv': ['python3.11'],
+        'python3-dev': ['python3.12-devel'],
+        'python3-venv': ['python3.12'],
     },
     '10': _RHEL_BASE,
 }

@@ -66,7 +66,7 @@ Arvados publishes packages for Debian 12 "bookworm," Ubuntu 22.04 "jammy," and U
 Installing on Red Hat, AlmaLinux, and Rocky Linux
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Arvados publishes packages for RHEL 8 and 9, as well as distributions based on those. Note that these packages depend on, and will automatically enable, the Python 3.11 module. You can install the Python SDK package on any of these distributions by running the following commands::
+Arvados publishes packages for RHEL 8, 9, and 10, as well as distributions based on those. Note that these packages depend on Python 3.12. You can install the Python SDK package on any of these distributions by running the following commands::
 
   sudo tee /etc/yum.repos.d/arvados.repo >/dev/null <<'EOF'
   [arvados]
