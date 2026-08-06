@@ -7,7 +7,7 @@ import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { CollectionResource } from 'models/collection';
 import { RootState } from "store/store";
-import { toggleResourceTrashed } from "store/trash/trash-actions";
+import { openTrashConfirmDialog } from "store/trash/trash-actions";
 import { getTrashPanelTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import {
     getResource,
@@ -92,7 +92,7 @@ export const ResourceRestore = connect((state: RootState, props: { uuid: string;
             style={{ padding: '0' }}
             onClick={() => {
                 if (resource && props.dispatch) {
-                    props.dispatch(toggleResourceTrashed(
+                    props.dispatch(openTrashConfirmDialog(
                         [resource.uuid],
                         resource.isTrashed
                     ));
