@@ -134,11 +134,8 @@ fi
 #   packages. This should match distro convention.
 PYTHON3_PKG_PREFIX=python3
 case "$TARGET" in
-    rocky9)
-        FORMAT=rpm
-        PYTHON3_VERSION=3.11
-        ;;
-    centos*|rocky*)
+    rocky*)
+        PYTHON3_VERSION=3.12
         FORMAT=rpm
         ;;
     debian*|ubuntu*)
