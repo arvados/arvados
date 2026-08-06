@@ -32,6 +32,10 @@ h2(#main). development main
 
 "previous: Upgrading to 3.2.1":#v3_2_1
 
+h3. RPMs now require Red Hat/AlmaLinux/Rocky Linux 8.10 or 9.5 or later
+
+Our packages for Red Hat/AlmaLinux/Rocky Linux 8 now depend on appstreams in version 8.10. Our packages for Red Hat/AlmaLinux/Rocky Linux 9 now depend on appstreams in version 9.5. Please make sure you are running at least that version of your distribution before you upgrade to Arvados 3.3.0. If not, you should follow your distributor's instructions to upgrade from your current release before you upgrade Arvados.
+
 h3. @CUDA@ configuration in @InstanceTypes@ is no longer supported
 
 Arvados 3.1 introduced general "GPU" instance type settings and runtime constraints to replace vendor-specific "CUDA" settings. To support new cloud dispatch features, Arvados 3.3 removes support for the old @CUDA@ configuration sections of the cluster's configured @InstanceTypes@. Before you upgrade to Arvados 3.3, "update your cluster's configured @InstanceTypes@ with @GPU@ sections":#v3_1_0_instance_type_cuda. Make sure that each @GPU@ section has an accurate @VRAM@ setting. Without this, the cloud dispatcher may not consider your instance types suitable for GPU-accelerated workflows. You can update and test your current configuration before you start with the rest of your upgrade planning.
