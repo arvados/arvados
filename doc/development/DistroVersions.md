@@ -17,6 +17,7 @@ For RHEL releases, this table shows the *latest* version available from AppStrea
 | RHEL 9.5 with AppStreams  | November 2024 | 16.8       | 3.12.5  | 3.3.8 |
 | RHEL 10.0 with AppStreams | May 2025      | 16.8       | 3.12.9  | 3.3.8 |
 | Debian 13 “trixie”        | August 2025   | 17.5       | 3.13.3  | 3.3.8 |
+| Ubuntu 26.04 “resolute”   | April 2026    | 18.4       | 3.14.3  | 3.3.8 |
 
 ## For Arvados 3.2.x
 

@@ -24,6 +24,7 @@ _PACKAGE_NAMES_MAP: t.Dict[DistroID, PackageMapping] = {
     ('Debian', '13'): {},
     ('Ubuntu', '22'): {},
     ('Ubuntu', '24'): {},
+    ('Ubuntu', '26'): {},
 }
 # Unversioned package translation table for RHEL-based distributions.
 _RHEL_BASE: PackageMapping = {

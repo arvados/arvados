@@ -18,12 +18,18 @@ arvados_build_one_target:
     arvados_pkgbuild_debian12:
       arvados_docker_from: debian:12-slim
       arvados_docker_tag: arvados/build:debian12
+    arvados_pkgbuild_debian13:
+      arvados_docker_from: debian:13-slim
+      arvados_docker_tag: arvados/build:debian13
     arvados_pkgbuild_ubuntu2204:
       arvados_docker_from: ubuntu:jammy
       arvados_docker_tag: arvados/build:ubuntu2204
     arvados_pkgbuild_ubuntu2404:
       arvados_docker_from: ubuntu:noble
       arvados_docker_tag: arvados/build:ubuntu2404
+    arvados_pkgbuild_ubuntu2604:
+      arvados_docker_from: ubuntu:resolute
+      arvados_docker_tag: arvados/build:ubuntu2604
     arvados_pkgbuild_rocky8:
       ansible_python_interpreter: /usr/libexec/platform-python
       arvados_docker_from: rockylinux:8-minimal
@@ -43,12 +49,18 @@ arvados_package_tests:
     arvados_pkgtest_debian12:
       arvados_docker_from: debian:12-slim
       arvados_docker_tag: arvados/package-test:debian12
+    arvados_pkgtest_debian13:
+      arvados_docker_from: debian:13-slim
+      arvados_docker_tag: arvados/package-test:debian13
     arvados_pkgtest_ubuntu2204:
       arvados_docker_from: ubuntu:jammy
       arvados_docker_tag: arvados/package-test:ubuntu2204
     arvados_pkgtest_ubuntu2404:
       arvados_docker_from: ubuntu:noble
       arvados_docker_tag: arvados/package-test:ubuntu2404
+    arvados_pkgtest_ubuntu2604:
+      arvados_docker_from: ubuntu:resolute
+      arvados_docker_tag: arvados/package-test:ubuntu2604
     arvados_pkgtest_rocky8:
       ansible_python_interpreter: /usr/libexec/platform-python
       arvados_docker_from: rockylinux:8-minimal
