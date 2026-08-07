@@ -1114,6 +1114,8 @@ class TestEditingSubcommands:
         run_test_server.reset()
 
     def test_bad_editor(self, monkeypatch, run_arvcli, tmp_path):
+        monkeypatch.delenv("VISUAL", raising=False)
+        monkeypatch.delenv("EDITOR", raising=False)
         monkeypatch.setenv("PATH", str(tmp_path))
 
         exit_code, out, err = run_arvcli(["create", "group"])
