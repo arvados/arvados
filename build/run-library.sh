@@ -451,8 +451,10 @@ test_package_presence() {
       local codename
       case "$TARGET" in
           debian12) codename=bookworm ;;
+          debian13) codename=trixie ;;
           ubuntu2204) codename=jammy ;;
           ubuntu2404) codename=noble ;;
+          ubuntu2604) codename=resolute ;;
           *)
               echo "FIXME: Don't know deb URL path for $TARGET, building"
               return 0
