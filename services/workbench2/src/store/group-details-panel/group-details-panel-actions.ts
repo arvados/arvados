@@ -53,7 +53,7 @@ export const editPermissionLevel = (uuid: string, level: PermissionLevel) =>
         try {
             const permission = await permissionService.update(uuid, {name: level});
             dispatch(updateResources([permission]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Permission level changed.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Permission level changed.', hideDuration: 8000 }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: 'Failed to update permission',
@@ -96,7 +96,7 @@ export const removeGroupMember = (uuid: string) =>
         dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
         dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
     };
 
 export const openRemoveCheckedGroupMembersDialog = () =>
@@ -133,7 +133,7 @@ export const removeMultipleGroupMembers = () =>
         dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
         dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
     };
 
 export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: string, visible: boolean) =>
@@ -148,7 +148,7 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
                 dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed read permission.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS,
                 }));
             } catch (e) {
@@ -169,7 +169,7 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
                 dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Created read permission.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS,
                 }));
             } catch(e) {

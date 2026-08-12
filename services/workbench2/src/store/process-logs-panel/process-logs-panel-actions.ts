@@ -71,10 +71,10 @@ export const initProcessLogsPanel = (processUuid: string) =>
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
             // Only show toast on errors other than 404 since 404 is expected when logs do not exist yet
             if (e.status !== 404) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Error loading process logs', hideDuration: 4000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Error loading process logs', hideDuration: 10000, kind: SnackbarKind.ERROR }));
             }
             if (e.status === 404 && process?.containerRequest.state === ContainerRequestState.FINAL) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Log collection was trashed or deleted.', hideDuration: 4000, kind: SnackbarKind.WARNING }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Log collection was trashed or deleted.', hideDuration: 10000, kind: SnackbarKind.WARNING }));
             }
         }
     };
@@ -355,7 +355,7 @@ export const navigateToLogCollection = (uuid: string) =>
             await services.collectionService.get(uuid);
             dispatch<any>(navigateTo(uuid));
         } catch {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Log collection was trashed or deleted.', hideDuration: 4000, kind: SnackbarKind.WARNING }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Log collection was trashed or deleted.', hideDuration: 10000, kind: SnackbarKind.WARNING }));
         }
     };
 

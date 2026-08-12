@@ -63,7 +63,7 @@ export const createCollection = (data: CollectionCreateFormDialogData, setSubmit
                     : 'There was an error while creating the collection';
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: errMsg,
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR
                 }));
                 if (newCollection) { await services.collectionService.delete(newCollection.uuid); }

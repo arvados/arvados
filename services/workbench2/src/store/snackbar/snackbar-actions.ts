@@ -25,9 +25,9 @@ export const snackbarActions = unionize({
 });
 
 export const showSuccessSnackbar = (message: string) =>
-    snackbarActions.OPEN_SNACKBAR({ message, hideDuration: 2000, kind: SnackbarKind.SUCCESS });
+    snackbarActions.OPEN_SNACKBAR({ message, hideDuration: 8000, kind: SnackbarKind.SUCCESS });
 
 export const showErrorSnackbar = (message: string) =>
-    snackbarActions.OPEN_SNACKBAR({ message, hideDuration: 4000, kind: SnackbarKind.ERROR });
+    snackbarActions.OPEN_SNACKBAR({ message, hideDuration: 10000, kind: SnackbarKind.ERROR });
 
 export type SnackbarAction = UnionOf<typeof snackbarActions>;

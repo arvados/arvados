@@ -95,14 +95,14 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Files have been moved to selected collection.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move files to selected collection', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
@@ -159,16 +159,16 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Files have been moved to selected collection.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE, hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
@@ -221,19 +221,19 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'New collections created.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));

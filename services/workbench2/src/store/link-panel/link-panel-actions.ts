@@ -50,7 +50,7 @@ export const removeLink = (uuid: string) =>
         try {
             await services.linkService.delete(uuid);
             dispatch(linkPanelActions.REQUEST_ITEMS());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Link has been successfully removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Link has been successfully removed.', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             return;
         }

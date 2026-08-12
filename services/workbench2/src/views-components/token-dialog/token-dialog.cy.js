@@ -92,7 +92,7 @@ describe('<CurrentTokenDialog />', () => {
       cy.get('button').contains('Copy').click();
       cy.get('@dispatch').should('be.calledWith', {
         payload: {
-          hideDuration: 2000,
+          hideDuration: 8000,
           kind: 1,
           message: 'Shell code block copied',
         },

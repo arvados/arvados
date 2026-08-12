@@ -33,7 +33,7 @@ export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispa
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Copied",
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -50,7 +50,7 @@ export const copyStringToClipboardAction = (string: string) => (dispatch: Dispat
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Copied",
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -58,7 +58,7 @@ export const copyStringToClipboardAction = (string: string) => (dispatch: Dispat
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Failed to copy",
-                hideDuration: 2000,
+                hideDuration: 10000,
                 kind: SnackbarKind.ERROR,
             })
         );

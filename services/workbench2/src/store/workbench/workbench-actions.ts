@@ -126,7 +126,7 @@ export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<an
     } catch (e) {
         snackbarActions.OPEN_SNACKBAR({
             message: "Error " + e,
-            hideDuration: 8000,
+            hideDuration: 10000,
             kind: SnackbarKind.WARNING,
         })
     } finally {
@@ -307,7 +307,7 @@ export const createProjectRunner = (data: projectCreateActions.ProjectCreateForm
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Project has been successfully created.",
-                hideDuration: 2000,
+                hideDuration: 6000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -356,7 +356,7 @@ export const moveProjectRunner =
                         dispatch(
                             snackbarActions.OPEN_SNACKBAR({
                                 message: "Project has been moved",
-                                hideDuration: 2000,
+                                hideDuration: 8000,
                                 kind: SnackbarKind.SUCCESS,
                             })
                         );
@@ -366,7 +366,7 @@ export const moveProjectRunner =
                     dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: !!(project as any).frozenByUuid ? 'Could not move frozen project.' : e.message,
-                            hideDuration: 2000,
+                            hideDuration: 10000,
                             kind: SnackbarKind.ERROR,
                         })
                     );
@@ -384,7 +384,7 @@ export const updateProjectRunner = (data: projectUpdateActions.ProjectUpdateForm
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Project has been successfully updated.",
-                hideDuration: 2000,
+                hideDuration: 6000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -399,7 +399,7 @@ export const updateGroupRunner = (data: projectUpdateActions.ProjectUpdateFormDi
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Group has been successfully updated.",
-                hideDuration: 2000,
+                hideDuration: 6000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -461,7 +461,7 @@ export const createCollectionRunner = (data: collectionCreateActions.CollectionC
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully created.",
-                hideDuration: 2000,
+                hideDuration: 6000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -500,7 +500,7 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: "Collection has been copied.",
-                        hideDuration: 3000,
+                        hideDuration: 8000,
                         kind: SnackbarKind.SUCCESS,
                         link: newCollection.ownerUuid,
                     })
@@ -513,7 +513,7 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: "A collection with the same name already exists in the target project.",
-                        hideDuration: 3000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 );
@@ -521,7 +521,7 @@ export const copyCollectionRunner = (data: CopyFormDialogData) => async (dispatc
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: e.message,
-                        hideDuration: 2000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 )
@@ -573,7 +573,7 @@ export const moveCollectionRunner =
                     dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: "Collection has been moved.",
-                            hideDuration: 2000,
+                            hideDuration: 8000,
                             kind: SnackbarKind.SUCCESS,
                         })
                     );
@@ -581,7 +581,7 @@ export const moveCollectionRunner =
                     dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: e.message,
-                            hideDuration: 2000,
+                            hideDuration: 10000,
                             kind: SnackbarKind.ERROR,
                         })
                     );
@@ -649,7 +649,7 @@ export const updateProcessRunner = (data: processUpdateActions.ProcessUpdateForm
             dispatch(
                 snackbarActions.OPEN_SNACKBAR({
                     message: "Process has been successfully updated.",
-                    hideDuration: 2000,
+                    hideDuration: 6000,
                     kind: SnackbarKind.SUCCESS,
                 })
             );
@@ -660,7 +660,7 @@ export const updateProcessRunner = (data: processUpdateActions.ProcessUpdateForm
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: e.message,
-                hideDuration: 2000,
+                hideDuration: 10000,
                 kind: SnackbarKind.ERROR,
             })
         );
@@ -675,7 +675,7 @@ export const copyProcessRunner = (data: CopyFormDialogData) => async (dispatch: 
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Process has been copied.",
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS,
             })
         );
@@ -684,7 +684,7 @@ export const copyProcessRunner = (data: CopyFormDialogData) => async (dispatch: 
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
                 message: e.message,
-                hideDuration: 2000,
+                hideDuration: 10000,
                 kind: SnackbarKind.ERROR,
             })
         );

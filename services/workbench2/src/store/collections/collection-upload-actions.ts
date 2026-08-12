@@ -37,14 +37,14 @@ export const submitCollectionFiles = (targetLocation?: string) =>
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Data has been uploaded.',
-                    hideDuration: 2000,
+                    hideDuration: 6000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Error uploading file(s). See console for details.',
-                    hideDuration: 4000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR
                 }));
             } finally {

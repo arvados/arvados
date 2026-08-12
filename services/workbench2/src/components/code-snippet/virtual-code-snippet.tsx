@@ -74,7 +74,7 @@ const mapDispatchToProps = (dispatch: Dispatch): CodeSnippetActionProps => ({
         dispatch<any>(
             snackbarActions.OPEN_SNACKBAR({
                 message: "Contents copied to clipboard",
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS,
             })
         );

@@ -52,7 +52,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                     message: isFavorite
                         ? "Removed from favorites"
                         : "Added to favorites",
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
                 dispatch<any>(favoritePinsActions.REQUEST_ITEMS());

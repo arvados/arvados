@@ -49,7 +49,7 @@ export const restoreVersion = (resourceUuid: string) =>
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `Couldn't restore version: ${e.errors[0]}`,
-                hideDuration: 2000,
+                hideDuration: 10000,
                 kind: SnackbarKind.ERROR
             }));
         }

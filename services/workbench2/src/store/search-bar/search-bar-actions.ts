@@ -124,11 +124,11 @@ const saveQuery = (data: SearchBarAdvancedFormData) =>
             if (filteredQuery) {
                 services.searchService.editSavedQueries(data);
                 dispatch(searchBarActions.UPDATE_SAVED_QUERY(savedQueries));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully updated', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully updated', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
             } else {
                 services.searchService.saveQuery(data);
                 dispatch(searchBarActions.SET_SAVED_QUERIES(savedQueries));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully saved', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Query has been successfully saved', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
             }
         }
     };

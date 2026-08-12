@@ -22,7 +22,7 @@ export const freezeProject = (uuid: string) => async (dispatch: Dispatch, getSta
         });
     } catch (e) {
         console.error(e);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not freeze project', hideDuration: 4000, kind: SnackbarKind.ERROR }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not freeze project', hideDuration: 10000, kind: SnackbarKind.ERROR }));
     }
 
     dispatch(projectPanelDataActions.REQUEST_ITEMS());

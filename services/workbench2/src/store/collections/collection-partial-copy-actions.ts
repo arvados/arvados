@@ -93,19 +93,19 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'New collection created.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection with this name already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection with this name already exists', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
@@ -161,15 +161,15 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: 'Files has been copied to selected collection.',
-                    hideDuration: 2000,
+                    message: 'Files have been copied to selected collection.',
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
@@ -216,19 +216,19 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'New collections created.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 } else {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 10000, kind: SnackbarKind.ERROR }));
                 }
             } finally {
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));

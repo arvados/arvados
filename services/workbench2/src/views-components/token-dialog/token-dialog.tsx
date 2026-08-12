@@ -58,7 +58,7 @@ export class TokenDialogComponent extends React.Component<TokenDialogProps> {
     onCopy = (message: string) => {
         this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
             message,
-            hideDuration: 2000,
+            hideDuration: 8000,
             kind: SnackbarKind.SUCCESS
         }));
     }
@@ -68,13 +68,13 @@ export class TokenDialogComponent extends React.Component<TokenDialogProps> {
         if (newToken) {
             this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: 'New token retrieved',
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS
             }));
         } else {
             this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: 'Creating new tokens is not allowed',
-                hideDuration: 2000,
+                hideDuration: 10000,
                 kind: SnackbarKind.WARNING
             }));
         }

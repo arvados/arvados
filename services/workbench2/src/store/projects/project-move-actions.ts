@@ -42,9 +42,9 @@ export const moveProject = (resource: MoveToFormDialogData) => async (dispatch: 
     } catch (e) {
         const error = getCommonResourceServiceError(e);
         if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "A project with the same name already exists in the target project.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "A project with the same name already exists in the target project.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
         } else if (error === CommonResourceServiceError.OWNERSHIP_CYCLE) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Cannot move a project into itself or one of its sub-projects.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Cannot move a project into itself or one of its sub-projects.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
         } else {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
             throw new Error(`Could not move the project: ${e instanceof Error ? e.message : "Unknown error."}`);

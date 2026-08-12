@@ -51,7 +51,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData, set
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Collection has been successfully updated.",
-                hideDuration: 2000,
+                hideDuration: 6000,
                 kind: SnackbarKind.SUCCESS
             }));
             dispatch<any>(updateResources([updatedCollection]));
@@ -64,7 +64,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData, set
                 setSubmitErr('Collection with the same name already exists.');
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Collection with the same name already exists.',
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR
                 }));
             } else {
@@ -75,7 +75,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData, set
                 setSubmitErr(errMsg);
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: errMsg,
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR }));
                 }
             }

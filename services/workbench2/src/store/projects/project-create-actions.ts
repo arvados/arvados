@@ -70,7 +70,7 @@ export const createProject = (project: Partial<ProjectResource>, setSubmitErr: (
                     : 'There was an error while creating the project.';
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: errMsg,
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR
                 }));
             }

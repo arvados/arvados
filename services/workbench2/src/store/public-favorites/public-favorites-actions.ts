@@ -48,7 +48,7 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
                     message: isPublicFavorite
                         ? "Removed from public favorites"
                         : "Added to public favorites",
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
                 dispatch<any>(removeDisabledButton(ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES))

@@ -63,9 +63,9 @@ export const deleteResourceProperty = (uuid: string, key: string, value: string)
                 });
             updatedRsc = {...rsc, ...updatedRsc};
             dispatch<any>(updateResources([updatedRsc]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 6000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -92,10 +92,10 @@ export const createResourceProperty = (data: TagProperty) =>
             );
             updatedRsc = {...rsc, ...updatedRsc};
             dispatch<any>(updateResources([updatedRsc]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 6000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             const errorMsg = e.errors && e.errors.length > 0 ? e.errors[0] : "Error while adding property";
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: errorMsg, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: errorMsg, hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 

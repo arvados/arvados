@@ -65,7 +65,7 @@ export const updateProject =
                 setSubmitErr("Project with the same name already exists.");
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: "Project with the same name already exists.",
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR,
                 }));
             } else {
@@ -74,7 +74,7 @@ export const updateProject =
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: errMsg,
-                        hideDuration: 2000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 );

@@ -81,13 +81,13 @@ export const createSharingToken = (expDate: Date | undefined) => async (dispatch
                 dispatch(resourcesActions.SET_RESOURCES([sharingToken]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Sharing URL created',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS,
                 }));
             } catch (e) {
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Failed to create sharing URL',
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR,
                 }));
             } finally {
@@ -104,13 +104,13 @@ export const deleteSharingToken = (uuid: string) => async (dispatch: Dispatch, g
         dispatch(resourcesActions.DELETE_RESOURCES([uuid]));
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message: 'Sharing URL removed',
-            hideDuration: 2000,
+            hideDuration: 8000,
             kind: SnackbarKind.SUCCESS,
         }));
     } catch (e) {
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message: 'Failed to remove sharing URL',
-            hideDuration: 2000,
+            hideDuration: 10000,
             kind: SnackbarKind.ERROR,
         }));
     } finally {
@@ -135,7 +135,7 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: 'You do not have access to share this item',
-                hideDuration: 2000,
+                hideDuration: 10000,
                 kind: SnackbarKind.ERROR
             }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: SHARING_DIALOG_NAME }));

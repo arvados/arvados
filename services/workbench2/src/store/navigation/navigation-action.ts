@@ -16,7 +16,7 @@ import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL, INSTANCE_TYPES_PANEL_LABEL, 
 export const navigationNotAvailable = (id: string) =>
     snackbarActions.OPEN_SNACKBAR({
         message: `${id} not available`,
-        hideDuration: 3000,
+        hideDuration: 10000,
         kind: SnackbarKind.ERROR,
     });
 
