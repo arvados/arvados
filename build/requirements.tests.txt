@@ -20,7 +20,7 @@ pytest
 
 ### Requirements for individual tests
 # Run by CWL integration tests
-cwltest >= 2.5.20241122133319, < 3.0
+cwltest >= 2.7.20260814074913, < 3.0
 
 # Required to build Python SDK documentation
 pdoc ~= 16.0
