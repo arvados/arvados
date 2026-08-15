@@ -875,7 +875,6 @@ class TestContainer(unittest.TestCase):
                         "p1": {
                             "basename": "99999999999999999999999999999994+44",
                             "class": "Directory",
-                            "dirname": "/keep",
                             "http://arvados.org/cwl#collectionUUID": "zzzzz-4zz18-zzzzzzzzzzzzzzz",
                             "listing": [
                                 {

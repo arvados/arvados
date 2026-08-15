@@ -14,8 +14,8 @@ setuptools.setup(
     cmdclass=arvados_version['CMDCLASS'],
     install_requires=[
         *arv_mod.iter_dependencies(version=version),
-        'cwltool == 3.2.20260413085819',
-        'schema-salad == 8.9.20260417192335',
+        'cwltool == 3.2.20260720092025',
+        'schema-salad == 8.10.20260814121804',
         'ciso8601 >= 2.0.0',
         'packaging',
     ],
