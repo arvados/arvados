@@ -40,7 +40,7 @@ functionality in the Arvados platform from the command line.
 
 * *API and SDKs*: Arvados is designed to be integrated with existing infrastructure. All
 the services in Arvados are accessed through a RESTful API.  SDKs are
-available for Python, Go, R, Perl, Ruby, and Java.
+available for Python, Go, Ruby, Java, and R.
 
 # Documentation
 
