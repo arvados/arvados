@@ -26,10 +26,3 @@
     owner: root
     group: root
     mode: 0644
-
-- name: Add symlink from password_secret_connector service to arvados_aws_secret
-  become: yes
-  ansible.builtin.file:
-    state: link
-    src: /etc/systemd/system/arvados_aws_secret.service
-    dest: /etc/systemd/system/password_secret_connector.service
