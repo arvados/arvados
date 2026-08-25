@@ -3861,9 +3861,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cypress/request@npm:^3.0.0":
-  version: 3.0.9
-  resolution: "@cypress/request@npm:3.0.9"
+"@cypress/request@npm:^3.0.6":
+  version: 3.0.10
+  resolution: "@cypress/request@npm:3.0.10"
   dependencies:
     aws-sign2: ~0.7.0
     aws4: ^1.8.0
@@ -3878,12 +3878,12 @@ __metadata:
     json-stringify-safe: ~5.0.1
     mime-types: ~2.1.19
     performance-now: ^2.1.0
-    qs: 6.14.0
+    qs: ~6.14.1
     safe-buffer: ^5.1.2
     tough-cookie: ^5.0.0
     tunnel-agent: ^0.6.0
     uuid: ^8.3.2
-  checksum: d22327b6fc52c8c6bbfa82b3a5b40f890f869da615c0dd494b3bf2c016eb3b1875082b451571d6b109a84c7e73a5869e9a997cdb71716e46900f607002e6afd0
+  checksum: f1504a39421ea1102d1045a8c3c11f52867c3449547ff2282847324f1935b7d9ba62fd6d0fc788b689fe59b7a418420e0c9a76cebb82f5c7b6704dfce6f1859f
   languageName: node
   linkType: hard
 
@@ -5523,6 +5523,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/prop-types@npm:^15.7.3":
+  version: 15.7.15
+  resolution: "@types/prop-types@npm:15.7.15"
+  checksum: 31aa2f59b28f24da6fb4f1d70807dae2aedfce090ec63eaf9ea01727a9533ef6eaf017de5bff99fbccad7d1c9e644f52c6c2ba30869465dd22b1a7221c29f356
+  languageName: node
+  linkType: hard
+
 "@types/qs@npm:*":
   version: 6.9.15
   resolution: "@types/qs@npm:6.9.15"
@@ -5655,13 +5662,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/redux-devtools@npm:3.0.44":
-  version: 3.0.44
-  resolution: "@types/redux-devtools@npm:3.0.44"
+"@types/redux-devtools@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "@types/redux-devtools@npm:3.7.0"
   dependencies:
-    "@types/react": "*"
-    redux: ^3.6.0
-  checksum: 7d4af410a5fd0010c2c573d6355ed6abe76d7ec9643b03145bdda0f3cd7592158e9852626fcc7b4103e8e53a850dac2abf8e3979402e8bda4842bc813058bbd0
+    redux-devtools: "*"
+  checksum: 05dd743bbea925ebbb19b1ce1f08c8f06b686bef39c7bec77288b380f5a2c3a185c7b32c0c86d603b9b89eefff8165aaf281b92402781a0bbf7a9eac37aaaab4
   languageName: node
   linkType: hard
 
@@ -6673,7 +6679,7 @@ __metadata:
     "@types/react-router-redux": 5.0.16
     "@types/react-virtualized-auto-sizer": 1.0.0
     "@types/react-window": 1.8.2
-    "@types/redux-devtools": 3.0.44
+    "@types/redux-devtools": ^3.7.0
     "@types/redux-form": 7.4.12
     "@types/redux-mock-store": 1.0.2
     "@types/shell-escape": ^0.2.0
@@ -6755,7 +6761,7 @@ __metadata:
     react-virtualized-auto-sizer: 1.0.2
     react-window: 1.8.5
     redux: 4.0.3
-    redux-devtools: 3.4.1
+    redux-devtools: ^3.7.0
     redux-devtools-extension: ^2.13.9
     redux-form: ^8.3.10
     redux-mock-store: 1.5.4
@@ -7637,10 +7643,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ci-info@npm:^3.2.0":
-  version: 3.9.0
-  resolution: "ci-info@npm:3.9.0"
-  checksum: 6b19dc9b2966d1f8c2041a838217299718f15d6c4b63ae36e4674edd2bee48f780e94761286a56aa59eb305a85fbea4ddffb7630ec063e7ec7e7e5ad42549a87
+"ci-info@npm:^4.0.0":
+  version: 4.4.0
+  resolution: "ci-info@npm:4.4.0"
+  checksum: 3418954c9ca192d4ab7f88637835f8463a327dfcb1d9fdd2434f0aba2715d8b2b0e79fd1a4297cc4a35efc5728f8fd74f3b31cb741c948469a4c07dfe8df3675
   languageName: node
   linkType: hard
 
@@ -8469,10 +8475,10 @@ __metadata:
   linkType: hard
 
 "cypress@npm:^13.6.6":
-  version: 13.6.6
-  resolution: "cypress@npm:13.6.6"
+  version: 13.17.0
+  resolution: "cypress@npm:13.17.0"
   dependencies:
-    "@cypress/request": ^3.0.0
+    "@cypress/request": ^3.0.6
     "@cypress/xvfb": ^1.2.4
     "@types/sinonjs__fake-timers": 8.1.1
     "@types/sizzle": ^2.3.2
@@ -8483,6 +8489,7 @@ __metadata:
     cachedir: ^2.3.0
     chalk: ^4.1.0
     check-more-types: ^2.24.0
+    ci-info: ^4.0.0
     cli-cursor: ^3.1.0
     cli-table3: ~0.6.1
     commander: ^6.2.1
@@ -8497,7 +8504,6 @@ __metadata:
     figures: ^3.2.0
     fs-extra: ^9.1.0
     getos: ^3.2.1
-    is-ci: ^3.0.1
     is-installed-globally: ~0.4.0
     lazy-ass: ^1.6.0
     listr2: ^3.8.3
@@ -8511,12 +8517,13 @@ __metadata:
     request-progress: ^3.0.0
     semver: ^7.5.3
     supports-color: ^8.1.1
-    tmp: ~0.2.1
+    tmp: ~0.2.3
+    tree-kill: 1.2.2
     untildify: ^4.0.0
     yauzl: ^2.10.0
   bin:
     cypress: bin/cypress
-  checksum: 8a7db7d2941ea9fd698b9311b4f23fb6491038fe57e4c19b29a1ee58a25f9d98646674f876c1068a97428c2e81548bb0dd8701cd08e84c6b17ed75f9c2266908
+  checksum: c1d87358e8b92e19e3bf5246a8787dcdd5083e27fa7b816d26c28b4678ecd87b5b3b8661fb812bc993845ca30a482d3f18837af1ac6d9e142e41049dccbc51e0
   languageName: node
   linkType: hard
 
@@ -11611,17 +11618,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-ci@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "is-ci@npm:3.0.1"
-  dependencies:
-    ci-info: ^3.2.0
-  bin:
-    is-ci: bin.js
-  checksum: 192c66dc7826d58f803ecae624860dccf1899fc1f3ac5505284c0a5cf5f889046ffeb958fa651e5725d5705c5bcb14f055b79150ea5fcad7456a9569de60260e
-  languageName: node
-  linkType: hard
-
 "is-core-module@npm:^2.13.0, is-core-module@npm:^2.13.1":
   version: 2.13.1
   resolution: "is-core-module@npm:2.13.1"
@@ -12671,13 +12667,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash-es@npm:^4.2.1":
-  version: 4.17.21
-  resolution: "lodash-es@npm:4.17.21"
-  checksum: 05cbffad6e2adbb331a4e16fbd826e7faee403a1a04873b82b42c0f22090f280839f85b95393f487c1303c8a3d2a010048bf06151a6cbe03eee4d388fb0a12d2
-  languageName: node
-  linkType: hard
-
 "lodash.debounce@npm:^4.0.8":
   version: 4.0.8
   resolution: "lodash.debounce@npm:4.0.8"
@@ -12734,7 +12723,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.10, lodash@npm:^4.17.11, lodash@npm:^4.17.15, lodash@npm:^4.17.19, lodash@npm:^4.17.20, lodash@npm:^4.17.21, lodash@npm:^4.2.0, lodash@npm:^4.2.1, lodash@npm:~4.17.10":
+"lodash@npm:^4.17.10, lodash@npm:^4.17.11, lodash@npm:^4.17.15, lodash@npm:^4.17.19, lodash@npm:^4.17.20, lodash@npm:^4.17.21, lodash@npm:~4.17.10":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: eb835a2e51d381e561e508ce932ea50a8e5a68f4ebdd771ea240d3048244a8d13658acbd502cd4829768c56f2e16bdd4340b9ea141297d472517b83868e677f7
@@ -15249,7 +15238,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:15.7.2, prop-types@npm:^15.5.7, prop-types@npm:^15.5.8, prop-types@npm:^15.6.1, prop-types@npm:^15.6.2, prop-types@npm:^15.7.2":
+"prop-types@npm:15.7.2, prop-types@npm:^15.5.8, prop-types@npm:^15.6.1, prop-types@npm:^15.6.2, prop-types@npm:^15.7.2":
   version: 15.7.2
   resolution: "prop-types@npm:15.7.2"
   dependencies:
@@ -15321,12 +15310,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:6.14.0":
-  version: 6.14.0
-  resolution: "qs@npm:6.14.0"
+"qs@npm:~6.14.1":
+  version: 6.14.2
+  resolution: "qs@npm:6.14.2"
   dependencies:
     side-channel: ^1.1.0
-  checksum: 189b52ad4e9a0da1a16aff4c58b2a554a8dad9bd7e287c7da7446059b49ca2e33a49e570480e8be406b87fccebf134f51c373cbce36c8c83859efa0c9b71d635
+  checksum: e613d0b8d02cec33c20d1a6015ec2a5db614bf3dd2ffd9bde08bc34a76419213f291c91fb00519a3d8a74e4727f565b350f8394f9d381bc64e6da663d9e031d4
   languageName: node
   linkType: hard
 
@@ -15818,7 +15807,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"redux-devtools-instrument@npm:^1.0.1":
+"redux-devtools-instrument@npm:^1.10.0":
   version: 1.10.0
   resolution: "redux-devtools-instrument@npm:1.10.0"
   dependencies:
@@ -15830,18 +15819,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"redux-devtools@npm:3.4.1":
-  version: 3.4.1
-  resolution: "redux-devtools@npm:3.4.1"
+"redux-devtools@npm:*, redux-devtools@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "redux-devtools@npm:3.7.0"
   dependencies:
-    lodash: ^4.2.0
-    prop-types: ^15.5.7
-    redux-devtools-instrument: ^1.0.1
+    "@types/prop-types": ^15.7.3
+    lodash: ^4.17.19
+    prop-types: ^15.7.2
+    redux-devtools-instrument: ^1.10.0
   peerDependencies:
     react: ^0.14.9 || ^15.3.0 || ^16.0.0
-    react-redux: ^4.0.0 || ^5.0.0
-    redux: ^3.5.2
-  checksum: 6ef1b86c9d95fccd5365c133a85abcdef3f867aff015114c0f1bcd4b7ca3059ace53f33c07fb2fe44adcfbf9b57055067ab516df860fcc2633b1f99578a89ec9
+    react-redux: ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
+    redux: ^3.5.2 || ^4.0.0
+  checksum: 321c7499d0744cb5867fd0759fcdc845bdd30cb2aac740257f29e42c9582d967097f3648025a5e55509f42157f77b0ee7a8f7f4dd341f7bcee0b9c17255fd1fb
   languageName: node
   linkType: hard
 
@@ -15910,18 +15900,6 @@ __metadata:
   dependencies:
     "@babel/runtime": ^7.9.2
   checksum: 322d5f4b49cbbdb3f64f04e9279cabbdea9a698024b530dc98563eb598b6bd55ff8a715208e3ee09db9802a2f426c991c78906b1c6491ebb52e7310e55ee5cdf
-  languageName: node
-  linkType: hard
-
-"redux@npm:^3.6.0":
-  version: 3.7.2
-  resolution: "redux@npm:3.7.2"
-  dependencies:
-    lodash: ^4.2.1
-    lodash-es: ^4.2.1
-    loose-envify: ^1.1.0
-    symbol-observable: ^1.0.3
-  checksum: c349b77e68d009bc530d3cb6252a6a3e43e20a6e52f9483a048b24cd2f266d9bfa6f0bbd4769d40fe36795e2f7a7a884c3ddc92c13e82efd3328890f94821091
   languageName: node
   linkType: hard
 
@@ -17512,7 +17490,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"symbol-observable@npm:^1.0.3, symbol-observable@npm:^1.0.4, symbol-observable@npm:^1.2.0":
+"symbol-observable@npm:^1.0.4, symbol-observable@npm:^1.2.0":
   version: 1.2.0
   resolution: "symbol-observable@npm:1.2.0"
   checksum: 48ffbc22e3d75f9853b3ff2ae94a44d84f386415110aea5effc24d84c502e03a4a6b7a8f75ebaf7b585780bda34eb5d6da3121f826a6f93398429d30032971b6
@@ -17771,7 +17749,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tmp@npm:~0.2.1":
+"tmp@npm:~0.2.3":
   version: 0.2.7
   resolution: "tmp@npm:0.2.7"
   checksum: 45dec2fc288ad368eeff7268cb6d5d33452c6d35f4f7d9b1b5e023409a141dab57a3c08b5f505daf3af6d69667a5f544fc1a5b6a27c6f9396a5a1b4002912f1c
@@ -17830,6 +17808,15 @@ __metadata:
   version: 0.0.3
   resolution: "tr46@npm:0.0.3"
   checksum: 726321c5eaf41b5002e17ffbd1fb7245999a073e8979085dacd47c4b4e8068ff5777142fc6726d6ca1fd2ff16921b48788b87225cbc57c72636f6efa8efbffe3
+  languageName: node
+  linkType: hard
+
+"tree-kill@npm:1.2.2":
+  version: 1.2.2
+  resolution: "tree-kill@npm:1.2.2"
+  bin:
+    tree-kill: cli.js
+  checksum: 49117f5f410d19c84b0464d29afb9642c863bc5ba40fcb9a245d474c6d5cc64d1b177a6e6713129eb346b40aebb9d4631d967517f9fbe8251c35b21b13cd96c7
   languageName: node
   linkType: hard
 
