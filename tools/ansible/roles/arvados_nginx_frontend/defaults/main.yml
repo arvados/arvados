@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# If you set arvados_nginx_log_basename, the nginx frontend will have
+# access_log and error_log directives based on it. If those don't meet your
+# needs, set it to a falsy value and add your own directives to
+# arvados_nginx_server_config.
+arvados_nginx_log_basename: "arvados-{{ arvados_nginx_service_key }}"
+
 # arvados_nginx_proxy_config is an nginx configuration block that will be used
 # for all proxy front-ends. The default has standard configuration suitable for
 # all Arvados services.
