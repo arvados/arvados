@@ -263,7 +263,7 @@ Cypress.Commands.add("appendLog", (token, crUuid, fileName, lines = []) =>
                     return cy
                         .doWebDAVRequest("GET", `c=${filePath}`, null, null, token)
                         .then(({ body: contents }) =>
-                            cy.doWebDAVRequest("PUT", `c=${filePath}`, contents.split("\n").concat(lines).join("\n"), null, token)
+                            cy.doWebDAVRequest("PUT", `c=${filePath}`, (contents ?? "").split("\n").concat(lines).join("\n"), null, token)
                         );
                 } else {
                     // File not exists, put new file
