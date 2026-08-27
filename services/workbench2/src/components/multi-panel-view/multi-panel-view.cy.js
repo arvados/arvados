@@ -97,6 +97,38 @@ describe('<MPVContainer />', () => {
         cy.contains('This is another panel');
     });
 
+    it('should configure disabled panels with tooltips', () => {
+        const childs = [
+            <PanelMock key={1}>This is one panel</PanelMock>,
+            <PanelMock key={2}>This is another panel</PanelMock>,
+        ];
+        props.panelStates = [
+            {name: 'First Panel', visible: true},
+            {name: 'Second Panel', disabled: true, disabledInfo: 'Disabled reason'},
+        ]
+        cy.mount(
+            <Provider store={store}>
+                <ThemeProvider theme={CustomTheme}>
+                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                </ThemeProvider>
+            </Provider>
+        );
+        // Verify "First Panel" is active and not disabled
+        cy.get('button').eq(0).should('contain', 'First Panel').and('not.have.attr', 'disabled');
+
+        // Verify "Second Panel" is disabled and has correct styling
+        cy.get('button').eq(1).should('contain', 'Second Panel').and('have.attr', 'disabled');
+        cy.get('button').eq(1).parents('span').eq(0)
+            .should('have.css', 'flex-grow', '1')
+            .and('have.css', 'display', 'flex');
+
+        // Hover over the tooltip to verify it appears
+        cy.get('button').eq(1).trigger('mouseover', { force: true });
+        cy.get('#disabled-tab-1-tooltip')
+            .should('be.visible')
+            .and('contain.text', 'Disabled reason');
+    });
+
     it('should set initial panel visibility according to panelStates prop', () => {
         const childs = [
             <PanelMock key={1}>This is one panel</PanelMock>,

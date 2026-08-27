@@ -1254,6 +1254,47 @@ describe("Collection panel tests", function () {
         });
     });
 
+    it('shows Overview tab as default, disables Files tab, and prevents file requests for a trashed collection', () => {
+        const trashedCollectionName = `Trashed Tab Test Collection ${Math.floor(Math.random() * 999999)}`;
+        cy.createCollection(adminUser.token, {
+            name: trashedCollectionName,
+            owner_uuid: activeUser.user.uuid,
+            trash_at: "2026-08-23T00:00:00.000Z",  // must be in the past
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+        })
+            .as("testTrashedCollection")
+            .then(function (testTrashedCollection) {
+                cy.loginAs(activeUser);
+                // Spy on the file request
+                let filesRequestCalled = false;
+                cy.intercept('PROPFIND', `**/c=${testTrashedCollection.uuid}/**`, (req) => {
+                    filesRequestCalled = true;
+                    req.continue();
+                }).as('filesRequest');
+
+                // Navigate to the trashed collection via the Trash panel
+                cy.doSidePanelNavigation('Trash');
+                cy.doDataExplorerSearch(trashedCollectionName);
+                cy.doDataExplorerNavigate(trashedCollectionName);
+
+                // Verify "Overview" is the default active tab
+                cy.get('[data-cy=mpv-tabs] .Mui-selected').should('contain', 'Overview');
+
+                // Confirm no network request was made for files
+                cy.then(() => {
+                    expect(filesRequestCalled).to.be.false;
+                });
+
+                // Restore collection and verify "Files" tab is now enabled.
+                cy.doToolbarAction("Restore");
+                cy.get('[data-cy=mpv-tabs] [data-cy=tab-files]').should('not.have.attr', 'disabled');
+
+                // Ensure the files panel loads successfully
+                cy.doMPVTabSelect("Files");
+                cy.get('[data-cy=collection-files-panel]').should('exist').and("contain", "bar");
+            });
+    });
+
     describe("file upload", () => {
         beforeEach(() => {
             cy.createCollection(adminUser.token, {
