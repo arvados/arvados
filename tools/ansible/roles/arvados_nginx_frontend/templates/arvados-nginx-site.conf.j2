@@ -24,6 +24,10 @@ server {
 {% if tls_source.key.aws_secret is defined %}
   ssl_password_file    /run/arvados/{{ tls_source.key.aws_secret }};
 {% endif %}
+{% if arvados_nginx_log_basename is truthy %}
+  access_log  /var/log/nginx/{{ arvados_nginx_log_basename }}.access.log  combined;
+  error_log   /var/log/nginx/{{ arvados_nginx_log_basename }}.error.log;
+{% endif %}
 
   {{ arvados_nginx_server_config|indent(2) }}
 {% block server_config %}
