@@ -76,7 +76,7 @@ export const loadProcess =
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: e.message,
-                        hideDuration: 2000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 );
@@ -133,7 +133,7 @@ export const navigateToOutput = (resource: ContextMenuResource | ContainerReques
         await services.collectionService.get(resource.outputUuid || '');
         dispatch<any>(navigateTo(resource.outputUuid || ''));
     } catch {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 4000, kind: SnackbarKind.WARNING }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 10000, kind: SnackbarKind.WARNING }));
     }
 };
 

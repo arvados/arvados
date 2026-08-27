@@ -55,7 +55,7 @@ export const openAdminVirtualMachines = () =>
             dispatch<any>(navigateToAdminVirtualMachines);
         } else {
             dispatch<any>(navigateToRootProject);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -177,7 +177,7 @@ export const addUpdateVirtualMachineLogin = ({ uuid, vmUuid, user, groups }: Add
             // Get user
             userResource = await services.userService.get(user.uuid, false);
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Failed to get user details.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Failed to get user details.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
             return;
         }
         try {
@@ -213,7 +213,7 @@ export const addUpdateVirtualMachineLogin = ({ uuid, vmUuid, user, groups }: Add
                 kind: SnackbarKind.SUCCESS
             }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -243,7 +243,7 @@ export const removeVirtualMachineLogin = (uuid: string) =>
                 kind: SnackbarKind.SUCCESS
             }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -271,7 +271,7 @@ export const removeVirtualMachine = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.virtualMachineService.delete(uuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         dispatch<any>(loadVirtualMachinesAdminData());
     };
 

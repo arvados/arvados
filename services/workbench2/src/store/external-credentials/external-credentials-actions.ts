@@ -34,7 +34,7 @@ export const loadExternalCredentials = () =>
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: e.message,
-                        hideDuration: 2000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 );
@@ -72,7 +72,7 @@ export const createExternalCredential = (data: CreateExternalCredentialFormDialo
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: errMsg,
-                        hideDuration: 2000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 );
@@ -163,7 +163,7 @@ export const updateExternalCredential =
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: errMsg,
-                        hideDuration: 2000,
+                        hideDuration: 10000,
                         kind: SnackbarKind.ERROR,
                     })
                 );

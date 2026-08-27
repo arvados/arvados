@@ -25,7 +25,7 @@ export const openCopyProcessDialog =
             const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, uuid: resource.uuid, ownerUuid: '' };
             dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_COPY_FORM_NAME, data: initialData }));
         } else {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process not found', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process not found', hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 

@@ -42,7 +42,7 @@ export const CopyToClipboardSnackbar = connect()(
                 this.props.dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: 'Copied',
-                        hideDuration: 2000,
+                        hideDuration: 8000,
                         kind: SnackbarKind.SUCCESS,
                     })
                 );

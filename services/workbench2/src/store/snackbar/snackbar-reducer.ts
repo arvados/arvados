@@ -9,7 +9,7 @@ export interface SnackbarState {
     open: boolean;
 }
 
-const DEFAULT_HIDE_DURATION = 3000;
+const DEFAULT_HIDE_DURATION = 10000;
 
 const initialState: SnackbarState = {
     messages: [],
@@ -23,7 +23,7 @@ export const snackbarReducer = (state = initialState, action: SnackbarAction) =>
                 open: true,
                 messages: state.messages.concat({
                     message: data.message,
-                    hideDuration: data.hideDuration ? data.hideDuration : DEFAULT_HIDE_DURATION,
+                    hideDuration: data.hideDuration ? data.hideDuration : (data.kind === SnackbarKind.SUCCESS ? 8000 : DEFAULT_HIDE_DURATION),
                     kind: data.kind ? data.kind : SnackbarKind.INFO, 
                     link: data.link
                 })

@@ -43,7 +43,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SharingURLsComponentActionProps
     onCopy(message: string) {
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message,
-            hideDuration: 2000,
+            hideDuration: 8000,
             kind: SnackbarKind.SUCCESS
         }));
     },

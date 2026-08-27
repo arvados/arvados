@@ -31,7 +31,7 @@ export const msNavigateToOutput = (resource: ContextMenuResource | ContainerRequ
         await services.collectionService.get(resource.outputUuid || '');
         dispatch<any>(navigateTo(resource.outputUuid || ''));
     } catch {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 4000, kind: SnackbarKind.WARNING }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 10000, kind: SnackbarKind.WARNING }));
     }
 };
 

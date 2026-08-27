@@ -314,7 +314,7 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 break;
 
             default:
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 

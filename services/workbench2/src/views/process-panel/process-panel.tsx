@@ -33,7 +33,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
         dispatch<any>(
             snackbarActions.OPEN_SNACKBAR({
                 message,
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS,
             })
         );

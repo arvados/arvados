@@ -35,7 +35,7 @@ export const loadKeepServicesPanel = () =>
             }
         } else {
             dispatch(navigateToRootProject);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -64,7 +64,7 @@ export const removeKeepService = (uuid: string) =>
         try {
             await services.keepService.delete(uuid);
             dispatch(keepServicesActions.REMOVE_KEEP_SERVICE(uuid));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Keep service has been successfully removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Keep service has been successfully removed.', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             return;
         }

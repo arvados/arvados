@@ -44,13 +44,13 @@ export const removeCollectionFiles = (filePaths: string[]) =>
             services.collectionService.deleteFiles(currentCollection.uuid, filePaths).then(() => {
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed.',
-                    hideDuration: 2000,
+                    hideDuration: 8000,
                     kind: SnackbarKind.SUCCESS
                 }));
             }).catch(e =>
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Could not remove file.',
-                    hideDuration: 2000,
+                    hideDuration: 10000,
                     kind: SnackbarKind.ERROR
                 }))
             );
@@ -132,7 +132,7 @@ export const renameFile = (newFullPath: string) =>
                 const oldPath = getFileFullPath(file);
                 const newPath = newFullPath;
                 services.collectionService.renameFile(currentCollection.uuid, currentCollection.portableDataHash, oldPath, newPath).then(() => {
-                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 6000 }));
                     dispatch<any>(loadCollection(currentCollection.uuid));
                 }).catch(e => {
                     const errors: FormErrors<RenameFileDialogData, string> = {

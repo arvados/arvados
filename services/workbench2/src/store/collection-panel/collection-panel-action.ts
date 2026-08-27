@@ -47,6 +47,6 @@ export const navigateToProcess = (uuid: string) =>
             await services.containerRequestService.get(uuid);
             dispatch<any>(navigateTo(uuid));
         } catch {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This process does not exist!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This process does not exist!', hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };

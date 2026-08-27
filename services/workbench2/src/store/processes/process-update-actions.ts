@@ -27,7 +27,7 @@ export const openProcessUpdateDialog =
             dispatch(initialize(PROCESS_UPDATE_FORM_NAME, { ...resource, name: process.containerRequest.name }));
             dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_UPDATE_FORM_NAME, data: {} }));
         } else {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Process not found", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Process not found", hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -48,7 +48,7 @@ export const updateProcess =
                 dispatch(stopSubmit(PROCESS_UPDATE_FORM_NAME, { name: "Process with the same name already exists." } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not update the process.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not update the process.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
             }
             return;
         }

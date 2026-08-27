@@ -64,7 +64,7 @@ export const refreshCollectionVersionsList = (uuid: string) =>
         }).then(versions => dispatch(resourcesActions.SET_RESOURCES(versions.items))
         ).catch(e => snackbarActions.OPEN_SNACKBAR({
             message: `Couldn't retrieve versions: ${e.errors[0]}`,
-            hideDuration: 2000,
+            hideDuration: 10000,
             kind: SnackbarKind.ERROR })
         );
     };

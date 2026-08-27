@@ -103,7 +103,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelAction
     onCopy: (message: string) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message,
-            hideDuration: 2000,
+            hideDuration: 6000,
             kind: SnackbarKind.SUCCESS
         }));
     },

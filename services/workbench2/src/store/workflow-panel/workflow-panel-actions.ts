@@ -157,13 +157,13 @@ export const removeWorkflowPermanently = (uuid: string, ownerUuid?: string) => a
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
             await services.workflowService.delete(workflow.uuid);
             dispatch(projectPanelDataActions.REQUEST_ITEMS());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 10000, kind: SnackbarKind.ERROR }));
             } else {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 10000, kind: SnackbarKind.ERROR }));
             }
         }
     }

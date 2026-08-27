@@ -87,7 +87,7 @@ export const checkForLinkStatus = () =>
                 msg = "Unknown Error!";
                 msgKind = SnackbarKind.ERROR;
             }
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: msg, kind: msgKind, hideDuration: 3000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: msg, kind: msgKind, hideDuration: (msgKind === SnackbarKind.ERROR ? 10000 : 8000) }));
             services.linkAccountService.removeLinkOpStatus();
         }
     };

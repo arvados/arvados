@@ -114,7 +114,7 @@ export const createUser = (data: UserCreateFormDialogData) =>
 
             dispatch(dialogActions.CLOSE_DIALOG({ id: USER_CREATE_FORM_NAME }));
             dispatch(reset(USER_CREATE_FORM_NAME));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been successfully created.", hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
             dispatch<any>(loadUsersPanel());
             dispatch(userBindedActions.REQUEST_ITEMS());
             return newUser;
@@ -132,7 +132,7 @@ export const openUserPanel = () =>
             dispatch<any>(navigateToUsers);
         } else {
             dispatch<any>(navigateToRootProject);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 10000 }));
         }
     };
 

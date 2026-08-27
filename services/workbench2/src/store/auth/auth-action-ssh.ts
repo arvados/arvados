@@ -56,7 +56,7 @@ export const removeSshKey = (uuid: string) =>
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.authorizedKeysService.delete(uuid);
         dispatch(authActions.REMOVE_SSH_KEY(uuid));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Public Key has been successfully removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Public Key has been successfully removed.', hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
     };
 
 export const createSshKey = (data: SshKeyCreateFormDialogData) =>
@@ -77,7 +77,7 @@ export const createSshKey = (data: SshKeyCreateFormDialogData) =>
             dispatch(reset(SSH_KEY_CREATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Public key has been successfully created.",
-                hideDuration: 2000,
+                hideDuration: 6000,
                 kind: SnackbarKind.SUCCESS
             }));
         } catch (e) {

@@ -42,10 +42,10 @@ export const moveCollection =
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "A collection with the same name already exists in the target project.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "A collection with the same name already exists in the target project.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not move the collection.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not move the collection.", hideDuration: 10000, kind: SnackbarKind.ERROR }));
             }
             return;
         } finally {

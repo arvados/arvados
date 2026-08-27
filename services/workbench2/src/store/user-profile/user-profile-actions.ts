@@ -67,7 +67,7 @@ export const saveEditedUser = (resource: any) =>
                 dispatch(authActions.USER_DETAILS_SUCCESS(updatedUser));
             }
             dispatch(initialize(USER_PROFILE_FORM, updatedUser));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Profile has been updated.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Profile has been updated.", hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "Could not update profile",
@@ -124,9 +124,9 @@ export const setup = (uuid: string) =>
             // Refresh data explorer
             dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been setup", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been setup", hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 10000, kind: SnackbarKind.ERROR }));
         } finally {
             dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_DIALOG }));
         }
@@ -141,9 +141,9 @@ export const activate = (uuid: string) =>
             // Refresh data explorer
             dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been activated", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been activated", hideDuration: 8000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 10000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -171,7 +171,7 @@ export const deactivate = (uuid: string) =>
 
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: "User has been deactivated.",
-                hideDuration: 2000,
+                hideDuration: 8000,
                 kind: SnackbarKind.SUCCESS
             }));
         } catch (e) {

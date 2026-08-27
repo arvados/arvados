@@ -34,7 +34,7 @@ export const loadApiClientAuthorizationsPanel = () =>
             }
         } else {
             dispatch(navigateToRootProject);
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "You don't have permissions to view this page", hideDuration: 10000 }));
         }
     };
 
@@ -64,7 +64,7 @@ export const removeApiClientAuthorization = (uuid: string) =>
         try {
             await services.apiClientAuthorizationService.delete(uuid);
             dispatch(apiClientAuthorizationsActions.REQUEST_ITEMS());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Api client authorization has been successfully removed.', hideDuration: 2000 }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Api client authorization has been successfully removed.', hideDuration: 8000 }));
         } catch (e) {
             return;
         }

@@ -58,7 +58,7 @@ export const createRepository = (repository: RepositoryResource) =>
             const newRepository = await services.repositoriesService.create({ name: `${user.username}/${repository.name}` });
             dispatch(dialogActions.CLOSE_DIALOG({ id: REPOSITORY_CREATE_FORM_NAME }));
             dispatch(reset(REPOSITORY_CREATE_FORM_NAME));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Repository has been successfully created.", hideDuration: 6000, kind: SnackbarKind.SUCCESS }));
             dispatch<any>(loadRepositoriesData());
             return newRepository;
         } catch (e) {
@@ -87,7 +87,7 @@ export const removeRepository = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.repositoriesService.delete(uuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 6000, kind: SnackbarKind.SUCCESS }));
         dispatch<any>(loadRepositoriesData());
     };
 
