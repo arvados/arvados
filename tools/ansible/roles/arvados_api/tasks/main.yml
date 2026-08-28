@@ -5,7 +5,9 @@
 # Install the RailsAPI server and configure it to match the cluster
 # configuration.
 
-- name: Install PostgreSQL client package
+# We want to install postgresql-client *before* arvados-api-server to make
+# sure gems see and use our desired version.
+- name: Install API server dependencies
   become: yes
   ansible.builtin.apt:
     name:
