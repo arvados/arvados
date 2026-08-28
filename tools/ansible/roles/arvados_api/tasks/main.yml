@@ -11,7 +11,17 @@
   become: yes
   ansible.builtin.apt:
     name:
+      - logrotate
       - "postgresql-client{{ arvados_postgresql_suffix }}"
+
+- name: Install Arvados API server logrotate configuration
+  become: yes
+  ansible.builtin.template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.d/arvados-api
+    owner: root
+    group: root
+    mode: 0755
 
 - name: Install arvados-api-server
   become: yes
