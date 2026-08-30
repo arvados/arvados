@@ -23,14 +23,15 @@ import { LinkResource } from 'models/link';
 import { WorkflowResource } from 'models/workflow';
 import { KeepServiceResource } from 'models/keep-services';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
-import React from 'react';
 import { ExternalCredential } from 'models/external-credential';
+import pick from 'lodash/pick';
+import snakeCase from 'lodash/snakeCase';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
 export interface AdvancedTabDialogData {
     uuid: string;
-    apiResponse: JSX.Element;
+    apiResponse: string;
     metadata: ListResults<LinkResource> | string;
     user: UserResource | string;
     pythonHeader: string;
@@ -128,7 +129,13 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: metaCollection,
                     user: userCollection,
-                    apiResponseKind: collectionApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'createdAt', 'modifiedByUserUuid', 'modifiedAt', 'portableDataHash',
+                        'replicationDesired', 'replicationConfirmedAt', 'replicationConfirmed',
+                        'name', 'description', 'properties', 'deleteAt', 'trashAt', 'isTrashed',
+                        'storageClassesDesired', 'storageClassesConfirmed', 'storageClassesConfirmedAt',
+                        'currentVersionUuid', 'version', 'preserveVersion', 'fileCount', 'fileSizeTotal'
+                    ],
                     data: dataCollection,
                     resourceKind: CollectionData.COLLECTION,
                     resourcePrefix: GroupContentsResourcePrefix.COLLECTION,
@@ -143,7 +150,12 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: metaProcess,
                     user: userProcess,
-                    apiResponseKind: containerRequestApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'createdAt', 'modifiedAt', 'modifiedByUserUuid',
+                        'name', 'description', 'properties', 'state', 'requestingContainerUuid', 'containerUuid',
+                        'containerCountMax', 'mounts', 'runtimeConstraints', 'containerImage', 'environment', 'cwd', 'command', 'outputPath', 'priority', 'expiresAt', 'filters', 'containerCount',
+                        'useExisting', 'schedulingParameters', 'outputUuid', 'logUuid', 'outputName', 'outputTtl', 'outputGlob'
+                    ],
                     data: dataProcess,
                     resourceKind: ProcessData.CONTAINER_REQUEST,
                     resourcePrefix: GroupContentsResourcePrefix.PROCESS,
@@ -158,7 +170,11 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: metaProject,
                     user: userProject,
-                    apiResponseKind: groupRequestApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'createdAt', 'modifiedByUserUuid', 'modifiedAt',
+                        'name', 'description', 'groupClass', 'trashAt', 'isTrashed', 'deleteAt', 'properties',
+                        'canWrite', 'canManage'
+                    ],
                     data: dataProject,
                     resourceKind: ProjectData.GROUP,
                     resourcePrefix: GroupContentsResourcePrefix.PROJECT,
@@ -173,7 +189,9 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: repositoryApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'modifiedByUserUuid', 'modifiedAt', 'name', 'createdAt', 'cloneUrls'
+                    ],
                     data: dataRepository,
                     resourceKind: RepositoryData.REPOSITORY,
                     resourcePrefix: ResourcePrefix.REPOSITORIES,
@@ -188,7 +206,9 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: sshKeyApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'authorizedUserUuid', 'modifiedByUserUuid', 'modifiedAt', 'name', 'createdAt', 'expiresAt'
+                    ],
                     data: dataSshKey,
                     resourceKind: SshKeyData.SSH_KEY,
                     resourcePrefix: ResourcePrefix.AUTORIZED_KEYS,
@@ -203,7 +223,9 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: virtualMachineApiResponse,
+                    apiResponseKeys: [
+                        'hostname', 'uuid', 'ownerUuid', 'modifiedByUserUuid', 'modifiedAt', 'createdAt'
+                    ],
                     data: dataVirtualMachine,
                     resourceKind: VirtualMachineData.VIRTUAL_MACHINE,
                     resourcePrefix: ResourcePrefix.VIRTUAL_MACHINES,
@@ -218,7 +240,9 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: keepServiceApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'modifiedByUserUuid', 'modifiedAt', 'serviceHost', 'servicePort', 'serviceSslFlag', 'serviceType', 'createdAt', 'readOnly'
+                    ],
                     data: dataKeepService,
                     resourceKind: KeepServiceData.KEEP_SERVICE,
                     resourcePrefix: ResourcePrefix.KEEP_SERVICES,
@@ -239,7 +263,10 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata,
                     user: '',
-                    apiResponseKind: userApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'createdAt', 'modifiedByUserUuid', 'modifiedAt',
+                        'email', 'firstName', 'lastName', 'username', 'isActive', 'isAdmin', 'prefs'
+                    ],
                     data,
                     resourceKind: UserData.USER,
                     resourcePrefix: ResourcePrefix.USERS,
@@ -255,7 +282,10 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: apiClientAuthorizationApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'apiToken', 'createdByIpAddress', 'lastUsedByIpAddress',
+                        'lastUsedAt', 'expiresAt', 'createdAt', 'updatedAt', 'scopes'
+                    ],
                     data: dataApiClientAuthorization,
                     resourceKind: ApiClientAuthorizationsData.API_CLIENT_AUTHORIZATION,
                     resourcePrefix: ResourcePrefix.API_CLIENT_AUTHORIZATIONS,
@@ -271,7 +301,10 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: linkApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'name', 'headUuid', 'headKind', 'tailUuid', 'tailKind', 'linkClass',
+                        'ownerUuid', 'createdAt', 'modifiedAt', 'modifiedByUserUuid', 'properties'
+                    ],
                     data: dataLink,
                     resourceKind: LinkData.LINK,
                     resourcePrefix: ResourcePrefix.LINKS,
@@ -287,7 +320,9 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: wfApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'name', 'ownerUuid', 'createdAt', 'modifiedAt', 'modifiedByUserUuid', 'description'
+                    ],
                     data: dataWf,
                     resourceKind: WorkflowData.WORKFLOW,
                     resourcePrefix: GroupContentsResourcePrefix.WORKFLOW,
@@ -303,7 +338,9 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     uuid,
                     metadata: '',
                     user: '',
-                    apiResponseKind: extCredApiResponse,
+                    apiResponseKeys: [
+                        'uuid', 'ownerUuid', 'createdAt', 'modifiedByUserUuid', 'modifiedAt', 'name', 'description', 'scopes', 'expiresAt'
+                    ],
                     data: dataExtCred,
                     resourceKind: ExternalCredentialData.EXTERNAL_CREDENTIAL,
                     resourcePrefix: ResourcePrefix.EXTERNAL_CREDENTIALS,
@@ -337,7 +374,7 @@ interface AdvancedTabData {
     uuid: string;
     metadata: ListResults<LinkResource> | string;
     user: UserResource | string;
-    apiResponseKind: (apiResponse) => JSX.Element;
+    apiResponseKeys: string[];
     data: AdvanceResponseData;
     resourceKind: AdvanceResourceKind;
     resourcePrefix: AdvanceResourcePrefix;
@@ -345,12 +382,12 @@ interface AdvancedTabData {
     property: any;
 }
 
-const advancedTabData = ({ uuid, user, metadata, apiResponseKind, data, resourceKind, resourcePrefix, resourceKindProperty, property }: AdvancedTabData) => {
+const advancedTabData = ({ uuid, user, metadata, apiResponseKeys, data, resourceKind, resourcePrefix, resourceKindProperty, property }: AdvancedTabData) => {
     return {
         uuid,
         user,
         metadata,
-        apiResponse: apiResponseKind(data),
+        apiResponse: formatApiResponse(data, apiResponseKeys),
         pythonHeader: pythonHeader(resourceKind),
         pythonExample: pythonExample(uuid, resourcePrefix),
         cliGetHeader: cliGetHeader(resourceKind),
@@ -411,265 +448,12 @@ EOF`;
     return curlExample;
 };
 
-const stringify = (item: string | null | number | boolean) =>
-    JSON.stringify(item) || 'null';
-
-const stringifyObject = (item: any) =>
-    JSON.stringify(item, null, 2) || 'null';
-
-const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
-        containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, containerCount,
-        useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl, outputGlob } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${createdAt}",
-"modified_at": ${stringify(modifiedAt)},
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"name": ${stringify(name)},
-"description": ${stringify(description)},
-"properties": ${stringifyObject(properties)},
-"state": ${stringify(state)},
-"requesting_container_uuid": ${stringify(requestingContainerUuid)},
-"container_uuid": ${stringify(containerUuid)},
-"container_count_max": ${stringify(containerCountMax)},
-"mounts": ${stringifyObject(mounts)},
-"runtime_constraints": ${stringifyObject(runtimeConstraints)},
-"container_image": ${stringify(containerImage)},
-"environment": ${stringifyObject(environment)},
-"cwd": ${stringify(cwd)},
-"command": ${stringifyObject(command)},
-"output_path": ${stringify(outputPath)},
-"priority": ${stringify(priority)},
-"expires_at": ${stringify(expiresAt)},
-"filters": ${stringify(filters)},
-"container_count": ${stringify(containerCount)},
-"use_existing": ${stringify(useExisting)},
-"scheduling_parameters": ${stringifyObject(schedulingParameters)},
-"output_uuid": ${stringify(outputUuid)},
-"log_uuid": ${stringify(logUuid)},
-"output_name": ${stringify(outputName)},
-"output_ttl": ${stringify(outputTtl)},
-"output_glob": ${stringifyObject(outputGlob)}`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
+const formatApiResponse = (apiResponse: any, keys: string[]): string => {
+    const picked = pick(apiResponse, keys);
+    const snaked: Record<string, any> = {};
+    for (const key in picked) {
+        snaked[snakeCase(key)] = picked[key];
+    }
+    return JSON.stringify(snaked, null, 2);
 };
 
-const collectionApiResponse = (apiResponse: CollectionResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
-        replicationConfirmedAt, replicationConfirmed, deleteAt, trashAt, isTrashed, storageClassesDesired,
-        storageClassesConfirmed, storageClassesConfirmedAt, currentVersionUuid, version, preserveVersion, fileCount, fileSizeTotal } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${createdAt}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"portable_data_hash": ${stringify(portableDataHash)},
-"replication_desired": ${stringify(replicationDesired)},
-"replication_confirmed_at": ${stringify(replicationConfirmedAt)},
-"replication_confirmed": ${stringify(replicationConfirmed)},
-"name": ${stringify(name)},
-"description": ${stringify(description)},
-"properties": ${stringifyObject(properties)},
-"delete_at": ${stringify(deleteAt)},
-"trash_at": ${stringify(trashAt)},
-"is_trashed": ${stringify(isTrashed)},
-"storage_classes_desired": ${JSON.stringify(storageClassesDesired, null, 2)},
-"storage_classes_confirmed": ${JSON.stringify(storageClassesConfirmed, null, 2)},
-"storage_classes_confirmed_at": ${stringify(storageClassesConfirmedAt)},
-"current_version_uuid": ${stringify(currentVersionUuid)},
-"version": ${version},
-"preserve_version": ${preserveVersion},
-"file_count": ${fileCount},
-"file_size_total": ${fileSizeTotal}`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const groupRequestApiResponse = (apiResponse: ProjectResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name,
-        description, groupClass, trashAt, isTrashed, deleteAt, properties,
-        canWrite, canManage } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${createdAt}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"name": ${stringify(name)},
-"description": ${stringify(description)},
-"group_class": ${stringify(groupClass)},
-"trash_at": ${stringify(trashAt)},
-"is_trashed": ${stringify(isTrashed)},
-"delete_at": ${stringify(deleteAt)},
-"properties": ${stringifyObject(properties)},
-"can_write": ${stringify(canWrite)},
-"can_manage": ${stringify(canManage)}`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const repositoryApiResponse = (apiResponse: RepositoryResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, cloneUrls } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"name": ${stringify(name)},
-"created_at": "${createdAt}",
-"clone_urls": ${stringifyObject(cloneUrls)}`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const sshKeyApiResponse = (apiResponse: SshKeyResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, authorizedUserUuid, expiresAt } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"authorized_user_uuid": "${authorizedUserUuid}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"name": ${stringify(name)},
-"created_at": "${createdAt}",
-"expires_at": "${expiresAt}"`;
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, hostname } = apiResponse;
-    const response = `
-"hostname": ${stringify(hostname)},
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"modified_at": ${stringify(modifiedAt)},
-"created_at": "${createdAt}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const keepServiceApiResponse = (apiResponse: KeepServiceResource): JSX.Element => {
-    const {
-        uuid, readOnly, serviceHost, servicePort, serviceSslFlag, serviceType,
-        ownerUuid, createdAt, modifiedAt, modifiedByUserUuid
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"service_host": "${serviceHost}",
-"service_port": "${servicePort}",
-"service_ssl_flag": "${stringify(serviceSslFlag)}",
-"service_type": "${serviceType}",
-"created_at": "${createdAt}",
-"read_only": "${stringify(readOnly)}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const userApiResponse = (apiResponse: UserResource): JSX.Element => {
-    const {
-        uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid,
-        email, firstName, lastName, username, isActive, isAdmin, prefs,
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${createdAt}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"email": "${email}",
-"first_name": "${firstName}",
-"last_name": "${stringify(lastName)}",
-"username": "${username}",
-"is_active": "${isActive},
-"is_admin": "${isAdmin},
-"prefs": "${stringifyObject(prefs)},
-"username": "${username}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization): JSX.Element => {
-    const {
-        uuid, ownerUuid, apiToken, createdByIpAddress, lastUsedByIpAddress,
-        lastUsedAt, expiresAt, scopes, updatedAt, createdAt
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"api_token": "${stringify(apiToken)}",
-"created_by_ip_address": "${stringify(createdByIpAddress)}",
-"last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
-"last_used_at": "${stringify(lastUsedAt)}",
-"expires_at": "${stringify(expiresAt)}",
-"created_at": "${stringify(createdAt)}",
-"updated_at": "${stringify(updatedAt)}",
-"scopes": "${JSON.stringify(scopes, null, 2)}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
-    const {
-        uuid, name, headUuid, properties, headKind, tailUuid, tailKind, linkClass,
-        ownerUuid, createdAt, modifiedAt, modifiedByUserUuid
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"name": "${name}",
-"head_uuid": "${headUuid}",
-"head_kind": "${headKind}",
-"tail_uuid": "${tailUuid}",
-"tail_kind": "${tailKind}",
-"link_class": "${linkClass}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${stringify(createdAt)}",
-"modified_at": ${stringify(modifiedAt)},
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"properties": "${JSON.stringify(properties, null, 2)}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-
-const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
-    const {
-        uuid, name,
-        ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, description
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"name": "${name}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${stringify(createdAt)}",
-"modified_at": ${stringify(modifiedAt)},
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)}
-"description": ${stringify(description)}`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const extCredApiResponse = (apiResponse: ExternalCredential): JSX.Element => {
-    const {
-        uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description = null, scopes, expiresAt
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"created_at": "${stringify(createdAt)}",
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"name": ${stringify(name)},
-"description": ${stringify(description)},
-"scopes": ${JSON.stringify(scopes, null, 2)},
-"expires_at": "${stringify(expiresAt)}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
