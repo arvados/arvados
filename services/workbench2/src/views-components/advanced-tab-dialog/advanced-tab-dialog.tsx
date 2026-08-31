@@ -86,11 +86,11 @@ export const AdvancedTabDialog = compose(
                     }}>
                     <DialogTitle>API Details</DialogTitle>
                     <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
-                        <Tab label="API RESPONSE" />
-                        <Tab label="METADATA" />
-                        <Tab label="PYTHON EXAMPLE" />
-                        <Tab label="CLI EXAMPLE" />
-                        <Tab label="CURL EXAMPLE" />
+                        <Tab label="API Response" />
+                        <Tab label="Metadata" />
+                        <Tab label="Python Example" />
+                        <Tab label="CLI Example" />
+                        <Tab label="cURL Example" />
                     </Tabs>
                     <DialogContent className={classes.content}>
                         {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
