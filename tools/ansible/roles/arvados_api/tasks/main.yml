@@ -5,11 +5,23 @@
 # Install the RailsAPI server and configure it to match the cluster
 # configuration.
 
-- name: Install PostgreSQL client package
+# We want to install postgresql-client *before* arvados-api-server to make
+# sure gems see and use our desired version.
+- name: Install API server dependencies
   become: yes
   ansible.builtin.apt:
     name:
+      - logrotate
       - "postgresql-client{{ arvados_postgresql_suffix }}"
+
+- name: Install Arvados API server logrotate configuration
+  become: yes
+  ansible.builtin.template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.d/arvados-api
+    owner: root
+    group: root
+    mode: 0755
 
 - name: Install arvados-api-server
   become: yes
