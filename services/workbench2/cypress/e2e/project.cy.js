@@ -492,7 +492,7 @@ describe("Project tests", function () {
 
                     cy.get("[data-cy=context-menu]").contains("API Details").click();
 
-                    cy.get("[role=tablist]").contains("METADATA").click();
+                    cy.get("[role=tablist]").contains("Metadata").click();
 
                     cy.get("td").contains(uuid).should("exist");
 
