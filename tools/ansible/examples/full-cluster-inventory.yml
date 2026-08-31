@@ -148,6 +148,34 @@ arvados_workbench:
     workbench.arvados.example:
 
 
+### Host groups for Arvados web front-ends ###
+# The Arvados servers for API controller, websockets, keepproxy, and
+# keep-web/WebDAV expect to run behind a production web front-end.
+# The following groups deploy nginx to do that.
+# This example configuration shows the simple case of deploying nginx on the
+# same host as the Arvados service. You can deploy these groups to different
+# host(s) if desired. Note that *all* nginx front-ends will proxy *all* the
+# corresponding back-end services for load balancing via the InternalURLs
+# in your Arvados cluster configuration.
+# You can make these groups empty if you plan to configure a different
+# web front-end such as AWS ELB.
+arvados_controller_nginx:
+  children:
+    arvados_controller:
+
+arvados_websocket_nginx:
+  children:
+    arvados_websocket:
+
+arvados_keepproxy_nginx:
+  children:
+    arvados_keepproxy:
+
+arvados_keep_web_nginx:
+  children:
+    arvados_keep_web:
+
+
 ### Host groups for Arvados dispatchers ###
 # A complete Arvados cluster must deploy at least one dispatcher, but
 # different clusters run different dispatchers. Uncomment and define the
