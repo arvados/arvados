@@ -7,7 +7,7 @@ function doTestWithResource(token, resourceType, testResource) {
 
     // 'API Response' is default activated tab.
     cy.get(".MuiDialog-container .MuiTabs-root .Mui-selected")
-        .should("contain", "API RESPONSE");
+        .should("contain", "API Response");
 
     // Obtain API record of resource.
     cy.getResource(token, resourceType, testResource.uuid)
