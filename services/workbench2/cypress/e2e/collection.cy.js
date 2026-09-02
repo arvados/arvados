@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 const path = require("path");
-require('cypress-plugin-tab')
+require('cypress-plugin-tab');
 
 // It can be tricky to mimick the user's navigation and eyeballing for a newly
 // created (but not shown) collection by its known (and unique) name, which can
@@ -44,6 +44,8 @@ describe("Collection panel tests", function () {
     });
 
     it("allows to download mountain duck config for a collection", () => {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
@@ -105,9 +107,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]")
             .should("contain", "New collection")
             .within(() => {
-                cy.get("[data-cy=name-field]").within(() => {
-                    cy.get("input").type(name);
-                });
+                cy.get("[data-cy=name-field] input").type(name);
                 cy.get("[data-cy=form-submit-btn]").click();
             });
         // Error message should display, allowing editing the name
@@ -115,10 +115,8 @@ describe("Collection panel tests", function () {
             .should("exist")
             .and("contain", "Collection with the same name already exists")
             .within(() => {
-                cy.get("[data-cy=name-field]").within(() => {
-                    cy.get("input").type(" renamed");
-                });
-                cy.get("[data-cy=form-submit-btn]").click({timeout: 10000});
+                cy.get("[data-cy=name-field] input").type(" renamed");
+                cy.get("[data-cy=form-submit-btn]").click();
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
         // Attempt to rename the collection with the duplicate name
@@ -126,9 +124,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]")
             .should("contain", "Edit Collection")
             .within(() => {
-                cy.get("[data-cy=name-field]").within(() => {
-                    cy.get("input").type("{selectall}{backspace}").type(name);
-                });
+                cy.get("[data-cy=name-field] input").type("{selectall}{backspace}").type(name);
                 cy.get("[data-cy=form-submit-btn]").click();
             });
         cy.get("[data-cy=form-dialog]").should("exist").and("contain", "Collection with the same name already exists");
@@ -226,14 +222,11 @@ describe("Collection panel tests", function () {
                 // Case-insensitive on-blur auto-selection test
                 // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
                 cy.get("[data-cy=resource-properties-form]").within(() => {
-                    cy.get("[data-cy=property-field-key]").within(() => {
-                        cy.get("input").type("sIzE");
-                    });
+                    cy.get("[data-cy=property-field-key] input").type("sIzE");
                     cy.get("[data-cy=property-field-value]").click().within(() => {
                         cy.get("input").type("sMaLL{enter}");
                     });
                     cy.get("[data-cy=property-add-btn]").click();
-                    cy.waitForDom();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
                 cy.get("[data-cy=form-dialog]").should("contain", "Size: S");
@@ -269,104 +262,105 @@ describe("Collection panel tests", function () {
                 name: "Shared project",
                 group_class: "project",
             })
-                .as("sharedGroup")
-                .then(function () {
-                    // Creates the collection using the admin token so we can set up
-                    // a bogus manifest text without block signatures.
-                    cy.doRequest("GET", "/arvados/v1/config", null, null)
-                        .its("body")
-                        .should(clusterConfig => {
-                            expect(clusterConfig.Collections, "clusterConfig").to.have.property("TrustAllContent", true);
-                            expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAV").have.property("ExternalURL");
-                            expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAVDownload").have.property("ExternalURL");
-                            const inlineUrl =
-                                clusterConfig.Services.WebDAV.ExternalURL !== ""
-                                    ? clusterConfig.Services.WebDAV.ExternalURL
-                                    : clusterConfig.Services.WebDAVDownload.ExternalURL;
-                            expect(inlineUrl).to.not.contain("*");
-                        })
-                        .createCollection(adminUser.token, {
-                            name: "Test collection",
-                            owner_uuid: this.sharedGroup.uuid,
-                            properties: { someKey: "someValue" },
-                            manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n./${subDirName} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
-                        })
-                        .as("testCollection")
-                        .then(function () {
-                            // Share the group with active user.
-                            cy.createLink(adminUser.token, {
-                                name: isWritable ? "can_write" : "can_read",
-                                link_class: "permission",
-                                head_uuid: this.sharedGroup.uuid,
-                                tail_uuid: activeUser.user.uuid,
-                            });
-                            cy.goToPath(`/collections/${this.testCollection.uuid}`);
+                .as("sharedGroup");
 
-                            // Verify collection name
-                            cy.get("[data-cy=collection-details-card]")
-                                .should("contain", this.testCollection.name);
+            cy.doRequest("GET", "/arvados/v1/config", null, null)
+                .its("body")
+                .should(clusterConfig => {
+                    expect(clusterConfig.Collections, "clusterConfig").to.have.property("TrustAllContent", true);
+                    expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAV").have.property("ExternalURL");
+                    expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAVDownload").have.property("ExternalURL");
+                    const inlineUrl =
+                        clusterConfig.Services.WebDAV.ExternalURL !== ""
+                            ? clusterConfig.Services.WebDAV.ExternalURL
+                            : clusterConfig.Services.WebDAVDownload.ExternalURL;
+                    expect(inlineUrl).to.not.contain("*");
+                })
 
-                            // Open overview tab
-                            cy.doMPVTabSelect("Overview");
+            cy.get("@sharedGroup").then(sharedGroup => {
+                cy.createCollection(adminUser.token, {
+                    name: "Test collection",
+                    owner_uuid: sharedGroup.uuid,
+                    properties: { someKey: "someValue" },
+                    manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n./${subDirName} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
+                })
+                    .as("testCollection");
 
-                            // Verify collection uuid
-                            cy.get("[data-cy=details-element]")
-                                .should("contain", this.testCollection.uuid)
-                                .and("not.contain", "This is an old version");
-
-                            // Check for the read-only icon
-                            cy.get("[data-cy=read-only-icon]").should(`${isWritable ? "not." : ""}exist`);
-                            // Check that both read and write operations are available on
-                            // the 'More options' menu.
-                            cy.get("[data-cy=collection-details-card]").within(() => {
-                                cy.get("[data-targetid='Add to favorites']");
-                                if (isWritable) {
-                                    cy.get("[data-targetid='Edit collection']");
-                                } else {
-                                    cy.get("[data-targetid='Edit collection']").should("not.exist");
-                                }
-                            });
-                            cy.get("body").click(); // Collapse the menu avoiding details panel expansion
-                            cy.get("[data-cy=resource-properties]")
-                                .should("contain", "someKey: someValue")
-                                .and("not.contain", "anotherKey: anotherValue");
-                            // Check that the file listing show both read & write operations
-                            cy.waitForDom();
-                            cy.doMPVTabSelect("Files");
-                            cy.get("[data-cy=collection-files-right-panel]", { timeout: 5000 }).should("contain", fileName);
-                            if (isWritable) {
-                                cy.get("[data-cy=upload-button]").should(`${isWritable ? "" : "not."}contain`, "Upload data");
-                            }
-                            // Test context menus
-                            cy.get("[data-cy=collection-files-panel]").contains(fileName).rightclick();
-                            cy.get("[data-cy=context-menu]")
-                                .should("contain", "Download")
-                                .and("contain", "Open in new tab")
-                                .and("contain", "Copy link to latest version")
-                                .and("contain", "Copy link to immutable version")
-                                .and(`${isWritable ? "" : "not."}contain`, "Rename")
-                                .and(`${isWritable ? "" : "not."}contain`, "Remove");
-                            cy.get("body").click(); // Collapse the menu
-                            cy.get("[data-cy=collection-files-panel]").contains(subDirName).rightclick();
-                            cy.get("[data-cy=context-menu]")
-                                .should("not.contain", "Download")
-                                .and("contain", "Open in new tab")
-                                .and("contain", "Copy link to latest version")
-                                .and("contain", "Copy link to immutable version")
-                                .and(`${isWritable ? "" : "not."}contain`, "Rename")
-                                .and(`${isWritable ? "" : "not."}contain`, "Remove");
-                            cy.get("body").click(); // Collapse the menu
-                            // File/dir item 'more options' button
-                            cy.get("[data-cy=file-item-options-btn").first().click();
-                            cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove");
-                            cy.get("body").click(); // Collapse the menu
-                            // Hamburger 'more options' menu button
-                            cy.doCollectionPanelOptionsAction("Select all");
-                            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-                            cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove selected");
-                            cy.get("body").click(); // Collapse the menu
-                        });
+                // Share the group with active user.
+                cy.createLink(adminUser.token, {
+                    name: isWritable ? "can_write" : "can_read",
+                    link_class: "permission",
+                    head_uuid: sharedGroup.uuid,
+                    tail_uuid: activeUser.user.uuid,
                 });
+            });
+
+            cy.get("@testCollection").then(testCollection => {
+                cy.goToPath(`/collections/${testCollection.uuid}`);
+                // Verify collection name
+                cy.get("[data-cy=collection-details-card]")
+                    .should("contain", testCollection.name);
+
+                // Open overview tab
+                cy.doMPVTabSelect("Overview");
+
+                // Verify collection uuid
+                cy.get("[data-cy=details-element]")
+                    .should("contain", testCollection.uuid)
+                    .and("not.contain", "This is an old version");
+            });
+
+            // Check for the read-only icon
+            cy.get("[data-cy=read-only-icon]").should(`${isWritable ? "not." : ""}exist`);
+            // Check that both read and write operations are available on
+            // the 'More options' menu.
+            cy.get("[data-cy=collection-details-card]").within(() => {
+                cy.get("[data-targetid='Add to favorites']");
+                if (isWritable) {
+                    cy.get("[data-targetid='Edit collection']");
+                } else {
+                    cy.get("[data-targetid='Edit collection']").should("not.exist");
+                }
+            });
+            cy.get("body").click(); // Collapse the menu avoiding details panel expansion
+            cy.get("[data-cy=resource-properties]")
+                .should("contain", "someKey: someValue")
+                .and("not.contain", "anotherKey: anotherValue");
+            // Check that the file listing show both read & write operations
+            cy.waitForDom();
+            cy.doMPVTabSelect("Files");
+            cy.get("[data-cy=collection-files-right-panel]", { timeout: 5000 }).should("contain", fileName);
+            if (isWritable) {
+                cy.get("[data-cy=upload-button]").should(`${isWritable ? "" : "not."}contain`, "Upload data");
+            }
+            // Test context menus
+            cy.get("[data-cy=collection-files-panel]").contains(fileName).rightclick();
+            cy.get("[data-cy=context-menu]")
+                .should("contain", "Download")
+                .and("contain", "Open in new tab")
+                .and("contain", "Copy link to latest version")
+                .and("contain", "Copy link to immutable version")
+                .and(`${isWritable ? "" : "not."}contain`, "Rename")
+                .and(`${isWritable ? "" : "not."}contain`, "Remove");
+            cy.get("body").click(); // Collapse the menu
+            cy.get("[data-cy=collection-files-panel]").contains(subDirName).rightclick();
+            cy.get("[data-cy=context-menu]")
+                .should("not.contain", "Download")
+                .and("contain", "Open in new tab")
+                .and("contain", "Copy link to latest version")
+                .and("contain", "Copy link to immutable version")
+                .and(`${isWritable ? "" : "not."}contain`, "Rename")
+                .and(`${isWritable ? "" : "not."}contain`, "Remove");
+            cy.get("body").click(); // Collapse the menu
+            // File/dir item 'more options' button
+            cy.get("[data-cy=file-item-options-btn").first().click();
+            cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove");
+            cy.get("body").click(); // Collapse the menu
+            // Hamburger 'more options' menu button
+            cy.doCollectionPanelOptionsAction("Select all");
+            cy.get("[data-cy=collection-files-panel-options-btn]").click();
+            cy.get("[data-cy=context-menu]").should(`${isWritable ? "" : "not."}contain`, "Remove selected");
+            cy.get("body").click(); // Collapse the menu
         });
     });
 
@@ -376,173 +370,152 @@ describe("Collection panel tests", function () {
                 func(lst[i], lst[i + 1]);
             }
         }
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
+
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        })
-            .as("testCollection")
-            .then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
 
-                const names = [
-                    "bar", // initial name already set
-                    "&",
-                    "foo",
-                    "&amp;",
-                    "I ❤️ ⛵️",
-                    "...",
-                    "#..",
-                    "some name with whitespaces",
-                    "some name with #2",
-                    "is this name legal? I hope it is",
-                    "some_file.pdf#",
-                    "some_file.pdf?",
-                    "?some_file.pdf",
-                    "some%file.pdf",
-                    "some%2Ffile.pdf",
-                    "some%22file.pdf",
-                    "some%20file.pdf",
-                    "G%C3%BCnter's%20file.pdf",
-                    "table%&?*2",
-                    "bar", // make sure we can go back to the original name as a last step
-                ];
-                cy.intercept({ method: "PUT", url: "**/arvados/v1/collections/*" }).as("renameRequest");
-                cy.doMPVTabSelect("Files");
-                eachPair(names, (from, to) => {
-                    cy.waitForDom().get("[data-cy=collection-files-panel]").contains(`${from}`).rightclick();
-                    cy.get("[data-cy=context-menu]").contains("Rename").click();
-                    cy.get("[data-cy=form-dialog]")
-                        .should("contain", "Rename")
-                        .within(() => {
-                            cy.get("input").type("{selectall}{backspace}").type(to, { parseSpecialCharSequences: false });
-                        });
-                    cy.get("[data-cy=form-submit-btn]").click();
-                    cy.wait("@renameRequest");
-                    cy.get("[data-cy=collection-files-panel]").should("not.contain", `${from}`).and("contain", `${to}`);
+        const names = [
+            "bar", // initial name already set
+            "&",
+            "foo",
+            "&amp;",
+            "I ❤️ ⛵️",
+            "...",
+            "#..",
+            "some name with whitespaces",
+            "some name with #2",
+            "is this name legal? I hope it is",
+            "some_file.pdf#",
+            "some_file.pdf?",
+            "?some_file.pdf",
+            "some%file.pdf",
+            "some%2Ffile.pdf",
+            "some%22file.pdf",
+            "some%20file.pdf",
+            "G%C3%BCnter's%20file.pdf",
+            "table%&?*2",
+            "bar", // make sure we can go back to the original name as a last step
+        ];
+        cy.intercept({ method: "PUT", url: "**/arvados/v1/collections/*" }).as("renameRequest");
+
+        cy.doMPVTabSelect("Files");
+        eachPair(names, (from, to) => {
+            cy.get("[data-cy=collection-files-panel]").contains(`${from}`).rightclick();
+            cy.get("[data-cy=context-menu]").contains("Rename").click();
+            cy.get("[data-cy=form-dialog]")
+                .should("contain", "Rename")
+                .within(() => {
+                    cy.get("input").type("{selectall}{backspace}").type(to, { parseSpecialCharSequences: false });
                 });
-            });
+            cy.get("[data-cy=form-submit-btn]").click();
+            cy.wait("@renameRequest");
+            cy.get("[data-cy=collection-files-panel]").should("not.contain", `${from}`).and("contain", `${to}`);
+        });
     });
 
     it("renames a file to a different directory", function () {
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        })
-            .as("testCollection")
-            .then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
 
-                cy.doMPVTabSelect("Files");
-                ["subdir", "G%C3%BCnter's%20file", "table%&?*2"].forEach(subdir => {
-                    cy.waitForDom().get("[data-cy=collection-files-panel]").contains("bar").rightclick();
-                    cy.get("[data-cy=context-menu]").contains("Rename").click();
-                    cy.get("[data-cy=form-dialog]")
-                        .should("contain", "Rename")
-                        .within(() => {
-                            cy.get("input").type(`{selectall}{backspace}${subdir}/foo`);
-                        });
-                    cy.get("[data-cy=form-submit-btn]").click();
-                    cy.waitForDom();
-                    cy.get("[data-cy=form-dialog]").should("not.exist");
-                    cy.get("[data-cy=collection-files-panel]").should("not.contain", "bar").and("contain", subdir);
-                    cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
-
-                    // Rename 'subdir/foo' to 'bar'
-                    cy.waitForDom();
-                    cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
-                    cy.get("[data-cy=context-menu]").contains("Rename").click();
-                    cy.get("[data-cy=form-dialog]")
-                        .should("contain", "Rename")
-                        .within(() => {
-                            cy.get("input").should("have.value", `${subdir}/foo`).type(`{selectall}{backspace}bar`);
-                        });
-                    cy.get("[data-cy=form-submit-btn]").click({ force: true });
-
-                    // need to wait for dialog to dismiss
-                    cy.get("[data-cy=form-dialog]").should("not.exist");
-
-                    cy.waitForDom().get("[data-cy=collection-files-panel]").contains("Home").click();
-
-                    cy.waitForDom();
-                    cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
-                    cy.get("[data-cy=collection-files-panel]")
-                        .should("contain", subdir) // empty dir kept
-                        .and("contain", "bar");
-
-                    // this is when the dom is actually finished loading
-                    cy.get("[data-cy=file-item-options-btn]", { timeout: 20000 }).first().should('exist')
-
-                    cy.get("[data-cy=collection-files-panel-content]").contains(subdir).rightclick();
-                    cy.get("[data-cy=context-menu]").contains("Remove").click();
-                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
-                    cy.get("[data-cy=form-dialog]").should("not.exist");
+        cy.doMPVTabSelect("Files");
+        ["subdir", "G%C3%BCnter's%20file", "table%&?*2"].forEach(subdir => {
+            cy.get("[data-cy=collection-files-panel]").contains("bar").rightclick();
+            cy.get("[data-cy=context-menu]").contains("Rename").click();
+            cy.get("[data-cy=form-dialog]")
+                .should("contain", "Rename")
+                .within(() => {
+                    cy.get("input").type(`{selectall}{backspace}${subdir}/foo`);
                 });
-            });
+            cy.get("[data-cy=form-submit-btn]").click();
+            cy.get("[data-cy=form-dialog]").should("not.exist");
+            cy.get("[data-cy=collection-files-panel]").should("not.contain", "bar").and("contain", subdir);
+            cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
+
+            // Rename 'subdir/foo' to 'bar'
+            cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
+            cy.get("[data-cy=context-menu]").contains("Rename").click();
+            cy.get("[data-cy=form-dialog]")
+                .should("contain", "Rename")
+                .within(() => {
+                    cy.get("input").should("have.value", `${subdir}/foo`).type(`{selectall}{backspace}bar`);
+                });
+            cy.get("[data-cy=form-submit-btn]").click({ force: true });
+
+            // need to wait for dialog to dismiss
+            cy.get("[data-cy=form-dialog]").should("not.exist");
+
+            cy.get("[data-cy=collection-files-panel]").contains("Home").click();
+
+            cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
+            cy.get("[data-cy=collection-files-panel]")
+                .should("contain", subdir) // empty dir kept
+                .and("contain", "bar");
+
+            // this is when the dom is actually finished loading
+            cy.get("[data-cy=file-item-options-btn]", { timeout: 20000 }).first().should('exist')
+
+            cy.get("[data-cy=collection-files-panel-content]").contains(subdir).rightclick();
+            cy.get("[data-cy=context-menu]").contains("Remove").click();
+            cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+            cy.get("[data-cy=form-dialog]").should("not.exist");
+        });
     });
 
     it("shows collection owner", () => {
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        })
-            .as("testCollection")
-            .then(testCollection => {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${testCollection.uuid}`);
-                cy.wait(5000);
-                cy.doMPVTabSelect("Overview");
-                cy.get("[data-cy=details-element]").contains(`Collection User`);
-            });
+        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
+
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=details-element]").contains(activeUser.user.full_name);
     });
 
     it("tries to rename a file with illegal names", function () {
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
+        const illegalNamesFromUI = [
+            [".", "Name cannot be '.' or '..'"],
+            ["..", "Name cannot be '.' or '..'"],
+            ["", "This field is required"],
+            [" ", "Leading/trailing whitespaces not allowed"],
+            [" foo", "Leading/trailing whitespaces not allowed"],
+            ["foo ", "Leading/trailing whitespaces not allowed"],
+            ["//foo", "Empty dir name not allowed"],
+        ];
+
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         })
-            .as("testCollection")
-            .then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+            .then(testCollection => cy.goToPath(`/collections/${testCollection.uuid}`));
 
-                const illegalNamesFromUI = [
-                    [".", "Name cannot be '.' or '..'"],
-                    ["..", "Name cannot be '.' or '..'"],
-                    ["", "This field is required"],
-                    [" ", "Leading/trailing whitespaces not allowed"],
-                    [" foo", "Leading/trailing whitespaces not allowed"],
-                    ["foo ", "Leading/trailing whitespaces not allowed"],
-                    ["//foo", "Empty dir name not allowed"],
-                ];
-                cy.doMPVTabSelect("Files");
-                illegalNamesFromUI.forEach(([name, errMsg]) => {
-                    cy.get("[data-cy=collection-files-panel]").contains("bar").rightclick();
-                    cy.get("[data-cy=context-menu]").contains("Rename").click();
-                    cy.get("[data-cy=form-dialog]")
-                        .should("contain", "Rename")
-                        .within(() => {
-                            cy.get("input").type(`{selectall}{backspace}${name}`);
-                        });
-                    cy.get("[data-cy=form-dialog]")
-                        .should("contain", "Rename")
-                        .within(() => {
-                            cy.contains(`${errMsg}`);
-                        });
-                    cy.get("[data-cy=form-cancel-btn]").click();
+        cy.doMPVTabSelect("Files");
+        illegalNamesFromUI.forEach(([name, errMsg]) => {
+            cy.get("[data-cy=collection-files-panel]").contains("bar").rightclick();
+            cy.get("[data-cy=context-menu]").contains("Rename").click();
+            cy.get("[data-cy=form-dialog]")
+                .should("contain", "Rename")
+                .within(() => {
+                    cy.get("input").type(`{selectall}{backspace}${name}`);
                 });
-            });
+            cy.get("[data-cy=form-dialog]")
+                .should("contain", "Rename")
+                .within(() => {
+                    cy.contains(errMsg);
+                });
+            cy.get("[data-cy=form-cancel-btn]").click();
+        });
     });
 
     it("can correctly display old versions", function () {
@@ -559,8 +532,6 @@ describe("Collection panel tests", function () {
             .then(function () {
                 expect(this.collections).to.be.empty;
             });
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
             name: colName,
             owner_uuid: activeUser.user.uuid,
@@ -681,30 +652,33 @@ describe("Collection panel tests", function () {
             owner_uuid: activeUser.user.uuid,
         }).as("testProject");
 
-        cy.getAll("@testCollection", "@testProject").then(function ([testCollection, testProject]) {
-            cy.loginAs(activeUser);
-            cy.goToPath(`/collections/${testCollection.uuid}`);
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
-            cy.get("[data-cy=collection-details-card]").should("not.contain", projName).and("not.contain", testProject.uuid);
-            cy.get('[data-title="Move to"]').click();
-            cy.get("[data-cy=form-dialog]")
-                .should("contain", "Move to")
-                .within(() => {
-                    // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
-                    cy.get("[data-cy=projects-tree-home-tree-picker]")
-                        .find("i")
-                        .then(el => el.click());
-                    cy.get("[data-cy=projects-tree-home-tree-picker]").contains(projName).click();
-                });
-            cy.get("[data-cy=form-submit-btn]").click();
-            cy.get("[data-cy=snackbar]").contains("Collection has been moved");
-            cy.get("button").contains(projName);
-            // Double check that the collection is in the project
-            cy.goToPath(`/projects/${testProject.uuid}`);
-            cy.doMPVTabSelect("Data");
-            cy.waitForDom().get("[data-cy=project-panel]").should("contain", collName);
+        cy.loginAs(activeUser);
+
+        cy.get("@testCollection").then(testCollection => cy.goToPath(`/collections/${testCollection.uuid}`));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
+        cy.get("@testProject").then(testProject => {
+            cy.get("[data-cy=collection-details-card]")
+                .should("not.contain", projName)
+                .and("not.contain", testProject.uuid);
         });
+        cy.get('[data-title="Move to"]').click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Move to")
+            .within(() => {
+                // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
+                cy.get("[data-cy=projects-tree-home-tree-picker]")
+                    .find("i")
+                    .then(el => el.click());
+                cy.get("[data-cy=projects-tree-home-tree-picker]").contains(projName).click();
+            });
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=snackbar]").contains("Collection has been moved");
+        cy.get("button").contains(projName);
+        // Double check that the collection is in the project
+        cy.get("@testProject").then(testProject => cy.goToPath(`/projects/${testProject.uuid}`));
+        cy.doMPVTabSelect("Data");
+        cy.get("[data-cy=project-panel]").should("contain", collName);
     });
 
     it("automatically updates the collection UI contents without using the Refresh button", function () {
@@ -751,167 +725,153 @@ describe("Collection panel tests", function () {
         const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
         const copyName = `Copy of: ${collName}`;
 
+        cy.loginAs(activeUser);
+
         cy.createCollection(adminUser.token, {
             name: collName,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:some-file\n",
         })
-            .as("collection")
-            .then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.collection.uuid}`);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
-                cy.get('[data-title="Make a copy"]').click();
-                cy.get("[data-cy=form-dialog]")
-                    .should("contain", "Make a copy")
-                    .within(() => {
-                        cy.get("[data-cy=projects-tree-home-tree-picker]").contains("Projects").click();
-                        cy.get("[data-cy=form-submit-btn]").click();
-                    });
-                cy.get("[data-cy=snackbar]").contains("Collection has been copied.");
-                cy.get("[data-cy=tree-li]").contains("Home Projects").click();
-                cy.doMPVTabSelect("Data");
-                cy.get("[data-cy=project-panel]").contains(copyName).click();
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
+            .then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
+
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
+        cy.get('[data-title="Make a copy"]').click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Make a copy")
+            .within(() => {
+                cy.get("[data-cy=projects-tree-home-tree-picker]").contains("Projects").click();
+                cy.get("[data-cy=form-submit-btn]").click();
             });
+        cy.get("[data-cy=snackbar]").contains("Collection has been copied.");
+
+        goToCollectionByName(copyName, activeUser.token);
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
     });
 
     it("uses the collection version browser to view a previous version", function () {
         const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
 
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
             name: colName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        })
-            .as("collection")
-            .then(function () {
-                // Visit collection, check basic information
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.collection.uuid}`);
-                cy.doMPVTabSelect("Overview");
+        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
 
-                cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
-                cy.get("[data-cy=read-only-icon]").should("not.exist");
-                cy.get("[data-cy=collection-version-number]").should("contain", "1");
-                cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
+        cy.get("[data-cy=read-only-icon]").should("not.exist");
+        cy.get("[data-cy=collection-version-number]").should("contain", "1");
+        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
-                // Modify collection, expect version number change
-                cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
-                cy.get("[data-cy=context-menu]").contains("Remove").click();
-                cy.get("[data-cy=confirmation-dialog]").should("contain", "Removing file");
-                cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
-                cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
-                cy.doMPVTabSelect("Overview");
-                cy.get("[data-cy=collection-version-number]").should("contain", "2");
+        // Modify collection, expect version number change
+        cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
+        cy.get("[data-cy=context-menu]").contains("Remove").click();
+        cy.get("[data-cy=confirmation-dialog]").should("contain", "Removing file");
+        cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+        cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=collection-version-number]").should("contain", "2");
 
-                // Click on version number, check version browser. Click on past version.
-                cy.get("[data-cy=collection-version-browser]").should("not.exist");
-                cy.get("[data-cy=collection-version-number]").contains("2").click();
-                cy.get("[data-cy=collection-version-browser]")
-                    .should("contain", "Nr")
-                    .and("contain", "Size")
-                    .and("contain", "Date")
-                    .within(() => {
-                        // Version 1: 6 bytes in size
-                        cy.get("[data-cy=collection-version-browser-select-1]")
-                            .should("contain", "1")
-                            .and("contain", "6 B")
-                            .and("contain", adminUser.user.full_name);
-                        // Version 2: 3 bytes in size (one file removed)
-                        cy.get("[data-cy=collection-version-browser-select-2]")
-                            .should("contain", "2")
-                            .and("contain", "3 B")
-                            .and("contain", activeUser.user.full_name);
-                        cy.get("[data-cy=collection-version-browser-select-3]").should("not.exist");
-                        cy.get("[data-cy=collection-version-browser-select-1]").click();
-                    });
-                // Navigate back to overview tab
-                cy.doMPVTabSelect("Overview");
-                cy.get("[data-cy=details-element]").should("contain", "This is an old version");
-                cy.get("[data-cy=read-only-icon]").should("exist");
-                cy.get("[data-cy=collection-version-number]").should("contain", "1");
-                cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
-
-                // Check that only old collection action are available on toolbar
-                cy.get('[data-title="Restore version"]').should('exist');
-                cy.get('[data-title="Add to favorites"]').should('not.exist');
-
-                // Click on "head version" link, confirm that it's the latest version.
-                cy.doMPVTabSelect("Overview");;
-                cy.get("[data-cy=details-element]").contains("head version").click();
-                // Navigate back to overview after changing versions
-                cy.doMPVTabSelect("Overview");
-                cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
-                cy.get("[data-cy=read-only-icon]").should("not.exist");
-                cy.get("[data-cy=collection-version-number]").should("contain", "2");
-                cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
-
-                // Check that old collection action isn't available on context menu
-                cy.get('[data-title="Restore version"]').should('not.exist');
-
-                // Make another change, confirm new version.
-                cy.get('[data-title="Edit collection"]').click();
-                cy.get("[data-cy=form-dialog]")
-                    .should("contain", "Edit Collection")
-                    .within(() => {
-                        // appends some text
-                        cy.get("input").first().type(" renamed");
-                    });
-                cy.get("[data-cy=form-submit-btn]").click();
-                cy.doMPVTabSelect("Overview");;
-                cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
-                cy.get("[data-cy=read-only-icon]").should("not.exist");
-                cy.get("[data-cy=collection-version-number]").should("contain", "3");
-                cy.get("[data-cy=collection-details-card]").should("contain", colName + " renamed");
-                cy.get("[data-cy=collection-version-browser-select-3]").should("contain", "3").and("contain", "3 B");
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
-
-                // Check context menus on version browser
-                cy.waitForDom();
-                cy.waitForDom();
-                cy.get("[data-cy=collection-version-browser-select-3]").rightclick();
-                cy.get("[data-cy=context-menu]")
-                    .should("contain", "Add to favorites")
-                    .and("contain", "Make a copy")
-                    .and("contain", "Edit collection");
-                cy.get("body").click();
-                // (and now an old version...)
-                cy.get("[data-cy=collection-version-browser-select-1]").rightclick();
-                cy.get("[data-cy=context-menu]")
-                    .should("not.contain", "Add to favorites")
-                    .and("contain", "Make a copy")
-                    .and("not.contain", "Edit collection");
-                cy.get("body").click();
-
-
-                // Restore first version
-                cy.get("[data-cy=collection-version-browser]").within(() => {
-                    cy.get("[data-cy=collection-version-browser-select-1]").click();
-                });
-                cy.get('[data-title="Restore version"]').click();
-                cy.get("[data-cy=confirmation-dialog]").should("contain", "Restore version");
-                cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
-                // Navigate back to overview after changing versions
-                cy.doMPVTabSelect("Overview");
-                cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
-                cy.get("[data-cy=collection-version-number]").should("contain", "4");
-                cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
+        // Click on version number, check version browser. Click on past version.
+        cy.get("[data-cy=collection-version-browser]").should("not.exist");
+        cy.get("[data-cy=collection-version-number]").contains("2").click();
+        cy.get("[data-cy=collection-version-browser]")
+            .should("contain", "Nr")
+            .and("contain", "Size")
+            .and("contain", "Date")
+            .within(() => {
+                // Version 1: 6 bytes in size
+                cy.get("[data-cy=collection-version-browser-select-1]")
+                    .should("contain", "1")
+                    .and("contain", "6 B")
+                    .and("contain", adminUser.user.full_name);
+                // Version 2: 3 bytes in size (one file removed)
+                cy.get("[data-cy=collection-version-browser-select-2]")
+                    .should("contain", "2")
+                    .and("contain", "3 B")
+                    .and("contain", activeUser.user.full_name);
+                cy.get("[data-cy=collection-version-browser-select-3]").should("not.exist");
+                cy.get("[data-cy=collection-version-browser-select-1]").click();
             });
+        // Navigate back to overview tab
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=details-element]").should("contain", "This is an old version");
+        cy.get("[data-cy=read-only-icon]").should("exist");
+        cy.get("[data-cy=collection-version-number]").should("contain", "1");
+        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
+
+        // Check that only old collection action are available on toolbar
+        cy.get('[data-title="Restore version"]').should('exist');
+        cy.get('[data-title="Add to favorites"]').should('not.exist');
+
+        // Click on "head version" link, confirm that it's the latest version.
+        cy.doMPVTabSelect("Overview");;
+        cy.get("[data-cy=details-element]").contains("head version").click();
+        // Navigate back to overview after changing versions
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
+        cy.get("[data-cy=read-only-icon]").should("not.exist");
+        cy.get("[data-cy=collection-version-number]").should("contain", "2");
+        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
+
+        // Check that old collection action isn't available on context menu
+        cy.get('[data-title="Restore version"]').should('not.exist');
+
+        // Make another change, confirm new version.
+        cy.get('[data-title="Edit collection"]').click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Edit Collection")
+            .within(() => {
+                // appends some text
+                cy.get("input").first().type(" renamed");
+            });
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.doMPVTabSelect("Overview");;
+        cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
+        cy.get("[data-cy=read-only-icon]").should("not.exist");
+        cy.get("[data-cy=collection-version-number]").should("contain", "3");
+        cy.get("[data-cy=collection-details-card]").should("contain", colName + " renamed");
+        cy.get("[data-cy=collection-version-browser-select-3]").should("contain", "3").and("contain", "3 B");
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
+
+        // Check context menus on version browser
+        cy.get("[data-cy=collection-version-browser-select-3]").rightclick();
+        cy.get("[data-cy=context-menu]")
+            .should("contain", "Add to favorites")
+            .and("contain", "Make a copy")
+            .and("contain", "Edit collection");
+        cy.get("body").click();
+        // (and now an old version...)
+        cy.get("[data-cy=collection-version-browser-select-1]").rightclick();
+        cy.get("[data-cy=context-menu]")
+            .should("not.contain", "Add to favorites")
+            .and("contain", "Make a copy")
+            .and("not.contain", "Edit collection");
+        cy.get("body").click();
+
+        // Restore first version
+        cy.get("[data-cy=collection-version-browser] [data-cy=collection-version-browser-select-1]").click();
+        cy.get('[data-title="Restore version"]').click();
+        cy.get("[data-cy=confirmation-dialog]").should("contain", "Restore version");
+        cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+        // Navigate back to overview after changing versions
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
+        cy.get("[data-cy=collection-version-number]").should("contain", "4");
+        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
     });
 
     it("copies selected files into new collection", () => {
@@ -920,29 +880,25 @@ describe("Collection panel tests", function () {
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        })
-            .as("collection")
-            .then(function () {
-                // Visit collection, check basic information
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.collection.uuid}`);
+        }).as("sourceCollection");
 
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").within(() => {
-                    cy.get("input[type=checkbox]").first().click();
-                });
+        // Visit collection, check basic information
+        cy.loginAs(activeUser);
+        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
 
-                cy.get("[data-cy=collection-files-panel-options-btn]").click();
-                cy.get("[data-cy=context-menu]").contains("Copy selected into new collection").click();
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
 
-                cy.get("[data-cy=form-dialog]").contains("Projects").click();
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]").contains("Copy selected into new collection").click();
 
-                cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").contains("Projects").click();
+        cy.get("[data-cy=form-submit-btn]").click();
 
-                goToCollectionByName(`Files extracted from: ${this.collection.name}`, activeUser.token);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
-            });
+        cy.get("@sourceCollection")
+            .then(oldColl => goToCollectionByName(`Files extracted from: ${oldColl.name}`, activeUser.token));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
     });
 
     it("copies selected files into existing collection", () => {
@@ -960,31 +916,30 @@ describe("Collection panel tests", function () {
             manifest_text: "",
         }).as("destinationCollection");
 
-        cy.getAll("@sourceCollection", "@destinationCollection").then(function ([sourceCollection, destinationCollection]) {
-            // Visit collection, check basic information
-            cy.loginAs(activeUser);
-            cy.goToPath(`/collections/${sourceCollection.uuid}`);
+        cy.loginAs(activeUser);
+        // Visit collection, check basic information
+        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
 
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").within(() => {
-                cy.get("input[type=checkbox]").first().click();
-            });
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
 
-            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").contains("Copy selected into existing collection").click();
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]").contains("Copy selected into existing collection").click();
 
-            cy.get("[data-cy=form-dialog]").contains(destinationCollection.name).click();
+        cy.get("@destinationCollection")
+            .its("name")
+            .then(destName => cy.get("[data-cy=form-dialog]").contains(destName).click());
 
-            cy.get("[data-cy=form-submit-btn]").click();
-            cy.wait(2000);
+        cy.get("[data-cy=form-submit-btn]").click();
 
-            cy.goToPath(`/collections/${destinationCollection.uuid}`);
+        cy.get("@destinationCollection").then(destinationCollection => cy.goToPath(`/collections/${destinationCollection.uuid}`));
 
-            cy.doMPVTabSelect("Overview");;
-            cy.get("main").contains(destinationCollection.name).should("exist");
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
-        });
+        cy.doMPVTabSelect("Overview");;
+        cy.get("@destinationCollection")
+            .its("name")
+            .then(destName => cy.get("main").contains(destName).should("exist"));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
     });
 
     it("copies selected files into separate collections", () => {
@@ -995,118 +950,103 @@ describe("Collection panel tests", function () {
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
         }).as("sourceCollection");
 
-        cy.getAll("@sourceCollection").then(function ([sourceCollection]) {
-            // Visit collection, check basic information
-            cy.loginAs(activeUser);
-            cy.goToPath(`/collections/${sourceCollection.uuid}`);
+        // Visit collection, check basic information
+        cy.loginAs(activeUser);
+        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
 
-            // Select both files
-            cy.waitForDom()
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]")
-                .within(() => {
-                    cy.get("input[type=checkbox]").first().click();
-                    cy.get("input[type=checkbox]").last().click();
-                });
+        // Select both files
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").last().click();
 
-            // Copy to separate collections
-            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").contains("Copy selected into separate collections").click();
-            cy.get("[data-cy=form-dialog]").contains("Projects").click();
-            cy.get("[data-cy=form-submit-btn]").click();
+        // Copy to separate collections
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]").contains("Copy selected into separate collections").click();
+        cy.get("[data-cy=form-dialog]").contains("Projects").click();
+        cy.get("[data-cy=form-submit-btn]").click();
 
-            // Verify created collections
-            goToCollectionByName(`File copied from collection ${sourceCollection.name}/foo`, activeUser.token);
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").and("contain", "foo");
-            goToCollectionByName(`File copied from collection ${sourceCollection.name}/bar`, activeUser.token);
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
+        // Verify created collections
+        cy.get("@sourceCollection")
+            .then(oldColl => goToCollectionByName(`File copied from collection ${oldColl.name}/foo`, activeUser.token));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
 
-            // Verify separate collection menu items not present when single file selected
-            // Wait for dom for collection to re-render
-            cy.waitForDom()
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]")
-                .within(() => {
-                    cy.get("input[type=checkbox]").first().click();
-                });
-            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").should("not.contain", "Copy selected into separate collections");
-            cy.get("[data-cy=context-menu]").should("not.contain", "Move selected into separate collections");
-        });
+        cy.get("@sourceCollection")
+            .then(oldColl => goToCollectionByName(`File copied from collection ${oldColl.name}/bar`, activeUser.token));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
+
+        // Verify separate collection menu items not present when single file selected
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]")
+            .first().click();
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]")
+            .should("not.contain", "Copy selected into separate collections")
+            .and("not.contain", "Move selected into separate collections");
     });
 
     it("moves selected files into new collection", () => {
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
             name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        })
-            .as("collection")
-            .then(function () {
-                // Visit collection, check basic information
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.collection.uuid}`);
+        }).as("testCollection")
+            .then(testCollection => cy.goToPath(`/collections/${testCollection.uuid}`));
 
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").within(() => {
-                    cy.get("input[type=checkbox]").first().click();
-                });
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
 
-                cy.get("[data-cy=collection-files-panel-options-btn]").click();
-                cy.get("[data-cy=context-menu]").contains("Move selected into new collection").click();
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]").contains("Move selected into new collection").click();
 
-                cy.get("[data-cy=form-dialog]").contains("Projects").click();
+        cy.get("[data-cy=form-dialog]").contains("Projects").click();
 
-                cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-submit-btn]").click();
 
-                goToCollectionByName(`Files moved from: ${this.collection.name}`, activeUser.token);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
-            });
+        cy.get("@testCollection").then(oldColl => goToCollectionByName(`Files moved from: ${oldColl.name}`, activeUser.token));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
     });
 
     it("moves selected files into existing collection", () => {
+        const srcName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const dstName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+
         cy.createCollection(adminUser.token, {
-            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            name: srcName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("sourceCollection");
+        }).as("srcCollection");
 
         cy.createCollection(adminUser.token, {
-            name: `Destination Collection ${Math.floor(Math.random() * 999999)}`,
+            name: dstName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: "",
-        }).as("destinationCollection");
+        }).as("dstCollection");
 
-        cy.getAll("@sourceCollection", "@destinationCollection").then(function ([sourceCollection, destinationCollection]) {
-            // Visit collection, check basic information
-            cy.loginAs(activeUser);
-            cy.goToPath(`/collections/${sourceCollection.uuid}`);
+        cy.loginAs(activeUser);
+        cy.get("@srcCollection").then(srcCollection => cy.goToPath(`/collections/${srcCollection.uuid}`));
 
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").within(() => {
-                cy.get("input[type=checkbox]").first().click();
-            });
+        cy.doMPVTabSelect("Files");
+        // FIXME: implicitly relying on "bar" being first.
+        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
 
-            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").contains("Move selected into existing collection").click();
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]").contains("Move selected into existing collection").click();
 
-            cy.get("[data-cy=form-dialog]").contains(destinationCollection.name).click();
+        cy.get("[data-cy=form-dialog]").contains(dstName).click();
+        cy.get("[data-cy=form-submit-btn]").click();
 
-            cy.get("[data-cy=form-submit-btn]").click();
-            cy.wait(2000);
+        cy.get("@dstCollection").then(dstCollection => cy.goToPath(`/collections/${dstCollection.uuid}`));
 
-            cy.goToPath(`/collections/${destinationCollection.uuid}`);
-
-            cy.get("main").contains(destinationCollection.name).should("exist");
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
-        });
+        cy.get("main").contains(dstName).should("exist");
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
     });
 
     it("moves selected files into separate collections", () => {
@@ -1117,34 +1057,32 @@ describe("Collection panel tests", function () {
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
         }).as("sourceCollection");
 
-        cy.getAll("@sourceCollection").then(function ([sourceCollection]) {
-            // Visit collection, check basic information
-            cy.loginAs(activeUser);
-            cy.goToPath(`/collections/${sourceCollection.uuid}`);
-            cy.doMPVTabSelect("Files");
+        // Visit collection, check basic information
+        cy.loginAs(activeUser);
+        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
 
-            // Select both files
-            cy.get("[data-cy=collection-files-panel]").within(() => {
-                cy.get("input[type=checkbox]").first().click();
-                cy.get("input[type=checkbox]").last().click();
-            });
-
-            // Move to separate collections
-            cy.get("[data-cy=collection-files-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").contains("Move selected into separate collections").click();
-            cy.get("[data-cy=form-dialog]").contains("Projects").click();
-            cy.get("[data-cy=form-submit-btn]").click();
-            cy.get("[data-cy=form-dialog]").should("not.exist", { timeout: 10000 });
-
-            // Verify created collections
-            goToCollectionByName(`File moved from collection ${sourceCollection.name}/foo`, activeUser.token);
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
-
-            goToCollectionByName(`File moved from collection ${sourceCollection.name}/bar`, activeUser.token);
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
+        cy.doMPVTabSelect("Files");
+        // Select both files
+        cy.get("[data-cy=collection-files-panel]").within(() => {
+            cy.get("input[type=checkbox]").first().click();
+            cy.get("input[type=checkbox]").last().click();
         });
+
+        // Move to separate collections
+        cy.get("[data-cy=collection-files-panel-options-btn]").click();
+        cy.get("[data-cy=context-menu]").contains("Move selected into separate collections").click();
+        cy.get("[data-cy=form-dialog]").contains("Projects").click();
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+
+        // Verify created collections
+        cy.get("@sourceCollection").then(oldColl => goToCollectionByName(`File moved from collection ${oldColl.name}/foo`, activeUser.token));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
+
+        cy.get("@sourceCollection").then(oldColl => goToCollectionByName(`File moved from collection ${oldColl.name}/bar`, activeUser.token));
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
     });
 
     it("creates new collection with properties on home project", function () {
@@ -1166,12 +1104,8 @@ describe("Collection panel tests", function () {
             .and("contain", "foo")
             .and("contain", "bar")
             .within(() => {
-                cy.get("[data-cy=parent-field]").within(() => {
-                    cy.get("input").should("have.value", "Home project");
-                });
-                cy.get("[data-cy=name-field]").within(() => {
-                    cy.get("input").type(collName);
-                });
+                cy.get("[data-cy=parent-field] input").should("have.value", "Home project");
+                cy.get("[data-cy=name-field] input").type(collName);
                 cy.get("[data-cy=checkbox-foo]").click();
             });
 
@@ -1179,9 +1113,7 @@ describe("Collection panel tests", function () {
         // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
         cy.get("[data-cy=form-dialog]").should("not.contain", "Color: Magenta");
         cy.get("[data-cy=resource-properties-form]").within(() => {
-            cy.get("[data-cy=property-field-key]").within(() => {
-                cy.get("input").type("Color");
-            });
+            cy.get("[data-cy=property-field-key] input").type("Color");
             cy.get("[data-cy=property-field-value]").click().within(() => {
                 cy.get("input").type("Magenta");
             });
@@ -1217,10 +1149,9 @@ describe("Collection panel tests", function () {
             filters: `[["name", "=", "${collName}"]]`,
         })
             .its("body.items")
-            .as("collections")
-            .then(function () {
-                expect(this.collections).to.have.lengthOf(1);
-                expect(this.collections[0].properties["IDTAGCOLORS"]).to.deep.equal(["IDVALCOLORS3"]);
+            .then(collArray => {
+                expect(collArray).to.have.lengthOf(1);
+                expect(collArray[0].properties["IDTAGCOLORS"]).to.deep.equal(["IDVALCOLORS3"]);
             });
     });
 
