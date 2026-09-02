@@ -124,7 +124,7 @@
     "terser-webpack-plugin": "^5.2.5",
     "tippy.js": "^6.3.7",
     "unionize": "2.1.2",
-    "uuid": "3.3.2",
+    "uuid": "14.0.0",
     "webpack": "5.105.2",
     "webpack-dev-server": "^4.6.0",
     "webpack-manifest-plugin": "^4.0.2",
