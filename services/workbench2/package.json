@@ -141,6 +141,7 @@
     "watch-css": "npm run build-css && node-sass src/ -o src/ --watch --recursive"
   },
   "devDependencies": {
+    "@cypress/react": "^8",
     "@sinonjs/fake-timers": "^10.3.0",
     "@types/classnames": "2.2.6",
     "@types/is-image": "3.0.0",
@@ -155,8 +156,8 @@
     "@types/sinon": "7.5",
     "@types/uuid": "3.4.4",
     "axios-mock-adapter": "^2.1.0",
-    "cypress": "^13.6.6",
-    "cypress-wait-until": "^3.0.1",
+    "cypress": "^14.0.0",
+    "cypress-wait-until": "^3.0.2",
     "node-sass": "^9.0.0",
     "redux-devtools": "^3.7.0",
     "redux-mock-store": "1.5.4",

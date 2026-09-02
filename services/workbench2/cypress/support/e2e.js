@@ -18,7 +18,7 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
-import './commands'
+import './commands';
 
 // Comment out to turn off fail-fast behavior for all tests
 // DO NOT FORGET TO UNCOMMENT THIS LINE BEFORE COMMITTING
