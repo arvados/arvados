@@ -8,6 +8,9 @@ require('cypress-plugin-tab');
 // It can be tricky to mimick the user's search for a collection by its known
 // (and unique) name, which can be noisy, time consuming, and a bit flaky. We
 // locate the collection by API directly and jump to it.
+// NOTE: To use after some collection-creating user action, it's a good idea to
+// add a "barrier" assertion (e.g., disappeared form dialog, snackbar with a
+// certain message, etc.) before calling.
 function goToCollectionByName(collectionName, token) {
     return cy.doRequest("GET", "/arvados/v1/collections", null, {
         filters: JSON.stringify([["name", "=", collectionName]]),
@@ -21,6 +24,10 @@ function goToCollectionByName(collectionName, token) {
             const uuid = response.body.items[0].uuid;
             return cy.goToPath(`/collections/${uuid}`);
         });
+}
+
+function randomName(prefix = "Test collection ") {  // note the ending space
+    return `${prefix}${Math.floor(Math.random() * 999999)}`;
 }
 
 describe("Collection panel tests", function () {
@@ -47,16 +54,16 @@ describe("Collection panel tests", function () {
     });
 
     it("allows to download mountain duck config for a collection", () => {
+        cy.loginAs(activeUser);
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         })
             .as("testCollection")
             .then(function (testCollection) {
-                cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testCollection.uuid}`);
 
                 cy.get('[data-title="Open with 3rd party client"]').click();
@@ -94,9 +101,9 @@ describe("Collection panel tests", function () {
     });
 
     it("attempts to use a preexisting name creating or updating a collection", function () {
-        const name = `Test collection ${Math.floor(Math.random() * 999999)}`;
+        const collName = randomName();
         cy.createCollection(adminUser.token, {
-            name: name,
+            name: collName,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         });
@@ -110,13 +117,12 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]")
             .should("contain", "New collection")
             .within(() => {
-                cy.get("[data-cy=name-field] input").type(name);
+                cy.get("[data-cy=name-field] input").type(collName);
                 cy.get("[data-cy=form-submit-btn]").click();
             });
         // Error message should display, allowing editing the name
         cy.get("[data-cy=form-dialog]")
-            .should("exist")
-            .and("contain", "Collection with the same name already exists")
+            .should("contain", "Collection with the same name already exists")
             .within(() => {
                 cy.get("[data-cy=name-field] input").type(" renamed");
                 cy.get("[data-cy=form-submit-btn]").click();
@@ -127,130 +133,120 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]")
             .should("contain", "Edit Collection")
             .within(() => {
-                cy.get("[data-cy=name-field] input").type("{selectall}{backspace}").type(name);
+                cy.get("[data-cy=name-field] input").type("{selectall}{backspace}").type(collName);
                 cy.get("[data-cy=form-submit-btn]").click();
             });
         cy.get("[data-cy=form-dialog]").should("exist").and("contain", "Collection with the same name already exists");
     });
 
     it("uses the property editor (from edit dialog) with vocabulary terms", function () {
+        const collName = randomName();
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: collName,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         })
             .as("testCollection")
-            .then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+            .then((testCollection) => cy.goToPath(`/collections/${testCollection.uuid}`));
 
-                // Verify collection name
-                cy.get("[data-cy=collection-details-card").should("contain", this.testCollection.name);
-                // Open overview tab
-                cy.doMPVTabSelect("Overview");
-                // Verify property not present
-                cy.get("[data-cy=resource-properties]").should("not.contain", "Color: Magenta");
+        // Verify collection name
+        cy.get("[data-cy=collection-details-card").should("contain", collName);
+        // Open overview tab
+        cy.doMPVTabSelect("Overview");
+        // Verify property not present
+        cy.get("[data-cy=resource-properties]").should("not.contain", "Color: Magenta");
 
-                cy.get('[data-title="Edit collection"]').click();
-                cy.get("[data-cy=form-dialog]").should("contain", "Properties");
+        cy.get('[data-title="Edit collection"]').click();
+        cy.get("[data-cy=form-dialog]").should("contain", "Properties");
 
-                // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
-                cy.get("[data-cy=resource-properties-form]").within(() => {
-                    cy.get("[data-cy=property-field-key]").within(() => {
-                        cy.get("input").type("Color");
-                    });
-                    cy.get("[data-cy=property-field-value]").click().within(() => {
-                        cy.get("input").type("Magenta");
-                    });
-                    cy.get("[data-cy=property-add-btn]").click();
-                });
-                // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
-                cy.get("[data-cy=form-dialog]").contains("Save").click();
-                cy.get("[data-cy=form-dialog]").should("not.exist");
-                // Confirm proper vocabulary IDs were saved on the backend.
-                cy.doRequest("GET", `/arvados/v1/collections/${this.testCollection.uuid}`)
-                    .its("body")
-                    .as("collection")
-                    .then(function () {
-                        expect(this.collection.properties.IDTAGCOLORS).to.deep.equal(["IDVALCOLORS3"]);
-                    });
-                // Confirm the property is displayed on the UI.
-                cy.get("[data-cy=resource-properties").should("contain", "Color: Magenta");
+        // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+        cy.get("[data-cy=resource-properties-form]").within(() => {
+            cy.get("[data-cy=property-field-key] input").type("Color");
+            cy.get("[data-cy=property-field-value]").click().within(() => {
+                cy.get("input").type("Magenta");
             });
+            cy.get("[data-cy=property-add-btn]").click();
+        });
+        // Confirm proper vocabulary labels are displayed on the UI.
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Color: Magenta")
+            .contains("Save").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+        // Confirm proper vocabulary IDs were saved on the backend.
+        cy.get("@testCollection")
+            .then((testCollection) => cy.getCollection(activeUser.token, testCollection.uuid))
+            .its("properties")
+            .should("deep.include", { IDTAGCOLORS: ["IDVALCOLORS3"] });
+        // Confirm the property is displayed on the UI.
+        cy.get("[data-cy=resource-properties").should("contain", "Color: Magenta");
     });
 
     it("uses the editor (from details panel) with vocabulary terms", function () {
+        const collName = randomName();
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: collName,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         })
             .as("testCollection")
-            .then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+            .then((testCollection) => cy.goToPath(`/collections/${this.testCollection.uuid}`));
 
-                // Verify collection name
-                cy.get("[data-cy=collection-details-card")
-                    .should("contain", this.testCollection.name);
+        // Verify collection name
+        cy.get("[data-cy=collection-details-card").should("contain", collName);
 
-                // Open overview tab
-                cy.doMPVTabSelect("Overview");
+        // Open overview tab
+        cy.doMPVTabSelect("Overview");
 
-                // Verify properties not present
-                cy.get("[data-cy=resource-properties]")
-                    .and("not.contain", "Color: Magenta")
-                    .and("not.contain", "Size: S");
-                cy.get("[data-title='View details']").click();
+        // Verify properties not present
+        cy.get("[data-cy=resource-properties]")
+            .and("not.contain", "Color: Magenta")
+            .and("not.contain", "Size: S");
+        cy.get("[data-title='View details']").click();
 
-                cy.get("[data-cy=details-panel]").within(() => {
-                    cy.get("[data-cy=details-panel-edit-btn]").click();
-                });
-                cy.get("[data-cy=form-dialog").contains("Edit Collection");
+        cy.get("[data-cy=details-panel] [data-cy=details-panel-edit-btn]").click();
+        cy.get("[data-cy=form-dialog").should("contain", "Edit Collection");
 
-                // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
-                cy.get("[data-cy=resource-properties-form]").within(() => {
-                    cy.get("[data-cy=property-field-key]").within(() => {
-                        cy.get("input").type("Color");
-                    });
-                    cy.get("[data-cy=property-field-value]").click().within(() => {
-                        cy.get("input").type("Magenta");
-                    });
-                    cy.get("[data-cy=property-add-btn]").click();
-                });
-                // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
-
-                // Case-insensitive on-blur auto-selection test
-                // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
-                cy.get("[data-cy=resource-properties-form]").within(() => {
-                    cy.get("[data-cy=property-field-key] input").type("sIzE");
-                    cy.get("[data-cy=property-field-value]").click().within(() => {
-                        cy.get("input").type("sMaLL{enter}");
-                    });
-                    cy.get("[data-cy=property-add-btn]").click();
-                });
-                // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get("[data-cy=form-dialog]").should("contain", "Size: S");
-
-                cy.get("[data-cy=form-dialog]").contains("Save").click();
-                cy.get("[data-cy=form-dialog]").should("not.exist");
-
-                // Confirm proper vocabulary IDs were saved on the backend.
-                cy.doRequest("GET", `/arvados/v1/collections/${this.testCollection.uuid}`)
-                    .its("body")
-                    .as("collection")
-                    .then(function () {
-                        expect(this.collection.properties.IDTAGCOLORS).to.deep.equal(["IDVALCOLORS3"]);
-                        expect(this.collection.properties.IDTAGSIZES).to.deep.equal(["IDVALSIZES2"]);
-                    });
-
-                // Confirm properties display on the UI.
-                cy.get("[data-cy=resource-properties]")
-                    .should("contain", "Color: Magenta")
-                    .and("contain", "Size: S");
+        // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+        cy.get("[data-cy=resource-properties-form]").within(() => {
+            cy.get("[data-cy=property-field-key] input").type("Color");
+            cy.get("[data-cy=property-field-value]").click().within(() => {
+                cy.get("input").type("Magenta");
             });
+            cy.get("[data-cy=property-add-btn]").click();
+        });
+        // Confirm proper vocabulary labels are displayed on the UI.
+        cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
+
+        // Case-insensitive on-blur auto-selection test
+        // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
+        cy.get("[data-cy=resource-properties-form]").within(() => {
+            cy.get("[data-cy=property-field-key] input").type("sIzE");
+            cy.get("[data-cy=property-field-value]").click().within(() => {
+                cy.get("input").type("sMaLL{enter}");
+            });
+            cy.get("[data-cy=property-add-btn]").click();
+        });
+        // Confirm proper vocabulary labels are displayed on the UI.
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Size: S")
+            .contains("Save").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+
+        // Confirm proper vocabulary IDs were saved on the backend.
+        cy.get("@testCollection")
+            .then((testCollection) => cy.getCollection(activeUser.token, testCollection.uuid))
+            .its("properties")
+            .should("deep.include", {
+                IDTAGCOLORS: ["IDVALCOLORS3"],
+                IDTAGSIZES: ["IDVALSIZES2"]
+            });
+
+        // Confirm properties display on the UI.
+        cy.get("[data-cy=resource-properties]")
+            .should("contain", "Color: Magenta")
+            .and("contain", "Size: S");
     });
 
     it("shows collection by URL", function () {
@@ -314,7 +310,12 @@ describe("Collection panel tests", function () {
             });
 
             // Check for the read-only icon
-            cy.get("[data-cy=read-only-icon]").should(`${isWritable ? "not." : ""}exist`);
+            if (isWritable) {
+                cy.get("[data-cy=read-only-icon]").should("not.exist");
+            } else {
+                cy.get("[data-cy=read-only-icon]").should("be.visible");
+            }
+
             // Check that both read and write operations are available on
             // the 'More options' menu.
             cy.get("[data-cy=collection-details-card]").within(() => {
@@ -376,10 +377,10 @@ describe("Collection panel tests", function () {
 
         cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         const names = [
             "bar", // initial name already set
@@ -423,10 +424,10 @@ describe("Collection panel tests", function () {
     it("renames a file to a different directory", function () {
         cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Files");
         ["subdir", "G%C3%BCnter's%20file", "table%&?*2"].forEach(subdir => {
@@ -475,13 +476,13 @@ describe("Collection panel tests", function () {
     it("shows collection owner", () => {
         cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Overview");
-        cy.get("[data-cy=details-element]").contains(activeUser.user.full_name);
+        cy.get("[data-cy=details-element]").should("contain", activeUser.user.full_name);
     });
 
     it("tries to rename a file with illegal names", function () {
@@ -497,11 +498,10 @@ describe("Collection panel tests", function () {
 
         cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
-        })
-            .then(testCollection => cy.goToPath(`/collections/${testCollection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Files");
         illegalNamesFromUI.forEach(([name, errMsg]) => {
@@ -522,133 +522,120 @@ describe("Collection panel tests", function () {
     });
 
     it("can correctly display old versions", function () {
-        const colName = `Versioned Collection ${Math.floor(Math.random() * 999999)}`;
-        let colUuid = "";
-        let oldVersionUuid = "";
-        // Make sure no other collections with this name exist
-        cy.doRequest("GET", "/arvados/v1/collections", null, {
-            filters: `[["name", "=", "${colName}"]]`,
-            include_old_versions: true,
-        })
-            .its("body.items")
-            .as("collections")
-            .then(function () {
-                expect(this.collections).to.be.empty;
-            });
+        const collName = randomName("Versioned Collection ");
+        cy.loginAs(activeUser);
+
         cy.createCollection(adminUser.token, {
-            name: colName,
+            name: collName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         })
-            .as("originalVersion")
-            .then(function () {
-                // Change the file name to create a new version.
-                cy.updateCollection(adminUser.token, this.originalVersion.uuid, {
-                    manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n",
-                });
-                colUuid = this.originalVersion.uuid;
-            });
-        // Confirm that there are 2 versions of the collection
-        cy.doRequest("GET", "/arvados/v1/collections", null, {
-            filters: `[["name", "=", "${colName}"]]`,
-            include_old_versions: true,
-        })
-            .its("body.items")
-            .as("collections")
-            .then(function () {
-                expect(this.collections).to.have.lengthOf(2);
-                this.collections.map(function (aCollection) {
-                    expect(aCollection.current_version_uuid).to.equal(colUuid);
-                    if (aCollection.uuid !== aCollection.current_version_uuid) {
-                        oldVersionUuid = aCollection.uuid;
-                    }
-                });
-                // Check the old version displays as what it is.
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${oldVersionUuid}`);
-                cy.doMPVTabSelect("Overview");
+            // Change the file name to create a new version.
+            .then((collection) => cy.updateCollection(adminUser.token, collection.uuid, {
+                manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n",
+            }))
+            // Get old version.
+            .then((collection) => cy.doRequest("GET", "/arvados/v1/collections", null, {
+                filters: JSON.stringify([
+                    ["current_version_uuid", "=", collection.uuid],
+                    ["version", "=", 1],
+                ]),
+                include_old_versions: true,
+                limit: "1",
+                select: JSON.stringify(["uuid"]),
+                count: "none",
+            }, activeUser.token, true))
+            .its("body.items.0.uuid")
+            // Go to old version.
+            .then((oldVersionUuid) => cy.goToPath(`/collections/${oldVersionUuid}`));
 
-                cy.get("[data-cy=details-element]").should("contain", "This is an old version");
-                cy.get("[data-cy=read-only-icon]").should("exist");
-                cy.get("[data-cy=collection-details-card]").should("contain", colName);
-                cy.doMPVTabSelect("Files");
-                cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
-            });
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=details-element]").should("contain", "This is an old version");
+        cy.get("[data-cy=read-only-icon]").should("be.visible");
+        cy.get("[data-cy=collection-details-card]").should("contain", collName);
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
     });
 
     it("views & edits storage classes data", function () {
-        const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        cy.loginAs(activeUser);
+
         cy.createCollection(adminUser.token, {
-            name: colName,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:some-file\n",
         })
-            .as("collection")
-            .then(function () {
-                expect(this.collection.storage_classes_desired).to.deep.equal(["default"]);
+            .as("testCollection")
+            .then((testCollection) => cy.goToPath(`/collections/${testCollection.uuid}`));
 
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.collection.uuid}`);
-                cy.doMPVTabSelect("Overview");
-
-                // Initial check: it should show the 'default' storage class
-                cy.get("[data-cy=details-element]")
-                    .should("contain", "Storage classes")
-                    .and("contain", "default")
-                    .and("not.contain", "foo")
-                    .and("not.contain", "bar");
-                // Edit collection: add storage class 'foo'
-                cy.get('[data-title="Edit collection"]').click();
-                cy.get("[data-cy=form-dialog]")
-                    .should("contain", "Edit Collection")
-                    .and("contain", "Storage classes")
-                    .and("contain", "default")
-                    .and("contain", "foo")
-                    .and("contain", "bar")
-                    .within(() => {
-                        cy.get("[data-cy=checkbox-foo]").click();
-                    });
-                cy.get("[data-cy=form-submit-btn]").click();
-                cy.get("[data-cy=details-element]").should("contain", "default").and("contain", "foo").and("not.contain", "bar");
-                cy.doRequest("GET", `/arvados/v1/collections/${this.collection.uuid}`)
-                    .its("body")
-                    .as("updatedCollection")
-                    .then(function () {
-                        expect(this.updatedCollection.storage_classes_desired).to.deep.equal(["default", "foo"]);
-                    });
-                // Edit collection: remove storage class 'default'
-                cy.get('[data-title="Edit collection"]').click();
-                cy.get("[data-cy=form-dialog]")
-                    .should("contain", "Edit Collection")
-                    .and("contain", "Storage classes")
-                    .and("contain", "default")
-                    .and("contain", "foo")
-                    .and("contain", "bar")
-                    .within(() => {
-                        cy.get("[data-cy=checkbox-default]").click();
-                    });
-                cy.get("[data-cy=form-submit-btn]").click();
-                cy.get("[data-cy=details-element]").should("not.contain", "default").and("contain", "foo").and("not.contain", "bar");
-                cy.doRequest("GET", `/arvados/v1/collections/${this.collection.uuid}`)
-                    .its("body")
-                    .as("updatedCollection")
-                    .then(function () {
-                        expect(this.updatedCollection.storage_classes_desired).to.deep.equal(["foo"]);
-                    });
+        cy.doMPVTabSelect("Overview");
+        // Initial check: it should show the 'default' storage class
+        cy.get("[data-cy=details-element]")
+            .should("contain", "Storage classes")
+            .and("contain", "default")
+            .and("not.contain", "foo")
+            .and("not.contain", "bar");
+        // Edit collection: add storage class 'foo'
+        cy.get('[data-title="Edit collection"]').click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Edit Collection")
+            .and("contain", "Storage classes")
+            .and("contain", "default")
+            .and("contain", "foo")
+            .and("contain", "bar")
+            .within(() => {
+                cy.get("[data-cy=checkbox-foo]").click();
             });
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=details-element]")
+            .should("contain", "default")
+            .and("contain", "foo")
+            .and("not.contain", "bar");
+
+        // Storage class changes are committed.
+        cy.get("@testCollection")
+            .its("uuid")
+            .then((uuid) => cy.getCollection(activeUser.token, uuid))
+            .its("storage_classes_desired")
+            .should("deep.equal", ["default", "foo"]);
+
+        // Edit collection: remove storage class 'default'
+        cy.get('[data-title="Edit collection"]').click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "Edit Collection")
+            .and("contain", "Storage classes")
+            .and("contain", "default")
+            .and("contain", "foo")
+            .and("contain", "bar")
+            .within(() => {
+                cy.get("[data-cy=checkbox-default]").click();
+            });
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=details-element]")
+            .should("not.contain", "default")
+            .and("contain", "foo")
+            .and("not.contain", "bar");
+
+        // Storage class changes are committed.
+        cy.get("@testCollection")
+            .its("uuid")
+            .then((uuid) => cy.getCollection(activeUser.token, uuid))
+            .its("storage_classes_desired")
+            .should("deep.equal", ["foo"]);
     });
 
     it("moves a collection to a different project", function () {
-        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
-        const projName = `Test Project ${Math.floor(Math.random() * 999999)}`;
-        const fileName = `Test_File_${Math.floor(Math.random() * 999999)}`;
+        const collName = randomName();
+        const projName = randomName("Test Project ");
+        const fileName = randomName("Test_File_");
 
         cy.createCollection(adminUser.token, {
             name: collName,
             owner_uuid: activeUser.user.uuid,
             manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
         }).as("testCollection");
+
         cy.createGroup(adminUser.token, {
             name: projName,
             group_class: "project",
@@ -676,7 +663,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=projects-tree-home-tree-picker]").contains(projName).click();
             });
         cy.get("[data-cy=form-submit-btn]").click();
-        cy.get("[data-cy=snackbar]").contains("Collection has been moved");
+        cy.get("[data-cy=snackbar]").should("contain", "Collection has been moved");
         cy.get("button").contains(projName);
         // Double check that the collection is in the project
         cy.get("@testProject").then(testProject => cy.goToPath(`/projects/${testProject.uuid}`));
@@ -685,47 +672,49 @@ describe("Collection panel tests", function () {
     });
 
     it("automatically updates the collection UI contents without using the Refresh button", function () {
-        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
-        cy.clock();
+        const collName = randomName();
+        cy.loginAs(activeUser);
 
         cy.createCollection(adminUser.token, {
             name: collName,
             owner_uuid: activeUser.user.uuid,
-        }).as("testCollection");
+        })
+            .its("uuid")
+            .as("testUuid")
+            .then((testUuid) => cy.goToPath(`/collections/${testUuid}`));
 
-        cy.getAll("@testCollection").then(function ([testCollection]) {
-            cy.loginAs(activeUser);
+        const files = ["foobar", "anotherFile", "", "finalName"];
+        cy.doMPVTabSelect("Files");
+        cy.get("[data-cy=collection-files-panel]")
+            .should("contain", "This collection is empty")
+            .and("not.contain", files[0]);
+        cy.get("[data-cy=collection-details-card]").should("contain", collName);
 
-            const files = ["foobar", "anotherFile", "", "finalName"];
-
-            cy.goToPath(`/collections/${testCollection.uuid}`);
-            cy.doMPVTabSelect("Files");
-            cy.get("[data-cy=collection-files-panel]").should("contain", "This collection is empty");
-            cy.get("[data-cy=collection-files-panel]").should("not.contain", files[0]);
-            cy.get("[data-cy=collection-details-card]").should("contain", collName);
-
-            files.map((fileName, i, files) => {
-                cy.updateCollection(adminUser.token, testCollection.uuid, {
-                    name: `${collName + " updated"}`,
+        cy.clock();
+        files.map((fileName, i, files) => {
+            let collNewName = `${collName} updated ${i}`;
+            cy.get("@testUuid")
+                .then((uuid) => cy.updateCollection(adminUser.token, uuid, {
+                    name: collNewName,
                     manifest_text: fileName ? `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n` : "",
-                }).as("updatedCollection");
-
-                // Fast forward 15 seconds for the websocket throttle
-                cy.tick(15000);
-
-                cy.getAll("@updatedCollection").then(function ([updatedCollection]) {
-                    expect(updatedCollection.name).to.equal(`${collName + " updated"}`);
-                    cy.get("[data-cy=collection-details-card]").should("contain", updatedCollection.name);
-                    fileName
-                        ? cy.get("[data-cy=collection-files-panel]").should("contain", fileName)
-                        : cy.get("[data-cy=collection-files-panel]").should("not.contain", files[i - 1]);
+                }))
+                .then(() => {
+                    // Fast forward 15 seconds for the websocket throttle
+                    cy.tick(15000);
                 });
-            });
+            cy.get("[data-cy=collection-details-card]").should("contain", collNewName);
+            if (fileName) {
+                cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
+            } else {
+                cy.get("[data-cy=collection-files-panel]")
+                    .should("contain", "This collection is empty")
+                    .and("not.contain", files[i - 1]);
+            }
         });
     });
 
     it("makes a copy of an existing collection", function () {
-        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const collName = randomName();
         const copyName = `Copy of: ${collName}`;
 
         cy.loginAs(activeUser);
@@ -735,7 +724,7 @@ describe("Collection panel tests", function () {
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:some-file\n",
         })
-            .then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
+            .then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
@@ -746,29 +735,29 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=projects-tree-home-tree-picker]").contains("Projects").click();
                 cy.get("[data-cy=form-submit-btn]").click();
             });
-        cy.get("[data-cy=snackbar]").contains("Collection has been copied.");
 
+        cy.get("[data-cy=snackbar]").should("contain", "Collection has been copied.");
         goToCollectionByName(copyName, activeUser.token);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
     });
 
     it("uses the collection version browser to view a previous version", function () {
-        const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const collName = randomName();
 
         cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: colName,
+            name: collName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).then(collection => cy.goToPath(`/collections/${collection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Overview");
         cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
         cy.get("[data-cy=read-only-icon]").should("not.exist");
         cy.get("[data-cy=collection-version-number]").should("contain", "1");
-        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.get("[data-cy=collection-details-card]").should("contain", collName);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
@@ -805,9 +794,9 @@ describe("Collection panel tests", function () {
         // Navigate back to overview tab
         cy.doMPVTabSelect("Overview");
         cy.get("[data-cy=details-element]").should("contain", "This is an old version");
-        cy.get("[data-cy=read-only-icon]").should("exist");
+        cy.get("[data-cy=read-only-icon]").should("be.visible");
         cy.get("[data-cy=collection-version-number]").should("contain", "1");
-        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.get("[data-cy=collection-details-card]").should("contain", collName);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
@@ -823,7 +812,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
         cy.get("[data-cy=read-only-icon]").should("not.exist");
         cy.get("[data-cy=collection-version-number]").should("contain", "2");
-        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.get("[data-cy=collection-details-card]").should("contain", collName);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
 
@@ -843,7 +832,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
         cy.get("[data-cy=read-only-icon]").should("not.exist");
         cy.get("[data-cy=collection-version-number]").should("contain", "3");
-        cy.get("[data-cy=collection-details-card]").should("contain", colName + " renamed");
+        cy.get("[data-cy=collection-details-card]").should("contain", collName + " renamed");
         cy.get("[data-cy=collection-version-browser-select-3]").should("contain", "3").and("contain", "3 B");
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
@@ -872,22 +861,21 @@ describe("Collection panel tests", function () {
         cy.doMPVTabSelect("Overview");
         cy.get("[data-cy=details-element]").should("not.contain", "This is an old version");
         cy.get("[data-cy=collection-version-number]").should("contain", "4");
-        cy.get("[data-cy=collection-details-card]").should("contain", colName);
+        cy.get("[data-cy=collection-details-card]").should("contain", collName);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
     });
 
     it("copies selected files into new collection", () => {
+        const srcName = randomName();
+        cy.loginAs(activeUser);
+
         cy.createCollection(adminUser.token, {
-            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            name: srcName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("sourceCollection");
-
-        // Visit collection, check basic information
-        cy.loginAs(activeUser);
-        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
@@ -898,64 +886,63 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]").contains("Projects").click();
         cy.get("[data-cy=form-submit-btn]").click();
 
-        cy.get("@sourceCollection")
-            .then(oldColl => goToCollectionByName(`Files extracted from: ${oldColl.name}`, activeUser.token));
+        cy.get("[data-cy=snackbar]").should("contain", "New collection created.");
+        goToCollectionByName(`Files extracted from: ${srcName}`, activeUser.token);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
     });
 
     it("copies selected files into existing collection", () => {
-        cy.createCollection(adminUser.token, {
-            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: activeUser.user.uuid,
-            preserve_version: true,
-            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("sourceCollection");
+        const srcName = randomName();
+        const dstName = randomName("Destination Collection ");
+
+        cy.loginAs(activeUser);
 
         cy.createCollection(adminUser.token, {
-            name: `Destination Collection ${Math.floor(Math.random() * 999999)}`,
+            name: dstName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: "",
-        }).as("destinationCollection");
+        }).as("dstCollection");
 
-        cy.loginAs(activeUser);
-        // Visit collection, check basic information
-        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
-
+        cy.createCollection(adminUser.token, {
+            name: srcName,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
+        }).then((srcCollection) => cy.goToPath(`/collections/${srcCollection.uuid}`));
+        // Now browsing src collection; check basic information
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
 
         cy.get("[data-cy=collection-files-panel-options-btn]").click();
         cy.get("[data-cy=context-menu]").contains("Copy selected into existing collection").click();
-
-        cy.get("@destinationCollection")
-            .its("name")
-            .then(destName => cy.get("[data-cy=form-dialog]").contains(destName).click());
-
+        cy.get("[data-cy=form-dialog]").contains(dstName).click();
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
 
-        cy.get("@destinationCollection").then(destinationCollection => cy.goToPath(`/collections/${destinationCollection.uuid}`));
+        // Visit dst collection
+        cy.get("@dstCollection").then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Overview");;
-        cy.get("@destinationCollection")
-            .its("name")
-            .then(destName => cy.get("main").contains(destName).should("exist"));
+        cy.get("main").contains(dstName).should("exist");
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
     });
 
     it("copies selected files into separate collections", () => {
+        const srcName = randomName();
+        const dstNameFoo = `File copied from collection ${srcName}/foo`;
+        const dstNameBar = `File copied from collection ${srcName}/bar`;
+
+        cy.loginAs(activeUser);
+
         cy.createCollection(adminUser.token, {
-            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            name: srcName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("sourceCollection");
-
-        // Visit collection, check basic information
-        cy.loginAs(activeUser);
-        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         // Select both files
         cy.doMPVTabSelect("Files");
@@ -968,14 +955,13 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]").contains("Projects").click();
         cy.get("[data-cy=form-submit-btn]").click();
 
+        cy.get("[data-cy=snackbar]").should("contain", "New collections created.");
         // Verify created collections
-        cy.get("@sourceCollection")
-            .then(oldColl => goToCollectionByName(`File copied from collection ${oldColl.name}/foo`, activeUser.token));
+        goToCollectionByName(dstNameFoo, activeUser.token);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
 
-        cy.get("@sourceCollection")
-            .then(oldColl => goToCollectionByName(`File copied from collection ${oldColl.name}/bar`, activeUser.token));
+        goToCollectionByName(dstNameBar, activeUser.token);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
 
@@ -990,14 +976,16 @@ describe("Collection panel tests", function () {
     });
 
     it("moves selected files into new collection", () => {
+        const srcName = randomName();
+        const dstName = `Files moved from: ${srcName}`;
+
         cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            name: srcName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("testCollection")
-            .then(testCollection => cy.goToPath(`/collections/${testCollection.uuid}`));
+        }).then((collection) => cy.goToPath(`/collections/${collection.uuid}`));
 
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
@@ -1006,24 +994,19 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=context-menu]").contains("Move selected into new collection").click();
 
         cy.get("[data-cy=form-dialog]").contains("Projects").click();
-
         cy.get("[data-cy=form-submit-btn]").click();
 
-        cy.get("@testCollection").then(oldColl => goToCollectionByName(`Files moved from: ${oldColl.name}`, activeUser.token));
+        cy.get("[data-cy=snackbar]").should("contain", "Files have been moved to selected collection.");
+        goToCollectionByName(dstName, activeUser.token);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
     });
 
     it("moves selected files into existing collection", () => {
-        const srcName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
-        const dstName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const srcName = randomName();
+        const dstName = randomName();
 
-        cy.createCollection(adminUser.token, {
-            name: srcName,
-            owner_uuid: activeUser.user.uuid,
-            preserve_version: true,
-            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("srcCollection");
+        cy.loginAs(activeUser);
 
         cy.createCollection(adminUser.token, {
             name: dstName,
@@ -1032,38 +1015,47 @@ describe("Collection panel tests", function () {
             manifest_text: "",
         }).as("dstCollection");
 
-        cy.loginAs(activeUser);
-        cy.get("@srcCollection").then(srcCollection => cy.goToPath(`/collections/${srcCollection.uuid}`));
+        cy.createCollection(adminUser.token, {
+            name: srcName,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
+        }).then((srcCollection) => cy.goToPath(`/collections/${srcCollection.uuid}`));
 
+        // Now browsing src collection.
         cy.doMPVTabSelect("Files");
-        // FIXME: implicitly relying on "bar" being first.
-        cy.get("[data-cy=collection-files-panel] input[type=checkbox]").first().click();
+        // Click on checkbox next to "bar".
+        cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar'] input[type='checkbox']").click();
 
         cy.get("[data-cy=collection-files-panel-options-btn]").click();
         cy.get("[data-cy=context-menu]").contains("Move selected into existing collection").click();
 
         cy.get("[data-cy=form-dialog]").contains(dstName).click();
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
 
+        // Go to dst collection.
         cy.get("@dstCollection").then(dstCollection => cy.goToPath(`/collections/${dstCollection.uuid}`));
 
         cy.get("main").contains(dstName).should("exist");
         cy.doMPVTabSelect("Files");
-        cy.get("[data-cy=collection-files-panel]").should("contain", "bar");
+        cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
     });
 
     it("moves selected files into separate collections", () => {
+        const srcName = randomName();
+        const dstNameFoo = `File moved from collection ${srcName}/foo`;
+        const dstNameBar = `File moved from collection ${srcName}/bar`;
+
+        cy.loginAs(activeUser);
         cy.createCollection(adminUser.token, {
-            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            name: srcName,
             owner_uuid: activeUser.user.uuid,
             preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n",
-        }).as("sourceCollection");
+        }).then((srcCollection) => cy.goToPath(`/collections/${srcCollection.uuid}`));
 
-        // Visit collection, check basic information
-        cy.loginAs(activeUser);
-        cy.get("@sourceCollection").then(sourceCollection => cy.goToPath(`/collections/${sourceCollection.uuid}`));
-
+        // Now browsing src collection.
         cy.doMPVTabSelect("Files");
         // Select both files
         cy.get("[data-cy=collection-files-panel]").within(() => {
@@ -1076,15 +1068,17 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=context-menu]").contains("Move selected into separate collections").click();
         cy.get("[data-cy=form-dialog]").contains("Projects").click();
         cy.get("[data-cy=form-submit-btn]").click();
-        cy.get("[data-cy=form-dialog]").should("not.exist");
+        cy.get("[data-cy=snackbar]").should("contain", "New collections created.");
 
         // Verify created collections
-        cy.get("@sourceCollection").then(oldColl => goToCollectionByName(`File moved from collection ${oldColl.name}/foo`, activeUser.token));
+        goToCollectionByName(dstNameFoo, activeUser.token);
+        cy.get("main").contains(dstNameFoo).should("exist");
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
 
-        cy.get("@sourceCollection").then(oldColl => goToCollectionByName(`File moved from collection ${oldColl.name}/bar`, activeUser.token));
+        goToCollectionByName(dstNameBar, activeUser.token);
         cy.doMPVTabSelect("Files");
+        cy.get("main").contains(dstNameBar).should("exist");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
     });
 
@@ -1097,7 +1091,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=side-panel-button]").click();
         cy.get("[data-cy=side-panel-new-collection]").click();
         // Name between brackets tests bugfix #17582
-        const collName = `[Test collection (${Math.floor(999999 * Math.random())})]`;
+        const collName = `[${randomName()}]`;
 
         // Select a storage class.
         cy.get("[data-cy=form-dialog]")
@@ -1128,28 +1122,26 @@ describe("Collection panel tests", function () {
         // Value field should not complain about being required just after
         // adding a new property. See #19732
         cy.get("[data-cy=form-dialog]").should("not.contain", "This field is required");
-
         cy.get("[data-cy=form-submit-btn]").click();
+
         // Confirm that the user was taken to the newly created collection
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
-        cy.waitForDom();
-        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", collName);
 
         // Navigate to Overview tab
         cy.doMPVTabSelect("Overview");
 
         // Verify details
-        cy.get("[data-cy=details-element]")
+        cy.get("[data-cy='details-panel-storage classes'] [data-cy='details-attribute-value']")
             .should("contain", "default")
             .and("contain", "foo")
-        cy.get("[data-cy=resource-properties]")
-            .should("contain", "Color: Magenta")
             .and("not.contain", "bar");
-        // Confirm that the collection's properties has the real values.
+        cy.get("[data-cy=resource-properties]")
+            .should("contain", "Color: Magenta");
+        // Confirm that the collection's properties have been committed.
         cy.doRequest("GET", "/arvados/v1/collections", null, {
-            filters: `[["name", "=", "${collName}"]]`,
+            filters: JSON.stringify([["name", "=", collName]]),
         })
             .its("body.items")
             .then(collArray => {
@@ -1160,34 +1152,55 @@ describe("Collection panel tests", function () {
 
     it("shows responsible person for collection if available", () => {
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         }).as("testCollection1");
 
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            name: randomName(),
             owner_uuid: adminUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
         })
             .as("testCollection2")
-            .then(function (testCollection2) {
+            .then((testCollection2) => {
                 cy.shareWith(adminUser.token, activeUser.user.uuid, testCollection2.uuid, "can_write");
             });
 
-        cy.getAll("@testCollection1", "@testCollection2").then(function ([testCollection1, testCollection2]) {
-            cy.loginAs(activeUser);
+        cy.loginAs(activeUser);
+        cy.get("@testCollection1").then((testCollection1) => cy.goToPath(`/collections/${testCollection1.uuid}`));
+        // Navigate to Overview tab
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=responsible-person-wrapper]")
+            .should("contain", activeUser.user.uuid);
 
-            cy.goToPath(`/collections/${testCollection1.uuid}`);
-            // Navigate to Overview tab
-            cy.doMPVTabSelect("Overview");
-            cy.get("[data-cy=responsible-person-wrapper]").contains(activeUser.user.uuid);
+        cy.get("@testCollection2").then((testCollection2) => cy.goToPath(`/collections/${testCollection2.uuid}`));
+        // Navigate to Overview tab
+        cy.doMPVTabSelect("Overview");
+        cy.get("[data-cy=responsible-person-wrapper]")
+            .should("contain", adminUser.user.uuid);
+    });
 
-            cy.goToPath(`/collections/${testCollection2.uuid}`);
-            // Navigate to Overview tab
-            cy.doMPVTabSelect("Overview");
-            cy.get("[data-cy=responsible-person-wrapper]").contains(adminUser.user.uuid);
+    it('displays the correct breadcrumbs after moving a collection to trash', () => {
+        // See old redmine issue #22618
+        const collName = randomName("Breadcrumb Test Collection ");
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: "",
         });
+
+        cy.loginAs(activeUser);
+        // Go to home projects
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
+
+        // Right click on the item in listing
+        cy.get('[data-cy=data-table-row]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').should('exist');
+        // Move to trash
+        cy.get('[data-cy=context-move-to-trash]').click();
+
+        cy.get("[data-cy=breadcrumb-first]").should("contain", "Home Projects");
     });
 
     describe("file upload", () => {
@@ -1335,32 +1348,6 @@ describe("Collection panel tests", function () {
             });
         });
 
-        it('displays the correct breadcrumbs after moving a collection to trash', () => {
-            const breadcrumbTestCollectionName = `Breadcrumb Test Collection ${Math.floor(Math.random() * 999999)}`;
-            cy.loginAs(activeUser);
-            cy.goToPath(`/projects/${activeUser.user.uuid}`);
-
-            cy.get("[data-cy=side-panel-button]").click();
-            cy.get("[data-cy=side-panel-new-collection]").click();
-            cy.get("[data-cy=form-dialog]")
-                .should("contain", "New collection")
-                .within(() => {
-                    cy.get("[data-cy=name-field]").within(() => {
-                        cy.get("input").type(breadcrumbTestCollectionName);
-                    });
-                    cy.get("[data-cy=form-submit-btn]").click();
-                });
-            cy.get("[data-cy=form-dialog]").should("not.exist");
-
-            cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-            cy.waitForDom()
-            cy.get('[data-cy=data-table-row]').contains(breadcrumbTestCollectionName).should('exist').rightclick();
-            cy.get('[data-cy=context-menu]').should('exist');
-            cy.get('[data-cy=context-move-to-trash]').click();
-
-            cy.waitForDom();
-            cy.get("[data-cy=breadcrumb-first]").should("contain", "Home Projects");
-        });
     });
 
     describe("zip download", () => {
