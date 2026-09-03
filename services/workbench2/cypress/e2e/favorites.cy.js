@@ -289,10 +289,12 @@ describe('Favorites-SidePanel tests', function () {
         cy.createProject({
             owningUser: adminUser,
             projectName: `myFavoriteProject1`,
+            addToFavorites: true,
         });
         cy.createProject({
             owningUser: adminUser,
             projectName: `myFavoriteProject2`,
+            addToFavorites: true,
         });
         cy.createProject({
             owningUser: adminUser,
@@ -305,18 +307,10 @@ describe('Favorites-SidePanel tests', function () {
 
         cy.loginAs(adminUser);
         cy.doSidePanelNavigation('Home Projects');
+        cy.doMPVTabSelect("Data");
 
         cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2')
         .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2, ]) {
-
-                //add two projects to favorites
-                cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject1.name).rightclick();
-                cy.contains('Add to favorites').click();
-                cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject2.name).rightclick();
-                cy.contains('Add to favorites').click();
-
-                cy.doMPVTabSelect("Data");
-
                 //add two projects to public favorites
                 cy.get('[data-cy=data-table]').contains(myPublicFavoriteProject1.name).rightclick();
                 cy.contains('Add to public favorites').click();
