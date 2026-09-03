@@ -24,7 +24,7 @@ import { openMoveCollectionDialog } from "store/collections/collection-move-acti
 import { openCollectionCopy } from "store/collections/collection-copy-actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
-import { toggleResourceTrashed } from "store/trash/trash-actions";
+import { openTrashConfirmDialog } from "store/trash/trash-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { openDetailsPanel } from "store/details-panel/details-panel-action";
@@ -136,7 +136,7 @@ export const collectionActionSet: ContextMenuActionSet = [
             name: ContextMenuActionNames.MOVE_TO_TRASH,
             isForMulti: true,
             execute: (dispatch, resources: ContextMenuResource[]) => {
-                dispatch<any>(toggleResourceTrashed(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
+                dispatch<any>(openTrashConfirmDialog(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
             },
         },
     ],
