@@ -302,14 +302,11 @@ describe('Favorites-SidePanel tests', function () {
             owningUser: adminUser,
             projectName: `myPublicFavoriteProject2`,
         });
-        cy.createCollection(adminUser.token, {
-            owner_uuid: adminUser.user.uuid,
-            name: `Test favorite collection ${Math.floor(Math.random() * 999999)}`,
-        }).as('testFavoriteCollection');
+
+        cy.loginAs(adminUser);
 
         cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2')
         .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2, ]) {
-                cy.loginAs(adminUser);
                 cy.doSidePanelNavigation('Home Projects');
 
                 //add two projects and collection to favorites
@@ -380,10 +377,17 @@ describe('Favorites-SidePanel tests', function () {
                 cy.wait(1000);
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
         });
+    });
 
+    it('restores trashed favorite collection to favorites', () => {
+        cy.createCollection(adminUser.token, {
+            owner_uuid: adminUser.user.uuid,
+            name: `Test favorite collection ${Math.floor(Math.random() * 999999)}`,
+        }).as('testFavoriteCollection');
+
+        cy.loginAs(adminUser);
         cy.getAll('@testFavoriteCollection')
             .then(function ([testFavoriteCollection]) {
-                cy.loginAs(adminUser);
                 cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
                 cy.doMPVTabSelect("Data");
                 cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
