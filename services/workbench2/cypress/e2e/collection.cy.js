@@ -5,10 +5,9 @@
 const path = require("path");
 require('cypress-plugin-tab');
 
-// It can be tricky to mimick the user's navigation and eyeballing for a newly
-// created (but not shown) collection by its known (and unique) name, which can
-// be noisy, time consuming, and a bit flaky. We locate the collection by API
-// directly and jump to it.
+// It can be tricky to mimick the user's search for a collection by its known
+// (and unique) name, which can be noisy, time consuming, and a bit flaky. We
+// locate the collection by API directly and jump to it.
 function goToCollectionByName(collectionName, token) {
     return cy.doRequest("GET", "/arvados/v1/collections", null, {
         filters: JSON.stringify([["name", "=", collectionName]]),
@@ -16,8 +15,12 @@ function goToCollectionByName(collectionName, token) {
         select: JSON.stringify(["uuid"]),
         count: "none"
     }, token, true)
-        .its("body.items.0.uuid")
-        .then(uuid => cy.goToPath(`/collections/${uuid}`));
+        .then((response) => {
+            // Not using Cypress "its" command, because "its" retries, yet we
+            // want the following line to fail fast.
+            const uuid = response.body.items[0].uuid;
+            return cy.goToPath(`/collections/${uuid}`);
+        });
 }
 
 describe("Collection panel tests", function () {
