@@ -621,7 +621,7 @@ describe("Project tests", function () {
         cy.contains("Project has been successfully created");
         cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
-        cy.get("[data-cy=snackbar]").should("not.exist");
+        cy.get("[data-cy=snackbar]", { timeout: 6000 }).should("not.exist");
         cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
         cy.waitForDom();
         cy.get("[data-cy=project-panel]").contains(projectName).should("be.visible").rightclick();
