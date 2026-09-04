@@ -375,26 +375,31 @@ describe('Favorites-SidePanel tests', function () {
         cy.get('[data-cy=tree-item-toggle-my-favorites]').click();
 
         cy.get('@myFavoriteProject1')
-            .then(function (myFavoriteProject1) {
+            .its("name")
+            .then((projName) => {
                 // Trash favorited project
-                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
+                cy.get('[data-cy=data-table]').contains(projName).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
                 // Snackbar assertion as a barrier
                 cy.get("[data-cy=snackbar]").should("contain", "Item trashed");
 
                 // Check removed from favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', myFavoriteProject1.name);
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', projName);
 
                 // Untrash favorited project
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
-                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
+                // Project might not be on first page
+                cy.get('[data-cy=search-input] input').type(`${projName}{enter}`);
+                cy.get('[data-cy=data-table]').contains(projName).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
+            });
 
-                // Snackbar assertion as a barrier
-                cy.get("[data-cy=snackbar]").should("contain", "Item untrashed");
-
+        cy.get('@myFavoriteProject1')
+            .then((myFavoriteProject1) => {
                 // Check project restored to favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').within(() => {
+                    cy.get(`[data-id="${myFavoriteProject1.uuid}"]`, { timeout: 6000 }).should("contain", myFavoriteProject1.name);
+                });
             });
     });
 
@@ -412,7 +417,9 @@ describe('Favorites-SidePanel tests', function () {
         cy.createCollection(adminUser.token, {
             owner_uuid: adminUser.user.uuid,
             name: collName,
-        });
+        })
+            .its("uuid")
+            .as("testCollectionUuid");
 
         cy.loginAs(adminUser);
         cy.goToPath(`/projects/${adminUser.user.uuid}`);
@@ -434,12 +441,16 @@ describe('Favorites-SidePanel tests', function () {
 
         // Untrash favorited collection
         cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
+        // Collection might not be on first page
+        cy.get('[data-cy=search-input] input').type(`${collName}{enter}`);
         cy.get('[data-cy=data-table]').contains(collName).rightclick();
         cy.get('[data-cy=context-menu]').contains('Restore').click();
-        // Snackbar assertion as a barrier
-        cy.get("[data-cy=snackbar]").should("contain", "Item untrashed");
-
         // Check collection restored to favorites
-        cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', collName);
+        cy.get("@testCollectionUuid")
+            .then((uuid) => {
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').within(() => {
+                    cy.get(`[data-id="${uuid}"]`, { timeout: 6000 }).should("contain", collName);
+                })
+            });
     });
 });
