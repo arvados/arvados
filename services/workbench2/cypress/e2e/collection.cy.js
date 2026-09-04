@@ -1133,7 +1133,7 @@ describe("Collection panel tests", function () {
         cy.doMPVTabSelect("Overview");
 
         // Verify details
-        cy.get("[data-cy='details-panel-storage classes'] [data-cy='details-attribute-value']")
+        cy.get("[data-cy='details-panel-storage-classes'] [data-cy='details-attribute-value']")
             .should("contain", "default")
             .and("contain", "foo")
             .and("not.contain", "bar");

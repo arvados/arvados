@@ -9,6 +9,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { Tooltip } from '@mui/material';
+import kebabCase from 'lodash/kebabCase';
 import { CopyIcon } from 'components/icon/icon';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -119,7 +120,7 @@ interface DetailsAttributeComponentProps {
 
 export const DetailsAttributeComponent = withStyles(styles)(
     (props: DetailsAttributeDataProps & WithStyles<CssRules> & DetailsAttributeComponentProps) =>
-        <Typography component="div" className={props.classes.attribute} data-cy={`details-panel-${props.label.toLowerCase()}`}>
+        <Typography component="div" className={props.classes.attribute} data-cy={`details-panel-${kebabCase(props.label)}`}>
             <Typography component="div" className={classnames([props.classes.label, props.classLabel])}>{props.label}{props.button}</Typography>
             <Typography
                 onClick={props.onValueClick}
