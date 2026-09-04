@@ -353,6 +353,15 @@ describe('Favorites-SidePanel tests', function () {
     });
 
     it('restores trashed favorite project to favorites', () => {
+        // The following faved item is not touched; simply used to keep the
+        // favorites dropdown in the sidebar from collapsing once (which
+        // happens if all faved items are gone)
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: `myFavoriteProject0`,
+            addToFavorites: true,
+        });
+
         cy.createProject({
             owningUser: adminUser,
             projectName: `myFavoriteProject1`,
@@ -360,64 +369,77 @@ describe('Favorites-SidePanel tests', function () {
         });
 
         cy.loginAs(adminUser);
-        cy.doSidePanelNavigation('Home Projects');
+        cy.goToPath(`/projects/${adminUser.user.uuid}`);
+
+        // Open the favorite dropdown
+        cy.get('[data-cy=tree-item-toggle-my-favorites]').click();
 
         cy.get('@myFavoriteProject1')
             .then(function (myFavoriteProject1) {
                 // Trash favorited project
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
-                cy.waitForDom();
+                // Snackbar assertion as a barrier
+                cy.get("[data-cy=snackbar]").should("contain", "Item trashed");
+
                 // Check removed from favorites
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', myFavoriteProject1.name);
+
                 // Untrash favorited project
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                //navigates to restored project
-                cy.assertDetailsCardTitle(myFavoriteProject1.name);
-                cy.assertBreadcrumbs(["Home Projects", myFavoriteProject1.name]);
+
+                // Snackbar assertion as a barrier
+                cy.get("[data-cy=snackbar]").should("contain", "Item untrashed");
+
                 // Check project restored to favorites
-                cy.wait(1000);
-                // Open favorites
-                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
             });
     });
 
     it('restores trashed favorite collection to favorites', () => {
+        // The following faved item is not touched; simply used to keep the
+        // favorites dropdown in the sidebar from collapsing once (which
+        // happens if all faved items are gone)
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: `myFavoriteProject0`,
+            addToFavorites: true,
+        });
+
+        const collName = `Test favorite collection ${Math.floor(Math.random() * 999999)}`;
         cy.createCollection(adminUser.token, {
             owner_uuid: adminUser.user.uuid,
-            name: `Test favorite collection ${Math.floor(Math.random() * 999999)}`,
-        }).as('testFavoriteCollection');
+            name: collName,
+        });
 
         cy.loginAs(adminUser);
-        cy.getAll('@testFavoriteCollection')
-            .then(function ([testFavoriteCollection]) {
-                cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
-                cy.doMPVTabSelect("Data");
-                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
-                cy.waitForDom()
-                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Move to trash').click();
-                // Keep the favorites open
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').click({ force: true })
-                cy.wait(1000);
-                // Check removed from favorites
-                cy.get('[data-cy=side-panel-tree]').should('not.contain', testFavoriteCollection.name);
-                // Untrash favorited collection
-                cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
-                // collection might not be on first page
-                cy.get('[data-cy=search-input]').type(testFavoriteCollection.name);
-                cy.waitForDom();
-                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Restore').click();
-                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 })
-                cy.assertDataExplorerContains(testFavoriteCollection.name, false);
-                // Check collection restored to favorites
-                cy.wait(1000);
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testFavoriteCollection.name);
-        });
+        cy.goToPath(`/projects/${adminUser.user.uuid}`);
+        // Open the favorite dropdown
+        cy.get('[data-cy=tree-item-toggle-my-favorites]').click();
+        cy.doMPVTabSelect("Data");
+
+        // Fave
+        cy.get('[data-cy=data-table]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
+        // Trash
+        cy.get('[data-cy=data-table]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Move to trash').click();
+        // Snackbar assertion as a barrier
+        cy.get("[data-cy=snackbar]").should("contain", "Item trashed");
+
+        // Check removed from sidebar
+        cy.get('[data-cy=side-panel-tree]').should('not.contain', collName);
+
+        // Untrash favorited collection
+        cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
+        cy.get('[data-cy=data-table]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Restore').click();
+        // Snackbar assertion as a barrier
+        cy.get("[data-cy=snackbar]").should("contain", "Item untrashed");
+
+        // Check collection restored to favorites
+        cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', collName);
     });
 });
