@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-const kebabCase = require('lodash/kebabCase');
-
 describe('Favorites tests', function () {
     let activeUser;
     let adminUser;
@@ -318,7 +316,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.contains('Add to public favorites').click();
 
                 //close "Home Projects", which is open by default
-                cy.get(`[data-cy=tree-item-toggle-${kebabCase(adminUser.user.uuid)}]`).click();
+                cy.get(`[data-cy=tree-item-toggle-${adminUser.user.uuid}]`).click();
 
                 //check if the correct favorites are displayed in the side panel
                 cy.get('span').contains(myFavoriteProject1.name).should('not.exist');

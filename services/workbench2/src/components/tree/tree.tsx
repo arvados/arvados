@@ -14,13 +14,12 @@ import classnames from "classnames";
 import { getNodeChildrenIds, Tree, getNode, initTreeNode, createTree } from 'models/tree';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
-import { Resource, ResourceKind } from 'models/resource';
+import { Resource, ResourceKind, isResourceUuid } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
-import { kebabCase } from 'lodash';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { TreePicker } from 'store/tree-picker/tree-picker';
-import { isEqual } from 'lodash';
+import { kebabCase, isEqual } from 'lodash';
 
 type CssRules = 'list'
               | 'listItem'
@@ -449,6 +448,10 @@ export const TreeComponent = withStyles(styles)(
                 if (isInFavoritesTree(it) && it.open === true && it.items && it.items.length) {
                     it = { ...it, items: it.items.filter(item => item.depth && item.depth < 3) }
                 }
+                let toggleId = it.id.toString();
+                if (!isResourceUuid(toggleId)) {
+                    toggleId = kebabCase(toggleId);
+                }
                 return <div data-cy="tree-top-level-item" key={`item/${level}/${it.id}`}>
                     <ListItem button className={listItem}
                         data-cy="tree-li"
@@ -465,7 +468,7 @@ export const TreeComponent = withStyles(styles)(
                         <i onClick={(e) => handleToggleItemOpen(it, e)}
                             className={toggableIconContainer}>
                             <ListItemIcon className={getToggableIconClassNames(it.open, it.active)}
-                                data-cy={`tree-item-toggle-${kebabCase(it.id.toString())}`}
+                                data-cy={`tree-item-toggle-${toggleId}`}
                                 >
                                 {getProperArrowAnimation(it.status, it.items!)}
                             </ListItemIcon>
