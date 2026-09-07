@@ -33,6 +33,9 @@ export default defineConfig({
           return config;
       },
       baseUrl: 'https://localhost:3000/',
+      // Typing long resource names may timeout under rare conditions; zero
+      // delay will be default in Cypress 16.
+      keystrokeDelay: 0,
       experimentalRunAllSpecs: true,
       // The 2 options below make Electron crash a lot less and Firefox behave better
       experimentalMemoryManagement: true,
