@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-const kebabCase = require('lodash/kebabCase');
-
 describe('Favorites tests', function () {
     let activeUser;
     let adminUser;
@@ -289,10 +287,12 @@ describe('Favorites-SidePanel tests', function () {
         cy.createProject({
             owningUser: adminUser,
             projectName: `myFavoriteProject1`,
+            addToFavorites: true,
         });
         cy.createProject({
             owningUser: adminUser,
             projectName: `myFavoriteProject2`,
+            addToFavorites: true,
         });
         cy.createProject({
             owningUser: adminUser,
@@ -302,24 +302,13 @@ describe('Favorites-SidePanel tests', function () {
             owningUser: adminUser,
             projectName: `myPublicFavoriteProject2`,
         });
-        cy.createCollection(adminUser.token, {
-            owner_uuid: adminUser.user.uuid,
-            name: `Test favorite collection ${Math.floor(Math.random() * 999999)}`,
-        }).as('testFavoriteCollection');
+
+        cy.loginAs(adminUser);
+        cy.doSidePanelNavigation('Home Projects');
+        cy.doMPVTabSelect("Data");
 
         cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2')
         .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2, ]) {
-                cy.loginAs(adminUser);
-                cy.doSidePanelNavigation('Home Projects');
-
-                //add two projects and collection to favorites
-                cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject1.name).rightclick();
-                cy.contains('Add to favorites').click();
-                cy.get('[data-cy=side-panel-tree]').contains(myFavoriteProject2.name).rightclick();
-                cy.contains('Add to favorites').click();
-
-                cy.doMPVTabSelect("Data");
-
                 //add two projects to public favorites
                 cy.get('[data-cy=data-table]').contains(myPublicFavoriteProject1.name).rightclick();
                 cy.contains('Add to public favorites').click();
@@ -327,7 +316,7 @@ describe('Favorites-SidePanel tests', function () {
                 cy.contains('Add to public favorites').click();
 
                 //close "Home Projects", which is open by default
-                cy.get(`[data-cy=tree-item-toggle-${kebabCase(adminUser.user.uuid)}]`).click();
+                cy.get(`[data-cy=tree-item-toggle-${adminUser.user.uuid}]`).click();
 
                 //check if the correct favorites are displayed in the side panel
                 cy.get('span').contains(myFavoriteProject1.name).should('not.exist');
@@ -358,55 +347,108 @@ describe('Favorites-SidePanel tests', function () {
                 cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
                 cy.get('span').contains(myPublicFavoriteProject1.name).should('exist');
                 cy.get('span').contains(myPublicFavoriteProject2.name).should('exist');
-                cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
+        });
+    });
 
-                // Keep favorites open
-                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+    it('restores trashed favorite project to favorites', () => {
+        // The following faved item is not touched; simply used to keep the
+        // favorites dropdown in the sidebar from collapsing once (which
+        // happens if all faved items are gone)
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: `myFavoriteProject0`,
+            addToFavorites: true,
+        });
 
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: `myFavoriteProject1`,
+            addToFavorites: true,
+        });
+
+        cy.loginAs(adminUser);
+        cy.goToPath(`/projects/${adminUser.user.uuid}`);
+
+        // Open the favorite dropdown
+        cy.get('[data-cy=tree-item-toggle-my-favorites]').click();
+
+        cy.get('@myFavoriteProject1')
+            .its("name")
+            .then((projName) => {
                 // Trash favorited project
-                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
+                cy.get('[data-cy=data-table]').contains(projName).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
-                cy.waitForDom();
+                // Snackbar assertion as a barrier
+                cy.get("[data-cy=snackbar]").should("contain", "Item trashed");
+
                 // Check removed from favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', myFavoriteProject1.name);
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('not.contain', projName);
+
                 // Untrash favorited project
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
-                cy.get('[data-cy=data-table]').contains(myFavoriteProject1.name).rightclick();
+                // Project might not be on first page
+                cy.get('[data-cy=search-input] input').type(`${projName}{enter}`);
+                cy.get('[data-cy=data-table]').contains(projName).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Restore').click();
-                //navigates to restored project
-                cy.assertDetailsCardTitle(myFavoriteProject1.name);
-                cy.assertBreadcrumbs(["Home Projects", myFavoriteProject1.name]);
+            });
+
+        cy.get('@myFavoriteProject1')
+            .then((myFavoriteProject1) => {
                 // Check project restored to favorites
-                cy.wait(1000);
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', myFavoriteProject1.name);
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').within(() => {
+                    cy.get(`[data-id="${myFavoriteProject1.uuid}"]`, { timeout: 6000 }).should("contain", myFavoriteProject1.name);
+                });
+            });
+    });
+
+    it('restores trashed favorite collection to favorites', () => {
+        // The following faved item is not touched; simply used to keep the
+        // favorites dropdown in the sidebar from collapsing once (which
+        // happens if all faved items are gone)
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: `myFavoriteProject0`,
+            addToFavorites: true,
         });
 
-        cy.getAll('@testFavoriteCollection')
-            .then(function ([testFavoriteCollection]) {
-                cy.loginAs(adminUser);
-                cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click().waitForDom();
-                cy.doMPVTabSelect("Data");
-                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
-                cy.waitForDom()
-                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Move to trash').click();
-                // Check removed from favorites
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').click({ force: true })
-                cy.wait(1000);
-                cy.get('[data-cy=side-panel-tree]').should('not.contain', testFavoriteCollection.name);
-                // Untrash favorited collection
-                cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
-                // collection might not be on first page
-                cy.get('[data-cy=search-input]').type(testFavoriteCollection.name);
-                cy.waitForDom();
-                cy.get('[data-cy=data-table]').contains(testFavoriteCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Restore').click();
-                cy.get('[data-cy=data-table]').should('exist', { timeout: 10000 })
-                cy.assertDataExplorerContains(testFavoriteCollection.name, false);
-                // Check collection restored to favorites
-                cy.wait(1000);
-                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').should('contain', testFavoriteCollection.name);
-        });
+        const collName = `Test favorite collection ${Math.floor(Math.random() * 999999)}`;
+        cy.createCollection(adminUser.token, {
+            owner_uuid: adminUser.user.uuid,
+            name: collName,
+        })
+            .its("uuid")
+            .as("testCollectionUuid");
+
+        cy.loginAs(adminUser);
+        cy.goToPath(`/projects/${adminUser.user.uuid}`);
+        // Open the favorite dropdown
+        cy.get('[data-cy=tree-item-toggle-my-favorites]').click();
+        cy.doMPVTabSelect("Data");
+
+        // Fave
+        cy.get('[data-cy=data-table]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Add to favorites').click();
+        // Trash
+        cy.get('[data-cy=data-table]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Move to trash').click();
+        // Snackbar assertion as a barrier
+        cy.get("[data-cy=snackbar]").should("contain", "Item trashed");
+
+        // Check removed from sidebar
+        cy.get('[data-cy=side-panel-tree]').should('not.contain', collName);
+
+        // Untrash favorited collection
+        cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
+        // Collection might not be on first page
+        cy.get('[data-cy=search-input] input').type(`${collName}{enter}`);
+        cy.get('[data-cy=data-table]').contains(collName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Restore').click();
+        // Check collection restored to favorites
+        cy.get("@testCollectionUuid")
+            .then((uuid) => {
+                cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').within(() => {
+                    cy.get(`[data-id="${uuid}"]`, { timeout: 6000 }).should("contain", collName);
+                })
+            });
     });
 });
