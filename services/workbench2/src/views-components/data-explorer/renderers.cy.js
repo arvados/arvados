@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { GroupMembersCount, ProcessStatus, ResourceFileSize } from './renderers';
+import { GroupMembersCount, ProcessStatus, ResourceFileSize, RenderDescriptionInTD } from './renderers';
 import { Provider } from 'react-redux';
 import configureMockStore from 'redux-mock-store'
 import { ResourceKind } from '../../models/resource';
@@ -251,7 +251,47 @@ describe('renderers', () => {
 
             cy.get('[data-testid=ErrorRoundedIcon]').should('exist');
         });
-
     });
 
+    describe('RenderDescriptionInTD', () => {
+        beforeEach(() => {
+            props = {
+                uuid: 'zzzzz-oss07-12345abcde67890',
+            };
+        });
+
+        it('should render allow-listed HTML content', () => {
+            const store = mockStore({
+                resources: {
+                    [props.uuid]: {
+                        'kind': ResourceKind.EXTERNAL_CREDENTIAL,
+                        'uuid': props.uuid,
+                        'description': '<p style="color: red;">Hello <b style="border-top: 42px !important;">World!</b></p><script>alert("foo");</script><h1>Heading</h1>',
+                    }
+                }
+            });
+
+            cy.mount(
+                <Provider store={store}>
+                    <ThemeProvider theme={CustomTheme}>
+                        <RenderDescriptionInTD {...props} />
+                    </ThemeProvider>
+                </Provider>
+            );
+
+            cy.contains('Hello ').should('exist');
+            // Stripped attribute
+            cy.get('b')
+                .should('have.text', 'World!')
+                .then(($el) => window.getComputedStyle($el[0]))
+                .invoke('getPropertyValue', 'border-top')
+                .should('not.match', /^42px/);
+            cy.contains('foo').should('not.exist');
+            cy.contains('Heading').should('exist');
+
+            // Removed tags
+            cy.get('p').should('not.exist');
+            cy.get('h1').should('not.exist');
+        });
+    });
 });
