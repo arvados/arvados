@@ -121,8 +121,7 @@ function preventRerender(prevProps: MPVPanelContentProps, nextProps: MPVPanelCon
 export interface MPVPanelState {
     name: string;
     visible?: boolean;
-    disabled?: boolean;
-    disabledInfo?: string;
+    reasonToDisable?: string;
 }
 interface MPVContainerDataProps {
     panelStates?: MPVPanelState[];
@@ -176,21 +175,20 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
         for (let idx = 0; idx < children.length; idx++) {
             const panelState = panelStates && panelStates[idx];
             const panelName = panelState?.name || `Panel ${idx + 1}`;
-            const disabled = panelState?.disabled || false;
-            const disabledInfo = panelState?.disabledInfo;
+            const disabled: boolean = !!panelState?.reasonToDisable;
 
             const tab = <Tab
                 disabled={disabled}
                 className={classNames(classes.tab, idx === selectedPanel ? classes.selectedTab : '')}
                 key={idx}
                 label={panelName}
-                data-cy={`tab-${panelName.toLowerCase()}`}
+                data-cy={`tab-${panelName.toLowerCase().replace(/\s+/g, "-")}`}
             />;
 
             tabs = [
                 ...tabs,
-                (disabled && disabledInfo) ? (
-                    <Tooltip title={disabledInfo} id={`disabled-tab-${idx}-tooltip`} key={idx} describeChild>
+                (disabled) ? (
+                    <Tooltip title={panelState?.reasonToDisable} id={`disabled-tab-${idx}-tooltip`} key={idx} describeChild>
                         <span style={{ pointerEvents: 'auto', flexGrow: 1, display: 'flex' }}>
                             {tab}
                         </span>

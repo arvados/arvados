@@ -104,7 +104,7 @@ describe('<MPVContainer />', () => {
         ];
         props.panelStates = [
             {name: 'First Panel', visible: true},
-            {name: 'Second Panel', disabled: true, disabledInfo: 'Disabled reason'},
+            {name: 'Second Panel', reasonToDisable: 'Testing disabled panel'},
         ]
         cy.mount(
             <Provider store={store}>
@@ -126,7 +126,7 @@ describe('<MPVContainer />', () => {
         cy.get('button').eq(1).trigger('mouseover', { force: true });
         cy.get('#disabled-tab-1-tooltip')
             .should('be.visible')
-            .and('contain.text', 'Disabled reason');
+            .and('contain.text', 'Testing disabled panel');
     });
 
     it('should set initial panel visibility according to panelStates prop', () => {
