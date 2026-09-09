@@ -27,14 +27,14 @@ describe('<MPVContainer />', () => {
     });
 
     it('should show default panel buttons for every child', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -48,7 +48,7 @@ describe('<MPVContainer />', () => {
     });
 
     it('should show panel when clicking on its button', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -56,7 +56,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -72,7 +72,7 @@ describe('<MPVContainer />', () => {
     });
 
     it('should show custom panel buttons when config provided', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -82,7 +82,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -98,7 +98,7 @@ describe('<MPVContainer />', () => {
     });
 
     it('should configure disabled panels with tooltips', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -109,7 +109,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -130,7 +130,7 @@ describe('<MPVContainer />', () => {
     });
 
     it('should set initial panel visibility according to panelStates prop', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -141,7 +141,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
