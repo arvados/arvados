@@ -11,13 +11,16 @@ require('cypress-plugin-tab');
 // NOTE: To use after some collection-creating user action, it's a good idea to
 // add a "barrier" assertion (e.g., disappeared form dialog, snackbar with a
 // certain message, etc.) before calling.
-function goToCollectionByName(collectionName, token) {
+function goToCollectionByName(collectionName, user) {
     return cy.doRequest("GET", "/arvados/v1/collections", null, {
-        filters: JSON.stringify([["name", "=", collectionName]]),
+        filters: JSON.stringify([
+            ["name", "=", collectionName],
+            ["owner_uuid", "=", user.user.uuid],
+        ]),
         limit: "1",
         select: JSON.stringify(["uuid"]),
         count: "none"
-    }, token, true)
+    }, user.token, true)
         .then((response) => {
             // Not using Cypress "its" command, because "its" retries, yet we
             // want the following line to fail fast.
@@ -737,7 +740,7 @@ describe("Collection panel tests", function () {
             });
 
         cy.get("[data-cy=snackbar]").should("contain", "Collection has been copied.");
-        goToCollectionByName(copyName, activeUser.token);
+        goToCollectionByName(copyName, activeUser);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").should("contain", "some-file");
     });
@@ -887,7 +890,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-submit-btn]").click();
 
         cy.get("[data-cy=snackbar]").should("contain", "New collection created.");
-        goToCollectionByName(`Files extracted from: ${srcName}`, activeUser.token);
+        goToCollectionByName(`Files extracted from: ${srcName}`, activeUser);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
     });
@@ -957,11 +960,11 @@ describe("Collection panel tests", function () {
 
         cy.get("[data-cy=snackbar]").should("contain", "New collections created.");
         // Verify created collections
-        goToCollectionByName(dstNameFoo, activeUser.token);
+        goToCollectionByName(dstNameFoo, activeUser);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
 
-        goToCollectionByName(dstNameBar, activeUser.token);
+        goToCollectionByName(dstNameBar, activeUser);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
 
@@ -997,7 +1000,7 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-submit-btn]").click();
 
         cy.get("[data-cy=snackbar]").should("contain", "Files have been moved to selected collection.");
-        goToCollectionByName(dstName, activeUser.token);
+        goToCollectionByName(dstName, activeUser);
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy=collection-files-panel]").and("contain", "bar");
     });
@@ -1071,12 +1074,12 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=snackbar]").should("contain", "New collections created.");
 
         // Verify created collections
-        goToCollectionByName(dstNameFoo, activeUser.token);
+        goToCollectionByName(dstNameFoo, activeUser);
         cy.get("main").contains(dstNameFoo).should("exist");
         cy.doMPVTabSelect("Files");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='foo']").should("be.visible");
 
-        goToCollectionByName(dstNameBar, activeUser.token);
+        goToCollectionByName(dstNameBar, activeUser);
         cy.doMPVTabSelect("Files");
         cy.get("main").contains(dstNameBar).should("exist");
         cy.get("[data-cy='collection-files-panel'] [data-subfolder-path='bar']").should("be.visible");
