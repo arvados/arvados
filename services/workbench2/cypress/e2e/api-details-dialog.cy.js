@@ -17,8 +17,15 @@ function testResourceAPIDetails(token, resourceType, testResource) {
             cy.get(".MuiDialogContent-root pre")
                 .invoke("text")
                 .then(JSON.parse)
-                .should((displayedData) => {
-                    expect(resource).to.deep.include(displayedData);
+                .then((displayedData) => {
+                    let filteredOutput = {};
+                    for (const [key, value] of Object.entries(displayedData)) {
+                        if (key !== "etag") filteredOutput[key] = value;
+                    }
+                    return filteredOutput;
+                })
+                .should((data) => {
+                    expect(resource).to.deep.include(data);
                 });
         });
 }
