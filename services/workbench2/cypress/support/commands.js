@@ -330,10 +330,7 @@ Cypress.Commands.add("createVirtualMachine", (token, data) => {
 Cypress.Commands.add("getResource", (token, suffix, uuid) => {
     return cy
         .doRequest("GET", `/arvados/v1/${suffix}/${uuid}`, null, {}, token)
-        .its("body")
-        .then(function (resource) {
-            return resource;
-        });
+        .its("body");
 });
 
 Cypress.Commands.add("createResource", (token, suffix, data, keep = false) => {
