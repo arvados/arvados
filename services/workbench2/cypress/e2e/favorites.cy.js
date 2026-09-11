@@ -396,7 +396,9 @@ describe('Favorites-SidePanel tests', function () {
             .then((myFavoriteProject1) => {
                 // Check project restored to favorites
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').within(() => {
-                    cy.get(`[data-id="${myFavoriteProject1.uuid}"]`, { timeout: 6000 }).should("contain", myFavoriteProject1.name);
+                    // Side panel takes time to do the fairly expensive sync;
+                    // doubling the timeout from Cypress default.
+                    cy.get(`[data-id="${myFavoriteProject1.uuid}"]`, { timeout: 8000 }).should("contain", myFavoriteProject1.name);
                 });
             });
     });
@@ -447,7 +449,9 @@ describe('Favorites-SidePanel tests', function () {
         cy.get("@testCollectionUuid")
             .then((uuid) => {
                 cy.get('[data-cy=tree-item-toggle-my-favorites]').parents('[data-cy=tree-top-level-item]').within(() => {
-                    cy.get(`[data-id="${uuid}"]`, { timeout: 6000 }).should("contain", collName);
+                    // Side panel takes time to do the fairly expensive sync;
+                    // doubling the timeout from Cypress default.
+                    cy.get(`[data-id="${uuid}"]`, { timeout: 8000 }).should("contain", collName);
                 })
             });
     });
