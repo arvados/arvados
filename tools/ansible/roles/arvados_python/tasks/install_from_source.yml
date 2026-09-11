@@ -29,7 +29,7 @@
   ansible.builtin.command:
     argv:
       - "make"
-      - "-j4"
+      - "-j{{ ansible_processor_nproc }}"
     chdir: "{{ python_builddir.path }}"
 
 - name: Install Python

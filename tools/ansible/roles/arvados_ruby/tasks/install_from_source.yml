@@ -27,7 +27,7 @@
   ansible.builtin.command:
     argv:
       - "make"
-      - "-j4"
+      - "-j{{ ansible_processor_nproc }}"
     chdir: "{{ ruby_builddir.path }}"
 
 - name: Install Ruby

@@ -67,7 +67,7 @@
         PATH: "{{ singularity_build.path }}/go/bin:{{ ansible_env.PATH }}:{{ singularity_build.path }}/GOPATH/bin"
       loop:
         - "./mconfig --prefix={{ compute_singularity_destdir }}"
-        - env -C builddir make
+        - "env -C builddir make -j{{ ansible_processor_nproc }}"
 
     - name: Install Singularity
       become: yes
