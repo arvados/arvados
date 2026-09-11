@@ -44,8 +44,15 @@
     dest: "{{ ('/usr/local/bin', item)|path_join }}"
   loop:
     - ansible
+    - ansible-config
+    - ansible-console
+    - ansible-doc
     - ansible-galaxy
+    - ansible-inventory
     - ansible-playbook
+    - ansible-pull
+    - ansible-test
+    - ansible-vault
 
 - name: Install Ansible requirements
   when: arvados_ansible_galaxy_user is truthy
