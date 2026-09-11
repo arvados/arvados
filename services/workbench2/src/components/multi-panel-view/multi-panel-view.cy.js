@@ -27,14 +27,14 @@ describe('<MPVContainer />', () => {
     });
 
     it('should show default panel buttons for every child', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -48,7 +48,7 @@ describe('<MPVContainer />', () => {
     });
 
     it('should show panel when clicking on its button', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -56,7 +56,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -72,7 +72,7 @@ describe('<MPVContainer />', () => {
     });
 
     it('should show custom panel buttons when config provided', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -82,7 +82,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );
@@ -97,8 +97,40 @@ describe('<MPVContainer />', () => {
         cy.contains('This is another panel');
     });
 
+    it('should configure disabled panels with tooltips', () => {
+        const childPanelMocks = [
+            <PanelMock key={1}>This is one panel</PanelMock>,
+            <PanelMock key={2}>This is another panel</PanelMock>,
+        ];
+        props.panelStates = [
+            {name: 'First Panel', visible: true},
+            {name: 'Second Panel', reasonToDisable: 'Testing disabled panel'},
+        ]
+        cy.mount(
+            <Provider store={store}>
+                <ThemeProvider theme={CustomTheme}>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
+                </ThemeProvider>
+            </Provider>
+        );
+        // Verify "First Panel" is active and not disabled
+        cy.get('button').eq(0).should('contain', 'First Panel').and('not.have.attr', 'disabled');
+
+        // Verify "Second Panel" is disabled and has correct styling
+        cy.get('button').eq(1).should('contain', 'Second Panel').and('have.attr', 'disabled');
+        cy.get('button').eq(1).parents('span').eq(0)
+            .should('have.css', 'flex-grow', '1')
+            .and('have.css', 'display', 'flex');
+
+        // Hover over the tooltip to verify it appears
+        cy.get('button').eq(1).trigger('mouseover', { force: true });
+        cy.get('#disabled-tab-1-tooltip')
+            .should('be.visible')
+            .and('contain.text', 'Testing disabled panel');
+    });
+
     it('should set initial panel visibility according to panelStates prop', () => {
-        const childs = [
+        const childPanelMocks = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
         ];
@@ -109,7 +141,7 @@ describe('<MPVContainer />', () => {
         cy.mount(
             <Provider store={store}>
                 <ThemeProvider theme={CustomTheme}>
-                    <MPVContainer {...props}>{[...childs]}</MPVContainer>
+                    <MPVContainer {...props}>{[...childPanelMocks]}</MPVContainer>
                 </ThemeProvider>
             </Provider>
         );

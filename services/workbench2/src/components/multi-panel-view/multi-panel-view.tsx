@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 import { RouterState } from "connected-react-router";
 import { RootState } from 'store/store';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, Paper, Tabs, Tab } from "@mui/material";
+import { Grid, Paper, Tabs, Tab, Tooltip } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { GridProps } from '@mui/material/Grid';
@@ -121,6 +121,7 @@ function preventRerender(prevProps: MPVPanelContentProps, nextProps: MPVPanelCon
 export interface MPVPanelState {
     name: string;
     visible?: boolean;
+    reasonToDisable?: string;
 }
 interface MPVContainerDataProps {
     panelStates?: MPVPanelState[];
@@ -172,13 +173,29 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
         };
 
         for (let idx = 0; idx < children.length; idx++) {
-            const panelName = panelStates === undefined
-                ? `Panel ${idx + 1}`
-                : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx + 1}`;
+            const panelState = panelStates && panelStates[idx];
+            const panelName = panelState?.name || `Panel ${idx + 1}`;
+            const disabled: boolean = !!panelState?.reasonToDisable;
+
+            const tab = <Tab
+                disabled={disabled}
+                className={classNames(classes.tab, idx === selectedPanel ? classes.selectedTab : '')}
+                key={idx}
+                label={panelName}
+                data-cy={`tab-${panelName.toLowerCase().replace(/\s+/g, "-")}`}
+            />;
 
             tabs = [
                 ...tabs,
-                <>{panelName}</>
+                (disabled) ? (
+                    <Tooltip title={panelState?.reasonToDisable} id={`disabled-tab-${idx}-tooltip`} key={idx} describeChild>
+                        <span style={{ pointerEvents: 'auto', flexGrow: 1, display: 'flex' }}>
+                            {tab}
+                        </span>
+                    </Tooltip>
+                ) : (
+                    tab
+                )
             ];
 
             const aPanel =
@@ -196,7 +213,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, router, ...prop
 
         tabBar = (
             <Tabs className={classes.symmetricTabs} value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
-                {tabs.map((tgl, idx) => <Tab className={classNames(classes.tab, idx === selectedPanel ? classes.selectedTab : '')} key={idx} label={tgl} />)}
+                {tabs}
             </Tabs>);
     };
 
