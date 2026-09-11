@@ -941,6 +941,8 @@ describe('For workflow resources', () => {
             //delete workflow
             cy.doToolbarAction("Delete Workflow");
             cy.get('[data-cy=confirmation-dialog] [data-cy=confirmation-dialog-ok-btn]').click();
+            // Select "individual message box that contains 'Removed' in the
+            // snackbar (container) area".
             cy.contains("[data-cy='snackbar'] [role='alert']", "Removed").should("be.visible");
             cy.assertDataExplorerContains(testWorkflow.name, false);
         });
