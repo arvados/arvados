@@ -48,12 +48,30 @@
     - ansible.builtin.include_role:
         name: arvados_api
 
+- name: Set up API controller nginx front-end
+  hosts: arvados_controller_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Controller
+
 - name: Set up API controller(s)
   hosts: arvados_controller
   serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_controller
+
+- name: Set up WebSocket server nginx front-end
+  hosts: arvados_websocket_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Websocket
 
 - name: Set up WebSocket server
   hosts: arvados_websocket
@@ -76,12 +94,30 @@
     - ansible.builtin.include_role:
         name: arvados_keepbalance
 
+- name: Set up keepproxy nginx front-end
+  hosts: arvados_keepproxy_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Keepproxy
+
 - name: Set up keepproxy(ies)
   hosts: arvados_keepproxy
   serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_keepproxy
+
+- name: Set up keep-web nginx front-end
+  hosts: arvados_keep_web_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: WebDAV
 
 - name: Set up keep-web(s)
   hosts: arvados_keep_web
