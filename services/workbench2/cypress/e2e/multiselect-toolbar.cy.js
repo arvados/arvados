@@ -941,7 +941,7 @@ describe('For workflow resources', () => {
             //delete workflow
             cy.doToolbarAction("Delete Workflow");
             cy.get('[data-cy=confirmation-dialog] [data-cy=confirmation-dialog-ok-btn]').click();
-            cy.get("[data-cy=snackbar]", { timeout: 10000 }).should("contain", 'Removed');
+            cy.contains("[data-cy='snackbar'] [role='alert']", "Removed").should("be.visible");
             cy.assertDataExplorerContains(testWorkflow.name, false);
         });
     });
@@ -1028,7 +1028,7 @@ describe('For groups', () => {
             //remove group
             cy.doToolbarAction("Remove");
             cy.get('[data-cy=confirmation-dialog] [data-cy=confirmation-dialog-ok-btn]').click();
-            cy.get("[data-cy=snackbar]", { timeout: 10000 }).should("contain", 'Removed');
+            cy.contains("[data-cy='snackbar'] [role='alert']", "Removed").should("be.visible");
             cy.assertDataExplorerContains(testGroup.name, false);
         });
     });
@@ -1155,7 +1155,7 @@ describe('For users', () => {
         //remove
         cy.get('[aria-label="Remove"]').click();
         cy.get('[data-cy=confirmation-dialog] [data-cy=confirmation-dialog-ok-btn]').click();
-        cy.get("[data-cy=snackbar]", { timeout: 10000 }).should("contain", 'Removed');
+        cy.contains("[data-cy='snackbar'] [role='alert']", "Removed").should("be.visible");
         cy.assertDataExplorerContains(groupName, false);
     });
 
