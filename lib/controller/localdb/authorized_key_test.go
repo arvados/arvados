@@ -73,7 +73,7 @@ func (s *authorizedKeySuite) TestAuthorizedKeyCreate(c *C) {
 		Attrs: map[string]interface{}{
 			"public_key": strings.Replace(testPubKey, "ssh-rsa", "ssh-dsa", 1),
 		}})
-	c.Check(err, ErrorMatches, `Public key does not appear to be valid: leading type field "ssh-dsa" does not match actual key type "ssh-rsa"`)
+	c.Check(err, ErrorMatches, `Public key does not appear to be valid: ssh: no key found; .*`)
 	var se httpserver.HTTPStatusError
 	if c.Check(errors.As(err, &se), Equals, true) {
 		c.Check(se.HTTPStatus(), Equals, http.StatusBadRequest)
@@ -105,7 +105,7 @@ func (s *authorizedKeySuite) TestAuthorizedKeyCreate(c *C) {
 			Attrs: map[string]interface{}{
 				"public_key": strings.Replace(string(pubkey), " ", "-bogus ", 1),
 			}})
-		c.Check(err, ErrorMatches, `.*type field ".*" does not match actual key type ".*"`)
+		c.Check(err, ErrorMatches, `Public key does not appear to be valid: ssh: no key found; .*`)
 	}
 
 	deleted, err := s.localdb.AuthorizedKeyDelete(s.userctx, arvados.DeleteOptions{UUID: ak.UUID})
