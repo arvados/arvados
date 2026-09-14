@@ -65,6 +65,7 @@ import { CustomTheme } from "common/custom-theme";
 import { getProperty } from "store/properties/properties";
 import { ClusterBadge } from "store/auth/cluster-badges";
 import { isContainerRequestResource } from "models/container-request";
+import { sanitizeTableCellContent } from "common/html-sanitize";
 
 enum WorkflowStatus {
     PUBLIC = "Public",
@@ -926,8 +927,8 @@ export const RenderDescriptionInTD = connect((state: RootState, props: { uuid: s
 })((props: { description?: string }) =>
     props.description ? <Typography
         component='div'
-        // Remove <p> tags from description so they don't affect table display
-        dangerouslySetInnerHTML={{ __html: props.description.replace(/<\/?p>/g, "") }} />
+        // Strip <p> and other tags that nest poorly in table cell.
+        dangerouslySetInnerHTML={{ __html: sanitizeTableCellContent(props.description) }} />
     : <>-</>);
 
 export const RenderScopes = connect((state: RootState, props: { uuid: string }) => {
