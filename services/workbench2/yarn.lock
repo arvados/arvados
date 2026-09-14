@@ -4883,15 +4883,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"baseline-browser-mapping@npm:^2.10.12":
-  version: 2.11.19
-  resolution: "baseline-browser-mapping@npm:2.11.19"
-  bin:
-    baseline-browser-mapping: dist/cli.cjs
-  checksum: cb4f6c93f25737b2212d3941a3af7458ee58045291a338db32b00aab0322c7672f57509a75a2bc0dcd82c55b63bb55f98d3b82f43a342537f5f7e0a6ba709945
-  languageName: node
-  linkType: hard
-
 "baseline-browser-mapping@npm:^2.10.44":
   version: 2.11.20
   resolution: "baseline-browser-mapping@npm:2.11.20"
@@ -5032,22 +5023,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"browserslist@npm:^4.0.0, browserslist@npm:^4.18.1, browserslist@npm:^4.21.4, browserslist@npm:^4.23.0, browserslist@npm:^4.23.3, browserslist@npm:^4.24.0, browserslist@npm:^4.28.1":
-  version: 4.28.2
-  resolution: "browserslist@npm:4.28.2"
-  dependencies:
-    baseline-browser-mapping: ^2.10.12
-    caniuse-lite: ^1.0.30001782
-    electron-to-chromium: ^1.5.328
-    node-releases: ^2.0.36
-    update-browserslist-db: ^1.2.3
-  bin:
-    browserslist: cli.js
-  checksum: 702cdd3462b5eb6f8a9bb3bf7bdc6d6a4141ced6935bb44edb7f3d40edd66198775f2b4a9178682535391293e04e625ba2b5943546d692f42ea080323cecb25e
-  languageName: node
-  linkType: hard
-
-"browserslist@npm:^4.28.7":
+"browserslist@npm:^4.0.0, browserslist@npm:^4.18.1, browserslist@npm:^4.21.4, browserslist@npm:^4.23.0, browserslist@npm:^4.23.3, browserslist@npm:^4.24.0, browserslist@npm:^4.28.1, browserslist@npm:^4.28.7":
   version: 4.28.7
   resolution: "browserslist@npm:4.28.7"
   dependencies:
@@ -5274,7 +5250,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"caniuse-lite@npm:^1.0.0, caniuse-lite@npm:^1.0.30001599, caniuse-lite@npm:^1.0.30001782, caniuse-lite@npm:^1.0.30001806":
+"caniuse-lite@npm:^1.0.0, caniuse-lite@npm:^1.0.30001599, caniuse-lite@npm:^1.0.30001806":
   version: 1.0.30001810
   resolution: "caniuse-lite@npm:1.0.30001810"
   checksum: 4ff2dae8df59eb5f5ae71c4803666cf581459a9432c7cf016afd85f4f110774fb9c6469a62ff69a73ed7be5a7eae27988656c3acf56bceed7b0f24358426a5a8
@@ -6795,13 +6771,6 @@ __metadata:
   bin:
     ejs: bin/cli.js
   checksum: ce90637e9c7538663ae023b8a7a380b2ef7cc4096de70be85abf5a3b9641912dde65353211d05e24d56b1f242d71185c6d00e02cb8860701d571786d92c71f05
-  languageName: node
-  linkType: hard
-
-"electron-to-chromium@npm:^1.5.328":
-  version: 1.5.373
-  resolution: "electron-to-chromium@npm:1.5.373"
-  checksum: 55abaf26072d0df2f8a8a784d4807571417f9e46f9269ecd0c40db32a8baf42655af42e2ea39854145c3c24e34fd08d05f8479b1b2fc336e9195416b3301cda2
   languageName: node
   linkType: hard
 
@@ -10883,13 +10852,6 @@ __metadata:
   version: 1.0.0
   resolution: "node-modules-regexp@npm:1.0.0"
   checksum: 99541903536c5ce552786f0fca7f06b88df595e62e423c21fa86a1674ee2363dad1f7482d1bec20b4bd9fa5f262f88e6e5cb788fc56411113f2fe2e97783a3a7
-  languageName: node
-  linkType: hard
-
-"node-releases@npm:^2.0.36":
-  version: 2.0.47
-  resolution: "node-releases@npm:2.0.47"
-  checksum: 520070d74a79c8d1e38bb61863b4ca39c4b4c58176f9ecfbca022be33baf2454c1b4bea6e57d74cecac05e251108375a79af0c0297c98fd150cf8d5eaa51bee2
   languageName: node
   linkType: hard
 
