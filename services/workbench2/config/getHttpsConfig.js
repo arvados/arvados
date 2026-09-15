@@ -47,24 +47,25 @@ function readEnvFile(file, type) {
   return fs.readFileSync(file);
 }
 
-// Get the https config
-// Return cert files if provided in env, otherwise just true or false
+// Get the server https config
+// Return https server config object with "options" property containing cert
+// files if provided in env, otherwise a bare https server config object.
 function getHttpsConfig() {
   const { SSL_CRT_FILE, SSL_KEY_FILE, HTTPS } = process.env;
   const isHttps = HTTPS === 'true';
+  let config = { type: "https" };
 
   if (isHttps && SSL_CRT_FILE && SSL_KEY_FILE) {
     const crtFile = path.resolve(paths.appPath, SSL_CRT_FILE);
     const keyFile = path.resolve(paths.appPath, SSL_KEY_FILE);
-    const config = {
+    config.options = {
       cert: readEnvFile(crtFile, 'SSL_CRT_FILE'),
       key: readEnvFile(keyFile, 'SSL_KEY_FILE'),
     };
 
-    validateKeyAndCerts({ ...config, keyFile, crtFile });
-    return config;
+    validateKeyAndCerts({ ...config.options, keyFile, crtFile });
   }
-  return isHttps;
+  return config;
 }
 
 module.exports = getHttpsConfig;
