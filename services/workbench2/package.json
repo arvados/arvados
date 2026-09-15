@@ -17,7 +17,7 @@
     "@mui/material": "^5.15.20",
     "@mui/styles": "^5.15.20",
     "@mui/x-date-pickers": "^7.7.0",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.6.3",
     "@svgr/webpack": "8.1.0",
     "@types/debounce": "3.0.0",
     "@types/dompurify": "^3.0.3",
@@ -126,8 +126,8 @@
     "unionize": "2.1.2",
     "uuid": "3.3.2",
     "webpack": "5.109.2",
-    "webpack-manifest-plugin": "^4.0.2",
-    "workbox-webpack-plugin": "^6.4.1"
+    "webpack-manifest-plugin": "^6.0.0",
+    "workbox-webpack-plugin": "^7.4.1"
   },
   "scripts": {
     "start": "BROWSER=none node scripts/start.js",
