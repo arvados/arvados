@@ -167,6 +167,12 @@
     - ansible.builtin.include_role:
         name: arvados_loki
 
+- name: Set up Prometheus node exporters
+  hosts: arvados_prometheus_node
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_prometheus_node
+
 - name: Set up Prometheus
   hosts: arvados_prometheus
   serial: 1

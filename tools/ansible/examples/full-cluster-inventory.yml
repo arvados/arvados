@@ -265,6 +265,23 @@ arvados_keep_web_nginx:
 #  vars:
 #    arvados_alloy_config_file: /PATH/TO/config.alloy
 
+# arvados_prometheus_node host(s) will have the Prometheus node exporter installed and running.
+# No configuration is required.
+# Typically this should be installed on all nodes running Arvados services as
+# illustrated in the example below.
+#arvados_prometheus_node:
+#  children:
+#    arvados_api:
+#    arvados_controller:
+#    arvados_websocket:
+#    arvados_keepstore:
+#    arvados_keepbalance:
+#    arvados_keepproxy:
+#    arvados_keep_web:
+#    arvados_workbench:
+#    arvados_dispatch_cloud:
+#    arvados_dispatch_local:
+
 # arvados_loki host(s) will have Loki installed from the Grafana APT repository.
 # The required Loki configuration file is defined by `arvados_loki_config_file`.
 #arvados_loki:
@@ -273,6 +290,14 @@ arvados_keep_web_nginx:
 #  vars:
 #    arvados_loki_config_file: /PATH/TO/config.yml
 
+# arvados_prometheus host(s) will have the Prometheus server installed.
+# The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
+#arvados_prometheus:
+#  hosts:
+#    prometheus.arvados.example:
+#  vars:
+#    arvados_prometheus_config_file: /PATH/TO/prometheus.yml
+
 # arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
 # The required Grafana configuration file is defined by `arvados_grafana_config_file`.
 #arvados_grafana:
@@ -280,11 +305,3 @@ arvados_keep_web_nginx:
 #    prometheus.arvados.example:
 #  vars:
 #    arvados_grafana_config_file: /PATH/TO/grafana.ini
-
-# arvados_prometheus host(s) will have Prometheus installed from the Prometheus APT repository.
-# The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
-#arvados_prometheus:
-#  hosts:
-#    prometheus.arvados.example:
-#  vars:
-#    arvados_prometheus_config_file: /PATH/TO/prometheus.yml
