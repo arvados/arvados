@@ -107,13 +107,6 @@ arvados_api:
 arvados_controller:
   hosts:
     api.arvados.example:
-  vars:
-    # `arvados_nginx_server_config` is a block of nginx configuration
-    # directives that will be included in the server block for this
-    # service. You can use this to answer to additional names or ports,
-    # or do whatever other customization you need.
-    #arvados_nginx_server_config: |
-    #  server_name  arvados.example;
 
 # arvados_websocket host(s) run the Arvados websockets server.
 arvados_websocket:
@@ -146,6 +139,41 @@ arvados_keep_web:
 arvados_workbench:
   hosts:
     workbench.arvados.example:
+
+
+### Host groups for Arvados web front-ends ###
+# The Arvados servers for API controller, websockets, keepproxy, and
+# keep-web/WebDAV expect to run behind a production web front-end.
+# The following groups deploy nginx to do that.
+# This example configuration shows the simple case of deploying nginx on the
+# same host as the Arvados service. You can deploy these groups to different
+# host(s) if desired. Note that *all* nginx front-ends will proxy *all* the
+# corresponding back-end services for load balancing via the InternalURLs
+# in your Arvados cluster configuration.
+# You can make these groups empty if you plan to configure a different
+# web front-end such as AWS ELB.
+arvados_controller_nginx:
+  children:
+    arvados_controller:
+  vars:
+    # `arvados_nginx_server_config` is a block of nginx configuration
+    # directives that will be included in the server block for this
+    # service. You can use this to answer to additional names or ports,
+    # or do whatever other customization you need.
+    #arvados_nginx_server_config: |
+    #  server_name  arvados.example;
+
+arvados_websocket_nginx:
+  children:
+    arvados_websocket:
+
+arvados_keepproxy_nginx:
+  children:
+    arvados_keepproxy:
+
+arvados_keep_web_nginx:
+  children:
+    arvados_keep_web:
 
 
 ### Host groups for Arvados dispatchers ###
