@@ -295,7 +295,7 @@ arvados_keep_web_nginx:
 # The required Loki configuration file is defined by `arvados_loki_config_file`.
 #arvados_loki:
 #  hosts:
-#    prometheus.arvados.example:
+#    workbench.arvados.example:
 #  vars:
 #    arvados_loki_config_file: /PATH/TO/config.yml
 
@@ -303,7 +303,7 @@ arvados_keep_web_nginx:
 # The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
 #arvados_prometheus:
 #  hosts:
-#    prometheus.arvados.example:
+#    workbench.arvados.example:
 #  vars:
 #    arvados_prometheus_config_file: /PATH/TO/prometheus.yml
 
@@ -311,6 +311,6 @@ arvados_keep_web_nginx:
 # The required Grafana configuration file is defined by `arvados_grafana_config_file`.
 #arvados_grafana:
 #  hosts:
-#    prometheus.arvados.example:
+#    workbench.arvados.example:
 #  vars:
 #    arvados_grafana_config_file: /PATH/TO/grafana.ini
