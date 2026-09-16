@@ -239,12 +239,15 @@ arvados_keep_web_nginx:
 #      #arvados_shell_hostname: shellhost.arvados.example
 
 
-### Centralized logging ###
-# The installer can set up Prometheus to collect logs from all Arvados services
-# and report metrics.
-# This is especially helpful to collate logs on multi-node installs.
+### Centralized monitoring ###
+# The installer can set up:
+#  * Loki to collect logs from all nodes
+#  * Prometheus to collect metrics from all services
+#  * Grafana to provide dashboards for monitoring
+# This is especially helpful to collate information on multi-node installs.
 # The Arvados cluster activity report can use these metrics to report additional
 # information about cluster health.
+# To use this, you should generally uncomment and define all groups below.
 
 # arvados_alloy host(s) will have Alloy installed from the Grafana APT repository.
 # The required Alloy configuration file is defined by `arvados_alloy_config_file`.
