@@ -107,13 +107,6 @@ arvados_api:
 arvados_controller:
   hosts:
     api.arvados.example:
-  vars:
-    # `arvados_nginx_server_config` is a block of nginx configuration
-    # directives that will be included in the server block for this
-    # service. You can use this to answer to additional names or ports,
-    # or do whatever other customization you need.
-    #arvados_nginx_server_config: |
-    #  server_name  arvados.example;
 
 # arvados_websocket host(s) run the Arvados websockets server.
 arvados_websocket:
@@ -162,6 +155,13 @@ arvados_workbench:
 arvados_controller_nginx:
   children:
     arvados_controller:
+  vars:
+    # `arvados_nginx_server_config` is a block of nginx configuration
+    # directives that will be included in the server block for this
+    # service. You can use this to answer to additional names or ports,
+    # or do whatever other customization you need.
+    #arvados_nginx_server_config: |
+    #  server_name  arvados.example;
 
 arvados_websocket_nginx:
   children:
