@@ -34,4 +34,6 @@ arvados_nginx_proxy_config: |
 arvados_nginx_server_config: ""
 
 arvados_ansible_services: {}
+arvados_nginx_htpasswd_path: "/etc/nginx/arvados/{{ arvados_nginx_service_key }}.htpasswd"
+arvados_nginx_proxy_service: "{{ (arvados_ansible_services|combine(arvados_cluster.Services))[arvados_nginx_service_key] }}"
 tls_source: "{{ arvados_tls.get(arvados_nginx_service_key, arvados_tls.Default) }}"

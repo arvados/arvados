@@ -7,14 +7,17 @@
   ansible.builtin.apt:
     name: nginx
 
-- name: Install nginx service override directory
+- name: Install nginx configuration directories
   become: yes
   ansible.builtin.file:
     state: directory
-    path: /etc/systemd/system/nginx.service.d
+    path: "{{ item }}"
     owner: root
     group: root
     mode: 0755
+  loop:
+    - /etc/nginx/arvados
+    - /etc/systemd/system/nginx.service.d
 
 - name: Disable nginx default site
   become: yes

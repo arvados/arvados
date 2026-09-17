@@ -43,6 +43,15 @@ all:
     # * `ConfigFile`: Optional. A path to the service's main configuration file
     #   for Ansible to deploy. The example paths indicate which file that is
     #   for each service.
+    # * `BasicUser`: Optional. If defined, the nginx front-end for this service
+    #   will require basic auth, and Ansible will manage this user in an
+    #   htpasswd file.
+    # * `BasicPass`: Optional. The htpasswd password for `BasicUser`. If not
+    #   defined, Ansible will ensure `BasicUser` is absent.
+    # * `BasicScheme`: Optional. The hash scheme used for `BasicUser` in
+    #   htpasswd. If not defined, uses Ansible's default.
+    # * `BasicRealm`: Optional. The name of the basic auth realm nginx will
+    #   advertise.
     # Note these settings only have an effect if you enable the corresponding
     # monitoring groups below.
     arvados_ansible_services:
@@ -51,11 +60,15 @@ all:
           "http://localhost:3100": {}
         ExternalURL: "https://loki.arvados.example"
         #ConfigFile: /PATH/TO/loki/config.yml
+        #BasicUser: admin
+        #BasicPass: FIXMEDefaultLokiAuth
       Prometheus:
         InternalURLs:
           "http://localhost:9090": {}
         ExternalURL: "https://prometheus.arvados.example"
         #ConfigFile: /PATH/TO/prometheus.yml
+        #BasicUser: admin
+        #BasicPass: FIXMEDefaultPrometheusAuth
       Grafana:
         InternalURLs:
           "http://localhost:3000": {}
