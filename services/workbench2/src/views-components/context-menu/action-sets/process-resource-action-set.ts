@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
 import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
@@ -29,7 +30,6 @@ import { togglePublicFavorite } from "store/public-favorites/public-favorites-ac
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openCancelProcesswDialog } from "store/processes/processes-actions";
-import { copyStringToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
     [

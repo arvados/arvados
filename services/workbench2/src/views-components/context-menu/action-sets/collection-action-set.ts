@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { copyToClipboardAction, copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
 import { ContextMenuAction, ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
@@ -28,7 +29,7 @@ import { toggleResourceTrashed } from "store/trash/trash-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { openDetailsPanel } from "store/details-panel/details-panel-action";
-import { copyToClipboardAction, copyStringToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openRestoreCollectionVersionDialog } from "store/collections/collection-version-actions";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
