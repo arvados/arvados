@@ -33,4 +33,5 @@ arvados_nginx_proxy_config: |
 # server names or listening ports.
 arvados_nginx_server_config: ""
 
+arvados_ansible_services: {}
 tls_source: "{{ arvados_tls.get(arvados_nginx_service_key, arvados_tls.Default) }}"

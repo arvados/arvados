@@ -160,6 +160,15 @@
     - ansible.builtin.include_role:
         name: arvados_alloy
 
+- name: Set up Loki nginx front-end
+  hosts: arvados_loki_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Loki
+
 - name: Set up Loki
   hosts: arvados_loki
   serial: 1
@@ -173,12 +182,30 @@
     - ansible.builtin.include_role:
         name: arvados_prometheus_node
 
+- name: Set up Prometheus nginx front-end
+  hosts: arvados_prometheus_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Prometheus
+
 - name: Set up Prometheus
   hosts: arvados_prometheus
   serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_prometheus
+
+- name: Set up Grafana nginx front-end
+  hosts: arvados_grafana_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Grafana
 
 - name: Set up Grafana
   hosts: arvados_grafana

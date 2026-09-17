@@ -5,7 +5,7 @@
  #}
 
 {% set upstream_name = "arvados-" + arvados_nginx_service_key|lower %}
-{% set upstream_svc = arvados_cluster.Services[arvados_nginx_service_key] %}
+{% set upstream_svc = (arvados_ansible_services|combine(arvados_cluster.Services))[arvados_nginx_service_key] %}
 {% block upstream %}
 upstream {{ upstream_name }} {
 {% for addr in upstream_svc | internal_addrs %}
