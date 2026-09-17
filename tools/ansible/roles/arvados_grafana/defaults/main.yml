@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+arvados_ansible_services: {}
+
 # These values are used to build Arvados dashboards.
 arvados_grafana_tls_goodtime: "{{ 40 * 24 * 60 * 60 }}"
 arvados_grafana_tls_warntime: "{{ 20 * 24 * 60 * 60 }}"
