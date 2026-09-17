@@ -8,10 +8,11 @@
     name: prometheus
 
 - name: Write Prometheus config
+  when: arvados_ansible_services.Prometheus.ConfigFile is defined
   become: yes
   no_log: yes
   ansible.builtin.copy:
-    src: "{{ arvados_prometheus_config_file }}"
+    src: "{{ arvados_ansible_services.Prometheus.ConfigFile }}"
     dest: /etc/prometheus/prometheus.yml
     owner: root
     group: root

@@ -35,24 +35,32 @@ all:
     # `arvados_ansible_services` describes how to set up nginx servers for
     # services that are deployed by Ansible but not part of Arvados per se,
     # specifically the monitoring services Loki, Prometheus, and Grafana.
-    # Each value follows the same format as the `Services` section of your
-    # cluster configuration: `InternalURLs` lists the URLs where nginx should
-    # contact the upstream service, and `ExternalURL` defines where nginx
-    # should listen. These settings only have an effect if you enable the
-    # arvados_*_nginx group for the corresponding service.
+    # The following settings are supported:
+    # * `InternalURLs`: Required. A list of URLs where the service is running
+    #   and nginx can contact it.
+    # * `ExternalURL`: Required. The service's nginx front-end will listen on
+    #   this hostname and port.
+    # * `ConfigFile`: Optional. A path to the service's main configuration file
+    #   for Ansible to deploy. The example paths indicate which file that is
+    #   for each service.
+    # Note these settings only have an effect if you enable the corresponding
+    # monitoring groups below.
     arvados_ansible_services:
       Loki:
         InternalURLs:
           "http://localhost:3100": {}
         ExternalURL: "https://loki.arvados.example"
+        #ConfigFile: /PATH/TO/loki/config.yml
       Prometheus:
         InternalURLs:
           "http://localhost:9090": {}
         ExternalURL: "https://prometheus.arvados.example"
+        #ConfigFile: /PATH/TO/prometheus.yml
       Grafana:
         InternalURLs:
           "http://localhost:3000": {}
         ExternalURL: "https://grafana.arvados.example"
+        #ConfigFile: /PATH/TO/grafana.ini
 
     # `arvados_tls` defines the source of the TLS certificate for each Arvados
     # service. Each key corresponds to a key in the `Services` section of your
@@ -314,12 +322,9 @@ arvados_keep_web_nginx:
 #    arvados_grafana:
 
 # arvados_loki host(s) will have Loki installed from the Grafana APT repository.
-# The required Loki configuration file is defined by `arvados_loki_config_file`.
 #arvados_loki:
 #  hosts:
 #    workbench.arvados.example:
-#  vars:
-#    arvados_loki_config_file: /PATH/TO/config.yml
 
 # arvados_loki_nginx sets up an nginx front-end for the Loki server.
 #arvados_loki_nginx:
@@ -327,12 +332,9 @@ arvados_keep_web_nginx:
 #    arvados_loki:
 
 # arvados_prometheus host(s) will have the Prometheus server installed.
-# The required Prometheus configuration file is defined by `arvados_prometheus_config_file`.
 #arvados_prometheus:
 #  hosts:
 #    workbench.arvados.example:
-#  vars:
-#    arvados_prometheus_config_file: /PATH/TO/prometheus.yml
 
 # arvados_prometheus_nginx sets up an nginx front-end for the Prometheus server.
 #arvados_prometheus_nginx:
@@ -340,12 +342,9 @@ arvados_keep_web_nginx:
 #    arvados_prometheus:
 
 # arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
-# The required Grafana configuration file is defined by `arvados_grafana_config_file`.
 #arvados_grafana:
 #  hosts:
 #    workbench.arvados.example:
-#  vars:
-#    arvados_grafana_config_file: /PATH/TO/grafana.ini
 
 # arvados_grafana_nginx sets up an nginx front-end for the Grafana server.
 #arvados_grafana_nginx:
