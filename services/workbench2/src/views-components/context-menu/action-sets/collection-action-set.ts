@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { copyToClipboardAction, copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
+import { copyLinkToClipboardAction, copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
 import { ContextMenuAction, ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
@@ -60,7 +60,7 @@ const commonActionSet: ContextMenuActionSet = [
             icon: Link,
             name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
             execute: (dispatch, resources) => {
-                dispatch<any>(copyToClipboardAction(resources));
+                dispatch<any>(copyLinkToClipboardAction(resources));
             },
         },
         {

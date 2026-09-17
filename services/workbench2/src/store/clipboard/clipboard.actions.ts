@@ -37,7 +37,7 @@ const dispatchCopyResult = (dispatch: Dispatch, text: string) => {
     }
 };
 
-export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispatch, getState: () => RootState) => {
+export const copyLinkToClipboardAction = (resources: Array<any>) => (dispatch: Dispatch, getState: () => RootState) => {
     // Copy link to clipboard omits token to avoid accidental sharing
 
     let url = getNavUrl(resources[0].uuid, getState().auth, false);
@@ -51,6 +51,6 @@ export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispa
     dispatchCopyResult(dispatch, textToCopy);
 };
 
-export const copyStringToClipboardAction = (string: string) => (dispatch: Dispatch, getState: () => RootState) => {
-    dispatchCopyResult(dispatch, string);
+export const copyStringToClipboardAction = (text: string) => (dispatch: Dispatch, getState: () => RootState) => {
+    dispatchCopyResult(dispatch, text);
 };

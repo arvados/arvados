@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { copyToClipboardAction, copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
+import { copyLinkToClipboardAction, copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
 import { ContextMenuActionSet, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { openRunProcess, openRemoveWorkflowDialog } from "store/workflow-panel/workflow-panel-actions";
 import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon, DeleteForever, CopyIcon } from "components/icon/icon";
@@ -23,7 +23,7 @@ export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
             icon: Link,
             name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
             execute: (dispatch, resources) => {
-                dispatch<any>(copyToClipboardAction(resources));
+                dispatch<any>(copyLinkToClipboardAction(resources));
             },
         },
         {
