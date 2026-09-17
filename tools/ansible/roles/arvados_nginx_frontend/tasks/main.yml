@@ -21,6 +21,28 @@
   notify:
     - restart nginx
 
+- name: Set up htpasswd
+  when: arvados_nginx_proxy_service.BasicUser is defined
+  block:
+    - name: Install passlib
+      become: yes
+      ansible.builtin.apt:
+        name:
+          - python3-passlib
+
+    - name: Write htpasswd user
+      become: yes
+      no_log: yes
+      community.general.htpasswd:
+        name: "{{ arvados_nginx_proxy_service.BasicUser }}"
+        state: "{{ 'present' if arvados_nginx_proxy_service.BasicPass is defined else 'absent' }}"
+        password: "{{ arvados_nginx_proxy_service.BasicPass|default(omit) }}"
+        hash_scheme: "{{ arvados_nginx_proxy_service.BasicScheme|default(omit) }}"
+        path: "{{ arvados_nginx_htpasswd_path }}"
+        owner: root
+        group: www-data
+        mode: 0640
+
 - name: "Set up nginx {{ arvados_nginx_service_key }} site"
   become: yes
   ansible.builtin.template:
