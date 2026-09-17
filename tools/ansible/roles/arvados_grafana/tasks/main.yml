@@ -34,6 +34,26 @@
         - /etc/grafana/arvados
         - /etc/grafana/arvados/dashboards
 
+    - name: Write Grafana datasources
+      become: yes
+      vars:
+        datasource:
+          apiVersion: 1
+          datasources:
+            - name: "Arvados {{ item }}"
+              type: "{{ item|lower }}"
+              uid: "Arvados{{ item[:4] }}DataSource"
+              url: "{{ arvados_ansible_services[item]['InternalURLs']|first if ('arvados_' ~ item|lower) in group_names else arvados_ansible_services[item]['ExternalURL'] }}"
+      ansible.builtin.copy:
+        content: "{{ datasource|to_nice_yaml }}"
+        dest: "/etc/grafana/provisioning/datasources/arvados_{{ item }}.yaml"
+        owner: root
+        group: grafana
+        mode: 0640
+      loop: "{{ ['Loki', 'Prometheus']|select('in', arvados_ansible_services) }}"
+      notify:
+        - restart grafana
+
     - name: Write Grafana dashboards
       become: yes
       ansible.builtin.template:
