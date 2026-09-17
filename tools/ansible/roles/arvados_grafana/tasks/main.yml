@@ -7,21 +7,64 @@
   ansible.builtin.apt:
     name: grafana
 
-- name: Write Grafana config
+- name: Configure Grafana
   when: arvados_ansible_services.Grafana.ConfigFile is defined
-  become: yes
-  no_log: yes
-  ansible.builtin.copy:
-    src: "{{ arvados_ansible_services.Grafana.ConfigFile }}"
-    dest: /etc/grafana/grafana.ini
-    owner: root
-    group: grafana
-    mode: 0640
-  register: arvados_grafana_config_copy
+  block:
+    - name: Write grafana.ini
+      become: yes
+      no_log: yes
+      ansible.builtin.copy:
+        src: "{{ arvados_ansible_services.Grafana.ConfigFile }}"
+        dest: /etc/grafana/grafana.ini
+        owner: root
+        group: grafana
+        mode: 0640
+      notify:
+        - restart grafana
 
-- name: Start and enable grafana
+    - name: Set up Grafana configuration directories
+      become: yes
+      ansible.builtin.file:
+        state: directory
+        path: "{{ item }}"
+        owner: root
+        group: grafana
+        mode: 0755
+      loop:
+        - /etc/grafana/arvados
+        - /etc/grafana/arvados/dashboards
+
+    - name: Write Grafana dashboards
+      become: yes
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ ('/etc/grafana/arvados/dashboards', item)|path_join }}"
+        owner: root
+        group: grafana
+        mode: 0644
+      loop:
+        - arvados_logs.json
+        - arvados_overview.json
+        - node-exporter-full_rev30.json
+        - postgresql_exporter.json
+        - ssl-certificate-monitor.json
+      notify:
+        - restart grafana
+
+    - name: Provision Grafana dashboards
+      become: yes
+      ansible.builtin.copy:
+        src: dashboards.yml
+        dest: /etc/grafana/provisioning/dashboards/arvados.yaml
+        owner: root
+        group: grafana
+        mode: 0644
+      notify:
+        - restart grafana
+
+- name: Enable grafana
   become: yes
   ansible.builtin.systemd_service:
     name: grafana-server.service
-    state: "{{ 'restarted' if arvados_grafana_config_copy.changed else 'started' }}"
+    state: started
     enabled: true
