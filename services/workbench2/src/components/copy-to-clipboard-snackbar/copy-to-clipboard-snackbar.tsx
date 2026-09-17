@@ -9,7 +9,7 @@ import { Tooltip } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'components/copy-to-clipboard/copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { CopyIcon } from 'components/icon/icon';
 

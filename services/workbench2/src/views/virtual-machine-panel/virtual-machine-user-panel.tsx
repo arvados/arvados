@@ -15,10 +15,10 @@ import { RootState } from 'store/store';
 import { ListResults } from 'services/common-service/common-service';
 import { HelpIcon } from 'components/icon/icon';
 import { SESSION_STORAGE } from "services/auth-service/auth-service";
-// import * as CopyToClipboard from 'react-copy-to-clipboard';
+
 import parse from "parse-duration";
 import { CopyIcon } from 'components/icon/icon';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'components/copy-to-clipboard/copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sanitizeHTML } from 'common/html-sanitize';
 

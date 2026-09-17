@@ -7,7 +7,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Dialog, DialogActions, DialogTitle, DialogContent, Button, Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'components/copy-to-clipboard/copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
 import { withDialog } from 'store/dialog/with-dialog';
 import { WithDialogProps } from 'store/dialog/with-dialog';
