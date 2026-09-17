@@ -17,10 +17,11 @@
     mode: 0755 # Matches the default permissions used by the grafana loki package
 
 - name: Write Loki config.yml
+  when: arvados_ansible_services.Loki.ConfigFile is defined
   become: yes
   no_log: yes
   ansible.builtin.copy:
-    src: "{{ arvados_loki_config_file }}"
+    src: "{{ arvados_ansible_services.Loki.ConfigFile }}"
     dest: /etc/loki/config.yml
     owner: root
     group: root

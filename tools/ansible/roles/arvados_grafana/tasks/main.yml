@@ -8,10 +8,11 @@
     name: grafana
 
 - name: Write Grafana config
+  when: arvados_ansible_services.Grafana.ConfigFile is defined
   become: yes
   no_log: yes
   ansible.builtin.copy:
-    src: "{{ arvados_grafana_config_file }}"
+    src: "{{ arvados_ansible_services.Grafana.ConfigFile }}"
     dest: /etc/grafana/grafana.ini
     owner: root
     group: grafana
