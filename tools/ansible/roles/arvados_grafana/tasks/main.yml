@@ -16,7 +16,7 @@
     dest: /etc/grafana/grafana.ini
     owner: root
     group: grafana
-    mode: 0640 # Matches the default permissions used by the grafana package
+    mode: 0640
   register: arvados_grafana_config_copy
 
 - name: Start and enable grafana

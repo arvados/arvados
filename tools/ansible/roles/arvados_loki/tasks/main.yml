@@ -23,9 +23,9 @@
   ansible.builtin.copy:
     src: "{{ arvados_ansible_services.Loki.ConfigFile }}"
     dest: /etc/loki/config.yml
-    owner: root
+    owner: loki
     group: root
-    mode: 0664 # Matches the default permissions used by the grafana loki package
+    mode: 0640
   register: arvados_loki_config_copy
 
 - name: Start and enable loki.service

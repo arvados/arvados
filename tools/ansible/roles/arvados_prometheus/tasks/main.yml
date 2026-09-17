@@ -15,8 +15,8 @@
     src: "{{ arvados_ansible_services.Prometheus.ConfigFile }}"
     dest: /etc/prometheus/prometheus.yml
     owner: root
-    group: root
-    mode: 0644 # Matches the default permissions used by the grafana package
+    group: prometheus
+    mode: 0640
   register: arvados_prometheus_config_copy
 
 - name: Start and enable prometheus
