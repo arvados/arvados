@@ -1,7 +1,9 @@
+{% extends 'arvados_base.j2' %}
 {# Copyright (C) The Arvados Authors. All rights reserved.
  #
  # SPDX-License-Identifier: Apache-2.0
 -#}
+{% block body %}
 {
     "__inputs": [
       {
@@ -60,7 +62,7 @@
     "liveNow": false,
     "panels": [
       {
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "description": "",
         "fieldConfig": {
           "defaults": {
@@ -452,7 +454,7 @@
         "pluginVersion": "10.1.5",
         "targets": [
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_ssl_earliest_cert_expiry-time()",
             "format": "table",
             "hide": false,
@@ -462,7 +464,7 @@
             "refId": "A"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_http_status_code",
             "format": "table",
             "instant": true,
@@ -471,7 +473,7 @@
             "refId": "D"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_http_duration_seconds{phase=\"resolve\"}",
             "format": "table",
             "instant": true,
@@ -480,7 +482,7 @@
             "refId": "G"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_http_duration_seconds{phase=\"connect\"}",
             "format": "table",
             "instant": true,
@@ -489,7 +491,7 @@
             "refId": "B"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_http_duration_seconds{phase=\"tls\"}",
             "format": "table",
             "instant": true,
@@ -498,7 +500,7 @@
             "refId": "E"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_http_duration_seconds{phase=\"processing\"}",
             "format": "table",
             "instant": true,
@@ -507,7 +509,7 @@
             "refId": "F"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+            "datasource": {{ datasource('Prometheus') }},
             "expr": "probe_http_duration_seconds{phase=\"transfer\"}",
             "format": "table",
             "instant": true,
@@ -583,4 +585,5 @@
     "uid": "r8eWoHpGz",
     "version": 4,
     "weekStart": ""
-  }
+}
+{% endblock %}

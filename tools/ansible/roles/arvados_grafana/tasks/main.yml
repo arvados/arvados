@@ -40,17 +40,18 @@
         datasource:
           apiVersion: 1
           datasources:
-            - name: "Arvados {{ item }}"
-              type: "{{ item|lower }}"
-              uid: "Arvados{{ item[:4] }}DataSource"
-              url: "{{ arvados_ansible_services[item]['InternalURLs']|first if ('arvados_' ~ item|lower) in group_names else arvados_ansible_services[item]['ExternalURL'] }}"
+            - "{{ item.value }}"
       ansible.builtin.copy:
-        content: "{{ datasource|to_nice_yaml }}"
-        dest: "/etc/grafana/provisioning/datasources/arvados_{{ item }}.yaml"
+        content: |
+          ### This file is managed by the Arvados Ansible installer ###
+          {{ datasource|to_nice_yaml }}
+        dest: "/etc/grafana/provisioning/datasources/arvados_{{ item.key }}.yaml"
         owner: root
         group: grafana
         mode: 0640
-      loop: "{{ ['Loki', 'Prometheus']|select('in', arvados_ansible_services) }}"
+      loop: "{{ arvados_grafana_datasources|dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
       notify:
         - restart grafana
 

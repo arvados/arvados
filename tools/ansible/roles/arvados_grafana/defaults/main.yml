@@ -9,8 +9,12 @@ arvados_grafana_tls_goodtime: "{{ 40 * 24 * 60 * 60 }}"
 arvados_grafana_tls_warntime: "{{ 20 * 24 * 60 * 60 }}"
 arvados_grafana_datasources:
   Loki:
+    name: Arvados Loki
     type: loki
     uid: ArvadosLokiDataSource
+    url: "{{ arvados_ansible_services.Loki.InternalURLs|first|default('http://localhost:3100') if 'arvados_loki' in group_names else arvados_ansible_services.Loki.ExternalURL }}"
   Prometheus:
+    name: Arvados Prometheus
     type: prometheus
     uid: ArvadosPromDataSource
+    url: "{{ arvados_ansible_services.Prometheus.InternalURLs|first|default('http://localhost:9090') if 'arvados_prometheus' in group_names else arvados_ansible_services.Prometheus.ExternalURL }}"

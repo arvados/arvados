@@ -1,7 +1,9 @@
+{% extends 'arvados_base.j2' %}
 {# Copyright (C) The Arvados Authors. All rights reserved.
  #
  # SPDX-License-Identifier: Apache-2.0
 -#}
+{% block body %}
 {
     "__inputs": [
       {
@@ -63,7 +65,7 @@
     "links": [],
     "panels": [
       {
-        "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+        "datasource": {{ datasource('Loki') }},
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -170,7 +172,7 @@
         },
         "targets": [
           {
-            "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+            "datasource": {{ datasource('Loki') }},
             "editorMode": "code",
             "expr": "sum(count_over_time({systemd_unit=~\"arvados-controller\\\\.service|arvados-railsapi\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RespStatusCode =~ `2[0-9]{2}` | RequestId =~ `${request_id}` [$__auto])) + sum(count_over_time({filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | RespStatusCode =~ `2[0-9]{2}` | RequestId =~ `${request_id}` [$__auto]))",
             "legendFormat": "ok",
@@ -178,7 +180,7 @@
             "refId": "ok"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+            "datasource": {{ datasource('Loki') }},
             "editorMode": "builder",
             "expr": "sum(count_over_time({systemd_unit=~\"arvados-controller\\\\.service|arvados-railsapi\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RespStatusCode =~ `[45][0-9]{2}` | RequestId =~ `${request_id}` [$__auto])) + sum(count_over_time({filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | RespStatusCode =~ `[45][0-9]{2}` | RequestId =~ `${request_id}` [$__auto]))",
             "hide": false,
@@ -190,7 +192,7 @@
         "type": "timeseries"
       },
       {
-        "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+        "datasource": {{ datasource('Loki') }},
         "gridPos": {
           "h": 13,
           "w": 24,
@@ -210,14 +212,14 @@
         },
         "targets": [
           {
-            "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+            "datasource": {{ datasource('Loki') }},
             "editorMode": "code",
             "expr": "{systemd_unit=~\"arvados-controller\\\\.service|arvados-railsapi\\\\.service|arvados-ws\\\\.service|keep-balance\\\\.service|keep-web\\\\.service|keepproxy\\\\.service|arvados-dispatch-cloud\\\\.service|keepstore\\\\.service\"} |~ `${regex_search}` | json RequestId=\"RequestID\", RespStatusCode=\"respStatusCode\" | RequestId =~ `${request_id}`",
             "queryType": "range",
             "refId": "Arvados Journald logs"
           },
           {
-            "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+            "datasource": {{ datasource('Loki') }},
             "editorMode": "code",
             "expr": "{filename=\"/var/www/arvados-api/shared/log/production.log\"} |~ `${regex_search}` | json RequestId=\"request_id\", RespStatusCode=\"status\" | __error__=`` | RequestId =~ `${request_id}`",
             "queryType": "range",
@@ -228,7 +230,7 @@
         "type": "logs"
       },
       {
-        "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+        "datasource": {{ datasource('Loki') }},
         "gridPos": {
           "h": 8,
           "w": 24,
@@ -249,7 +251,7 @@
         "pluginVersion": "11.1.4",
         "targets": [
           {
-            "datasource": {{ arvados_grafana_datasources.Loki|to_json }},
+            "datasource": {{ datasource('Loki') }},
             "editorMode": "builder",
             "expr": "{filename=~\"/var/log/nginx/.+\\\\.log\"} |= ``",
             "queryType": "range",
@@ -309,3 +311,4 @@
     "version": 11,
     "weekStart": ""
   }
+  {% endblock %}

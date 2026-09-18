@@ -1,0 +1,10 @@
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+{% macro datasource(key) %}
+{{ {'type': arvados_grafana_datasources[key].type,
+    'uid': arvados_grafana_datasources[key].uid}|to_json -}}
+{% endmacro %}
+{% block body required %}
+{% endblock %}

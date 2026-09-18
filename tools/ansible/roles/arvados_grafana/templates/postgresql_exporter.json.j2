@@ -1,7 +1,9 @@
+{% extends 'arvados_base.j2' %}
 {# Copyright (C) The Arvados Authors. All rights reserved.
  #
  # SPDX-License-Identifier: Apache-2.0
 -#}
+{% block body %}
 {
   "__inputs": [
     {
@@ -76,7 +78,7 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -153,7 +155,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -230,7 +232,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -307,7 +309,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -384,7 +386,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -455,7 +457,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -526,7 +528,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -601,7 +603,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -685,7 +687,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -769,7 +771,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -853,7 +855,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -939,7 +941,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1023,7 +1025,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
@@ -1112,7 +1114,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1193,7 +1195,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1274,7 +1276,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1361,7 +1363,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1446,7 +1448,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1609,7 +1611,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "label_values(node_disk_reads_completed_total, instance)",
         "hide": 0,
         "includeAll": false,
@@ -1632,7 +1634,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "label_values(node_disk_reads_completed_total{instance=\"$host\", device!~\"dm-.+\"}, device)",
         "hide": 0,
         "includeAll": true,
@@ -1655,7 +1657,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "",
         "hide": 0,
         "includeAll": true,
@@ -1678,7 +1680,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "",
         "hide": 0,
         "includeAll": true,
@@ -1701,7 +1703,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "",
         "hide": 0,
         "includeAll": true,
@@ -1759,3 +1761,4 @@
   "version": 9,
   "weekStart": ""
 }
+{% endblock %}

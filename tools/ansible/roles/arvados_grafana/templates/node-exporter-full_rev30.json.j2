@@ -1,7 +1,9 @@
+{% extends 'arvados_base.j2' %}
 {# Copyright (C) The Arvados Authors. All rights reserved.
  #
  # SPDX-License-Identifier: Apache-2.0
 -#}
+{% block body %}
 {
   "__inputs": [
     {
@@ -68,7 +70,7 @@
         "type": "dashboard"
       },
       {
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "enable": true,
         "expr": "changes(node_boot_time_seconds{instance=\"$node\"}[$__rate_interval])",
         "iconColor": "red",
@@ -103,7 +105,7 @@
   "panels": [
     {
       "collapsed": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -114,7 +116,7 @@
       "panels": [],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -122,7 +124,7 @@
       "type": "row"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Busy state of all CPU cores together",
       "fieldConfig": {
         "defaults": {
@@ -186,7 +188,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "(sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode!=\"idle\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))) * 100",
           "hide": false,
@@ -201,7 +203,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Busy state of all CPU cores together (5 min average)",
       "fieldConfig": {
         "defaults": {
@@ -265,7 +267,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "avg(node_load5{instance=\"$node\"}) /  count(count(node_cpu_seconds_total{instance=\"$node\"}) by (cpu)) * 100",
           "format": "time_series",
           "hide": false,
@@ -278,7 +280,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Busy state of all CPU cores together (15 min average)",
       "fieldConfig": {
         "defaults": {
@@ -342,7 +344,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "avg(node_load15{instance=\"$node\"}) /  count(count(node_cpu_seconds_total{instance=\"$node\"}) by (cpu)) * 100",
           "hide": false,
           "intervalFactor": 1,
@@ -354,7 +356,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Non available RAM memory",
       "fieldConfig": {
         "defaults": {
@@ -410,7 +412,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "((node_memory_MemTotal_bytes{instance=\"$node\"} - node_memory_MemFree_bytes{instance=\"$node\"}) / (node_memory_MemTotal_bytes{instance=\"$node\"} )) * 100",
           "format": "time_series",
           "hide": true,
@@ -419,7 +421,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"$node\"} * 100) / node_memory_MemTotal_bytes{instance=\"$node\"})",
           "format": "time_series",
           "hide": false,
@@ -432,7 +434,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Used Swap",
       "fieldConfig": {
         "defaults": {
@@ -496,7 +498,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "((node_memory_SwapTotal_bytes{instance=\"$node\"} - node_memory_SwapFree_bytes{instance=\"$node\"}) / (node_memory_SwapTotal_bytes{instance=\"$node\"} )) * 100",
           "intervalFactor": 1,
           "refId": "A",
@@ -507,7 +509,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Used Root FS",
       "fieldConfig": {
         "defaults": {
@@ -571,7 +573,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "100 - ((node_filesystem_avail_bytes{instance=\"$node\",mountpoint=\"/\",fstype!=\"rootfs\"} * 100) / node_filesystem_size_bytes{instance=\"$node\",mountpoint=\"/\",fstype!=\"rootfs\"})",
           "format": "time_series",
           "intervalFactor": 1,
@@ -583,7 +585,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Total number of CPU cores",
       "fieldConfig": {
         "defaults": {
@@ -644,7 +646,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "count(count(node_cpu_seconds_total{instance=\"$node\"}) by (cpu))",
           "interval": "",
           "intervalFactor": 1,
@@ -657,7 +659,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "System uptime",
       "fieldConfig": {
         "defaults": {
@@ -720,7 +722,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_time_seconds{instance=\"$node\"} - node_boot_time_seconds{instance=\"$node\"}",
           "intervalFactor": 1,
           "refId": "A",
@@ -731,7 +733,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Total RootFS",
       "fieldConfig": {
         "defaults": {
@@ -797,7 +799,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_filesystem_size_bytes{instance=\"$node\",mountpoint=\"/\",fstype!=\"rootfs\"}",
           "format": "time_series",
           "hide": false,
@@ -810,7 +812,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Total RAM",
       "fieldConfig": {
         "defaults": {
@@ -872,7 +874,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_memory_MemTotal_bytes{instance=\"$node\"}",
           "intervalFactor": 1,
           "refId": "A",
@@ -883,7 +885,7 @@
       "type": "stat"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Total SWAP",
       "fieldConfig": {
         "defaults": {
@@ -945,7 +947,7 @@
       "pluginVersion": "9.2.3",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_memory_SwapTotal_bytes{instance=\"$node\"}",
           "intervalFactor": 1,
           "refId": "A",
@@ -957,7 +959,7 @@
     },
     {
       "collapsed": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -968,7 +970,7 @@
       "panels": [],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -976,7 +978,7 @@
       "type": "row"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Basic CPU info",
       "fieldConfig": {
         "defaults": {
@@ -1163,7 +1165,7 @@
       "pluginVersion": "9.2.0",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"system\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
           "format": "time_series",
@@ -1175,7 +1177,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"user\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
           "format": "time_series",
@@ -1187,7 +1189,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"iowait\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
           "format": "time_series",
@@ -1198,7 +1200,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=~\".*irq\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
           "format": "time_series",
@@ -1209,7 +1211,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
           "format": "time_series",
@@ -1220,7 +1222,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"idle\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
           "format": "time_series",
@@ -1235,7 +1237,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Basic memory usage",
       "fieldConfig": {
         "defaults": {
@@ -1684,7 +1686,7 @@
       "pluginVersion": "9.2.0",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_memory_MemTotal_bytes{instance=\"$node\"}",
           "format": "time_series",
           "hide": false,
@@ -1694,7 +1696,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_memory_MemTotal_bytes{instance=\"$node\"} - node_memory_MemFree_bytes{instance=\"$node\"} - (node_memory_Cached_bytes{instance=\"$node\"} + node_memory_Buffers_bytes{instance=\"$node\"} + node_memory_SReclaimable_bytes{instance=\"$node\"})",
           "format": "time_series",
           "hide": false,
@@ -1704,7 +1706,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_memory_Cached_bytes{instance=\"$node\"} + node_memory_Buffers_bytes{instance=\"$node\"} + node_memory_SReclaimable_bytes{instance=\"$node\"}",
           "format": "time_series",
           "intervalFactor": 1,
@@ -1713,7 +1715,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "node_memory_MemFree_bytes{instance=\"$node\"}",
           "format": "time_series",
           "intervalFactor": 1,
@@ -1722,7 +1724,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "(node_memory_SwapTotal_bytes{instance=\"$node\"} - node_memory_SwapFree_bytes{instance=\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
@@ -1735,7 +1737,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Basic network info per interface",
       "fieldConfig": {
         "defaults": {
@@ -2172,7 +2174,7 @@
       "pluginVersion": "9.2.0",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "irate(node_network_receive_bytes_total{instance=\"$node\"}[$__rate_interval])*8",
           "format": "time_series",
           "intervalFactor": 1,
@@ -2181,7 +2183,7 @@
           "step": 240
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\"}[$__rate_interval])*8",
           "format": "time_series",
           "intervalFactor": 1,
@@ -2194,7 +2196,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "description": "Disk space used of all filesystems mounted",
       "fieldConfig": {
         "defaults": {
@@ -2275,7 +2277,7 @@
       "pluginVersion": "9.2.0",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "100 - ((node_filesystem_avail_bytes{instance=\"$node\",device!~'rootfs'} * 100) / node_filesystem_size_bytes{instance=\"$node\",device!~'rootfs'})",
           "format": "time_series",
           "intervalFactor": 1,
@@ -2289,7 +2291,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2299,7 +2301,7 @@
       "id": 265,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -2506,7 +2508,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"system\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2518,7 +2520,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"user\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2529,7 +2531,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"nice\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2540,7 +2542,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"iowait\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2551,7 +2553,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"irq\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2562,7 +2564,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"softirq\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2573,7 +2575,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"steal\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2584,7 +2586,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_seconds_total{instance=\"$node\", mode=\"idle\"}[$__rate_interval])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])))",
               "format": "time_series",
@@ -2600,7 +2602,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -2987,7 +2989,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_MemTotal_bytes{instance=\"$node\"} - node_memory_MemFree_bytes{instance=\"$node\"} - node_memory_Buffers_bytes{instance=\"$node\"} - node_memory_Cached_bytes{instance=\"$node\"} - node_memory_Slab_bytes{instance=\"$node\"} - node_memory_PageTables_bytes{instance=\"$node\"} - node_memory_SwapCached_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -2997,7 +2999,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_PageTables_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -3007,7 +3009,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_SwapCached_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -3016,7 +3018,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Slab_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -3026,7 +3028,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Cached_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -3036,7 +3038,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Buffers_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -3046,7 +3048,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_MemFree_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -3056,7 +3058,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "(node_memory_SwapTotal_bytes{instance=\"$node\"} - node_memory_SwapFree_bytes{instance=\"$node\"})",
               "format": "time_series",
               "hide": false,
@@ -3066,7 +3068,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_HardwareCorrupted_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -3080,7 +3082,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3236,7 +3238,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_bytes_total{instance=\"$node\"}[$__rate_interval])*8",
               "format": "time_series",
               "intervalFactor": 1,
@@ -3245,7 +3247,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\"}[$__rate_interval])*8",
               "format": "time_series",
               "intervalFactor": 1,
@@ -3258,7 +3260,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -3343,7 +3345,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_size_bytes{instance=\"$node\",device!~'rootfs'} - node_filesystem_avail_bytes{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -3356,7 +3358,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -3768,7 +3770,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_reads_completed_total{instance=\"$node\",device=~\"$diskdevices\"}[$__rate_interval])",
               "intervalFactor": 4,
               "legendFormat": {{ "{{device}} - Reads completed"|to_json }},
@@ -3776,7 +3778,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_writes_completed_total{instance=\"$node\",device=~\"$diskdevices\"}[$__rate_interval])",
               "intervalFactor": 1,
               "legendFormat": {{ "{{device}} - Writes completed"|to_json }},
@@ -3788,7 +3790,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -3987,7 +3989,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_read_bytes_total{instance=\"$node\",device=~\"$diskdevices\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -3997,7 +3999,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_written_bytes_total{instance=\"$node\",device=~\"$diskdevices\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -4011,7 +4013,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -4124,7 +4126,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_io_time_seconds_total{instance=\"$node\",device=~\"$diskdevices\"} [$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -4139,7 +4141,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4251,7 +4253,7 @@
           },
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_guest_seconds_total{instance=\"$node\", mode=\"user\"}[1m])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[1m])))",
               "hide": false,
@@ -4260,7 +4262,7 @@
               "refId": "A"
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "editorMode": "code",
               "expr": "sum by(instance) (irate(node_cpu_guest_seconds_total{instance=\"$node\", mode=\"nice\"}[1m])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance=\"$node\"}[1m])))",
               "hide": false,
@@ -4275,7 +4277,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -4284,7 +4286,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -4294,7 +4296,7 @@
       "id": 266,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4634,7 +4636,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Inactive_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -4643,7 +4645,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Active_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -4656,7 +4658,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5015,7 +5017,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Committed_AS_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -5024,7 +5026,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_CommitLimit_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -5037,7 +5039,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5377,7 +5379,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Inactive_file_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -5387,7 +5389,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Inactive_anon_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -5397,7 +5399,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Active_file_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -5407,7 +5409,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Active_anon_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -5421,7 +5423,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5790,7 +5792,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Writeback_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -5799,7 +5801,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_WritebackTmp_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -5808,7 +5810,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Dirty_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -5821,7 +5823,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6185,7 +6187,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Mapped_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -6194,7 +6196,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Shmem_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -6203,7 +6205,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_ShmemHugePages_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -6213,7 +6215,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_ShmemPmdMapped_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -6227,7 +6229,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6596,7 +6598,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_SUnreclaim_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -6605,7 +6607,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_SReclaimable_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -6618,7 +6620,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6972,7 +6974,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_VmallocChunk_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -6982,7 +6984,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_VmallocTotal_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -6992,7 +6994,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_VmallocUsed_bytes{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -7006,7 +7008,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7346,7 +7348,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Bounce_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -7359,7 +7361,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7725,7 +7727,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_AnonHugePages_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -7734,7 +7736,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_AnonPages_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -7747,7 +7749,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -8087,7 +8089,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_KernelStack_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -8096,7 +8098,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Percpu_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -8110,7 +8112,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -8463,7 +8465,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_HugePages_Free{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -8472,7 +8474,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_HugePages_Rsvd{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -8481,7 +8483,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_HugePages_Surp{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -8494,7 +8496,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -8847,7 +8849,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_HugePages_Total{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -8856,7 +8858,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Hugepagesize_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -8869,7 +8871,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -9222,7 +9224,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_DirectMap1G_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -9231,7 +9233,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_DirectMap2M_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -9241,7 +9243,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_DirectMap4k_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -9255,7 +9257,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -9595,7 +9597,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Unevictable_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -9604,7 +9606,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_Mlocked_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -9617,7 +9619,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -9986,7 +9988,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_memory_NFS_Unstable_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10001,7 +10003,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -10010,7 +10012,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -10020,7 +10022,7 @@
       "id": 267,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -10115,7 +10117,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pgpgin{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10124,7 +10126,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pgpgout{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10137,7 +10139,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -10232,7 +10234,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pswpin{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10241,7 +10243,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pswpout{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10254,7 +10256,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -10613,7 +10615,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pgfault{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10622,7 +10624,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pgmajfault{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10631,7 +10633,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_pgfault{instance=\"$node\"}[$__rate_interval])  - irate(node_vmstat_pgmajfault{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -10644,7 +10646,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -11013,7 +11015,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_vmstat_oom_kill{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -11029,7 +11031,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -11038,7 +11040,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -11048,7 +11050,7 @@
       "id": 293,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -11147,7 +11149,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_estimated_error_seconds{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -11158,7 +11160,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_offset_seconds{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -11169,7 +11171,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_maxerror_seconds{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -11184,7 +11186,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -11267,7 +11269,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_loop_time_constant{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -11281,7 +11283,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -11380,7 +11382,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_sync_status{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -11390,7 +11392,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_frequency_adjustment_ratio{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -11404,7 +11406,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -11487,7 +11489,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_tick_seconds{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -11497,7 +11499,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_timex_tai_offset_seconds{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -11513,7 +11515,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -11522,7 +11524,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -11532,7 +11534,7 @@
       "id": 312,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -11615,7 +11617,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_procs_blocked{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -11624,7 +11626,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_procs_running{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -11637,7 +11639,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -11720,7 +11722,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_processes_state{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -11734,7 +11736,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -11817,7 +11819,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_forks_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -11831,7 +11833,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -11927,7 +11929,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(process_virtual_memory_bytes{instance=\"$node\"}[$__rate_interval])",
               "hide": false,
               "interval": "",
@@ -11937,7 +11939,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "process_resident_memory_max_bytes{instance=\"$node\"}",
               "hide": false,
               "interval": "",
@@ -11947,7 +11949,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(process_virtual_memory_bytes{instance=\"$node\"}[$__rate_interval])",
               "hide": false,
               "interval": "",
@@ -11957,7 +11959,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(process_virtual_memory_max_bytes{instance=\"$node\"}[$__rate_interval])",
               "hide": false,
               "interval": "",
@@ -11971,7 +11973,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12074,7 +12076,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_processes_pids{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -12084,7 +12086,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_processes_max_processes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -12098,7 +12100,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12193,7 +12195,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_schedstat_running_seconds_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -12203,7 +12205,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_schedstat_waiting_seconds_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -12217,7 +12219,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12320,7 +12322,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_processes_threads{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -12330,7 +12332,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_processes_max_threads{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -12346,7 +12348,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -12355,7 +12357,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -12365,7 +12367,7 @@
       "id": 269,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12448,7 +12450,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_context_switches_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -12457,7 +12459,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_intr_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -12471,7 +12473,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12554,7 +12556,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_load1{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 4,
@@ -12563,7 +12565,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_load5{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 4,
@@ -12572,7 +12574,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_load15{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 4,
@@ -12585,7 +12587,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12707,7 +12709,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_interrupts_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -12721,7 +12723,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12803,7 +12805,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_schedstat_timeslices_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -12817,7 +12819,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12900,7 +12902,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_entropy_available_bits{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -12913,7 +12915,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -12995,7 +12997,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(process_cpu_seconds_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -13009,7 +13011,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13112,7 +13114,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "process_max_fds{instance=\"$node\"}",
               "interval": "",
               "intervalFactor": 1,
@@ -13121,7 +13123,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "process_open_fds{instance=\"$node\"}",
               "interval": "",
               "intervalFactor": 1,
@@ -13136,7 +13138,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -13145,7 +13147,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -13155,7 +13157,7 @@
       "id": 304,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13277,7 +13279,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_hwmon_temp_celsius{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -13287,7 +13289,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_hwmon_temp_crit_alarm_celsius{instance=\"$node\"}",
               "format": "time_series",
               "hide": true,
@@ -13298,7 +13300,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_hwmon_temp_crit_celsius{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -13308,7 +13310,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_hwmon_temp_crit_hyst_celsius{instance=\"$node\"}",
               "format": "time_series",
               "hide": true,
@@ -13319,7 +13321,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_hwmon_temp_max_celsius{instance=\"$node\"}",
               "format": "time_series",
               "hide": true,
@@ -13334,7 +13336,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13436,7 +13438,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_cooling_device_cur_state{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -13447,7 +13449,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_cooling_device_max_state{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -13461,7 +13463,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13543,7 +13545,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_power_supply_online{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -13560,7 +13562,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -13569,7 +13571,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -13579,7 +13581,7 @@
       "id": 296,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13662,7 +13664,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_systemd_socket_accepted_connections_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -13676,7 +13678,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13834,7 +13836,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_systemd_units{instance=\"$node\",state=\"activating\"}",
               "format": "time_series",
               "interval": "",
@@ -13844,7 +13846,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_systemd_units{instance=\"$node\",state=\"active\"}",
               "format": "time_series",
               "interval": "",
@@ -13854,7 +13856,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_systemd_units{instance=\"$node\",state=\"deactivating\"}",
               "format": "time_series",
               "interval": "",
@@ -13864,7 +13866,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_systemd_units{instance=\"$node\",state=\"failed\"}",
               "format": "time_series",
               "interval": "",
@@ -13874,7 +13876,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_systemd_units{instance=\"$node\",state=\"inactive\"}",
               "format": "time_series",
               "interval": "",
@@ -13890,7 +13892,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -13899,7 +13901,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -13909,7 +13911,7 @@
       "id": 270,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "The number (after merges) of I/O requests completed per second for the device",
           "fieldConfig": {
             "defaults": {
@@ -14305,7 +14307,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_reads_completed_total{instance=\"$node\"}[$__rate_interval])",
               "intervalFactor": 4,
               "legendFormat": {{ "{{device}} - Reads completed"|to_json }},
@@ -14313,7 +14315,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_writes_completed_total{instance=\"$node\"}[$__rate_interval])",
               "intervalFactor": 1,
               "legendFormat": {{ "{{device}} - Writes completed"|to_json }},
@@ -14325,7 +14327,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "The number of bytes read from or written to the device per second",
           "fieldConfig": {
             "defaults": {
@@ -14721,7 +14723,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_read_bytes_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 4,
@@ -14730,7 +14732,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_written_bytes_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -14743,7 +14745,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "The average time for requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them.",
           "fieldConfig": {
             "defaults": {
@@ -15139,7 +15141,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_read_time_seconds_total{instance=\"$node\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{instance=\"$node\"}[$__rate_interval])",
               "hide": false,
               "interval": "",
@@ -15149,7 +15151,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_write_time_seconds_total{instance=\"$node\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{instance=\"$node\"}[$__rate_interval])",
               "hide": false,
               "interval": "",
@@ -15163,7 +15165,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "The average queue length of the requests that were issued to the device",
           "fieldConfig": {
             "defaults": {
@@ -15548,7 +15550,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_io_time_weighted_seconds_total{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "intervalFactor": 4,
@@ -15561,7 +15563,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "The number of read and write requests merged per second that were queued to the device",
           "fieldConfig": {
             "defaults": {
@@ -15957,7 +15959,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_reads_merged_total{instance=\"$node\"}[$__rate_interval])",
               "intervalFactor": 1,
               "legendFormat": {{ "{{device}} - Read merged"|to_json }},
@@ -15965,7 +15967,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_writes_merged_total{instance=\"$node\"}[$__rate_interval])",
               "intervalFactor": 1,
               "legendFormat": {{ "{{device}} - Write merged"|to_json }},
@@ -15977,7 +15979,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "Percentage of elapsed time during which I/O requests were issued to the device (bandwidth utilization for the device). Device saturation occurs when this value is close to 100% for devices serving requests serially.  But for devices  serving requests in parallel, such as RAID arrays and modern SSDs, this number does not reflect their performance limits.",
           "fieldConfig": {
             "defaults": {
@@ -16362,7 +16364,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_io_time_seconds_total{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "intervalFactor": 4,
@@ -16371,7 +16373,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_discard_time_seconds_total{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "intervalFactor": 4,
@@ -16384,7 +16386,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "The number of outstanding requests at the instant the sample was taken. Incremented as requests are given to appropriate struct request_queue and decremented as they finish.",
           "fieldConfig": {
             "defaults": {
@@ -16769,7 +16771,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_disk_io_now{instance=\"$node\"}",
               "interval": "",
               "intervalFactor": 4,
@@ -16782,7 +16784,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -17166,7 +17168,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_discards_completed_total{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "intervalFactor": 4,
@@ -17175,7 +17177,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_disk_discards_merged_total{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "intervalFactor": 1,
@@ -17190,7 +17192,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -17199,7 +17201,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -17209,7 +17211,7 @@
       "id": 271,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -17293,7 +17295,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_avail_bytes{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "hide": false,
@@ -17304,7 +17306,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_free_bytes{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "hide": true,
@@ -17314,7 +17316,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_size_bytes{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "hide": true,
@@ -17328,7 +17330,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -17412,7 +17414,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_files_free{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "hide": false,
@@ -17426,7 +17428,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -17510,7 +17512,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filefd_maximum{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 4,
@@ -17519,7 +17521,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filefd_allocated{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -17532,7 +17534,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -17616,7 +17618,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_files{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "hide": false,
@@ -17630,7 +17632,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -17731,7 +17733,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_readonly{instance=\"$node\",device!~'rootfs'}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -17740,7 +17742,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_filesystem_device_error{instance=\"$node\",device!~'rootfs',fstype!~'tmpfs'}",
               "format": "time_series",
               "interval": "",
@@ -17756,7 +17758,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -17765,7 +17767,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -17775,7 +17777,7 @@
       "id": 272,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -17931,7 +17933,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_packets_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -17941,7 +17943,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_packets_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -17955,7 +17957,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18051,7 +18053,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_errs_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18060,7 +18062,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_errs_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18073,7 +18075,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18169,7 +18171,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_drop_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18178,7 +18180,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_drop_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18191,7 +18193,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18287,7 +18289,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_compressed_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18296,7 +18298,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_compressed_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18309,7 +18311,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18405,7 +18407,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_multicast_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18418,7 +18420,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18514,7 +18516,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_fifo_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18523,7 +18525,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_fifo_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18536,7 +18538,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18632,7 +18634,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_receive_frame_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -18646,7 +18648,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18729,7 +18731,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_carrier_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18742,7 +18744,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18838,7 +18840,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_network_transmit_colls_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18851,7 +18853,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18954,7 +18956,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_nf_conntrack_entries{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18963,7 +18965,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_nf_conntrack_entries_limit{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -18976,7 +18978,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19059,7 +19061,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_arp_entries{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -19072,7 +19074,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19156,7 +19158,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_network_mtu_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -19169,7 +19171,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19253,7 +19255,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_network_speed_bytes{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -19266,7 +19268,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19350,7 +19352,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_network_transmit_queue_length{instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -19363,7 +19365,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19459,7 +19461,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_softnet_processed_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -19469,7 +19471,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_softnet_dropped_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -19483,7 +19485,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19566,7 +19568,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_softnet_times_squeezed_total{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -19580,7 +19582,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19663,7 +19665,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_network_up{operstate=\"up\",instance=\"$node\"}",
               "format": "time_series",
               "intervalFactor": 1,
@@ -19672,7 +19674,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_network_carrier{instance=\"$node\"}",
               "format": "time_series",
               "instant": false,
@@ -19686,7 +19688,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -19695,7 +19697,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -19705,7 +19707,7 @@
       "id": 273,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19789,7 +19791,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_TCP_alloc{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19799,7 +19801,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_TCP_inuse{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19809,7 +19811,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_TCP_mem{instance=\"$node\"}",
               "format": "time_series",
               "hide": true,
@@ -19820,7 +19822,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_TCP_orphan{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19830,7 +19832,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_TCP_tw{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19844,7 +19846,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19928,7 +19930,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_UDPLITE_inuse{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19938,7 +19940,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_UDP_inuse{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19948,7 +19950,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_UDP_mem{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -19962,7 +19964,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20046,7 +20048,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_FRAG_inuse{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -20056,7 +20058,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_RAW_inuse{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -20070,7 +20072,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20154,7 +20156,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_TCP_mem_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -20164,7 +20166,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_UDP_mem_bytes{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -20174,7 +20176,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_FRAG_memory{instance=\"$node\"}",
               "interval": "",
               "intervalFactor": 1,
@@ -20186,7 +20188,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20270,7 +20272,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_sockstat_sockets_used{instance=\"$node\"}",
               "format": "time_series",
               "interval": "",
@@ -20286,7 +20288,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -20295,7 +20297,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -20305,7 +20307,7 @@
       "id": 274,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20401,7 +20403,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_IpExt_InOctets{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20411,7 +20413,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_IpExt_OutOctets{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "intervalFactor": 1,
@@ -20424,7 +20426,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20508,7 +20510,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Ip_Forwarding{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20522,7 +20524,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20617,7 +20619,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Icmp_InMsgs{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20627,7 +20629,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Icmp_OutMsgs{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20641,7 +20643,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20736,7 +20738,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Icmp_InErrors{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20750,7 +20752,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20857,7 +20859,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Udp_InDatagrams{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20867,7 +20869,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Udp_OutDatagrams{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20881,7 +20883,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20963,7 +20965,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Udp_InErrors{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20973,7 +20975,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Udp_NoPorts{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -20983,14 +20985,14 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_UdpLite_InErrors{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "InErrors Lite - UDPLite Datagrams that could not be delivered to an application",
               "refId": "C"
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Udp_RcvbufErrors{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -21000,7 +21002,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Udp_SndbufErrors{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -21014,7 +21016,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -21121,7 +21123,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_InSegs{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "instant": false,
@@ -21132,7 +21134,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_OutSegs{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -21146,7 +21148,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -21230,7 +21232,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_TcpExt_ListenOverflows{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -21241,7 +21243,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_TcpExt_ListenDrops{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -21252,7 +21254,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_TcpExt_TCPSynRetrans{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -21262,21 +21264,21 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_RetransSegs{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "RetransSegs - Segments retransmitted - that is, the number of TCP segments transmitted containing one or more previously transmitted octets",
               "refId": "D"
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_InErrs{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "InErrs - Segments received in error (e.g., bad TCP checksums)",
               "refId": "E"
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_OutRsts{instance=\"$node\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "OutRsts - Segments sent with RST flag",
@@ -21287,7 +21289,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -21390,7 +21392,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_netstat_Tcp_CurrEstab{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -21401,7 +21403,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_netstat_Tcp_MaxConn{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -21416,7 +21418,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -21512,7 +21514,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_TcpExt_SyncookiesFailed{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -21523,7 +21525,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_TcpExt_SyncookiesRecv{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -21534,7 +21536,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_TcpExt_SyncookiesSent{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "hide": false,
@@ -21549,7 +21551,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -21632,7 +21634,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_ActiveOpens{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -21642,7 +21644,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "irate(node_netstat_Tcp_PassiveOpens{instance=\"$node\"}[$__rate_interval])",
               "format": "time_series",
               "interval": "",
@@ -21658,7 +21660,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -21667,7 +21669,7 @@
     },
     {
       "collapsed": true,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -21677,7 +21679,7 @@
       "id": 279,
       "panels": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -21760,7 +21762,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_scrape_collector_duration_seconds{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -21775,7 +21777,7 @@
           "type": "timeseries"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -21881,7 +21883,7 @@
           "pluginVersion": "9.2.0",
           "targets": [
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_scrape_collector_success{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -21892,7 +21894,7 @@
               "step": 240
             },
             {
-              "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+              "datasource": {{ datasource('Prometheus') }},
               "expr": "node_textfile_scrape_error{instance=\"$node\"}",
               "format": "time_series",
               "hide": false,
@@ -21909,7 +21911,7 @@
       ],
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "refId": "A"
         }
       ],
@@ -21945,7 +21947,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "",
         "hide": 0,
         "includeAll": false,
@@ -21968,7 +21970,7 @@
       },
       {
         "current": {},
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "definition": "label_values(node_uname_info{}, instance)",
         "hide": 0,
         "includeAll": false,
@@ -22047,3 +22049,4 @@
   "version": 9,
   "weekStart": ""
 }
+{% endblock %}

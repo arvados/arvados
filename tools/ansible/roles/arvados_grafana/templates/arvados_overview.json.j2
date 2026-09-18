@@ -1,7 +1,9 @@
+{% extends 'arvados_base.j2' %}
 {# Copyright (C) The Arvados Authors. All rights reserved.
  #
  # SPDX-License-Identifier: Apache-2.0
 -#}
+{% block body %}
 {
   "__inputs": [
     {
@@ -44,7 +46,7 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+        "datasource": {{ datasource('Prometheus') }},
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -67,7 +69,7 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -153,7 +155,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "editorMode": "code",
           "exemplar": false,
           "expr": "min(probe_ssl_earliest_cert_expiry)-time()",
@@ -187,7 +189,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 4,
       "fillGradient": 0,
       "gridPos": {
@@ -231,7 +233,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "sum(rate(arvados_keepstore_volume_io_bytes{}[1m])) without (operation,device_id)",
           "interval": "",
           "legendFormat": {{ "{{ instance }} {{ direction }}"|to_json }},
@@ -275,7 +277,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -318,7 +320,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_containers_running{}",
           "interval": "",
           "legendFormat": "# containers",
@@ -364,7 +366,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -407,7 +409,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "sum(rate(arvados_keepstore_volume_operations{}[1m])) without (operation,device_id)",
           "interval": "",
           "legendFormat": {{ "{{instance}}"|to_json }},
@@ -452,7 +454,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -495,21 +497,21 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_queue_entries{}",
           "interval": "",
           "legendFormat": {{ "{{instance_type}} {{state}}"|to_json }},
           "refId": "A"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_containers_allocated_not_started{}",
           "interval": "",
           "legendFormat": "allocated, not started",
           "refId": "B"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_containers_not_allocated_over_quota{}",
           "interval": "",
           "legendFormat": "not allocated, over quota",
@@ -554,7 +556,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -597,7 +599,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_keepstore_bufferpool_inuse_buffers{}",
           "interval": "",
           "legendFormat": {{ "{{instance}}"|to_json }},
@@ -642,7 +644,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -679,14 +681,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_containers_longest_wait_time_seconds{}",
           "interval": "",
           "legendFormat": "Longest wait time",
           "refId": "A"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "rate(arvados_dispatchcloud_containers_time_from_queue_to_crunch_run_seconds_sum{}[10m]) / rate(arvados_dispatchcloud_containers_time_from_queue_to_crunch_run_seconds_count{}[10m])",
           "interval": "",
           "legendFormat": "avg wait time [10m]",
@@ -731,7 +733,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -774,28 +776,28 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_keep_total_bytes{}",
           "interval": "",
           "legendFormat": "Total stored",
           "refId": "A"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_keep_overreplicated_bytes{}",
           "interval": "",
           "legendFormat": "Overreplicated",
           "refId": "B"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_keep_underreplicated_bytes{}",
           "interval": "",
           "legendFormat": "Underreplicated",
           "refId": "C"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_keep_lost_bytes{}",
           "interval": "",
           "legendFormat": "Lost",
@@ -842,7 +844,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -879,7 +881,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "rate(arvados_dispatchcloud_instances_time_to_ssh_seconds_sum{}[10m]) / rate(arvados_dispatchcloud_instances_time_to_ssh_seconds_count{}[10m])",
           "hide": false,
           "interval": "",
@@ -887,7 +889,7 @@
           "refId": "A"
         },
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "rate(arvados_dispatchcloud_instances_time_to_ready_for_container_seconds_sum{}[10m]) / rate(arvados_dispatchcloud_instances_time_to_ready_for_container_seconds_count{}[10m])",
           "interval": "",
           "legendFormat": "ready",
@@ -932,7 +934,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -969,7 +971,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_concurrent_requests{}",
           "interval": "",
           "legendFormat": {{ "{{instance}}_{{queue}}"|to_json }},
@@ -1014,7 +1016,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -1057,7 +1059,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_boot_outcomes{}",
           "interval": "",
           "legendFormat": {{ "{{outcome}}"|to_json }},
@@ -1102,7 +1104,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -1145,7 +1147,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "sum(arvados_dispatchcloud_instances_price{})",
           "interval": "",
           "intervalFactor": 10,
@@ -1192,7 +1194,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -1235,7 +1237,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_instances_disappeared{}",
           "interval": "",
           "legendFormat": {{ "{{state}}"|to_json }},
@@ -1280,7 +1282,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -1323,7 +1325,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_instances_price{}",
           "interval": "",
           "intervalFactor": 10,
@@ -1370,7 +1372,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1407,7 +1409,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "rate(arvados_dispatchcloud_instances_time_from_shutdown_request_to_disappearance_seconds_sum{}[10m]) / rate(arvados_dispatchcloud_instances_time_from_shutdown_request_to_disappearance_seconds_count{}[10m])",
           "interval": "",
           "legendFormat": "shutdown to disappearance",
@@ -1452,7 +1454,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -1495,7 +1497,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "arvados_dispatchcloud_instances_total{}",
           "instant": false,
           "interval": "",
@@ -1550,7 +1552,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1587,7 +1589,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "rate(arvados_dispatchcloud_instances_run_probe_duration_seconds_sum{}[10m]) / rate(arvados_dispatchcloud_instances_run_probe_duration_seconds_count{}[10m])",
           "interval": "",
           "legendFormat": {{ "{{outcome}}"|to_json }},
@@ -1632,7 +1634,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+      "datasource": {{ datasource('Prometheus') }},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1669,7 +1671,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {{ arvados_grafana_datasources.Prometheus|to_json }},
+          "datasource": {{ datasource('Prometheus') }},
           "expr": "delta(arvados_dispatchcloud_instances_run_probe_duration_seconds_count{}[1m])",
           "instant": false,
           "interval": "",
@@ -1741,3 +1743,4 @@
   "version": 1,
   "weekStart": ""
 }
+{% endblock %}
