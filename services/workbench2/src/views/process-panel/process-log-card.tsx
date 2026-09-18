@@ -27,7 +27,7 @@ import {
 import { ProcessLogCodeSnippet } from 'views/process-panel/process-log-code-snippet';
 import { DefaultView } from 'components/default-view/default-view';
 import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'components/copy-to-clipboard/copy-to-clipboard';
 
 type CssRules = 'card' | 'content' | 'title' | 'iconHeader' | 'header' | 'namePlate' | 'toolbarWrapper' | 'toolbar' | 'root' | 'logViewer' | 'logViewerContainer';
 

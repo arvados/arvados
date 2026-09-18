@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { copyStringToClipboardAction } from 'store/clipboard/clipboard.actions';
 import { openLinkAttributesDialog, openLinkRemoveDialog } from 'store/link-panel/link-panel-actions';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { ContextMenuActionSet, ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { AdvancedIcon, RemoveIcon, AttributesIcon, CopyIcon } from 'components/icon/icon';
-import { copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 export const linkActionSet: ContextMenuActionSet = [
     [

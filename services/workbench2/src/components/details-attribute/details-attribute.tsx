@@ -11,7 +11,7 @@ import withStyles from '@mui/styles/withStyles';
 import { Tooltip } from '@mui/material';
 import kebabCase from 'lodash/kebabCase';
 import { CopyIcon } from 'components/icon/icon';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'components/copy-to-clipboard/copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
 import classnames from "classnames";
 import { Link } from 'react-router-dom';

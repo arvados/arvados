@@ -9,7 +9,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 import { CopyIcon, CloseIcon } from 'components/icon/icon';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'components/copy-to-clipboard/copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
 import moment from 'moment';
 
