@@ -15,15 +15,12 @@ interface CopyToClipboardActionProps {
 
 export const CopyToClipboardAction = (props: CopyToClipboardActionProps) => {
     const copyToClipboard = () => {
-        if (props.href) {
-            navigator.clipboard.writeText(props.href).finally(() => {
-                if (props.onClick) {
-                    props.onClick();
-                }
-            });
-        } else if (props.onClick) {
-            props.onClick();
-        }
+        (props.href
+            ? navigator.clipboard.writeText(props.href)
+            : Promise.resolve()
+        ).finally(() => {
+            if (props.onClick) props.onClick();
+        });
     };
 
     return props.href
