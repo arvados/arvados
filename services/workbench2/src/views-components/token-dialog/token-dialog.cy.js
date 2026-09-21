@@ -65,7 +65,7 @@ describe('<CurrentTokenDialog />', () => {
 
     it('should show a create new token button when allowed', () => {
       expect(!!props.canCreateNewTokens).to.equal(false);
-      cy.contains('GET NEW TOKEN').should('not.exist');
+      cy.contains('Get new token').should('not.exist');
 
       props.canCreateNewTokens = true;
       cy.mount(
@@ -74,7 +74,7 @@ describe('<CurrentTokenDialog />', () => {
             <TokenDialogComponent {...props} />
           </ThemeProvider>
         </Provider>);
-      cy.contains('GET NEW TOKEN').should('exist');
+      cy.contains('Get new token').should('exist');
     });
   });
 

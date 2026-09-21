@@ -74,7 +74,7 @@ describe('auth-actions', () => {
         //ask for an extra token
         cy.get('[aria-label="Account Management"]').click();
         cy.contains('Get API token').click();
-        cy.contains('GET NEW TOKEN').click();
+        cy.contains('Get new token').click();
         cy.waitForLocalStorage('arvadosStore').then((storedStore) => {
             const store = JSON.parse(storedStore);
 
@@ -87,7 +87,7 @@ describe('auth-actions', () => {
             firstExtraToken = store.auth.extraApiToken;
         });
         //check that another request generates a new token
-        cy.contains('GET NEW TOKEN').click();
+        cy.contains('Get new token').click();
         cy.waitForLocalStorageUpdate('arvadosStore');
         cy.waitForLocalStorage('arvadosStore').then((storedStore) => {
             const store = JSON.parse(storedStore);
