@@ -2,5 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# logrotate rotation and compression options for RailsAPI server logs. You
+# can override this to set your own directives to match your log retention
+# policy. The configuration file includes other directives required for
+# logrotate to play well with Passenger.
+arvados_api_logrotate: |
+  daily
+  rotate 30
+  compress
+  nodelaycompress
+
 arvados_api_max_pool_size: "{{ ansible_processor_nproc | int }}"
 arvados_api_max_request_queue_size: "{{ arvados_api_max_pool_size | int * 2 + 1 }}"

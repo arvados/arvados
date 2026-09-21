@@ -1,0 +1,16 @@
+### This file is managed by Ansible ###
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+/var/www/arvados-api/shared/log/*.log
+{
+  {{ arvados_api_logrotate|indent(2) }}
+  missingok
+  copytruncate
+  sharedscripts
+  postrotate
+    systemctl try-reload-or-restart arvados-railsapi.service
+  endscript
+}
