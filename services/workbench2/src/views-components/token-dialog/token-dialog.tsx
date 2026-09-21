@@ -119,7 +119,7 @@ unset ARVADOS_API_HOST_INSECURE`
                     variant="contained"
                     className={classes.actionButton}
                 >
-                    GET NEW TOKEN
+                    Get new token
                 </Button>}
 
                 <Typography paragraph={true}>
