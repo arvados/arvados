@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import copy from 'copy-to-clipboard';
 import { ListItemIcon, ListItemText, ListItem } from "@mui/material";
 import { Link } from "components/icon/icon";
 
@@ -16,13 +15,12 @@ interface CopyToClipboardActionProps {
 
 export const CopyToClipboardAction = (props: CopyToClipboardActionProps) => {
     const copyToClipboard = () => {
-        if (props.href) {
-	    copy(props.href);
-        }
-
-        if (props.onClick) {
-            props.onClick();
-        }
+        (props.href
+            ? navigator.clipboard.writeText(props.href)
+            : Promise.resolve()
+        ).finally(() => {
+            if (props.onClick) props.onClick();
+        });
     };
 
     return props.href
