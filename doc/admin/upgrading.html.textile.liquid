@@ -52,6 +52,10 @@ These conditions can arise in the following cases:
 
 To disable the new behavior and ensure that each container runs on a dedicated instance even in the above cases, set the new configuration entry @Containers.MaxRunningContainersPerInstance@ to @1@.
 
+h3. Ansible installer manages new host groups
+
+In order to support load balanced multi-node installs, the Ansible installer manages new host groups @arvados_controller_nginx@, @arvados_keepproxy_nginx@, @arvados_keep_web_nginx@, and @arvados_websocket_nginx@ separately from their original service groups. You should add these groups to your Ansible inventory(ies) before you upgrade to Arvados 3.3. The example inventories in the @tools/ansible/examples/@ directory describe how to define these groups for different use cases.
+
 h3. CLI SDK obsoleted by Python SDK
 
 As of Arvados 3.3.0, we no longer publish the @arvados-cli@ gem that provided the @arv@ command-line client for Arvados. The "@arv@ tool":{{ site.baseurl }}/sdk/python/arv-cli.html is now included with the "Python SDK":{{ site.baseurl }}/sdk/python/sdk-python.html. The @arv@ tool already required the Python SDK to be installed for full functionality, so this change simply eliminates the need to install a separate gem.
