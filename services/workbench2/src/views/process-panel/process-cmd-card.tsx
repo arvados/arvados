@@ -97,7 +97,7 @@ export const ProcessCmdCard = withStyles(styles)(
           action={
             <Grid container direction="row" alignItems="center">
               <Grid item>
-                <Tooltip title="Copy link to clipboard" disableFocusListener>
+                <Tooltip title="Copy command to clipboard" disableFocusListener>
                   <IconButton size="large">
                     <CopyResultToClipboard
                       getText={formatClipboardText(process.containerRequest.command)}

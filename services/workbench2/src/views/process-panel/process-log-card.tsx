@@ -146,7 +146,7 @@ export const ProcessLogsCard = withStyles(styles)(
                                     </Tooltip>
                                 </Grid>
                                 <Grid item>
-                                    <Tooltip title="Copy link to clipboard" disableFocusListener>
+                                    <Tooltip title="Copy log to clipboard" disableFocusListener>
                                         <IconButton size="large">
                                             <CopyToClipboard text={lines.join()} onCopy={() => onCopy("Log copied to clipboard")}>
                                                 <CopyIcon />
