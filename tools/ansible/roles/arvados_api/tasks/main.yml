@@ -21,7 +21,7 @@
     dest: /etc/logrotate.d/arvados-api
     owner: root
     group: root
-    mode: 0755
+    mode: 0644
 
 - name: Install arvados-api-server
   become: yes
