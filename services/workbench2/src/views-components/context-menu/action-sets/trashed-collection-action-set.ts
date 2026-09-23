@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet, ContextMenuActionNames } from '../context-menu-action-set';
 import { DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RestoreFromTrashIcon } from 'components/icon/icon';
-import { toggleResourceTrashed } from 'store/trash/trash-actions';
+import { openTrashConfirmDialog } from 'store/trash/trash-actions';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 
@@ -35,7 +35,7 @@ export const trashedCollectionActionSet: ContextMenuActionSet = [
             icon: RestoreFromTrashIcon,
             name: ContextMenuActionNames.RESTORE,
             execute: (dispatch, resources) => {
-                dispatch<any>(toggleResourceTrashed(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
+                dispatch<any>(openTrashConfirmDialog(resources.map(res => res.uuid), resources.some(res => res.isTrashed)));
             },
         },
     ],

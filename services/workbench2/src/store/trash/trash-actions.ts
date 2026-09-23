@@ -17,7 +17,52 @@ import { addDisabledButton } from "store/multiselect/multiselect-actions";
 import { showGroupedCommonResourceResultSnackbars, updateResources } from "store/resources/resources-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { CommonResourceServiceError } from "services/common-service/common-resource-service";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { getResource } from "store/resources/resources";
+import { NamedResource } from "models/resource";
 import _ from "lodash";
+
+export const TRASH_CONFIRM_DIALOG = "trashConfirmDialog";
+
+export const openTrashConfirmDialog =
+    (uuids: string[], isTrashed: boolean) =>
+        (dispatch: Dispatch, getState: () => RootState) => {
+            const state = getState();
+            const names = uuids.map(uuid => {
+                const resource = getResource<NamedResource>(uuid)(state.resources);
+                return resource ? resource.name : uuid;
+            });
+
+            const count = uuids.length;
+            let title: string;
+            let text: string;
+            let confirmButtonLabel: string;
+
+            if (isTrashed) {
+                title = "Restore from trash";
+                confirmButtonLabel = "Restore";
+                text = count === 1
+                    ? `Are you sure you want to restore "${names[0]}"?`
+                    : `Are you sure you want to restore ${count} items?`;
+            } else {
+                title = "Move to trash";
+                confirmButtonLabel = "Move to trash";
+                text = count === 1
+                    ? `Are you sure you want to move "${names[0]}" to trash?`
+                    : `Are you sure you want to move ${count} items to trash?`;
+            }
+
+            dispatch(dialogActions.OPEN_DIALOG({
+                id: TRASH_CONFIRM_DIALOG,
+                data: {
+                    title,
+                    text,
+                    confirmButtonLabel,
+                    uuids,
+                    isTrashed,
+                },
+            }));
+        };
 
 /**
  * Toggles the trash status of an array of UUIDS based on the current isTrashed status
