@@ -79,7 +79,9 @@ all:
         #BasicPass: FIXMEDefaultPrometheusAuth
       Grafana:
         InternalURLs:
-          "http://localhost:3000": {}
+          # Grafana requires a ListenURL with an IP address.
+          "http://localhost:3000":
+            ListenURL: "http://127.0.0.1:3000"
         ExternalURL: "https://grafana.arvados.example"
         #ConfigFile: /PATH/TO/grafana.ini
 
