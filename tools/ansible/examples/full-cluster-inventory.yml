@@ -55,6 +55,9 @@ all:
     # Note these settings only have an effect if you enable the corresponding
     # monitoring groups below.
     arvados_ansible_services:
+      Alloy:
+        # Alloy does not serve HTTP so it does not support URLs or auth.
+        #ConfigFile: /PATH/TO/config.alloy
       Loki:
         InternalURLs:
           "http://localhost:3100": {}
@@ -311,8 +314,6 @@ arvados_keep_web_nginx:
 #    arvados_loki:
 #    arvados_prometheus:
 #    arvados_grafana:
-#  vars:
-#    arvados_alloy_config_file: /PATH/TO/config.alloy
 
 # arvados_prometheus_node host(s) will have the Prometheus node exporter installed and running.
 # No configuration is required.
