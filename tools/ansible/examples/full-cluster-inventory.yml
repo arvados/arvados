@@ -36,22 +36,24 @@ all:
     # services that are deployed by Ansible but not part of Arvados per se,
     # specifically the monitoring services Loki, Prometheus, and Grafana.
     # The following settings are supported:
-    # * `InternalURLs`: Required. A list of URLs where the service is running
-    #   and nginx can contact it.
-    # * `ExternalURL`: Required. The service's nginx front-end will listen on
-    #   this hostname and port.
-    # * `ConfigFile`: Optional. A path to the service's main configuration file
-    #   for Ansible to deploy. The example paths indicate which file that is
-    #   for each service.
-    # * `BasicUser`: Optional. If defined, the nginx front-end for this service
-    #   will require basic auth, and Ansible will manage this user in an
-    #   htpasswd file.
-    # * `BasicPass`: Optional. The htpasswd password for `BasicUser`. If not
-    #   defined, Ansible will ensure `BasicUser` is absent.
-    # * `BasicScheme`: Optional. The hash scheme used for `BasicUser` in
-    #   htpasswd. If not defined, uses Ansible's default.
-    # * `BasicRealm`: Optional. The name of the basic auth realm nginx will
-    #   advertise.
+    # * `InternalURLs`: A list of URLs where the service is running and
+    #   nginx can contact it. Required to build configuration or deploy an
+    #   nginx front-end.
+    # * `ExternalURL`: The service's nginx front-end will listen on
+    #   this hostname and port. Required to build configuration or deploy an
+    #   nginx front-end or Grafana.
+    # * `ConfigFile`: A path to the service's main configuration file for
+    #   Ansible to deploy. The example paths indicate which file that is for
+    #   each service.
+    # * `BasicUser`: If defined, the nginx front-end for this service will
+    #   require basic auth, and Ansible will manage this user in an htpasswd
+    #   file.
+    # * `BasicPass`: The htpasswd password for `BasicUser`. If not defined,
+    #   Ansible will ensure `BasicUser` is absent.
+    # * `BasicScheme`: The hash scheme used for `BasicUser` in htpasswd. If
+    #   not defined, uses Ansible's default.
+    # * `BasicRealm`: The name of the basic auth realm nginx will
+    #   advertise. If not defined, defaults to "Restricted Area".
     # Note these settings only have an effect if you enable the corresponding
     # monitoring groups below.
     arvados_ansible_services:
