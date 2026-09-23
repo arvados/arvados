@@ -182,6 +182,13 @@
     - ansible.builtin.include_role:
         name: arvados_prometheus_node
 
+- name: Set up Prometheus Blackbox Exporter
+  hosts: arvados_pbe
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_pbe
+
 - name: Set up Prometheus nginx front-end
   hosts: arvados_prometheus_nginx
   serial: 1

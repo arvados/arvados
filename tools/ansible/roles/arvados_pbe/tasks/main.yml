@@ -1,0 +1,27 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Prometheus Blackbox Exporter
+  become: yes
+  ansible.builtin.apt:
+    name: prometheus-blackbox-exporter
+
+- name: Write Prometheus Blackbox Exporter config
+  when: arvados_ansible_services.BlackboxExporter.ConfigFile is defined
+  become: yes
+  no_log: yes
+  ansible.builtin.copy:
+    src: "{{ arvados_ansible_services.BlackboxExporter.ConfigFile }}"
+    dest: /etc/prometheus/blackbox_exporter.yml
+    owner: root
+    group: prometheus
+    mode: 0640
+  register: arvados_pbe_config_copy
+
+- name: Start and enable prometheus-blackbox-exporter
+  become: yes
+  ansible.builtin.systemd_service:
+    name: prometheus-blackbox-exporter.service
+    state: "{{ 'restarted' if arvados_pbe_config_copy.changed else 'started' }}"
+    enabled: true

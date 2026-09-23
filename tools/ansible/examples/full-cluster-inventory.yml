@@ -58,6 +58,9 @@ all:
       Alloy:
         # Alloy does not serve HTTP so it does not support URLs or auth.
         #ConfigFile: /PATH/TO/config.alloy
+      BlackboxExporter:
+        #ConfigFile: /PATH/TO/blackbox_exporter.yml
+        #ExternalURL: "http://localhost:9115"
       Loki:
         InternalURLs:
           "http://localhost:3100": {}
@@ -349,6 +352,11 @@ arvados_keep_web_nginx:
 #arvados_prometheus:
 #  hosts:
 #    workbench.arvados.example:
+
+# arvados_pbe host(s) will have the Prometheus Blackbox Exporter installed.
+#arvados_pbe:
+#  children:
+#    arvados_prometheus:
 
 # arvados_prometheus_nginx sets up an nginx front-end for the Prometheus server.
 #arvados_prometheus_nginx:
