@@ -7,30 +7,44 @@
   ansible.builtin.apt:
     name: loki
 
-- name: Create Loki config dir
-  become: yes
-  ansible.builtin.file:
-    path: /etc/loki
-    state: directory
-    owner: root
-    group: root
-    mode: 0755 # Matches the default permissions used by the grafana loki package
-
-- name: Write Loki config.yml
+- name: Configure Loki
   when: arvados_ansible_services.Loki.ConfigFile is defined
-  become: yes
-  no_log: yes
-  ansible.builtin.copy:
-    src: "{{ arvados_ansible_services.Loki.ConfigFile }}"
-    dest: /etc/loki/config.yml
-    owner: loki
-    group: root
-    mode: 0640
-  register: arvados_loki_config_copy
+  block:
+    - name: Create Loki var directories
+      become: yes
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: loki
+        group: root
+        mode: 0750
+      loop:
+        - /var/cache/loki
+        - /var/lib/loki
+
+    - name: Create Loki config dir
+      become: yes
+      ansible.builtin.file:
+        path: /etc/loki
+        state: directory
+        owner: root
+        group: root
+        mode: 0755 # Matches the default permissions used by the grafana loki package
+
+    - name: Write Loki config.yml
+      become: yes
+      no_log: yes
+      ansible.builtin.copy:
+        src: "{{ arvados_ansible_services.Loki.ConfigFile }}"
+        dest: /etc/loki/config.yml
+        owner: loki
+        group: root
+        mode: 0640
+      register: arvados_loki_config_copy
 
 - name: Start and enable loki.service
   become: yes
   ansible.builtin.systemd_service:
     name: loki.service
-    state: "{{ 'restarted' if arvados_loki_config_copy.changed else 'started' }}"
+    state: "{{ 'restarted' if arvados_loki_config_copy.changed|default(false) else 'started' }}"
     enabled: true
