@@ -10,6 +10,7 @@
   missingok
   copytruncate
   sharedscripts
+  su arvados-railsapi www-data
   postrotate
     systemctl try-reload-or-restart arvados-railsapi.service
   endscript
