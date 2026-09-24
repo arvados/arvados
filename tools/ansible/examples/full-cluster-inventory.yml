@@ -64,6 +64,10 @@ all:
         #ConfigFile: /PATH/TO/blackbox_exporter.yml
         #ExternalURL: "http://localhost:9115"
       Loki:
+        # Loki REQUIRES an S3-compatible object store.
+        # Our example template assumes you're deploying to AWS.
+        # To build configuration from it, you must set `aws_region`.
+        BucketNames: "{{ aws_region }}-loki-object-storage"
         InternalURLs:
           "http://localhost:3100": {}
         ExternalURL: "https://loki.arvados.example"

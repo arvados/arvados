@@ -1,0 +1,108 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# build-monitoring-config.yml - Ansible playbook to make initial monitoring configuration
+#
+# Large Arvados clusters typically use Loki, Prometheus, and Grafana to collect
+# logs and metrics in a single place for analysis. This playbook can build
+# initial configuration to collect all this information for your cluster.
+# To use this playbook, first write a complete inventory for your cluster.
+# Make sure to define groups for all the monitoring services you want and
+# fill out the `arvados_ansible_services` variable with network information.
+# Then run this playbook. It will write a configuration file for each service
+# in the `xurid_config` directory, where `xurid` is your cluster ID.
+# You can edit those files as needed and use them as the `ConfigFile` setting
+# for `arvados_ansible_services`, or integrate them into any existing
+# configuration you have.
+
+- name: Bootstrap nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Load Arvados configuration file
+      no_log: yes
+      delegate_to: localhost
+      ansible.builtin.include_vars:
+        name: arvados_config
+        file: "{{ arvados_config_file }}"
+
+    - name: Load Arvados cluster configuration
+      no_log: yes
+      ansible.builtin.set_fact:
+        arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+      failed_when: arvados_cluster is undefined
+
+    - name: Set up configuration directory
+      delegate_to: localhost
+      run_once: yes
+      ansible.builtin.file:
+        state: directory
+        path: "{{ arvados_cluster_id }}_config"
+        mode: 0700
+      register: config_dir
+
+- name: Write Alloy configuration
+  hosts: arvados_alloy
+  gather_facts: no
+  tasks:
+    - name: Write config.alloy
+      delegate_to: localhost
+      no_log: yes
+      run_once: yes
+      ansible.builtin.template:
+        src: examples/config.alloy.j2
+        dest: "{{ (config_dir.path, 'config.alloy')|path_join }}"
+        mode: 0600
+
+- name: Write Loki configuration
+  hosts: arvados_loki
+  gather_facts: no
+  tasks:
+    - name: Write loki_config.yml
+      delegate_to: localhost
+      no_log: yes
+      run_once: yes
+      ansible.builtin.template:
+        src: examples/loki_config.yml.j2
+        dest: "{{ (config_dir.path, 'loki_config.yml')|path_join }}"
+        mode: 0600
+
+- name: Write Prometheus Blackbox Exporter configuration
+  hosts: arvados_pbe
+  gather_facts: no
+  tasks:
+    - name: Write blackbox_exporter.yml
+      delegate_to: localhost
+      no_log: yes
+      run_once: yes
+      ansible.builtin.template:
+        src: examples/blackbox_exporter.yml.j2
+        dest: "{{ (config_dir.path, 'blackbox_exporter.yml')|path_join }}"
+        mode: 0600
+
+- name: Write Prometheus configuration
+  hosts: arvados_prometheus
+  gather_facts: no
+  tasks:
+    - name: Write prometheus.yml
+      delegate_to: localhost
+      no_log: yes
+      run_once: yes
+      ansible.builtin.template:
+        src: examples/prometheus.yml.j2
+        dest: "{{ (config_dir.path, 'prometheus.yml')|path_join }}"
+        mode: 0600
+
+- name: Write Grafana configuration
+  hosts: arvados_grafana
+  gather_facts: no
+  tasks:
+    - name: Write grafana.ini
+      delegate_to: localhost
+      no_log: yes
+      run_once: yes
+      ansible.builtin.template:
+        src: examples/grafana.ini.j2
+        dest: "{{ (config_dir.path, 'grafana.ini')|path_join }}"
+        mode: 0600
