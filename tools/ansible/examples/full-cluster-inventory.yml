@@ -36,9 +36,9 @@ all:
     # services that are deployed by Ansible but not part of Arvados per se,
     # specifically the monitoring services Loki, Prometheus, and Grafana.
     # The following settings are supported:
-    # * `InternalURLs`: A list of URLs where the service is running and
-    #   nginx can contact it. Required to build configuration or deploy an
-    #   nginx front-end.
+    # * `InternalURLs`: A map of URLs to objects with an optional `ListenURL`
+    #   setting, following the same pattern as Arvados cluster configuration.
+    #   Required to build configuration or deploy an nginx front-end.
     # * `ExternalURL`: The service's nginx front-end will listen on
     #   this hostname and port. Required to build configuration or deploy an
     #   nginx front-end or Grafana.
