@@ -4,7 +4,22 @@
  # SPDX-License-Identifier: Apache-2.0
  #}
 
+{% set extra_conns = [] -%}
+
+{% if 'arvados_controller_nginx' in group_names %}
+{% set controllers = groups.arvados_controller|length %}
+{% set api_svc = arvados_cluster.Services.API %}
+{% set _ = extra_conns.append(api_svc.MaxConcurrentRequests|default(64)|int * controllers) %}
+{% set _ = extra_conns.append(api_svc.MaxQueuedRequests|default(128)|int * controllers) %}
+{% set _ = extra_conns.append(api_svc.MaxGatewayTunnels|default(1000)|int * controllers) %}
+{% set ctr_svc = arvados_cluster.Services.ContainerWebServices %}
+{% set extport_min = ctr_svc.ExternalPortMin|default(0)|int %}
+{% set extport_max = ctr_svc.ExternalPortMax|default(0)|int %}
+{% set _ = extra_conns.append((extport_max - extport_min + 1) * controllers) %}
+{% endif -%}
+
+{% set extra_conncount = extra_conns|sum %}
 events {
-  worker_connections  {{ worker_connections }};
+  worker_connections  {{ arvados_nginx_min_worker_connections + extra_conncount }};
 }
-worker_rlimit_nofile  {{ worker_rlimit_nofile }};
+worker_rlimit_nofile  {{ arvados_nginx_min_worker_rlimit_nofile + extra_conncount }};
