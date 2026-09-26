@@ -21,7 +21,7 @@
     order: [["created_at", "desc"], ["uuid", "desc"]]
   ansible.builtin.command:
     argv:
-      - /usr/bin/arv
+      - arv
       - virtual_machine
       - list
       - "--filters={{ filters|to_json }}"
@@ -29,6 +29,8 @@
   environment:
     ARVADOS_API_HOST: "{{ arvados_cluster.Services.Controller | external_addr }}"
     ARVADOS_API_TOKEN: "{{ arvados_cluster.SystemRootToken }}"
+    # Prefer Python arv over Ruby but use either.
+    PATH: "/usr/bin:/usr/local/bin:{{ ansible_env.PATH|default('/bin') }}"
     SSL_CERT_FILE: "{{ '/etc/arvados/ca-certificates.crt' if arvados_certificates_file is truthy else omit }}"
   register: arvados_virtual_machine_list
 
@@ -40,13 +42,15 @@
       hostname: "{{ arvados_shell_hostname }}"
   ansible.builtin.command:
     argv:
-      - /usr/bin/arv
+      - arv
       - virtual_machine
       - create
       - "--virtual-machine={{ virtual_machine|to_json }}"
   environment:
     ARVADOS_API_HOST: "{{ arvados_cluster.Services.Controller | external_addr }}"
     ARVADOS_API_TOKEN: "{{ arvados_cluster.SystemRootToken }}"
+    # Prefer Python arv over Ruby but use either.
+    PATH: "/usr/bin:/usr/local/bin:{{ ansible_env.PATH|default('/bin') }}"
     SSL_CERT_FILE: "{{ '/etc/arvados/ca-certificates.crt' if arvados_certificates_file is truthy else omit }}"
   register: arvados_virtual_machine_create
 
