@@ -48,7 +48,8 @@
 #    the corresponding service. For example, all the `*_INT_IP` and
 #    `*_EXT_SSL_PORT` parameters are now defined in the `Services` section of
 #    your Arvados `config.yml`. The `GRAFANA_SMTP_*` settings are now written
-#    directly in the `[smtp]` section of your `grafana.ini`.
+#    directly in the `[smtp]` section of your `grafana.ini`. `DEPLOY_USER` and
+#    `SSH` settings are now written as Ansible connection parameters.
 #
 # 4. In this file, find-and-replace the string `arvados-salt.example` with
 #    the value of `DOMAIN` from your Salt installer `local.params`.
