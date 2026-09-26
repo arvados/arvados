@@ -1,0 +1,97 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# migrate-from-salt-cleanup.yml - Clean stale configuration from a cluster
+# initially installed by Salt
+#
+# If you installed Arvados 3.2.x or earlier using the Salt installer, you
+# can run this playbook on it after successfully running
+# migrate-from-salt-setup.yml and install-arvados-cluster.yml. This playbook
+# removes software and configuration that has no effect after installing
+# with Ansible, either because the software is no longer used or the
+# settings are now overridden elsewhere. Running this playbook is not
+# strictly required but simplifies things for future system administration.
+
+- hosts: all
+  tasks:
+    - ansible.builtin.include_role:
+        name: salt_migrate_files
+      vars:
+        salt_files:
+          - /etc/apt/preferences.d/salt.pref
+          - /etc/apt/sources.list.d/salt.sources
+
+- hosts: "arvados_*_nginx:arvados_workbench"
+  name: Remove obsolete nginx configuration
+  tasks:
+    - name: Remove obsolete nginx configuration block
+      become: yes
+      ansible.builtin.replace:
+        path: /etc/nginx/nginx.conf
+        # For an explanation of this regexp, refer to the task that removes the
+        # events block in arvados_nginx_base
+        regexp: |
+          (?mx)
+          ^\s* {{ item|split|map('regex_escape')|join(' \s+ ') }} \s* \{
+          ( [^#}\n]* (|\#.*) \n )*?
+            [^#}\n]* }
+        replace: ""
+      loop:
+        - 'geo $external_client'
+        - 'upstream collections_downloads_upstream'
+        - 'upstream controller_upstream'
+        - 'upstream grafana_upstream'
+        - 'upstream keepproxy_upstream'
+        - 'upstream loki_upstream'
+        - 'upstream prometheus_upstream'
+        - 'upstream websocket_upstream'
+      register: nginx_conf
+
+    - name: Stat password_secret_connector.service
+      become: yes
+      ansible.builtin.stat:
+        path: /etc/systemd/system/password_secret_connector.service
+      register: passconn_stat
+
+    - name: Remove password_secret_connector.service
+      when: "passconn_stat.stat.lnk_target|default('')|basename != 'arvados_aws_secret.service'"
+      block:
+        - name: Disable password_secret_connector.service
+          become: yes
+          ansible.builtin.systemd_service:
+            name: password_secret_connector.service
+            state: stopped
+            enabled: no
+          register: passconn_svc
+
+        - ansible.builtin.include_role:
+            name: salt_migrate_files
+          vars:
+            salt_files:
+              - /etc/systemd/system/password_secret_connector.service
+              - /usr/local/sbin/password_secret_connector.sh
+
+        - name: Create password_secret_connector compatibility symlink
+          become: yes
+          ansible.builtin.file:
+            state: link
+            src: /etc/systemd/system/arvados_aws_secret.service
+            dest: /etc/systemd/system/password_secret_connector.service
+            force: yes
+
+        # Stopping the old service might've removed /run/arvados.
+        # Restart the new service to recreate it.
+        - name: Reload and restart arvados_aws_secret.service if needed
+          become: yes
+          ansible.builtin.systemd_service:
+            daemon_reload: yes
+            name: arvados_aws_secret.service
+            state: "{{ 'restarted' if passconn_svc.changed else omit }}"
+
+    - name: Reload nginx
+      when: nginx_conf.changed
+      become: yes
+      ansible.builtin.systemd_service:
+        name: nginx.service
+        state: reloaded

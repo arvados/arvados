@@ -1,0 +1,19 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Move files installed by Salt
+  become: yes
+  vars:
+    oldpath: "{{ item if item is string else item.Old|mandatory }}"
+    # If item.New is not defined, move the file to /var/backups/arvados-salt.
+    # Else if item.New is relative, move the file within the old path's directory.
+    # Else item.New is an absolute path and used verbatim.
+    newpath: "{{ (oldpath|dirname if item.New is defined else '/var/backups/arvados-salt', item.New|default(oldpath|basename))|path_join }}"
+  ansible.builtin.command:
+    argv: [mv, "{{ oldpath }}", "{{ newpath }}"]
+    creates: "{{ newpath }}"
+    removes: "{{ oldpath }}"
+  loop: "{{ salt_files }}"
+  loop_control:
+    label: "{{ oldpath }}"

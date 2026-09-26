@@ -1,0 +1,134 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# migrate-from-salt-setup.yml - Prepare a cluster installed from Salt to be
+# managed by Ansible
+#
+# If you installed Arvados 3.2.x or earlier using the Salt installer, write
+# an Ansible inventory for your cluster, then run this playbook on it before
+# using the Ansible installer. This migrates your configuration so that the
+# Ansible installer can manage it without conflicts.
+#
+# This playbook retains as much of your configuration as possible. It disables
+# some apt .list sources when the Ansible installer sets up a .sources file.
+# It also removes some worker_* settings from nginx.conf to move them to a
+# file in conf.d. Backups of these files are saved to /var/backups/arvados-salt.
+#
+# After a successful run of this playbook, you should run
+# install-arvados-cluster.yml, then migrate-from-salt-cleanup.yml.
+
+- name: Bootstrap nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+    - ansible.builtin.include_role:
+        name: distro_bootstrap
+
+    - name: Create backups directory
+      become: yes
+      ansible.builtin.file:
+        state: directory
+        path: /var/backups/arvados-salt
+        owner: root
+        group: root
+        mode: 0700
+
+    - ansible.builtin.include_role:
+        name: salt_migrate_files
+      vars:
+        salt_files:
+          - Old: /etc/apt/preferences.d/arvados
+            New: arvados.pref
+          - /etc/apt/sources.list.d/arvados.list
+          - /etc/apt/sources.list.d/pgdg.list
+          - /etc/apt/sources.list.d/grafana.list
+
+- name: Disable redundant nginx front-ends
+  hosts: "arvados_controller:!arvados_controller_nginx"
+  tasks:
+    - name: Remove redundant controller front-end
+      become: yes
+      ansible.builtin.file:
+        state: absent
+        path: /etc/nginx/sites-enabled/arvados_controller_ssl.conf
+
+- name: Migrate nginx base configuration
+  hosts: "arvados_*_nginx:arvados_workbench"
+  tasks:
+    - name: Back up nginx.conf
+      become: yes
+      ansible.builtin.command:
+        argv: [cp, --preserve=all, /etc/nginx/nginx.conf, /var/backups/arvados-salt/]
+        creates: /var/backups/arvados-salt/nginx.conf
+
+    - ansible.builtin.include_role:
+        name: arvados_nginx_base
+
+    - name: Move SSL hardening to conf.d
+      become: yes
+      vars:
+        oldpath: /etc/nginx/ssl_hardening_default.conf
+        newpath: /etc/nginx/conf.d/ssl_hardening_default.conf
+      ansible.builtin.command:
+        argv: [mv, "{{ oldpath }}", "{{ newpath }}"]
+        creates: "{{ newpath }}"
+        removes: "{{ oldpath }}"
+      register: nginx_ssl_hardening
+
+    - name: Write SSL hardening stub for old sites to include
+      when: nginx_ssl_hardening.changed
+      become: yes
+      ansible.builtin.copy:
+        content: |
+          ### This file has been moved to conf.d to include server-wide ###
+        dest: /etc/nginx/ssl_hardening_default.conf
+        owner: root
+        group: root
+        mode: 0644
+
+- name: Migrate nginx front-end sites
+  hosts: "arvados_*_nginx"
+  tasks:
+    - ansible.builtin.include_role:
+        name: salt_migrate_nginx
+
+- name: Migrate Workbench site
+  hosts: arvados_workbench
+  tasks:
+    - ansible.builtin.include_role:
+        name: salt_migrate_nginx
+      vars:
+        site_groups: [arvados_workbench]
+
+- name: Migrate Grafana configuration
+  hosts: arvados_grafana
+  tasks:
+    - name: Set up Grafana configuration directory
+      become: yes
+      ansible.builtin.file:
+        state: directory
+        path: /etc/grafana/arvados
+        owner: root
+        group: grafana
+        mode: 0755
+
+    - ansible.builtin.include_role:
+        name: salt_migrate_files
+      vars:
+        salt_files:
+          - Old: /etc/grafana/provisioning/dashboards/default.yaml
+            New: arvados.yaml
+          - Old: /etc/grafana/provisioning/datasources/loki.yaml
+            New: arvados_Loki.yaml
+          - Old: /etc/grafana/provisioning/datasources/prometheus.yaml
+            New: arvados_Prometheus.yaml
+          - Old: /var/lib/grafana/dashboards
+            New: /etc/grafana/arvados/dashboards
+
+    - name: Set up dashboards compatibility symlink
+      become: yes
+      ansible.builtin.file:
+        state: link
+        src: /etc/grafana/arvados/dashboards
+        path: /var/lib/grafana/dashboards

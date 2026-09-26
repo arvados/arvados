@@ -1,0 +1,27 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+salt_oldsites:
+  arvados_controller_nginx: "arvados_{{ 'controller' if 'arvados_controller' in group_names else 'balancer' }}_ssl.conf"
+  arvados_websocket_nginx: arvados_websocket_ssl.conf
+  arvados_keepproxy_nginx: arvados_keepproxy_ssl.conf
+  arvados_keep_web_nginx: arvados_download_ssl.conf
+  arvados_loki_nginx: loki-ssl
+  arvados_prometheus_nginx: prometheus-ssl
+  arvados_grafana_nginx: grafana-ssl
+  arvados_workbench: arvados_workbench2_ssl.conf
+
+salt_newsites:
+  arvados_controller_nginx: arvados-controller
+  arvados_websocket_nginx: arvados-websocket
+  arvados_keepproxy_nginx: arvados-keepproxy
+  arvados_keep_web_nginx: arvados-webdav
+  arvados_loki_nginx: arvados-loki
+  arvados_prometheus_nginx: arvados-prometheus
+  arvados_grafana_nginx: arvados-grafana
+  arvados_workbench: arvados-workbench2
+
+site_groups: "{{ group_names|select('match', '^arvados_\\w+_nginx$') }}"
+sites_available_path: /etc/nginx/sites-available
+sites_enabled_path: /etc/nginx/sites-enabled

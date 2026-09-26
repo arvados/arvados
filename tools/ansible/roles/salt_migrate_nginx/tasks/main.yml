@@ -1,0 +1,29 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Rename site configuration
+  become: yes
+  vars:
+    oldpath: "{{ (sites_available_path, salt_oldsites[item])|path_join }}"
+    newpath: "{{ (sites_available_path, salt_newsites[item])|path_join }}"
+  ansible.builtin.command:
+    argv: [mv, "{{ oldpath }}", "{{ newpath }}"]
+    creates: "{{ newpath }}"
+    removes: "{{ oldpath }}"
+  loop: "{{ site_groups }}"
+
+- name: Enable new sites
+  become: yes
+  ansible.builtin.file:
+    state: link
+    src: "{{ (sites_available_path, salt_newsites[item])|path_join }}"
+    path: "{{ (sites_enabled_path, salt_newsites[item])|path_join }}"
+  loop: "{{ site_groups }}"
+
+- name: Clean old sites-enabled links
+  become: yes
+  ansible.builtin.file:
+    state: absent
+    path: "{{ (sites_enabled_path, salt_oldsites[item])|path_join }}"
+  loop: "{{ site_groups }}"
