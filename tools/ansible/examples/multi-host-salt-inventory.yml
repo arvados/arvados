@@ -274,8 +274,11 @@ arvados_workbench:
 # keep-web/WebDAV expect to run behind a production web front-end.
 # The following groups deploy nginx to do that.
 arvados_controller_nginx:
-  children:
-    arvados_controller:
+  hosts:
+    # If you used a load-balanced controller, name the front-end host(s) here.
+    # Note these will connect directly to the back-end arvados-server
+    # processes.
+    controller.arvados-salt.example:
   vars:
     arvados_log_nginx_basename: "{{ arvados_salt_domain }}"
     # `arvados_nginx_server_config` is a block of nginx configuration
