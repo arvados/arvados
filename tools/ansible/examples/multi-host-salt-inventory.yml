@@ -370,7 +370,8 @@ arvados_shell:
 # arvados_alloy host(s) will have Alloy installed from the Grafana APT repository.
 # The required Alloy configuration file is defined by `arvados_alloy_config_file`.
 # Typically this should be installed on all nodes running Arvados services as
-# illustrated in the example below.
+# illustrated in the example below. If you have host aliases, you can optimize a
+# little by naming only the "physical" hosts.
 arvados_alloy:
   children:
     arvados_api:
@@ -390,7 +391,8 @@ arvados_alloy:
 # arvados_prometheus_node host(s) will have the Prometheus node exporter installed and running.
 # No configuration is required.
 # Typically this should be installed on all nodes running Arvados services as
-# illustrated in the example below.
+# illustrated in the example below. If you have host aliases, you can optimize a
+# little by naming only the "physical" hosts.
 arvados_prometheus_node:
   children:
     arvados_api:
