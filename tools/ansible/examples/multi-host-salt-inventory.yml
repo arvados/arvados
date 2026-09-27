@@ -76,11 +76,6 @@
 ### Core cluster configuration settings ###
 all:
   vars:
-    # Set this to the value of DOMAIN from your Salt local.params.
-    # This is not directly used by the Ansible installer, but used elsewhere
-    # in this inventory to set backwards-compatible values for other settings.
-    arvados_salt_domain: arvados-salt.example
-
     # To deploy a cluster, you must write a cluster configuration file and have
     # a copy on the node where you run the Ansible installer. This file will be
     # deployed to cluster hosts as needed and read by the Ansible installer for
@@ -266,7 +261,7 @@ arvados_workbench:
   hosts:
     workbench.arvados-salt.example:
   vars:
-    arvados_log_nginx_basename: "workbench2.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "workbench2.arvados-salt.example"
 
 
 ### Host groups for Arvados web front-ends ###
@@ -280,7 +275,7 @@ arvados_controller_nginx:
     # processes.
     controller.arvados-salt.example:
   vars:
-    arvados_log_nginx_basename: "{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "arvados-salt.example"
     # `arvados_nginx_server_config` is a block of nginx configuration
     # directives that will be included in the server block for this
     # service. You can use this to answer to additional names or ports,
@@ -292,19 +287,19 @@ arvados_websocket_nginx:
   children:
     arvados_websocket:
   vars:
-    arvados_log_nginx_basename: "ws.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "ws.arvados-salt.example"
 
 arvados_keepproxy_nginx:
   children:
     arvados_keepproxy:
   vars:
-    arvados_log_nginx_basename: "keepproxy.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "keepproxy.arvados-salt.example"
 
 arvados_keep_web_nginx:
   children:
     arvados_keep_web:
   vars:
-    arvados_log_nginx_basename: "download.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "download.arvados-salt.example"
 
 
 ### Host groups for Arvados dispatchers ###
@@ -420,7 +415,7 @@ arvados_loki_nginx:
   children:
     arvados_loki:
   vars:
-    arvados_log_nginx_basename: "loki.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "loki.arvados-salt.example"
 
 # arvados_prometheus host(s) will have the Prometheus server installed.
 arvados_prometheus:
@@ -438,7 +433,7 @@ arvados_prometheus_nginx:
   children:
     arvados_prometheus:
   vars:
-    arvados_log_nginx_basename: "prometheus.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "prometheus.arvados-salt.example"
 
 # arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
 arvados_grafana:
@@ -451,4 +446,4 @@ arvados_grafana_nginx:
   children:
     arvados_grafana:
   vars:
-    arvados_log_nginx_basename: "grafana.{{ arvados_salt_domain }}"
+    arvados_log_nginx_basename: "grafana.arvados-salt.example"
