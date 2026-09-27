@@ -259,6 +259,7 @@ arvados_keepproxy:
 arvados_keep_web:
   hosts:
     download.arvados-salt.example:
+      #ansible_host: keep.arvados-salt.example
 
 # arvados_workbench host(s) serve the Arvados Workbench front-end.
 arvados_workbench:
