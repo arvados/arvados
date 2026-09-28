@@ -74,7 +74,7 @@
     - name: Move SSL hardening to conf.d
       become: yes
       vars:
-        oldpath: /etc/nginx/ssl_hardening_default.conf
+        oldpath: /etc/nginx/snippets/ssl_hardening_default.conf
         newpath: /etc/nginx/conf.d/ssl_hardening_default.conf
       ansible.builtin.command:
         argv: [mv, "{{ oldpath }}", "{{ newpath }}"]
