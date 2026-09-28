@@ -1,0 +1,10 @@
+{% extends "arvados-nginx-site.conf.j2" %}
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+{% block server_config %}
+  client_max_body_size  0;
+{{ super() }}
+{% endblock %}

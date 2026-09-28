@@ -108,11 +108,22 @@
     - ansible.builtin.include_role:
         name: arvados_keepproxy
 
-- name: Set up keep-web nginx front-end
-  hosts: arvados_keep_web_nginx
+- name: Set up WebDAVDownload nginx front-end
+  hosts: arvados_webdavdownload_nginx
   serial: 1
   tasks:
-    - ansible.builtin.include_role:
+    - when: arvados_cluster.Services.WebDAVDownload.ExternalURL|default(none) is truthy
+      ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: WebDAVDownload
+
+- name: Set up WebDAV nginx front-end
+  hosts: arvados_webdav_nginx
+  serial: 1
+  tasks:
+    - when: arvados_cluster.Services.WebDAV.ExternalURL|default(none) is truthy
+      ansible.builtin.include_role:
         name: arvados_nginx_frontend
       vars:
         arvados_nginx_service_key: WebDAV

@@ -111,7 +111,11 @@ arvados_keepproxy:
   children:
     arvados_cluster_host:
 
-arvados_keep_web_nginx:
+arvados_webdav_nginx:
+  children:
+    arvados_cluster_host:
+
+arvados_webdavdownload_nginx:
   children:
     arvados_cluster_host:
 

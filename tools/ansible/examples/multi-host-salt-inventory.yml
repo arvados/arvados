@@ -295,7 +295,13 @@ arvados_keepproxy_nginx:
   vars:
     arvados_log_nginx_basename: "keepproxy.arvados-salt.example"
 
-arvados_keep_web_nginx:
+arvados_webdav_nginx:
+  children:
+    arvados_keep_web:
+  vars:
+    arvados_log_nginx_basename: "collections.arvados-salt.example"
+
+arvados_webdavdownload_nginx:
   children:
     arvados_keep_web:
   vars:

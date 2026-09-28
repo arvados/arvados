@@ -228,7 +228,11 @@ arvados_keepproxy_nginx:
   children:
     arvados_keepproxy:
 
-arvados_keep_web_nginx:
+arvados_webdav_nginx:
+  children:
+    arvados_keep_web:
+
+arvados_webdavdownload_nginx:
   children:
     arvados_keep_web:
 
