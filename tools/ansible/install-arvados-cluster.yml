@@ -55,6 +55,15 @@
       vars:
         arvados_nginx_service_key: Controller
 
+- name: Set up container web services nginx front-end
+  hosts: arvados_containerwebservices_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: ContainerWebServices
+
 - name: Set up API controller(s)
   hosts: arvados_controller
   serial: 1

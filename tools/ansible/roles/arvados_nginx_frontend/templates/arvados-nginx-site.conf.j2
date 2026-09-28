@@ -15,7 +15,7 @@ upstream {{ upstream_name }} {
 
 {% set ext_addr = arvados_nginx_proxy_service | external_addr %}
 server {
-  listen       {{ ext_addr.port }} http2 ssl;
+  listen       {% block listen_ports %}{{ ext_addr.port }}{% endblock %} http2 ssl;
 {# nginx supports plain wildcards in server_name, but it only replaces whole
    components. In Arvados it represents either an optional component or partial
    copmonent. Convert the Arvados meaning into a regexp. #}

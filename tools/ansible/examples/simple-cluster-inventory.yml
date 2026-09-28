@@ -79,6 +79,10 @@ arvados_api:
 ### Arvados services ###
 # The rest of the inventory defines the Arvados services to run on the
 # cluster host. You should not need to change anything from here on.
+arvados_containerwebservices_nginx:
+  children:
+    arvados_cluster_host:
+
 arvados_controller_nginx:
   children:
     arvados_cluster_host:

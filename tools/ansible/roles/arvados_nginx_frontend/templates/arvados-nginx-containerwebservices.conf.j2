@@ -1,0 +1,15 @@
+{% extends "arvados-nginx-site.conf.j2" %}
+{# Copyright (C) The Arvados Authors. All rights reserved.
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ #}
+
+{% block listen_ports %}
+{% set external_port_min = arvados_nginx_proxy_service.ExternalPortMin|default(0) %}
+{% set external_port_max = arvados_nginx_proxy_service.ExternalPortMax|default(0) %}
+{% if 0 < external_port_min <= external_port_max %}
+{{ external_port_min }}-{{ external_port_max }}
+{%- else %}
+{{ super() }}
+{%- endif %}
+{% endblock %}

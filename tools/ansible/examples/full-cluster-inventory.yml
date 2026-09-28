@@ -220,6 +220,10 @@ arvados_controller_nginx:
     #arvados_nginx_server_config: |
     #  server_name  arvados.example;
 
+arvados_containerwebservices_nginx:
+  children:
+    arvados_controller:
+
 arvados_websocket_nginx:
   children:
     arvados_websocket:

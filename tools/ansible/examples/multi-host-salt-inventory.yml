@@ -283,6 +283,13 @@ arvados_controller_nginx:
     #arvados_nginx_server_config: |
     #  server_name  arvados.example;
 
+arvados_containerwebservices_nginx:
+  hosts:
+    containers.arvados-salt.example:
+      #ansible_host: controller.arvados-salt.example
+  vars:
+    arvados_log_nginx_basename: "containers.arvados-salt.example"
+
 arvados_websocket_nginx:
   children:
     arvados_websocket:
