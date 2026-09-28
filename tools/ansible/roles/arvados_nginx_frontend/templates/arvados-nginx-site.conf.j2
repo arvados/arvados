@@ -16,7 +16,10 @@ upstream {{ upstream_name }} {
 {% set ext_addr = arvados_nginx_proxy_service | external_addr %}
 server {
   listen       {{ ext_addr.port }} ssl;
-  server_name  {{ ext_addr.address }};
+{# nginx supports plain wildcards in server_name, but it only replaces whole
+   components. In Arvados it represents either an optional component or partial
+   copmonent. Convert the Arvados meaning into a regexp. #}
+  server_name  ~^{{ ext_addr.address|regex_escape|replace('\*\.', '(.*\.|)')|replace('\*\-', '[-a-z0-9]+\-') }}$;
 
   ssl_certificate      {{ tls_source.cert.path }};
   ssl_certificate_key  {{ tls_source.key.path }};
