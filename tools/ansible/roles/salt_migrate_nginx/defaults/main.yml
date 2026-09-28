@@ -6,7 +6,8 @@ salt_oldsites:
   arvados_controller_nginx: "arvados_{{ 'controller' if 'arvados_controller' in group_names else 'balancer' }}_ssl.conf"
   arvados_websocket_nginx: arvados_websocket_ssl.conf
   arvados_keepproxy_nginx: arvados_keepproxy_ssl.conf
-  arvados_keep_web_nginx: arvados_download_ssl.conf
+  arvados_webdav_nginx: arvados_collections_ssl.conf
+  arvados_webdavdownload_nginx: arvados_download_ssl.conf
   arvados_loki_nginx: loki-ssl
   arvados_prometheus_nginx: prometheus-ssl
   arvados_grafana_nginx: grafana-ssl
@@ -16,7 +17,8 @@ salt_newsites:
   arvados_controller_nginx: arvados-controller
   arvados_websocket_nginx: arvados-websocket
   arvados_keepproxy_nginx: arvados-keepproxy
-  arvados_keep_web_nginx: arvados-webdav
+  arvados_webdav_nginx: arvados-webdav
+  arvados_webdavdownload_nginx: arvados-webdavdownload
   arvados_loki_nginx: arvados-loki
   arvados_prometheus_nginx: arvados-prometheus
   arvados_grafana_nginx: arvados-grafana
