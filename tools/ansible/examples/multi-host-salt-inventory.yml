@@ -261,7 +261,7 @@ arvados_workbench:
   hosts:
     workbench.arvados-salt.example:
   vars:
-    arvados_log_nginx_basename: "workbench2.arvados-salt.example"
+    arvados_log_nginx_basename: "workbench.arvados-salt.example"
 
 
 ### Host groups for Arvados web front-ends ###
