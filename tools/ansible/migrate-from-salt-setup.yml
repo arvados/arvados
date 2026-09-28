@@ -53,6 +53,12 @@
         state: absent
         path: /etc/nginx/sites-enabled/arvados_controller_ssl.conf
 
+    - ansible.builtin.include_role:
+        name: salt_migrate_files
+      vars:
+        salt_files:
+          - /etc/nginx/sites-available/arvados_controller_ssl.conf
+
 - name: Migrate nginx base configuration
   hosts: "arvados_*_nginx:arvados_workbench"
   tasks:
