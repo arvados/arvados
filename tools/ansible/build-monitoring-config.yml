@@ -22,15 +22,16 @@
   tasks:
     - name: Load Arvados configuration file
       no_log: yes
-      delegate_to: localhost
-      ansible.builtin.include_vars:
-        name: arvados_config
-        file: "{{ arvados_config_file }}"
+      ansible.builtin.set_fact:
+        arvados_config: "{{ lookup('ansible.builtin.unvault', arvados_config_file)|from_yaml }}"
+        cacheable: yes
+      failed_when: arvados_config is undefined
 
     - name: Load Arvados cluster configuration
       no_log: yes
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+        cacheable: yes
       failed_when: arvados_cluster is undefined
 
     - name: Set up configuration directory
