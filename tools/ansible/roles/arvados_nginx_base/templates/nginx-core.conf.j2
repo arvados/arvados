@@ -15,11 +15,11 @@
 {% endif -%}
 
 {% if 'arvados_controller_nginx' in group_names %}
-{% set api_svc = arvados_cluster.Services.API %}
-{% set backends = api_svc|internal_addrs|length %}
-{% set _ = extra_conns.append(api_svc.MaxConcurrentRequests|default(64)|int * backends) %}
-{% set _ = extra_conns.append(api_svc.MaxQueuedRequests|default(128)|int * backends) %}
-{% set _ = extra_conns.append(api_svc.MaxGatewayTunnels|default(1000)|int * backends) %}
+{% set api_conf = arvados_cluster.API %}
+{% set backends = arvados_cluster.Services.Controller|internal_addrs|length %}
+{% set _ = extra_conns.append(api_conf.MaxConcurrentRequests|default(64)|int * backends) %}
+{% set _ = extra_conns.append(api_conf.MaxQueuedRequests|default(128)|int * backends) %}
+{% set _ = extra_conns.append(api_conf.MaxGatewayTunnels|default(1000)|int * backends) %}
 {% endif -%}
 
 {% set extra_conncount = extra_conns|sum %}
