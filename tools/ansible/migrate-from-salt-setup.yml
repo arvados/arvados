@@ -88,7 +88,7 @@
       ansible.builtin.copy:
         content: |
           ### This file has been moved to conf.d to include server-wide ###
-        dest: /etc/nginx/ssl_hardening_default.conf
+        dest: /etc/nginx/snippets/ssl_hardening_default.conf
         owner: root
         group: root
         mode: 0644
