@@ -56,15 +56,11 @@
 #
 # 5. Review this inventory and make any other changes you like.
 #
-#    The groups in this inventory use all the same subdomains allocated by
-#    the multi-host Salt configuration. Most typical installs would have
-#    multiple subdomains served by the same physical host. In particular,
-#    the Workbench node usually also serves Websockets and all of the
-#    monitoring services.  You should leave the distinct hostnames here for
-#    variable separation. This inventory has commented-out `ansible_host`
-#    settings to note where the hostname typically points to a different
-#    physical node and you can use that if you need or want to map service
-#    hostnames to "real" ones.
+#    The Salt installer mapped services to hosts via the `ROLES` parameter.
+#    The Ansible installer does it by assigning hosts to inventory groups.
+#    This example follows the deployment pattern for a typical multi-node Salt
+#    cluster. Double-check that the host(s) in each group match the `ROLES`
+#    you had before.
 #
 # 6. With your inventory, run the following playbooks in order. Make sure each
 #    succeeds before you proceed to the next one.
@@ -207,6 +203,21 @@ all:
         ExternalURL: "https://grafana.arvados-salt.example"
         ConfigFile: /PATH/TO/grafana.ini
 
+    # These values are backwards-compatible with the Salt installer.
+    # You shouldn't need to change anything here beyond replacing the
+    # example domain.
+    arvados_nginx_logname:
+      ContainerWebServices: containers.arvados-salt.example
+      Controller: arvados-salt.example
+      Keepproxy: keepproxy.arvados-salt.example
+      WebDAV: collections.arvados-salt.example
+      WebDAVDownload: download.arvados-salt.example
+      Websocket: websocket.arvados-salt.example
+      Workbench2: workbench.arvados-salt.example
+      Loki: loki.arvados-salt.example
+      Prometheus: prometheus.arvados-salt.example
+      Grafana: grafana.arvados-salt.example
+
 ### Host groups for core Arvados services ###
 # arvados_api host(s) run the Arvados Rails API server.
 arvados_api:
@@ -231,8 +242,7 @@ arvados_controller:
 # arvados_websocket host(s) run the Arvados websockets server.
 arvados_websocket:
   hosts:
-    ws.arvados-salt.example:
-      #ansible_host: workbench.arvados-salt.example
+    workbench.arvados-salt.example:
 
 # arvados_keepstore host(s) run the Arvados keepstore services.
 arvados_keepstore:
@@ -253,15 +263,12 @@ arvados_keepproxy:
 # arvados_keep_web host(s) run the Arvados keep-web/WebDAV service.
 arvados_keep_web:
   hosts:
-    download.arvados-salt.example:
-      #ansible_host: keep.arvados-salt.example
+    keep.arvados-salt.example:
 
 # arvados_workbench host(s) serve the Arvados Workbench front-end.
 arvados_workbench:
   hosts:
     workbench.arvados-salt.example:
-  vars:
-    arvados_log_nginx_basename: "workbench.arvados-salt.example"
 
 
 ### Host groups for Arvados web front-ends ###
@@ -275,7 +282,6 @@ arvados_controller_nginx:
     # processes.
     controller.arvados-salt.example:
   vars:
-    arvados_log_nginx_basename: "arvados-salt.example"
     # `arvados_nginx_server_config` is a block of nginx configuration
     # directives that will be included in the server block for this
     # service. You can use this to answer to additional names or ports,
@@ -285,34 +291,23 @@ arvados_controller_nginx:
 
 arvados_containerwebservices_nginx:
   hosts:
-    containers.arvados-salt.example:
-      #ansible_host: controller.arvados-salt.example
-  vars:
-    arvados_log_nginx_basename: "containers.arvados-salt.example"
+    controller.arvados-salt.example:
 
 arvados_websocket_nginx:
   children:
     arvados_websocket:
-  vars:
-    arvados_log_nginx_basename: "ws.arvados-salt.example"
 
 arvados_keepproxy_nginx:
   children:
     arvados_keepproxy:
-  vars:
-    arvados_log_nginx_basename: "keepproxy.arvados-salt.example"
 
 arvados_webdav_nginx:
   children:
     arvados_keep_web:
-  vars:
-    arvados_log_nginx_basename: "collections.arvados-salt.example"
 
 arvados_webdavdownload_nginx:
   children:
     arvados_keep_web:
-  vars:
-    arvados_log_nginx_basename: "download.arvados-salt.example"
 
 
 ### Host groups for Arvados dispatchers ###
@@ -346,7 +341,7 @@ arvados_dispatch_cloud:
 # (e.g., Amazon RDS).
 #arvados_postgresql:
 #  hosts:
-#    controller.arvados-salt.example:
+#    database.arvados-salt.example:
 #  vars:
 #    # `arvados_postgresql_hba_sources` is an array of IPv4 or v6 netmasks,
 #    # or special values recognized in `pg_hba.conf`. The Arvados database user
@@ -378,8 +373,7 @@ arvados_shell:
 # arvados_alloy host(s) will have Alloy installed from the Grafana APT repository.
 # The required Alloy configuration file is defined by `arvados_alloy_config_file`.
 # Typically this should be installed on all nodes running Arvados services as
-# illustrated in the example below. If you have host aliases, you can optimize a
-# little by naming only the "physical" hosts.
+# illustrated in the example below.
 arvados_alloy:
   children:
     arvados_api:
@@ -399,8 +393,7 @@ arvados_alloy:
 # arvados_prometheus_node host(s) will have the Prometheus node exporter installed and running.
 # No configuration is required.
 # Typically this should be installed on all nodes running Arvados services as
-# illustrated in the example below. If you have host aliases, you can optimize a
-# little by naming only the "physical" hosts.
+# illustrated in the example below.
 arvados_prometheus_node:
   children:
     arvados_api:
@@ -420,21 +413,17 @@ arvados_prometheus_node:
 # arvados_loki host(s) will have Loki installed from the Grafana APT repository.
 arvados_loki:
   hosts:
-    loki.arvados-salt.example:
-      #ansible_host: workbench.arvados-salt.example
+    workbench.arvados-salt.example:
 
 # arvados_loki_nginx sets up an nginx front-end for the Loki server.
 arvados_loki_nginx:
   children:
     arvados_loki:
-  vars:
-    arvados_log_nginx_basename: "loki.arvados-salt.example"
 
 # arvados_prometheus host(s) will have the Prometheus server installed.
 arvados_prometheus:
   hosts:
-    prometheus.arvados-salt.example:
-      #ansible_host: workbench.arvados-salt.example
+    workbench.arvados-salt.example:
 
 # arvados_pbe host(s) will have the Prometheus Blackbox Exporter installed.
 arvados_pbe:
@@ -445,18 +434,13 @@ arvados_pbe:
 arvados_prometheus_nginx:
   children:
     arvados_prometheus:
-  vars:
-    arvados_log_nginx_basename: "prometheus.arvados-salt.example"
 
 # arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
 arvados_grafana:
   hosts:
-    grafana.arvados-salt.example:
-      #ansible_host: workbench.arvados-salt.example
+    workbench.arvados-salt.example:
 
 # arvados_grafana_nginx sets up an nginx front-end for the Grafana server.
 arvados_grafana_nginx:
   children:
     arvados_grafana:
-  vars:
-    arvados_log_nginx_basename: "grafana.arvados-salt.example"

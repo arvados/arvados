@@ -26,9 +26,10 @@ server {
 {% if tls_source.key.aws_secret is defined %}
   ssl_password_file    /run/arvados/{{ tls_source.key.aws_secret }};
 {% endif %}
-{% if arvados_nginx_log_basename is truthy %}
-  access_log  /var/log/nginx/{{ arvados_nginx_log_basename }}.access.log  combined;
-  error_log   /var/log/nginx/{{ arvados_nginx_log_basename }}.error.log;
+{% set logname = arvados_nginx_logname.get(arvados_nginx_service_key, arvados_nginx_logname.Default|default(none)) %}
+{% if logname is truthy %}
+  access_log  /var/log/nginx/{{ logname }}.access.log  combined;
+  error_log   /var/log/nginx/{{ logname }}.error.log;
 {% endif %}
 {% if arvados_nginx_proxy_service.BasicUser is defined %}
   auth_basic            {{ arvados_nginx_proxy_service.BasicRealm|default('Restricted Area')|regex_replace('([\\s\\\'"{};$\\\\])', '\\\\\\1') }};
