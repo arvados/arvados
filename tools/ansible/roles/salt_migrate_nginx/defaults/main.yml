@@ -4,6 +4,7 @@
 
 salt_oldsites:
   arvados_controller_nginx: "arvados_{{ 'controller' if 'arvados_controller' in group_names else 'balancer' }}_ssl.conf"
+  arvados_containerwebservices_nginx: arvados_containers_ssl.conf
   arvados_websocket_nginx: arvados_websocket_ssl.conf
   arvados_keepproxy_nginx: arvados_keepproxy_ssl.conf
   arvados_webdav_nginx: arvados_collections_ssl.conf
@@ -15,6 +16,7 @@ salt_oldsites:
 
 salt_newsites:
   arvados_controller_nginx: arvados-controller
+  arvados_containerwebservices_nginx: arvados-containerwebservices
   arvados_websocket_nginx: arvados-websocket
   arvados_keepproxy_nginx: arvados-keepproxy
   arvados_webdav_nginx: arvados-webdav
