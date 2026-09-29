@@ -126,9 +126,9 @@
           - Old: /etc/grafana/provisioning/dashboards/default.yaml
             New: arvados.yaml
           - Old: /etc/grafana/provisioning/datasources/loki.yaml
-            New: arvados_Loki.yaml
+            New: arvados_loki.yaml
           - Old: /etc/grafana/provisioning/datasources/prometheus.yaml
-            New: arvados_Prometheus.yaml
+            New: arvados_prometheus.yaml
           - Old: /var/lib/grafana/dashboards
             New: /etc/grafana/arvados/dashboards
 

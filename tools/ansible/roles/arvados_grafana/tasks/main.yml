@@ -30,7 +30,7 @@
     content: |
       ### This file is managed by the Arvados Ansible installer ###
       {{ datasource|to_nice_yaml }}
-    dest: "/etc/grafana/provisioning/datasources/arvados_{{ item.key }}.yaml"
+    dest: "/etc/grafana/provisioning/datasources/arvados_{{ item.key|lower }}.yaml"
     owner: root
     group: grafana
     mode: 0640
