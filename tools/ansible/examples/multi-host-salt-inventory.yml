@@ -212,8 +212,8 @@ all:
       Keepproxy: keepproxy.arvados-salt.example
       WebDAV: collections.arvados-salt.example
       WebDAVDownload: download.arvados-salt.example
-      Websocket: websocket.arvados-salt.example
-      Workbench2: workbench.arvados-salt.example
+      Websocket: ws.arvados-salt.example
+      Workbench2: workbench2.arvados-salt.example
       Loki: loki.arvados-salt.example
       Prometheus: prometheus.arvados-salt.example
       Grafana: grafana.arvados-salt.example
