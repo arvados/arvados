@@ -4,7 +4,7 @@
 
 import { fieldRequire } from './require';
 import { maxLength } from './max-length';
-import { isRsaKey } from './is-rsa-key';
+import { isSshPublicKey } from './is-ssh-public-key';
 import { isRemoteHost } from "./is-remote-host";
 import { validFileName, validFilePath, validName, validNameAllowSlash } from "./valid-name";
 import { isZipFilename } from './is-zip-filename';
@@ -68,7 +68,7 @@ export const PROFILE_EMAIL_VALIDATION: Validator[] = [maxLength(255)];
 export const PROFILE_URL_VALIDATION: Validator[] = [maxLength(255)];
 export const USER_LENGTH_VALIDATION: Validator[] = [maxLength(255)];
 
-export const SSH_KEY_PUBLIC_VALIDATION: Validator[] = [fieldRequire, isRsaKey, maxLength(1024)];
+export const SSH_KEY_PUBLIC_VALIDATION: Validator[] = [fieldRequire, isSshPublicKey, maxLength(2048)];
 export const SSH_KEY_NAME_VALIDATION: Validator[] = [fieldRequire, maxLength(255)];
 
 export const SITE_MANAGER_REMOTE_HOST_VALIDATION: Validator[] = [fieldRequire, isRemoteHost, maxLength(255)];
