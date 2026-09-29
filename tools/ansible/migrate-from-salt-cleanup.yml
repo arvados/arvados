@@ -55,7 +55,7 @@
       register: passconn_stat
 
     - name: Remove password_secret_connector.service
-      when: "passconn_stat.stat.lnk_target|default('')|basename != 'arvados_aws_secret.service'"
+      when: "passconn_stat.stat.isreg|default(false)"
       block:
         - name: Disable password_secret_connector.service
           become: yes
