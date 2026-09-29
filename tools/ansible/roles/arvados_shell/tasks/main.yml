@@ -9,10 +9,6 @@
       - arvados-client
       - python3-arvados-python-client
       - python3-arvados-fuse
-      - build-essential
-      - libcurl4-openssl-dev
-      - libssl-dev
-      - zlib1g-dev
 
 - name: Query virtual machine record
   no_log: yes
