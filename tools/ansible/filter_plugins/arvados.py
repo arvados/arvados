@@ -100,6 +100,12 @@ class ListenAddress:
 
     GLOBAL_ADDR = ipaddress.ip_address('1.1.1.1')
     LOOPBACK_ADDR = ipaddress.ip_address('127.0.0.1')
+    _SCHEME_PORTS = {
+        'http': 80,
+        'https': 443,
+        'ws': 80,
+        'wss': 443,
+    }
 
     @classmethod
     def parse(cls, s: str) -> 'ListenAddress':
@@ -113,7 +119,10 @@ class ListenAddress:
             try:
                 port = socket.getservbyname(parts.scheme)
             except (OSError, TypeError):
-                raise ValueError(f"no port or known scheme in {s!r}")
+                try:
+                    port = cls._SCHEME_PORTS[parts.scheme.lower()]
+                except (AttributeError, KeyError):
+                    raise ValueError(f"no port or known scheme in {s!r}") from None
         return cls(address, port)
 
     def sort_score(self) -> int:
