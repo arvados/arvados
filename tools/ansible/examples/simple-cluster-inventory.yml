@@ -115,9 +115,12 @@ arvados_keepproxy:
   children:
     arvados_cluster_host:
 
-arvados_webdav_nginx:
-  children:
-    arvados_cluster_host:
+# Deploying WebDAV safely requires a separate domain.
+# Most single-node won't have this so it's skipped by default.
+# Refer to the Arvados configuration reference for details.
+#arvados_webdav_nginx:
+#  children:
+#    arvados_cluster_host:
 
 arvados_webdavdownload_nginx:
   children:
