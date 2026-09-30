@@ -50,7 +50,7 @@ describe('Trash tests', function () {
                 cy.assertDataExplorerContains(testProject.name, true);
 
                 // Test delete from toolbar
-                cy.doDataExplorerSelect(testProject.name);
+                cy.doDataExplorerSelectByUuid(testProject.uuid, { animationDistanceThreshold: 20 });
                 cy.doToolbarAction("Move to trash");
 
                 // Verify trashed and breadcrumbs correct
@@ -61,7 +61,7 @@ describe('Trash tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.assertBreadcrumbs(["Trash"]);
                 cy.doDataExplorerSearch(testProject.name);
-                cy.doDataExplorerSelect(testProject.name);
+                cy.doDataExplorerSelectByUuid(testProject.uuid, { animationDistanceThreshold: 20 });
                 cy.get(`[aria-label="Restore"]`, { timeout: 5000 }).eq(0).click();
                 cy.waitForDom();
 
@@ -111,7 +111,7 @@ describe('Trash tests', function () {
                 cy.assertDataExplorerContains(testCollection.name, true);
 
                 // Test delete from toolbar
-                cy.doDataExplorerSelect(testCollection.name);
+                cy.doDataExplorerSelectByUuid(testCollection.uuid, { animationDistanceThreshold: 20 });
                 cy.doToolbarAction("Move to trash");
 
                 // Verify trashed and breadcrumbs correct
@@ -122,7 +122,7 @@ describe('Trash tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Trash').click();
                 cy.assertBreadcrumbs(["Trash"]);
                 cy.doDataExplorerSearch(testCollection.name);
-                cy.doDataExplorerSelect(testCollection.name);
+                cy.doDataExplorerSelectByUuid(testCollection.uuid, { animationDistanceThreshold: 20 });
                 cy.get(`[aria-label="Restore"]`, { timeout: 5000 }).eq(0).click();
                 cy.waitForDom();
 
