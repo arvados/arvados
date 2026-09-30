@@ -1,0 +1,17 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Install Prometheus Node Exporter
+  become: yes
+  ansible.builtin.apt:
+    name:
+      - prometheus-node-exporter
+      - prometheus-node-exporter-collectors
+
+- name: Start and enable node exporter
+  become: yes
+  ansible.builtin.systemd_service:
+    name: prometheus-node-exporter.service
+    state: started
+    enabled: true

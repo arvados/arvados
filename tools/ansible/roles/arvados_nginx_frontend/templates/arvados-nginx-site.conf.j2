@@ -5,28 +5,35 @@
  #}
 
 {% set upstream_name = "arvados-" + arvados_nginx_service_key|lower %}
-{% set upstream_svc = arvados_cluster.Services[arvados_nginx_service_key] %}
 {% block upstream %}
 upstream {{ upstream_name }} {
-{% for addr in upstream_svc | internal_addrs %}
+{% for addr in arvados_nginx_proxy_service | internal_addrs %}
   server  {{ addr }}  fail_timeout=10s;
 {% endfor %}
 }
 {% endblock %}
 
-{% set ext_addr = upstream_svc | external_addr %}
+{% set ext_addr = arvados_nginx_proxy_service | external_addr %}
 server {
-  listen       {{ ext_addr.port }} ssl;
-  server_name  {{ ext_addr.address }};
+  listen       {% block listen_ports %}{{ ext_addr.port }}{% endblock %} http2 ssl;
+{# nginx supports plain wildcards in server_name, but it only replaces whole
+   components. In Arvados it represents either an optional component or partial
+   copmonent. Convert the Arvados meaning into a regexp. #}
+  server_name  ~^{{ ext_addr.address|regex_escape|replace('\*\.', '(.*\.|)')|replace('\*\-', '[-a-z0-9]+\-') }}$;
 
   ssl_certificate      {{ tls_source.cert.path }};
   ssl_certificate_key  {{ tls_source.key.path }};
 {% if tls_source.key.aws_secret is defined %}
   ssl_password_file    /run/arvados/{{ tls_source.key.aws_secret }};
 {% endif %}
-{% if arvados_nginx_log_basename is truthy %}
-  access_log  /var/log/nginx/{{ arvados_nginx_log_basename }}.access.log  combined;
-  error_log   /var/log/nginx/{{ arvados_nginx_log_basename }}.error.log;
+{% set logname = arvados_nginx_logname.get(arvados_nginx_service_key, arvados_nginx_logname.Default|default(none)) %}
+{% if logname is truthy %}
+  access_log  /var/log/nginx/{{ logname }}.access.log  combined;
+  error_log   /var/log/nginx/{{ logname }}.error.log;
+{% endif %}
+{% if arvados_nginx_proxy_service.BasicUser is defined %}
+  auth_basic            {{ arvados_nginx_proxy_service.BasicRealm|default('Restricted Area')|regex_replace('([\\s\\\'"{};$\\\\])', '\\\\\\1') }};
+  auth_basic_user_file  {{ arvados_nginx_htpasswd_path }};
 {% endif %}
 
   {{ arvados_nginx_server_config|indent(2) }}

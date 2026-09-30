@@ -3,8 +3,3 @@
  #
  # SPDX-License-Identifier: Apache-2.0
  #}
-
-{% block server_config %}
-  client_max_body_size  {{ arvados_cluster.API.MaxRequestSize|default('128m') }};
-{{ super() }}
-{% endblock %}

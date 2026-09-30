@@ -4,7 +4,26 @@
  # SPDX-License-Identifier: Apache-2.0
  #}
 
+{% set extra_conns = [] -%}
+
+{% if 'arvados_containerwebservices_nginx' in group_names %}
+{% set ctr_svc = arvados_cluster.Services.ContainerWebServices %}
+{% set backends = ctr_svc|internal_addrs|length %}
+{% set extport_min = ctr_svc.ExternalPortMin|default(0)|int %}
+{% set extport_max = ctr_svc.ExternalPortMax|default(0)|int %}
+{% set _ = extra_conns.append((extport_max - extport_min + 1) * backends) %}
+{% endif -%}
+
+{% if 'arvados_controller_nginx' in group_names %}
+{% set api_conf = arvados_cluster.API %}
+{% set backends = arvados_cluster.Services.Controller|internal_addrs|length %}
+{% set _ = extra_conns.append(api_conf.MaxConcurrentRequests|default(64)|int * backends) %}
+{% set _ = extra_conns.append(api_conf.MaxQueuedRequests|default(128)|int * backends) %}
+{% set _ = extra_conns.append(api_conf.MaxGatewayTunnels|default(1000)|int * backends) %}
+{% endif -%}
+
+{% set extra_conncount = extra_conns|sum %}
 events {
-  worker_connections  {{ worker_connections }};
+  worker_connections  {{ arvados_nginx_min_worker_connections + extra_conncount }};
 }
-worker_rlimit_nofile  {{ worker_rlimit_nofile }};
+worker_rlimit_nofile  {{ arvados_nginx_min_worker_rlimit_nofile + extra_conncount }};

@@ -1,0 +1,12 @@
+### This file is managed by the Arvados Ansible installer ###
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: 1
+providers:
+  - name: General
+    folder: Arvados Cluster
+    type: file
+    options:
+      path: /etc/grafana/arvados/dashboards

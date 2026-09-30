@@ -5,13 +5,67 @@
  #}
 
 {% block upstream %}
+map $arg_uuid $workbench_uuid_path {
+  ~-4zz18-  /collections;
+  ~-xvhdp-  /processes;
+  ~-j7d0g-  /projects;
+  ~-tpzed-  /projects;
+  ~-7fd4e-  /workflows;
+  default   "";
+}
 {% endblock %}
 
 {% block server_config %}
+  ### Rewrite old Workbench1 URIs for Workbench2 ###
+  # Loading specific object types by UUID:
+  rewrite ^/actions $workbench_uuid_path/$arg_uuid? redirect;
+  rewrite ^/container_requests/([-a-z0-9]+) /processes/$1 redirect;
+  rewrite ^/groups/([-a-z0-9]+) /group/$1 redirect;
+  rewrite ^/users/([-a-z0-9]+) /user/$1 redirect;
+  rewrite ^/work_units/([-a-z0-9]+) /processes/$1 redirect;
+
+  # File downloads:
+  if ($arg_disposition = attachment) {
+    rewrite ^/collections/([^/]*)/(.*) /?redirectToDownload=/c=$1/$2? redirect;
+  }
+  if ($arg_disposition = inline) {
+    rewrite ^/collections/([^/]*)/(.*) /?redirectToPreview=/c=$1/$2? redirect;
+  }
+
+  # Roughly equivalent listings:
+  rewrite ^/authorized_keys /ssh-keys-admin redirect;
+  rewrite ^/container_requests /all_processes redirect;
+  rewrite ^/containers /all_processes redirect;
+  rewrite ^/job /all_processes redirect;
+  rewrite ^/keep_services /keep-services redirect;
+  rewrite ^/trash_items /trash redirect;
+  rewrite ^/users/.*/ssh_keys /ssh-keys-user redirect;
+  rewrite ^/users/.*/virtual_machines /virtual-machines-user redirect;
+  rewrite ^/users/link_account /link_account redirect;
+  rewrite ^/virtual_machines /virtual-machines-admin redirect;
+
+  # Old paths with no correpsodence in Workbench2:
+  rewrite ^/current_token / redirect;
+  rewrite ^/factory_jobs / redirect;
+  rewrite ^/humans / redirect;
+  rewrite ^/keep_disks / redirect;
+  rewrite ^/logged_out / redirect;
+  rewrite ^/logout / redirect;
+  rewrite ^/logs / redirect;
+  rewrite ^/nodes / redirect;
+  rewrite ^/pipeline_instances / redirect;
+  rewrite ^/pipeline_templates / redirect;
+  rewrite ^/sessions / redirect;
+  rewrite ^/specimens / redirect;
+  rewrite ^/themes / redirect;
+  rewrite ^/traits / redirect;
+  rewrite ^/uploaded_datasets / redirect;
+  rewrite ^/user_agreements / redirect;
+
   # Workbench2 uses a call to /config.json to bootstrap itself
   # and find out where to contact the API server.
   location /config.json {
-    return 200 '{"API_HOST":"{{ arvados_cluster.Services.Controller|external_addr }}"}';
+    return 200 '{{ {"API_HOST": arvados_cluster.Services.Controller|external_addr|string}|to_json }}';
   }
 
   location / {

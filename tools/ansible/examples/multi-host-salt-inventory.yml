@@ -3,11 +3,71 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# This file illustrates host groups you can deploy with
-# install-arvados-cluster.yml and variables you can use to customize
-# the deployment. Copy this file somewhere else, edit it following the
-# comments, and run the installer like:
-#   $ ansible-playbook -Ki YOUR-INVENTORY.yml install-arvados-cluster.yml
+# This example inventory provides a starting point for Arvados
+# administrators migrating from the Salt installer. If you previously
+# installed an Arvados cluster with Salt, follow these steps to start
+# managing your cluster with Ansible:
+#
+# 1. Copy this example to a new location to be the Ansible inventory for your
+#    cluster.
+#
+# 2. Copy the following configuration files from your cluster to the system
+#    where you'll run Ansible (the controller node):
+#
+#    * /etc/arvados/config.yml
+#    * /etc/alloy/config.alloy
+#    * /etc/loki/config.yml
+#    * /etc/prometheus/blackbox_exporter.yml
+#    * /etc/prometheus/prometheus.yml
+#    * /etc/grafana/grafana.ini
+#
+#    The path to the Arvados configuration will be set as `arvados_config_file`
+#    below. The other paths will be set as a `ConfigFile` value for its
+#    corresponding service under `arvados_ansible_services`.
+#
+# 3. Review the `local.params` and `local.params.secrets` files from your Salt
+#    installer configuration and use their values to set the corresponding
+#    Ansible variables. Note that some Ansible variables are structured
+#    differently from Salt parameters. Make sure to follow the structure given
+#    in the comments and examples here.
+#
+#    Salt local parameter          | Used in Ansible variable
+#    ----------------------------- | -----------------------------------------
+#    `CLUSTER`                     | `arvados_cluster_id`
+#    `CLUSTER_INT_CIDR`            | `arvados_nginx_internal_networks`
+#    `AWS_REGION`                  | `aws_region`
+#    `CUSTOM_CERTS_DIR`            | `arvados_tls.*.src`
+#    `SSL_KEY_AWS_SECRET_NAME`     | `arvados_tls.*.aws_secret`
+#    `DATABASE_POSTGRESQL_VERSION` | `arvados_postgresql_version`
+#    `MONITORING_USERNAME`         | `arvados_ansible_services.*.BasicUser`
+#    `MONITORING_PASSWORD`         | `arvados_ansible_services.*.BasicPass`
+#    `RELEASE`                     | `arvados_apt_suites`
+#    `VERSION`                     | `arvados_pin_version`
+#
+#    Many other settings are now written directly in the configuration file for
+#    the corresponding service. For example, all the `*_INT_IP` and
+#    `*_EXT_SSL_PORT` parameters are now defined in the `Services` section of
+#    your Arvados `config.yml`. The `GRAFANA_SMTP_*` settings are now written
+#    directly in the `[smtp]` section of your `grafana.ini`. `DEPLOY_USER` and
+#    `SSH` settings are now written as Ansible connection parameters.
+#
+# 4. In this file, find-and-replace the string `arvados-salt.example` with
+#    the value of `DOMAIN` from your Salt installer `local.params`.
+#
+# 5. Review this inventory and make any other changes you like.
+#
+#    The Salt installer mapped services to hosts via the `ROLES` parameter.
+#    The Ansible installer does it by assigning hosts to inventory groups.
+#    This example follows the deployment pattern for a typical multi-node Salt
+#    cluster. Double-check that the host(s) in each group match the `ROLES`
+#    you had before.
+#
+# 6. With your inventory, run the following playbooks in order. Make sure each
+#    succeeds before you proceed to the next one.
+#
+#    a. `migrate-from-salt-setup.yml`
+#    b. `install-arvados-cluster.yml`
+#    c. `migrate-from-salt-cleanup.yml` (optional)
 
 ### Core cluster configuration settings ###
 all:
@@ -113,10 +173,15 @@ all:
     arvados_ansible_services:
       Alloy:
         # Alloy does not serve HTTP so it does not support URLs or auth.
-        #ConfigFile: /PATH/TO/config.alloy
+        ConfigFile: /PATH/TO/config.alloy
       BlackboxExporter:
-        #ConfigFile: /PATH/TO/blackbox.yml
-        #ExternalURL: "http://localhost:9115"
+        # The Salt installer deployed /etc/prometheus/blackbox_exporter.yml.
+        # You can stil use that filename (or any other) on the Ansible control node.
+        # The Ansible installer deploys /etc/prometheus/blackbox.yml
+        # (the package's default) to managed nodes.
+        # The migration playbook arranges to move the file.
+        ConfigFile: /PATH/TO/blackbox_exporter.yml
+        ExternalURL: "http://localhost:9115"
       Loki:
         # Loki REQUIRES an S3-compatible object store.
         # Our example template assumes you're deploying to AWS.
@@ -124,35 +189,47 @@ all:
         BucketNames: "{{ aws_region }}-loki-object-storage"
         InternalURLs:
           "http://localhost:3100": {}
-        ExternalURL: "https://loki.arvados.example"
-        #ConfigFile: /PATH/TO/loki/config.yml
-        #BasicUser: admin
-        #BasicPass: FIXMEDefaultLokiAuth
+        ExternalURL: "https://loki.arvados-salt.example"
+        ConfigFile: /PATH/TO/loki/config.yml
+        #BasicUser: SALT_MONITORING_USERNAME
+        #BasicPass: SALT_MONITORING_PASSWORD
       Prometheus:
         InternalURLs:
           "http://localhost:9090": {}
-        ExternalURL: "https://prometheus.arvados.example"
-        #ConfigFile: /PATH/TO/prometheus.yml
-        #BasicUser: admin
-        #BasicPass: FIXMEDefaultPrometheusAuth
+        ExternalURL: "https://prometheus.arvados-salt.example"
+        ConfigFile: /PATH/TO/prometheus.yml
+        #BasicUser: SALT_MONITORING_USERNAME
+        #BasicPass: SALT_MONITORING_PASSWORD
       Grafana:
         InternalURLs:
           # Grafana requires a ListenURL with an IP address.
           "http://localhost:3000":
             ListenURL: "http://127.0.0.1:3000"
-        ExternalURL: "https://grafana.arvados.example"
-        #ConfigFile: /PATH/TO/grafana.ini
+        ExternalURL: "https://grafana.arvados-salt.example"
+        ConfigFile: /PATH/TO/grafana.ini
+
+    # These values are backwards-compatible with the Salt installer.
+    # You shouldn't need to change anything here beyond replacing the
+    # example domain.
+    arvados_nginx_logname:
+      ContainerWebServices: containers.arvados-salt.example
+      Controller: arvados-salt.example
+      Keepproxy: keepproxy.arvados-salt.example
+      WebDAV: collections.arvados-salt.example
+      WebDAVDownload: download.arvados-salt.example
+      Websocket: ws.arvados-salt.example
+      Workbench2: workbench2.arvados-salt.example
+      Loki: loki.arvados-salt.example
+      Prometheus: prometheus.arvados-salt.example
+      Grafana: grafana.arvados-salt.example
 
 ### Host groups for core Arvados services ###
-# Most Arvados clusters will have at least one host in each of these groups.
-# It's normal to have the same host in multiple groups. For example, most
-# clusters have the same host(s) in the `arvados_api`, `arvados_controller`,
-# and `arvados_websocket` groups.
-
 # arvados_api host(s) run the Arvados Rails API server.
 arvados_api:
   hosts:
-    api.arvados.example:
+    # If you used a load-balanced controller, name the individual back-end
+    # controller hosts here.
+    controller.arvados-salt.example:
   vars:
     # If your cluster will use an external database, specify the database
     # superuser credentials here. These will be used to set up a dedicated
@@ -163,55 +240,52 @@ arvados_api:
 # arvados_controller host(s) run the Arvados API controller.
 arvados_controller:
   hosts:
-    api.arvados.example:
+    # If you used a load-balanced controller, name the individual back-end
+    # controller hosts here.
+    controller.arvados-salt.example:
 
 # arvados_websocket host(s) run the Arvados websockets server.
 arvados_websocket:
   hosts:
-    api.arvados.example:
+    workbench.arvados-salt.example:
 
 # arvados_keepstore host(s) run the Arvados keepstore services.
 arvados_keepstore:
   hosts:
-    keep0.arvados.example:
-    keep1.arvados.example:
+    keep0.arvados-salt.example:
+    #keep1.arvados-salt.example:
 
 # arvados_keepbalance host(s) run the Arvados keep-balance service.
 arvados_keepbalance:
   hosts:
-    keep0.arvados.example:
-    keep1.arvados.example:
+    keepbalance.arvados-salt.example:
 
 # arvados_keepproxy host(s) run the Arvados keepproxy service.
 arvados_keepproxy:
   hosts:
-    keep.arvados.example:
+    keep.arvados-salt.example:
 
 # arvados_keep_web host(s) run the Arvados keep-web/WebDAV service.
 arvados_keep_web:
   hosts:
-    webdav.arvados.example:
+    keep.arvados-salt.example:
 
 # arvados_workbench host(s) serve the Arvados Workbench front-end.
 arvados_workbench:
   hosts:
-    workbench.arvados.example:
+    workbench.arvados-salt.example:
 
 
 ### Host groups for Arvados web front-ends ###
 # The Arvados servers for API controller, websockets, keepproxy, and
 # keep-web/WebDAV expect to run behind a production web front-end.
 # The following groups deploy nginx to do that.
-# This example configuration shows the simple case of deploying nginx on the
-# same host as the Arvados service. You can deploy these groups to different
-# host(s) if desired. Note that *all* nginx front-ends will proxy *all* the
-# corresponding back-end services for load balancing via the InternalURLs
-# in your Arvados cluster configuration.
-# You can make these groups empty if you plan to configure a different
-# web front-end such as AWS ELB.
 arvados_controller_nginx:
-  children:
-    arvados_controller:
+  hosts:
+    # If you used a load-balanced controller, name the front-end host(s) here.
+    # Note these will connect directly to the back-end arvados-server
+    # processes.
+    controller.arvados-salt.example:
   vars:
     # `arvados_nginx_server_config` is a block of nginx configuration
     # directives that will be included in the server block for this
@@ -221,8 +295,8 @@ arvados_controller_nginx:
     #  server_name  arvados.example;
 
 arvados_containerwebservices_nginx:
-  children:
-    arvados_controller:
+  hosts:
+    controller.arvados-salt.example:
 
 arvados_websocket_nginx:
   children:
@@ -242,17 +316,13 @@ arvados_webdavdownload_nginx:
 
 
 ### Host groups for Arvados dispatchers ###
-# A complete Arvados cluster must deploy at least one dispatcher, but
-# different clusters run different dispatchers. Uncomment and define the
-# group(s) for the dispatcher(s) your cluster will run.
-
 # arvados_dispatch_cloud host(s) run the arvados-dispatch-cloud service
 # to create dedicated cloud nodes to configure containers. You must have
 # `Containers.CloudVMs` configured in your cluster configuration for this
 # to work.
-#arvados_dispatch_cloud:
-#  hosts:
-#    api.arvados.example:
+arvados_dispatch_cloud:
+  hosts:
+    dispatcher.arvados-salt.example:
 
 # arvados_dispatch_local host(s) run the crunch-dispatch-local service
 # to run containers on the local host. This is only intended for small
@@ -260,8 +330,8 @@ arvados_webdavdownload_nginx:
 # have compute requirements like Docker and arv-mount installed.
 #arvados_dispatch_local:
 #  hosts:
-#    compute0.arvados.example:
-#    compute1.arvados.example:
+#    compute0.arvados-salt.example:
+#    compute1.arvados-salt.example:
 
 
 ### Host groups for Arvados supporting services ###
@@ -276,7 +346,7 @@ arvados_webdavdownload_nginx:
 # (e.g., Amazon RDS).
 #arvados_postgresql:
 #  hosts:
-#    api.arvados.example:
+#    database.arvados-salt.example:
 #  vars:
 #    # `arvados_postgresql_hba_sources` is an array of IPv4 or v6 netmasks,
 #    # or special values recognized in `pg_hba.conf`. The Arvados database user
@@ -294,97 +364,88 @@ arvados_webdavdownload_nginx:
 
 # arvados_shell host(s) have all client tools installed so cluster users can
 # access a complete client environment via SSH or similar.
-#arvados_shell:
-#  hosts:
-#    shell.arvados.example:
-#      # The installer will automatically create an Arvados virtual machine
-#      # record for each shell node. The `hostname` attribute in that record
-#      # will come from the inventory hostname by default. If you need to use
-#      # a different hostname externally, set `arvados_shell_hostname` like this:
-#      #arvados_shell_hostname: shellhost.arvados.example
+arvados_shell:
+  hosts:
+    shell.arvados-salt.example:
+      # The installer will automatically create an Arvados virtual machine
+      # record for each shell node. The `hostname` attribute in that record
+      # will come from the inventory hostname by default. If you need to use
+      # a different hostname externally, set `arvados_shell_hostname` like this:
+      #arvados_shell_hostname: shellhost.arvados-salt.example
 
 
 ### Centralized monitoring ###
-# The installer can set up:
-#  * Loki to collect logs from all nodes
-#  * Prometheus to collect metrics from all services
-#  * Grafana to provide dashboards for monitoring
-# This is especially helpful to collate information on multi-node installs.
-# The Arvados cluster activity report can use these metrics to report additional
-# information about cluster health.
-# To use this, you should generally uncomment and define all groups below.
-
 # arvados_alloy host(s) will have Alloy installed from the Grafana APT repository.
 # The required Alloy configuration file is defined by `arvados_alloy_config_file`.
 # Typically this should be installed on all nodes running Arvados services as
 # illustrated in the example below.
-#arvados_alloy:
-#  children:
-#    arvados_api:
-#    arvados_controller:
-#    arvados_websocket:
-#    arvados_keepstore:
-#    arvados_keepbalance:
-#    arvados_keepproxy:
-#    arvados_keep_web:
-#    arvados_workbench:
-#    arvados_dispatch_cloud:
-#    arvados_dispatch_local:
-#    arvados_loki:
-#    arvados_prometheus:
-#    arvados_grafana:
+arvados_alloy:
+  children:
+    arvados_api:
+    arvados_controller:
+    arvados_websocket:
+    arvados_keepstore:
+    arvados_keepbalance:
+    arvados_keepproxy:
+    arvados_keep_web:
+    arvados_workbench:
+    arvados_dispatch_cloud:
+    arvados_dispatch_local:
+    arvados_loki:
+    arvados_prometheus:
+    arvados_grafana:
 
 # arvados_prometheus_node host(s) will have the Prometheus node exporter installed and running.
 # No configuration is required.
 # Typically this should be installed on all nodes running Arvados services as
 # illustrated in the example below.
-#arvados_prometheus_node:
-#  children:
-#    arvados_api:
-#    arvados_controller:
-#    arvados_websocket:
-#    arvados_keepstore:
-#    arvados_keepbalance:
-#    arvados_keepproxy:
-#    arvados_keep_web:
-#    arvados_workbench:
-#    arvados_dispatch_cloud:
-#    arvados_dispatch_local:
-#    arvados_loki:
-#    arvados_prometheus:
-#    arvados_grafana:
+arvados_prometheus_node:
+  children:
+    arvados_api:
+    arvados_controller:
+    arvados_websocket:
+    arvados_keepstore:
+    arvados_keepbalance:
+    arvados_keepproxy:
+    arvados_keep_web:
+    arvados_workbench:
+    arvados_dispatch_cloud:
+    arvados_dispatch_local:
+    arvados_loki:
+    arvados_prometheus:
+    arvados_grafana:
 
 # arvados_loki host(s) will have Loki installed from the Grafana APT repository.
-#arvados_loki:
-#  hosts:
-#    workbench.arvados.example:
+arvados_loki:
+  hosts:
+    workbench.arvados-salt.example:
 
 # arvados_loki_nginx sets up an nginx front-end for the Loki server.
-#arvados_loki_nginx:
-#  children:
-#    arvados_loki:
+arvados_loki_nginx:
+  children:
+    arvados_loki:
 
 # arvados_prometheus host(s) will have the Prometheus server installed.
-#arvados_prometheus:
-#  hosts:
-#    workbench.arvados.example:
+arvados_prometheus:
+  hosts:
+    workbench.arvados-salt.example:
 
 # arvados_pbe host(s) will have the Prometheus Blackbox Exporter installed.
-#arvados_pbe:
-#  children:
-#    arvados_prometheus:
+arvados_pbe:
+  children:
+    arvados_prometheus:
 
 # arvados_prometheus_nginx sets up an nginx front-end for the Prometheus server.
-#arvados_prometheus_nginx:
-#  children:
-#    arvados_prometheus:
+arvados_prometheus_nginx:
+  children:
+    arvados_prometheus:
 
 # arvados_grafana host(s) will have Grafana installed from the Grafana APT repository.
-#arvados_grafana:
-#  hosts:
-#    workbench.arvados.example:
+arvados_grafana:
+  hosts:
+    workbench.arvados-salt.example:
 
 # arvados_grafana_nginx sets up an nginx front-end for the Grafana server.
-#arvados_grafana_nginx:
-#  children:
-#    arvados_grafana:
+arvados_grafana_nginx:
+  children:
+    arvados_grafana:

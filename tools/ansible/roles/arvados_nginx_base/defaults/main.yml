@@ -7,3 +7,9 @@
 # boolean. If it's the literal `false`, the netmask will not be considered
 # internal. *Any* other value will be considered internal.
 arvados_nginx_internal_networks: {}
+
+# Taken from Debian's defaults. The nginx configuration will use these
+# values as a baseline, increasing them as needed to accommodate specific
+# services.
+arvados_nginx_min_worker_connections: 768
+arvados_nginx_min_worker_rlimit_nofile: 1024

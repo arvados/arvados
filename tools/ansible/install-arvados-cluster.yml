@@ -4,11 +4,9 @@
 #
 # install-arvados-cluster.yml - Ansible playbook to set up an Arvados cluster
 #
-# This playbook installs all services necessary for an Arvados cluster. It is
-# still in early development, so it does not support all configurations or
-# integrate with third-party services. Refer to
-# `examples/full-cluster-inventory.yml` for information about how to write
-# configuration for this playbook.
+# This playbook installs all services necessary for an Arvados cluster.
+# Refer to `examples/full-cluster-inventory.yml` for information
+# about how to write configuration for this playbook.
 
 - name: Bootstrap nodes
   hosts: all
@@ -16,15 +14,18 @@
   tasks:
     - name: Load Arvados configuration file
       no_log: yes
-      delegate_to: localhost
-      ansible.builtin.include_vars:
-        name: arvados_config
-        file: "{{ arvados_config_file }}"
+      ansible.builtin.set_fact:
+        arvados_config: "{{ lookup('ansible.builtin.unvault', arvados_config_file)|from_yaml }}"
+        cacheable: yes
+      failed_when: arvados_config is undefined
+
     - name: Load Arvados cluster configuration
       no_log: yes
       ansible.builtin.set_fact:
         arvados_cluster: "{{ arvados_config.Clusters[arvados_cluster_id] }}"
+        cacheable: yes
       failed_when: arvados_cluster is undefined
+
     - ansible.builtin.include_role:
         name: distro_bootstrap
 
@@ -56,6 +57,15 @@
         name: arvados_nginx_frontend
       vars:
         arvados_nginx_service_key: Controller
+
+- name: Set up container web services nginx front-end
+  hosts: arvados_containerwebservices_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: ContainerWebServices
 
 - name: Set up API controller(s)
   hosts: arvados_controller
@@ -110,11 +120,22 @@
     - ansible.builtin.include_role:
         name: arvados_keepproxy
 
-- name: Set up keep-web nginx front-end
-  hosts: arvados_keep_web_nginx
+- name: Set up WebDAVDownload nginx front-end
+  hosts: arvados_webdavdownload_nginx
   serial: 1
   tasks:
-    - ansible.builtin.include_role:
+    - when: arvados_cluster.Services.WebDAVDownload.ExternalURL|default(none) is truthy
+      ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: WebDAVDownload
+
+- name: Set up WebDAV nginx front-end
+  hosts: arvados_webdav_nginx
+  serial: 1
+  tasks:
+    - when: arvados_cluster.Services.WebDAV.ExternalURL|default(none) is truthy
+      ansible.builtin.include_role:
         name: arvados_nginx_frontend
       vars:
         arvados_nginx_service_key: WebDAV
@@ -154,25 +175,49 @@
     - ansible.builtin.include_role:
         name: arvados_dispatch_cloud
 
-- name: Set up Loki
-  hosts: arvados_loki
-  tasks:
-    - ansible.builtin.include_role:
-        name: arvados_loki
-
 - name: Set up Alloy
   hosts: arvados_alloy
-  serial: 1
   tasks:
     - ansible.builtin.include_role:
         name: arvados_alloy
 
-- name: Set up Grafana
-  hosts: arvados_grafana
+- name: Set up Loki nginx front-end
+  hosts: arvados_loki_nginx
   serial: 1
   tasks:
     - ansible.builtin.include_role:
-        name: arvados_grafana
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Loki
+
+- name: Set up Loki
+  hosts: arvados_loki
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_loki
+
+- name: Set up Prometheus node exporters
+  hosts: arvados_prometheus_node
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_prometheus_node
+
+- name: Set up Prometheus Blackbox Exporter
+  hosts: arvados_pbe
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_pbe
+
+- name: Set up Prometheus nginx front-end
+  hosts: arvados_prometheus_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Prometheus
 
 - name: Set up Prometheus
   hosts: arvados_prometheus
@@ -180,3 +225,19 @@
   tasks:
     - ansible.builtin.include_role:
         name: arvados_prometheus
+
+- name: Set up Grafana nginx front-end
+  hosts: arvados_grafana_nginx
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_nginx_frontend
+      vars:
+        arvados_nginx_service_key: Grafana
+
+- name: Set up Grafana
+  hosts: arvados_grafana
+  serial: 1
+  tasks:
+    - ansible.builtin.include_role:
+        name: arvados_grafana

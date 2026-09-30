@@ -5,6 +5,6 @@
  #}
 
 {% block server_config %}
-  client_max_body_size  {{ arvados_cluster.API.MaxRequestSize|default('128m') }};
+  client_max_body_size  0;
 {{ super() }}
 {% endblock %}

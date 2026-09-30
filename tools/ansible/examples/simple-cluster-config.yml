@@ -87,7 +87,9 @@ Clusters:
         ExternalURL: "https://hostname.example:8443"
 
       ContainerWebServices:
-        # This ExternalURL should match Controller's.
+        # ContainerWebServices' InternalURLs should match Controller's.
+        InternalURLs:
+          "http://localhost:8043": {}
         ExternalURL: "https://hostname.example:8443"
         ExternalPortMin: 8900
         ExternalPortMax: 8999
@@ -98,12 +100,16 @@ Clusters:
         ExternalURL: "https://hostname.example:8444"
 
       WebDAV:
+        # WebDAV InternalURLs define where the keep-web service will listen.
         InternalURLs:
           "http://localhost:8048": {}
-        ExternalURL: "https://hostname.example:8448"
+        # Safely deploying WebDAV requires a separate domain.
+        # Most single-node clusters will not run it.
+        # See the Arvados configuration reference for details.
+        #ExternalURL: "https://webdav.hostname.example:8448"
 
       WebDAVDownload:
-        # These URLs should match WebDAV's.
+        # WebDAVDownload InternalURLs should match WebDAV's.
         InternalURLs:
           "http://localhost:8048": {}
         ExternalURL: "https://hostname.example:8448"
