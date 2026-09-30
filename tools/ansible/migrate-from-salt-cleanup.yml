@@ -22,30 +22,6 @@
           - /etc/apt/preferences.d/salt.pref
           - /etc/apt/sources.list.d/salt.sources
 
-- hosts: arvados_pbe
-  tasks:
-    - ansible.builtin.include_role:
-        name: salt_migrate_files
-      vars:
-        salt_files:
-          - /etc/prometheus/blackbox_exporter.yml
-
-    - name: Update Prometheus Blackbox Exporter config.file
-      become: yes
-      ansible.builtin.replace:
-        path: /etc/default/prometheus-blackbox-exporter
-        regexp: |-
-          --config\.file(=|\s+)/etc/prometheus/blackbox_exporter\.yml(\s|"|'|$)
-        replace: '--config.file\1/etc/prometheus/blackbox.yml\2'
-      register: pbe_args
-
-    - name: Restart prometheus-blackbox-exporter
-      when: pbe_args.changed
-      become: yes
-      ansible.builtin.systemd_service:
-        name: prometheus-blackbox-exporter.service
-        state: restarted
-
 - hosts: "arvados_*_nginx:arvados_workbench"
   name: Remove obsolete nginx configuration
   tasks:

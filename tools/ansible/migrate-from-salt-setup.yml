@@ -121,6 +121,39 @@
       vars:
         site_groups: [arvados_workbench]
 
+- name: Migrate Prometheus Blackbox Exporter configuration
+  hosts: arvados_pbe
+  tasks:
+    - name: Stat Prometheus Blackbox Exporter configuration
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /etc/default/prometheus-blackbox-exporter
+        - /etc/prometheus/blackbox.yml
+      register: pbe_stat
+
+    - name: Back up Prometheus Blackbox Exporter configuration
+      become: yes
+      ansible.builtin.command:
+        argv: [cp, --preserve=all, "{{ item }}", /var/backups/arvados-salt/]
+        creates: "{{ ('/var/backups/arvados-salt', item|basename)|path_join }}"
+      loop: "{{ pbe_stat.results|map(attribute='stat')|selectattr('exists')|map(attribute='path') }}"
+
+    - name: Move blackbox_exporter.yml
+      become: yes
+      ansible.builtin.command:
+        argv: [mv, blackbox_exporter.yml, blackbox.yml]
+        chdir: /etc/prometheus
+        removes: /etc/prometheus/blackbox_exporter.yml
+
+    - name: Update Prometheus Blackbox Exporter config.file
+      become: yes
+      ansible.builtin.replace:
+        path: /etc/default/prometheus-blackbox-exporter
+        regexp: |-
+          --config\.file(=|\s+)/etc/prometheus/blackbox_exporter\.yml(\s|"|'|$)
+        replace: '--config.file\1/etc/prometheus/blackbox.yml\2'
+
 - name: Migrate Grafana configuration
   hosts: arvados_grafana
   tasks:
