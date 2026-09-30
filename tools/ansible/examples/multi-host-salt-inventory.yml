@@ -175,6 +175,11 @@ all:
         # Alloy does not serve HTTP so it does not support URLs or auth.
         ConfigFile: /PATH/TO/config.alloy
       BlackboxExporter:
+        # The Salt installer deployed /etc/prometheus/blackbox_exporter.yml.
+        # You can stil use that filename (or any other) on the Ansible control node.
+        # The Ansible installer deploys /etc/prometheus/blackbox.yml
+        # (the package's default) to managed nodes.
+        # The migration playbook arranges to move the file.
         ConfigFile: /PATH/TO/blackbox_exporter.yml
         ExternalURL: "http://localhost:9115"
       Loki:
