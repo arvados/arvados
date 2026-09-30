@@ -13,7 +13,7 @@
   no_log: yes
   ansible.builtin.copy:
     src: "{{ arvados_ansible_services.BlackboxExporter.ConfigFile }}"
-    dest: /etc/prometheus/blackbox_exporter.yml
+    dest: /etc/prometheus/blackbox.yml
     owner: root
     group: prometheus
     mode: 0640

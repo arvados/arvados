@@ -115,7 +115,7 @@ all:
         # Alloy does not serve HTTP so it does not support URLs or auth.
         #ConfigFile: /PATH/TO/config.alloy
       BlackboxExporter:
-        #ConfigFile: /PATH/TO/blackbox_exporter.yml
+        #ConfigFile: /PATH/TO/blackbox.yml
         #ExternalURL: "http://localhost:9115"
       Loki:
         # Loki REQUIRES an S3-compatible object store.

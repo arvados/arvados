@@ -73,13 +73,13 @@
   hosts: arvados_pbe
   gather_facts: no
   tasks:
-    - name: Write blackbox_exporter.yml
+    - name: Write blackbox.yml
       delegate_to: localhost
       no_log: yes
       run_once: yes
       ansible.builtin.template:
-        src: examples/blackbox_exporter.yml.j2
-        dest: "{{ (config_dir.path, 'blackbox_exporter.yml')|path_join }}"
+        src: examples/blackbox.yml.j2
+        dest: "{{ (config_dir.path, 'blackbox.yml')|path_join }}"
         mode: 0600
 
 - name: Write Prometheus configuration
