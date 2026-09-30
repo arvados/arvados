@@ -850,6 +850,14 @@ Cypress.Commands.add("doDataExplorerSelect", (name) => {
 });
 
 /**
+ * Selects data explorer row checkbox by UUID
+ */
+Cypress.Commands.add("doDataExplorerSelectByUuid", (uuid, ...clickArgs) => {
+    return cy.get(`[data-cy="data-table"] input[data-cy="multiselect-checkbox-${uuid}"]`)
+        .click(clickArgs);
+});
+
+/**
  * Selects all visible data explorer items using the select all checkbox
  */
 Cypress.Commands.add("doDataExplorerSelectAll", () => {
