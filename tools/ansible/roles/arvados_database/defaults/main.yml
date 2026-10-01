@@ -14,7 +14,7 @@ arvados_database_role_attr_flags: ""
 # How to connect to the PostgreSQL server.
 # If login_host is empty, the role will "become" login_user on the managed node
 # to perform database administration.
-arvados_database_login_host: "{{ arvados_cluster.PostgreSQL.Connection.host }}"
+arvados_database_login_host: "{{ '' if 'arvados_postgresql' in group_names else arvados_cluster.PostgreSQL.Connection.host }}"
 arvados_database_login_port: "{{ arvados_cluster.PostgreSQL.Connection.port|default(5432) }}"
 
 # Credentials for the PostgreSQL server.
