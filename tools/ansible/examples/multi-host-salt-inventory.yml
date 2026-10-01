@@ -146,6 +146,14 @@ all:
     # number like "18".
     #arvados_postgresql_version: "18"
 
+    # logrotate retention and compression rules for the RailsAPI service.
+    # These are the rules that Salt installed, but you're free to change them.
+    arvados_api_logrotate: |
+      daily
+      rotate 365
+      compress
+      nodelaycompress
+
     # `arvados_ansible_services` describes how to set up nginx servers for
     # services that are deployed by Ansible but not part of Arvados per se,
     # specifically the monitoring services Loki, Prometheus, and Grafana.
