@@ -67,23 +67,3 @@ run-library.sh                           A library of functions shared by the
 
 build_docker_image.py                    Build a Docker image from Arvados
                                          source components
-
-Adding a new target
-===================
-
-In order to build packages on a new distribution, you MUST:
-
-* Define containers to build the package build and test Docker images in
-  `tools/ansible/files/development-docker-images.yml`.
-* Create `package-testing/test-packages-TARGET.sh`, ideally by making it a
-  symlink to `FORMAT-common-test-packages.sh`.
-* Update the package download code near the bottom of `test_package_presence`
-  in `run-library.sh` so it can download packages for the new distribution.
-
-Of course, any part of our package build or test infrastructure may need to
-be updated to accommodate the process for new distributions. If you're
-having trouble building lots of packages, consider grepping these build
-scripts for the identifier of the closest working target, and see if you may
-need to add branches or similar hooks for your target. If you're having
-trouble building specific packages, consider doing the same for those
-packages' `fpm-info.sh` files.

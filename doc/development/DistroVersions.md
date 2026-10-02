@@ -33,3 +33,19 @@ For RHEL releases, this table shows the *latest* version available from AppStrea
 | Ubuntu 20.04 “focal”     | April 2020   | 12.22      | 3.8.10 | 2.7.0 |
 | RHEL 8.4 with AppStreams | June 2021    | 13.3       | 3.9.2  | 2.7.4 |
 | Debian 11 “bullseye”     | August 2021  | 13.16      | 3.9.2  | 2.7.4 |
+
+# Adding support for a new distribution
+
+In order to build packages on a new distribution, you MUST:
+
+* Define containers to build the package build and test Docker images in `tools/ansible/files/development-docker-images.yml`.
+
+* Add an entry to `_PACKAGE_NAMES_MAP` for this distribution in `tools/ansible/filter_plugins/arvados.py`.
+
+* Create `package-testing/test-packages-TARGET.sh`, ideally by making it a symlink to `FORMAT-common-test-packages.sh`.
+
+* Update the package download code near the bottom of `test_package_presence` in `run-library.sh` so it can download packages for the new distribution.
+
+Commit bfa592a1bbdf52fb46fd35a2c41120232354e294 is a recent example.
+
+Of course, any part of our package build or test infrastructure may need to be updated to accommodate the process for new distributions. If you're having trouble building lots of packages, consider grepping these build scripts for the identifier of the closest working target, and see if you may need to add branches or similar hooks for your target. If you're having trouble building specific packages, consider doing the same for those packages' `fpm-info.sh` files.
