@@ -46,12 +46,37 @@ describe('Ed25519 public key validator', () => {
     });
 });
 
-describe("Validator capable of rejecting malformed or unsupported keys", () => {
+describe("Detection of text-format errors", () => {
+    // These errors are detected without inspecting decoded data. Truncation
+    // and appending tests are the more UX-relevant ones.
     it("should reject key with unsupported type", () => {
         const unsupportedKey = "ssh-dss AAAAB3NzaC1kc3MAAACBANxTbA537hM9OYuWVhe0he6wkqOSNt6pRLsx+2p0/7DQKs4UoIKmVWSPLbVES0XrjGkoALEPDHb3mI6vZANXg3/LwtpbwJsnIG5i46cIUC0Uue/4ed0JHp11rGnUAIZybOV4R1BtA1l8K2pbXfwXMqy21KU4hOPHEua4FvIqLrC/AAAAFQDyS1YjrWrF3fpHAygcMSeOKYfPCQAAAIAIBlcKQHh1hYgGOA4+Ae686JkiyIXUzXipcYqVAqpPacr9Cu+zlwV9FFvkNvCJTcmQant+AwoTJ2+rPQUvAWZGdnVtmW5xHKjTO49+s8CBq/iaHF7r/t8GqUqQPFhDHEEDyQ439cmWv2NL4cC7mtADaEDSRUgpIJDgNfxo/0uW1AAAAIEAyjb0KSJjmtZL6jySmQzgHKDfQd+A9p4mCceA4v4eKeBEXOwzRUxxJEZ/PExvDwz+2r/mfRd1iow0okcL475wRRSqaPSCyddSkst2WA2hxA4ukGYvQP4y9tYMmNYpiOBU19Lpz93jQ6ejGA/wj4xAUcD5nQxYsgb1CI2uSgJyaTE=";
         expect(isSshPublicKey(unsupportedKey)).to.equal("Unknown key type (currently supported: RSA, Ed25519)");
     });
 
+    it("should reject key containing character outside the base64 range", () => {
+        // Inject illegal character "@" in base64-encoded data.
+        const badKey = goodEd25519Key.replace("ssh-ed25519 AAAA", "ssh-ed25519 @AAA");
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+
+    it("should reject key with invalid base64 sequence (truncation)", () => {
+        // Remove last 3 letters in encoded data, causing base64 decoding error.
+        const badKey = goodRsaKey.slice(0, -3);
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+
+    it("should reject key with invalid base64 sequence (appended char)", () => {
+        // Append to encoded data, causing base64 decoding error.
+        const badKey = goodEd25519Key + "a";
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+});
+
+describe("Detection of malformed binary data in keys", () => {
+    // These errors are more subtle and their reliable detection requires
+    // inspecting the binary data. They're less likely to occur as a result of
+    // "normal" user action though.
     it("should reject key with inconsistent key-type label", () => {
         // I.e., change the text label in the input without modifying the label
         // in the binary key data.
@@ -59,12 +84,6 @@ describe("Validator capable of rejecting malformed or unsupported keys", () => {
         expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
 
         badKey = goodRsaKey.replace("ssh-rsa ", "ssh-ed25519 ");
-        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
-    });
-
-    it("should reject key data that cannot be decoded", () => {
-        // Inject illegal character "@" in base64-encoded data
-        const badKey = goodEd25519Key.replace("ssh-ed25519 AAAA", "ssh-ed25519 @AAA");
         expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
     });
 
