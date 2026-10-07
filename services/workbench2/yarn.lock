@@ -5111,6 +5111,7 @@ __metadata:
     cwlts: 1.15.29
     cypress: ^14.0.0
     cypress-fail-fast: ^7.1.1
+    cypress-fill-command: ^1.0.2
     cypress-plugin-tab: ^1.0.5
     cypress-wait-until: ^3.0.2
     date-fns: ^2.28.0
@@ -6761,6 +6762,13 @@ __metadata:
   peerDependencies:
     cypress: ">=8.0.0"
   checksum: d73a4c33d09188606987af8e6e20847788e9178806a8df3b3418f8d11e1d2a3f84db4d09c36db1b73185b537c0410f84d008193cfd8c8cf54c9b10c88cc4559d
+  languageName: node
+  linkType: hard
+
+"cypress-fill-command@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "cypress-fill-command@npm:1.0.2"
+  checksum: 172ffd8fb8e60af7f6dc2cbe3a1ea3535d1ceafb76863e82cf51ea0d229c2e384fd3ae1a635661a2f19c610e12b1ccd57eefa7522402c466934dc1cd063fd3fa
   languageName: node
   linkType: hard
 

@@ -13,9 +13,9 @@ type DialogSshKeyProps = WithDialogProps<{}> & InjectedFormProps<SshKeyCreateFor
 
 export const DialogSshKeyCreate = (props: DialogSshKeyProps) =>
     <FormDialog
-        dialogTitle='Add new SSH key'
+        dialogTitle='New SSH Key'
         formFields={SshKeyAddFields}
-        submitLabel='Add new ssh key'
+        submitLabel='Create'
         {...props}
     />;
 

@@ -83,8 +83,8 @@ export const SshKeyPanelRoot = withStyles(styles)(
                         </Typography>}
                     </Grid>
                     <Grid item xs={4} className={classes.buttonContainer}>
-                        <Button onClick={openSshKeyCreateDialog} color="primary" variant="contained">
-                            <AddIcon /> Add New Ssh Key
+                        <Button onClick={openSshKeyCreateDialog} color="primary" variant="contained" data-cy="add-new-ssh-key">
+                            <AddIcon /> Add new SSH key
                         </Button>
                     </Grid>
                 </Grid>
