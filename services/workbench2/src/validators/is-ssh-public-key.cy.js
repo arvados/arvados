@@ -6,8 +6,8 @@ import { isSshPublicKey } from './is-ssh-public-key';
 
 // Doing the inverse of getMpIntSegment()
 function toSegment(text) {
-    // Create the "size" uint32 field. Only works for size not exceeding 0xffff
-    // (65536).
+    // First create the "size" uint32 field; only works for size not exceeding
+    // 0xffff (65535).
     const sizeField = String.fromCharCode(0, 0, 0, text.length);
     return sizeField + text;
 }
@@ -112,6 +112,47 @@ describe("Validator capable of rejecting malformed or unsupported keys", () => {
         const badKeyData = toSegment("ssh-ed25519") + toSegment(badKeyPayload);
         const badKey = `ssh-ed25519 ${window.btoa(badKeyData)}`;
         cy.log("Bad key (nonstandard size)", badKey);
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+
+    it("should reject RSA key with malformed modulus whose most significant bit is set", () => {
+        const goodKeyData = window.atob(goodRsaKey.split(" ")[1]);
+        const badByteIdx = (
+            4 + 7  // size field + "ssh-rsa"
+            + 4 + 3  // size field + 0x010001 (exponent)
+            + 4  // size field for modulus
+        );
+        const badKeyChars = goodKeyData.split("");
+        badKeyChars[badByteIdx] = String.fromCharCode(
+            goodKeyData.charCodeAt(badByteIdx) | 0x0080  // set leading bit.
+        );
+        const badKey = `ssh-rsa ${window.btoa(badKeyChars.join(""))}`;
+        cy.log("Bad key (wrong modulus sign)", badKey);
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+
+    it("should reject RSA key with too-short modulus", () => {
+        const badKeyData = (
+            toSegment("ssh-rsa")
+            + toSegment("\u0001\u0000\u0001")  // exponent 0x010001
+            + toSegment("\u0000".repeat(127))  // fake modulus
+        );
+        const badKey = `ssh-rsa ${window.btoa(badKeyData)}`;
+        cy.log("Bad key (wrong modulus size)", badKey);
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+
+    it("should reject incomplete Ed25519 key without any key data", () => {
+        const badKeyData = toSegment("ssh-ed25519");
+        const badKey = `ssh-ed25519 ${window.btoa(badKeyData)}`;
+        cy.log("Bad key (no actual key data)", badKey);
+        expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
+    });
+
+    it("should reject incomplete RSA key without modulus", () => {
+        const badKeyData = toSegment("ssh-rsa") + toSegment("\u0001\u0000\u0001");
+        const badKey = `ssh-rsa ${window.btoa(badKeyData)}`;
+        cy.log("Bad key (no modulus)", badKey);
         expect(isSshPublicKey(badKey)).to.equal(ERROR_MESSAGE);
     });
 });

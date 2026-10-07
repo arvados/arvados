@@ -45,16 +45,16 @@ const isRsaKeyData = (inputData: string): boolean => {
     pos += segment.size;
 
     // Key content is two mpints, the public exponent (e) and the modulus (n).
-    // Exponent e.
+    // Exponent e, in practice almost always 0x010001.
     segment = getMpIntSegment(inputData.slice(pos));
-    if (segment === null) return false;
+    // Check anyway. 5 == 4 + at least 1 byte of e.
+    if (segment === null || isBadRsaMpInt(segment, 5)) return false;
     pos += segment.size;
 
     // Modulus n.
     segment = getMpIntSegment(inputData.slice(pos))
-    // Min size of n is 1024 bits; see ssh-keygen(1). Size check includes 4
-    // bytes of "size" itself.
-    if (segment === null || segment.size < 132) return false;
+    // Min size of n is 1024 bits; see ssh-keygen(1). 132 == 4 + 1024 / 8
+    if (segment === null || isBadRsaMpInt(segment, 132)) return false;
     pos += segment.size;
 
     if (pos !== inputData.length) return false;  // there's trailing data.
@@ -105,3 +105,11 @@ const arrayToUint = (intArray: readonly number[]): number => {
         0  // init
     );
 };
+
+const isBadRsaMpInt = (segment: Readonly<MpInt>, minSize: number): boolean => (
+    // NOTE: minSize should include the 4 bytes of "size" itself.
+    segment.size < minSize
+    // When interpreted as a signed integer, sign (formally most significant)
+    // bit must be zero. This is why a modulus may have 1-byte zero padding.
+    || !!(segment.data.charCodeAt(0) & 0x0080)  // leading bit in UTF-16 encoding
+);
