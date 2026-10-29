@@ -479,9 +479,9 @@ class ClusterActivityReport:
     exclude: dataclasses.InitVar[str] = ''
 
     should_exclude: Callable[[str], bool] = dataclasses.field(init=False)
-    # A WorkflowRunSummary for each project. The None key summarizes all runs.
+    # A WorkflowRunSummary for each project UUID. The None key summarizes all runs.
     summaries: dict[str | None, WorkflowRunSummary] = dataclasses.field(init=False, default_factory=dict)
-    # Statistics for each workflow. The outer key is an owner name. The inner
+    # Statistics for each workflow. The outer key is an owner UUID. The inner
     # key is a workflow UUID.
     statistics: dict[str, dict[str, WorkflowRunStatistics]] = dataclasses.field(
         init=False,
@@ -625,18 +625,17 @@ class ClusterActivityReport:
             self.summaries[None].tally(run)
 
             owner_uuid = run.request['owner_uuid']
-            owner_name = run.owner_name()
             try:
-                summary = self.summaries[owner_name]
+                summary = self.summaries[owner_uuid]
             except KeyError:
-                summary = self.summaries[owner_name] = WorkflowRunSummary(owner_uuid)
+                summary = self.summaries[owner_uuid] = WorkflowRunSummary(owner_uuid)
             summary.tally(run)
 
             wf_uuid = run.template_uuid()
             try:
-                stats = self.statistics[owner_name][wf_uuid]
+                stats = self.statistics[owner_uuid][wf_uuid]
             except KeyError:
-                stats = self.statistics[owner_name][wf_uuid] = WorkflowRunStatistics(owner_uuid, wf_uuid)
+                stats = self.statistics[owner_uuid][wf_uuid] = WorkflowRunStatistics(owner_uuid, wf_uuid)
             stats.tally(run)
 
     def iter_steps(self):
@@ -665,6 +664,16 @@ class ClusterActivityReport:
             )
             yield from self._load_and_iter_runs(new_reqs, containers, logger)
             seen_cuuids.update(cuuid_batch)
+
+    def owner_name(self, owner_uuid: str) -> str:
+        """Return the current display name for an owner UUID."""
+        owner = self.owners.get(owner_uuid)
+        if owner is None:
+            return 'unknown owner'
+        try:
+            return owner['full_name']
+        except KeyError:
+            return owner['name']
 
     def html_report(self):
         """Get a cluster activity report for the desired time period,

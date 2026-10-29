@@ -143,7 +143,7 @@ SPDX-License-Identifier: AGPL-3.0
   </thead>
   <tbody>
     {% for key, summary in summaries %}
-    {{ project_row(summary, key) }}
+    {{ project_row(summary, report.owner_name(key)) }}
     {% endfor %}
   </tbody>
 </table>
@@ -152,7 +152,7 @@ SPDX-License-Identifier: AGPL-3.0
 
 {% for pkey, psum in summaries %}
 {% call card() %}
-<a id="{{ psum.owner_uuid }}"></a><h2><a href="{{ ('projects', psum.owner_uuid)|workbench_url }}">{{ pkey }}</a></h2>
+<a id="{{ psum.owner_uuid }}"></a><h2><a href="{{ ('projects', psum.owner_uuid)|workbench_url }}">{{ report.owner_name(pkey) }}</a></h2>
 
 <table class='sortable single-project'>
   <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
