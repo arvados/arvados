@@ -279,12 +279,10 @@ describe("Search tests", function () {
                 cy.contains("View details");
 
                 cy.contains("Copy link to clipboard").click();
-                cy.waitForDom();
-                cy.window({ timeout: 15000 }).then(win =>
-                    win.navigator.clipboard.readText().then(text => {
-                        expect(text).to.match(new RegExp(`/collections/${testCollection.uuid}$`));
-                    })
-                );
+                cy.window()
+                    .its("navigator.clipboard")
+                    .then((clip) => clip.readText())
+                    .should("match", new RegExp(`/collections/${testCollection.uuid}$`));
             });
 
             // Check open in new tab
@@ -299,12 +297,10 @@ describe("Search tests", function () {
             cy.get("[data-cy=search-results]").contains(federatedColName).rightclick();
             cy.get("[data-cy=context-menu]").within(() => {
                 cy.contains("Copy link to clipboard").click();
-                cy.waitForDom();
-                cy.window({ timeout: 15000 }).then(win =>
-                    win.navigator.clipboard.readText().then(text => {
-                        expect(text).to.equal(`https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
-                    })
-                );
+                cy.window()
+                    .its("navigator.clipboard")
+                    .then((clip) => clip.readText())
+                    .should("equal", `https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
             });
             // Check open in new tab
             cy.get("[data-cy=search-results]").contains(federatedColName).rightclick();

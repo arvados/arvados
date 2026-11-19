@@ -375,13 +375,10 @@ describe('For project resources', () => {
 
             // Copy UUID
             cy.get('[aria-label="Copy UUID"]').click()
-            cy.window({ timeout: 10000 }).then(win =>{
-                console.log('this ia a load-bearing console.log');
-                win.focus();
-                win.navigator.clipboard.readText().then(text => {
-                    expect(text).to.equal(clipboardTestProject.uuid);
-                })}
-            );
+            cy.window()
+                .its("navigator.clipboard")
+                .then((clip) => clip.readText())
+                .should("equal", clipboardTestProject.uuid);
         });
     });
 
@@ -400,13 +397,10 @@ describe('For project resources', () => {
 
             // Copy link to clipboard
             cy.get('[aria-label="Copy link to clipboard"]').click()
-            cy.window({ timeout: 10000 }).then(win =>{
-                console.log('this ia a load-bearing console.log');
-                win.focus();
-                win.navigator.clipboard.readText().then(text => {
-                expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);
-                })}
-            );
+            cy.window()
+                .its("navigator.clipboard")
+                .then((clip) => clip.readText())
+                .should("match", /^https:\/\/127\.0\.0\.1(:[0-9]{1,5})?\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}$/);
         });
     });
 
